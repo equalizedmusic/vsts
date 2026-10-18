@@ -24,7 +24,7 @@ Não precisa de Mac nem de Visual Studio: todo push na `main` dispara o GitHub A
 (`.github/workflows/build.yml`), que compila no Mac e no Windows, roda o
 [pluginval](https://github.com/Tracktion/pluginval) e publica:
 
-- **Release `latest-build`**: `vsts-mac.zip` e `vsts-win.zip`, com uma pasta por formato;
+- **Release `latest-build`**: um zip por plugin e sistema (`GRAO-mac.zip`, `CALEIDO-win.zip`…) e o pack completo (`InsideStudioSP-Pack-mac.zip` / `-win.zip`), com uma pasta por formato;
 - **branch `builds`**: os mesmos pacotes mais os logs de compilação e do pluginval.
 
 ## Instalar
