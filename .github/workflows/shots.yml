@@ -1,0 +1,50 @@
+name: shots
+
+# Fotos das interfaces (para divulgação). Roda sozinho quando shots/ muda, ou à mão.
+on:
+  push:
+    branches: [main]
+    paths: ['shots/**', '.github/workflows/shots.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shots
+  cancel-in-progress: true
+
+jobs:
+  shots:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar
+        run: |
+          set -o pipefail
+          cmake -S shots -B build -DCMAKE_BUILD_TYPE=Release 2>&1 | tee build.log
+          cmake --build build --config Release -j 4 -- -k 2>&1 | tee -a build.log || true
+
+      - name: Fotos
+        if: always()
+        run: |
+          mkdir -p out
+          for app in $(find build -type f -perm +111 -name 'shot_*' ! -path '*.dSYM*'); do
+            echo "== $app"
+            "$app" "$PWD/out" || echo "falhou: $app"
+          done 2>&1 | tee shots.log
+          ls -l out | tee -a shots.log
+
+      - name: Publicar (branch shots)
+        if: always()
+        run: |
+          mkdir -p pub
+          cp out/*.png pub/ 2>/dev/null || true
+          cp build.log shots.log pub/ 2>/dev/null || true
+          cd pub
+          git init -q
+          git checkout -q -b shots
+          git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "shots ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" shots
