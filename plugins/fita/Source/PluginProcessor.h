@@ -51,7 +51,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     fita::TapeEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
-    std::atomic<float> vuL { 0.0f }, vuR { 0.0f };   // RMS da saída, para os VUs
+    std::atomic<float> vuL { 0.0f }, vuR { 0.0f };   // pico da saída por canal, para os VUs (dBFS)
     std::atomic<float> uiScale { 1.25f };            // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };

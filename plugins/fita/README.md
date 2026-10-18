@@ -13,7 +13,7 @@ da chave: 7,5 ips = 1 7/8 ips).
 
 | Bloco | Controle | Faixa | O que faz |
 |---|---|---|---|
-| MÁQUINA | VU L/R | −20 a +3 VU | Ponteiros com balística de VU (300 ms); 0 VU = −18 dBFS RMS |
+| MÁQUINA | VU L/R | −20 a +3 dBFS | Pico de cada canal, na mesma escala do medidor do Ableton (sobe na hora, desce em ~300 ms); vermelho = acima de 0 dBFS |
 | | Curva | — | Resposta da reprodução: head bump + perda de agudo + desgaste |
 | | Velocidade da fita | 0–100% | Estado do transporte: rodando, freando, parada, partindo |
 | MÁQUINA (card) | visual | — | Rolos/cassete, cabeças, cabrestante; contador e ips |

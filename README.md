@@ -8,6 +8,8 @@ Plugins de áudio da **InsideStudioSP**, feitos com [JUCE](https://juce.com). Ca
 | [CALEIDO](plugins/caleido/README.md) | Glitch rítmico para psytrance (mandala de 16 passos, sync com o BPM) |
 | [ESPIRAL](plugins/espiral/README.md) | Phaser/flanger infinito "barber pole" para psytrance (sobe sem fim, sync com o BPM) |
 | [FITA](plugins/fita/README.md) | Gravador de fita: saturação, wow/flutter, chiado, rolos girando e TAPE STOP no BPM |
+| [CHAMA](plugins/chama/README.md) | Build-up de um knob só: passa-alta, estéreo, ruído, reverb e gate no tempo, com fogo na tela |
+| [NAVALHA](plugins/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
 
 Todos têm 20 presets de fábrica e janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.

@@ -122,7 +122,7 @@ void FitaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     auto* outL = buffer.getWritePointer (0);
     auto* outR = buffer.getWritePointer (1);
-    float peakOut = 0.0f, sumL = 0.0f, sumR = 0.0f;
+    float peakOut = 0.0f, pkL = 0.0f, pkR = 0.0f;
     for (int i = 0; i < n; ++i)
     {
         const float mx = mixSm.getNextValue(), gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
@@ -131,8 +131,8 @@ void FitaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
         outL[i] = l * (1.0f - by) + dL[i] * by;
         outR[i] = r * (1.0f - by) + dR[i] * by;
         peakOut = juce::jmax (peakOut, std::abs (outL[i]), std::abs (outR[i]));
-        sumL += outL[i] * outL[i];
-        sumR += outR[i] * outR[i];
+        pkL = juce::jmax (pkL, std::abs (outL[i]));
+        pkR = juce::jmax (pkR, std::abs (outR[i]));
     }
 
     for (int ch = 2; ch < buffer.getNumChannels(); ++ch)
@@ -140,8 +140,8 @@ void FitaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     meterIn.store (juce::jmax (meterIn.load(), peakIn));
     meterOut.store (juce::jmax (meterOut.load(), peakOut));
-    vuL.store (juce::jmax (vuL.load(), std::sqrt (sumL / (float) n)));
-    vuR.store (juce::jmax (vuR.load(), std::sqrt (sumR / (float) n)));
+    vuL.store (juce::jmax (vuL.load(), pkL));
+    vuR.store (juce::jmax (vuR.load(), pkR));
 }
 
 juce::AudioProcessorEditor* FitaProcessor::createEditor()

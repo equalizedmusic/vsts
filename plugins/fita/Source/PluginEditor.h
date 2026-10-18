@@ -8,12 +8,12 @@ class MachineStrip : public juce::Component
 {
 public:
     explicit MachineStrip (FitaProcessor& p) : proc (p) {}
-    void setVu (float rmsL, float rmsR, float dt);
+    void setVu (float peakL, float peakR, float dt);
     void paint (juce::Graphics& g) override;
 
 private:
     FitaProcessor& proc;
-    float needleL = 0.0f, needleR = 0.0f;   // nível com a balística do VU (300 ms)
+    float needleL = 0.0f, needleR = 0.0f;   // pico com queda de VU (sobe na hora, desce em ~300 ms)
 };
 
 // ---------------- rolos (ou cassete) girando na velocidade da fita ----------------

@@ -107,7 +107,10 @@ void drawVu (juce::Graphics& g, juce::Rectangle<float> r, float needleDb, const 
 
     g.setColour (theme::dark);
     g.setFont (theme::sans (13.0f, true, 0.1f));
-    g.drawText ("VU", juce::Rectangle<float> (cx - 30.0f, face.getY() + face.getHeight() * 0.52f, 60.0f, 16.0f),
+    g.drawText ("VU", juce::Rectangle<float> (cx - 30.0f, face.getY() + face.getHeight() * 0.48f, 60.0f, 16.0f),
+                juce::Justification::centred);
+    g.setFont (theme::mono (8.0f));
+    g.drawText ("dBFS", juce::Rectangle<float> (cx - 30.0f, face.getY() + face.getHeight() * 0.48f + 15.0f, 60.0f, 10.0f),
                 juce::Justification::centred);
     g.setFont (theme::sans (9.0f, true, 0.1f));
     g.drawText (label, juce::Rectangle<float> (face.getX() + 6.0f, face.getBottom() - 15.0f, 20.0f, 12.0f),
@@ -235,12 +238,14 @@ void drawGuide (juce::Graphics& g, juce::Point<float> p)
 // =====================================================================
 // MÁQUINA (faixa de cima)
 // =====================================================================
-void MachineStrip::setVu (float rmsL, float rmsR, float dt)
+// escala em dBFS de pico, igual ao medidor do canal no Ableton (−9 no canal = ponteiro no −9);
+// sobe junto com o pico e desce devagar, como ponteiro de VU
+void MachineStrip::setVu (float peakL, float peakR, float dt)
 {
-    const float k   = 1.0f - std::exp (-dt / 0.065f);              // 99% em ~300 ms
-    const float ref = juce::Decibels::decibelsToGain (18.0f);      // 0 VU = −18 dBFS RMS
-    needleL += k * (rmsL * ref - needleL);
-    needleR += k * (rmsR * ref - needleR);
+    const float kDown = 1.0f - std::exp (-dt / 0.3f);
+    auto follow = [kDown] (float& needle, float peak) { needle = peak > needle ? peak : needle + kDown * (peak - needle); };
+    follow (needleL, peakL);
+    follow (needleR, peakR);
 }
 
 void MachineStrip::paint (juce::Graphics& g)
