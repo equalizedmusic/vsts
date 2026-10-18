@@ -22,8 +22,7 @@ target_sources(Grao PRIVATE
 target_compile_definitions(Grao PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0
-    JUCE_DISPLAY_SPLASH_SCREEN=0)
+    JUCE_VST3_CAN_REPLACE_VST2=0)
 
 target_link_libraries(Grao
     PRIVATE

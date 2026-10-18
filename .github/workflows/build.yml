@@ -53,6 +53,7 @@ jobs:
               fi
             done
           done
+          find dist \( -name '*.exp' -o -name '*.lib' \) -delete
           if [ "${{ matrix.name }}" = mac ]; then
             for b in dist/*/*; do codesign --force --deep --sign - "$b"; done
             ditto -c -k --sequesterRsrc dist vsts-mac.zip
