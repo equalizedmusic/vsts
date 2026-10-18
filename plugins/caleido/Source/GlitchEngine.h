@@ -42,6 +42,7 @@ struct Settings
     int    division = 1, ratchetMax = 3, spin = 2;
     float  chaos = 0.62f, trip = 0.48f, shuffle = 0.3f, reverse = 0.35f, tapeRange = 10.0f, filter = 0.55f, crush = 0.25f;
     bool   mutate = false, hold = false;
+    bool   running = true;   // falso = host parado: a mandala espera no passo 1 e o som passa limpo
 };
 
 using Probs   = std::array<float, numLanes>;
@@ -110,7 +111,7 @@ public:
         lastStepGlobal = std::numeric_limits<int64_t>::min();
         lastCycle = 0;
         cyclesSinceMutate = 0;
-        holdActive = false;
+        holdActive = parked = false;
         cur = prev = Voice {};
         xfLeft = 0;
         crushMix = filtMix = spinDepth = 0.0f;
@@ -129,7 +130,14 @@ public:
     {
         handleRequests (st);
 
-        const double stepBeats      = 0.5 / std::pow (2.0, st.division);   // 1/8, 1/16, 1/32
+        if (! st.running)
+        {
+            if (! parked) park();
+        }
+        else
+            parked = false;
+
+        const double stepBeats     = 0.5 / std::pow (2.0, st.division);   // 1/8, 1/16, 1/32
         const double beatsPerSample = st.bpm / 60.0 / sr;
         const double stepLen        = stepBeats / beatsPerSample;
         const double spinBeats      = 1.0 / std::pow (2.0, st.spin);       // 1/4 .. 1/32
@@ -142,7 +150,7 @@ public:
 
             // o PPQ do host pode voltar uma fração na virada do bloco: recuar um passo só é tremida, não pulo (senão o passo recomeça e estala)
             const bool jitter = lastStepGlobal != std::numeric_limits<int64_t>::min() && g == lastStepGlobal - 1;
-            if (g != lastStepGlobal && ! jitter)
+            if (! parked && g != lastStepGlobal && ! jitter)
             {
                 const int64_t cyc = g >= 0 ? g / numSteps : -((-g + numSteps - 1) / numSteps);
                 const int     s   = (int) (g - cyc * numSteps);
@@ -223,20 +231,23 @@ public:
             outR[i] = r;
 
             // ---- desenho do padrão: pico por coluna do compasso ----
-            const double frac = juce::jlimit (0.0, 0.999, ((double) now - cur.start) / cur.len);
-            const int col = curStep * colsPerStep + (int) (frac * colsPerStep);
-            if (col != lastCol)
+            if (! parked)
             {
-                if (lastCol >= 0) peaks[(size_t) lastCol].store (peakAcc, std::memory_order_relaxed);
-                peakAcc = 0.0f;
-                lastCol = col;
+                const double frac = juce::jlimit (0.0, 0.999, ((double) now - cur.start) / cur.len);
+                const int col = curStep * colsPerStep + (int) (frac * colsPerStep);
+                if (col != lastCol)
+                {
+                    if (lastCol >= 0) peaks[(size_t) lastCol].store (peakAcc, std::memory_order_relaxed);
+                    peakAcc = 0.0f;
+                    lastCol = col;
+                }
+                peakAcc = juce::jmax (peakAcc, std::abs (l), std::abs (r));
             }
-            peakAcc = juce::jmax (peakAcc, std::abs (l), std::abs (r));
 
             ++now;
         }
 
-        stepFrac.store ((float) juce::jlimit (0.0, 0.999, ((double) now - cur.start) / cur.len));
+        stepFrac.store (parked ? 0.0f : (float) juce::jlimit (0.0, 0.999, ((double) now - cur.start) / cur.len));
     }
 
 private:
@@ -268,7 +279,26 @@ private:
         lastProbs = probs;
     }
 
-    // MUTAR: padrão novo a cada 2 voltas da mandala (SEGURAR trava)
+    // host parado: volta ao passo 1 e passa o som ao vivo (crossfade); no play, entra no passo
+    // que corresponde à posição do host na régua, então a mandala começa junto com o beat grid
+    void park()
+    {
+        parked = true;
+        prev   = cur;
+        cur    = Voice {};
+        cur.start = (double) now;
+        xfLeft = (int) xfadeN;
+        crushTarget = filtTarget = spinTarget = 0.0f;
+        holdActive = false;
+        holding.store (false);
+        lastStepGlobal = std::numeric_limits<int64_t>::min();
+        cyclesSinceMutate = 0;
+        curStep = 0;
+        lastCol = -1;
+        step.store (0);
+    }
+
+    // TRANSMUTAR: padrão novo a cada 2 voltas da mandala (SEGURAR trava)
     void onNewCycle (const Settings& st)
     {
         if (! st.mutate || holdActive) { cyclesSinceMutate = 0; return; }
@@ -443,7 +473,7 @@ private:
 
     int64_t lastStepGlobal = std::numeric_limits<int64_t>::min(), lastCycle = 0;
     int     cyclesSinceMutate = 0, curStep = 0;
-    bool    holdActive = false;
+    bool    holdActive = false, parked = false;
     int64_t holdEnd = 0;
     double  holdStep = 1.0;
 

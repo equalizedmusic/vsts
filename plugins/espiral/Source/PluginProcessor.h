@@ -41,7 +41,12 @@ public:
     int  getPresetIndex() const { return presetIndex; }
     juce::String getPresetName() const { return presetName; }
     void loadPreset (int index);
-    void saveUserPreset();
+    bool isUserPreset() const;                           // o preset aberto é do usuário (dá para editar)
+    juce::String suggestPresetName() const;
+    void saveUserPreset (const juce::String& name);      // novo preset com o som atual
+    void overwriteUserPreset();                          // grava o som atual no preset do usuário aberto
+    bool renameUserPreset (const juce::String& newName);
+    void deleteUserPreset();                             // vai para a lixeira
 
     juce::AudioProcessorValueTreeState apvts;
     espiral::SpiralEngine engine;
@@ -49,12 +54,15 @@ public:
     std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };
+    std::atomic<bool>  waiting { false };   // host parado: espiral esperando o play
 
 private:
     espiral::Settings readSettings() const;
     void refreshUserPresets();
     void applyValues (const std::function<bool (const juce::String&, float&)>& lookup);
     juce::File userPresetDir() const;
+    juce::File currentUserFile() const;
+    void writePreset (const juce::File& file);
 
     std::atomic<float>* pRange = nullptr;
     std::atomic<float>* pCycle = nullptr;

@@ -5,6 +5,7 @@ using namespace fita;
 namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
@@ -546,7 +547,7 @@ FitaEditor::FitaEditor (FitaProcessor& p)
 
     prevBtn.onClick    = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
     nextBtn.onClick    = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
-    saveBtn.onClick    = [this] { proc.saveUserPreset(); };
+    saveBtn.onClick    = [this] { askNewPreset(); };
     presetName.onClick = [this] { showPresetMenu(); };
 
     layoutCanvas();
@@ -573,6 +574,17 @@ void FitaEditor::showPresetMenu()
     for (int i = 0; i < names.size(); ++i)
         menu.addItem (i + 1, names[i], true, i == proc.getPresetIndex());
 
+    // presets do usuário dá para gravar por cima, renomear e apagar; os de fábrica não mudam
+    menu.addSeparator();
+    menu.addItem (menuSaveAs, u8 ("Salvar como novo preset…"));
+    if (proc.isUserPreset())
+    {
+        const auto name = proc.getPresetName();
+        menu.addItem (menuOverwrite, u8 ("Salvar alterações em “") + name + u8 ("”"));
+        menu.addItem (menuRename,    u8 ("Renomear “") + name + u8 ("”…"));
+        menu.addItem (menuDelete,    u8 ("Apagar “") + name + u8 ("”…"));
+    }
+
     juce::PopupMenu sizes;
     const float current = proc.uiScale.load();
     for (int pct : { 75, 100, 125, 150, 175, 200 })
@@ -584,12 +596,52 @@ void FitaEditor::showPresetMenu()
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
                         [safe] (int result)
                         {
-                            if (safe == nullptr || result <= 0) return;
-                            if (result > sizeMenuBase)
-                                safe->setScale ((float) (result - sizeMenuBase) / 100.0f);
-                            else
-                                safe->proc.loadPreset (result - 1);
+                            if (safe != nullptr && result > 0)
+                                safe->presetMenuChosen (result);
                         });
+}
+
+void FitaEditor::askNewPreset()
+{
+    juce::Component::SafePointer<FitaEditor> safe (this);
+    dialog.askName (canvas, "Salvar preset", proc.suggestPresetName(),
+                    [safe] (const juce::String& name) { if (safe != nullptr) safe->proc.saveUserPreset (name); });
+}
+
+void FitaEditor::presetMenuChosen (int result)
+{
+    if (result > sizeMenuBase && result < menuSaveAs)
+    {
+        setScale ((float) (result - sizeMenuBase) / 100.0f);
+        return;
+    }
+
+    juce::Component::SafePointer<FitaEditor> safe (this);
+    const auto name = proc.getPresetName();
+    switch (result)
+    {
+        case menuSaveAs:
+            askNewPreset();
+            break;
+        case menuOverwrite:
+            proc.overwriteUserPreset();
+            break;
+        case menuRename:
+            dialog.askName (canvas, "Renomear preset", name, [safe] (const juce::String& newName)
+            {
+                if (safe != nullptr && ! safe->proc.renameUserPreset (newName))
+                    safe->dialog.inform (safe->canvas, u8 ("Não deu para renomear"), u8 ("Já existe um preset com esse nome."));
+            });
+            break;
+        case menuDelete:
+            dialog.confirm (canvas, "Apagar preset",
+                            u8 ("“") + name + u8 ("” vai para a lixeira. O som atual continua no plugin."), "Apagar",
+                            [safe] { if (safe != nullptr) safe->proc.deleteUserPreset(); });
+            break;
+        default:
+            proc.loadPreset (result - 1);
+            break;
+    }
 }
 
 void FitaEditor::timerCallback()

@@ -48,6 +48,8 @@ public:
 private:
     void timerCallback() override;
     void showPresetMenu();
+    void presetMenuChosen (int result);
+    void askNewPreset();
     void drawCanvas (juce::Graphics&);
     void layoutCanvas();
     void setScale (float scale);
@@ -69,7 +71,9 @@ private:
     std::unique_ptr<APVTS::ButtonAttachment> mutateAtt, holdAtt, bypassAtt;
     float levelIn = 0.0f, levelOut = 0.0f;
     float lastBpm = -1.0f;
-    bool lastSync = false;
+    bool lastSync = false, lastWaiting = false;
+
+    PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CaleidoEditor)
 };

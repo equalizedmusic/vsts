@@ -12,8 +12,8 @@ zero); repetir, inverter, acelerar a fita e embaralhar leem o que já passou.
 
 | Bloco | Controle | Faixa | O que faz |
 |---|---|---|---|
-| MANDALA | anéis | clique liga/desliga | De fora para dentro: REPETE, REVERSO, FITA, FILTRO, CRUSH |
-| | GERAR | — | Sorteia um padrão novo (nova semente) |
+| MANDALA | anéis | clique liga/desliga | De fora para dentro: REPETE (âmbar), REVERSO (coral), FITA (verde), FILTRO (azul), CRUSH (violeta). Os knobs de cada um têm a mesma cor |
+| | GERAR | — | Sorteia os knobs do padrão (CAOS, VIAGEM, REPETIÇÃO, EMBARALHAR, REVERSO, FITA, FILTRO, CRUSH) e uma semente nova: knobs e mandala mudam juntos |
 | 01 CORTE | **Macro CAOS** | 0–100% | Chance de cada passo ser repetido, invertido ou trocado de lugar |
 | | Divisão | 1/8 · 1/16 · 1/32 | Tamanho do passo (16 passos = 2 compassos, 1 ou meio) |
 | | Repetição | até 2× … 16× | Máximo de picotes num passo do anel REPETE |
@@ -24,23 +24,26 @@ zero); repetir, inverter, acelerar a fita e embaralhar leem o que já passou.
 | | Filtro | 0–100% | Peso no sorteio, ressonância e tamanho da varredura (LP/BP/HP) |
 | | Crush | 16→2 bit | Bits e redução de taxa nos passos do anel CRUSH |
 | | Giro | 1/4 … 1/32 | Velocidade do pan circular nos passos coloridos |
-| 03 SAÍDA | Mutar | liga/desliga (desligado) | Padrão novo a cada 2 voltas da mandala. Os presets não mexem nele |
+| 03 SAÍDA | Transmutar | liga/desliga (desligado) | Semente nova a cada 2 voltas da mandala (os knobs ficam). Os presets não mexem nele |
 | | Segurar | liga/desliga | Prende os 16 passos anteriores e toca em loop (entra na virada do passo) |
 | | Mix | 0–100% | Seco ↔ processado |
 | | Ganho | −36 a +12 dB | Volume final |
 
 Mexer em CAOS, VIAGEM, REVERSO, FILTRO ou CRUSH refaz o padrão **com a mesma semente**: os
 passos acendem ou apagam sem embaralhar tudo. Os sorteios são determinísticos, então o
-padrão se repete igual a cada volta até MUTAR ou GERAR.
+padrão se repete igual a cada volta até TRANSMUTAR ou GERAR.
 
-Com o Ableton tocando, segue a régua do projeto (**SYNC**). Parado, anda sozinho no BPM do
-projeto (**LIVRE**).
+Com o Ableton tocando, segue a régua do projeto (**SYNC**): o passo é o da posição do play no
+beat grid. Com o Ableton parado, a mandala fica no passo 1 e o som passa limpo (**AGUARDANDO
+PLAY**). Só anda sozinha no BPM (**LIVRE**) em host que não informa a posição.
 
 ## Presets
 
-Seis de fábrica, cada um com a sua semente: Init · Mandala, Cogumelo Azul, Fractal 145,
-Chuva de Bits, Portal Reverso, Sopro do Xamã. O preset do usuário guarda também o padrão da
-mandala:
+Vinte de fábrica, cada um com a sua semente. O preset do usuário guarda também o padrão da
+mandala. No menu de presets: *Salvar como novo*, e no preset do usuário aberto *Salvar alterações*,
+*Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.
+
+Pasta:
 
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/CALEIDO/`
 - Windows: `%APPDATA%\InsideStudioSP\CALEIDO\Presets\`

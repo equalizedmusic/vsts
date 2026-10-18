@@ -29,9 +29,10 @@ Duplo clique num controle volta ao valor padrão. O botão redondo no topo é o 
 
 ## Presets
 
-Seis de fábrica: Init · Areia, Poeira Dourada, Enxame Reverso, Coral Congelado, Fita Rasgada,
-Garoa. Clique no nome para abrir a lista; ◀ ▶ navegam; **+** salva o estado atual como
-"Meu preset NN":
+Vinte de fábrica, entre eles: Init · Areia, Poeira Dourada, Enxame Reverso, Coral Congelado, Fita Rasgada,
+Garoa (e mais 14). Clique no nome para abrir a lista; ◀ ▶ navegam; **+** pede um nome e salva o
+estado atual. No menu, com um preset do usuário aberto: *Salvar alterações*, *Renomear* e *Apagar*
+(vai para a lixeira). Pasta:
 
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/GRAO/`
 - Windows: `%APPDATA%\InsideStudioSP\GRAO\Presets\`

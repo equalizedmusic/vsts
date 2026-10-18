@@ -229,6 +229,75 @@ private:
     int idx = 0, count = 0;
 };
 
+// ---------------- caixas de diálogo dos presets (nome, confirmação), dentro da janela do plugin ----------------
+class PresetDialog
+{
+public:
+    ~PresetDialog() { close(); }
+
+    // pede um nome; onOk recebe o texto sem espaços nas pontas (vazio não chama)
+    void askName (juce::Component& parent, const juce::String& title, const juce::String& initial,
+                  std::function<void (const juce::String&)> onOk)
+    {
+        close();
+        auto* w = new juce::AlertWindow (title, {}, juce::MessageBoxIconType::NoIcon);
+        w->addTextEditor ("name", initial);
+        w->addButton ("Salvar", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancelar", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        juce::Component::SafePointer<juce::AlertWindow> sw (w);
+        open (parent, w, [sw, onOk] (int result)
+        {
+            if (result != 1 || sw == nullptr) return;
+            const auto name = sw->getTextEditorContents ("name").trim();
+            if (name.isNotEmpty()) onOk (name);
+        });
+        if (auto* ed = w->getTextEditor ("name"))
+        {
+            ed->grabKeyboardFocus();
+            ed->selectAll();
+        }
+    }
+
+    void confirm (juce::Component& parent, const juce::String& title, const juce::String& message,
+                  const juce::String& okText, std::function<void()> onOk)
+    {
+        close();
+        auto* w = new juce::AlertWindow (title, message, juce::MessageBoxIconType::NoIcon);
+        w->addButton (okText, 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancelar", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        open (parent, w, [onOk] (int result) { if (result == 1) onOk(); });
+    }
+
+    void inform (juce::Component& parent, const juce::String& title, const juce::String& message)
+    {
+        close();
+        auto* w = new juce::AlertWindow (title, message, juce::MessageBoxIconType::NoIcon);
+        w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        open (parent, w, [] (int) {});
+    }
+
+    // fecha sem confirmar (a janela do plugin fechou com a caixa aberta)
+    void close()
+    {
+        if (current != nullptr)
+            current->exitModalState (0);
+    }
+
+private:
+    void open (juce::Component& parent, juce::AlertWindow* w, std::function<void (int)> done)
+    {
+        w->setColour (juce::AlertWindow::backgroundColourId, theme::panel2);
+        w->setColour (juce::AlertWindow::textColourId, theme::txt);
+        w->setColour (juce::AlertWindow::outlineColourId, theme::line);
+        parent.addAndMakeVisible (w);
+        w->setCentrePosition (parent.getLocalBounds().getCentre());
+        current = w;
+        w->enterModalState (true, juce::ModalCallbackFunction::create (std::move (done)), true);   // apaga ao fechar
+    }
+
+    juce::Component::SafePointer<juce::AlertWindow> current;
+};
+
 // ---------------- medidor de LEDs ----------------
 class LedMeter : public juce::Component
 {

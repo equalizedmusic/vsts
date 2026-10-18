@@ -41,7 +41,12 @@ public:
     int  getPresetIndex() const { return presetIndex; }
     juce::String getPresetName() const { return presetName; }
     void loadPreset (int index);
-    void saveUserPreset();
+    bool isUserPreset() const;                           // o preset aberto é do usuário (dá para editar)
+    juce::String suggestPresetName() const;
+    void saveUserPreset (const juce::String& name);      // novo preset com o som atual
+    void overwriteUserPreset();                          // grava o som atual no preset do usuário aberto
+    bool renameUserPreset (const juce::String& newName);
+    void deleteUserPreset();                             // vai para a lixeira
 
     juce::AudioProcessorValueTreeState apvts;
     fita::TapeEngine engine;
@@ -56,6 +61,8 @@ private:
     void refreshUserPresets();
     void applyValues (const std::function<bool (const juce::String&, float&)>& lookup);
     juce::File userPresetDir() const;
+    juce::File currentUserFile() const;
+    void writePreset (const juce::File& file);
 
     std::atomic<float>* pDrive = nullptr;
     std::atomic<float>* pModel = nullptr;

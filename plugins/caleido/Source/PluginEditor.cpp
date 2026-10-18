@@ -5,6 +5,7 @@ using namespace caleido;
 namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
 // função, e não array global: um array copiado das cores do tema na carga do plugin podia ficar zerado
 // (ordem de inicialização entre arquivos) e a mandala saía sem cor
@@ -14,7 +15,7 @@ juce::Colour laneColour (int lane)
     {
         case laneRepeat:  return theme::amber;
         case laneReverse: return theme::coral;
-        case laneTape:    return theme::cream;
+        case laneTape:    return juce::Colour (0xff7fe0a8);   // verde: creme se confundia com os knobs comuns
         case laneFilter:  return theme::ice;
         default:          return theme::violet;
     }
@@ -321,16 +322,17 @@ CaleidoEditor::CaleidoEditor (CaleidoProcessor& p)
       chaosMacro (p.apvts, id::chaos,    "CAOS",             true,  theme::amber),
       tripMacro  (p.apvts, id::trip,     "VIAGEM",           true,  theme::coral),
       division   (p.apvts, id::division, u8 ("DIVISÃO"),     false, theme::cream),
-      ratchet    (p.apvts, id::ratchet,  u8 ("REPETIÇÃO"),   false, theme::cream),
+      // os knobs de cada anel usam a cor dele na mandala
+      ratchet    (p.apvts, id::ratchet,  u8 ("REPETIÇÃO"),   false, laneColour (laneRepeat)),
       shuffle    (p.apvts, id::shuffle,  "EMBARALHAR",       false, theme::cream),
-      reverse    (p.apvts, id::reverse,  "REVERSO",          false, theme::cream),
-      tape       (p.apvts, id::tape,     "FITA",             false, theme::cream),
-      filter     (p.apvts, id::filter,   "FILTRO",           false, theme::cream),
-      crush      (p.apvts, id::crush,    "CRUSH",            false, theme::cream),
+      reverse    (p.apvts, id::reverse,  "REVERSO",          false, laneColour (laneReverse)),
+      tape       (p.apvts, id::tape,     "FITA",             false, laneColour (laneTape)),
+      filter     (p.apvts, id::filter,   "FILTRO",           false, laneColour (laneFilter)),
+      crush      (p.apvts, id::crush,    "CRUSH",            false, laneColour (laneCrush)),
       spin       (p.apvts, id::spin,     "GIRO",             false, theme::cream),
       output     (p.apvts, id::output,   "GANHO",            false, theme::cream),
       mix        (p.apvts, id::mix),
-      mutateKey  ("MUTAR", theme::coral),
+      mutateKey  ("TRANSMUTAR", theme::coral),
       holdKey    ("SEGURAR", theme::violet)
 {
     setLookAndFeel (&lnf);
@@ -348,10 +350,10 @@ CaleidoEditor::CaleidoEditor (CaleidoProcessor& p)
     holdAtt   = std::make_unique<APVTS::ButtonAttachment> (p.apvts, id::hold, holdKey);
     bypassAtt = std::make_unique<APVTS::ButtonAttachment> (p.apvts, id::bypass, bypass);
 
-    generateBtn.onClick = [this] { proc.engine.requestNewPattern(); };
+    generateBtn.onClick = [this] { proc.generate(); };
     prevBtn.onClick     = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
     nextBtn.onClick     = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
-    saveBtn.onClick     = [this] { proc.saveUserPreset(); };
+    saveBtn.onClick    = [this] { askNewPreset(); };
     presetName.onClick  = [this] { showPresetMenu(); };
 
     layoutCanvas();
@@ -378,6 +380,17 @@ void CaleidoEditor::showPresetMenu()
     for (int i = 0; i < names.size(); ++i)
         menu.addItem (i + 1, names[i], true, i == proc.getPresetIndex());
 
+    // presets do usuário dá para gravar por cima, renomear e apagar; os de fábrica não mudam
+    menu.addSeparator();
+    menu.addItem (menuSaveAs, u8 ("Salvar como novo preset…"));
+    if (proc.isUserPreset())
+    {
+        const auto name = proc.getPresetName();
+        menu.addItem (menuOverwrite, u8 ("Salvar alterações em “") + name + u8 ("”"));
+        menu.addItem (menuRename,    u8 ("Renomear “") + name + u8 ("”…"));
+        menu.addItem (menuDelete,    u8 ("Apagar “") + name + u8 ("”…"));
+    }
+
     juce::PopupMenu sizes;
     const float current = proc.uiScale.load();
     for (int pct : { 75, 100, 125, 150, 175, 200 })
@@ -389,12 +402,52 @@ void CaleidoEditor::showPresetMenu()
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
                         [safe] (int result)
                         {
-                            if (safe == nullptr || result <= 0) return;
-                            if (result > sizeMenuBase)
-                                safe->setScale ((float) (result - sizeMenuBase) / 100.0f);
-                            else
-                                safe->proc.loadPreset (result - 1);
+                            if (safe != nullptr && result > 0)
+                                safe->presetMenuChosen (result);
                         });
+}
+
+void CaleidoEditor::askNewPreset()
+{
+    juce::Component::SafePointer<CaleidoEditor> safe (this);
+    dialog.askName (canvas, "Salvar preset", proc.suggestPresetName(),
+                    [safe] (const juce::String& name) { if (safe != nullptr) safe->proc.saveUserPreset (name); });
+}
+
+void CaleidoEditor::presetMenuChosen (int result)
+{
+    if (result > sizeMenuBase && result < menuSaveAs)
+    {
+        setScale ((float) (result - sizeMenuBase) / 100.0f);
+        return;
+    }
+
+    juce::Component::SafePointer<CaleidoEditor> safe (this);
+    const auto name = proc.getPresetName();
+    switch (result)
+    {
+        case menuSaveAs:
+            askNewPreset();
+            break;
+        case menuOverwrite:
+            proc.overwriteUserPreset();
+            break;
+        case menuRename:
+            dialog.askName (canvas, "Renomear preset", name, [safe] (const juce::String& newName)
+            {
+                if (safe != nullptr && ! safe->proc.renameUserPreset (newName))
+                    safe->dialog.inform (safe->canvas, u8 ("Não deu para renomear"), u8 ("Já existe um preset com esse nome."));
+            });
+            break;
+        case menuDelete:
+            dialog.confirm (canvas, "Apagar preset",
+                            u8 ("“") + name + u8 ("” vai para a lixeira. O som atual continua no plugin."), "Apagar",
+                            [safe] { if (safe != nullptr) safe->proc.deleteUserPreset(); });
+            break;
+        default:
+            proc.loadPreset (result - 1);
+            break;
+    }
 }
 
 void CaleidoEditor::timerCallback()
@@ -411,10 +464,12 @@ void CaleidoEditor::timerCallback()
 
     const float bpm = proc.shownBpm.load();
     const bool  syn = proc.synced.load();
-    if (std::abs (bpm - lastBpm) > 0.05f || syn != lastSync)
+    const bool  wt  = proc.waiting.load();
+    if (std::abs (bpm - lastBpm) > 0.05f || syn != lastSync || wt != lastWaiting)
     {
         lastBpm = bpm;
         lastSync = syn;
+        lastWaiting = wt;
         canvas.repaint (380, 18, 236, 32);
     }
 }
@@ -495,13 +550,14 @@ void CaleidoEditor::drawCanvas (juce::Graphics& g)
         g.drawText ("InsideStudioSP", juce::Rectangle<float> (brandX, 34.0f, 140.0f, 13.0f), juce::Justification::centredLeft);
     }
 
-    // ---- BPM: SYNC seguindo o host, LIVRE com o host parado ----
+    // ---- BPM: SYNC seguindo o host; host parado = espera o play; sem régua do host = LIVRE ----
     {
         const bool syn = proc.synced.load();
         juce::AttributedString s;
         s.append (juce::String (proc.shownBpm.load(), 1), theme::mono (11.5f), theme::cream);
         s.append (u8 (" BPM · "), theme::mono (11.5f), theme::dim);
-        s.append (syn ? "SYNC" : "LIVRE", theme::mono (11.5f), syn ? theme::cream : theme::dim);
+        s.append (syn ? "SYNC" : proc.waiting.load() ? "AGUARDANDO PLAY" : "LIVRE", theme::mono (11.5f),
+                  syn ? theme::cream : theme::dim);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
         const float w = tl.getWidth(), right = 604.0f;
@@ -558,8 +614,8 @@ void CaleidoEditor::layoutCanvas()
     crush.setBounds  (562, 468, 119, 92);
     spin.setBounds   (681, 468, 119, 92);
 
-    mutateKey.setBounds (830, 246, 71, 40);
-    holdKey.setBounds   (907, 246, 71, 40);
+    mutateKey.setBounds (830, 246, 80, 40);   // TRANSMUTAR é o nome mais comprido
+    holdKey.setBounds   (916, 246, 62, 40);
     mix.setBounds (830, 296, 44, 262);
     output.setBounds (884, 296, 94, 92);
     meterIn.setBounds  (904, 446, 24, 112);

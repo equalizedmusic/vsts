@@ -44,6 +44,8 @@ public:
 private:
     void timerCallback() override;
     void showPresetMenu();
+    void presetMenuChosen (int result);
+    void askNewPreset();
     void drawCanvas (juce::Graphics&);
     void layoutCanvas();
     void setScale (float scale);
@@ -67,6 +69,8 @@ private:
     bool lastSync = false;
     int lastModel = -1;
     double lastTick = 0.0;
+
+    PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FitaEditor)
 };

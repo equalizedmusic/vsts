@@ -12,6 +12,8 @@ Plugins de áudio da **InsideStudioSP**, feitos com [JUCE](https://juce.com). Ca
 Todos têm 20 presets de fábrica e janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
 
+No menu de presets: *Salvar como novo*; com um preset do usuário aberto, também *Salvar alterações*, *Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.
+
 ## Formatos gerados
 
 | | Mac (Intel + Apple Silicon) | Windows 64 bits |

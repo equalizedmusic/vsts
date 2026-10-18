@@ -114,14 +114,17 @@ void CaleidoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         }
     bpm = juce::jlimit (40.0, 300.0, bpm);
     const bool sync = playing && havePpq;
+    const bool wait = havePpq && ! playing;   // host com régua, parado: a mandala espera o play
     if (sync) freePpq = hostPpq;
 
     auto s = readSettings();
     s.bpm = bpm;
     s.ppq = freePpq;
+    s.running = ! wait;
     freePpq += (double) n * bpm / 60.0 / currentRate;
     shownBpm.store ((float) bpm);
     synced.store (sync);
+    waiting.store (wait);
 
     auto* wL = wet.getWritePointer (0);
     auto* wR = wet.getWritePointer (1);
@@ -150,6 +153,33 @@ void CaleidoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     meterIn.store (juce::jmax (meterIn.load(), peakIn));
     meterOut.store (juce::jmax (meterOut.load(), peakOut));
+}
+
+// GERAR: sorteia os knobs que formam o padrão e uma semente nova. A mandala sai desses knobs,
+// então padrão e knobs mudam juntos
+void CaleidoProcessor::generate()
+{
+    juce::Random rnd;
+    auto set = [this] (const char* pid, float value)
+    {
+        if (auto* p = apvts.getParameter (pid))
+        {
+            p->beginChangeGesture();
+            p->setValueNotifyingHost (p->convertTo0to1 (value));
+            p->endChangeGesture();
+        }
+    };
+    auto pick = [&rnd] (float lo, float hi) { return std::round (lo + (hi - lo) * rnd.nextFloat()); };
+
+    set (id::chaos,   pick (30.0f, 90.0f));
+    set (id::trip,    pick (25.0f, 90.0f));
+    set (id::ratchet, (float) rnd.nextInt (juce::Range<int> (1, 6)));   // até 3× … até 12×
+    set (id::shuffle, pick (0.0f, 60.0f));
+    set (id::reverse, pick (10.0f, 80.0f));
+    set (id::tape,    pick (0.0f, 24.0f));
+    set (id::filter,  pick (20.0f, 90.0f));
+    set (id::crush,   pick (0.0f, 70.0f));
+    engine.requestNewPattern();
 }
 
 juce::AudioProcessorEditor* CaleidoProcessor::createEditor()
@@ -197,7 +227,7 @@ void CaleidoProcessor::setStateInformation (const void* data, int sizeInBytes)
             apvts.replaceState (tree);
             restorePattern (tree);
             presetName  = tree.getProperty ("presetName", presetName).toString();
-            presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+            presetIndex = getPresetNames().indexOf (presetName);
             uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
     }
@@ -239,7 +269,7 @@ void CaleidoProcessor::applyValues (const std::function<bool (const juce::String
     for (auto* p : getParameters())
     {
         auto* rp = dynamic_cast<juce::RangedAudioParameter*> (p);
-        // bypass e MUTAR são do usuário: trocar de preset não mexe neles
+        // bypass e TRANSMUTAR são do usuário: trocar de preset não mexe neles
         if (rp == nullptr || rp->getParameterID() == id::bypass || rp->getParameterID() == id::mutate) continue;
 
         float value = rp->convertFrom0to1 (rp->getDefaultValue());
@@ -287,24 +317,85 @@ void CaleidoProcessor::loadPreset (int index)
     presetName  = getPresetNames()[index];
 }
 
-void CaleidoProcessor::saveUserPreset()
+juce::File CaleidoProcessor::currentUserFile() const
 {
+    if (presetIndex < (int) factory.size()) return {};
+    for (auto& f : userFiles)
+        if (f.getFileNameWithoutExtension() == presetName && f.existsAsFile()) return f;
+    return {};
+}
+
+bool CaleidoProcessor::isUserPreset() const
+{
+    return currentUserFile().existsAsFile();
+}
+
+juce::String CaleidoProcessor::suggestPresetName() const
+{
+    const auto dir = userPresetDir();
+    for (int i = 1; i < 1000; ++i)
+    {
+        const auto n = "Meu preset " + juce::String (i).paddedLeft ('0', 2);
+        if (! dir.getChildFile (n + ".xml").existsAsFile()) return n;
+    }
+    return "Meu preset";
+}
+
+void CaleidoProcessor::writePreset (const juce::File& file)
+{
+    if (auto xml = stateWithPattern().createXml())
+        xml->writeTo (file);
+}
+
+void CaleidoProcessor::saveUserPreset (const juce::String& name)
+{
+    const auto base = juce::File::createLegalFileName (name.trim());
+    if (base.isEmpty()) return;
     auto dir = userPresetDir();
     dir.createDirectory();
 
-    juce::File file;
-    for (int i = 1; i < 1000; ++i)
-    {
-        file = dir.getChildFile ("Meu preset " + juce::String (i).paddedLeft ('0', 2) + ".xml");
-        if (! file.existsAsFile()) break;
-    }
-
-    if (auto xml = stateWithPattern().createXml())
-        xml->writeTo (file);
+    auto file = dir.getChildFile (base + ".xml");
+    for (int i = 2; file.existsAsFile() && i < 1000; ++i)   // nome repetido vira "Nome (2)"
+        file = dir.getChildFile (base + " (" + juce::String (i) + ").xml");
+    writePreset (file);
 
     refreshUserPresets();
     presetName  = file.getFileNameWithoutExtension();
-    presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+    presetIndex = getPresetNames().indexOf (presetName);
+}
+
+void CaleidoProcessor::overwriteUserPreset()
+{
+    const auto file = currentUserFile();
+    if (file.existsAsFile()) writePreset (file);
+}
+
+bool CaleidoProcessor::renameUserPreset (const juce::String& newName)
+{
+    const auto file = currentUserFile();
+    const auto base = juce::File::createLegalFileName (newName.trim());
+    if (! file.existsAsFile() || base.isEmpty()) return false;
+
+    const auto target = file.getSiblingFile (base + ".xml");
+    const bool sameFile = target.getFullPathName().equalsIgnoreCase (file.getFullPathName());   // só maiúscula/minúscula
+    if ((target.existsAsFile() && ! sameFile) || ! file.moveFileTo (target)) return false;
+
+    refreshUserPresets();
+    presetName  = base;
+    presetIndex = getPresetNames().indexOf (presetName);
+    return true;
+}
+
+void CaleidoProcessor::deleteUserPreset()
+{
+    auto file = currentUserFile();
+    if (! file.existsAsFile()) return;
+    if (! file.moveToTrash()) file.deleteFile();
+
+    // o som continua o mesmo no plugin; só deixa de estar salvo
+    refreshUserPresets();
+    presetName  = "Sem nome";
+    presetIndex = -1;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

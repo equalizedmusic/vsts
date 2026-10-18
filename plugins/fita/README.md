@@ -39,7 +39,9 @@ velocidade normal, um crossfade de 30 ms elimina o atraso acumulado. Com *na hor
 
 ## Presets
 
-Vinte de fábrica. Trocar de preset não mexe no TAPE STOP nem no bypass. Presets do usuário:
+Vinte de fábrica. Trocar de preset não mexe no TAPE STOP nem no bypass. No menu de presets: *Salvar como novo*; com um preset do usuário aberto, também *Salvar alterações*, *Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.
+
+Presets do usuário:
 
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/FITA/`
 - Windows: `%APPDATA%\InsideStudioSP\FITA\Presets\`

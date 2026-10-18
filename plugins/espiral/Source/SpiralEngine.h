@@ -43,6 +43,7 @@ struct Settings
     int    cycle = 3, direction = dirUp, mode = modePhaser, stages = 2;
     float  range = 0.6f, centre = 800.0f, stereo = 0.25f, resonance = 0.55f, drive = 0.15f, tone = 0.85f;
     bool   freeze = false, twice = false;
+    bool   waiting = false;   // host parado: a espiral fica na posição do cursor e anda no play
 };
 
 class SpiralEngine
@@ -104,9 +105,9 @@ public:
         // ---- relógio: a volta segue a régua do host; desvio (loop, CICLO novo) é corrigido sem salto ----
         const double beats   = cycleBeats (s.cycle);
         const double hostPos = s.ppq / beats;
-        if (! primed || (s.playing && ! wasPlaying))
+        if (! primed || (s.playing && ! wasPlaying) || s.waiting)
         {
-            pos = hostPos;       // play: alinha na régua
+            pos = hostPos;       // play (ou parado): alinha na régua
             offset = 0.0;
         }
         else if (beats != lastBeats || s.freeze || s.twice)
@@ -115,8 +116,8 @@ public:
         wasPlaying = s.playing;
         primed     = true;
 
-        double speed = s.freeze ? 0.0 : (s.twice ? 2.0 : 1.0);
-        if (! s.freeze && ! s.twice)
+        double speed = s.freeze || s.waiting ? 0.0 : (s.twice ? 2.0 : 1.0);
+        if (! s.freeze && ! s.twice && ! s.waiting)
         {
             double err = hostPos + offset - pos;
             err -= std::round (err);                         // uma volta a mais ou a menos é a mesma posição

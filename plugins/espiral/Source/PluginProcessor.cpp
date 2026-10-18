@@ -111,15 +111,18 @@ void EspiralProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         }
     bpm = juce::jlimit (40.0, 300.0, bpm);
     const bool sync = playing && havePpq;
-    if (sync) freePpq = hostPpq;
+    const bool wait = havePpq && ! playing;   // host com régua, parado: espera o play no lugar do cursor
+    if (havePpq) freePpq = hostPpq;
 
     auto s = readSettings();
     s.bpm = bpm;
     s.ppq = freePpq;
     s.playing = sync;
+    s.waiting = wait;
     freePpq += (double) n * bpm / 60.0 / currentRate;
     shownBpm.store ((float) bpm);
     synced.store (sync);
+    waiting.store (wait);
 
     auto* wL = wet.getWritePointer (0);
     auto* wR = wet.getWritePointer (1);
@@ -175,7 +178,7 @@ void EspiralProcessor::setStateInformation (const void* data, int sizeInBytes)
             auto tree = juce::ValueTree::fromXml (*xml);
             apvts.replaceState (tree);
             presetName  = tree.getProperty ("presetName", presetName).toString();
-            presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+            presetIndex = getPresetNames().indexOf (presetName);
             uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
     }
@@ -265,24 +268,85 @@ void EspiralProcessor::loadPreset (int index)
     presetName  = getPresetNames()[index];
 }
 
-void EspiralProcessor::saveUserPreset()
+juce::File EspiralProcessor::currentUserFile() const
 {
+    if (presetIndex < (int) factory.size()) return {};
+    for (auto& f : userFiles)
+        if (f.getFileNameWithoutExtension() == presetName && f.existsAsFile()) return f;
+    return {};
+}
+
+bool EspiralProcessor::isUserPreset() const
+{
+    return currentUserFile().existsAsFile();
+}
+
+juce::String EspiralProcessor::suggestPresetName() const
+{
+    const auto dir = userPresetDir();
+    for (int i = 1; i < 1000; ++i)
+    {
+        const auto n = "Meu preset " + juce::String (i).paddedLeft ('0', 2);
+        if (! dir.getChildFile (n + ".xml").existsAsFile()) return n;
+    }
+    return "Meu preset";
+}
+
+void EspiralProcessor::writePreset (const juce::File& file)
+{
+    if (auto xml = apvts.copyState().createXml())
+        xml->writeTo (file);
+}
+
+void EspiralProcessor::saveUserPreset (const juce::String& name)
+{
+    const auto base = juce::File::createLegalFileName (name.trim());
+    if (base.isEmpty()) return;
     auto dir = userPresetDir();
     dir.createDirectory();
 
-    juce::File file;
-    for (int i = 1; i < 1000; ++i)
-    {
-        file = dir.getChildFile ("Meu preset " + juce::String (i).paddedLeft ('0', 2) + ".xml");
-        if (! file.existsAsFile()) break;
-    }
-
-    if (auto xml = apvts.copyState().createXml())
-        xml->writeTo (file);
+    auto file = dir.getChildFile (base + ".xml");
+    for (int i = 2; file.existsAsFile() && i < 1000; ++i)   // nome repetido vira "Nome (2)"
+        file = dir.getChildFile (base + " (" + juce::String (i) + ").xml");
+    writePreset (file);
 
     refreshUserPresets();
     presetName  = file.getFileNameWithoutExtension();
-    presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+    presetIndex = getPresetNames().indexOf (presetName);
+}
+
+void EspiralProcessor::overwriteUserPreset()
+{
+    const auto file = currentUserFile();
+    if (file.existsAsFile()) writePreset (file);
+}
+
+bool EspiralProcessor::renameUserPreset (const juce::String& newName)
+{
+    const auto file = currentUserFile();
+    const auto base = juce::File::createLegalFileName (newName.trim());
+    if (! file.existsAsFile() || base.isEmpty()) return false;
+
+    const auto target = file.getSiblingFile (base + ".xml");
+    const bool sameFile = target.getFullPathName().equalsIgnoreCase (file.getFullPathName());   // só maiúscula/minúscula
+    if ((target.existsAsFile() && ! sameFile) || ! file.moveFileTo (target)) return false;
+
+    refreshUserPresets();
+    presetName  = base;
+    presetIndex = getPresetNames().indexOf (presetName);
+    return true;
+}
+
+void EspiralProcessor::deleteUserPreset()
+{
+    auto file = currentUserFile();
+    if (! file.existsAsFile()) return;
+    if (! file.moveToTrash()) file.deleteFile();
+
+    // o som continua o mesmo no plugin; só deixa de estar salvo
+    refreshUserPresets();
+    presetName  = "Sem nome";
+    presetIndex = -1;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

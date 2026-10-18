@@ -188,7 +188,7 @@ void GraoProcessor::setStateInformation (const void* data, int sizeInBytes)
             auto tree = juce::ValueTree::fromXml (*xml);
             apvts.replaceState (tree);
             presetName  = tree.getProperty ("presetName", presetName).toString();
-            presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+            presetIndex = getPresetNames().indexOf (presetName);
             uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
     }
@@ -230,7 +230,8 @@ void GraoProcessor::applyValues (const std::function<bool (const juce::String&, 
     for (auto* p : getParameters())
     {
         auto* rp = dynamic_cast<juce::RangedAudioParameter*> (p);
-        if (rp == nullptr || rp->getParameterID() == id::bypass) continue;
+        // bypass e CONGELAR são de performance: trocar de preset não mexe neles
+        if (rp == nullptr || rp->getParameterID() == id::bypass || rp->getParameterID() == id::freeze) continue;
 
         float value = rp->convertFrom0to1 (rp->getDefaultValue());
         lookup (rp->getParameterID(), value);
@@ -275,24 +276,85 @@ void GraoProcessor::loadPreset (int index)
     presetName  = getPresetNames()[index];
 }
 
-void GraoProcessor::saveUserPreset()
+juce::File GraoProcessor::currentUserFile() const
 {
+    if (presetIndex < (int) factory.size()) return {};
+    for (auto& f : userFiles)
+        if (f.getFileNameWithoutExtension() == presetName && f.existsAsFile()) return f;
+    return {};
+}
+
+bool GraoProcessor::isUserPreset() const
+{
+    return currentUserFile().existsAsFile();
+}
+
+juce::String GraoProcessor::suggestPresetName() const
+{
+    const auto dir = userPresetDir();
+    for (int i = 1; i < 1000; ++i)
+    {
+        const auto n = "Meu preset " + juce::String (i).paddedLeft ('0', 2);
+        if (! dir.getChildFile (n + ".xml").existsAsFile()) return n;
+    }
+    return "Meu preset";
+}
+
+void GraoProcessor::writePreset (const juce::File& file)
+{
+    if (auto xml = apvts.copyState().createXml())
+        xml->writeTo (file);
+}
+
+void GraoProcessor::saveUserPreset (const juce::String& name)
+{
+    const auto base = juce::File::createLegalFileName (name.trim());
+    if (base.isEmpty()) return;
     auto dir = userPresetDir();
     dir.createDirectory();
 
-    juce::File file;
-    for (int i = 1; i < 1000; ++i)
-    {
-        file = dir.getChildFile ("Meu preset " + juce::String (i).paddedLeft ('0', 2) + ".xml");
-        if (! file.existsAsFile()) break;
-    }
-
-    if (auto xml = apvts.copyState().createXml())
-        xml->writeTo (file);
+    auto file = dir.getChildFile (base + ".xml");
+    for (int i = 2; file.existsAsFile() && i < 1000; ++i)   // nome repetido vira "Nome (2)"
+        file = dir.getChildFile (base + " (" + juce::String (i) + ").xml");
+    writePreset (file);
 
     refreshUserPresets();
     presetName  = file.getFileNameWithoutExtension();
-    presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+    presetIndex = getPresetNames().indexOf (presetName);
+}
+
+void GraoProcessor::overwriteUserPreset()
+{
+    const auto file = currentUserFile();
+    if (file.existsAsFile()) writePreset (file);
+}
+
+bool GraoProcessor::renameUserPreset (const juce::String& newName)
+{
+    const auto file = currentUserFile();
+    const auto base = juce::File::createLegalFileName (newName.trim());
+    if (! file.existsAsFile() || base.isEmpty()) return false;
+
+    const auto target = file.getSiblingFile (base + ".xml");
+    const bool sameFile = target.getFullPathName().equalsIgnoreCase (file.getFullPathName());   // só maiúscula/minúscula
+    if ((target.existsAsFile() && ! sameFile) || ! file.moveFileTo (target)) return false;
+
+    refreshUserPresets();
+    presetName  = base;
+    presetIndex = getPresetNames().indexOf (presetName);
+    return true;
+}
+
+void GraoProcessor::deleteUserPreset()
+{
+    auto file = currentUserFile();
+    if (! file.existsAsFile()) return;
+    if (! file.moveToTrash()) file.deleteFile();
+
+    // o som continua o mesmo no plugin; só deixa de estar salvo
+    refreshUserPresets();
+    presetName  = "Sem nome";
+    presetIndex = -1;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

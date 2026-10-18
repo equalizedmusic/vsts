@@ -29,12 +29,15 @@ a volta não estala.
 
 Com o Ableton tocando, a volta segue a régua do projeto (**SYNC**) e se alinha no play. Se o
 Ableton pular (loop, mudança de posição), a espiral acelera ou freia até 50% para alcançar,
-sem salto. Parado, anda sozinho no BPM do projeto (**LIVRE**). Trocar o CICLO, CONGELAR ou
+sem salto. Com o Ableton parado, a espiral fica na posição do cursor e só anda no play
+(**AGUARDANDO PLAY**); sozinha no BPM (**LIVRE**) só em host que não informa a posição. Trocar o CICLO, CONGELAR ou
 DOBRAR não pula: segue de onde está, e o alinhamento volta no próximo play.
 
 ## Presets
 
-Vinte de fábrica. Trocar de preset não mexe em CONGELAR, DOBRAR nem no bypass. Presets do usuário:
+Vinte de fábrica. Trocar de preset não mexe em CONGELAR, DOBRAR nem no bypass. No menu de presets: *Salvar como novo*; com um preset do usuário aberto, também *Salvar alterações*, *Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.
+
+Presets do usuário:
 
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/ESPIRAL/`
 - Windows: `%APPDATA%\InsideStudioSP\ESPIRAL\Presets\`
