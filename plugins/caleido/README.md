@@ -42,8 +42,8 @@ Seis de fábrica, cada um com a sua semente: Init · Mandala, Cogumelo Azul, Fra
 Chuva de Bits, Portal Reverso, Sopro do Xamã. O preset do usuário guarda também o padrão da
 mandala:
 
-- Mac: `~/Library/Audio/Presets/Equalized Music/CALEIDO/`
-- Windows: `%APPDATA%\Equalized Music\CALEIDO\Presets\`
+- Mac: `~/Library/Audio/Presets/InsideStudioSP/CALEIDO/`
+- Windows: `%APPDATA%\InsideStudioSP\CALEIDO\Presets\`
 
 ## Código
 

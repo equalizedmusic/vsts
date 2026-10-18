@@ -182,6 +182,7 @@ void CaleidoProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = stateWithPattern();
     state.setProperty ("presetName", presetName, nullptr);
+    state.setProperty ("uiScale", uiScale.load(), nullptr);
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
 }
@@ -197,6 +198,7 @@ void CaleidoProcessor::setStateInformation (const void* data, int sizeInBytes)
             restorePattern (tree);
             presetName  = tree.getProperty ("presetName", presetName).toString();
             presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+            uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
     }
 }
@@ -207,10 +209,10 @@ juce::File CaleidoProcessor::userPresetDir() const
 {
    #if JUCE_MAC
     return juce::File::getSpecialLocation (juce::File::userHomeDirectory)
-               .getChildFile ("Library/Audio/Presets/Equalized Music/CALEIDO");
+               .getChildFile ("Library/Audio/Presets/InsideStudioSP/CALEIDO");
    #else
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-               .getChildFile ("Equalized Music/CALEIDO/Presets");
+               .getChildFile ("InsideStudioSP/CALEIDO/Presets");
    #endif
 }
 

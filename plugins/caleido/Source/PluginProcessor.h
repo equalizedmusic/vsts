@@ -46,6 +46,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     caleido::GlitchEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
+    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };
 

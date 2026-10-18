@@ -174,6 +174,7 @@ void GraoProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("presetName", presetName, nullptr);
+    state.setProperty ("uiScale", uiScale.load(), nullptr);
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
 }
@@ -188,6 +189,7 @@ void GraoProcessor::setStateInformation (const void* data, int sizeInBytes)
             apvts.replaceState (tree);
             presetName  = tree.getProperty ("presetName", presetName).toString();
             presetIndex = juce::jmax (0, getPresetNames().indexOf (presetName));
+            uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
     }
 }
@@ -198,10 +200,10 @@ juce::File GraoProcessor::userPresetDir() const
 {
    #if JUCE_MAC
     return juce::File::getSpecialLocation (juce::File::userHomeDirectory)
-               .getChildFile ("Library/Audio/Presets/Equalized Music/GRAO");
+               .getChildFile ("Library/Audio/Presets/InsideStudioSP/GRAO");
    #else
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-               .getChildFile ("Equalized Music/GRAO/Presets");
+               .getChildFile ("InsideStudioSP/GRAO/Presets");
    #endif
 }
 

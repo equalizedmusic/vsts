@@ -1,7 +1,7 @@
 juce_add_plugin(Grao
-    COMPANY_NAME                "Equalized Music"
-    BUNDLE_ID                   com.equalizedmusic.grao
-    PLUGIN_MANUFACTURER_CODE    Eqzm
+    COMPANY_NAME                "InsideStudioSP"
+    BUNDLE_ID                   com.insidestudiosp.grao
+    PLUGIN_MANUFACTURER_CODE    Insp
     PLUGIN_CODE                 Gra1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "GRAO"

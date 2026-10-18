@@ -5,6 +5,20 @@
 
 using APVTS = juce::AudioProcessorValueTreeState;
 
+// ---------------- tela em escala: o layout é desenhado em 1000×580 e ampliado inteiro ----------------
+namespace ui
+{
+    inline constexpr int   baseW = 1000, baseH = 580;
+    inline constexpr float minScale = 0.75f, maxScale = 2.0f, defaultScale = 1.25f;
+}
+
+class ScaledCanvas : public juce::Component
+{
+public:
+    std::function<void (juce::Graphics&)> onPaint;
+    void paint (juce::Graphics& g) override { if (onPaint) onPaint (g); }
+};
+
 // ---------------- knob (grande: macro; pequeno: com nome e valor embaixo) ----------------
 class Knob : public juce::Component
 {

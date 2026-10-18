@@ -47,10 +47,14 @@ public:
 private:
     void timerCallback() override;
     void showPresetMenu();
+    void drawCanvas (juce::Graphics&);
+    void layoutCanvas();
+    void setScale (float scale);
 
     GraoProcessor& proc;
     GraoLookAndFeel lnf;
 
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
     TapeView tape;
     XYPad pad;
     Knob grainMacro, spaceMacro, size, density, spray, pitch, spread, feedback, decay, tone, output;

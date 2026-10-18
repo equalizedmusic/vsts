@@ -47,6 +47,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     GrainEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
+    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
 
 private:
     void refreshUserPresets();

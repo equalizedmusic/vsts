@@ -1,7 +1,7 @@
 juce_add_plugin(Caleido
-    COMPANY_NAME                "Equalized Music"
-    BUNDLE_ID                   com.equalizedmusic.caleido
-    PLUGIN_MANUFACTURER_CODE    Eqzm
+    COMPANY_NAME                "InsideStudioSP"
+    BUNDLE_ID                   com.insidestudiosp.caleido
+    PLUGIN_MANUFACTURER_CODE    Insp
     PLUGIN_CODE                 Cal1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "CALEIDO"

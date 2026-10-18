@@ -4,6 +4,8 @@ using namespace grao;
 
 namespace
 {
+constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
+
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
     juce::AttributedString s;
@@ -281,10 +283,14 @@ GraoEditor::GraoEditor (GraoProcessor& p)
 {
     setLookAndFeel (&lnf);
 
+    canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
+    canvas.setBounds (0, 0, ui::baseW, ui::baseH);
+    addAndMakeVisible (canvas);
+
     for (auto* c : std::initializer_list<juce::Component*> {
              &tape, &pad, &grainMacro, &spaceMacro, &size, &density, &spray, &pitch, &spread, &feedback, &decay, &tone,
              &output, &mix, &reverseKey, &freezeKey, &bypass, &prevBtn, &nextBtn, &saveBtn, &presetName, &meterIn, &meterOut })
-        addAndMakeVisible (c);
+        canvas.addAndMakeVisible (c);
 
     reverseAtt = std::make_unique<APVTS::ButtonAttachment> (p.apvts, id::reverse, reverseKey);
     freezeAtt  = std::make_unique<APVTS::ButtonAttachment> (p.apvts, id::freeze, freezeKey);
@@ -295,7 +301,14 @@ GraoEditor::GraoEditor (GraoProcessor& p)
     saveBtn.onClick    = [this] { proc.saveUserPreset(); };
     presetName.onClick = [this] { showPresetMenu(); };
 
-    setSize (1000, 580);
+    layoutCanvas();
+
+    // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
+    setResizable (true, true);
+    setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
+                     juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
+    setScale (proc.uiScale.load());
     startTimerHz (30);
 }
 
@@ -312,11 +325,21 @@ void GraoEditor::showPresetMenu()
     for (int i = 0; i < names.size(); ++i)
         menu.addItem (i + 1, names[i], true, i == proc.getPresetIndex());
 
+    juce::PopupMenu sizes;
+    const float current = proc.uiScale.load();
+    for (int pct : { 75, 100, 125, 150, 175, 200 })
+        sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
+    menu.addSeparator();
+    menu.addSubMenu ("Tamanho da janela", sizes);
+
     juce::Component::SafePointer<GraoEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
                         [safe] (int result)
                         {
-                            if (safe != nullptr && result > 0)
+                            if (safe == nullptr || result <= 0) return;
+                            if (result > sizeMenuBase)
+                                safe->setScale ((float) (result - sizeMenuBase) / 100.0f);
+                            else
                                 safe->proc.loadPreset (result - 1);
                         });
 }
@@ -334,7 +357,25 @@ void GraoEditor::timerCallback()
     presetName.set (proc.getPresetName(), proc.getPresetIndex(), proc.getPresetNames().size());
 }
 
+void GraoEditor::setScale (float scale)
+{
+    scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
+    setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
+}
+
+void GraoEditor::resized()
+{
+    const float scale = (float) getWidth() / (float) ui::baseW;
+    canvas.setTransform (juce::AffineTransform::scale (scale));
+    proc.uiScale = scale;
+}
+
 void GraoEditor::paint (juce::Graphics& g)
+{
+    g.fillAll (theme::bg);
+}
+
+void GraoEditor::drawCanvas (juce::Graphics& g)
 {
     g.fillAll (theme::bg);
 
@@ -367,6 +408,26 @@ void GraoEditor::paint (juce::Graphics& g)
     g.drawText ("GRANULAR",   juce::Rectangle<float> (tagX, 22.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
     g.drawText ("TEXTURE FX", juce::Rectangle<float> (tagX, 35.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
 
+    // ---- marca ----
+    {
+        auto width = [] (const juce::Font& f, const juce::String& s)
+        {
+            juce::GlyphArrangement a;
+            a.addLineOfText (f, s, 0.0f, 0.0f);
+            return a.getBoundingBox (0, -1, true).getWidth();
+        };
+        const auto tagFont = theme::sans (9.5f, false, 0.2f);
+        const float brandX = tagX + juce::jmax (width (tagFont, "GRANULAR"), width (tagFont, "TEXTURE FX")) + 20.0f;
+        g.setColour (theme::line);
+        g.fillRect (brandX - 10.0f, 24.0f, 1.0f, 22.0f);
+        g.setColour (theme::dim);
+        g.setFont (tagFont);
+        g.drawText ("BY", juce::Rectangle<float> (brandX, 22.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
+        g.setColour (theme::amber);
+        g.setFont (theme::sans (10.5f, true, 0.06f));
+        g.drawText ("InsideStudioSP", juce::Rectangle<float> (brandX, 34.0f, 140.0f, 13.0f), juce::Justification::centredLeft);
+    }
+
     // ---- cards ----
     drawCard (g, { 12.0f, 216.0f, 262.0f, 352.0f });
     drawCard (g, { 284.0f, 216.0f, 258.0f, 352.0f });
@@ -384,7 +445,7 @@ void GraoEditor::paint (juce::Graphics& g)
               u8 ("Abertura estéreo, repetição dos grãos e cauda do ambiente."));
 }
 
-void GraoEditor::resized()
+void GraoEditor::layoutCanvas()
 {
     prevBtn.setBounds (618, 18, 30, 32);
     presetName.setBounds (648, 18, 230, 32);

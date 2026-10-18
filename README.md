@@ -1,10 +1,14 @@
 # vsts
 
-Plugins de áudio feitos com [JUCE](https://juce.com). Cada pasta em `plugins/` é um plugin.
+Plugins de áudio da **InsideStudioSP**, feitos com [JUCE](https://juce.com). Cada pasta em `plugins/` é um plugin.
 
 | Plugin | O que é |
 |---|---|
 | [GRÃO](plugins/grao/README.md) | Efeito granular de textura (fita de 4 s, grãos, feedback, cauda, XY) |
+| [CALEIDO](plugins/caleido/README.md) | Glitch rítmico para psytrance (mandala de 16 passos, sync com o BPM) |
+
+Todos têm 20 presets de fábrica e janela redimensionável: arraste o canto inferior direito ou use
+*Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
 
 ## Formatos gerados
 

@@ -48,10 +48,14 @@ public:
 private:
     void timerCallback() override;
     void showPresetMenu();
+    void drawCanvas (juce::Graphics&);
+    void layoutCanvas();
+    void setScale (float scale);
 
     CaleidoProcessor& proc;
     BrandLookAndFeel lnf;
 
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
     PatternStrip strip;
     Mandala mandala;
     ChipButton generateBtn;

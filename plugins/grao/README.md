@@ -33,8 +33,8 @@ Seis de fábrica: Init · Areia, Poeira Dourada, Enxame Reverso, Coral Congelado
 Garoa. Clique no nome para abrir a lista; ◀ ▶ navegam; **+** salva o estado atual como
 "Meu preset NN":
 
-- Mac: `~/Library/Audio/Presets/Equalized Music/GRAO/`
-- Windows: `%APPDATA%\Equalized Music\GRAO\Presets\`
+- Mac: `~/Library/Audio/Presets/InsideStudioSP/GRAO/`
+- Windows: `%APPDATA%\InsideStudioSP\GRAO\Presets\`
 
 ## Código
 
