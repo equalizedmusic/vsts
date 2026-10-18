@@ -6,6 +6,7 @@ Plugins de áudio da **InsideStudioSP**, feitos com [JUCE](https://juce.com). Ca
 |---|---|
 | [GRÃO](plugins/grao/README.md) | Efeito granular de textura (fita de 4 s, grãos, feedback, cauda, XY) |
 | [CALEIDO](plugins/caleido/README.md) | Glitch rítmico para psytrance (mandala de 16 passos, sync com o BPM) |
+| [ESPIRAL](plugins/espiral/README.md) | Phaser/flanger infinito "barber pole" para psytrance (sobe sem fim, sync com o BPM) |
 
 Todos têm 20 presets de fábrica e janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
