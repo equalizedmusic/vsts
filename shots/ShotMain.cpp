@@ -117,7 +117,7 @@ int main (int argc, char** argv)
     proc->prepareToPlay (fs, block);
     applyLook (*proc);
 
-    std::unique_ptr<juce::AudioProcessorEditor> editor (proc->createEditor());
+    std::unique_ptr<juce::AudioProcessorEditor> editor (proc->createEditorAndMakeActive());
     editor->setSize (2000, 1160);   // 200%
 
     AudioThread audio (*proc, head);
