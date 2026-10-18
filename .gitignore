@@ -1,0 +1,7 @@
+build/
+dist/
+report/
+*.zip
+.DS_Store
+.vs/
+.vscode/
