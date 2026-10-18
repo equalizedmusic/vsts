@@ -6,8 +6,20 @@ namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 
-const juce::Colour laneColour[numLanes] = { theme::amber, theme::coral, theme::cream, theme::ice, theme::violet };
-const char* const  laneName[numLanes]   = { "REPETE", "REVERSO", "FITA", "FILTRO", "CRUSH" };
+// função, e não array global: um array copiado das cores do tema na carga do plugin podia ficar zerado
+// (ordem de inicialização entre arquivos) e a mandala saía sem cor
+juce::Colour laneColour (int lane)
+{
+    switch (lane)
+    {
+        case laneRepeat:  return theme::amber;
+        case laneReverse: return theme::coral;
+        case laneTape:    return theme::cream;
+        case laneFilter:  return theme::ice;
+        default:          return theme::violet;
+    }
+}
+const char* const laneName[numLanes] = { "REPETE", "REVERSO", "FITA", "FILTRO", "CRUSH" };
 
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
@@ -70,7 +82,7 @@ void PatternStrip::paint (juce::Graphics& g)
         const float x0 = (float) s * sw;
         juce::Array<juce::Colour> cols;
         for (int l = 0; l < numLanes; ++l)
-            if (laneOn (proc, l, s)) cols.add (laneColour[l]);
+            if (laneOn (proc, l, s)) cols.add (laneColour (l));
 
         // fundo do passo com a cor dos efeitos ativos
         for (auto& c : cols)
@@ -133,7 +145,7 @@ void PatternStrip::paint (juce::Graphics& g)
             g.setColour (theme::dim);
             g.drawText (laneName[l], juce::Rectangle<float> (x, 7.0f, tw + 2.0f, 12.0f), juce::Justification::centredLeft);
             x -= 12.0f;
-            g.setColour (laneColour[l]);
+            g.setColour (laneColour (l));
             g.fillRoundedRectangle (x, 9.0f, 8.0f, 8.0f, 2.0f);
             x -= 10.0f;
         }
@@ -194,10 +206,10 @@ void Mandala::paint (juce::Graphics& g)
             {
                 if (cur)
                 {
-                    g.setColour (laneColour[l].withAlpha (0.35f));
+                    g.setColour (laneColour (l).withAlpha (0.35f));
                     g.strokePath (seg, juce::PathStrokeType (5.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
                 }
-                g.setColour (laneColour[l].withAlpha (cur ? 1.0f : 0.55f));
+                g.setColour (laneColour (l).withAlpha (cur ? 1.0f : 0.55f));
             }
             else
                 g.setColour (cur ? theme::segOff : juce::Colour (0xff25211b));
@@ -231,7 +243,7 @@ void Mandala::paint (juce::Graphics& g)
             const float d = 9.0f + (float) i * 6.0f + std::sin (t / 12.0f + (float) i) * 4.0f, w = 4.0f + trip * 6.0f;
             juce::Path tri;
             tri.addTriangle (d, 0.0f, d + w, w * 0.5f, d + w * 0.4f, w * 1.2f);
-            g.setColour (laneColour[l].withAlpha (0.75f));
+            g.setColour (laneColour (l).withAlpha (0.75f));
             for (int k = 0; k < 8; ++k)
             {
                 auto tr = juce::AffineTransform::scale (1.0f, k % 2 ? -1.0f : 1.0f)

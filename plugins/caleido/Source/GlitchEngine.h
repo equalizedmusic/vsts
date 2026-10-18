@@ -41,7 +41,7 @@ struct Settings
     double bpm = 145.0, ppq = 0.0;
     int    division = 1, ratchetMax = 3, spin = 2;
     float  chaos = 0.62f, trip = 0.48f, shuffle = 0.3f, reverse = 0.35f, tapeRange = 10.0f, filter = 0.55f, crush = 0.25f;
-    bool   mutate = true, hold = false;
+    bool   mutate = false, hold = false;
 };
 
 using Probs   = std::array<float, numLanes>;
@@ -101,8 +101,10 @@ public:
         bufL.assign (n, 0.0f);
         bufR.assign (n, 0.0f);
         mask   = (int64_t) n - 1;
-        fadeN  = juce::jmax (16.0, 0.002 * sr);
-        smooth = (float) (1.0 - std::exp (-1.0 / (0.004 * sr)));
+        fadeN    = juce::jmax (16.0, 0.002 * sr);
+        xfadeN   = juce::jmax (32.0, 0.006 * sr);
+        smooth   = (float) (1.0 - std::exp (-1.0 / (0.004 * sr)));
+        fcSmooth = (float) (1.0 - std::exp (-16.0 / (0.004 * sr)));
 
         now = 0;
         lastStepGlobal = std::numeric_limits<int64_t>::min();
@@ -116,6 +118,8 @@ public:
         heldL = heldR = 0.0f;
         dsCount = 0;
         ic1L = ic2L = ic1R = ic2R = 0.0f;
+        typeW = { 1.0f, 0.0f, 0.0f };
+        logFc = -1.0f;
         lastCol = -1;
         peakAcc = 0.0f;
         for (auto& p : peaks) p.store (0.0f);
@@ -136,7 +140,9 @@ public:
             const double sp  = ppq / stepBeats;
             const auto   g   = (int64_t) std::floor (sp);
 
-            if (g != lastStepGlobal)
+            // o PPQ do host pode voltar uma fração na virada do bloco: recuar um passo só é tremida, não pulo (senão o passo recomeça e estala)
+            const bool jitter = lastStepGlobal != std::numeric_limits<int64_t>::min() && g == lastStepGlobal - 1;
+            if (g != lastStepGlobal && ! jitter)
             {
                 const int64_t cyc = g >= 0 ? g / numSteps : -((-g + numSteps - 1) / numSteps);
                 const int     s   = (int) (g - cyc * numSteps);
@@ -160,7 +166,7 @@ public:
             {
                 float pl, pr;
                 readVoice (prev, pl, pr);
-                const float k = (float) ((double) xfLeft / fadeN);
+                const float k = (float) ((double) xfLeft / xfadeN);
                 l = l * (1.0f - k) + pl * k;
                 r = r * (1.0f - k) + pr * k;
                 --xfLeft;
@@ -181,12 +187,17 @@ public:
             }
 
             // ---- FILTRO: passa-baixa, banda ou alta, com varredura dentro do passo ----
+            // corte e tipo (LP/BP/HP) deslizam em ~4 ms: dois passos de filtro seguidos não estalam na emenda
             filtMix += (filtTarget - filtMix) * smooth;
+            for (int ty = 0; ty < 3; ++ty)
+                typeW[(size_t) ty] += ((ty == filtType ? 1.0f : 0.0f) - typeW[(size_t) ty]) * smooth;
             if ((i & 15) == 0)
             {
                 const double tf = juce::jlimit (0.0, 1.0, ((double) now - cur.start) / cur.len);
                 const double fc = juce::jlimit (30.0, 0.45 * sr, (double) f0 * std::pow ((double) f1 / (double) f0, tf));
-                const float  gg = (float) std::tan (juce::MathConstants<double>::pi * fc / sr);
+                const float  lf = (float) std::log (fc);
+                logFc = (logFc < 0.0f || filtMix < 1.0e-3f) ? lf : logFc + (lf - logFc) * fcSmooth;
+                const float  gg = (float) std::tan (juce::MathConstants<double>::pi * std::exp ((double) logFc) / sr);
                 fk = 1.0f / filtQ;
                 a1 = 1.0f / (1.0f + gg * (gg + fk));
                 a2 = gg * a1;
@@ -277,7 +288,7 @@ private:
         holding.store (holdActive);
 
         prev   = cur;
-        xfLeft = (int) fadeN;
+        xfLeft = (int) xfadeN;
         curStep = s;
         step.store (s);
 
@@ -378,21 +389,26 @@ private:
             return;
         }
 
+        // depois do fim do passo (durante o crossfade do próximo) a última fatia segue em frente:
+        // voltar para o começo dela aqui era o estalo em cada passo
         const double t     = juce::jmax (0.0, (double) now - v.start);
-        const double local = std::fmod (t, v.slice);
+        const int    idx   = (int) juce::jmin ((double) (v.repeats - 1), std::floor (t / v.slice));
+        const double local = t - (double) idx * v.slice;
         const double ramp  = (v.rateEnd - v.rate) / v.len;
-        double off = local * v.rate + 0.5 * ramp * local * local;
+        const double lr    = juce::jmin (local, v.len);
+        double off = lr * v.rate + 0.5 * ramp * lr * lr + (local - lr) * v.rateEnd;
         if (v.wraps) off = std::fmod (off, v.slice);
         const double offW = off;
         if (v.reverse) off = v.slice - 1.0 - off;
 
-        // emenda sem clique entre as repetições (a virada do passo já tem crossfade)
+        // emenda sem clique entre as repetições (a virada do passo tem o crossfade)
         double w = 1.0;
         if (v.repeats > 1 || v.wraps)
         {
-            if (t >= v.slice)                              w = juce::jmin (w, local / fadeN);
-            if (t + (v.slice - local) < v.len - 1.0)       w = juce::jmin (w, (v.slice - local) / fadeN);
-            if (v.wraps && t >= fadeN)                     w = juce::jmin (w, juce::jmin (offW, v.slice - offW) / fadeN);
+            const double rf = juce::jmax (8.0, juce::jmin (fadeN, v.slice * 0.25));
+            if (idx > 0)                 w = juce::jmin (w, local / rf);
+            if (idx < v.repeats - 1)     w = juce::jmin (w, (v.slice - local) / rf);
+            if (v.wraps && t >= rf)      w = juce::jmin (w, juce::jmin (offW, v.slice - offW) / rf);
             w = juce::jlimit (0.0, 1.0, w);
         }
 
@@ -408,9 +424,9 @@ private:
         const float v2 = ic2 + a2 * ic1 + a3 * v3;
         ic1 = 2.0f * v1 - ic1;
         ic2 = 2.0f * v2 - ic2;
-        if (filtType == 1) return fk * v1;                                  // banda (pico em 0 dB)
         const float comp = 1.0f / (0.6f + 0.4f * filtQ);                    // segura a ressonância
-        return (filtType == 0 ? v2 : x - fk * v1 - v2) * comp;
+        return (v2 * typeW[0] + (x - fk * v1 - v2) * typeW[2]) * comp
+             + fk * v1 * typeW[1];                                          // banda (pico em 0 dB)
     }
 
     static float softClip (float x)
@@ -420,8 +436,8 @@ private:
         return std::copysign (0.8f + 0.2f * std::tanh ((a - 0.8f) / 0.2f), x);
     }
 
-    double sr = 44100.0, fadeN = 96.0;
-    float  smooth = 0.005f;
+    double sr = 44100.0, fadeN = 96.0, xfadeN = 288.0;
+    float  smooth = 0.005f, fcSmooth = 0.1f;
     std::vector<float> bufL, bufR;
     int64_t mask = 0, now = 0;
 
@@ -441,6 +457,8 @@ private:
     int   filtType = 0;
     float fk = 1.4f, a1 = 0, a2 = 0, a3 = 0;
     float ic1L = 0, ic2L = 0, ic1R = 0, ic2R = 0;
+    std::array<float, 3> typeW { 1.0f, 0.0f, 0.0f };
+    float logFc = -1.0f;
 
     float spinDepth = 0, spinTarget = 0;
 

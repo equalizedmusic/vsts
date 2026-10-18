@@ -66,7 +66,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
          [] (float v, int) { return String (v, 1) + " dB"; });
     add (id::mix,     "Mix",                 { 0.0f, 100.0f }, 70.0f, pct);
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mutate, 1 }, "Mutar", true));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mutate, 1 }, "Mutar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::hold, 1 }, "Segurar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;

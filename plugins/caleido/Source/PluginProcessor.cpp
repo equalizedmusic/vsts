@@ -239,7 +239,8 @@ void CaleidoProcessor::applyValues (const std::function<bool (const juce::String
     for (auto* p : getParameters())
     {
         auto* rp = dynamic_cast<juce::RangedAudioParameter*> (p);
-        if (rp == nullptr || rp->getParameterID() == id::bypass) continue;
+        // bypass e MUTAR são do usuário: trocar de preset não mexe neles
+        if (rp == nullptr || rp->getParameterID() == id::bypass || rp->getParameterID() == id::mutate) continue;
 
         float value = rp->convertFrom0to1 (rp->getDefaultValue());
         lookup (rp->getParameterID(), value);

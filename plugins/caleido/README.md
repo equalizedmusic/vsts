@@ -24,7 +24,7 @@ zero); repetir, inverter, acelerar a fita e embaralhar leem o que já passou.
 | | Filtro | 0–100% | Peso no sorteio, ressonância e tamanho da varredura (LP/BP/HP) |
 | | Crush | 16→2 bit | Bits e redução de taxa nos passos do anel CRUSH |
 | | Giro | 1/4 … 1/32 | Velocidade do pan circular nos passos coloridos |
-| 03 SAÍDA | Mutar | liga/desliga | Padrão novo a cada 2 voltas da mandala |
+| 03 SAÍDA | Mutar | liga/desliga (desligado) | Padrão novo a cada 2 voltas da mandala. Os presets não mexem nele |
 | | Segurar | liga/desliga | Prende os 16 passos anteriores e toca em loop (entra na virada do passo) |
 | | Mix | 0–100% | Seco ↔ processado |
 | | Ganho | −36 a +12 dB | Volume final |
