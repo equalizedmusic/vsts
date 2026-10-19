@@ -31,8 +31,8 @@ else()
     message(STATUS "VST2 SDK ausente (sdk/vst2): gerando só VST3/AU")
 endif()
 
-# Cada pasta em plugins/ com CMakeLists.txt é um plugin
-file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*")
+# Cada pasta em plugins/<linha>/ com CMakeLists.txt é um plugin (linhas: criativo, mix)
+file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*/*")
 foreach(dir ${plugin_dirs})
     if(EXISTS "${dir}/CMakeLists.txt")
         add_subdirectory("${dir}")

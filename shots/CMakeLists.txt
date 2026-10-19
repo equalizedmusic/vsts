@@ -15,7 +15,7 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(JUCE)
 
-file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/../plugins/*")
+file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/../plugins/*/*")
 foreach(dir ${plugin_dirs})
     if(EXISTS "${dir}/Source/PluginProcessor.cpp")
         get_filename_component(name "${dir}" NAME)

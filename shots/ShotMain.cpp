@@ -104,6 +104,8 @@ void applyLook (juce::AudioProcessor& p)
     if (name == "F1")      { setParam (p, "cutoff", 700.0f); setParam (p, "resonance", 70.0f); setParam (p, "envamt", 60.0f); setParam (p, "lfoamt", 30.0f); }
     if (name == "RINGER")  { setParam (p, "freq", 55.0f); setParam (p, "lfoamt", 40.0f); }
     if (name == "REPETECO") { setParam (p, "feedback", 70.0f); setParam (p, "mix", 45.0f); }
+    if (name == "MIRAGEM") { setParam (p, "shimmer", 60.0f); setParam (p, "motion", 60.0f); setParam (p, "mix", 45.0f); }
+    if (name == "PICOTE")  { setParam (p, "swing", 20.0f); setParam (p, "pan02", -60.0f); setParam (p, "pan04", 60.0f); }
 }
 } // namespace
 

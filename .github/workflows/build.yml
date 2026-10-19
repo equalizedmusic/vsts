@@ -45,17 +45,20 @@ jobs:
         run: |
           set -e
           mkdir -p dist
+          # dist/ = todos; linha/<criativo|mix>/ = só os da linha (vem de plugins/<linha>/<plugin>)
           for art in $(find build -type d -name '*_artefacts'); do
+            linha=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*##p')
             for fmt in VST3 AU VST; do
               if [ -d "$art/Release/$fmt" ]; then
-                mkdir -p "dist/$fmt"
+                mkdir -p "dist/$fmt" "linha/$linha/$fmt"
                 cp -R "$art/Release/$fmt/." "dist/$fmt/"
+                cp -R "$art/Release/$fmt/." "linha/$linha/$fmt/"
               fi
             done
           done
-          find dist \( -name '*.exp' -o -name '*.lib' \) -delete
+          find dist linha \( -name '*.exp' -o -name '*.lib' \) -delete
           if [ "${{ matrix.name }}" = mac ]; then
-            for b in dist/*/*; do codesign --force --deep --sign - "$b"; done
+            for b in dist/*/* linha/*/*/*; do codesign --force --deep --sign - "$b"; done
           fi
           zipar() {  # zipar <pasta> <arquivo.zip>
             if [ "${{ matrix.name }}" = mac ]; then
@@ -78,9 +81,13 @@ jobs:
             done
             zipar "um/$nome" "$nome-${{ matrix.name }}.zip"
           done
-          # pack completo
+          # pack completo e um pack por linha (InsideStudioSP-Criativo-mac.zip, InsideStudioSP-Mix-win.zip…)
           zipar dist "InsideStudioSP-Pack-${{ matrix.name }}.zip"
-          { find dist -maxdepth 2; ls -l *.zip; } | tee pack.log
+          for d in linha/*; do
+            l=$(basename "$d")
+            zipar "$d" "InsideStudioSP-$(echo "${l:0:1}" | tr a-z A-Z)${l:1}-${{ matrix.name }}.zip"
+          done
+          { find dist linha -maxdepth 3; ls -l *.zip; } | tee pack.log
 
       - name: pluginval
         id: pluginval

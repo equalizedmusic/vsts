@@ -1,0 +1,76 @@
+#pragma once
+
+#include "PluginProcessor.h"
+#include "Widgets.h"
+
+// ---------------- PASSOS: 16 colunas editáveis (VOLUME, PAN ou FILTRO), com o passo tocando aceso ----------------
+class StepGrid : public juce::Component
+{
+public:
+    explicit StepGrid (PicoteProcessor& p) : proc (p) {}
+    void paint (juce::Graphics& g) override;
+    void mouseDown (const juce::MouseEvent& e) override;
+    void mouseDrag (const juce::MouseEvent& e) override;
+    void mouseDoubleClick (const juce::MouseEvent& e) override;
+
+    int lane = picote::laneVol;   // faixa na tela (é a que o EMBARALHAR sorteia)
+
+private:
+    juce::Rectangle<float> tabRect (int i) const;
+    void setFromMouse (juce::Point<float> p);
+
+    PicoteProcessor& proc;
+};
+
+// ---------------- FATIA: envelope de um passo e a roda do padrão ----------------
+class SliceView : public juce::Component
+{
+public:
+    explicit SliceView (PicoteProcessor& p) : proc (p) {}
+    void paint (juce::Graphics& g) override;
+
+private:
+    PicoteProcessor& proc;
+};
+
+class PicoteEditor : public juce::AudioProcessorEditor, private juce::Timer
+{
+public:
+    explicit PicoteEditor (PicoteProcessor&);
+    ~PicoteEditor() override;
+
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    void timerCallback() override;
+    void showPresetMenu();
+    void presetMenuChosen (int result);
+    void askNewPreset();
+    void drawCanvas (juce::Graphics&);
+    void layoutCanvas();
+    void setScale (float scale);
+
+    PicoteProcessor& proc;
+    BrandLookAndFeel lnf;
+
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    StepGrid grid;
+    SliceView slice;
+    Knob depthMacro, division, length, swing, offset, widthMacro, attack, release, filtType, reso, output;
+    Fader mix;
+    KeyButton shuffleKey, holdKey;
+    BypassButton bypass;
+    IconButton prevBtn { IconButton::Icon::prev }, nextBtn { IconButton::Icon::next }, saveBtn { IconButton::Icon::save };
+    PresetName presetName;
+    LedMeter meterIn { "IN" }, meterOut { "OUT" };
+    std::unique_ptr<APVTS::ButtonAttachment> holdAtt, bypassAtt;
+    float levelIn = 0.0f, levelOut = 0.0f;
+    float lastBpm = 0.0f;
+    bool  lastSync = false, lastWaiting = false;
+    int   shuffleFlash = 0;
+
+    PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PicoteEditor)
+};
