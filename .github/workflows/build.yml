@@ -68,20 +68,7 @@ jobs:
               (cd "$1" && 7z a -tzip "$raiz/$2" . > /dev/null)
             fi
           }
-          # um zip por plugin (o nome vem do bundle VST3: GRAO.vst3 -> GRAO-mac.zip)
-          for v in dist/VST3/*.vst3; do
-            nome=$(basename "$v" .vst3)
-            rm -rf "um/$nome"
-            for fmt in VST3 AU VST; do
-              for f in dist/$fmt/"$nome".*; do
-                [ -e "$f" ] || continue
-                mkdir -p "um/$nome/$fmt"
-                cp -R "$f" "um/$nome/$fmt/"
-              done
-            done
-            zipar "um/$nome" "$nome-${{ matrix.name }}.zip"
-          done
-          # pack completo e um pack por linha (InsideStudioSP-Criativo-mac.zip, InsideStudioSP-Mix-win.zip…)
+          # só 3 zips por sistema: pack completo e um por linha (InsideStudioSP-Criativo-mac.zip, InsideStudioSP-Mix-win.zip…)
           zipar dist "InsideStudioSP-Pack-${{ matrix.name }}.zip"
           for d in linha/*; do
             l=$(basename "$d")
@@ -134,10 +121,14 @@ jobs:
           path: report
           merge-multiple: true
 
-      - name: Branch builds (logs + pacotes)
+      # os zips vão só para o release (limite de 2 GB por arquivo); o branch fica com logs e status,
+      # porque o Pack-mac passa dos 100 MB que o git do GitHub aceita por arquivo
+      - name: Branch builds (logs + status)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          mkdir -p pacotes
+          mv report/*.zip pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null; } > status.txt
           cat status.txt
@@ -148,11 +139,11 @@ jobs:
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
 
       - name: Release "latest-build"
-        if: hashFiles('report/*.zip') != ''
+        if: hashFiles('pacotes/*.zip') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd report
+          cd pacotes
           gh release delete latest-build --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
           gh release create latest-build *.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Último build" --notes-file status.txt --prerelease
+            --title "Último build" --notes-file ../report/status.txt --prerelease
