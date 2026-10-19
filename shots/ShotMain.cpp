@@ -101,6 +101,9 @@ void applyLook (juce::AudioProcessor& p)
     if (name == "CHAMA")   { setParam (p, "chama", 78.0f); setParam (p, "noise", 70.0f); setParam (p, "space", 70.0f); }
     if (name == "NAVALHA") { setParam (p, "drive", 12.0f); setParam (p, "ceiling", -4.0f); setParam (p, "knee", 10.0f); }
     if (name == "FITA")    { setParam (p, "drive", 55.0f); setParam (p, "wow", 45.0f); }
+    if (name == "F1")      { setParam (p, "cutoff", 700.0f); setParam (p, "resonance", 70.0f); setParam (p, "envamt", 60.0f); setParam (p, "lfoamt", 30.0f); }
+    if (name == "RINGER")  { setParam (p, "freq", 55.0f); setParam (p, "lfoamt", 40.0f); }
+    if (name == "REPETECO") { setParam (p, "feedback", 70.0f); setParam (p, "mix", 45.0f); }
 }
 } // namespace
 

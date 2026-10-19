@@ -10,6 +10,9 @@ Plugins de áudio da **InsideStudioSP**, feitos com [JUCE](https://juce.com). Ca
 | [FITA](plugins/fita/README.md) | Gravador de fita: saturação, wow/flutter, chiado, rolos girando e TAPE STOP no BPM |
 | [CHAMA](plugins/chama/README.md) | Build-up de um knob só: passa-alta, estéreo, ruído, reverb e gate no tempo, com fogo na tela |
 | [NAVALHA](plugins/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
+| [F1](plugins/f1/README.md) | Filtro ladder de 4 degraus (passa-baixa 12/24 dB) com envelope, LFO no grid e FUMAÇA |
+| [RINGER](plugins/ringer/README.md) | Ring modulator: portadora de tremolo a sino metálico, LFO no grid e osciloscópio |
+| [REPETECO](plugins/repeteco/README.md) | Delay analógico tipo BBD: escurece a cada volta, auto-oscila, INFINITO e MATAR |
 
 Todos têm 20 presets de fábrica e janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.

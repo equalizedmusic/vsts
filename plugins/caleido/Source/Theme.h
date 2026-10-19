@@ -15,6 +15,7 @@ inline const juce::Colour coral  { 0xffff6b4a };
 inline const juce::Colour cream  { 0xfff4e9d4 };
 inline const juce::Colour ice    { 0xff6ec3ff };
 inline const juce::Colour violet { 0xffc49bff };
+inline const juce::Colour leaf   { 0xff8fd16a };
 inline const juce::Colour dark   { 0xff100e0b };
 inline const juce::Colour segOff { 0xff3a342b };
 inline const juce::Colour body   { 0xff2a261f };

@@ -434,7 +434,7 @@ void ChamaEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 12.0f, 216.0f, 676.0f, 352.0f });
     drawCard (g, { 698.0f, 216.0f, 290.0f, 352.0f });
     drawTitle (g, 22.0f,  226.0f, "CHAMA ", u8 ("· UM KNOB PARA A SUBIDA INTEIRA"));
-    drawTitle (g, 708.0f, 226.0f, "AJUSTES ", u8 ("· QUANTO DE CADA COISA NO MÁXIMO"));
+    drawTitle (g, 708.0f, 226.0f, "AJUSTES ", u8 ("· O MÁXIMO DE CADA COISA"));
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (10.5f));
