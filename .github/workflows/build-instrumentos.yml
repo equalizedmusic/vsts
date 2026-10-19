@@ -5,7 +5,7 @@ name: build-instrumentos
 on:
   push:
     branches: [main]
-    paths: ['instrumentos/**', '.github/workflows/build-instrumentos.yml']
+    paths: ['instrumentos/**', 'instalador/**', '.github/workflows/build-instrumentos.yml']
   workflow_dispatch:
 
 permissions:
@@ -59,28 +59,13 @@ jobs:
           if [ "${{ matrix.name }}" = mac ]; then
             for b in dist/*/*; do codesign --force --deep --sign - "$b"; done
           fi
-          zipar() {  # zipar <pasta> <arquivo.zip>
-            if [ "${{ matrix.name }}" = mac ]; then
-              ditto -c -k --sequesterRsrc "$1" "$2"
-            else
-              raiz=$(pwd -W)
-              (cd "$1" && 7z a -tzip "$raiz/$2" . > /dev/null)
-            fi
-          }
-          # um zip por instrumento (QUIMERA.vst3 -> QUIMERA-mac.zip)
-          for v in dist/VST3/*.vst3; do
-            nome=$(basename "$v" .vst3)
-            rm -rf "um/$nome"
-            for fmt in VST3 AU; do
-              for f in dist/$fmt/"$nome".*; do
-                [ -e "$f" ] || continue
-                mkdir -p "um/$nome/$fmt"
-                cp -R "$f" "um/$nome/$fmt/"
-              done
-            done
-            zipar "um/$nome" "$nome-${{ matrix.name }}.zip"
-          done
-          { find dist -maxdepth 2; ls -l *.zip; } | tee pack.log
+          if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
+            choco install innosetup -y --no-progress > /dev/null
+          fi
+          # um instalador com todos os instrumentos: InsideStudioSP-Instrumentos-mac.dmg / -win.exe
+          if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
+          PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Instrumentos --origem dist --versao "0.1.${{ github.run_number }}" --saida .
+          { find dist -maxdepth 2; ls -l InsideStudioSP-*; } | tee pack.log
 
       - name: pluginval
         id: pluginval
@@ -108,7 +93,7 @@ jobs:
           cp build.log     "report/build-${{ matrix.name }}.log"     2>/dev/null || true
           cp pack.log      "report/pack-${{ matrix.name }}.log"      2>/dev/null || true
           cp pluginval.log "report/pluginval-${{ matrix.name }}.log" 2>/dev/null || true
-          cp *-${{ matrix.name }}.zip report/ 2>/dev/null || true
+          cp InsideStudioSP-*-${{ matrix.name }}.* report/ 2>/dev/null || true
           echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.name }}.txt"
 
       - uses: actions/upload-artifact@v5
@@ -127,10 +112,12 @@ jobs:
           path: report
           merge-multiple: true
 
-      - name: Branch builds-instrumentos (logs + pacotes)
+      - name: Branch builds-instrumentos (logs + status)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          mkdir -p pacotes
+          mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null; } > status.txt
           cat status.txt
@@ -141,11 +128,11 @@ jobs:
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds-instrumentos
 
       - name: Release "latest-instrumentos"
-        if: hashFiles('report/*.zip') != ''
+        if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd report
+          cd pacotes
           gh release delete latest-instrumentos --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
-          gh release create latest-instrumentos *.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Último build dos instrumentos" --notes-file status.txt --prerelease
+          gh release create latest-instrumentos * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Último build dos instrumentos" --notes-file ../report/status.txt --prerelease

@@ -60,21 +60,16 @@ jobs:
           if [ "${{ matrix.name }}" = mac ]; then
             for b in dist/*/* linha/*/*/*; do codesign --force --deep --sign - "$b"; done
           fi
-          zipar() {  # zipar <pasta> <arquivo.zip>
-            if [ "${{ matrix.name }}" = mac ]; then
-              ditto -c -k --sequesterRsrc "$1" "$2"
-            else
-              raiz=$(pwd -W)
-              (cd "$1" && 7z a -tzip "$raiz/$2" . > /dev/null)
-            fi
-          }
-          # só 3 zips por sistema: pack completo e um por linha (InsideStudioSP-Criativo-mac.zip, InsideStudioSP-Mix-win.zip…)
-          zipar dist "InsideStudioSP-Pack-${{ matrix.name }}.zip"
+          if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
+            choco install innosetup -y --no-progress > /dev/null
+          fi
+          # um instalador por linha: InsideStudioSP-Criativo-mac.dmg, InsideStudioSP-Mix-win.exe…
+          if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
           for d in linha/*; do
             l=$(basename "$d")
-            zipar "$d" "InsideStudioSP-$(echo "${l:0:1}" | tr a-z A-Z)${l:1}-${{ matrix.name }}.zip"
+            PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote "$(echo "${l:0:1}" | tr a-z A-Z)${l:1}" --origem "$d" --versao "0.1.${{ github.run_number }}" --saida .
           done
-          { find dist linha -maxdepth 3; ls -l *.zip; } | tee pack.log
+          { find dist linha -maxdepth 3; ls -l InsideStudioSP-*; } | tee pack.log
 
       - name: pluginval
         id: pluginval
@@ -102,7 +97,7 @@ jobs:
           cp build.log     "report/build-${{ matrix.name }}.log"     2>/dev/null || true
           cp pack.log      "report/pack-${{ matrix.name }}.log"      2>/dev/null || true
           cp pluginval.log "report/pluginval-${{ matrix.name }}.log" 2>/dev/null || true
-          cp *-${{ matrix.name }}.zip report/ 2>/dev/null || true
+          cp InsideStudioSP-*-${{ matrix.name }}.* report/ 2>/dev/null || true
           echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.name }}.txt"
 
       - uses: actions/upload-artifact@v5
@@ -121,14 +116,14 @@ jobs:
           path: report
           merge-multiple: true
 
-      # os zips vão só para o release (limite de 2 GB por arquivo); o branch fica com logs e status,
-      # porque o Pack-mac passa dos 100 MB que o git do GitHub aceita por arquivo
+      # os instaladores vão só para o release (limite de 2 GB por arquivo); o branch fica com logs e status,
+      # porque o instalador do Mac pode passar dos 100 MB que o git do GitHub aceita por arquivo
       - name: Branch builds (logs + status)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p pacotes
-          mv report/*.zip pacotes/ 2>/dev/null || true
+          mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null; } > status.txt
           cat status.txt
@@ -139,11 +134,11 @@ jobs:
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
 
       - name: Release "latest-build"
-        if: hashFiles('pacotes/*.zip') != ''
+        if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd pacotes
           gh release delete latest-build --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
-          gh release create latest-build *.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+          gh release create latest-build * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Último build" --notes-file ../report/status.txt --prerelease
