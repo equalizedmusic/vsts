@@ -22,13 +22,22 @@ separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
 
 | Plugin | O que é |
 |---|---|
+| [PRISMA](plugins/mix/prisma/README.md) | Multibanda: 4 bandas com compressor e saturação cada, cortes arrastáveis no espectro |
+| [TORNO](plugins/mix/torno/README.md) | Compressor que mostra o que está apertando: histórico de nível e redução, curva com joelho |
+| [BARRAGEM](plugins/mix/barragem/README.md) | Limiter de master com true peak e LUFS, com alvos de entrega (Spotify, Apple Music…) |
+| [CONSOLE](plugins/mix/console/README.md) | Cor de canal de mesa analógica, com 3 modelos: Cristal, Ferro e Brasa |
+| [SOCO](plugins/mix/soco/README.md) | Modelador de transiente: ataque e sustain de cada golpe, com o antes e o depois na tela |
+| [LIXA](plugins/mix/lixa/README.md) | De-esser de faixa ajustável que mostra no espectro o que está tirando |
+| [HORIZONTE](plugins/mix/horizonte/README.md) | Imagem estéreo em M/S, sem latência: largura de graves e agudos, grave em mono, vetorscópio |
+| [SALA](plugins/mix/sala/README.md) | Reverb limpo e transparente para colocar tudo num mesmo espaço |
+| [MONITOR](plugins/mix/monitor/README.md) | Medidor de entrega: LUFS, LRA, true peak, espectro e correlação, sem mexer no som |
 | [NAVALHA](plugins/mix/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
 
 ## Instrumentos
 
 Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
-Resultado no release `latest-instrumentos` e no branch `builds-instrumentos` (`QUIMERA-mac.zip` / `QUIMERA-win.zip`).
+O instalador (`InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`) sai no release `latest-instrumentos`; os logs, no branch `builds-instrumentos`.
 
 | Instrumento | O que é |
 |---|---|
@@ -45,7 +54,6 @@ No menu de presets: *Salvar como novo*; com um preset do usuário aberto, també
 |---|---|---|
 | VST3 | sim | sim |
 | AU (Logic/GarageBand) | sim | — |
-| VST2 | só com o SDK em `sdk/vst2` | só com o SDK em `sdk/vst2` |
 
 ## Como compilar
 
@@ -53,24 +61,26 @@ Não precisa de Mac nem de Visual Studio: todo push na `main` dispara o GitHub A
 (`.github/workflows/build.yml`), que compila no Mac e no Windows, roda o
 [pluginval](https://github.com/Tracktion/pluginval) e publica:
 
-- **Release `latest-build`**: um zip por plugin e sistema (`GRAO-mac.zip`, `CALEIDO-win.zip`…), um pack por linha
-  (`InsideStudioSP-Criativo-mac.zip`, `InsideStudioSP-Mix-win.zip`…) e o pack completo (`InsideStudioSP-Pack-mac.zip` / `-win.zip`),
-  com uma pasta por formato;
-- **branch `builds`**: os mesmos pacotes mais os logs de compilação e do pluginval.
+- **Release `latest-build`**: um instalador por linha e por sistema: `InsideStudioSP-Criativo-win.exe` /
+  `-mac.dmg` e `InsideStudioSP-Mix-win.exe` / `-mac.dmg` (montados por `instalador/montar.py`; nomes e
+  descrições da lista em `instalador/catalogo.json`);
+- **branch `builds`**: os logs de compilação e do pluginval e o `status.txt`.
+
+Push só em `.md` não dispara build. Um push novo cancela o build que estiver rodando.
 
 ## Instalar
 
-**Mac:** descompacte e copie
-- `VST3/*.vst3` para `~/Library/Audio/Plug-Ins/VST3/`
-- `AU/*.component` para `~/Library/Audio/Plug-Ins/Components/`
+**Windows:** abra o `.exe`. A lista vem com todos os plugins marcados (desmarque os que não quiser), e a
+pasta padrão é a do VST3 (`C:\Program Files\Common Files\VST3`), que pode ser trocada. Para desinstalar:
+*Configurações → Aplicativos*.
 
-O build não é assinado pela Apple. Libere uma vez no Terminal:
+**Mac:** abra o `.dmg` e o `.pkg` dentro dele. Na lista, desmarque o que não quiser; no passo *Destino* dá
+para instalar para todos os usuários (`/Library/Audio/Plug-Ins`, padrão) ou só para você
+(`~/Library/Audio/Plug-Ins`). O VST3 vai para `VST3/` e o AU para `Components/`. O `LEIA-ME.txt` do `.dmg`
+explica como desinstalar.
 
-```
-xattr -cr ~/Library/Audio/Plug-Ins/VST3/GRAO.vst3 ~/Library/Audio/Plug-Ins/Components/GRAO.component
-```
-
-**Windows:** copie `VST3/GRAO.vst3` para `C:\Program Files\Common Files\VST3\`.
+Os instaladores ainda não são assinados. No Windows, o SmartScreen pede *Mais informações → Executar assim
+mesmo*; no Mac, libere em *Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim*.
 
 No Ableton: *Settings → Plug-Ins*, ligue *Use VST3 Plug-In System Folders* e clique em *Rescan*.
 
@@ -79,16 +89,5 @@ No Ableton: *Settings → Plug-Ins*, ligue *Use VST3 Plug-In System Folders* e c
 1. Copie um plugin da mesma linha para `plugins/<linha>/<nome>` (ex.: `plugins/criativo/repeteco` → `plugins/criativo/<nome>`).
 2. No `CMakeLists.txt` dele, troque o nome do alvo, `PRODUCT_NAME`, `BUNDLE_ID` e `PLUGIN_CODE`
    (4 caracteres, com pelo menos uma maiúscula, e **diferente de todos os outros plugins**).
-3. Faça o push. O CMake da raiz encontra a pasta sozinho, e o build monta o pack da linha pela pasta.
-
-## VST2
-
-A Steinberg encerrou o VST2 em 2018 e não distribui mais o SDK. Quem tem uma cópia antiga
-(`vstsdk2.4`) pode colocar os headers assim, e o build passa a gerar também o VST2:
-
-```
-sdk/vst2/pluginterfaces/vst2.x/aeffect.h
-sdk/vst2/pluginterfaces/vst2.x/aeffectx.h
-```
-
-O SDK não pode ser redistribuído, então **só faça isso com o repositório privado**.
+3. Em `instalador/catalogo.json`, acrescente o nome e a descrição que aparecem na lista do instalador.
+4. Faça o push. O CMake da raiz encontra a pasta sozinho, e o build põe o plugin no instalador da linha pela pasta.
