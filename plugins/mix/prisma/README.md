@@ -1,4 +1,4 @@
-# LENTE — dinâmica + saturação multibanda
+# PRISMA — dinâmica + saturação multibanda
 
 Divide o som em **4 bandas** (crossovers Linkwitz-Riley de 4ª ordem, soma plana) e em cada uma
 tem um compressor e um DRIVE (saturação tanh com compensação de nível). No alto, o **espectro da
@@ -40,8 +40,8 @@ Vinte de fábrica. No menu de presets: *Salvar como novo*; com um preset do usu�
 *Salvar alterações*, *Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.
 Trocar de preset não mexe em SOLO, MUDO nem no bypass.
 
-- Mac: `~/Library/Audio/Presets/InsideStudioSP/LENTE/`
-- Windows: `%APPDATA%\InsideStudioSP\LENTE\Presets\`
+- Mac: `~/Library/Audio/Presets/InsideStudioSP/PRISMA/`
+- Windows: `%APPDATA%\InsideStudioSP\PRISMA\Presets\`
 
 ## Código
 

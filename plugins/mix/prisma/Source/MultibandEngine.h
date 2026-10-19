@@ -5,7 +5,7 @@
 #include <atomic>
 #include <cmath>
 
-namespace lente
+namespace prisma
 {
 constexpr int numBands  = 4;
 constexpr int fftOrder  = 11;
@@ -261,4 +261,4 @@ private:
 
     int scopePos = 0;
 };
-} // namespace lente
+} // namespace prisma

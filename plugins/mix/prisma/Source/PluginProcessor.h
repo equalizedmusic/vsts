@@ -4,11 +4,11 @@
 #include "MultibandEngine.h"
 #include "Params.h"
 
-class LenteProcessor : public juce::AudioProcessor
+class PrismaProcessor : public juce::AudioProcessor
 {
 public:
-    LenteProcessor();
-    ~LenteProcessor() override = default;
+    PrismaProcessor();
+    ~PrismaProcessor() override = default;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -19,7 +19,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "LENTE"; }
+    const juce::String getName() const override { return "PRISMA"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -49,13 +49,13 @@ public:
     void deleteUserPreset();                             // vai para a lixeira
 
     juce::AudioProcessorValueTreeState apvts;
-    lente::MultibandEngine engine;
+    prisma::MultibandEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
     std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
     std::atomic<double> rate { 44100.0 };
 
 private:
-    lente::Settings readSettings() const;
+    prisma::Settings readSettings() const;
     void refreshUserPresets();
     void applyValues (const std::function<bool (const juce::String&, float&)>& lookup);
     juce::File userPresetDir() const;
@@ -73,7 +73,7 @@ private:
         std::atomic<float>* solo = nullptr;
         std::atomic<float>* mute = nullptr;
     };
-    BandParams bandParams[lente::numBands];
+    BandParams bandParams[prisma::numBands];
     std::atomic<float>* pXover[3] = { nullptr, nullptr, nullptr };
     std::atomic<float>* pMacro = nullptr;
     std::atomic<float>* pOutput = nullptr;
@@ -84,10 +84,10 @@ private:
     juce::AudioBuffer<float> dry, wet;
     juce::SmoothedValue<float> mixSm, gainSm, bypassSm;
 
-    std::vector<lente::FactoryPreset> factory;
+    std::vector<prisma::FactoryPreset> factory;
     juce::Array<juce::File> userFiles;
     int presetIndex = 0;
     juce::String presetName;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LenteProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PrismaProcessor)
 };

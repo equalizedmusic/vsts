@@ -1,10 +1,10 @@
-juce_add_plugin(Lente
+juce_add_plugin(Prisma
     COMPANY_NAME                "InsideStudioSP"
-    BUNDLE_ID                   com.insidestudiosp.lente
+    BUNDLE_ID                   com.insidestudiosp.prisma
     PLUGIN_MANUFACTURER_CODE    Insp
-    PLUGIN_CODE                 Len1
+    PLUGIN_CODE                 Prs1
     FORMATS                     ${VSTS_FORMATS}
-    PRODUCT_NAME                "LENTE"
+    PRODUCT_NAME                "PRISMA"
     VERSION                     0.1.0
     IS_SYNTH                    FALSE
     NEEDS_MIDI_INPUT            FALSE
@@ -15,16 +15,16 @@ juce_add_plugin(Lente
     VST3_CATEGORIES             Fx Dynamics Distortion
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
-target_sources(Lente PRIVATE
+target_sources(Prisma PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp)
 
-target_compile_definitions(Lente PUBLIC
+target_compile_definitions(Prisma PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0)
 
-target_link_libraries(Lente
+target_link_libraries(Prisma
     PRIVATE
         juce::juce_audio_utils
         juce::juce_dsp

@@ -1,6 +1,6 @@
 #include "PluginEditor.h"
 
-using namespace lente;
+using namespace prisma;
 
 namespace
 {
@@ -77,7 +77,7 @@ float drawBrand (juce::Graphics& g, const juce::String& name, const juce::String
     return brandX + textWidth (brandFont, "InsideStudioSP");   // onde a marca termina
 }
 
-float param (LenteProcessor& p, const char* pid)
+float param (PrismaProcessor& p, const char* pid)
 {
     return p.apvts.getRawParameterValue (pid)->load();
 }
@@ -100,7 +100,7 @@ juce::String reductionText (float db)
 }
 
 // a banda está soando agora? (algum SOLO ligado: só as solo; senão, as que não estão no MUDO)
-bool bandAudible (LenteProcessor& p, int b)
+bool bandAudible (PrismaProcessor& p, int b)
 {
     bool anySolo = false;
     for (int k = 0; k < numBands; ++k)
@@ -109,7 +109,7 @@ bool bandAudible (LenteProcessor& p, int b)
 }
 
 // limites de cada banda em Hz (com os cortes atuais)
-void bandEdges (LenteProcessor& p, int b, float& lo, float& hi)
+void bandEdges (PrismaProcessor& p, int b, float& lo, float& hi)
 {
     lo = b == 0 ? minHz : param (p, id::xover[b - 1]);
     hi = b == numBands - 1 ? maxHz : param (p, id::xover[b]);
@@ -133,7 +133,7 @@ void legendItem (juce::Graphics& g, float& x, juce::Colour c, const juce::String
 // =====================================================================
 // ESPECTRO
 // =====================================================================
-SpectrumView::SpectrumView (LenteProcessor& p) : proc (p)
+SpectrumView::SpectrumView (PrismaProcessor& p) : proc (p)
 {
     spec.fill (-120.0f);
 }
@@ -458,7 +458,7 @@ void BandStatus::paint (juce::Graphics& g)
 // =====================================================================
 // EDITOR
 // =====================================================================
-LenteEditor::LenteEditor (LenteProcessor& p)
+PrismaEditor::PrismaEditor (PrismaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), spectrum (p),
       // cor do knob = cor do que ele mexe no desenho
       macro  (p.apvts, id::macro,  "MACRO", true,  theme::coral),
@@ -515,13 +515,13 @@ LenteEditor::LenteEditor (LenteProcessor& p)
     startTimerHz (30);
 }
 
-LenteEditor::~LenteEditor()
+PrismaEditor::~PrismaEditor()
 {
     stopTimer();
     setLookAndFeel (nullptr);
 }
 
-void LenteEditor::showPresetMenu()
+void PrismaEditor::showPresetMenu()
 {
     juce::PopupMenu menu;
     const auto names = proc.getPresetNames();
@@ -546,7 +546,7 @@ void LenteEditor::showPresetMenu()
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
 
-    juce::Component::SafePointer<LenteEditor> safe (this);
+    juce::Component::SafePointer<PrismaEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
                         [safe] (int result)
                         {
@@ -555,14 +555,14 @@ void LenteEditor::showPresetMenu()
                         });
 }
 
-void LenteEditor::askNewPreset()
+void PrismaEditor::askNewPreset()
 {
-    juce::Component::SafePointer<LenteEditor> safe (this);
+    juce::Component::SafePointer<PrismaEditor> safe (this);
     dialog.askName (canvas, "Salvar preset", proc.suggestPresetName(),
                     [safe] (const juce::String& name) { if (safe != nullptr) safe->proc.saveUserPreset (name); });
 }
 
-void LenteEditor::presetMenuChosen (int result)
+void PrismaEditor::presetMenuChosen (int result)
 {
     if (result > sizeMenuBase && result < menuSaveAs)
     {
@@ -570,7 +570,7 @@ void LenteEditor::presetMenuChosen (int result)
         return;
     }
 
-    juce::Component::SafePointer<LenteEditor> safe (this);
+    juce::Component::SafePointer<PrismaEditor> safe (this);
     const auto name = proc.getPresetName();
     switch (result)
     {
@@ -598,7 +598,7 @@ void LenteEditor::presetMenuChosen (int result)
     }
 }
 
-void LenteEditor::timerCallback()
+void PrismaEditor::timerCallback()
 {
     const double now = juce::Time::getMillisecondCounterHiRes();
     const float  dt  = lastTick > 0.0 ? (float) juce::jlimit (0.0, 0.1, (now - lastTick) * 0.001) : 1.0f / 30.0f;
@@ -624,48 +624,49 @@ void LenteEditor::timerCallback()
     presetName.set (proc.getPresetName(), proc.getPresetIndex(), proc.getPresetNames().size());
 }
 
-void LenteEditor::setScale (float scale)
+void PrismaEditor::setScale (float scale)
 {
     scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
     setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
 }
 
-void LenteEditor::resized()
+void PrismaEditor::resized()
 {
     const float scale = (float) getWidth() / (float) ui::baseW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     proc.uiScale = scale;
 }
 
-void LenteEditor::paint (juce::Graphics& g)
+void PrismaEditor::paint (juce::Graphics& g)
 {
     g.fillAll (theme::bg);
 }
 
-void LenteEditor::drawCanvas (juce::Graphics& g)
+void PrismaEditor::drawCanvas (juce::Graphics& g)
 {
     g.fillAll (theme::bg);
 
-    // ---- logo: uma lente com as 4 bandas dentro ----
+    // ---- logo: um prisma que abre o feixe nas 4 bandas ----
     {
-        const juce::Rectangle<float> lens (17.0f, 20.0f, 28.0f, 28.0f);
-        {
-            juce::Graphics::ScopedSaveState save (g);
-            juce::Path clip;
-            clip.addEllipse (lens.reduced (3.0f));
-            g.reduceClipRegion (clip);
-            const float w = lens.getWidth() / (float) numBands;
-            for (int b = 0; b < numBands; ++b)
-            {
-                g.setColour (bandColour (b).withAlpha (0.85f));
-                g.fillRect (lens.getX() + (float) b * w, lens.getY(), w, lens.getHeight());
-            }
-        }
+        const juce::Point<float> top (30.0f, 21.0f), left (19.0f, 46.0f), right (41.0f, 46.0f);
+
         g.setColour (theme::cream);
-        g.drawEllipse (lens.reduced (1.0f), 2.0f);
+        g.drawLine (12.0f, 38.0f, 24.5f, 33.5f, 1.6f);
+        for (int b = 0; b < numBands; ++b)
+        {
+            g.setColour (bandColour (b).withAlpha (0.9f));
+            g.drawLine (35.5f, 33.5f, 49.0f, 28.0f + (float) b * 4.5f, 1.6f);
+        }
+
+        juce::Path tri;
+        tri.addTriangle (top, left, right);
+        g.setColour (theme::bg);
+        g.fillPath (tri);
+        g.setColour (theme::cream);
+        g.strokePath (tri, juce::PathStrokeType (2.0f, juce::PathStrokeType::curved));
     }
 
-    drawBrand (g, "LENTE", "MULTIBANDA", u8 ("DINÂMICA + SATURAÇÃO"));
+    drawBrand (g, "PRISMA", "MULTIBANDA", u8 ("DINÂMICA + SATURAÇÃO"));
 
     // ---- latência (zero: crossovers IIR) ----
     {
@@ -694,7 +695,7 @@ void LenteEditor::drawCanvas (juce::Graphics& g)
               u8 ("Mais compressão e mais drive em todas as bandas juntas."));
 }
 
-void LenteEditor::layoutCanvas()
+void PrismaEditor::layoutCanvas()
 {
     prevBtn.setBounds (618, 18, 30, 32);
     presetName.setBounds (648, 18, 230, 32);

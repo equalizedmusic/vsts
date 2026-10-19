@@ -1,13 +1,13 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-using namespace lente;
+using namespace prisma;
 
-LenteProcessor::LenteProcessor()
+PrismaProcessor::PrismaProcessor()
     : AudioProcessor (BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "LENTE", createLayout())
+      apvts (*this, nullptr, "PRISMA", createLayout())
 {
     for (int b = 0; b < numBands; ++b)
     {
@@ -34,7 +34,7 @@ LenteProcessor::LenteProcessor()
     refreshUserPresets();
 }
 
-Settings LenteProcessor::readSettings() const
+Settings PrismaProcessor::readSettings() const
 {
     Settings s;
     for (int b = 0; b < numBands; ++b)
@@ -56,7 +56,7 @@ Settings LenteProcessor::readSettings() const
     return s;
 }
 
-bool LenteProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool PrismaProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     const auto in  = layouts.getMainInputChannelSet();
     const auto out = layouts.getMainOutputChannelSet();
@@ -64,7 +64,7 @@ bool LenteProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
         && (in == juce::AudioChannelSet::stereo() || in == juce::AudioChannelSet::mono());
 }
 
-void LenteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void PrismaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     const int n = juce::jmax (1, samplesPerBlock);
     dry.setSize (2, n);
@@ -82,7 +82,7 @@ void LenteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
 }
 
-void LenteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void PrismaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
@@ -136,14 +136,14 @@ void LenteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     meterOut.store (juce::jmax (meterOut.load(), peakOut));
 }
 
-juce::AudioProcessorEditor* LenteProcessor::createEditor()
+juce::AudioProcessorEditor* PrismaProcessor::createEditor()
 {
-    return new LenteEditor (*this);
+    return new PrismaEditor (*this);
 }
 
 // ---------------- estado ----------------
 
-void LenteProcessor::getStateInformation (juce::MemoryBlock& destData)
+void PrismaProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("presetName", presetName, nullptr);
@@ -152,7 +152,7 @@ void LenteProcessor::getStateInformation (juce::MemoryBlock& destData)
         copyXmlToBinary (*xml, destData);
 }
 
-void LenteProcessor::setStateInformation (const void* data, int sizeInBytes)
+void PrismaProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
     {
@@ -169,18 +169,18 @@ void LenteProcessor::setStateInformation (const void* data, int sizeInBytes)
 
 // ---------------- presets ----------------
 
-juce::File LenteProcessor::userPresetDir() const
+juce::File PrismaProcessor::userPresetDir() const
 {
    #if JUCE_MAC
     return juce::File::getSpecialLocation (juce::File::userHomeDirectory)
-               .getChildFile ("Library/Audio/Presets/InsideStudioSP/LENTE");
+               .getChildFile ("Library/Audio/Presets/InsideStudioSP/PRISMA");
    #else
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-               .getChildFile ("InsideStudioSP/LENTE/Presets");
+               .getChildFile ("InsideStudioSP/PRISMA/Presets");
    #endif
 }
 
-void LenteProcessor::refreshUserPresets()
+void PrismaProcessor::refreshUserPresets()
 {
     userFiles.clear();
     auto dir = userPresetDir();
@@ -190,7 +190,7 @@ void LenteProcessor::refreshUserPresets()
                [] (const juce::File& a, const juce::File& b) { return a.getFileName().compareNatural (b.getFileName()) < 0; });
 }
 
-juce::StringArray LenteProcessor::getPresetNames() const
+juce::StringArray PrismaProcessor::getPresetNames() const
 {
     juce::StringArray names;
     for (auto& p : factory) names.add (p.name);
@@ -198,7 +198,7 @@ juce::StringArray LenteProcessor::getPresetNames() const
     return names;
 }
 
-void LenteProcessor::applyValues (const std::function<bool (const juce::String&, float&)>& lookup)
+void PrismaProcessor::applyValues (const std::function<bool (const juce::String&, float&)>& lookup)
 {
     for (auto* p : getParameters())
     {
@@ -216,7 +216,7 @@ void LenteProcessor::applyValues (const std::function<bool (const juce::String&,
     }
 }
 
-void LenteProcessor::loadPreset (int index)
+void PrismaProcessor::loadPreset (int index)
 {
     refreshUserPresets();
     const int total = (int) factory.size() + userFiles.size();
@@ -251,7 +251,7 @@ void LenteProcessor::loadPreset (int index)
     presetName  = getPresetNames()[index];
 }
 
-juce::File LenteProcessor::currentUserFile() const
+juce::File PrismaProcessor::currentUserFile() const
 {
     if (presetIndex < (int) factory.size()) return {};
     for (auto& f : userFiles)
@@ -259,12 +259,12 @@ juce::File LenteProcessor::currentUserFile() const
     return {};
 }
 
-bool LenteProcessor::isUserPreset() const
+bool PrismaProcessor::isUserPreset() const
 {
     return currentUserFile().existsAsFile();
 }
 
-juce::String LenteProcessor::suggestPresetName() const
+juce::String PrismaProcessor::suggestPresetName() const
 {
     const auto dir = userPresetDir();
     for (int i = 1; i < 1000; ++i)
@@ -275,13 +275,13 @@ juce::String LenteProcessor::suggestPresetName() const
     return "Meu preset";
 }
 
-void LenteProcessor::writePreset (const juce::File& file)
+void PrismaProcessor::writePreset (const juce::File& file)
 {
     if (auto xml = apvts.copyState().createXml())
         xml->writeTo (file);
 }
 
-void LenteProcessor::saveUserPreset (const juce::String& name)
+void PrismaProcessor::saveUserPreset (const juce::String& name)
 {
     const auto base = juce::File::createLegalFileName (name.trim());
     if (base.isEmpty()) return;
@@ -298,13 +298,13 @@ void LenteProcessor::saveUserPreset (const juce::String& name)
     presetIndex = getPresetNames().indexOf (presetName);
 }
 
-void LenteProcessor::overwriteUserPreset()
+void PrismaProcessor::overwriteUserPreset()
 {
     const auto file = currentUserFile();
     if (file.existsAsFile()) writePreset (file);
 }
 
-bool LenteProcessor::renameUserPreset (const juce::String& newName)
+bool PrismaProcessor::renameUserPreset (const juce::String& newName)
 {
     const auto file = currentUserFile();
     const auto base = juce::File::createLegalFileName (newName.trim());
@@ -320,7 +320,7 @@ bool LenteProcessor::renameUserPreset (const juce::String& newName)
     return true;
 }
 
-void LenteProcessor::deleteUserPreset()
+void PrismaProcessor::deleteUserPreset()
 {
     auto file = currentUserFile();
     if (! file.existsAsFile()) return;
@@ -334,5 +334,5 @@ void LenteProcessor::deleteUserPreset()
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new LenteProcessor();
+    return new PrismaProcessor();
 }

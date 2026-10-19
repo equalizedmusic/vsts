@@ -5,7 +5,7 @@
 #include <vector>
 #include "MultibandEngine.h"
 
-namespace lente
+namespace prisma
 {
 // texto com acento: o JUCE só aceita ASCII em const char*
 inline juce::String u8 (const char* s) { return juce::String::fromUTF8 (s); }
@@ -154,7 +154,7 @@ inline std::vector<FactoryPreset> factoryPresets()
     //                 nome                                f1      f2       f3      macro mix   saída
     //                 limiar  razão  ataque soltura drive ganho
     return {
-        { u8 ("Init · Lente"), { } },
+        { u8 ("Init · Prisma"), { } },
         makePreset ("Cola de Mix",                         120.0f, 1000.0f, 6000.0f, 0.0f, 100.0f, 0.0f,
                     { -18.0f, 2.0f, 30.0f, 200.0f, 0.0f, 0.0f }, { -18.0f, 2.0f, 20.0f, 160.0f, 0.0f, 0.0f },
                     { -20.0f, 2.0f, 15.0f, 140.0f, 0.0f, 0.0f }, { -22.0f, 2.0f, 10.0f, 120.0f, 0.0f, 0.0f }),
@@ -214,4 +214,4 @@ inline std::vector<FactoryPreset> factoryPresets()
                     { -24.0f, 6.0f, 5.0f, 100.0f, 14.0f, 2.0f }, { -12.0f, 2.0f, 10.0f, 150.0f, 0.0f, -18.0f }),
     };
 }
-} // namespace lente
+} // namespace prisma
