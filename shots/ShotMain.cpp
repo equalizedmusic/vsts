@@ -106,6 +106,13 @@ void applyLook (juce::AudioProcessor& p)
     if (name == "REPETECO") { setParam (p, "feedback", 70.0f); setParam (p, "mix", 45.0f); }
     if (name == "MIRAGEM") { setParam (p, "shimmer", 60.0f); setParam (p, "motion", 60.0f); setParam (p, "mix", 45.0f); }
     if (name == "PICOTE")  { setParam (p, "swing", 20.0f); setParam (p, "pan02", -60.0f); setParam (p, "pan04", 60.0f); }
+    if (name == "LENTE")   { setParam (p, "macro", 55.0f); setParam (p, "drive1", 6.0f); }
+    if (name == "TORNO")   { setParam (p, "squeeze", 40.0f); }
+    if (name == "BARRAGEM") { setParam (p, "drive", 8.0f); }
+    if (name == "CONSOLE") { setParam (p, "drive", 65.0f); }
+    if (name == "SOCO")    { setParam (p, "attack", 60.0f); setParam (p, "sustain", -30.0f); }
+    if (name == "LIXA")    { setParam (p, "thresh", -42.0f); setParam (p, "range", 10.0f); }
+    if (name == "HORIZONTE") { setParam (p, "width", 140.0f); }
 }
 } // namespace
 
