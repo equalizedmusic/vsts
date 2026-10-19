@@ -47,7 +47,7 @@ jobs:
           mkdir -p dist
           # dist/ = todos; linha/<criativo|mix>/ = só os da linha (vem de plugins/<linha>/<plugin>)
           for art in $(find build -type d -name '*_artefacts'); do
-            linha=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*##p')
+            linha=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*#\1#p')
             for fmt in VST3 AU VST; do
               if [ -d "$art/Release/$fmt" ]; then
                 mkdir -p "dist/$fmt" "linha/$linha/$fmt"
