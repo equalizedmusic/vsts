@@ -4,7 +4,7 @@ name: shots
 on:
   push:
     branches: [main]
-    paths: ['shots/**', '.github/workflows/shots.yml']
+    paths: ['shots/**', 'instrumentos/**', '.github/workflows/shots.yml']
   workflow_dispatch:
 
 permissions:

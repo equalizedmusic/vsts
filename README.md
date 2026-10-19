@@ -24,7 +24,17 @@ separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
 |---|---|
 | [NAVALHA](plugins/mix/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
 
-Todos têm 20 presets de fábrica e janela redimensionável: arraste o canto inferior direito ou use
+## Instrumentos
+
+Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
+`instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
+Resultado no release `latest-instrumentos` e no branch `builds-instrumentos` (`QUIMERA-mac.zip` / `QUIMERA-win.zip`).
+
+| Instrumento | O que é |
+|---|---|
+| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, matriz de 16 slots, MPE, 8 efeitos e 180 presets |
+
+Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
 
 No menu de presets: *Salvar como novo*; com um preset do usuário aberto, também *Salvar alterações*, *Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.

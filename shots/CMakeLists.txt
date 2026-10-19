@@ -15,8 +15,10 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(JUCE)
 
+# efeitos (plugins/<linha>/<nome>) e instrumentos (instrumentos/<nome>, tocados por MIDI na foto)
 file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/../plugins/*/*")
-foreach(dir ${plugin_dirs})
+file(GLOB inst_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/../instrumentos/*")
+foreach(dir ${plugin_dirs} ${inst_dirs})
     if(EXISTS "${dir}/Source/PluginProcessor.cpp")
         get_filename_component(name "${dir}" NAME)
         string(TOUPPER "${name}" upper)
@@ -30,6 +32,10 @@ foreach(dir ${plugin_dirs})
             JUCE_USE_CURL=0
             JUCE_MODAL_LOOPS_PERMITTED=1
             SHOT_PLUGIN="${upper}")
+        if(dir IN_LIST inst_dirs)
+            # synth: sem entrada, toca acordes por MIDI; tela base 1200×740 (foto a 200%)
+            target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2400 SHOT_H=1480)
+        endif()
         target_link_libraries(${t}
             PRIVATE
                 juce::juce_audio_utils

@@ -1,5 +1,6 @@
 // Abre o editor do plugin, toca um loop de psytrance a 145 BPM por alguns segundos (para medidores,
-// mandala, rolos e fogo estarem vivos) e grava a tela em PNG a 200%.
+// mandala, rolos e fogo estarem vivos) e grava a tela em PNG a 200%. Instrumento (SHOT_SYNTH): em vez do loop,
+// toca um acorde segurado por MIDI com pressão (MPE/aftertouch) subindo.
 // Uso: shot_<plugin> <pasta de saída>
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -13,6 +14,13 @@ namespace
 {
 constexpr double fs = 48000.0, bpm = 145.0;
 constexpr int    block = 512;
+#ifndef SHOT_SYNTH
+ #define SHOT_SYNTH 0
+#endif
+#ifndef SHOT_W
+ #define SHOT_W 2000
+ #define SHOT_H 1160
+#endif
 
 // host "tocando": régua andando no BPM
 class ShotPlayHead : public juce::AudioPlayHead
@@ -75,6 +83,19 @@ public:
                 r[i] = (float) (kick + bass - hat * 0.6 + pad * 0.8);
             }
             head.ppq.store (head.ppq.load() + block * bpm / 60.0 / fs);
+           #if SHOT_SYNTH
+            // instrumento: silêncio na entrada; acorde de Lá menor com 9ª e um baixo, pressão subindo
+            buf.clear();
+            midi.clear();
+            if (blocks == 0)
+                for (int note : { 45, 57, 60, 64, 67, 71 })
+                    midi.addEvent (juce::MidiMessage::noteOn (1, note, (juce::uint8) 100), 0);
+            if (blocks % 8 == 0)
+                midi.addEvent (juce::MidiMessage::channelPressureChange (1, juce::jmin (127, blocks)), 0);
+            if (blocks % 8 == 4)
+                midi.addEvent (juce::MidiMessage::controllerEvent (1, 1, juce::jmin (127, blocks / 2)), 0);
+            ++blocks;
+           #endif
             proc.processBlock (buf, midi);
             juce::Thread::sleep (10);   // ~tempo real (512 amostras = 10,7 ms)
         }
@@ -84,6 +105,7 @@ private:
     juce::AudioProcessor& proc;
     ShotPlayHead& head;
     double t = 0.0, kickPh = 0.0, bassPh = 0.0, padPh1 = 0.0, padPh2 = 0.0;
+    int blocks = 0;
 };
 
 void setParam (juce::AudioProcessor& p, const juce::String& pid, float value)
@@ -113,6 +135,21 @@ void applyLook (juce::AudioProcessor& p)
     if (name == "SOCO")    { setParam (p, "attack", 60.0f); setParam (p, "sustain", -30.0f); }
     if (name == "LIXA")    { setParam (p, "thresh", -42.0f); setParam (p, "range", 10.0f); }
     if (name == "HORIZONTE") { setParam (p, "width", 140.0f); }
+    if (name == "QUIMERA")
+    {
+        // os 3 osciladores (analógico, modelado e wavetable), o filtro B e alguns efeitos ligados
+        setParam (p, "o1tab", 23.0f); setParam (p, "o1pos", 35.0f); setParam (p, "o1uni", 4.0f);
+        setParam (p, "o2on", 1.0f);   setParam (p, "o2tab", 5.0f);  setParam (p, "o2pos", 60.0f); setParam (p, "o2semi", 7.0f);
+        setParam (p, "o3on", 1.0f);   setParam (p, "o3tab", 17.0f); setParam (p, "o3pos", 45.0f); setParam (p, "o3oct", 1.0f);
+        setParam (p, "o3warp", 8.0f); setParam (p, "o3wamt", 30.0f);
+        setParam (p, "facut", 1400.0f); setParam (p, "fares", 55.0f); setParam (p, "faenv", 40.0f);
+        setParam (p, "fbon", 1.0f);
+        setParam (p, "e2d", 900.0f); setParam (p, "e2s", 30.0f);
+        setParam (p, "m01src", 4.0f); setParam (p, "m01dst", 2.0f);  setParam (p, "m01amt", 40.0f);   // LFO 1 → osc 1 posição
+        setParam (p, "m02src", 9.0f); setParam (p, "m02dst", 19.0f); setParam (p, "m02amt", 35.0f);   // pressão → corte A
+        setParam (p, "l1div", 10.0f);
+        setParam (p, "hyon", 1.0f); setParam (p, "chon", 1.0f); setParam (p, "dlon", 1.0f); setParam (p, "rvon", 1.0f);
+    }
 }
 } // namespace
 
@@ -125,12 +162,12 @@ int main (int argc, char** argv)
     std::unique_ptr<juce::AudioProcessor> proc (createPluginFilter());
     ShotPlayHead head;
     proc->setPlayHead (&head);
-    proc->setPlayConfigDetails (2, 2, fs, block);
+    proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : 2, 2, fs, block);
     proc->prepareToPlay (fs, block);
     applyLook (*proc);
 
     std::unique_ptr<juce::AudioProcessorEditor> editor (proc->createEditorAndMakeActive());
-    editor->setSize (2000, 1160);   // 200%
+    editor->setSize (SHOT_W, SHOT_H);   // 200%
 
     AudioThread audio (*proc, head);
     audio.startThread();

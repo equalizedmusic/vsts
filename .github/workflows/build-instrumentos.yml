@@ -1,0 +1,151 @@
+name: build-instrumentos
+
+# Instrumentos (VSTi, pasta instrumentos/): build separado do pack de efeitos, só roda quando instrumentos/ muda.
+# Resultado no branch "builds-instrumentos" e no release "latest-instrumentos".
+on:
+  push:
+    branches: [main]
+    paths: ['instrumentos/**', '.github/workflows/build-instrumentos.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-instrumentos
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest,   name: mac }
+          - { os: windows-latest, name: win }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar
+        id: build
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.name }}" = mac ]; then
+            cmake -S instrumentos -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake --build build --config Release -j 4 2>&1 | tee -a build.log
+          else
+            cmake -S instrumentos -B build -A x64 2>&1 | tee build.log
+            cmake --build build --config Release --parallel 2>&1 | tee -a build.log
+          fi
+
+      - name: Empacotar
+        id: pack
+        run: |
+          set -e
+          mkdir -p dist
+          for art in $(find build -type d -name '*_artefacts'); do
+            for fmt in VST3 AU; do
+              if [ -d "$art/Release/$fmt" ]; then
+                mkdir -p "dist/$fmt"
+                cp -R "$art/Release/$fmt/." "dist/$fmt/"
+              fi
+            done
+          done
+          find dist \( -name '*.exp' -o -name '*.lib' \) -delete
+          if [ "${{ matrix.name }}" = mac ]; then
+            for b in dist/*/*; do codesign --force --deep --sign - "$b"; done
+          fi
+          zipar() {  # zipar <pasta> <arquivo.zip>
+            if [ "${{ matrix.name }}" = mac ]; then
+              ditto -c -k --sequesterRsrc "$1" "$2"
+            else
+              raiz=$(pwd -W)
+              (cd "$1" && 7z a -tzip "$raiz/$2" . > /dev/null)
+            fi
+          }
+          # um zip por instrumento (QUIMERA.vst3 -> QUIMERA-mac.zip)
+          for v in dist/VST3/*.vst3; do
+            nome=$(basename "$v" .vst3)
+            rm -rf "um/$nome"
+            for fmt in VST3 AU; do
+              for f in dist/$fmt/"$nome".*; do
+                [ -e "$f" ] || continue
+                mkdir -p "um/$nome/$fmt"
+                cp -R "$f" "um/$nome/$fmt/"
+              done
+            done
+            zipar "um/$nome" "$nome-${{ matrix.name }}.zip"
+          done
+          { find dist -maxdepth 2; ls -l *.zip; } | tee pack.log
+
+      - name: pluginval
+        id: pluginval
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.name }}" = mac ]; then
+            curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+            unzip -q pv.zip
+            PV=pluginval.app/Contents/MacOS/pluginval
+          else
+            curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip
+            7z x -y pv.zip > /dev/null
+            PV=./pluginval.exe
+          fi
+          for p in dist/VST3/*.vst3; do
+            "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log
+          done
+
+      - name: Relatório
+        if: always()
+        run: |
+          mkdir -p report
+          cp build.log     "report/build-${{ matrix.name }}.log"     2>/dev/null || true
+          cp pack.log      "report/pack-${{ matrix.name }}.log"      2>/dev/null || true
+          cp pluginval.log "report/pluginval-${{ matrix.name }}.log" 2>/dev/null || true
+          cp *-${{ matrix.name }}.zip report/ 2>/dev/null || true
+          echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.name }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: report-${{ matrix.name }}
+          path: report/
+
+  publish:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: report
+          merge-multiple: true
+
+      - name: Branch builds-instrumentos (logs + pacotes)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd report
+          { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null; } > status.txt
+          cat status.txt
+          git init -q
+          git checkout -q -b builds-instrumentos
+          git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "build ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds-instrumentos
+
+      - name: Release "latest-instrumentos"
+        if: hashFiles('report/*.zip') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd report
+          gh release delete latest-instrumentos --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
+          gh release create latest-instrumentos *.zip -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Último build dos instrumentos" --notes-file status.txt --prerelease
