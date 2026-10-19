@@ -92,6 +92,7 @@ jobs:
       - name: pluginval
         id: pluginval
         continue-on-error: true
+        timeout-minutes: 25
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
@@ -104,7 +105,7 @@ jobs:
             PV=./pluginval.exe
           fi
           for p in dist/VST3/*.vst3; do
-            "$PV" --strictness-level 5 --validate-in-process --timeout-ms 300000 "$p" 2>&1 | tee -a pluginval.log
+            "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log
           done
 
       - name: Relatório
