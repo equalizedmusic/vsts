@@ -127,7 +127,14 @@ void applyLook (juce::AudioProcessor& p)
     if (name == "RINGER")  { setParam (p, "freq", 55.0f); setParam (p, "lfoamt", 40.0f); }
     if (name == "REPETECO") { setParam (p, "feedback", 70.0f); setParam (p, "mix", 45.0f); }
     if (name == "MIRAGEM") { setParam (p, "shimmer", 60.0f); setParam (p, "motion", 60.0f); setParam (p, "mix", 45.0f); }
-    if (name == "PICOTE")  { setParam (p, "swing", 20.0f); setParam (p, "pan02", -60.0f); setParam (p, "pan04", 60.0f); }
+    if (name == "PICOTE")
+    {
+        setParam (p, "swing", 20.0f); setParam (p, "pan02", -60.0f); setParam (p, "pan04", 60.0f);
+        // a foto sai num instante qualquer do compasso: nenhum passo mudo, senão os medidores aparecem zerados
+        const char* const fracos[] = { "vol02", "vol04", "vol06", "vol08", "vol10", "vol12", "vol14", "vol16" };
+        const float niveis[] = { 35.0f, 55.0f, 35.0f, 70.0f, 35.0f, 55.0f, 35.0f, 80.0f };
+        for (int i = 0; i < 8; ++i) setParam (p, fracos[i], niveis[i]);
+    }
     if (name == "PRISMA")  { setParam (p, "macro", 55.0f); setParam (p, "drive1", 6.0f); }
     if (name == "TORNO")   { setParam (p, "squeeze", 40.0f); }
     if (name == "BARRAGEM") { setParam (p, "drive", 8.0f); }
