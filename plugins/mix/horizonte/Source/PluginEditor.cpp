@@ -62,7 +62,9 @@ void setBool (HorizonteProcessor& p, const char* pid, bool on)
 juce::String signedText (float v, int decimals)
 {
     const float eps = 0.5f * std::pow (10.0f, (float) -decimals);
-    const auto  t = juce::String (std::abs (v), decimals).replaceCharacter ('.', ',');
+    // String (x, 0) não arredonda (vira precisão total: "2,90455"); sem casas, inteiro
+    const auto  t = decimals == 0 ? juce::String (juce::roundToInt (std::abs (v)))
+                                  : juce::String (std::abs (v), decimals).replaceCharacter ('.', ',');
     if (v >= eps)  return "+" + t;
     if (v <= -eps) return u8 ("−") + t;
     return t;

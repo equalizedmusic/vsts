@@ -123,13 +123,19 @@ void HistoryView::paint (juce::Graphics& g)
     // colunas: mais antiga à esquerda, agora à direita
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
     const float cw   = (x1 - x0) / (float) historyCols;
+
+    // escala da redução antes de desenhar (degraus fixos, para os números não ficarem pulando);
+    // calculada depois, a primeira pintura usava a escala velha e a redução enchia a altura toda
     float maxGr = 0.0f;
+    for (int k = 0; k < historyCols; ++k)
+        maxGr = juce::jmax (maxGr, proc.engine.colGr[(size_t) k].load (std::memory_order_relaxed));
+    grRange = maxGr < 5.0f ? 6.0f : maxGr < 10.0f ? 12.0f : maxGr < 20.0f ? 24.0f : 48.0f;
+
     for (int k = 0; k < historyCols; ++k)
     {
         const auto  idx = (size_t) ((wpos + k) % historyCols);
         const float lvl = proc.engine.colIn[idx].load (std::memory_order_relaxed);
         const float gr  = proc.engine.colGr[idx].load (std::memory_order_relaxed);
-        maxGr = juce::jmax (maxGr, gr);
         const float x = x0 + (float) k * cw;
 
         const float db = juce::Decibels::gainToDecibels (lvl, -100.0f);
@@ -147,8 +153,6 @@ void HistoryView::paint (juce::Graphics& g)
         }
     }
 
-    // escala da redução: degraus fixos, para os números não ficarem pulando
-    grRange = maxGr < 5.0f ? 6.0f : maxGr < 10.0f ? 12.0f : maxGr < 20.0f ? 24.0f : 48.0f;
     g.setColour (theme::coral);
     g.setFont (theme::mono (9.0f));
     g.drawText (u8 ("REDUÇÃO 0 a −") + juce::String (juce::roundToInt (grRange)) + " dB",
