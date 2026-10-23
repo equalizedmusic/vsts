@@ -8,19 +8,19 @@ Todas as tabelas são geradas por código (nada copiado de outro synth). Suporta
 
 | Aba | Bloco | O que tem |
 |---|---|---|
-| SÍNTESE | OSC 1–3 | 24 tabelas de 32 quadros: **Analógico** (Clássica, Pulso, Serra Dupla, Triângulo Dobrado), **Modelado** (Metal, Formante, Sincronizado, Dobra, Elétrico, Quadrada-Serra, Seno-Quadrada, Escova) e **Wavetable** (Cristal, Digital, Vocal, Harmônicos, Granito, Sinos, FM Linear, FM Metálico, Espectral, Órgão, Corda, Quimera). Posição, 11 warps (Sync, Dobra ±, PWM, Espelho, Dobrar, Quantizar, FM e RM do oscilador anterior, Assimetria), oitava/semitom/fino, uníssono até 8× com detune e abertura, fase aleatória, volume, pan e destino (filtro A, B, A+B ou direto) |
-| | SUB + RUÍDO | Sub de 1 ou 2 oitavas (seno, triângulo, quadrada); ruído com cor |
-| | FILTRO A / B | Ladder 24 e 12, PB/PA/PF 12, Rejeita, Pente e Formante; corte, ressonância, drive, key track, Env 2 e mix; em série ou paralelo |
-| | ENV 1–3 | ADSR com curva. Env 1 = volume; Env 2 = filtros (e matriz); Env 3 = só matriz |
-| | LFO 1–2 | 7 formas, sync no grid ou Hz, modo Livre / Por nota / Envelope, subida |
-| | VOZ | Poli / Mono / Legato, até 16 vozes, glide, bend, deriva analógica, velocidade no volume |
-| MATRIZ | 16 slots | Fontes: envelopes, LFOs, velocidade, nota, mod wheel, **pressão**, **slide**, bend, aleatório, 4 macros. Destinos: altura/posição/warp/volume/pan de cada osc, corte/ressonância/drive dos filtros, volume, pan, velocidade dos LFOs, detune |
-| EFEITOS | rack | HIPER → DISTORÇÃO → PHASER → CHORUS → DELAY (sync, ping-pong) → REVERB (sala, placa, hall) → EQ → COMPRESSOR (simples ou multibanda) |
+| SYNTH | OSC 1–3 | 24 tabelas de 32 quadros: **Analógico** (Clássica, Pulso, Serra Dupla, Triângulo Dobrado), **Modelado** (Metal, Formante, Sincronizado, Dobra, Elétrico, Quadrada-Serra, Seno-Quadrada, Escova) e **Wavetable** (Cristal, Digital, Vocal, Harmônicos, Granito, Sinos, FM Linear, FM Metálico, Espectral, Órgão, Corda, Quimera). POSITION, 11 warps (Sync, Bend ±, PWM, Mirror, Fold, Quantize, FM e RM do oscilador anterior, Asym), OCTAVE/SEMI/FINE, UNISON até 8× com DETUNE e WIDTH, fase aleatória (Random Phase), LEVEL, PAN e OUTPUT (Filter A, Filter B, A + B ou Direct) |
+| | SUB + NOISE | Sub de 1 ou 2 oitavas (Sine, Triangle, Square); noise com cor |
+| | FILTER A / B | Ladder 24 e 12, LP/HP/BP 12, Notch, Comb e Formant; CUTOFF, RES, DRIVE, KEY, ENV 2 e DRY/WET; em SERIAL A → B ou PARALLEL |
+| | ENV 1–3 | ADSR com curva. Env 1 = volume; Env 2 = filtros (e MOD MATRIX); Env 3 = só MOD MATRIX |
+| | LFO 1–2 | 7 formas, sync no grid ou Hz, modo Free / Retrig / Envelope, RISE |
+| | VOICE | Poly / Mono / Legato, até 16 VOICES, GLIDE, BEND, DRIFT (deriva analógica), VELOCITY no volume |
+| MOD MATRIX | 16 slots | SOURCE: envelopes, LFOs, Velocity, Note, Mod Wheel, **Pressure**, **Slide**, Bend, Random, 4 macros. DEST: Pitch/Position/Warp/Level/Pan de cada osc, Cutoff/Res/Drive dos filtros, Volume, Pan, Rate dos LFOs, Unison Detune |
+| FX | rack | HYPER → DISTORTION → PHASER → CHORUS → DELAY (sync, ping-pong) → REVERB (room, plate, hall) → EQ → COMPRESSOR (single ou multiband) |
 
-**MPE:** com o botão MPE ligado, cada nota tem o próprio bend (até 96 st), pressão e slide (CC74), que entram na matriz.
-Sem MPE, o aftertouch vira Pressão. Trocar de preset não mexe em MPE, MPE Bend e SEGURAR.
+**MPE:** com o botão MPE ligado, cada nota tem o próprio bend (até 96 st), pressure e slide (CC74), que entram na MOD MATRIX.
+Sem MPE, o aftertouch vira Pressure. Trocar de preset não mexe em MPE, MPE Bend e SEGURAR.
 
-**Presets:** Init e 20 por categoria — BAIXO, LEAD, PLUCK, PAD, ATMOS, PERC, BATERIA, TECLAS e FX (181).
+**Presets:** Init e 20 por categoria — BASS, LEAD, PLUCK, PAD, ATMOS, PERC, DRUMS, KEYS e FX (181).
 Presets do usuário com Salvar como / Salvar alterações / Renomear / Apagar, como nos efeitos da casa.
 
 Janela de 75% a 200% (base 1200×740).

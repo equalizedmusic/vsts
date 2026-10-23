@@ -255,7 +255,7 @@ void CorrelationView::paint (juce::Graphics& g)
         g.drawText (t, juce::Rectangle<float> (0.0f, y, W, 12.0f), juce::Justification::centredRight);
     };
 
-    label (u8 ("CORRELAÇÃO"), 0.0f);
+    label ("CORRELATION", 0.0f);
     value (active ? signedText (corr, 2) : juce::String ("SEM SINAL"), 0.0f, active ? corrColour (corr) : theme::dim);
 
     // barra −1..+1: negativo (some em mono) em coral, positivo em verde
@@ -288,16 +288,16 @@ void CorrelationView::paint (juce::Graphics& g)
     g.drawText ("0", juce::Rectangle<float> (W * 0.5f - 15.0f, barY + barH + 3.0f, 30.0f, 11.0f), juce::Justification::centred);
     g.drawText ("+1", juce::Rectangle<float> (W - 30.0f, barY + barH + 3.0f, 30.0f, 11.0f), juce::Justification::centredRight);
 
-    label (u8 ("MÍNIMO (3 s)"), 56.0f);
+    label ("MIN (3 s)", 56.0f);
     value (active ? signedText (corrMin, 2) : juce::String (u8 ("—")), 56.0f, active ? corrColour (corrMin) : theme::dim);
 
-    label ("LADO / MEIO", 76.0f);
+    label ("SIDE / MID", 76.0f);
     value (! active ? juce::String (u8 ("—"))
                     : sideMidDb <= -59.5f ? juce::String (u8 ("−∞ dB · mono"))
                                           : signedText (sideMidDb, 1) + " dB",
            76.0f, theme::cream);
 
-    label (u8 ("BALANÇO L/R"), 96.0f);
+    label ("BALANCE L/R", 96.0f);
     value (! active ? juce::String (u8 ("—"))
                     : std::abs (balanceDb) < 0.25f ? juce::String ("centro")
                                                    : juce::String (balanceDb > 0.0f ? "E " : "D ") + signedText (std::abs (balanceDb), 1) + " dB",
@@ -305,7 +305,7 @@ void CorrelationView::paint (juce::Graphics& g)
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (10.5f));
-    g.drawFittedText (u8 ("Correlação abaixo de zero: parte do som some quando toca em mono. Confira com OUVIR EM MONO."),
+    g.drawFittedText (u8 ("Correlação abaixo de zero: parte do som some quando toca em mono. Confira com MONO."),
                       juce::Rectangle<int> (0, 122, (int) W, 44), juce::Justification::topLeft, 3);
 }
 
@@ -319,13 +319,13 @@ void WidthCurve::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, u8 ("LARGURA POR FREQUÊNCIA "), u8 ("· LADO (S)"));
+    drawTitle (g, 12.0f, 7.0f, u8 ("WIDTH POR FREQUÊNCIA "), u8 ("· SIDE (S)"));
     {
         float x = W - 10.0f;
-        legendItem (g, x, theme::coral, "GRAVE MONO", false);
-        legendItem (g, x, theme::ice, "AGUDOS", false);
-        legendItem (g, x, theme::amber, "GRAVES", false);
-        legendItem (g, x, theme::violet, "LARGURA", true);
+        legendItem (g, x, theme::coral, "MONO BASS", false);
+        legendItem (g, x, theme::ice, "HIGH", false);
+        legendItem (g, x, theme::amber, "LOW", false);
+        legendItem (g, x, theme::violet, "WIDTH", true);
     }
 
     float x0 = 46.0f, x1 = W - 14.0f, top = 30.0f, bot = H - 20.0f;
@@ -416,7 +416,7 @@ void WidthCurve::paint (juce::Graphics& g)
     dashedLine (g, xx, top, xx, bot, 1.0f);
     g.setColour (theme::cream);
     g.setFont (theme::mono (9.5f));
-    const auto xoText = u8 ("DIVISÃO ") + hzText (fxo);
+    const auto xoText = "CROSSOVER " + hzText (fxo);
     if (xx < x1 - 120.0f)
         g.drawText (xoText, juce::Rectangle<float> (xx + 5.0f, top + 1.0f, 120.0f, 12.0f), juce::Justification::centredLeft);
     else
@@ -435,16 +435,16 @@ void WidthCurve::paint (juce::Graphics& g)
 HorizonteEditor::HorizonteEditor (HorizonteProcessor& p)
     : AudioProcessorEditor (&p), proc (p), gonio (p), curve (p),
       // cor do knob = cor do que ele mexe no desenho
-      widthMacro (p.apvts, id::width,     "LARGURA",          true,  theme::violet),
-      widthLow   (p.apvts, id::widthLow,  "GRAVES",           false, theme::amber),
-      xover      (p.apvts, id::xover,     u8 ("DIVISÃO"),     false, theme::cream),
-      widthHigh  (p.apvts, id::widthHigh, "AGUDOS",           false, theme::ice),
-      monoBass   (p.apvts, id::monoBass,  "GRAVE MONO",       false, theme::coral),
-      balance    (p.apvts, id::balance,   u8 ("BALANÇO"),     false, theme::leaf),
-      rotation   (p.apvts, id::rotation,  u8 ("ROTAÇÃO"),     false, theme::leaf),
-      output     (p.apvts, id::output,    "GANHO",            false, theme::cream),
-      monoKey    ("OUVIR EM MONO", theme::cream),
-      sideKey    (u8 ("OUVIR SÓ O LADO"), theme::violet)
+      widthMacro (p.apvts, id::width,     "WIDTH",            true,  theme::violet),
+      widthLow   (p.apvts, id::widthLow,  "LOW",              false, theme::amber),
+      xover      (p.apvts, id::xover,     "CROSSOVER",        false, theme::cream),
+      widthHigh  (p.apvts, id::widthHigh, "HIGH",             false, theme::ice),
+      monoBass   (p.apvts, id::monoBass,  "MONO BASS",        false, theme::coral),
+      balance    (p.apvts, id::balance,   "BALANCE",          false, theme::leaf),
+      rotation   (p.apvts, id::rotation,  "ROTATION",         false, theme::leaf),
+      output     (p.apvts, id::output,    "GAIN",             false, theme::cream),
+      monoKey    ("MONO", theme::cream),
+      sideKey    ("SIDE SOLO", theme::violet)
 {
     setLookAndFeel (&lnf);
 
@@ -626,7 +626,7 @@ void HorizonteEditor::drawCanvas (juce::Graphics& g)
     g.setColour (theme::line);
     g.fillRect (tagX - 10.0f, 24.0f, 1.0f, 22.0f);
     const auto tagFont = theme::sans (9.5f, false, 0.2f);
-    const juce::String tag1 (u8 ("IMAGEM ESTÉREO")), tag2 (u8 ("M/S · LATÊNCIA ZERO"));
+    const juce::String tag1 ("STEREO IMAGE"), tag2 (u8 ("M/S · ZERO LATENCY"));
     g.setColour (theme::dim);
     g.setFont (tagFont);
     g.drawText (tag1, juce::Rectangle<float> (tagX, 22.0f, 200.0f, 12.0f), juce::Justification::centredLeft);
@@ -651,15 +651,15 @@ void HorizonteEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 662.0f, 226.0f, 170.0f, 342.0f });
     drawCard (g, { 842.0f, 226.0f, 146.0f, 342.0f });
 
-    drawTitle (g, 22.0f,  76.0f,  u8 ("VETORSCÓPIO "), u8 ("· A IMAGEM QUE SAI"));
-    drawTitle (g, 332.0f, 236.0f, u8 ("01 · "), "LARGURA");
-    drawTitle (g, 672.0f, 236.0f, u8 ("02 · "), u8 ("GRAVE E POSIÇÃO"));
-    drawTitle (g, 852.0f, 236.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 22.0f,  76.0f,  "VECTORSCOPE ", u8 ("· A IMAGEM QUE SAI"));
+    drawTitle (g, 332.0f, 236.0f, u8 ("01 · "), "WIDTH");
+    drawTitle (g, 672.0f, 236.0f, u8 ("02 · "), u8 ("BASS E POSIÇÃO"));
+    drawTitle (g, 852.0f, 236.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 438.0f, 258.0f, 204.0f, 92.0f }, "MACRO LARGURA",
-              u8 ("Quanto do lado (S) entra: 0% = mono, 100% = como veio, 200% = o dobro."));
-    drawDesc (g, { 334.0f, 478.0f, 308.0f, 84.0f }, u8 ("GRAVES · DIVISÃO · AGUDOS"),
-              u8 ("Larguras separadas de cada lado da DIVISÃO (Linkwitz-Riley, soma plana). Multiplicam a MACRO."));
+    drawDesc (g, { 438.0f, 258.0f, 204.0f, 92.0f }, "MACRO WIDTH",
+              u8 ("Quanto do SIDE (S) entra: 0% = mono, 100% = como veio, 200% = o dobro."));
+    drawDesc (g, { 334.0f, 478.0f, 308.0f, 84.0f }, u8 ("LOW · CROSSOVER · HIGH"),
+              u8 ("Larguras separadas de cada lado do CROSSOVER (Linkwitz-Riley, soma plana). Multiplicam a MACRO."));
 }
 
 void HorizonteEditor::layoutCanvas()

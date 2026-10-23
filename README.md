@@ -10,25 +10,25 @@ separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
 | [GRÃO](plugins/criativo/grao/README.md) | Efeito granular de textura (fita de 4 s, grãos, feedback, cauda, XY) |
 | [CALEIDO](plugins/criativo/caleido/README.md) | Glitch rítmico (mandala de 16 passos, sync com o BPM) |
 | [ESPIRAL](plugins/criativo/espiral/README.md) | Phaser/flanger infinito "barber pole" (sobe sem fim, sync com o BPM) |
-| [FITA](plugins/criativo/fita/README.md) | Gravador de fita: saturação, wow/flutter, chiado, rolos girando e TAPE STOP no BPM |
+| [FITA](plugins/criativo/fita/README.md) | Gravador de fita: saturation, wow/flutter, hiss, rolos girando e TAPE STOP no BPM |
 | [CHAMA](plugins/criativo/chama/README.md) | Build-up de um knob só: passa-alta, estéreo, ruído, reverb e gate no tempo, com fogo na tela |
-| [F1](plugins/criativo/f1/README.md) | Filtro ladder de 4 degraus (passa-baixa 12/24 dB) com envelope, LFO no grid e FUMAÇA |
-| [RINGER](plugins/criativo/ringer/README.md) | Ring modulator: portadora de tremolo a sino metálico, LFO no grid e osciloscópio |
+| [F1](plugins/criativo/f1/README.md) | Filtro ladder de 4 degraus (low-pass 12/24 dB) com envelope, LFO no grid e FUMAÇA |
+| [RINGER](plugins/criativo/ringer/README.md) | Ring modulator: carrier de tremolo a sino metálico, LFO no grid e osciloscópio |
 | [REPETECO](plugins/criativo/repeteco/README.md) | Delay analógico tipo BBD: escurece a cada volta, auto-oscila, INFINITO e MATAR |
 | [MIRAGEM](plugins/criativo/miragem/README.md) | Reverb atmosférico com shimmer (oitava/quinta), CONGELAR, REVERSO e duck |
-| [PICOTE](plugins/criativo/picote/README.md) | Gate rítmico de 16 passos com volume, pan e filtro por passo, EMBARALHAR e PRENDER |
+| [PICOTE](plugins/criativo/picote/README.md) | Gate rítmico de 16 passos com volume, pan e filter por passo, EMBARALHAR e PRENDER |
 
 ## Linha de mix
 
 | Plugin | O que é |
 |---|---|
-| [PRISMA](plugins/mix/prisma/README.md) | Multibanda: 4 bandas com compressor e saturação cada, cortes arrastáveis no espectro |
-| [TORNO](plugins/mix/torno/README.md) | Compressor que mostra o que está apertando: histórico de nível e redução, curva com joelho |
+| [PRISMA](plugins/mix/prisma/README.md) | Multibanda: 4 bandas com compressor e saturação cada, crossovers arrastáveis no espectro |
+| [TORNO](plugins/mix/torno/README.md) | Compressor que mostra o que está apertando: histórico de input e gain reduction, curva com knee |
 | [BARRAGEM](plugins/mix/barragem/README.md) | Limiter de master com true peak e LUFS, com alvos de entrega (Spotify, Apple Music…) |
 | [CONSOLE](plugins/mix/console/README.md) | Cor de canal de mesa analógica, com 3 modelos: Cristal, Ferro e Brasa |
-| [SOCO](plugins/mix/soco/README.md) | Modelador de transiente: ataque e sustain de cada golpe, com o antes e o depois na tela |
+| [SOCO](plugins/mix/soco/README.md) | Modelador de transiente: attack e sustain de cada golpe, com o antes e o depois na tela |
 | [LIXA](plugins/mix/lixa/README.md) | De-esser de faixa ajustável que mostra no espectro o que está tirando |
-| [HORIZONTE](plugins/mix/horizonte/README.md) | Imagem estéreo em M/S, sem latência: largura de graves e agudos, grave em mono, vetorscópio |
+| [HORIZONTE](plugins/mix/horizonte/README.md) | Imagem estéreo em M/S, sem latência: width de graves e agudos, mono bass, vetorscópio |
 | [SALA](plugins/mix/sala/README.md) | Reverb limpo e transparente para colocar tudo num mesmo espaço |
 | [MONITOR](plugins/mix/monitor/README.md) | Medidor de entrega: LUFS, LRA, true peak, espectro e correlação, sem mexer no som |
 | [NAVALHA](plugins/mix/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
@@ -41,7 +41,7 @@ O instalador (`InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`) sai no release
 
 | Instrumento | O que é |
 |---|---|
-| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, matriz de 16 slots, MPE, 8 efeitos e 180 presets |
+| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos e 180 presets |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.

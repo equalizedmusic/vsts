@@ -100,16 +100,16 @@ void ColorStrip::paint (juce::Graphics& g)
     drawTitle (g, 12.0f, 7.0f, "MESA ", u8 ("· AO VIVO"));
     {
         juce::AttributedString s;
-        s.append ("PICO  ENTRADA ", theme::mono (9.5f), theme::dim);
+        s.append ("PEAK  IN ", theme::mono (9.5f), theme::dim);
         s.append (dbfsText (peakIn), theme::mono (9.5f), theme::cream);
-        s.append (u8 ("   SAÍDA "), theme::mono (9.5f), theme::dim);
+        s.append ("   OUT ", theme::mono (9.5f), theme::dim);
         s.append (dbfsText (peakOut), theme::mono (9.5f), theme::cream);
         s.setJustification (juce::Justification::centredLeft);
         s.draw (g, { 130.0f, 7.0f, 360.0f, 13.0f });
     }
     {
         float x = W - 10.0f;
-        legendItem (g, x, theme::violet, u8 ("RUÍDO"), true);
+        legendItem (g, x, theme::violet, "NOISE", true);
         legendItem (g, x, theme::coral, "COR GERADA", false);
         legendItem (g, x, theme::cream, "SINAL NO CANAL", false);
     }
@@ -166,7 +166,7 @@ void ColorStrip::paint (juce::Graphics& g)
         g.setColour (theme::violet);
         g.fillRect (x0, y - 0.5f, x1 - x0, 1.2f);
         g.setFont (theme::mono (9.0f));
-        g.drawText (u8 ("RUÍDO ") + minus (juce::String (juce::roundToInt (db))) + " dBFS",
+        g.drawText ("NOISE " + minus (juce::String (juce::roundToInt (db))) + " dBFS",
                     juce::Rectangle<float> (x0 + 6.0f, y - 12.0f, 140.0f, 10.0f), juce::Justification::centredLeft);
     }
 
@@ -337,7 +337,7 @@ void HarmonicsView::paint (juce::Graphics& g)
     const float thd = alive ? std::sqrt (h2 + h3 + h4 + h5) / harm[1] : 0.0f;
     const float evenShare = alive && (h2 + h3 + h4 + h5) > 1.0e-14f ? (h2 + h4) / (h2 + h3 + h4 + h5) : 0.5f;
 
-    label (u8 ("DISTORÇÃO (THD)"), 156.0f);
+    label ("DISTORTION (THD)", 156.0f);
     value (juce::String (thd * 100.0f, thd < 0.1f ? 2 : 1).replaceCharacter ('.', ',') + "%", 156.0f, theme::cream);
 
     label (u8 ("PARES · ÍMPARES"), 174.0f);
@@ -355,7 +355,7 @@ void HarmonicsView::paint (juce::Graphics& g)
     const float fsHalf = (float) (0.5 * proc.rate.load());
 
     label ("RESPOSTA DO CANAL", 206.0f);
-    value ("TOM " + minus (dbText (toneDb)), 206.0f, theme::leaf);
+    value ("TONE " + minus (dbText (toneDb)), 206.0f, theme::leaf);
 
     const juce::Rectangle<float> plot (0.0f, 222.0f, W, 64.0f);
     const float dbTop = 6.0f, dbBot = -30.0f;
@@ -414,7 +414,7 @@ void HarmonicsView::paint (juce::Graphics& g)
                            : u8 ("L↔R desligado"),
                 juce::Rectangle<float> (0.0f, 294.0f, W, 12.0f), juce::Justification::centredLeft);
     g.setColour (theme::violet);
-    g.drawText (u8 ("RUÍDO ") + minus (noiseText (param (proc, id::noise))),
+    g.drawText ("NOISE " + minus (noiseText (param (proc, id::noise))),
                 juce::Rectangle<float> (0.0f, 294.0f, W, 12.0f), juce::Justification::centredRight);
 }
 
@@ -426,10 +426,10 @@ ConsoleEditor::ConsoleEditor (ConsoleProcessor& p)
       // cor do knob = cor do que ele mexe no desenho
       driveMacro (p.apvts, id::drive,     "DRIVE",       true,  theme::coral),
       model      (p.apvts, id::model,     "MODELO",      false, theme::amber),
-      tone       (p.apvts, id::tone,      "TOM",         false, theme::leaf),
+      tone       (p.apvts, id::tone,      "TONE",        false, theme::leaf),
       crosstalk  (p.apvts, id::crosstalk, "CROSSTALK",   false, theme::ice),
-      noise      (p.apvts, id::noise,     u8 ("RUÍDO"),  false, theme::violet),
-      output     (p.apvts, id::output,    "GANHO",       false, theme::cream),
+      noise      (p.apvts, id::noise,     "NOISE",       false, theme::violet),
+      output     (p.apvts, id::output,    "GAIN",        false, theme::cream),
       mix        (p.apvts, id::mix),
       compareKey ("COMPARAR", theme::amber),
       autoKey    ("AUTO", theme::cream),
@@ -660,7 +660,7 @@ void ConsoleEditor::drawCanvas (juce::Graphics& g)
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
@@ -677,7 +677,7 @@ void ConsoleEditor::drawCanvas (juce::Graphics& g)
     drawTitle (g, 22.0f,  226.0f, "CURVA ", u8 ("· TRANSFERÊNCIA"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "CANAL");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), u8 ("HARMÔNICOS"));
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
     drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO DRIVE",
               u8 ("Empurra o sinal contra o canal da mesa. Mais drive, mais harmônicos (as barras coral)."));

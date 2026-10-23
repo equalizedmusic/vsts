@@ -54,18 +54,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     StringArray divs;
     for (auto* d : divNames) divs.add (d);
 
-    add (id::time,      "Tempo",            { 0.0f, 100.0f }, 100.0f, pct);
-    choice (id::range,  "Faixa",            { "Curto", "Longo" }, 0);
+    add (id::time,      "Time",             { 0.0f, 100.0f }, 100.0f, pct);
+    choice (id::range,  "Range",            { "Short", "Long" }, 0);
     choice (id::sync,   "Sync",             { "Grid", "Livre" }, 0);
     add (id::drive,     "Drive",            { 0.0f, 24.0f }, 0.0f, [] (float v, int) { return dbText (v); });
     add (id::pingPong,  "Ping-pong",        { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::feedback,  u8 ("Realimentação"), { 0.0f, 120.0f }, 45.0f, pct);
-    choice (id::lfoRate,  "LFO Taxa",       divs, 10);
-    add (id::lfoAmt,    "LFO Quant.",       { 0.0f, 100.0f }, 15.0f, pct);
-    choice (id::lfoShape, "LFO Forma",      StringArray ("Seno", u8 ("Triângulo"), "Quadrada", u8 ("Aleatória")), 0);
+    add (id::feedback,  "Feedback",         { 0.0f, 120.0f }, 45.0f, pct);
+    choice (id::lfoRate,  "LFO Rate",       divs, 10);
+    add (id::lfoAmt,    "LFO Amount",       { 0.0f, 100.0f }, 15.0f, pct);
+    choice (id::lfoShape, "LFO Shape",      StringArray ("Sine", "Triangle", "Square", "Random"), 0);
     add (id::dark,      "Escuro",           { 0.0f, 100.0f }, 50.0f, pct);
-    add (id::output,    "Ganho",            { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Mix",              { 0.0f, 100.0f }, 35.0f, pct);
+    add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,       "Dry/Wet",             { 0.0f, 100.0f }, 35.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::infinite, 1 }, "Infinito", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::kill, 1 }, "Matar", false));

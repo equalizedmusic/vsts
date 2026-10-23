@@ -64,7 +64,7 @@ private:
     std::unique_ptr<APVTS::SliderAttachment> attachment;
 };
 
-// ---------------- fader do MIX ----------------
+// ---------------- fader do DRY/WET ----------------
 class Fader : public juce::Component
 {
 public:
@@ -83,8 +83,8 @@ public:
     void paint (juce::Graphics& g) override
     {
         g.setColour (theme::txt);
-        g.setFont (theme::sans (10.0f, true, 0.15f));
-        g.drawText ("MIX", 0, getHeight() - 30, getWidth(), 13, juce::Justification::centred);
+        g.setFont (theme::sans (9.5f, true, 0.04f));
+        g.drawFittedText ("DRY/WET", 0, getHeight() - 30, getWidth(), 13, juce::Justification::centred, 1, 0.7f);
         g.setColour (theme::dim);
         g.setFont (theme::mono (11.0f));
         g.drawText (param->getCurrentValueAsText(), 0, getHeight() - 16, getWidth(), 14, juce::Justification::centred);

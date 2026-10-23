@@ -55,6 +55,9 @@ public:
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };
     std::atomic<bool>  waiting { false };   // host parado: gate espera o play
+    // relógio da animação (o FOGUINHO dança no tempo): beat no início do último bloco e quando ele chegou
+    std::atomic<double> uiPpq { 0.0 }, uiBarStart { 0.0 }, uiStampMs { 0.0 };
+    std::atomic<bool>   uiHaveBar { false };
 
 private:
     chama::Settings readSettings() const;

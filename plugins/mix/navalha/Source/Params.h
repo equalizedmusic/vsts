@@ -42,13 +42,13 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto pct = [] (float v, int) { return String (roundToInt (v)) + "%"; };
     auto db  = [] (float v, int) { return dbText (v); };
 
-    add (id::drive,   u8 ("Pressão"),     { 0.0f, 24.0f }, 0.0f, db);
-    add (id::ceiling, "Teto",             { -12.0f, 0.0f }, -0.3f, db);
-    add (id::knee,    "Suavidade",        { 0.0f, 100.0f }, 20.0f, pct);
-    add (id::asym,    "Assimetria",       { 0.0f, 100.0f }, 0.0f, pct);
+    add (id::drive,   "Drive",          { 0.0f, 24.0f }, 0.0f, db);
+    add (id::ceiling, "Ceiling",          { -12.0f, 0.0f }, -0.3f, db);
+    add (id::knee,    "Knee",             { 0.0f, 100.0f }, 20.0f, pct);
+    add (id::asym,    "Asymmetry",        { 0.0f, 100.0f }, 0.0f, pct);
     add (id::link,    "Link",             { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::output,  "Ganho",            { -36.0f, 12.0f }, 0.0f, db);
-    add (id::mix,     "Mix",              { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::output,  "Gain",             { -36.0f, 12.0f }, 0.0f, db);
+    add (id::mix,     "Dry/Wet",          { 0.0f, 100.0f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, u8 ("Só o corte"), false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));

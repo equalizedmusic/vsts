@@ -85,10 +85,10 @@ void WaveStrip::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "FORMA DE ONDA ", u8 ("· O QUE PASSA E O QUE A NAVALHA CORTA, AO VIVO"));
+    drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· O QUE PASSA E O QUE A NAVALHA CORTA, AO VIVO"));
     {
         float x = W - 10.0f;
-        legendItem (g, x, theme::amber, "TETO", true);
+        legendItem (g, x, theme::amber, "CEILING", true);
         legendItem (g, x, theme::coral, "CORTADO", false);
         legendItem (g, x, theme::cream, "PASSA", false);
     }
@@ -129,7 +129,7 @@ void WaveStrip::paint (juce::Graphics& g)
     g.fillRect (x0, yNeg - 0.5f, x1 - x0, 1.2f);
     g.setColour (theme::amber);
     g.setFont (theme::mono (9.5f));
-    g.drawText ("TETO " + dbText (param (proc, id::ceiling)).replace ("-", u8 ("−")),
+    g.drawText ("CEILING " + dbText (param (proc, id::ceiling)).replace ("-", u8 ("−")),
                 juce::Rectangle<float> (x0 + 6.0f, yPos - 13.0f, 120.0f, 11.0f), juce::Justification::centredLeft);
 
     // escala acompanha os picos devagar (sem pular a cada frame)
@@ -213,7 +213,7 @@ void CurveView::paint (juce::Graphics& g)
         s.append (b, theme::mono (10.5f), theme::cream);
         return s;
     };
-    auto sl = line ("TETO ", dbText (param (proc, id::ceiling)).replace ("-", u8 ("−")));
+    auto sl = line ("CEILING ", dbText (param (proc, id::ceiling)).replace ("-", u8 ("−")));
     auto sr = line ("CORTE ", cut > 0.05f ? u8 ("−") + juce::String (cut, 1).replaceCharacter ('.', ',') + " dB" : juce::String ("0,0 dB"));
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
@@ -264,7 +264,7 @@ void StatsView::paint (juce::Graphics& g)
     g.drawText (dbTxt (cutNow), juce::Rectangle<float> (0.0f, 14.0f, W, 36.0f), juce::Justification::centredLeft);
     bar (cutNow / 12.0f, 56.0f, theme::coral);
 
-    label (u8 ("MÁXIMO (3 s)"), 78.0f);
+    label ("MAX (3 s)", 78.0f);
     value (dbTxt (cutMax), 78.0f, cutMax > 0.05f ? theme::coral : theme::dim);
     bar (cutMax / 12.0f, 94.0f, theme::coral.withAlpha (0.6f));
 
@@ -272,17 +272,17 @@ void StatsView::paint (juce::Graphics& g)
     value (juce::String (juce::roundToInt (shareSm * 100.0f)) + "%", 116.0f, theme::cream);
     bar (shareSm, 132.0f, theme::amber);
 
-    label (u8 ("PICO DEPOIS DA PRESSÃO"), 154.0f);
+    label (u8 ("PEAK PÓS-DRIVE"), 154.0f);
     value (dbfs (pkIn), 154.0f, theme::cream);
     bar (juce::jmap (juce::Decibels::gainToDecibels (pkIn, -48.0f), -48.0f, 12.0f, 0.0f, 1.0f), 170.0f, theme::cream.withAlpha (0.7f));
 
-    label (u8 ("PICO NA SAÍDA"), 192.0f);
+    label ("OUTPUT PEAK", 192.0f);
     value (dbfs (pkOut), 192.0f, theme::cream);
     bar (juce::jmap (juce::Decibels::gainToDecibels (pkOut, -48.0f), -48.0f, 12.0f, 0.0f, 1.0f), 208.0f, theme::cream.withAlpha (0.7f));
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (10.5f));
-    g.drawFittedText (u8 ("O pico na saída pode passar um pouco do TETO entre amostras (filtro do oversampling)."),
+    g.drawFittedText (u8 ("O pico na saída pode passar um pouco do CEILING entre amostras (filtro do oversampling)."),
                       juce::Rectangle<int> (0, 232, (int) W, 40), juce::Justification::topLeft, 3);
 }
 
@@ -292,12 +292,12 @@ void StatsView::paint (juce::Graphics& g)
 NavalhaEditor::NavalhaEditor (NavalhaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), curve (p),
       // cor do knob = cor do que ele mexe no desenho
-      driveMacro (p.apvts, id::drive,   u8 ("PRESSÃO"), true,  theme::coral),
-      ceiling    (p.apvts, id::ceiling, "TETO",         false, theme::amber),
-      knee       (p.apvts, id::knee,    "SUAVIDADE",    false, theme::cream),
-      asym       (p.apvts, id::asym,    "ASSIMETRIA",   false, theme::ice),
+      driveMacro (p.apvts, id::drive,   "DRIVE",      true,  theme::coral),
+      ceiling    (p.apvts, id::ceiling, "CEILING",      false, theme::amber),
+      knee       (p.apvts, id::knee,    "KNEE",         false, theme::cream),
+      asym       (p.apvts, id::asym,    "ASYMMETRY",    false, theme::ice),
       link       (p.apvts, id::link,    "LINK L/R",     false, theme::cream),
-      output     (p.apvts, id::output,  "GANHO",        false, theme::cream),
+      output     (p.apvts, id::output,  "GAIN",         false, theme::cream),
       mix        (p.apvts, id::mix),
       deltaKey   (u8 ("SÓ O CORTE"), theme::coral)
 {
@@ -503,7 +503,7 @@ void NavalhaEditor::drawCanvas (juce::Graphics& g)
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
@@ -517,13 +517,13 @@ void NavalhaEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 552.0f, 216.0f, 258.0f, 352.0f });
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
-    drawTitle (g, 22.0f,  226.0f, "CURVA ", u8 ("· ENTRADA × SAÍDA"));
+    drawTitle (g, 22.0f,  226.0f, "CURVA ", u8 ("· INPUT × OUTPUT"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "CORTE");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), u8 ("ANÁLISE"));
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, u8 ("MACRO PRESSÃO"),
-              u8 ("Quanto o som é empurrado contra o TETO. O que passa dele vira coral na forma de onda."));
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO DRIVE",
+              u8 ("Quanto o som é empurrado contra o CEILING. O que passa dele vira coral na forma de onda."));
 }
 
 void NavalhaEditor::layoutCanvas()

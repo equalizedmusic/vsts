@@ -152,7 +152,7 @@ void StepGrid::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "PASSOS ", u8 ("·"));
+    drawTitle (g, 12.0f, 7.0f, "STEPS ", u8 ("·"));
 
     // abas: VOLUME · PAN · FILTRO
     for (int i = 0; i < numLanes; ++i)
@@ -170,7 +170,7 @@ void StepGrid::paint (juce::Graphics& g)
     {
         juce::AttributedString a;
         a.append (divNames[juce::jlimit (0, numDivs - 1, juce::roundToInt (param (proc, id::div)))], theme::mono (10.0f), theme::cream);
-        a.append (u8 (" · ") + juce::String (len) + " PASSOS", theme::mono (10.0f), theme::dim);
+        a.append (u8 (" · ") + juce::String (len) + " STEPS", theme::mono (10.0f), theme::dim);
         if (held) a.append (u8 (" · PRESO NO ") + juce::String (now + 1), theme::mono (10.0f), theme::coral);
         a.setJustification (juce::Justification::centredRight);
         a.draw (g, { W - 400.0f, 6.0f, 388.0f, 14.0f });
@@ -366,7 +366,7 @@ void SliceView::paint (juce::Graphics& g)
         g.drawText (juce::String (now + 1), juce::Rectangle<float> (cx - 40.0f, cy - 16.0f, 80.0f, 24.0f), juce::Justification::centred);
         g.setColour (theme::dim);
         g.setFont (theme::sans (8.5f, true, 0.15f));
-        g.drawText (held ? "PRESO" : "PASSO", juce::Rectangle<float> (cx - 40.0f, cy + 8.0f, 80.0f, 12.0f), juce::Justification::centred);
+        g.drawText (held ? "PRESO" : "STEP", juce::Rectangle<float> (cx - 40.0f, cy + 8.0f, 80.0f, 12.0f), juce::Justification::centred);
     }
 
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -378,7 +378,7 @@ void SliceView::paint (juce::Graphics& g)
     };
     const float gn = proc.engine.gainNow.load();
     auto sl = line ("SWING ", juce::String (juce::roundToInt (param (proc, id::swing))) + "%");
-    auto sr = line ("GANHO ", gn < 0.001f ? juce::String (u8 ("−∞")) : dbText (juce::Decibels::gainToDecibels (gn)));
+    auto sr = line ("GAIN ", gn < 0.001f ? juce::String (u8 ("−∞")) : dbText (juce::Decibels::gainToDecibels (gn)));
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
     sl.draw (g, { 0.0f, S + 8.0f, S, 14.0f });
@@ -391,17 +391,17 @@ void SliceView::paint (juce::Graphics& g)
 PicoteEditor::PicoteEditor (PicoteProcessor& p)
     : AudioProcessorEditor (&p), proc (p), grid (p), slice (p),
       // cor do knob = cor do que ele mexe no desenho
-      depthMacro (p.apvts, id::depth,    "PROFUNDIDADE", true,  theme::amber),
+      depthMacro (p.apvts, id::depth,    "DEPTH",        true,  theme::amber),
       division   (p.apvts, id::div,      u8 ("DIVISÃO"), false, theme::cream),
-      length     (p.apvts, id::length,   "PASSOS",       false, theme::cream),
+      length     (p.apvts, id::length,   "STEPS",        false, theme::cream),
       swing      (p.apvts, id::swing,    "SWING",        false, theme::cream),
       offset     (p.apvts, id::offset,   "DESLOCAR",     false, theme::cream),
-      widthMacro (p.apvts, id::width,    "LARGURA",      true,  theme::amber),
-      attack     (p.apvts, id::attack,   "ATAQUE",       false, theme::amber),
-      release    (p.apvts, id::release,  "SOLTURA",      false, theme::amber),
-      filtType   (p.apvts, id::filtType, "FILTRO",       false, theme::coral),
-      reso       (p.apvts, id::reso,     "RESSON.",      false, theme::coral),
-      output     (p.apvts, id::output,   "GANHO",        false, theme::cream),
+      widthMacro (p.apvts, id::width,    "WIDTH",        true,  theme::amber),
+      attack     (p.apvts, id::attack,   "ATTACK",       false, theme::amber),
+      release    (p.apvts, id::release,  "RELEASE",      false, theme::amber),
+      filtType   (p.apvts, id::filtType, "FILTER",       false, theme::coral),
+      reso       (p.apvts, id::reso,     "RESONANCE",    false, theme::coral),
+      output     (p.apvts, id::output,   "GAIN",         false, theme::cream),
       mix        (p.apvts, id::mix),
       shuffleKey ("EMBARALHAR", theme::violet),
       holdKey    ("PRENDER", theme::coral)
@@ -587,7 +587,7 @@ void PicoteEditor::drawCanvas (juce::Graphics& g)
         g.fillRoundedRectangle (x, 34.0f - h * 0.5f, 3.2f, h, 1.0f);
     }
 
-    const float brandEnd = drawBrand (g, "PICOTE", "RHYTHMIC GATE", u8 ("16 PASSOS NO GRID"));
+    const float brandEnd = drawBrand (g, "PICOTE", "RHYTHMIC GATE", "16-STEP GRID");
     drawSync (g, proc.shownBpm.load(), proc.synced.load(), proc.waiting.load(), brandEnd);
 
     // ---- cards ----
@@ -596,14 +596,14 @@ void PicoteEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 552.0f, 216.0f, 258.0f, 352.0f });
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
-    drawTitle (g, 22.0f,  226.0f, "FATIA ", u8 ("· UM PASSO"));
+    drawTitle (g, 22.0f,  226.0f, "FATIA ", u8 ("· 1 STEP"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "GRADE");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "FORMA");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO PROFUND.",
-              u8 ("Quanto o som fecha entre um golpe e outro. Em 0%, só o pan e o filtro trabalham."));
-    drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO LARGURA",
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO DEPTH",
+              u8 ("Quanto o som fecha entre um golpe e outro. Em 0%, só o PAN e o FILTER trabalham."));
+    drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO WIDTH",
               u8 ("Quanto de cada passo fica aberto: curto é picado seco, 100% só respira."));
 }
 

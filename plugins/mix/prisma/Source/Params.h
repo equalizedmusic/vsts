@@ -29,8 +29,8 @@ namespace id
 }
 
 // nomes das bandas (UTF-8; passar por u8)
-inline const char* const bandNames[numBands] = { "GRAVES", "MÉDIO-GRAVES", "MÉDIO-AGUDOS", "AGUDOS" };
-inline const char* const bandHost[numBands]  = { "Graves", "Médio-graves", "Médio-agudos", "Agudos" };
+inline const char* const bandNames[numBands] = { "LOW", "LOW-MID", "HIGH-MID", "HIGH" };
+inline const char* const bandHost[numBands]  = { "Low", "Low-mid", "High-mid", "High" };
 inline const float xoverDefaults[3] = { 120.0f, 1000.0f, 6000.0f };
 
 // botões de performance: os presets não mexem neles
@@ -92,25 +92,25 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     for (int b = 0; b < numBands; ++b)
     {
         const String band = " " + u8 (bandHost[b]);
-        add (id::thr[b],   "Limiar" + band,       { -60.0f, 0.0f }, 0.0f, db);
-        add (id::ratio[b], u8 ("Razão") + band,   ratioRange, 2.0f, rt);
-        add (id::att[b],   "Ataque" + band,       attRange, 10.0f, ms);
-        add (id::rel[b],   "Soltura" + band,      relRange, 150.0f, ms);
+        add (id::thr[b],   "Threshold" + band,    { -60.0f, 0.0f }, 0.0f, db);
+        add (id::ratio[b], "Ratio" + band,        ratioRange, 2.0f, rt);
+        add (id::att[b],   "Attack" + band,       attRange, 10.0f, ms);
+        add (id::rel[b],   "Release" + band,      relRange, 150.0f, ms);
         add (id::drive[b], "Drive" + band,        { 0.0f, 24.0f }, 0.0f, db);
-        add (id::gain[b],  "Ganho" + band,        { -18.0f, 18.0f }, 0.0f, db);
+        add (id::gain[b],  "Gain" + band,         { -18.0f, 18.0f }, 0.0f, db);
     }
     for (int k = 0; k < 3; ++k)
-        add (id::xover[k], "Corte " + String (k + 1), hzRange, xoverDefaults[k], hz);
+        add (id::xover[k], "Crossover " + String (k + 1), hzRange, xoverDefaults[k], hz);
 
     add (id::macro,  "Macro", { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::mix,    "Mix",   { 0.0f, 100.0f }, 100.0f, pct);
-    add (id::output, u8 ("Ganho de saída"), { -24.0f, 12.0f }, 0.0f, db);
+    add (id::mix,    "Dry/Wet", { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::output, "Output gain", { -24.0f, 12.0f }, 0.0f, db);
 
     for (int b = 0; b < numBands; ++b)
     {
         const String band = " " + u8 (bandHost[b]);
         layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::solo[b], 1 }, "Solo" + band, false));
-        layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mute[b], 1 }, "Mudo" + band, false));
+        layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mute[b], 1 }, "Mute" + band, false));
     }
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;

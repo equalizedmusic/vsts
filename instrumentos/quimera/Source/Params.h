@@ -64,24 +64,24 @@ inline juce::String tableGroup (int i)
 
 // warp do oscilador (quantidade em oNwamt, 0–100)
 inline constexpr int numWarps = 11;
-inline const char* const warpNames[numWarps] = { "Nenhum", "Sync", "Dobra +", "Dobra -", "PWM", "Espelho",
-                                                 "Dobrar", "Quantizar", "FM", "RM", "Assimetria" };
+inline const char* const warpNames[numWarps] = { "Off", "Sync", "Bend +", "Bend -", "PWM", "Mirror",
+                                                 "Fold", "Quantize", "FM", "RM", "Asym" };
 // FM e RM: o modulador é o oscilador anterior (osc 1 ← osc 3, osc 2 ← osc 1, osc 3 ← osc 2)
 
-inline const char* const routeNames[4] = { "Filtro A", "Filtro B", "A + B", "Direto" };
+inline const char* const routeNames[4] = { "Filter A", "Filter B", "A + B", "Direct" };
 
 inline constexpr int numFilterTypes = 8;
-inline const char* const filterNames[numFilterTypes] = { "Ladder 24", "Ladder 12", "PB 12", "PA 12", "PF 12",
-                                                         "Rejeita", "Pente", "Formante" };
+inline const char* const filterNames[numFilterTypes] = { "Ladder 24", "Ladder 12", "LP 12", "HP 12", "BP 12",
+                                                         "Notch", "Comb", "Formant" };
 
-inline const char* const subWaveNames[3] = { "Seno", "Triangulo", "Quadrada" };
-inline const char* const polyNames[3]    = { "Poli", "Mono", "Legato" };
+inline const char* const subWaveNames[3] = { "Sine", "Triangle", "Square" };
+inline const char* const polyNames[3]    = { "Poly", "Mono", "Legato" };
 
 inline constexpr int numLfoShapes = 7;
-inline const char* const lfoShapeNames[numLfoShapes] = { "Seno", "Triangulo", "Serra Desce", "Serra Sobe",
-                                                         "Quadrada", "S&H", "Aleatorio Suave" };
-// Livre = corre solto; Por nota = reinicia a cada nota; Envelope = uma volta só e para
-inline const char* const lfoModeNames[3] = { "Livre", "Por nota", "Envelope" };
+inline const char* const lfoShapeNames[numLfoShapes] = { "Sine", "Triangle", "Saw Down", "Saw Up",
+                                                         "Square", "S&H", "Smooth Random" };
+// Free = corre solto; Retrig = reinicia a cada nota; Envelope = uma volta só e para
+inline const char* const lfoModeNames[3] = { "Free", "Retrig", "Envelope" };
 
 // divisões do grid do host (em semínimas) — iguais às dos outros plugins da casa
 inline constexpr int numDivs = 14;
@@ -95,8 +95,8 @@ inline constexpr double divBeats[numDivs] = { 0.125, 1.0 / 6.0, 0.25, 1.0 / 3.0,
 // slide 0..1 (MPE CC74); bend −1..1; aleatório por nota −1..1 (sorteado no note-on); macros 0..1.
 enum Src { srcNone, srcEnv1, srcEnv2, srcEnv3, srcLfo1, srcLfo2, srcVel, srcNote, srcWheel, srcPressure,
            srcSlide, srcBend, srcRandom, srcMacro1, srcMacro2, srcMacro3, srcMacro4, numSrcs };
-inline const char* const srcNames[numSrcs] = { "-", "Env 1", "Env 2", "Env 3", "LFO 1", "LFO 2", "Velocidade", "Nota",
-                                               "Mod Wheel", "Pressao", "Slide", "Bend", "Aleatorio",
+inline const char* const srcNames[numSrcs] = { "-", "Env 1", "Env 2", "Env 3", "LFO 1", "LFO 2", "Velocity", "Note",
+                                               "Mod Wheel", "Pressure", "Slide", "Bend", "Random",
                                                "Macro 1", "Macro 2", "Macro 3", "Macro 4" };
 
 // Destinos e escala (quantidade ±100% × fonte):
@@ -112,28 +112,29 @@ enum Dst { dstNone,
            dstAmp, dstPan, dstLfo1Rate, dstLfo2Rate, dstDetune, numDsts };
 // destino do osc n (0..2): dstO1Pitch + n * 5 + {0 altura, 1 posição, 2 warp, 3 volume, 4 pan}
 inline const char* const dstNames[numDsts] = { "-",
-    "Osc 1 Altura", "Osc 1 Posicao", "Osc 1 Warp", "Osc 1 Volume", "Osc 1 Pan",
-    "Osc 2 Altura", "Osc 2 Posicao", "Osc 2 Warp", "Osc 2 Volume", "Osc 2 Pan",
-    "Osc 3 Altura", "Osc 3 Posicao", "Osc 3 Warp", "Osc 3 Volume", "Osc 3 Pan",
-    "Altura (todos)", "Sub Volume", "Ruido Volume",
-    "Filtro A Corte", "Filtro A Resson.", "Filtro A Drive", "Filtro B Corte", "Filtro B Resson.", "Filtro B Drive",
-    "Volume", "Pan", "LFO 1 Vel.", "LFO 2 Vel.", "Unissono Detune" };
+    "Osc 1 Pitch", "Osc 1 Position", "Osc 1 Warp", "Osc 1 Level", "Osc 1 Pan",
+    "Osc 2 Pitch", "Osc 2 Position", "Osc 2 Warp", "Osc 2 Level", "Osc 2 Pan",
+    "Osc 3 Pitch", "Osc 3 Position", "Osc 3 Warp", "Osc 3 Level", "Osc 3 Pan",
+    "Pitch (All)", "Sub Level", "Noise Level",
+    "Filter A Cutoff", "Filter A Res", "Filter A Drive", "Filter B Cutoff", "Filter B Res", "Filter B Drive",
+    "Volume", "Pan", "LFO 1 Rate", "LFO 2 Rate", "Unison Detune" };
 
-// ---------------- efeitos (ordem fixa: HIPER → DISTORÇÃO → PHASER → CHORUS → DELAY → REVERB → EQ → COMPRESSOR) ----------------
-inline const char* const distNames[6]   = { "Valvula", "Duro", "Dobra", "Bitcrush", "Downsample", "Assimetrico" };
-inline const char* const reverbNames[3] = { "Sala", "Placa", "Hall" };
-inline const char* const compNames[2]   = { "Simples", "Multibanda" };   // multibanda = 3 bandas, sobe e desce (estilo OTT)
+// ---------------- efeitos (ordem fixa: HYPER → DISTORTION → PHASER → CHORUS → DELAY → REVERB → EQ → COMPRESSOR) ----------------
+inline const char* const distNames[6]   = { "Tube", "Hard Clip", "Fold", "Bitcrush", "Downsample", "Asym" };
+inline const char* const reverbNames[3] = { "Room", "Plate", "Hall" };
+inline const char* const compNames[2]   = { "Single", "Multiband" };   // multiband = 3 bandas, sobe e desce (estilo OTT)
 
 // ---------------- categorias dos presets ----------------
+// (o preset guarda o ÍNDICE da categoria; o nome só aparece no menu)
 inline constexpr int numCategories = 9;
-inline const char* const categoryNames[numCategories] = { "BAIXO", "LEAD", "PLUCK", "PAD", "ATMOS", "PERC",
-                                                          "BATERIA", "TECLAS", "FX" };
+inline const char* const categoryNames[numCategories] = { "BASS", "LEAD", "PLUCK", "PAD", "ATMOS", "PERC",
+                                                          "DRUMS", "KEYS", "FX" };
 
 // ---------------- ids ----------------
 // Osc n = 1..3:  o<n>on o<n>tab o<n>pos o<n>warp o<n>wamt o<n>oct o<n>semi o<n>fine o<n>lvl o<n>pan
 //                o<n>uni o<n>det o<n>wid o<n>rand o<n>rt
 // Filtro A/B:    fa.. / fb..: on type cut res drv key env mix   (ex.: "facut", "fbres")
-// Env n = 1..3:  e<n>a e<n>d e<n>s e<n>r e<n>c       (1 = VOLUME, 2 = FILTRO, 3 = MOD)
+// Env n = 1..3:  e<n>a e<n>d e<n>s e<n>r e<n>c       (1 = VOLUME, 2 = FILTER, 3 = MOD)
 // LFO n = 1..2:  l<n>shape l<n>sync l<n>rate l<n>div l<n>mode l<n>rise
 // Matriz 01..16: m<nn>src m<nn>dst m<nn>amt
 inline juce::String oscId (int osc, const char* field)    { return "o" + juce::String (osc + 1) + field; }
@@ -242,7 +243,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto semis  = [] (float v, int) { const int r = roundToInt (v); return (r > 0 ? "+" : "") + String (r) + " st"; };
     auto cents  = [] (float v, int) { const int r = roundToInt (v); return (r > 0 ? "+" : "") + String (r) + " ct"; };
     auto ms     = [] (float v, int) { return msText (v); };
-    auto pan    = [] (float v, int) { const int r = roundToInt (v); return r == 0 ? String ("C") : r < 0 ? "E" + String (-r) : "D" + String (r); };
+    auto pan    = [] (float v, int) { const int r = roundToInt (v); return r == 0 ? String ("C") : r < 0 ? "L" + String (-r) : "R" + String (r); };
 
     NormalisableRange<float> cutRange (20.0f, 20000.0f);
     cutRange.setSkewForCentre (900.0f);
@@ -263,59 +264,59 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     {
         const String n = "Osc " + String (o + 1) + " ";
         toggle (oscId (o, "on"),   n + "Ligado", o == 0);
-        choice (oscId (o, "tab"),  n + "Tabela", tables, o == 0 ? 0 : o == 1 ? 5 : 12);
-        add (oscId (o, "pos"),     n + u8 ("Posição"), { 0.0f, 100.0f }, o == 0 ? 66.7f : 0.0f, pct);
+        choice (oscId (o, "tab"),  n + "Wavetable", tables, o == 0 ? 0 : o == 1 ? 5 : 12);
+        add (oscId (o, "pos"),     n + "Position", { 0.0f, 100.0f }, o == 0 ? 66.7f : 0.0f, pct);
         choice (oscId (o, "warp"), n + "Warp", toArray (warpNames, numWarps), 0);
-        add (oscId (o, "wamt"),    n + "Warp Quant.", { 0.0f, 100.0f }, 0.0f, pct);
-        add (oscId (o, "oct"),     n + "Oitava", { -3.0f, 3.0f, 1.0f }, 0.0f,
+        add (oscId (o, "wamt"),    n + "Warp Amount", { 0.0f, 100.0f }, 0.0f, pct);
+        add (oscId (o, "oct"),     n + "Octave", { -3.0f, 3.0f, 1.0f }, 0.0f,
              [] (float v, int) { const int r = roundToInt (v); return (r > 0 ? "+" : "") + String (r); });
-        add (oscId (o, "semi"),    n + "Semitom", { -12.0f, 12.0f, 1.0f }, 0.0f, semis);
-        add (oscId (o, "fine"),    n + "Fino", { -100.0f, 100.0f }, 0.0f, cents);
-        add (oscId (o, "lvl"),     n + "Volume", { 0.0f, 100.0f }, 75.0f, pct);
+        add (oscId (o, "semi"),    n + "Semi", { -12.0f, 12.0f, 1.0f }, 0.0f, semis);
+        add (oscId (o, "fine"),    n + "Fine", { -100.0f, 100.0f }, 0.0f, cents);
+        add (oscId (o, "lvl"),     n + "Level", { 0.0f, 100.0f }, 75.0f, pct);
         add (oscId (o, "pan"),     n + "Pan", { -100.0f, 100.0f }, 0.0f, pan);
-        add (oscId (o, "uni"),     n + u8 ("Uníssono"), { 1.0f, (float) maxUnison, 1.0f }, 1.0f,
+        add (oscId (o, "uni"),     n + "Unison", { 1.0f, (float) maxUnison, 1.0f }, 1.0f,
              [] (float v, int) { return String (roundToInt (v)) + "x"; });
         add (oscId (o, "det"),     n + "Detune", { 0.0f, 100.0f }, 25.0f, pct);
-        add (oscId (o, "wid"),     n + "Abertura", { 0.0f, 100.0f }, 70.0f, pct);
-        add (oscId (o, "rand"),    n + "Fase Aleat.", { 0.0f, 100.0f }, 100.0f, pct);
-        choice (oscId (o, "rt"),   n + "Destino", toArray (routeNames, 4), 0);
+        add (oscId (o, "wid"),     n + "Width", { 0.0f, 100.0f }, 70.0f, pct);
+        add (oscId (o, "rand"),    n + "Random Phase", { 0.0f, 100.0f }, 100.0f, pct);
+        choice (oscId (o, "rt"),   n + "Output", toArray (routeNames, 4), 0);
     }
 
     toggle (id::subOn, "Sub Ligado", false);
-    choice (id::subWave, "Sub Onda", toArray (subWaveNames, 3), 0);
-    choice (id::subOct, "Sub Oitava", { "-1", "-2" }, 0);
-    add (id::subLvl, "Sub Volume", { 0.0f, 100.0f }, 50.0f, pct);
-    choice (id::subRt, "Sub Destino", toArray (routeNames, 4), 0);
+    choice (id::subWave, "Sub Waveform", toArray (subWaveNames, 3), 0);
+    choice (id::subOct, "Sub Octave", { "-1", "-2" }, 0);
+    add (id::subLvl, "Sub Level", { 0.0f, 100.0f }, 50.0f, pct);
+    choice (id::subRt, "Sub Output", toArray (routeNames, 4), 0);
 
-    toggle (id::noiseOn, u8 ("Ruído Ligado"), false);
-    add (id::noiseColor, u8 ("Ruído Cor"), { 0.0f, 100.0f }, 50.0f,
+    toggle (id::noiseOn, "Noise Ligado", false);
+    add (id::noiseColor, "Noise Cor", { 0.0f, 100.0f }, 50.0f,
          [] (float v, int) { return v < 33.0f ? String ("Escuro") : v < 66.0f ? String ("Branco") : String ("Brilhante"); });
-    add (id::noiseLvl, u8 ("Ruído Volume"), { 0.0f, 100.0f }, 30.0f, pct);
-    choice (id::noiseRt, u8 ("Ruído Destino"), toArray (routeNames, 4), 0);
+    add (id::noiseLvl, "Noise Level", { 0.0f, 100.0f }, 30.0f, pct);
+    choice (id::noiseRt, "Noise Output", toArray (routeNames, 4), 0);
 
     // ---- filtros: A ladder 24 aberto, B desligado ----
     for (int f = 0; f < numFilters; ++f)
     {
-        const String n = String ("Filtro ") + (f == 0 ? "A " : "B ");
+        const String n = String ("Filter ") + (f == 0 ? "A " : "B ");
         toggle (filterId (f, "on"),   n + "Ligado", f == 0);
         choice (filterId (f, "type"), n + "Tipo", toArray (filterNames, numFilterTypes), f == 0 ? 0 : 3);
-        add (filterId (f, "cut"),     n + "Corte", cutRange, f == 0 ? 6000.0f : 120.0f, [] (float v, int) { return hzText (v); });
-        add (filterId (f, "res"),     n + u8 ("Ressonância"), { 0.0f, 100.0f }, 15.0f, pct);
+        add (filterId (f, "cut"),     n + "Cutoff", cutRange, f == 0 ? 6000.0f : 120.0f, [] (float v, int) { return hzText (v); });
+        add (filterId (f, "res"),     n + "Resonance", { 0.0f, 100.0f }, 15.0f, pct);
         add (filterId (f, "drv"),     n + "Drive", { 0.0f, 100.0f }, 0.0f, pct);
         add (filterId (f, "key"),     n + "Key Track", { 0.0f, 100.0f }, 0.0f, pct);
         add (filterId (f, "env"),     n + "Env 2", { -100.0f, 100.0f }, 0.0f, spct);   // ±7 oitavas
-        add (filterId (f, "mix"),     n + "Mix", { 0.0f, 100.0f }, 100.0f, pct);
+        add (filterId (f, "mix"),     n + "Dry/Wet", { 0.0f, 100.0f }, 100.0f, pct);
     }
-    toggle (id::filterSerial, u8 ("Filtros em Série"), false);
+    toggle (id::filterSerial, "Filters Serial", false);
 
     // ---- envelopes ----
     for (int e = 0; e < numEnvs; ++e)
     {
         const String n = "Env " + String (e + 1) + " ";
-        add (envId (e, "a"), n + "Ataque",   timeRange, e == 0 ? 2.0f : 1.0f, ms);
-        add (envId (e, "d"), n + "Decaimento", timeRange, e == 0 ? 300.0f : 600.0f, ms);
+        add (envId (e, "a"), n + "Attack",   timeRange, e == 0 ? 2.0f : 1.0f, ms);
+        add (envId (e, "d"), n + "Decay",    timeRange, e == 0 ? 300.0f : 600.0f, ms);
         add (envId (e, "s"), n + "Sustain",  { 0.0f, 100.0f }, e == 0 ? 100.0f : 0.0f, pct);
-        add (envId (e, "r"), n + "Soltura",  timeRange, e == 0 ? 180.0f : 300.0f, ms);
+        add (envId (e, "r"), n + "Release",  timeRange, e == 0 ? 180.0f : 300.0f, ms);
         add (envId (e, "c"), n + "Curva",    { -100.0f, 100.0f }, 0.0f, spct);   // − = rápida no começo (exponencial)
     }
 
@@ -323,32 +324,32 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     for (int l = 0; l < numLfos; ++l)
     {
         const String n = "LFO " + String (l + 1) + " ";
-        choice (lfoId (l, "shape"), n + "Forma", toArray (lfoShapeNames, numLfoShapes), 0);
+        choice (lfoId (l, "shape"), n + "Shape", toArray (lfoShapeNames, numLfoShapes), 0);
         toggle (lfoId (l, "sync"),  n + "Sync", true);
-        add (lfoId (l, "rate"),     n + "Velocidade", rateRange, 2.0f, [] (float v, int) { return num1 (v) + " Hz"; });
-        choice (lfoId (l, "div"),   n + u8 ("Divisão"), divs, 8);
+        add (lfoId (l, "rate"),     n + "Rate", rateRange, 2.0f, [] (float v, int) { return num1 (v) + " Hz"; });
+        choice (lfoId (l, "div"),   n + "Division", divs, 8);
         choice (lfoId (l, "mode"),  n + "Modo", toArray (lfoModeNames, 3), 1);
-        add (lfoId (l, "rise"),     n + "Subida", { 0.0f, 5000.0f }, 0.0f, ms);
+        add (lfoId (l, "rise"),     n + "Rise", { 0.0f, 5000.0f }, 0.0f, ms);
     }
 
     // ---- matriz ----
     for (int s = 0; s < numSlots; ++s)
     {
         const String n = "Mod " + String (s + 1).paddedLeft ('0', 2) + " ";
-        choice (slotId (s, "src"), n + "Fonte", toArray (srcNames, numSrcs), 0);
-        choice (slotId (s, "dst"), n + "Destino", toArray (dstNames, numDsts), 0);
-        add (slotId (s, "amt"),    n + "Quantidade", { -100.0f, 100.0f }, 0.0f, spct);
+        choice (slotId (s, "src"), n + "Source", toArray (srcNames, numSrcs), 0);
+        choice (slotId (s, "dst"), n + "Dest", toArray (dstNames, numDsts), 0);
+        add (slotId (s, "amt"),    n + "Amount", { -100.0f, 100.0f }, 0.0f, spct);
     }
     for (int m = 0; m < numMacros; ++m)
         add (macroId (m), "Macro " + String (m + 1), { 0.0f, 100.0f }, 0.0f, pct);
 
     // ---- voz ----
     choice (id::polyMode, "Modo", toArray (polyNames, 3), 0);
-    add (id::voices, "Vozes", { 1.0f, (float) maxVoices, 1.0f }, 8.0f, [] (float v, int) { return String (roundToInt (v)); });
+    add (id::voices, "Voices", { 1.0f, (float) maxVoices, 1.0f }, 8.0f, [] (float v, int) { return String (roundToInt (v)); });
     add (id::glide, "Glide", glideRange, 0.0f, ms);
     add (id::bend, "Bend", { 1.0f, 24.0f, 1.0f }, 2.0f, semis);
-    add (id::drift, u8 ("Deriva Analógica"), { 0.0f, 100.0f }, 15.0f, pct);
-    add (id::velAmp, "Velocidade no Volume", { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::drift, "Analog Drift", { 0.0f, 100.0f }, 15.0f, pct);
+    add (id::velAmp, "Velocity to Volume", { 0.0f, 100.0f }, 50.0f, pct);
     add (id::volume, "Volume", { -36.0f, 6.0f }, -6.0f, [] (float v, int) { return dbText (v); });
 
     toggle (id::mpe, "MPE", false);
@@ -356,52 +357,52 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     toggle (id::hold, "Segurar", false);
 
     // ---- efeitos (desligados no Init) ----
-    toggle (id::hypOn, "Hiper Ligado", false);
-    add (id::hypRate, "Hiper Velocidade", { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::hypDetune, "Hiper Detune", { 0.0f, 100.0f }, 35.0f, pct);
-    add (id::hypMix, "Hiper Mix", { 0.0f, 100.0f }, 50.0f, pct);
+    toggle (id::hypOn, "Hyper Ligado", false);
+    add (id::hypRate, "Hyper Rate", { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::hypDetune, "Hyper Detune", { 0.0f, 100.0f }, 35.0f, pct);
+    add (id::hypMix, "Hyper Dry/Wet", { 0.0f, 100.0f }, 50.0f, pct);
 
-    toggle (id::dstOn, u8 ("Distorção Ligada"), false);
-    choice (id::dstType, u8 ("Distorção Tipo"), toArray (distNames, 6), 0);
-    add (id::dstDrive, u8 ("Distorção Drive"), { 0.0f, 100.0f }, 30.0f, pct);
-    add (id::dstTone, u8 ("Distorção Tom"), { 0.0f, 100.0f }, 60.0f, pct);
-    add (id::dstMix, u8 ("Distorção Mix"), { 0.0f, 100.0f }, 100.0f, pct);
+    toggle (id::dstOn, "Distortion Ligado", false);
+    choice (id::dstType, "Distortion Tipo", toArray (distNames, 6), 0);
+    add (id::dstDrive, "Distortion Drive", { 0.0f, 100.0f }, 30.0f, pct);
+    add (id::dstTone, "Distortion Tone", { 0.0f, 100.0f }, 60.0f, pct);
+    add (id::dstMix, "Distortion Dry/Wet", { 0.0f, 100.0f }, 100.0f, pct);
 
     toggle (id::phsOn, "Phaser Ligado", false);
-    add (id::phsRate, "Phaser Velocidade", rateRange, 0.4f, [] (float v, int) { return num1 (v) + " Hz"; });
-    add (id::phsDepth, "Phaser Profundidade", { 0.0f, 100.0f }, 60.0f, pct);
-    add (id::phsFb, "Phaser Realim.", { 0.0f, 95.0f }, 40.0f, pct);
-    add (id::phsMix, "Phaser Mix", { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::phsRate, "Phaser Rate", rateRange, 0.4f, [] (float v, int) { return num1 (v) + " Hz"; });
+    add (id::phsDepth, "Phaser Depth", { 0.0f, 100.0f }, 60.0f, pct);
+    add (id::phsFb, "Phaser Feedback", { 0.0f, 95.0f }, 40.0f, pct);
+    add (id::phsMix, "Phaser Dry/Wet", { 0.0f, 100.0f }, 50.0f, pct);
 
     toggle (id::choOn, "Chorus Ligado", false);
-    add (id::choRate, "Chorus Velocidade", rateRange, 0.6f, [] (float v, int) { return num1 (v) + " Hz"; });
-    add (id::choDepth, "Chorus Profundidade", { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::choMix, "Chorus Mix", { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::choRate, "Chorus Rate", rateRange, 0.6f, [] (float v, int) { return num1 (v) + " Hz"; });
+    add (id::choDepth, "Chorus Depth", { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::choMix, "Chorus Dry/Wet", { 0.0f, 100.0f }, 40.0f, pct);
 
     toggle (id::dlyOn, "Delay Ligado", false);
-    choice (id::dlyDiv, u8 ("Delay Divisão"), divs, 7);
-    add (id::dlyFb, "Delay Realim.", { 0.0f, 95.0f }, 35.0f, pct);
+    choice (id::dlyDiv, "Delay Division", divs, 7);
+    add (id::dlyFb, "Delay Feedback", { 0.0f, 95.0f }, 35.0f, pct);
     toggle (id::dlyPing, "Delay Ping-Pong", true);
-    add (id::dlyTone, "Delay Tom", { 0.0f, 100.0f }, 55.0f, pct);
-    add (id::dlyMix, "Delay Mix", { 0.0f, 100.0f }, 25.0f, pct);
+    add (id::dlyTone, "Delay Tone", { 0.0f, 100.0f }, 55.0f, pct);
+    add (id::dlyMix, "Delay Dry/Wet", { 0.0f, 100.0f }, 25.0f, pct);
 
     toggle (id::revOn, "Reverb Ligado", false);
     choice (id::revType, "Reverb Tipo", toArray (reverbNames, 3), 1);
-    add (id::revSize, "Reverb Tamanho", { 0.0f, 100.0f }, 55.0f, pct);
+    add (id::revSize, "Reverb Size", { 0.0f, 100.0f }, 55.0f, pct);
     add (id::revDecay, "Reverb Decay", { 0.2f, 20.0f }, 2.5f, [] (float v, int) { return num1 (v) + " s"; });
-    add (id::revDamp, "Reverb Abafar", { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::revMix, "Reverb Mix", { 0.0f, 100.0f }, 25.0f, pct);
+    add (id::revDamp, "Reverb Damping", { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::revMix, "Reverb Dry/Wet", { 0.0f, 100.0f }, 25.0f, pct);
 
     toggle (id::eqOn, "EQ Ligado", false);
-    add (id::eqLow, "EQ Graves", { -18.0f, 18.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::eqMid, u8 ("EQ Médios"), { -18.0f, 18.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::eqMidF, u8 ("EQ Médios Freq."), midRange, 1000.0f, [] (float v, int) { return hzText (v); });
-    add (id::eqHigh, "EQ Agudos", { -18.0f, 18.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::eqLow, "EQ Low", { -18.0f, 18.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::eqMid, "EQ Mid", { -18.0f, 18.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::eqMidF, "EQ Mid Freq", midRange, 1000.0f, [] (float v, int) { return hzText (v); });
+    add (id::eqHigh, "EQ High", { -18.0f, 18.0f }, 0.0f, [] (float v, int) { return dbText (v); });
 
     toggle (id::cmpOn, "Compressor Ligado", false);
     choice (id::cmpMode, "Compressor Modo", toArray (compNames, 2), 0);
-    add (id::cmpAmt, "Compressor Quant.", { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::cmpMix, "Compressor Mix", { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::cmpAmt, "Compressor Amount", { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::cmpMix, "Compressor Dry/Wet", { 0.0f, 100.0f }, 100.0f, pct);
 
     return layout;
 }

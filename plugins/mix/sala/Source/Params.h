@@ -75,19 +75,19 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     StringArray syncs;
     for (auto* n : syncNames) syncs.add (n);
 
-    add (id::predelay,  u8 ("Pré-delay"),     { 0.0f, 250.0f }, 15.0f, [] (float v, int) { return msText (v); });
-    choice (id::preSync, u8 ("Pré no tempo"), syncs, 0);
-    add (id::size,      "Tamanho",            { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::predelay,  "Pre-delay",          { 0.0f, 250.0f }, 15.0f, [] (float v, int) { return msText (v); });
+    choice (id::preSync, "Pre-delay sync",    syncs, 0);
+    add (id::size,      "Size",               { 0.0f, 100.0f }, 50.0f, pct);
     add (id::decay,     "Decay",              skewed (0.2f, maxDecay, 2.0f), 1.6f, [] (float v, int) { return secText (v); });
-    add (id::diffusion, u8 ("Difusão"),       { 0.0f, 100.0f }, 75.0f, pct);
-    add (id::early,     u8 ("Reflexões"),     { 0.0f, 100.0f }, 50.0f, pct);
-    add (id::lowCut,    "Passa-altas",        skewed (20.0f, 1000.0f, 150.0f), 120.0f, [] (float v, int) { return hzText (v); });
-    add (id::highCut,   "Passa-baixas",       skewed (1000.0f, 20000.0f, 6000.0f), 12000.0f, [] (float v, int) { return hzText (v); });
-    add (id::damp,      "Amortecimento",      { 0.0f, 100.0f }, 35.0f, pct);
+    add (id::diffusion, "Diffusion",          { 0.0f, 100.0f }, 75.0f, pct);
+    add (id::early,     "Early reflections",  { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::lowCut,    "Low cut",            skewed (20.0f, 1000.0f, 150.0f), 120.0f, [] (float v, int) { return hzText (v); });
+    add (id::highCut,   "High cut",           skewed (1000.0f, 20000.0f, 6000.0f), 12000.0f, [] (float v, int) { return hzText (v); });
+    add (id::damp,      "Damping",            { 0.0f, 100.0f }, 35.0f, pct);
     add (id::duck,      "Duck",               { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::width,     "Largura",            { 0.0f, 150.0f }, 100.0f, pct);
-    add (id::output,    "Ganho",              { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Mix",                { 0.0f, 100.0f }, 25.0f, pct);
+    add (id::width,     "Width",              { 0.0f, 150.0f }, 100.0f, pct);
+    add (id::output,    "Gain",               { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,       "Dry/Wet",            { 0.0f, 100.0f }, 25.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::solo, 1 }, u8 ("Só a sala"), false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));

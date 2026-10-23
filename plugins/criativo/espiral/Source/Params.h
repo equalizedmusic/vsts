@@ -54,21 +54,21 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     NormalisableRange<float> centreRange (100.0f, 4000.0f);
     centreRange.setSkewForCentre (630.0f);
 
-    add (id::range,     "Faixa",            { 0.0f, 100.0f }, 60.0f,
-         [] (float v, int) { return String (rangeOctaves (v * 0.01f), 1) + " oit"; });
+    add (id::range,     "Range",            { 0.0f, 100.0f }, 60.0f,
+         [] (float v, int) { return String (rangeOctaves (v * 0.01f), 1) + " oct"; });
     choice (id::cycle,     "Ciclo",         { "1 tempo", "2 tempos", "1 comp", "2 comp", "4 comp", "8 comp", "16 comp" }, 3);
     choice (id::direction, u8 ("Direção"),  { "Sobe", "Desce", "Vai e volta" }, 0);
-    add (id::centre,    "Centro",           centreRange, 800.0f, [] (float v, int) { return hzText (v); });
-    add (id::stereo,    u8 ("Estéreo"),     { 0.0f, 100.0f }, 25.0f, pct);
-    add (id::resonance, u8 ("Ressonância"), { 0.0f, 100.0f }, 55.0f, pct);
+    add (id::centre,    "Center",           centreRange, 800.0f, [] (float v, int) { return hzText (v); });
+    add (id::stereo,    "Stereo",           { 0.0f, 100.0f }, 25.0f, pct);
+    add (id::resonance, "Resonance",        { 0.0f, 100.0f }, 55.0f, pct);
     choice (id::mode,      "Modo",          { "Phaser", "Flanger" }, 0);
-    choice (id::stages,    u8 ("Estágios"), { "4", "6", "8", "12" }, 2);
+    choice (id::stages,    "Stages",       { "4", "6", "8", "12" }, 2);
     add (id::drive,     "Drive",            { 0.0f, 100.0f }, 15.0f, pct);
-    add (id::tone,      "Tom",              { 0.0f, 100.0f }, 85.0f,
+    add (id::tone,      "Tone",             { 0.0f, 100.0f }, 85.0f,
          [] (float v, int) { return v >= 99.5f ? String ("aberto") : hzText (toneHz (v * 0.01f)); });
-    add (id::output,    "Ganho",            { -36.0f, 12.0f }, 0.0f,
+    add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
-    add (id::mix,       "Mix",              { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::mix,       "Dry/Wet",          { 0.0f, 100.0f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::freeze, 1 }, "Congelar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::twice, 1 }, "Dobrar", false));

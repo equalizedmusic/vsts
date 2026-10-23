@@ -9,21 +9,21 @@ mas serve para qualquer estilo.
 
 | Bloco | Controle | Faixa | O que faz |
 |---|---|---|---|
-| PASSOS | grade | 16 passos | Abas VOLUME · PAN · FILTRO. Clique e arraste para desenhar; duplo clique liga/desliga o volume, centraliza o pan e abre o filtro. O passo tocando fica aceso; o fundo de cada coluna é o que passou por ele na última volta |
-| FATIA | visual | — | Envelope de dois passos (ataque, largura, soltura, chão da profundidade) e a roda com o padrão inteiro; aceso = tocando, coral = preso |
-| 01 GRADE | **Macro PROFUNDIDADE** | 0–100% | Quanto o som fecha entre um golpe e outro. Em 0%, só o pan e o filtro trabalham |
+| STEPS | grade | 16 passos | Abas VOLUME · PAN · FILTER. Clique e arraste para desenhar; duplo clique liga/desliga o volume, centraliza o pan e abre o filtro. O passo tocando fica aceso; o fundo de cada coluna é o que passou por ele na última volta |
+| FATIA | visual | — | Envelope de dois passos (ATTACK, WIDTH, RELEASE, chão do DEPTH) e a roda com o padrão inteiro; aceso = tocando, coral = preso |
+| 01 GRADE | **Macro DEPTH** | 0–100% | Quanto o som fecha entre um golpe e outro. Em 0%, só o PAN e o FILTER trabalham |
 | | Divisão | 1/8 · 1/8T · 1/16 · 1/16T · 1/32 | Tamanho de cada passo |
-| | Passos | 1–16 | Quantos passos o padrão usa antes de voltar |
+| | Steps | 1–16 | Quantos passos o padrão usa antes de voltar |
 | | Swing | 0–100% | Empurra o passo par (até 3:1) |
 | | Deslocar | +0 a +15 | Gira o padrão sem redesenhar |
-| 02 FORMA | **Macro LARGURA** | 5–100% | Quanto de cada passo fica aberto |
-| | Ataque | 0,5–50 ms | Subida no começo do passo |
-| | Soltura | 1–200 ms | Queda depois da largura |
-| | Filtro | Passa-baixa / Passa-alta / Passa-faixa | Tipo do filtro de cada passo (100% = aberto no passa-baixa/alta) |
-| | Resson. | 0–100% | Ressonância do filtro |
-| 03 SAÍDA | EMBARALHAR | golpe | Sorteia a faixa que está na tela (o volume sempre bate no passo 1) |
+| 02 FORMA | **Macro WIDTH** | 5–100% | Quanto de cada passo fica aberto |
+| | Attack | 0,5–50 ms | Subida no começo do passo |
+| | Release | 1–200 ms | Queda depois do WIDTH |
+| | Filter | Low-pass / High-pass / Band-pass | Tipo do filtro de cada passo (100% = aberto no low-pass/high-pass) |
+| | Resonance | 0–100% | Ressonância do filtro |
+| 03 OUTPUT | EMBARALHAR | golpe | Sorteia a faixa que está na tela (o volume sempre bate no passo 1) |
 | | PRENDER | liga/desliga | Grava o próximo passo e repete em laço, no grid, até soltar |
-| | Mix / Ganho | | Seco ↔ picotado (padrão 100%) e volume final |
+| | Dry/Wet / Gain | | Seco ↔ picotado (padrão 100%) e volume final |
 
 **Sincronia:** o padrão segue a régua do host. Com o host parado, o cabeçalho mostra *AGUARDANDO PLAY*
 e o padrão fica no passo do cursor; no play ele entra no grid. Sem régua nenhuma (standalone), conta sozinho.

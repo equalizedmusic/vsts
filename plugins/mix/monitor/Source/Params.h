@@ -43,13 +43,13 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
                                                            AudioParameterFloatAttributes().withStringFromValueFunction (fmt)));
     };
 
-    add (id::target, "Alvo",            { -36.0f, -6.0f, 1.0f }, -14.0f, [] (float v, int) { return num (v, 0) + " LUFS"; });
-    add (id::tpMax,  "Teto true peak",  { -6.0f, 0.0f, 0.1f },   -1.0f,  [] (float v, int) { return num (v, 1) + " dBTP"; });
+    add (id::target, "Target",          { -36.0f, -6.0f, 1.0f }, -14.0f, [] (float v, int) { return num (v, 0) + " LUFS"; });
+    add (id::tpMax,  "TP ceiling",      { -6.0f, 0.0f, 0.1f },   -1.0f,  [] (float v, int) { return num (v, 1) + " dBTP"; });
     add (id::tol,    "Faixa",           { 0.5f, 6.0f, 0.5f },    1.0f,   [] (float v, int) { return u8 ("±") + num (v, 1) + " LU"; });
-    add (id::lraMax, u8 ("LRA máximo"), { 3.0f, 30.0f, 1.0f },   20.0f,  [] (float v, int) { return num (v, 0) + " LU"; });
+    add (id::lraMax, "LRA max",         { 3.0f, 30.0f, 1.0f },   20.0f,  [] (float v, int) { return num (v, 0) + " LU"; });
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mono, 1 },  "Ouvir em mono", false));
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::match, 1 }, "Ouvir no alvo", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mono, 1 },  "Mono", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::match, 1 }, "Match target", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;
 }

@@ -266,13 +266,13 @@ void SpectrumView::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "ESPECTRO ", u8 ("· ARRASTE AS BORDAS DA FAIXA DE DETECÇÃO"));
+    drawTitle (g, 12.0f, 7.0f, "SPECTRUM ", u8 ("· ARRASTE AS BORDAS DA FAIXA DE DETECÇÃO"));
     {
         float x = W - 10.0f;
         legendItem (g, x, theme::amber, "FAIXA", false);
         legendItem (g, x, theme::coral, "TIRADO", false);
-        legendItem (g, x, theme::cream, u8 ("SAÍDA"), true);
-        legendItem (g, x, theme::dim, "ENTRADA", false);
+        legendItem (g, x, theme::cream, "OUTPUT", true);
+        legendItem (g, x, theme::dim, "INPUT", false);
     }
 
     g.setColour (theme::dark);
@@ -392,15 +392,15 @@ void ReductionView::paint (juce::Graphics& g)
         g.drawText (t, juce::Rectangle<float> (0.0f, y, W, 12.0f), juce::Justification::centredRight);
     };
 
-    label ("REDUZINDO AGORA", 0.0f);
+    label ("GAIN REDUCTION", 0.0f);
     g.setColour (grNow > 0.05f ? theme::coral : theme::dim);
     g.setFont (theme::mono (30.0f));
     g.drawText (cutText (grNow), juce::Rectangle<float> (0.0f, 14.0f, W, 36.0f), juce::Justification::centredLeft);
 
-    label (u8 ("MÁXIMO (3 s)"), 56.0f);
+    label ("MAX (3 s)", 56.0f);
     value (cutText (grMax), 56.0f, grMax > 0.05f ? theme::coral : theme::dim);
 
-    // nível da faixa contra o LIMIAR (marca azul)
+    // nível da faixa contra o THRESHOLD (marca azul)
     label (u8 ("NÍVEL NA FAIXA"), 76.0f);
     value (lvlNow > -119.0f ? dbText (lvlNow).replace ("-", u8 ("−")) : juce::String (u8 ("−∞ dB")), 76.0f,
            lvlNow > thr ? theme::cream : theme::dim);
@@ -416,7 +416,7 @@ void ReductionView::paint (juce::Graphics& g)
         g.fillRect (tx - 1.0f, y - 3.0f, 2.0f, 10.0f);
     }
 
-    // histórico: a redução desce do topo (coral); a linha tracejada é a REDUÇÃO MÁXIMA
+    // histórico: a redução desce do topo (coral); a linha tracejada é o RANGE
     const juce::Rectangle<float> area (0.0f, 112.0f, W, H - 112.0f - 16.0f);
     g.setColour (theme::dark);
     g.fillRoundedRectangle (area, 3.0f);
@@ -460,7 +460,7 @@ void ReductionView::paint (juce::Graphics& g)
     g.setColour (theme::dim);
     g.setFont (theme::sans (9.0f, false, 0.1f));
     g.drawText (u8 ("ÚLTIMOS ~4 s"), juce::Rectangle<float> (0.0f, H - 13.0f, W, 12.0f), juce::Justification::centredLeft);
-    g.drawText (u8 ("MÁX. ") + cutText (range), juce::Rectangle<float> (0.0f, H - 13.0f, W, 12.0f), juce::Justification::centredRight);
+    g.drawText ("MAX " + cutText (range), juce::Rectangle<float> (0.0f, H - 13.0f, W, 12.0f), juce::Justification::centredRight);
 }
 
 // =====================================================================
@@ -486,8 +486,8 @@ void PeakReadout::paint (juce::Graphics& g)
         g.setFont (theme::mono (11.0f));
         g.drawText (dbfs (gain), 0, y + 14, W, 14, juce::Justification::centredLeft);
     };
-    row ("PICO IN", pkIn, 4);
-    row ("PICO OUT", pkOut, 40);
+    row ("PEAK IN", pkIn, 4);
+    row ("PEAK OUT", pkOut, 40);
     g.setColour (theme::dim);
     g.setFont (theme::sans (8.5f, false, 0.1f));
     g.drawText ("dBFS", 0, 84, W, 12, juce::Justification::centredLeft);
@@ -499,15 +499,15 @@ void PeakReadout::paint (juce::Graphics& g)
 LixaEditor::LixaEditor (LixaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), spectrum (p), reduction (p),
       // cor do knob = cor do que ele mexe no desenho
-      rangeMacro  (p.apvts, id::range,   u8 ("REDUÇÃO"),    true,  theme::coral),
-      loKnob      (p.apvts, id::lo,      "FREQ. BAIXA",     false, theme::amber),
-      hiKnob      (p.apvts, id::hi,      "FREQ. ALTA",      false, theme::amber),
-      threshKnob  (p.apvts, id::thresh,  "LIMIAR",          false, theme::ice),
+      rangeMacro  (p.apvts, id::range,   "RANGE",          true,  theme::coral),
+      loKnob      (p.apvts, id::lo,      "LOW FREQ",        false, theme::amber),
+      hiKnob      (p.apvts, id::hi,      "HIGH FREQ",       false, theme::amber),
+      threshKnob  (p.apvts, id::thresh,  "THRESHOLD",       false, theme::ice),
       linkKnob    (p.apvts, id::link,    "LINK L/R",        false, theme::cream),
-      attackKnob  (p.apvts, id::attack,  "ATAQUE",          false, theme::cream),
-      releaseKnob (p.apvts, id::release, "SOLTURA",         false, theme::cream),
-      output      (p.apvts, id::output,  "GANHO",           false, theme::cream),
-      wideKey     ("BANDA LARGA", theme::amber),
+      attackKnob  (p.apvts, id::attack,  "ATTACK",          false, theme::cream),
+      releaseKnob (p.apvts, id::release, "RELEASE",         false, theme::cream),
+      output      (p.apvts, id::output,  "GAIN",            false, theme::cream),
+      wideKey     ("WIDEBAND", theme::amber),
       deltaKey    (u8 ("SÓ O CORTE"), theme::coral)
 {
     setLookAndFeel (&lnf);
@@ -723,7 +723,7 @@ void LixaEditor::drawCanvas (juce::Graphics& g)
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
@@ -738,14 +738,14 @@ void LixaEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 820.0f, 266.0f, 168.0f, 302.0f });
 
     drawTitle (g, 22.0f,  276.0f, u8 ("01 · "), u8 ("FAIXA DE DETECÇÃO"));
-    drawTitle (g, 294.0f, 276.0f, u8 ("02 · "), u8 ("REDUÇÃO"));
+    drawTitle (g, 294.0f, 276.0f, u8 ("02 · "), "GAIN REDUCTION");
     drawTitle (g, 562.0f, 276.0f, u8 ("03 · "), u8 ("ANÁLISE"));
-    drawTitle (g, 830.0f, 276.0f, u8 ("04 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 276.0f, u8 ("04 · "), "OUTPUT");
 
-    drawDesc (g, { 22.0f, 448.0f, 242.0f, 112.0f }, "BANDA LARGA",
+    drawDesc (g, { 22.0f, 448.0f, 242.0f, 112.0f }, "WIDEBAND",
               u8 ("Desligado: só a faixa abaixa (corpo e grave não mexem). Ligado: o som inteiro abaixa junto "
-                  "quando o S passa do LIMIAR, mais natural em vozes expostas."));
-    drawDesc (g, { 396.0f, 296.0f, 140.0f, 92.0f }, u8 ("MACRO REDUÇÃO"),
+                  "quando o S passa do THRESHOLD, mais natural em vozes expostas."));
+    drawDesc (g, { 396.0f, 296.0f, 140.0f, 92.0f }, "MACRO RANGE",
               u8 ("O máximo que o S pode baixar. O que sai vira coral no espectro."));
 }
 

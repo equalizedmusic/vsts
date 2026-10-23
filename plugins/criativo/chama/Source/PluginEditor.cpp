@@ -32,80 +32,34 @@ float textWidth (const juce::Font& f, const juce::String& s)
     return ga.getBoundingBox (0, -1, true).getWidth();
 }
 
-// pseudoaleatório fixo por índice: cada língua de fogo tem o seu jeito, igual em todo frame
-float hashf (int i)
-{
-    const float v = std::sin ((float) i * 12.9898f) * 43758.5453f;
-    return v - std::floor (v);
-}
-
-// fogo: línguas em 3 camadas (violeta → coral → âmbar/creme), fumaça violeta (ESPAÇO) e faíscas azuis (RUÍDO)
-void drawFlames (juce::Graphics& g, juce::Rectangle<float> area, const FlameState& st, int tongues, bool centred)
-{
-    const float W = area.getWidth(), H = area.getHeight(), bottom = area.getBottom();
-    const float heat = st.drop ? 0.0f : st.heat;
-    const float pi = juce::MathConstants<float>::pi;
-
-    // fumaça (ESPAÇO): neblina violeta no alto
-    if (st.space * heat > 0.01f)
-    {
-        g.setGradientFill (juce::ColourGradient (theme::violet.withAlpha (0.28f * st.space * heat), area.getCentreX(), area.getY(),
-                                                 theme::violet.withAlpha (0.0f), area.getCentreX(), area.getY() + H * 0.7f, false));
-        g.fillRect (area);
-    }
-
-    // brilho da base
-    g.setGradientFill (juce::ColourGradient (theme::coral.withAlpha (0.10f + 0.35f * heat), area.getCentreX(), bottom,
-                                             theme::coral.withAlpha (0.0f), area.getCentreX(), bottom - H * (0.2f + 0.6f * heat), false));
-    g.fillRect (area);
-
-    struct Layer { float hMul, wMul; juce::Colour base, tip; };
-    const Layer layers[] = {
-        { 1.00f, 1.00f, theme::coral.withAlpha (0.55f), theme::violet },
-        { 0.72f, 0.66f, theme::amber.withAlpha (0.75f), theme::coral },
-        { 0.42f, 0.34f, theme::cream.withAlpha (0.85f), theme::amber },
-    };
-
-    for (const auto& L : layers)
-    {
-        for (int i = 0; i < tongues; ++i)
-        {
-            const float u     = ((float) i + 0.5f) / (float) tongues;
-            const float x     = area.getX() + u * W;
-            const float w     = W / (float) tongues * 2.4f * L.wMul;
-            const float env   = centred ? 0.25f + 0.75f * std::sin (u * pi) : 0.8f + 0.2f * hashf (i + 3);
-            const float flick = 0.72f + 0.28f * std::sin (st.t * (3.1f + 2.3f * hashf (i)) + (float) i * 1.9f);
-            const float tall  = H * (0.06f + 0.9f * heat) * env * flick * (0.85f + 0.3f * st.level) * (0.7f + 0.3f * hashf (i * 7 + 1));
-            const float hgt   = juce::jmin (H, tall) * L.hMul;
-            const float sway  = std::sin (st.t * 1.7f + (float) i) * w * 0.3f * (0.3f + heat);
-            if (hgt < 1.0f) continue;
-
-            juce::Path p;
-            p.startNewSubPath (x - w * 0.5f, bottom);
-            p.quadraticTo (x - w * 0.5f, bottom - hgt * 0.55f, x + sway, bottom - hgt);
-            p.quadraticTo (x + w * 0.5f, bottom - hgt * 0.55f, x + w * 0.5f, bottom);
-            p.closeSubPath();
-            g.setGradientFill (juce::ColourGradient (L.base, x, bottom, L.tip.withAlpha (0.0f), x, bottom - hgt, false));
-            g.fillPath (p);
-        }
-    }
-
-    // faíscas (RUÍDO): sobem e somem
-    const int sparks = juce::roundToInt (60.0f * st.noise * heat);
-    for (int j = 0; j < sparks; ++j)
-    {
-        const float cyc = std::fmod (st.t * (0.35f + 0.5f * hashf (j + 11)) + hashf (j + 23), 1.0f);
-        const float x   = area.getX() + W * hashf (j + 37) + std::sin (st.t * 2.0f + (float) j) * 6.0f;
-        const float y   = bottom - cyc * H * (0.4f + 0.6f * heat);
-        g.setColour (theme::ice.withAlpha (0.9f * (1.0f - cyc)));
-        g.fillEllipse (x - 1.2f, y - 1.2f, 2.4f, 2.4f);
-    }
-}
 } // namespace
 
 // =====================================================================
 // TENSÃO (faixa de cima)
 // =====================================================================
+FireParams HeatStrip::fireParams() const
+{
+    FireParams fp;
+    fp.heat = st.drop ? 0.0f : st.heat;
+    fp.level = st.level;
+    fp.noise = st.noise;
+    fp.space = st.space;
+    fp.pulse = st.pulse;
+    fp.t = st.t;
+    fp.centred = false;
+    return fp;
+}
+
+void HeatStrip::set (const FlameState& s)
+{
+    st = s;
+    const auto area = getLocalBounds().toFloat().withTrimmedTop (60.0f);
+    if (! area.isEmpty())
+        fire.render (juce::jmax (8, (int) (area.getWidth() / 4.0f)), juce::jmax (4, (int) (area.getHeight() / 4.0f)),
+                     area.getWidth() / area.getHeight(), fireParams());
+    repaint();
+}
+
 void HeatStrip::paint (juce::Graphics& g)
 {
     const auto r = getLocalBounds().toFloat();
@@ -116,7 +70,10 @@ void HeatStrip::paint (juce::Graphics& g)
         juce::Path clip;
         clip.addRoundedRectangle (r.reduced (1.0f), 4.0f);
         g.reduceClipRegion (clip);
-        drawFlames (g, r.withTrimmedTop (60.0f), st, 46, false);
+        const auto area = r.withTrimmedTop (60.0f);
+        const auto fp = fireParams();
+        fire.draw (g, area, fp);
+        drawSparks (g, area, fp, 50);
     }
 
     const float h = st.drop ? 0.0f : st.heat;
@@ -136,7 +93,7 @@ void HeatStrip::paint (juce::Graphics& g)
         gd > 0.005f ? (waitPlay ? juce::String ("ESPERA PLAY") : juce::String (gateText (h)) + u8 (" · ") + juce::String (juce::roundToInt (gd * 100.0f)) + "%")
                     : u8 ("—"),
     };
-    const juce::String names[] = { "CORTE GRAVE", u8 ("RESSONÂNCIA"), "LARGURA", u8 ("RUÍDO"), u8 ("ESPAÇO"), "GATE NO TEMPO" };
+    const juce::String names[] = { "LOW CUT", "RESONANCE", "WIDTH", "NOISE", u8 ("ESPAÇO"), "GATE SYNC" };
     const juce::Colour tint[] = { theme::amber, theme::amber, theme::cream, theme::ice, theme::violet, theme::coral };
 
     for (int k = 0; k < 6; ++k)
@@ -161,6 +118,29 @@ void HeatStrip::paint (juce::Graphics& g)
 // =====================================================================
 // PALCO DO KNOB
 // =====================================================================
+FireParams FlameStage::fireParams() const
+{
+    FireParams fp;
+    fp.heat = st.drop ? 0.0f : st.heat;
+    fp.level = st.level;
+    fp.noise = st.noise;
+    fp.space = st.space;
+    fp.pulse = st.pulse;
+    fp.t = st.t;
+    fp.centred = true;
+    return fp;
+}
+
+void FlameStage::set (const FlameState& s)
+{
+    st = s;
+    const auto r = getLocalBounds().toFloat();
+    if (! r.isEmpty())
+        fire.render (juce::jmax (8, (int) (r.getWidth() / 3.0f)), juce::jmax (4, (int) (r.getHeight() / 3.0f)),
+                     r.getWidth() / r.getHeight(), fireParams());
+    repaint();
+}
+
 void FlameStage::paint (juce::Graphics& g)
 {
     const auto r = getLocalBounds().toFloat();
@@ -171,9 +151,21 @@ void FlameStage::paint (juce::Graphics& g)
         g.reduceClipRegion (clip);
         g.setColour (theme::dark);
         g.fillRoundedRectangle (r, 4.0f);
-        drawFlames (g, r, st, 24, true);
+        const auto fp = fireParams();
+        fire.draw (g, r, fp);
+        drawSparks (g, r, fp, 60);
+
+        // o FOGUINHO dança à direita do knob, no tempo do projeto; embaixo, o compasso 1-2-3-4
+        const float cx = r.getX() + r.getWidth() * 0.855f, floorY = r.getBottom() - 44.0f;
+        drawDancer (g, cx, floorY, st.dance);
+        g.setColour (theme::dark.withAlpha (0.7f));
+        g.fillRoundedRectangle (juce::Rectangle<float> (cx - 40.0f, floorY + 15.0f, 80.0f, 18.0f), 9.0f);
+        drawBeatDots (g, cx, floorY + 24.0f, st.dance);
     }
 
+    // fundo escuro atrás do nome: com o fogo no talo, o texto não some
+    g.setColour (theme::dark.withAlpha (0.7f));
+    g.fillRoundedRectangle (juce::Rectangle<float> (r.getCentreX() - 46.0f, r.getBottom() - 36.0f, 92.0f, 22.0f), 11.0f);
     g.setColour (st.drop ? theme::ice : theme::amber);
     g.setFont (theme::sans (14.0f, true, 0.3f));
     g.drawText (st.drop ? "DROP" : "CHAMA", juce::Rectangle<float> (0.0f, r.getBottom() - 34.0f, r.getWidth(), 18.0f),
@@ -185,11 +177,11 @@ void FlameStage::paint (juce::Graphics& g)
 // =====================================================================
 ChamaEditor::ChamaEditor (ChamaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p),
-      // cor do knob = cor do que ele mexe no desenho: chama âmbar, faíscas azuis, fumaça violeta
+      // cor do knob = cor do que ele mexe no desenho: chama âmbar, faíscas azuis (NOISE), fumaça violeta (ESPAÇO)
       chamaKnob (p.apvts, id::chama,  "CHAMA",        true,  theme::amber),
-      noise     (p.apvts, id::noise,  u8 ("RUÍDO"),   false, theme::ice),
+      noise     (p.apvts, id::noise,  "NOISE",        false, theme::ice),
       space     (p.apvts, id::space,  u8 ("ESPAÇO"),  false, theme::violet),
-      output    (p.apvts, id::output, "GANHO",        false, theme::cream),
+      output    (p.apvts, id::output, "GAIN",         false, theme::cream),
       dropKey   ("DROP", theme::ice)
 {
     setLookAndFeel (&lnf);
@@ -317,6 +309,34 @@ void ChamaEditor::timerCallback()
     anim.noise = proc.apvts.getRawParameterValue (id::noise)->load() * 0.01f;
     anim.space = proc.apvts.getRawParameterValue (id::space)->load() * 0.01f;
     anim.drop  = proc.apvts.getRawParameterValue (id::drop)->load() > 0.5f;
+
+    // ---- compasso 4/4 do projeto: posição do último bloco de áudio, andando com o relógio até o próximo ----
+    {
+        const bool   wt    = proc.waiting.load();
+        const double stamp = proc.uiStampMs.load();
+        const double age   = now - stamp;
+        double ppq = proc.uiPpq.load();
+        if (! wt)
+            ppq += juce::jlimit (0.0, 250.0, age) * 0.001 * (double) proc.shownBpm.load() / 60.0;
+        double inBar = std::fmod (ppq - (proc.uiHaveBar.load() ? proc.uiBarStart.load() : 0.0), 4.0);
+        if (inBar < 0.0) inBar += 4.0;
+
+        auto& d = anim.dance;
+        d.beatPos = (float) inBar;
+        d.beatAbs = (int) std::floor (ppq);
+        d.dancing = ! wt && stamp > 0.0 && age < 500.0;   // sem áudio chegando, ele para
+        d.drop    = anim.drop;
+        d.t       = anim.t;
+
+        // a euforia segue a CHAMA: sobe rápido, desce devagar
+        const float target = anim.drop ? 0.0f : anim.heat;
+        euph += (target - euph) * (target > euph ? 0.18f : 0.06f);
+        d.euph = euph;
+
+        const float frac = d.beatPos - std::floor (d.beatPos);
+        anim.pulse = d.dancing && ! anim.drop ? std::exp (-frac * 5.0f) * ((int) d.beatPos == 0 ? 1.0f : 0.65f) : 0.0f;
+    }
+
     strip.set (anim);
     stage.set (anim);
 
@@ -434,7 +454,7 @@ void ChamaEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 12.0f, 216.0f, 676.0f, 352.0f });
     drawCard (g, { 698.0f, 216.0f, 290.0f, 352.0f });
     drawTitle (g, 22.0f,  226.0f, "CHAMA ", u8 ("· UM KNOB PARA A SUBIDA INTEIRA"));
-    drawTitle (g, 708.0f, 226.0f, "AJUSTES ", u8 ("· O MÁXIMO DE CADA COISA"));
+    drawTitle (g, 708.0f, 226.0f, "AJUSTES ", u8 ("· ATÉ ONDE VAI"));
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (10.5f));

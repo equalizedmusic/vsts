@@ -162,11 +162,11 @@ void ScopeStrip::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, u8 ("OSCILOSCÓPIO "), u8 ("· ENTRADA × PORTADORA"));
+    drawTitle (g, 12.0f, 7.0f, "OSCILLOSCOPE ", u8 ("· INPUT × CARRIER"));
     {
         const float lfoA = param (proc, id::lfoAmt);
         juce::AttributedString s;
-        s.append ("PORTADORA ", theme::mono (10.0f), theme::dim);
+        s.append ("CARRIER ", theme::mono (10.0f), theme::dim);
         s.append (hzText (proc.engine.hzNow.load()), theme::mono (10.0f), theme::coral);
         s.append (u8 (" · LFO "), theme::mono (10.0f), theme::dim);
         s.append (divNames[juce::jlimit (0, numDivs - 1, juce::roundToInt (param (proc, id::lfoRate)))]
@@ -210,9 +210,9 @@ void ScopeStrip::paint (juce::Graphics& g)
     trace (car, 0.35f,  theme::coral.withAlpha (0.55f), 1.0f);
     trace (out, scale,  theme::amber,                   1.6f);
 
-    legendItem (g, x0 + 4.0f,   y1 + 5.0f, theme::dim,   "ENTRADA");
-    legendItem (g, x0 + 84.0f,  y1 + 5.0f, theme::coral, "PORTADORA");
-    legendItem (g, x0 + 176.0f, y1 + 5.0f, theme::amber, u8 ("SAÍDA"));
+    legendItem (g, x0 + 4.0f,   y1 + 5.0f, theme::dim,   "INPUT");
+    legendItem (g, x0 + 84.0f,  y1 + 5.0f, theme::coral, "CARRIER");
+    legendItem (g, x0 + 176.0f, y1 + 5.0f, theme::amber, "OUTPUT");
 
     g.setColour (theme::line);
     g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
@@ -305,8 +305,8 @@ void RingView::paint (juce::Graphics& g)
         s.append (b, theme::mono (10.5f), theme::cream);
         return s;
     };
-    auto sl = line ("PORTADORA ", hzText (proc.engine.hzNow.load()));
-    auto sr = line ("FAIXA ", juce::roundToInt (param (proc, id::range)) == 1 ? "ALTA" : "BAIXA");
+    auto sl = line ("CARRIER ", hzText (proc.engine.hzNow.load()));
+    auto sr = line ("RANGE ", juce::roundToInt (param (proc, id::range)) == 1 ? "HIGH" : "LOW");
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
     sl.draw (g, { 0.0f, S + 8.0f, S, 14.0f });
@@ -319,17 +319,17 @@ void RingView::paint (juce::Graphics& g)
 RingerEditor::RingerEditor (RingerProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), ring (p),
       // cor do knob = cor do que ele mexe no desenho
-      freqMacro (p.apvts, id::freq,     u8 ("FREQUÊNCIA"), true,  theme::coral),
-      range     (p.apvts, id::range,    "FAIXA",          false, theme::coral),
+      freqMacro (p.apvts, id::freq,     "FREQUENCY",      true,  theme::coral),
+      range     (p.apvts, id::range,    "RANGE",          false, theme::coral),
       snap      (p.apvts, id::snap,     "AFINAR",         false, theme::coral),
       drive     (p.apvts, id::drive,    "DRIVE",          false, theme::cream),
-      stereo    (p.apvts, id::stereo,   u8 ("ESTÉREO"),    false, theme::cream),
-      lfoMacro  (p.apvts, id::lfoAmt,   "QUANTIDADE",     true,  theme::violet),
-      lfoRate   (p.apvts, id::lfoRate,  "TAXA",           false, theme::violet),
-      lfoShape  (p.apvts, id::lfoShape, "FORMA",          false, theme::violet),
+      stereo    (p.apvts, id::stereo,   "STEREO",         false, theme::cream),
+      lfoMacro  (p.apvts, id::lfoAmt,   "AMOUNT",         true,  theme::violet),
+      lfoRate   (p.apvts, id::lfoRate,  "RATE",           false, theme::violet),
+      lfoShape  (p.apvts, id::lfoShape, "SHAPE",          false, theme::violet),
       lfoSync   (p.apvts, id::lfoSync,  "SYNC",           false, theme::violet),
-      lfoPhase  (p.apvts, id::lfoPhase, "FASE",           false, theme::violet),
-      output    (p.apvts, id::output,   "GANHO",          false, theme::cream),
+      lfoPhase  (p.apvts, id::lfoPhase, "PHASE",          false, theme::violet),
+      output    (p.apvts, id::output,   "GAIN",        false, theme::cream),
       mix       (p.apvts, id::mix),
       twiceKey  ("DOBRAR", theme::coral)
 {
@@ -500,7 +500,7 @@ void RingerEditor::drawCanvas (juce::Graphics& g)
     g.setColour (theme::coral);
     g.drawEllipse (28.5f, 27.5f, 13.0f, 13.0f, 2.0f);
 
-    const float brandEnd = drawBrand (g, "RINGER", "RING MODULATOR", u8 ("PORTADORA · LFO"));
+    const float brandEnd = drawBrand (g, "RINGER", "RING MODULATOR", u8 ("CARRIER · LFO"));
     drawSync (g, proc.shownBpm.load(), proc.synced.load(), proc.waiting.load(), brandEnd);
 
     // ---- cards ----
@@ -510,14 +510,14 @@ void RingerEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
     drawTitle (g, 22.0f,  226.0f, "ANEL ", u8 ("· LISSAJOUS"));
-    drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "PORTADORA");
+    drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "CARRIER");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "LFO");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, u8 ("MACRO FREQUÊNCIA"),
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO FREQUENCY",
               u8 ("A nota que multiplica o som. Baixa = tremolo; alta = metálico, sino, robô."));
-    drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO QUANTIDADE",
-              u8 ("Quanto o LFO balança a portadora. É daí que vêm sirene, borbulha e laser."));
+    drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO AMOUNT",
+              u8 ("Quanto o LFO balança o CARRIER. É daí que vêm sirene, borbulha e laser."));
 }
 
 void RingerEditor::layoutCanvas()

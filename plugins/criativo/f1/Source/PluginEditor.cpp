@@ -159,10 +159,10 @@ void ResponseStrip::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "RESPOSTA ", four ? u8 ("· 4 POLOS · 24 dB/OIT") : u8 ("· 2 POLOS · 12 dB/OIT"));
+    drawTitle (g, 12.0f, 7.0f, "RESPOSTA ", four ? u8 ("· 4 POLES · 24 dB/OCT") : u8 ("· 2 POLES · 12 dB/OCT"));
     {
         juce::AttributedString s;
-        s.append ("CORTE ", theme::mono (10.0f), theme::dim);
+        s.append ("CUTOFF ", theme::mono (10.0f), theme::dim);
         s.append (hzText (base), theme::mono (10.0f), theme::cream);
         s.append (u8 (" → "), theme::mono (10.0f), theme::dim);
         s.append (hzText (now), theme::mono (10.0f), theme::leaf);
@@ -328,7 +328,7 @@ void LadderView::paint (juce::Graphics& g)
         g.fillPath (dashed);
 
         juce::GlyphArrangement ga;
-        ga.addLineOfText (theme::sans (8.0f, true, 0.15f), u8 ("RESSONÂNCIA"), 0.0f, 0.0f);
+        ga.addLineOfText (theme::sans (8.0f, true, 0.15f), "RESONANCE", 0.0f, 0.0f);
         juce::Path txt;
         ga.createPath (txt);
         txt.applyTransform (juce::AffineTransform::rotation (-juce::MathConstants<float>::halfPi).translated (R + 47.0f, 162.0f));
@@ -381,7 +381,7 @@ void LadderView::paint (juce::Graphics& g)
     };
     const int envPct = juce::roundToInt (env * param (proc, id::envAmt));
     auto sl = line ("ENVELOPE ", (envPct > 0 ? juce::String ("+") : envPct < 0 ? u8 ("−") : juce::String()) + juce::String (std::abs (envPct)) + "%");
-    auto sr = line ("CORTE ", hzText (fc));
+    auto sr = line ("CUTOFF ", hzText (fc));
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
     sl.draw (g, { 0.0f, S + 8.0f, S, 14.0f });
@@ -394,17 +394,17 @@ void LadderView::paint (juce::Graphics& g)
 F1Editor::F1Editor (F1Processor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), ladder (p),
       // cor do knob = cor do que ele mexe no desenho
-      cutMacro  (p.apvts, id::cutoff,    "CORTE",            true,  theme::amber),
-      resonance (p.apvts, id::resonance, u8 ("RESSONÂNCIA"), false, theme::coral),
-      poles     (p.apvts, id::poles,     "POLOS",            false, theme::cream),
+      cutMacro  (p.apvts, id::cutoff,    "CUTOFF",           true,  theme::amber),
+      resonance (p.apvts, id::resonance, "RESONANCE",        false, theme::coral),
+      poles     (p.apvts, id::poles,     "POLES",            false, theme::cream),
       drive     (p.apvts, id::drive,     "DRIVE",            false, theme::cream),
-      range     (p.apvts, id::range,     "FAIXA",            false, theme::cream),
+      range     (p.apvts, id::range,     "RANGE",            false, theme::cream),
       envMacro  (p.apvts, id::envAmt,    "ENVELOPE",         true,  theme::leaf),
-      smooth    (p.apvts, id::smooth,    u8 ("SUAVIZAÇÃO"),  false, theme::leaf),
+      smooth    (p.apvts, id::smooth,    "SMOOTH",           false, theme::leaf),
       lfoRate   (p.apvts, id::lfoRate,   "LFO",              false, theme::violet),
-      lfoAmt    (p.apvts, id::lfoAmt,    "LFO QUANT.",       false, theme::violet),
-      sens      (p.apvts, id::sens,      "SENSIBIL.",        false, theme::leaf),
-      output    (p.apvts, id::output,    "GANHO",            false, theme::cream),
+      lfoAmt    (p.apvts, id::lfoAmt,    "LFO AMOUNT",       false, theme::violet),
+      sens      (p.apvts, id::sens,      "SENSITIVITY",      false, theme::leaf),
+      output    (p.apvts, id::output,    "GAIN",         false, theme::cream),
       mix       (p.apvts, id::mix),
       openKey   ("ABRIR", theme::amber),
       smokeKey  (u8 ("FUMAÇA"), theme::leaf)
@@ -590,7 +590,7 @@ void F1Editor::drawCanvas (juce::Graphics& g)
         g.fillRect (cx - 0.7f, cy + 2.0f, 1.4f, 8.0f);
     }
 
-    const float brandEnd = drawBrand (g, "F1", "LADDER FILTER 101", u8 ("PASSA-BAIXA · ENVELOPE"));
+    const float brandEnd = drawBrand (g, "F1", "LADDER FILTER 101", u8 ("LOW-PASS · ENVELOPE"));
     drawSync (g, proc.shownBpm.load(), proc.synced.load(), proc.waiting.load(), brandEnd);
 
     // ---- cards ----
@@ -600,11 +600,11 @@ void F1Editor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
     drawTitle (g, 22.0f,  226.0f, "ESCADA ", u8 ("· 4 DEGRAUS"));
-    drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "FILTRO");
+    drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "FILTER");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "ENVELOPE");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO CORTE",
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO CUTOFF",
               u8 ("Onde o filtro fecha. Gira devagar e o som abre, como no pedal clássico."));
     drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO ENVELOPE",
               u8 ("Quanto a força do som abre (+) ou fecha (−) o filtro. É o wah automático."));

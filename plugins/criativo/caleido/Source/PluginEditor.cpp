@@ -20,7 +20,7 @@ juce::Colour laneColour (int lane)
         default:          return theme::violet;
     }
 }
-const char* const laneName[numLanes] = { "REPETE", "REVERSO", "FITA", "FILTRO", "CRUSH" };
+const char* const laneName[numLanes] = { "REPETE", "REVERSO", "FITA", "FILTER", "CRUSH" };
 
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
@@ -267,7 +267,7 @@ void Mandala::paint (juce::Graphics& g)
         s.append (c, theme::mono (10.5f), theme::dim);
         return s;
     };
-    auto sl = line ("PASSO ", juce::String (step + 1).paddedLeft ('0', 2), "/16");
+    auto sl = line ("STEP ", juce::String (step + 1).paddedLeft ('0', 2), "/16");
     auto sr = line ("SEMENTE ", juce::String ((int) (proc.engine.seed.load() % 10000u)).paddedLeft ('0', 4), {});
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
@@ -327,10 +327,10 @@ CaleidoEditor::CaleidoEditor (CaleidoProcessor& p)
       shuffle    (p.apvts, id::shuffle,  "EMBARALHAR",       false, theme::cream),
       reverse    (p.apvts, id::reverse,  "REVERSO",          false, laneColour (laneReverse)),
       tape       (p.apvts, id::tape,     "FITA",             false, laneColour (laneTape)),
-      filter     (p.apvts, id::filter,   "FILTRO",           false, laneColour (laneFilter)),
+      filter     (p.apvts, id::filter,   "FILTER",           false, laneColour (laneFilter)),
       crush      (p.apvts, id::crush,    "CRUSH",            false, laneColour (laneCrush)),
       spin       (p.apvts, id::spin,     "GIRO",             false, theme::cream),
-      output     (p.apvts, id::output,   "GANHO",            false, theme::cream),
+      output     (p.apvts, id::output,   "GAIN",             false, theme::cream),
       mix        (p.apvts, id::mix),
       mutateKey  ("TRANSMUTAR", theme::coral),
       holdKey    ("SEGURAR", theme::violet)
@@ -582,12 +582,12 @@ void CaleidoEditor::drawCanvas (juce::Graphics& g)
     drawTitle (g, 22.0f,  226.0f, "MANDALA ", u8 ("· 16"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "CORTE");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "VIAGEM");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
     drawDesc (g, { 396.0f, 252.0f, 140.0f, 90.0f }, "MACRO CAOS",
               u8 ("Chance de cada passo ser cortado, repetido, invertido ou trocado de lugar."));
     drawDesc (g, { 664.0f, 252.0f, 140.0f, 90.0f }, "MACRO VIAGEM",
-              u8 ("Quanto cada corte é colorido: afinação de fita, filtro, crush e giro no estéreo."));
+              u8 ("Quanto cada corte é colorido: PITCH de fita, FILTER, CRUSH e giro no STEREO."));
 }
 
 void CaleidoEditor::layoutCanvas()

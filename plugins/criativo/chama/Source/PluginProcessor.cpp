@@ -81,14 +81,15 @@ void ChamaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         peakIn = juce::jmax (peakIn, std::abs (dL[i]), std::abs (dR[i]));
 
     // ---- relógio do gate: segue o host tocando; parado, o gate espera o play ----
-    double bpm = 145.0, hostPpq = 0.0;
-    bool playing = false, havePpq = false;
+    double bpm = 145.0, hostPpq = 0.0, barStart = 0.0;
+    bool playing = false, havePpq = false, haveBar = false;
     if (auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())
         {
             if (auto b = pos->getBpm()) bpm = *b;
             playing = pos->getIsPlaying();
             if (auto p = pos->getPpqPosition()) { hostPpq = *p; havePpq = true; }
+            if (auto bs = pos->getPpqPositionOfLastBarStart()) { barStart = *bs; haveBar = true; }
         }
     bpm = juce::jlimit (40.0, 300.0, bpm);
     const bool sync = playing && havePpq;
@@ -99,6 +100,10 @@ void ChamaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     s.bpm = bpm;
     s.ppq = freePpq;
     s.playing = ! wait;   // sem régua do host (LIVRE), o gate anda no relógio próprio
+    uiPpq.store (freePpq);
+    uiBarStart.store (barStart);
+    uiHaveBar.store (haveBar && havePpq);
+    uiStampMs.store (juce::Time::getMillisecondCounterHiRes());
     freePpq += (double) n * bpm / 60.0 / currentRate;
     shownBpm.store ((float) bpm);
     synced.store (sync);

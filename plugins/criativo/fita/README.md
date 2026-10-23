@@ -15,21 +15,21 @@ da chave: 7,5 ips = 1 7/8 ips).
 |---|---|---|---|
 | MÁQUINA | VU L/R | −20 a +3 dBFS | Pico de cada canal, na mesma escala do medidor do Ableton (sobe na hora, desce em ~300 ms); vermelho = acima de 0 dBFS |
 | | Curva | — | Resposta da reprodução: head bump + perda de agudo + desgaste |
-| | Velocidade da fita | 0–100% | Estado do transporte: rodando, freando, parada, partindo |
+| | Tape speed | 0–100% | Estado do transporte: rodando, freando, parada, partindo |
 | MÁQUINA (card) | visual | — | Rolos/cassete, cabeças, cabrestante; contador e ips |
-| 01 GRAVAÇÃO | **Macro SATURAÇÃO** | −12 a +18 dB na fita | Sinal baixo passa igual; os picos arredondam (com pré/de-ênfase, o agudo satura antes, como na fita) |
+| 01 GRAVAÇÃO | **Macro SATURATION** | −12 a +18 dB na fita | Sinal baixo passa igual; os picos arredondam (com pré/de-ênfase, o agudo satura antes, como na fita) |
 | | Modelo | Rolo 1/4" · Fita 2" · Cassete | Curva de saturação, chiado, wow, grave e agudo de cada máquina |
-| | Velocidade | 7,5 · 15 · 30 ips | Mais rápida = mais agudo, menos chiado, head bump mais alto em frequência |
-| | Grave | 0 a +6 dB | Head bump (com o vale logo acima, como na fita de verdade) |
-| | Desgaste | 0–100% | Perde agudo (até 4 kHz), raspa mais (flutter) e tem falhas de óxido (dropouts) |
+| | Speed | 7,5 · 15 · 30 ips | Mais rápida = mais agudo, menos chiado, head bump mais alto em frequência |
+| | Head bump | 0 a +6 dB | Reforço de grave (com o vale logo acima, como na fita de verdade) |
+| | Wear | 0–100% | Perde agudo (até 4 kHz), raspa mais (flutter) e tem falhas de óxido (dropouts) |
 | 02 TRANSPORTE | **Macro WOW** | 0–100% | Oscilação lenta da velocidade (até ±2,2 ms; cassete 1,6×) |
 | | Flutter | 0–100% | Oscilação rápida (7–12 Hz + ruído) |
-| | Chiado | 0–100% | Hiss da fita; passa pela curva da reprodução e para junto com a fita |
+| | Hiss | 0–100% | Hiss da fita; passa pela curva da reprodução e para junto com a fita |
 | | Freio | 1/2 tempo … 2 comp | Quanto o TAPE STOP leva para parar, no BPM do projeto (máx. 4 s) |
 | | Partida | Na hora · Curta · Igual ao freio | Ao soltar: volta na hora (crossfade de 30 ms) ou acelera do zero (1/4 ou igual ao freio) |
-| 03 SAÍDA | TAPE STOP | liga/desliga | Freia a fita até parar. Automatizável no Ableton |
-| | Mix | 0–100% | Seco ↔ fita (o seco sai com a mesma latência: paralelo sem fase) |
-| | Ganho | −36 a +12 dB | Volume final |
+| 03 OUTPUT | TAPE STOP | liga/desliga | Freia a fita até parar. Automatizável no Ableton |
+| | Dry/Wet | 0–100% | Seco ↔ fita (o seco sai com a mesma latência: paralelo sem fase) |
+| | Gain | −36 a +12 dB | Volume final |
 
 **Latência:** 5 ms + oversampling (2×), informada ao host. O Ableton compensa sozinho.
 

@@ -2,7 +2,7 @@
 
 O som que entra é gravado numa **fita** de 4 s. Dela saem **grãos** curtos, cada um com o
 próprio tamanho, posição, afinação e lado do estéreo. Os grãos passam por feedback (voltam
-para a fita), filtro (TOM) e uma cauda de ambiente (DECAIMENTO).
+para a fita), filtro (TONE) e uma cauda de ambiente (DECAY).
 
 ## Controles
 
@@ -10,19 +10,19 @@ para a fita), filtro (TOM) e uma cauda de ambiente (DECAIMENTO).
 |---|---|---|---|
 | CAMPO XY | X / Y | — | X = macro ESPAÇO, Y = macro GRÃO |
 | 01 GRÃO | **Macro GRÃO** | 0–100% | Mais alto = grãos menores, mais densos e com mais variação de afinação |
-| | Tamanho | 10–500 ms | Duração de cada grão |
-| | Densidade | 1–100 /s | Grãos por segundo |
-| | Dispersão | 0–1000 ms | Quão longe, para trás na fita, cada grão pode começar |
-| | Afinação | ±24 st | Transposição dos grãos |
+| | Size | 10–500 ms | Duração de cada grão |
+| | Density | 1–100 /s | Grãos por segundo |
+| | Spray | 0–1000 ms | Quão longe, para trás na fita, cada grão pode começar |
+| | Pitch | ±24 st | Transposição dos grãos |
 | 02 ESPAÇO | **Macro ESPAÇO** | 0–100% | Abre o estéreo, aumenta o feedback e a quantidade de cauda |
-| | Estéreo | 0–100% | Espalhamento dos grãos entre L e R |
+| | Stereo | 0–100% | Espalhamento dos grãos entre L e R |
 | | Feedback | 0–95% | Quanto da saída dos grãos volta para a fita |
-| | Decaimento | 0,2–10 s | Tamanho da cauda |
-| | Tom | LP ← ABERTO → HP | Esquerda fecha o passa-baixa (até 500 Hz), direita abre o passa-alta (até 2 kHz) |
-| 03 SAÍDA | Reverso | liga/desliga | Metade dos grãos toca de trás para frente |
+| | Decay | 0,2–10 s | Tamanho da cauda |
+| | Tone | LP ← ABERTO → HP | Esquerda fecha o passa-baixa (até 500 Hz), direita abre o passa-alta (até 2 kHz) |
+| 03 OUTPUT | Reverso | liga/desliga | Metade dos grãos toca de trás para frente |
 | | Congelar | liga/desliga | Para a gravação; os grãos continuam lendo a fita parada |
-| | Mix | 0–100% | Seco ↔ processado |
-| | Ganho | −36 a +12 dB | Volume final |
+| | Dry/Wet | 0–100% | Seco ↔ processado |
+| | Gain | −36 a +12 dB | Volume final |
 
 Duplo clique num controle volta ao valor padrão. O botão redondo no topo é o bypass
 (aceso = efeito ligado).

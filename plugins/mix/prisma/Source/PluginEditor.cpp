@@ -210,11 +210,11 @@ void SpectrumView::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "ESPECTRO ", u8 ("· ARRASTE AS LINHAS PARA MUDAR OS CORTES"));
+    drawTitle (g, 12.0f, 7.0f, "SPECTRUM ", u8 ("· ARRASTE AS LINHAS PARA MUDAR OS CROSSOVERS"));
     {
         float x = W - 10.0f;
         legendItem (g, x, theme::coral, "DRIVE");
-        legendItem (g, x, theme::cream, u8 ("REDUÇÃO (COR DA BANDA)"));
+        legendItem (g, x, theme::cream, "GR (COR DA BANDA)");
     }
 
     g.setColour (theme::dark);
@@ -439,7 +439,7 @@ void BandStatus::paint (juce::Graphics& g)
     g.drawText (hzText (lo) + u8 (" – ") + hzText (hi), juce::Rectangle<float> (0.0f, 0.0f, W, 12.0f), juce::Justification::centredLeft);
 
     g.setFont (theme::sans (8.5f, true, 0.18f));
-    g.drawText (u8 ("REDUÇÃO"), juce::Rectangle<float> (0.0f, 16.0f, W, 12.0f), juce::Justification::centredLeft);
+    g.drawText ("GAIN REDUCTION", juce::Rectangle<float> (0.0f, 16.0f, W, 12.0f), juce::Justification::centredLeft);
     g.setColour (gr > 0.05f ? theme::cream : theme::dim);
     g.setFont (theme::mono (11.0f));
     g.drawText (reductionText (gr), juce::Rectangle<float> (0.0f, 16.0f, W, 12.0f), juce::Justification::centredRight);
@@ -462,7 +462,7 @@ PrismaEditor::PrismaEditor (PrismaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), spectrum (p),
       // cor do knob = cor do que ele mexe no desenho
       macro  (p.apvts, id::macro,  "MACRO", true,  theme::coral),
-      output (p.apvts, id::output, "GANHO", false, theme::cream),
+      output (p.apvts, id::output, "GAIN",  false, theme::cream),
       mix    (p.apvts, id::mix)
 {
     setLookAndFeel (&lnf);
@@ -475,14 +475,14 @@ PrismaEditor::PrismaEditor (PrismaProcessor& p)
     {
         const auto col = bandColour (b);
         status[b]  = std::make_unique<BandStatus> (p, b);
-        thrK[b]    = std::make_unique<Knob> (p.apvts, id::thr[b],   "LIMIAR",       false, col);
-        ratioK[b]  = std::make_unique<Knob> (p.apvts, id::ratio[b], u8 ("RAZÃO"),   false, col);
-        attK[b]    = std::make_unique<Knob> (p.apvts, id::att[b],   "ATAQUE",       false, col);
-        relK[b]    = std::make_unique<Knob> (p.apvts, id::rel[b],   "SOLTURA",      false, col);
+        thrK[b]    = std::make_unique<Knob> (p.apvts, id::thr[b],   "THRESH",       false, col);
+        ratioK[b]  = std::make_unique<Knob> (p.apvts, id::ratio[b], "RATIO",        false, col);
+        attK[b]    = std::make_unique<Knob> (p.apvts, id::att[b],   "ATTACK",       false, col);
+        relK[b]    = std::make_unique<Knob> (p.apvts, id::rel[b],   "RELEASE",      false, col);
         driveK[b]  = std::make_unique<Knob> (p.apvts, id::drive[b], "DRIVE",        false, theme::coral);
-        gainK[b]   = std::make_unique<Knob> (p.apvts, id::gain[b],  "GANHO",        false, theme::cream);
+        gainK[b]   = std::make_unique<Knob> (p.apvts, id::gain[b],  "GAIN",         false, theme::cream);
         soloKey[b] = std::make_unique<KeyButton> ("SOLO", col);
-        muteKey[b] = std::make_unique<KeyButton> ("MUDO", theme::dim);
+        muteKey[b] = std::make_unique<KeyButton> ("MUTE", theme::dim);
 
         for (auto* c : std::initializer_list<juce::Component*> {
                  status[b].get(), thrK[b].get(), ratioK[b].get(), attK[b].get(), relK[b].get(),
@@ -666,13 +666,13 @@ void PrismaEditor::drawCanvas (juce::Graphics& g)
         g.strokePath (tri, juce::PathStrokeType (2.0f, juce::PathStrokeType::curved));
     }
 
-    drawBrand (g, "PRISMA", "MULTIBANDA", u8 ("DINÂMICA + SATURAÇÃO"));
+    drawBrand (g, "PRISMA", "MULTIBAND", "DYNAMICS + SATURATION");
 
     // ---- latência (zero: crossovers IIR) ----
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);

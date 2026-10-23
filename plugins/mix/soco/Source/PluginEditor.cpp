@@ -95,11 +95,11 @@ void WaveStrip::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "FORMA DE ONDA ", u8 ("· ANTES E DEPOIS DO SOCO, AO VIVO"));
+    drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· ANTES E DEPOIS DO SOCO, AO VIVO"));
     {
         float x = W - 10.0f;
         legendItem (g, x, theme::ice, "SUSTAIN", false);
-        legendItem (g, x, theme::coral, "ATAQUE", false);
+        legendItem (g, x, theme::coral, "ATTACK", false);
         legendItem (g, x, theme::cream, "DEPOIS", false);
         legendItem (g, x, theme::dim, "ANTES", true);
     }
@@ -181,7 +181,7 @@ void WaveStrip::paint (juce::Graphics& g)
     g.strokePath (atkPath, juce::PathStrokeType (1.4f));
     g.setColour (theme::dim);
     g.setFont (theme::mono (8.5f));
-    g.drawText ("GANHO APLICADO", juce::Rectangle<float> (x0 + 6.0f, lTop + 2.0f, 120.0f, 10.0f), juce::Justification::centredLeft);
+    g.drawText ("GAIN APLICADO", juce::Rectangle<float> (x0 + 6.0f, lTop + 2.0f, 120.0f, 10.0f), juce::Justification::centredLeft);
     g.drawText (u8 ("±15 dB"), juce::Rectangle<float> (x1 - 66.0f, lTop + 2.0f, 60.0f, 10.0f), juce::Justification::centredRight);
 
     // escala acompanha os picos devagar (sem pular a cada frame)
@@ -307,7 +307,7 @@ void HitView::paint (juce::Graphics& g)
         s.append (b, theme::mono (10.5f), c);
         return s;
     };
-    auto sl = line ("ATAQUE ", signedDb (atkBig), theme::coral);
+    auto sl = line ("ATTACK ", signedDb (atkBig), theme::coral);
     auto sr = line ("SUSTAIN ", signedDb (susBig), theme::ice);
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
@@ -380,7 +380,7 @@ void DetectorView::paint (juce::Graphics& g)
     juce::AttributedString s;
     const juce::String name = juce::String (detModeNames[mode]).toUpperCase();
     s.append (name, theme::mono (10.0f), theme::violet);
-    s.append (mode == detAll ? u8 (" · O SOM INTEIRO") : u8 (" · CORTE ") + hzText (fc), theme::mono (10.0f), theme::dim);
+    s.append (mode == detAll ? u8 (" · O SOM INTEIRO") : u8 (" · CUTOFF ") + hzText (fc), theme::mono (10.0f), theme::dim);
     s.setJustification (juce::Justification::centredLeft);
     s.draw (g, { 8.0f, 4.0f, W - 16.0f, 13.0f });
 }
@@ -417,7 +417,7 @@ void GainNowView::paint (juce::Graphics& g)
         g.setColour (theme::dim);
         g.fillRect (cx - 0.5f, by - 2.0f, 1.0f, 8.0f);
     };
-    row ("ATAQUE AGORA", atk, 0.0f, theme::coral);
+    row ("ATTACK AGORA", atk, 0.0f, theme::coral);
     row ("SUSTAIN AGORA", sus, 38.0f, theme::ice);
 }
 
@@ -450,9 +450,9 @@ void PeakView::paint (juce::Graphics& g)
         g.setColour (theme::cream.withAlpha (0.7f));
         g.fillRoundedRectangle (0.0f, y + 16.0f, W * juce::jlimit (0.0f, 1.0f, frac), 4.0f, 2.0f);
     };
-    row ("PICO NA ENTRADA", pkIn, 0.0f, true);
-    row (u8 ("PICO NA SAÍDA"), pkOut, 28.0f, true);
-    row (u8 ("MÁX. SAÍDA (3 s)"), maxOut, 58.0f, false);
+    row ("INPUT PEAK", pkIn, 0.0f, true);
+    row ("OUTPUT PEAK", pkOut, 28.0f, true);
+    row ("MAX OUTPUT (3 s)", maxOut, 58.0f, false);
 }
 
 // =====================================================================
@@ -461,14 +461,14 @@ void PeakView::paint (juce::Graphics& g)
 SocoEditor::SocoEditor (SocoProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), hit (p), detView (p),
       // cor do knob = cor do que ele mexe no desenho
-      attackMacro (p.apvts, id::attack,  "ATAQUE",   true,  theme::coral),
+      attackMacro (p.apvts, id::attack,  "ATTACK",   true,  theme::coral),
       sustain     (p.apvts, id::sustain, "SUSTAIN",  false, theme::ice),
       focus       (p.apvts, id::focus,   "FOCO",     false, theme::cream),
       detMode     (p.apvts, id::detMode, "DETECTOR", false, theme::violet),
-      detFreq     (p.apvts, id::detFreq, "CORTE",    false, theme::violet),
-      output      (p.apvts, id::output,  "GANHO",    false, theme::cream),
+      detFreq     (p.apvts, id::detFreq, "CUTOFF",   false, theme::violet),
+      output      (p.apvts, id::output,  "GAIN",     false, theme::cream),
       mix         (p.apvts, id::mix),
-      deltaKey    (u8 ("OUVIR DIFERENÇA"), theme::leaf),
+      deltaKey    ("DELTA", theme::leaf),
       clipKey     (u8 ("CLIPPER DE PROTEÇÃO"), theme::amber)
 {
     setLookAndFeel (&lnf);
@@ -659,7 +659,7 @@ void SocoEditor::drawCanvas (juce::Graphics& g)
     g.setColour (theme::line);
     g.fillRect (tagX - 10.0f, 24.0f, 1.0f, 22.0f);
     const auto tagFont = theme::sans (9.5f, false, 0.2f);
-    const juce::String tag1 ("MODELADOR DE TRANSIENTE"), tag2 (u8 ("ATAQUE · SUSTAIN"));
+    const juce::String tag1 ("TRANSIENT SHAPER"), tag2 (u8 ("ATTACK · SUSTAIN"));
     g.setColour (theme::dim);
     g.setFont (tagFont);
     g.drawText (tag1, juce::Rectangle<float> (tagX, 22.0f, 200.0f, 12.0f), juce::Justification::centredLeft);
@@ -682,7 +682,7 @@ void SocoEditor::drawCanvas (juce::Graphics& g)
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
@@ -699,9 +699,9 @@ void SocoEditor::drawCanvas (juce::Graphics& g)
     drawTitle (g, 22.0f,  236.0f, "GOLPE ", u8 ("· ANTES × DEPOIS"));
     drawTitle (g, 294.0f, 236.0f, u8 ("01 · "), "SOCO");
     drawTitle (g, 562.0f, 236.0f, u8 ("02 · "), "DETECTOR");
-    drawTitle (g, 830.0f, 236.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 236.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 262.0f, 140.0f, 110.0f }, "MACRO ATAQUE",
+    drawDesc (g, { 396.0f, 262.0f, 140.0f, 110.0f }, "MACRO ATTACK",
               u8 ("Mais = o começo do golpe salta (coral). Menos = o golpe amacia. Não depende do volume."));
 }
 

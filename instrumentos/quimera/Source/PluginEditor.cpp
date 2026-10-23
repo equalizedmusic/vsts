@@ -309,7 +309,7 @@ juce::String srcGroup (int i)
     if (i <= srcNone)    return {};
     if (i <= srcEnv3)    return "ENVELOPES";
     if (i <= srcLfo2)    return "LFOS";
-    if (i <= srcRandom)  return "TECLADO E CONTROLADOR";
+    if (i <= srcRandom)  return u8 ("KEYBOARD · CONTROLLER");
     return "MACROS";
 }
 
@@ -319,9 +319,9 @@ juce::String dstGroup (int i)
     if (i < dstO2Pitch)        return "OSC 1";
     if (i < dstO3Pitch)        return "OSC 2";
     if (i < dstPitch)          return "OSC 3";
-    if (i < dstFACut)          return "FONTES";
-    if (i < dstAmp)            return "FILTROS";
-    return u8 ("VOZ E LFO");
+    if (i < dstFACut)          return u8 ("PITCH · SUB · NOISE");
+    if (i < dstAmp)            return "FILTERS";
+    return u8 ("VOICE · LFO");
 }
 } // namespace
 
@@ -449,7 +449,7 @@ void WaveView::paint (juce::Graphics& g)
 
     g.setFont (theme::mono (9.0f));
     g.setColour (theme::dim);
-    g.drawText ("QUADRO " + juce::String (juce::roundToInt (fpos) + 1).paddedLeft ('0', 2) + "/" + juce::String (frames),
+    g.drawText ("FRAME " + juce::String (juce::roundToInt (fpos) + 1).paddedLeft ('0', 2) + "/" + juce::String (frames),
                 r.reduced (6.0f, 3.0f), juce::Justification::topLeft, false);
     if (! on)
     {
@@ -853,7 +853,7 @@ void ScopeView::paint (juce::Graphics& g)
     g.strokePath (p, juce::PathStrokeType (1.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
     juce::AttributedString s;
-    s.append ("PICO ", theme::mono (10.0f), theme::dim);
+    s.append ("PEAK ", theme::mono (10.0f), theme::dim);
     s.append (peak > 1.0e-5f ? dbText (juce::Decibels::gainToDecibels (peak)) + "FS" : u8 ("—"),
               theme::mono (10.0f), peak > 0.89f ? theme::coral : theme::cream);
     s.setJustification (juce::Justification::topRight);
@@ -902,7 +902,7 @@ void VoiceMeter::paint (juce::Graphics& g)
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (8.0f, true, 0.2f));
-    g.drawText ("VOZES", juce::Rectangle<float> (9.0f, 3.0f, 60.0f, 11.0f), juce::Justification::centredLeft, false);
+    g.drawText ("VOICES", juce::Rectangle<float> (9.0f, 3.0f, 60.0f, 11.0f), juce::Justification::centredLeft, false);
     juce::AttributedString s;
     s.append (juce::String (count).paddedLeft ('0', 2), theme::mono (13.0f), count > 0 ? theme::cream : theme::dim);
     s.append ("/" + juce::String (limit).paddedLeft ('0', 2), theme::mono (10.0f), theme::dim);
@@ -1093,9 +1093,9 @@ void QuimeraEditor::buildHeader()
     presetName->onClick = [this] { showPresetMenu(); };
 
     juce::StringArray names;
-    names.add (u8 ("SÍNTESE"));
-    names.add ("MATRIZ");
-    names.add ("EFEITOS");
+    names.add ("SYNTH");
+    names.add ("MOD MATRIX");
+    names.add ("FX");
     tabs = add<TabBar> (-1, R (12, 64, 330, 22), names);
     tabs->onChange = [this] (int t) { setTab (t); };
 }
@@ -1118,12 +1118,12 @@ void QuimeraEditor::buildSynth()
 
         waves[(size_t) o] = add<WaveView> (0, R (x + 10, y + 30, 262, 82), proc, o);
         add<ChoiceBox> (0, R (x + 10, y + 116, 128, 18), proc.apvts, oscId (o, "warp"), col, juce::String ("WARP"));
-        add<ChoiceBox> (0, R (x + 144, y + 116, 128, 18), proc.apvts, oscId (o, "rt"), col, u8 ("SAÍDA"));
+        add<ChoiceBox> (0, R (x + 144, y + 116, 128, 18), proc.apvts, oscId (o, "rt"), col, juce::String ("OUTPUT"));
 
         const char* f1[] = { "pos", "wamt", "oct", "semi", "fine" };
-        const juce::String l1[] = { u8 ("POSIÇÃO"), "WARP", "OITAVA", "SEMI", "FINO" };
+        const juce::String l1[] = { "POSITION", "WARP", "OCTAVE", "SEMI", "FINE" };
         const char* f2[] = { "uni", "det", "wid", "lvl", "pan" };
-        const juce::String l2[] = { u8 ("UNÍSSONO"), "DETUNE", "ABERTURA", "VOLUME", "PAN" };
+        const juce::String l2[] = { "UNISON", "DETUNE", "WIDTH", "LEVEL", "PAN" };
         for (int k = 0; k < 5; ++k)
         {
             add<MiniKnob> (0, R (x + 11 + k * 52, y + 138, 52, 57), proc.apvts, oscId (o, f1[k]), l1[k], col, 34);
@@ -1138,31 +1138,31 @@ void QuimeraEditor::buildSynth()
 
         addTitle (0, (float) x + 28.0f, (float) y + 9.5f, u8 ("04 · "), "SUB", qui::sand);
         attachButton (*add<LedToggle> (0, R (x + 8, y + 8, 16, 16), qui::sand), id::subOn);
-        add<MiniKnob> (0, R (x + 6, y + 30, 52, 57), proc.apvts, id::subLvl, "VOLUME", qui::sand, 34);
+        add<MiniKnob> (0, R (x + 6, y + 30, 52, 57), proc.apvts, id::subLvl, "LEVEL", qui::sand, 34);
         add<ChoiceBox> (0, R (x + 62, y + 33, 84, 18), proc.apvts, id::subWave, qui::sand);
         auto* oct = add<ChoiceBox> (0, R (x + 62, y + 57, 84, 18), proc.apvts, id::subOct, qui::sand);
-        oct->labelFor = [] (int i) { return u8 (i == 0 ? "−1 OIT." : "−2 OIT."); };
-        add<ChoiceBox> (0, R (x + 8, y + 96, 138, 18), proc.apvts, id::subRt, qui::sand, u8 ("SAÍDA"));
+        oct->labelFor = [] (int i) { return u8 (i == 0 ? "−1 OCT" : "−2 OCT"); };
+        add<ChoiceBox> (0, R (x + 8, y + 96, 138, 18), proc.apvts, id::subRt, qui::sand, juce::String ("OUTPUT"));
 
-        addTitle (0, (float) x1 + 28.0f, (float) y + 9.5f, u8 ("05 · "), u8 ("RUÍDO"), qui::steel);
+        addTitle (0, (float) x1 + 28.0f, (float) y + 9.5f, u8 ("05 · "), "NOISE", qui::steel);
         attachButton (*add<LedToggle> (0, R (x1 + 8, y + 8, 16, 16), qui::steel), id::noiseOn);
         add<MiniKnob> (0, R (x1 + 6, y + 30, 52, 57), proc.apvts, id::noiseColor, "COR", qui::steel, 34);
-        add<MiniKnob> (0, R (x1 + 60, y + 30, 52, 57), proc.apvts, id::noiseLvl, "VOLUME", qui::steel, 34);
-        add<ChoiceBox> (0, R (x1 + 8, y + 96, 138, 18), proc.apvts, id::noiseRt, qui::steel, u8 ("SAÍDA"));
+        add<MiniKnob> (0, R (x1 + 60, y + 30, 52, 57), proc.apvts, id::noiseLvl, "LEVEL", qui::steel, 34);
+        add<ChoiceBox> (0, R (x1 + 8, y + 96, 138, 18), proc.apvts, id::noiseRt, qui::steel, juce::String ("OUTPUT"));
     }
 
     // ---- voz ----
     {
         const int x = 882, y = 225;
         addCard (0, x, y, 306, 125);
-        addTitle (0, (float) x + 10.0f, (float) y + 9.5f, u8 ("06 · "), "VOZ", qui::steel);
+        addTitle (0, (float) x + 10.0f, (float) y + 9.5f, u8 ("06 · "), "VOICE", qui::steel);
         add<ChoiceBox> (0, R (x + 120, y + 6, 176, 18), proc.apvts, id::polyMode, qui::steel, juce::String ("MODO"));
         const char* ids[] = { id::voices, id::glide, id::bend, id::drift, id::velAmp };
-        const juce::String labs[] = { "VOZES", "GLIDE", "BEND", "DERIVA", "VELOC." };
+        const juce::String labs[] = { "VOICES", "GLIDE", "BEND", "DRIFT", "VELOCITY" };
         for (int k = 0; k < 5; ++k)
             add<MiniKnob> (0, R (x + 13 + k * 56, y + 34, 56, 57), proc.apvts, ids[k], labs[k], qui::steel, 34);
         addCaption (0, (float) x + 10.0f, (float) y + 94.0f, 286.0f, 26.0f,
-                    u8 ("DERIVA: a afinação respira como num analógico. VELOC.: quanto a força da tecla mexe no volume."),
+                    u8 ("DRIFT: a afinação respira como num analógico. VELOCITY: quanto a força da tecla mexe no volume."),
                     juce::Justification::centredLeft, 8.5f, false);
     }
 
@@ -1171,19 +1171,19 @@ void QuimeraEditor::buildSynth()
     {
         const int x = 12 + f * 482, y = 358;
         addCard (0, x, y, 474, 121);
-        addTitle (0, (float) x + 30.0f, (float) y + 9.5f, u8 (f == 0 ? "07 · " : "08 · "), f == 0 ? "FILTRO A" : "FILTRO B", theme::coral);
+        addTitle (0, (float) x + 30.0f, (float) y + 9.5f, u8 (f == 0 ? "07 · " : "08 · "), f == 0 ? "FILTER A" : "FILTER B", theme::coral);
         attachButton (*add<LedToggle> (0, R (x + 9, y + 8, 16, 16), theme::coral), filterId (f, "on"));
         add<ChoiceBox> (0, R (x + 146, y + 6, 140, 18), proc.apvts, filterId (f, "type"), theme::coral, juce::String ("TIPO"));
         filters[(size_t) f] = add<FilterView> (0, R (x + 10, y + 30, 150, 84), proc, f);
-        add<MiniKnob> (0, R (x + 164, y + 32, 64, 69), proc.apvts, filterId (f, "cut"), "CORTE", theme::coral, 46);
+        add<MiniKnob> (0, R (x + 164, y + 32, 64, 69), proc.apvts, filterId (f, "cut"), "CUTOFF", theme::coral, 46);
 
         const char* fl[] = { "res", "drv", "key", "env", "mix" };
-        const juce::String lb[] = { "RESSON.", "DRIVE", "KEY", "ENV 2", "MIX" };
+        const juce::String lb[] = { "RES", "DRIVE", "KEY", "ENV 2", "DRY/WET" };
         for (int k = 0; k < 5; ++k)
             add<MiniKnob> (0, R (x + 232 + k * 47, y + 38, 47, 57), proc.apvts, filterId (f, fl[k]), lb[k], theme::coral, 34);
 
         if (f == 0)
-            attachButton (*add<SwitchButton> (0, R (x + 300, y + 6, 164, 18), juce::String ("PARALELO"), u8 ("SÉRIE A → B"), theme::coral),
+            attachButton (*add<SwitchButton> (0, R (x + 300, y + 6, 164, 18), juce::String ("PARALLEL"), u8 ("SERIAL A → B"), theme::coral),
                           id::filterSerial);
     }
 
@@ -1194,12 +1194,12 @@ void QuimeraEditor::buildSynth()
         addTitle (0, (float) x + 10.0f, (float) y + 9.5f, u8 ("09 · "), "MACROS", qui::jade);
         for (int m = 0; m < numMacros; ++m)
             add<MiniKnob> (0, R (x + 6 + m * 50, y + 28, 50, 59), proc.apvts, macroId (m), "MACRO " + juce::String (m + 1), qui::jade, 36);
-        addCaption (0, (float) x + 10.0f, (float) y + 92.0f, 192.0f, 22.0f, u8 ("Ligue cada macro aos destinos na aba MATRIZ."),
+        addCaption (0, (float) x + 10.0f, (float) y + 92.0f, 192.0f, 22.0f, u8 ("Ligue cada macro aos destinos na aba MOD MATRIX."),
                     juce::Justification::centredLeft, 8.5f, false);
     }
 
     // ---- envelopes ----
-    const juce::String envNames[] = { "VOLUME", "FILTRO", "MOD" };
+    const juce::String envNames[] = { "VOLUME", "FILTER", "MOD" };
     for (int e = 0; e < numEnvs; ++e)
     {
         const int x = 12 + e * 252, y = 487;
@@ -1207,7 +1207,7 @@ void QuimeraEditor::buildSynth()
         addTitle (0, (float) x + 10.0f, (float) y + 6.0f, "ENV " + juce::String (e + 1) + u8 (" · "), envNames[e], theme::cream);
         envs[(size_t) e] = add<EnvView> (0, R (x + 8, y + 22, 228, 38), proc, e);
         const char* fl[] = { "a", "d", "s", "r", "c" };
-        const juce::String lb[] = { "ATAQUE", "DECAIM.", "SUSTAIN", "SOLTURA", "CURVA" };
+        const juce::String lb[] = { "ATTACK", "DECAY", "SUSTAIN", "RELEASE", "CURVA" };
         for (int k = 0; k < 5; ++k)
             add<MiniKnob> (0, R (x + 7 + k * 46, y + 62, 46, 57), proc.apvts, envId (e, fl[k]), lb[k], theme::cream, 34);
     }
@@ -1220,15 +1220,15 @@ void QuimeraEditor::buildSynth()
         addTitle (0, (float) x + 10.0f, (float) y + 6.0f, "", "LFO " + juce::String (l + 1), theme::leaf);
         attachButton (*add<LedToggle> (0, R (x + 146, y + 3, 54, 16), theme::leaf, juce::String ("SYNC")), lfoId (l, "sync"));
         lfos[(size_t) l] = add<LfoView> (0, R (x + 8, y + 22, 190, 38), proc, l);
-        lfoRate[(size_t) l] = add<MiniKnob> (0, R (x + 6, y + 62, 50, 57), proc.apvts, lfoId (l, "rate"), "VELOC.", theme::leaf, 34);
-        lfoDiv[(size_t) l]  = add<MiniKnob> (0, R (x + 6, y + 62, 50, 57), proc.apvts, lfoId (l, "div"), u8 ("DIVISÃO"), theme::leaf, 34);
+        lfoRate[(size_t) l] = add<MiniKnob> (0, R (x + 6, y + 62, 50, 57), proc.apvts, lfoId (l, "rate"), "RATE", theme::leaf, 34);
+        lfoDiv[(size_t) l]  = add<MiniKnob> (0, R (x + 6, y + 62, 50, 57), proc.apvts, lfoId (l, "div"), "DIVISION", theme::leaf, 34);
         lfoSyncP[(size_t) l] = raw (proc, lfoId (l, "sync"));
-        add<MiniKnob> (0, R (x + 54, y + 62, 50, 57), proc.apvts, lfoId (l, "rise"), "SUBIDA", theme::leaf, 34);
+        add<MiniKnob> (0, R (x + 54, y + 62, 50, 57), proc.apvts, lfoId (l, "rise"), "RISE", theme::leaf, 34);
 
         auto* shape = add<ChoiceBox> (0, R (x + 108, y + 68, 90, 18), proc.apvts, lfoId (l, "shape"), theme::leaf);
         shape->labelFor = [] (int i)
         {
-            static const char* const n[] = { "Seno", "Triângulo", "Serra Desce", "Serra Sobe", "Quadrada", "S&H", "Aleat. Suave" };
+            static const char* const n[] = { "Sine", "Triangle", "Saw Down", "Saw Up", "Square", "S&H", "Smooth Rnd" };
             return u8 (n[juce::jlimit (0, 6, i)]);
         };
         add<ChoiceBox> (0, R (x + 108, y + 92, 90, 18), proc.apvts, lfoId (l, "mode"), theme::leaf);
@@ -1238,10 +1238,10 @@ void QuimeraEditor::buildSynth()
 void QuimeraEditor::buildMatrix()
 {
     addCard (1, 12, 92, 790, 516);
-    addTitle (1, 22.0f, 101.5f, u8 ("MATRIZ · "), u8 ("16 LIGAÇÕES"), theme::amber);
-    addCaption (1, 60.0f, 116.0f, 160.0f, 12.0f, "FONTE");
-    addCaption (1, 252.0f, 116.0f, 200.0f, 12.0f, "DESTINO");
-    addCaption (1, 494.0f, 116.0f, 290.0f, 12.0f, u8 ("QUANTIDADE  (−100% A +100%)"));
+    addTitle (1, 22.0f, 101.5f, u8 ("MOD MATRIX · "), "16 SLOTS", theme::amber);
+    addCaption (1, 60.0f, 116.0f, 160.0f, 12.0f, "SOURCE");
+    addCaption (1, 252.0f, 116.0f, 200.0f, 12.0f, "DEST");
+    addCaption (1, 494.0f, 116.0f, 290.0f, 12.0f, u8 ("AMOUNT  (−100% A +100%)"));
     for (int s = 0; s < numSlots; ++s)
         rows[(size_t) s] = add<MatrixRow> (1, R (20, 132 + s * 29, 774, 27), proc, s);
 
@@ -1264,8 +1264,8 @@ void QuimeraEditor::buildMatrix()
     add<Knob> (1, R (914, 296, 84, 90), proc.apvts, juce::String (id::mpeBend), juce::String ("MPE BEND"), false, qui::steel);
     add<Knob> (1, R (1004, 296, 84, 90), proc.apvts, juce::String (id::bend), juce::String ("BEND"), false, qui::steel);
     addDesc (1, 822.0f, 402.0f, 354.0f, 200.0f, "COMO FUNCIONA",
-             u8 ("Pressão e Slide vêm do controlador MPE (sem MPE, a pressão é o aftertouch). Com o MPE ligado, cada nota "
-                 "tem o próprio bend, pressão e slide: escolha Pressão ou Slide como fonte numa linha da matriz. "
+             u8 ("Pressure e Slide vêm do controlador MPE (sem MPE, a pressure é o aftertouch). Com o MPE ligado, cada nota "
+                 "tem o próprio bend, pressure e slide: escolha Pressure ou Slide como SOURCE numa linha da MOD MATRIX. "
                  "MPE BEND é a faixa do bend por nota (o padrão MPE é ±48 st); BEND é a faixa da alavanca comum. "
                  "MPE e SEGURAR são de performance: trocar de preset não mexe neles."));
 }
@@ -1273,7 +1273,7 @@ void QuimeraEditor::buildMatrix()
 void QuimeraEditor::buildFx()
 {
     addCard (2, 12, 92, 1176, 156);
-    addTitle (2, 22.0f, 101.5f, u8 ("SAÍDA · "), u8 ("OSCILOSCÓPIO"), theme::amber);
+    addTitle (2, 22.0f, 101.5f, u8 ("OUTPUT · "), "OSCILLOSCOPE", theme::amber);
     addCaption (2, 600.0f, 100.0f, 578.0f, 14.0f, u8 ("DEPOIS DE TODOS OS EFEITOS E DO VOLUME"), juce::Justification::centredRight);
     scope = add<ScopeView> (2, R (22, 118, 1156, 122), proc);
 
@@ -1298,60 +1298,60 @@ void QuimeraEditor::buildFx()
     };
 
     {
-        const auto at = block (0, "HIPER", theme::violet, id::hypOn, u8 ("Cópias desafinadas em volta do som (super serra)."));
-        knob (at, 0, id::hypRate, "VELOC.", theme::violet);
+        const auto at = block (0, "HYPER", theme::violet, id::hypOn, u8 ("Cópias desafinadas em volta do som (super serra)."));
+        knob (at, 0, id::hypRate, "RATE", theme::violet);
         knob (at, 1, id::hypDetune, "DETUNE", theme::violet);
-        knob (at, 2, id::hypMix, "MIX", theme::violet);
+        knob (at, 2, id::hypMix, "DRY/WET", theme::violet);
     }
     {
-        const auto at = block (1, u8 ("DISTORÇÃO"), theme::coral, id::dstOn, u8 ("Válvula, duro, dobra, bitcrush… TOM abre ou fecha."));
+        const auto at = block (1, "DISTORTION", theme::coral, id::dstOn, u8 ("Tube, hard clip, fold, bitcrush… TONE abre ou fecha."));
         type (at, id::dstType, theme::coral);
         knob (at, 0, id::dstDrive, "DRIVE", theme::coral);
-        knob (at, 1, id::dstTone, "TOM", theme::coral);
-        knob (at, 2, id::dstMix, "MIX", theme::coral);
+        knob (at, 1, id::dstTone, "TONE", theme::coral);
+        knob (at, 2, id::dstMix, "DRY/WET", theme::coral);
     }
     {
-        const auto at = block (2, "PHASER", theme::leaf, id::phsOn, u8 ("Vales que varrem o espectro, com realimentação."));
-        knob (at, 0, id::phsRate, "VELOC.", theme::leaf);
-        knob (at, 1, id::phsDepth, "PROFUND.", theme::leaf);
-        knob (at, 2, id::phsFb, "REALIM.", theme::leaf);
-        knob (at, 3, id::phsMix, "MIX", theme::leaf);
+        const auto at = block (2, "PHASER", theme::leaf, id::phsOn, u8 ("Vales que varrem o espectro, com FEEDBACK."));
+        knob (at, 0, id::phsRate, "RATE", theme::leaf);
+        knob (at, 1, id::phsDepth, "DEPTH", theme::leaf);
+        knob (at, 2, id::phsFb, "FEEDBACK", theme::leaf);
+        knob (at, 3, id::phsMix, "DRY/WET", theme::leaf);
     }
     {
         const auto at = block (3, "CHORUS", theme::ice, id::choOn, u8 ("Engrossa e abre o estéreo."));
-        knob (at, 0, id::choRate, "VELOC.", theme::ice);
-        knob (at, 1, id::choDepth, "PROFUND.", theme::ice);
-        knob (at, 2, id::choMix, "MIX", theme::ice);
+        knob (at, 0, id::choRate, "RATE", theme::ice);
+        knob (at, 1, id::choDepth, "DEPTH", theme::ice);
+        knob (at, 2, id::choMix, "DRY/WET", theme::ice);
     }
     {
         const auto at = block (4, "DELAY", theme::amber, id::dlyOn, {});
         type (at, id::dlyDiv, theme::amber);
         attachButton (*add<LedToggle> (2, R (at.x + 8, at.y + 29, 100, 16), theme::amber, juce::String ("PING-PONG")), id::dlyPing);
         delayTime = add<Readout> (2, R (at.x + 120, at.y + 29, 158, 16), theme::cream, juce::Justification (juce::Justification::centredRight));
-        knob (at, 0, id::dlyFb, "REALIM.", theme::amber);
-        knob (at, 1, id::dlyTone, "TOM", theme::amber);
-        knob (at, 2, id::dlyMix, "MIX", theme::amber);
+        knob (at, 0, id::dlyFb, "FEEDBACK", theme::amber);
+        knob (at, 1, id::dlyTone, "TONE", theme::amber);
+        knob (at, 2, id::dlyMix, "DRY/WET", theme::amber);
     }
     {
-        const auto at = block (5, "REVERB", qui::jade, id::revOn, u8 ("Sala, placa ou hall; ABAFAR tira o brilho da cauda."));
+        const auto at = block (5, "REVERB", qui::jade, id::revOn, u8 ("Room, plate ou hall; DAMPING tira o brilho da cauda."));
         type (at, id::revType, qui::jade);
-        knob (at, 0, id::revSize, "TAMANHO", qui::jade);
+        knob (at, 0, id::revSize, "SIZE", qui::jade);
         knob (at, 1, id::revDecay, "DECAY", qui::jade);
-        knob (at, 2, id::revDamp, "ABAFAR", qui::jade);
-        knob (at, 3, id::revMix, "MIX", qui::jade);
+        knob (at, 2, id::revDamp, "DAMPING", qui::jade);
+        knob (at, 3, id::revMix, "DRY/WET", qui::jade);
     }
     {
         const auto at = block (6, "EQ", theme::cream, id::eqOn, u8 ("Três bandas no fim da corrente."));
-        knob (at, 0, id::eqLow, "GRAVES", theme::cream);
-        knob (at, 1, id::eqMid, u8 ("MÉDIOS"), theme::cream);
+        knob (at, 0, id::eqLow, "LOW", theme::cream);
+        knob (at, 1, id::eqMid, "MID", theme::cream);
         knob (at, 2, id::eqMidF, "FREQ.", theme::cream);
-        knob (at, 3, id::eqHigh, "AGUDOS", theme::cream);
+        knob (at, 3, id::eqHigh, "HIGH", theme::cream);
     }
     {
-        const auto at = block (7, "COMPRESSOR", qui::steel, id::cmpOn, u8 ("Multibanda: 3 bandas que sobem e descem (estilo OTT)."));
+        const auto at = block (7, "COMPRESSOR", qui::steel, id::cmpOn, u8 ("Multiband: 3 bandas que sobem e descem (estilo OTT)."));
         type (at, id::cmpMode, qui::steel);
-        knob (at, 0, id::cmpAmt, "QUANT.", qui::steel);
-        knob (at, 1, id::cmpMix, "MIX", qui::steel);
+        knob (at, 0, id::cmpAmt, "AMOUNT", qui::steel);
+        knob (at, 1, id::cmpMix, "DRY/WET", qui::steel);
         compGr = add<GrMeter> (2, R (at.x + 152, at.y + 66, 126, 54), qui::steel);
     }
 }
@@ -1528,7 +1528,7 @@ void QuimeraEditor::timerCallback()
         if (delayTime != nullptr)
         {
             const float ms = proc.fx.delayTimeMs.load();
-            delayTime->set (ms > 0.5f ? "TEMPO " + msText (ms) : juce::String ("TEMPO --"));
+            delayTime->set (ms > 0.5f ? "TIME " + msText (ms) : juce::String ("TIME --"));
         }
         if (compGr != nullptr) compGr->setReduction (proc.fx.compGainReductionDb.load());
     }
@@ -1583,8 +1583,8 @@ void QuimeraEditor::drawCanvas (juce::Graphics& g)
     // dica da aba, à direita das abas
     {
         const juce::String hint = currentTab == 0 ? u8 ("ARRASTE NA VERTICAL · DUPLO CLIQUE VOLTA AO PADRÃO · SETAS TROCAM A LISTA")
-                                : currentTab == 1 ? u8 ("O BRILHO MOSTRA A MODULAÇÃO AGORA · DUPLO CLIQUE NA QUANTIDADE ZERA")
-                                                  : u8 ("ORDEM FIXA: HIPER → DISTORÇÃO → … → COMPRESSOR · O LED LIGA O EFEITO");
+                                : currentTab == 1 ? u8 ("O BRILHO MOSTRA A MODULAÇÃO AGORA · DUPLO CLIQUE NO AMOUNT ZERA")
+                                                  : u8 ("ORDEM FIXA: HYPER → DISTORTION → … → COMPRESSOR · O LED LIGA O EFEITO");
         g.setColour (theme::dim);
         g.setFont (theme::sans (8.5f, true, 0.15f));
         g.drawText (hint, juce::Rectangle<float> (352.0f, 64.0f, 836.0f, 22.0f), juce::Justification::centredRight, true);

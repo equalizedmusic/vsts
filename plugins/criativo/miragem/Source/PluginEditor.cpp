@@ -159,7 +159,7 @@ void MirageView::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "MIRAGEM ", u8 ("· CAUDA ") + secText (param (proc, id::decay))
+    drawTitle (g, 12.0f, 7.0f, "MIRAGEM ", u8 ("· DECAY ") + secText (param (proc, id::decay))
                                             + (frz ? juce::String (u8 (" · CONGELADA")) : juce::String())
                                             + (rev ? juce::String (u8 (" · REVERSO")) : juce::String()));
     {
@@ -344,7 +344,7 @@ void DecayView::paint (juce::Graphics& g)
         g.setFont (theme::mono (9.0f));
         g.drawText ("20", juce::Rectangle<float> (gx0, by + 10.0f, 40.0f, 11.0f), juce::Justification::centredLeft);
         g.drawText ("20k", juce::Rectangle<float> (gx1 - 40.0f, by + 10.0f, 40.0f, 11.0f), juce::Justification::centredRight);
-        g.drawText ("TOM", juce::Rectangle<float> (gx0, by + 10.0f, gx1 - gx0, 11.0f), juce::Justification::centred);
+        g.drawText ("TONE", juce::Rectangle<float> (gx0, by + 10.0f, gx1 - gx0, 11.0f), juce::Justification::centred);
     }
 
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -368,17 +368,17 @@ void DecayView::paint (juce::Graphics& g)
 MiragemEditor::MiragemEditor (MiragemProcessor& p)
     : AudioProcessorEditor (&p), proc (p), mirage (p), decayView (p),
       // cor do knob = cor do que ele mexe no desenho
-      decayMacro  (p.apvts, id::decay,    "CAUDA",        true,  theme::amber),
-      size        (p.apvts, id::size,     "TAMANHO",      false, theme::amber),
-      predelay    (p.apvts, id::predelay, u8 ("PRÉ-DELAY"), false, theme::amber),
-      dark        (p.apvts, id::dark,     "ESCURO",       false, theme::coral),
-      lowCut      (p.apvts, id::lowCut,   "CORTE GRAVE",  false, theme::coral),
+      decayMacro  (p.apvts, id::decay,    "DECAY",        true,  theme::amber),
+      size        (p.apvts, id::size,     "SIZE",         false, theme::amber),
+      predelay    (p.apvts, id::predelay, "PRE-DELAY",      false, theme::amber),
+      dark        (p.apvts, id::dark,     "DAMPING",      false, theme::coral),
+      lowCut      (p.apvts, id::lowCut,   "LOW CUT",      false, theme::coral),
       shimMacro   (p.apvts, id::shimmer,  "SHIMMER",      true,  theme::violet),
-      interval    (p.apvts, id::interval, "TOM",          false, theme::violet),
-      motion      (p.apvts, id::motion,   "MOVIMENTO",    false, theme::ice),
+      interval    (p.apvts, id::interval, "INTERVAL",     false, theme::violet),
+      motion      (p.apvts, id::motion,   "MODULATION",   false, theme::ice),
       duck        (p.apvts, id::duck,     "DUCK",         false, theme::cream),
       revLen      (p.apvts, id::revLen,   "JANELA REV.",  false, theme::cream),
-      output      (p.apvts, id::output,   "GANHO",        false, theme::cream),
+      output      (p.apvts, id::output,   "GAIN",         false, theme::cream),
       mix         (p.apvts, id::mix),
       freezeKey   ("CONGELAR", theme::ice),
       reverseKey  ("REVERSO", theme::violet)
@@ -571,12 +571,12 @@ void MiragemEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 552.0f, 216.0f, 258.0f, 352.0f });
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
-    drawTitle (g, 22.0f,  226.0f, "CAUDA ", u8 ("· dB × TEMPO"));
+    drawTitle (g, 22.0f,  226.0f, "TAIL ", u8 ("· dB × TIME"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), u8 ("ESPAÇO"));
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "SHIMMER");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO CAUDA",
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO DECAY",
               u8 ("Quanto tempo o som leva para sumir, de uma sala curta a 30 s de nuvem."));
     drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO SHIMMER",
               u8 ("A cauda sobe de tom e volta para a sala: cada volta fica mais alta e mais brilhante."));

@@ -80,7 +80,7 @@ void drawPreStatus (juce::Graphics& g, float preMs, int sync, float bpm, bool ho
     const float right = 604.0f;
 
     juce::AttributedString a, b;
-    a.append (u8 ("PRÉ-DELAY "), f, theme::dim);
+    a.append ("PRE-DELAY ", f, theme::dim);
     a.append (msText (preMs), f, theme::cream);
     if (sync > 0)
     {
@@ -161,14 +161,14 @@ void ResponseView::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "RESPOSTA ", u8 ("· RT60 ") + secText (dec) + u8 (" · PRÉ-DELAY ") + msText (pre * 1000.0f));
+    drawTitle (g, 12.0f, 7.0f, "RESPOSTA ", u8 ("· RT60 ") + secText (dec) + u8 (" · PRE-DELAY ") + msText (pre * 1000.0f));
     {
         float x = W - 10.0f;
         legendItem (g, x, theme::cream, "AGORA", true);
-        legendItem (g, x, theme::amber, "CAUDA", false);
-        legendItem (g, x, theme::violet, u8 ("REFLEXÕES"), false);
-        legendItem (g, x, theme::ice, u8 ("PRÉ-DELAY"), false);
-        legendItem (g, x, theme::cream, "SECO", false);
+        legendItem (g, x, theme::amber, "TAIL", false);
+        legendItem (g, x, theme::violet, "EARLY REFLECTIONS", false);
+        legendItem (g, x, theme::ice, "PRE-DELAY", false);
+        legendItem (g, x, theme::cream, "DRY", false);
     }
 
     const float x0 = 12.0f, x1 = W - 12.0f, top = 26.0f, bot = H - 10.0f;
@@ -425,7 +425,7 @@ void TailEqView::paint (juce::Graphics& g)
         g.setFont (theme::mono (9.0f));
         g.drawText ("MONO", juce::Rectangle<float> (gx0, by + 9.0f, 50.0f, 11.0f), juce::Justification::centredLeft);
         g.drawText ("150%", juce::Rectangle<float> (gx1 - 50.0f, by + 9.0f, 50.0f, 11.0f), juce::Justification::centredRight);
-        g.drawText ("LARGURA", juce::Rectangle<float> (gx0, by + 9.0f, gx1 - gx0, 11.0f), juce::Justification::centred);
+        g.drawText ("WIDTH", juce::Rectangle<float> (gx0, by + 9.0f, gx1 - gx0, 11.0f), juce::Justification::centred);
     }
 
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -449,18 +449,18 @@ void TailEqView::paint (juce::Graphics& g)
 SalaEditor::SalaEditor (SalaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), response (p), eqView (p),
       // cor do knob = cor do que ele mexe no desenho
-      sizeMacro (p.apvts, id::size,      "TAMANHO",            true,  theme::amber),
+      sizeMacro (p.apvts, id::size,      "SIZE",               true,  theme::amber),
       decay     (p.apvts, id::decay,     "DECAY",              false, theme::amber),
-      predelay  (p.apvts, id::predelay,  u8 ("PRÉ-DELAY"),     false, theme::ice),
-      preSync   (p.apvts, id::preSync,   u8 ("PRÉ NO TEMPO"),  false, theme::ice),
-      diffusion (p.apvts, id::diffusion, u8 ("DIFUSÃO"),       false, theme::violet),
-      early     (p.apvts, id::early,     u8 ("REFLEXÕES"),     false, theme::violet),
-      lowCut    (p.apvts, id::lowCut,    "PASSA-ALTAS",        false, theme::coral),
-      highCut   (p.apvts, id::highCut,   "PASSA-BAIXAS",       false, theme::coral),
-      damp      (p.apvts, id::damp,      "AMORTECIMENTO",      false, theme::leaf),
-      width     (p.apvts, id::width,     "LARGURA",            false, theme::cream),
+      predelay  (p.apvts, id::predelay,  "PRE-DELAY",          false, theme::ice),
+      preSync   (p.apvts, id::preSync,   "PRE SYNC",           false, theme::ice),
+      diffusion (p.apvts, id::diffusion, "DIFFUSION",          false, theme::violet),
+      early     (p.apvts, id::early,     "EARLY REF.",         false, theme::violet),
+      lowCut    (p.apvts, id::lowCut,    "LOW CUT",            false, theme::coral),
+      highCut   (p.apvts, id::highCut,   "HIGH CUT",           false, theme::coral),
+      damp      (p.apvts, id::damp,      "DAMPING",            false, theme::leaf),
+      width     (p.apvts, id::width,     "WIDTH",              false, theme::cream),
       duck      (p.apvts, id::duck,      "DUCK",               false, theme::cream),
-      output    (p.apvts, id::output,    "GANHO",              false, theme::cream),
+      output    (p.apvts, id::output,    "GAIN",               false, theme::cream),
       mix       (p.apvts, id::mix),
       soloKey   (u8 ("SÓ A SALA"), theme::amber)
 {
@@ -655,13 +655,13 @@ void SalaEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 552.0f, 216.0f, 258.0f, 352.0f });
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
-    drawTitle (g, 22.0f,  226.0f, "EQ DA CAUDA ", u8 ("· dB × FREQUÊNCIA"));
+    drawTitle (g, 22.0f,  226.0f, "TAIL EQ ", u8 ("· dB × FREQUÊNCIA"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), u8 ("ESPAÇO"));
-    drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "CAUDA");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "TAIL");
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
     drawDesc (g, { 685.0f, 472.0f, 117.0f, 90.0f }, "DUCK",
-              u8 ("A cauda abaixa enquanto o seco toca e volta nas pausas."));
+              u8 ("A cauda abaixa enquanto o DRY toca e volta nas pausas."));
 }
 
 void SalaEditor::layoutCanvas()

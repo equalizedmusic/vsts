@@ -70,19 +70,19 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     };
 
     add (id::squeeze,   "Aperto",            { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::threshold, "Limiar",            { -60.0f, 0.0f }, -18.0f, db);
-    add (id::ratio,     u8 ("Razão"),        skewed (1.0f, 20.0f, 4.0f), 4.0f, [] (float v, int) { return ratioText (v); });
-    add (id::knee,      "Joelho",            { 0.0f, 24.0f }, 6.0f, db);
-    add (id::attack,    "Ataque",            skewed (0.1f, 100.0f, 10.0f), 10.0f, ms);
-    add (id::release,   "Soltura",           skewed (10.0f, 1000.0f, 150.0f), 150.0f, ms);
-    add (id::scHpf,     "Filtro sidechain",  skewed (20.0f, 500.0f, 100.0f), 20.0f, [] (float v, int) { return hzText (v); });
-    add (id::makeup,    u8 ("Compensação"),  { -12.0f, 24.0f }, 0.0f, db);
-    add (id::output,    "Ganho",             { -36.0f, 12.0f }, 0.0f, db);
-    add (id::mix,       "Mix",               { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::threshold, "Threshold",         { -60.0f, 0.0f }, -18.0f, db);
+    add (id::ratio,     "Ratio",             skewed (1.0f, 20.0f, 4.0f), 4.0f, [] (float v, int) { return ratioText (v); });
+    add (id::knee,      "Knee",              { 0.0f, 24.0f }, 6.0f, db);
+    add (id::attack,    "Attack",            skewed (0.1f, 100.0f, 10.0f), 10.0f, ms);
+    add (id::release,   "Release",           skewed (10.0f, 1000.0f, 150.0f), 150.0f, ms);
+    add (id::scHpf,     "SC HPF",            skewed (20.0f, 500.0f, 100.0f), 20.0f, [] (float v, int) { return hzText (v); });
+    add (id::makeup,    "Makeup",            { -12.0f, 24.0f }, 0.0f, db);
+    add (id::output,    "Gain",              { -36.0f, 12.0f }, 0.0f, db);
+    add (id::mix,       "Dry/Wet",           { 0.0f, 100.0f }, 100.0f, pct);
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoRel, 1 }, "Soltura auto", false));
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoMakeup, 1 }, u8 ("Compensação auto"), false));
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::listen, 1 }, "Ouvir sidechain", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoRel, 1 }, "Auto release", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoMakeup, 1 }, "Auto makeup", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::listen, 1 }, "SC listen", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;
 }

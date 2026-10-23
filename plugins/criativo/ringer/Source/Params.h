@@ -60,19 +60,19 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     StringArray divs;
     for (auto* d : divNames) divs.add (d);
 
-    add (id::freq,      u8 ("Frequência"),  { 0.0f, 100.0f }, 58.0f, pct);
-    choice (id::range,  "Faixa",            { "Baixa", "Alta" }, 1);
+    add (id::freq,      "Frequency",        { 0.0f, 100.0f }, 58.0f, pct);
+    choice (id::range,  "Range",            { "Low", "High" }, 1);
     choice (id::snap,   "Afinar",           StringArray ("Livre", u8 ("Semitom")), 0);
     add (id::drive,     "Drive",            { 0.0f, 24.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::stereo,    u8 ("Estéreo"),     { 0.0f, 100.0f }, 25.0f, pct);
-    add (id::lfoAmt,    "LFO Quantidade",   { 0.0f, 100.0f }, 30.0f, pct);
-    choice (id::lfoRate,  "LFO Taxa",       divs, 8);
-    choice (id::lfoShape, "LFO Forma",      StringArray ("Seno", u8 ("Triângulo"), "Quadrada", "Rampa", u8 ("Aleatória")), 0);
+    add (id::stereo,    "Stereo",           { 0.0f, 100.0f }, 25.0f, pct);
+    add (id::lfoAmt,    "LFO Amount",       { 0.0f, 100.0f }, 30.0f, pct);
+    choice (id::lfoRate,  "LFO Rate",       divs, 8);
+    choice (id::lfoShape, "LFO Shape",      StringArray ("Sine", "Triangle", "Square", "Ramp", "Random"), 0);
     choice (id::lfoSync,  "LFO Sync",       { "Grid", "Livre" }, 0);
-    add (id::lfoPhase,  "LFO Fase",         { 0.0f, 360.0f }, 0.0f,
+    add (id::lfoPhase,  "LFO Phase",        { 0.0f, 360.0f }, 0.0f,
          [] (float v, int) { return String (roundToInt (v)) + juce::String::fromUTF8 ("°"); });
-    add (id::output,    "Ganho",            { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Mix",              { 0.0f, 100.0f }, 70.0f, pct);
+    add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,       "Dry/Wet",             { 0.0f, 100.0f }, 70.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::twice, 1 }, "Dobrar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));

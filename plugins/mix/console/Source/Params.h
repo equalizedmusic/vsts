@@ -71,13 +71,13 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     add (id::drive,     "Drive",       { 0.0f, 100.0f }, 30.0f, pct);
     choice (id::model,  "Modelo",      models, 1);
-    add (id::tone,      "Tom",         { -6.0f, 6.0f }, 0.0f, db);
+    add (id::tone,      "Tone",        { -6.0f, 6.0f }, 0.0f, db);
     add (id::crosstalk, "Crosstalk",   { 0.0f, 100.0f }, 10.0f, pct);
-    add (id::noise,     u8 ("Ruído"),  { 0.0f, 100.0f }, 0.0f, [] (float v, int) { return noiseText (v); });
-    add (id::output,    "Ganho",       { -36.0f, 12.0f }, 0.0f, db);
-    add (id::mix,       "Mix",         { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::noise,     "Noise",       { 0.0f, 100.0f }, 0.0f, [] (float v, int) { return noiseText (v); });
+    add (id::output,    "Gain",        { -36.0f, 12.0f }, 0.0f, db);
+    add (id::mix,       "Dry/Wet",     { 0.0f, 100.0f }, 100.0f, pct);
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoGain, 1 }, u8 ("Compensação automática"), true));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoGain, 1 }, "Auto makeup", true));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::os4, 1 }, u8 ("Oversampling 4×"), true));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::compare, 1 }, "Comparar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));

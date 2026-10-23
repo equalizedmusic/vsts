@@ -58,20 +58,20 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     };
     auto pct = [] (float v, int) { return String (roundToInt (v)) + "%"; };
 
-    add (id::drive,   u8 ("Saturação"), { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::drive,   "Saturation",     { 0.0f, 100.0f }, 40.0f, pct);
     choice (id::model, "Modelo",        { "Rolo 1/4\"", "Fita 2\"", "Cassete" }, 0);
-    choice (id::speed, "Velocidade",    { "7,5 ips", "15 ips", "30 ips" }, 1);
-    add (id::bump,    "Grave",          { 0.0f, 100.0f }, 50.0f,
+    choice (id::speed, "Speed",         { "7,5 ips", "15 ips", "30 ips" }, 1);
+    add (id::bump,    "Head bump",      { 0.0f, 100.0f }, 50.0f,
          [] (float v, int) { return "+" + String (6.0f * v * 0.01f, 1) + " dB"; });
-    add (id::wear,    "Desgaste",       { 0.0f, 100.0f }, 0.0f, pct);
+    add (id::wear,    "Wear",           { 0.0f, 100.0f }, 0.0f, pct);
     add (id::wow,     "Wow",            { 0.0f, 100.0f }, 15.0f, pct);
     add (id::flutter, "Flutter",        { 0.0f, 100.0f }, 15.0f, pct);
-    add (id::hiss,    "Chiado",         { 0.0f, 100.0f }, 20.0f, pct);
+    add (id::hiss,    "Hiss",           { 0.0f, 100.0f }, 20.0f, pct);
     choice (id::brake, "Freio",         { "1/2 tempo", "1 tempo", "2 tempos", "1 comp", "2 comp" }, 3);
     choice (id::start, "Partida",       { "Na hora", "Curta", "Igual ao freio" }, 1);
-    add (id::output,  "Ganho",          { -36.0f, 12.0f }, 0.0f,
+    add (id::output,  "Gain",           { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
-    add (id::mix,     "Mix",            { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::mix,     "Dry/Wet",        { 0.0f, 100.0f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::tapeStop, 1 }, "Tape Stop", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));

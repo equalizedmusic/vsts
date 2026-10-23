@@ -39,9 +39,9 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto pct = [] (float v, int) { return String (roundToInt (v)) + "%"; };
 
     add (id::chama,  "Chama",          { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::noise,  u8 ("Ruído"),     { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::noise,  "Noise",     { 0.0f, 100.0f }, 50.0f, pct);
     add (id::space,  u8 ("Espaço"),    { 0.0f, 100.0f }, 50.0f, pct);
-    add (id::output, "Ganho",          { -36.0f, 12.0f }, 0.0f,
+    add (id::output, "Gain",           { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::drop, 1 }, "Drop", false));

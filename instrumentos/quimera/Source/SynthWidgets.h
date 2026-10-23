@@ -496,7 +496,7 @@ public:
         const float W = (float) getWidth();
         g.setColour (theme::dim);
         g.setFont (theme::sans (8.5f, true, 0.18f));
-        g.drawText (quimera::u8 ("REDUÇÃO"), juce::Rectangle<float> (0.0f, 0.0f, W, 12.0f), juce::Justification::centredLeft);
+        g.drawText ("GAIN REDUCTION", juce::Rectangle<float> (0.0f, 0.0f, W, 12.0f), juce::Justification::centredLeft);
         g.setColour (painted > 0.05f ? theme::cream : theme::dim);
         g.setFont (theme::mono (11.0f));
         const juce::String t = painted > 0.05f ? quimera::u8 ("−") + quimera::num1 (painted) + " dB" : juce::String ("0,0 dB");

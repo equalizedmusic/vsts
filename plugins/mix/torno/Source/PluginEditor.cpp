@@ -86,12 +86,12 @@ void HistoryView::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, u8 ("HISTÓRICO "), u8 ("· NÍVEL DE ENTRADA E REDUÇÃO DE GANHO, ÚLTIMOS 4 s"));
+    drawTitle (g, 12.0f, 7.0f, u8 ("HISTÓRICO "), u8 ("· INPUT E GAIN REDUCTION, ÚLTIMOS 4 s"));
     {
         float x = W - 10.0f;
-        legendItem (g, x, theme::amber, "LIMIAR", true);
-        legendItem (g, x, theme::coral, u8 ("REDUÇÃO"), false);
-        legendItem (g, x, theme::cream, "ENTRADA", false);
+        legendItem (g, x, theme::amber, "THRESHOLD", true);
+        legendItem (g, x, theme::coral, "GR", false);
+        legendItem (g, x, theme::cream, "INPUT", false);
     }
 
     const float x0 = 12.0f, x1 = W - 46.0f, top = 26.0f, bot = H - 10.0f;
@@ -155,7 +155,7 @@ void HistoryView::paint (juce::Graphics& g)
 
     g.setColour (theme::coral);
     g.setFont (theme::mono (9.0f));
-    g.drawText (u8 ("REDUÇÃO 0 a −") + juce::String (juce::roundToInt (grRange)) + " dB",
+    g.drawText (u8 ("GR 0 a −") + juce::String (juce::roundToInt (grRange)) + " dB",
                 juce::Rectangle<float> (x0 + 6.0f, top + 3.0f, 200.0f, 11.0f), juce::Justification::centredLeft);
 
     // limiar (já com o APERTO)
@@ -165,7 +165,7 @@ void HistoryView::paint (juce::Graphics& g)
         g.setColour (theme::amber);
         g.fillRect (x0, yT - 0.5f, x1 - x0, 1.2f);
         g.setFont (theme::mono (9.5f));
-        g.drawText ("LIMIAR " + dbSigned (c.threshold),
+        g.drawText ("THRESHOLD " + dbSigned (c.threshold),
                     juce::Rectangle<float> (x1 - 130.0f, yT - 13.0f, 124.0f, 11.0f), juce::Justification::centredRight);
     }
 
@@ -279,9 +279,9 @@ void CurveView::paint (juce::Graphics& g)
         t.append (b, theme::mono (10.5f), cb);
         return t;
     };
-    auto l1 = line ("LIMIAR ", dbSigned (c.threshold), theme::amber);
-    auto r1 = line (u8 ("RAZÃO "), ratioText (c.ratio), theme::cream);
-    auto l2 = line ("JOELHO ", juce::String (c.knee, 1).replaceCharacter ('.', ',') + " dB", theme::violet);
+    auto l1 = line ("THRESHOLD ", dbSigned (c.threshold), theme::amber);
+    auto r1 = line ("RATIO ", ratioText (c.ratio), theme::cream);
+    auto l2 = line ("KNEE ", juce::String (c.knee, 1).replaceCharacter ('.', ',') + " dB", theme::violet);
     auto r2 = line ("SC ", hzText (s.hpfHz), theme::ice);
     l1.setJustification (juce::Justification::centredLeft);
     r1.setJustification (juce::Justification::centredRight);
@@ -319,8 +319,8 @@ void GrReadout::paint (juce::Graphics& g)
         g.drawText (t, juce::Rectangle<float> (0.0f, y, W, 12.0f), juce::Justification::centredRight);
     };
 
-    label ("REDUZINDO AGORA", 0.0f);
-    value (u8 ("MÁX ") + grText (grMax), 0.0f, grMax > 0.05f ? theme::coral : theme::dim);
+    label ("GAIN REDUCTION", 0.0f);
+    value ("MAX " + grText (grMax), 0.0f, grMax > 0.05f ? theme::coral : theme::dim);
     g.setColour (grNow > 0.05f ? theme::coral : theme::dim);
     g.setFont (theme::mono (26.0f));
     g.drawText (grText (grNow), juce::Rectangle<float> (0.0f, 13.0f, W, 30.0f), juce::Justification::centredLeft);
@@ -332,7 +332,7 @@ void GrReadout::paint (juce::Graphics& g)
     g.setColour (theme::coral);
     g.fillRoundedRectangle (0.0f, 47.0f, W * juce::jlimit (0.0f, 1.0f, grNow / 24.0f), 4.0f, 2.0f);
 
-    label (u8 ("COMPENSAÇÃO APLICADA"), 60.0f);
+    label ("MAKEUP APLICADO", 60.0f);
     value (dbSigned (makeupDb), 60.0f, std::abs (makeupDb) > 0.05f ? theme::leaf : theme::dim);
 }
 
@@ -343,17 +343,17 @@ TornoEditor::TornoEditor (TornoProcessor& p)
     : AudioProcessorEditor (&p), proc (p), history (p), curve (p),
       // cor do knob = cor do que ele mexe no desenho
       squeezeMacro (p.apvts, id::squeeze,   "APERTO",            true,  theme::coral),
-      threshold    (p.apvts, id::threshold, "LIMIAR",            false, theme::amber),
-      ratio        (p.apvts, id::ratio,     u8 ("RAZÃO"),        false, theme::cream),
-      knee         (p.apvts, id::knee,      "JOELHO",            false, theme::violet),
-      scHpf        (p.apvts, id::scHpf,     "FILTRO SC",         false, theme::ice),
-      attack       (p.apvts, id::attack,    "ATAQUE",            false, theme::coral),
-      release      (p.apvts, id::release,   "SOLTURA",           false, theme::coral),
-      makeup       (p.apvts, id::makeup,    u8 ("COMPENSAÇÃO"),  false, theme::leaf),
-      output       (p.apvts, id::output,    "GANHO",             false, theme::cream),
+      threshold    (p.apvts, id::threshold, "THRESHOLD",         false, theme::amber),
+      ratio        (p.apvts, id::ratio,     "RATIO",             false, theme::cream),
+      knee         (p.apvts, id::knee,      "KNEE",              false, theme::violet),
+      scHpf        (p.apvts, id::scHpf,     "SC HPF",            false, theme::ice),
+      attack       (p.apvts, id::attack,    "ATTACK",            false, theme::coral),
+      release      (p.apvts, id::release,   "RELEASE",           false, theme::coral),
+      makeup       (p.apvts, id::makeup,    "MAKEUP",            false, theme::leaf),
+      output       (p.apvts, id::output,    "GAIN",              false, theme::cream),
       mix          (p.apvts, id::mix),
-      listenKey    ("OUVIR SIDECHAIN", theme::ice),
-      autoRelKey   ("SOLTURA AUTO", theme::coral),
+      listenKey    ("SC LISTEN", theme::ice),
+      autoRelKey   ("AUTO RELEASE", theme::coral),
       autoMakeupKey ("AUTO", theme::leaf)
 {
     setLookAndFeel (&lnf);
@@ -564,7 +564,7 @@ void TornoEditor::drawCanvas (juce::Graphics& g)
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
@@ -578,13 +578,13 @@ void TornoEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 552.0f, 216.0f, 258.0f, 352.0f });
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
-    drawTitle (g, 22.0f,  226.0f, "CURVA ", u8 ("· ENTRADA × SAÍDA (dB)"));
+    drawTitle (g, 22.0f,  226.0f, "CURVA ", u8 ("· INPUT × OUTPUT (dB)"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), u8 ("COMPRESSÃO"));
-    drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "TEMPO E GANHO");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "ENVELOPE E GAIN");
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
     drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO APERTO",
-              u8 ("Desce o LIMIAR e sobe a RAZÃO juntos. O que ele tira aparece em coral no histórico."));
+              u8 ("Desce o THRESHOLD e sobe o RATIO juntos. O que ele tira aparece em coral no histórico."));
 
     // separador entre o tempo e a leitura da redução
     g.setColour (theme::line);

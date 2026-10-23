@@ -72,16 +72,16 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     StringArray modes;
     for (auto* m : detModeNames) modes.add (m);
 
-    add (id::attack,  "Ataque",   { -100.0f, 100.0f }, 0.0f, sig);
+    add (id::attack,  "Attack",   { -100.0f, 100.0f }, 0.0f, sig);
     add (id::sustain, "Sustain",  { -100.0f, 100.0f }, 0.0f, sig);
     add (id::focus,   "Foco",     skewed (2.0f, 50.0f, 12.0f), 12.0f, [] (float v, int) { return msText (v); });
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { id::detMode, 1 }, "Detector", modes, 0));
-    add (id::detFreq, "Corte do detector", skewed (40.0f, 8000.0f, 600.0f), 200.0f, [] (float v, int) { return hzText (v); });
-    add (id::output,  "Ganho",    { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,     "Mix",      { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::detFreq, "Detector cutoff",   skewed (40.0f, 8000.0f, 600.0f), 200.0f, [] (float v, int) { return hzText (v); });
+    add (id::output,  "Gain",     { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,     "Dry/Wet",  { 0.0f, 100.0f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::clip, 1 }, "Clipper", true));
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, u8 ("Ouvir diferença"), false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, "Delta", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;
 }
@@ -92,7 +92,7 @@ struct FactoryPreset
     std::vector<std::pair<const char*, float>> values;   // valores reais; o que faltar volta ao padrão
 };
 
-// DETECTOR guarda o índice: 0 = Tudo, 1 = Graves (passa-baixa no corte), 2 = Agudos (passa-alta no corte)
+// DETECTOR guarda o índice: 0 = Full, 1 = Low (passa-baixa no corte), 2 = High (passa-alta no corte)
 inline std::vector<FactoryPreset> factoryPresets()
 {
     return {

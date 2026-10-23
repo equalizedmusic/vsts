@@ -17,7 +17,7 @@ inline constexpr double divBeats[numDivs]  = { 0.5, 1.0 / 3.0, 0.25, 1.0 / 6.0, 
 
 enum FilterType { filtLow, filtHigh, filtBand };
 inline constexpr int numFilters = 3;
-inline const char* const filterNames[numFilters] = { "Passa-baixa", "Passa-alta", "Passa-faixa" };
+inline const char* const filterNames[numFilters] = { "Low-pass", "High-pass", "Band-pass" };
 
 inline constexpr double maxHoldSec = 2.0;
 

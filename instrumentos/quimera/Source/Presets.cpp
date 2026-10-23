@@ -1,6 +1,6 @@
 // QUIMERA — banco de presets de fábrica.
-// O Init primeiro e depois 20 por categoria, na ordem de categoryNames (BAIXO, LEAD, PLUCK, PAD, ATMOS, PERC,
-// BATERIA, TECLAS, FX). Valores REAIS (%, Hz, ms, st, dB); listas e liga/desliga = índice / 0 ou 1.
+// O Init primeiro e depois 20 por categoria, na ordem de categoryNames (BASS, LEAD, PLUCK, PAD, ATMOS, PERC,
+// DRUMS, KEYS, FX). Valores REAIS (%, Hz, ms, st, dB); listas e liga/desliga = índice / 0 ou 1.
 // O que não aparece volta ao PADRÃO do parâmetro (ver createLayout em Params.h).
 // mpe, mpeBend e hold NUNCA entram aqui (são de performance).
 

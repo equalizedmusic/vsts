@@ -59,27 +59,27 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     add (id::grain,    u8 ("Grão"),       { 0.0f, 100.0f }, 55.0f, pct);
     add (id::space,    u8 ("Espaço"),     { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::size,     "Tamanho",         skewed (10.0f, 500.0f, 120.0f), 180.0f,
+    add (id::size,     "Size",            skewed (10.0f, 500.0f, 120.0f), 180.0f,
          [] (float v, int) { return String (roundToInt (v)) + " ms"; });
-    add (id::density,  "Densidade",       skewed (1.0f, 100.0f, 20.0f), 25.0f,
+    add (id::density,  "Density",         skewed (1.0f, 100.0f, 20.0f), 25.0f,
          [] (float v, int) { return String (roundToInt (v)) + " /s"; });
-    add (id::spray,    u8 ("Dispersão"),  skewed (0.0f, 1000.0f, 200.0f), 300.0f,
+    add (id::spray,    "Spray",           skewed (0.0f, 1000.0f, 200.0f), 300.0f,
          [] (float v, int) { return String (roundToInt (v)) + " ms"; });
-    add (id::pitch,    u8 ("Afinação"),   { -24.0f, 24.0f, 1.0f }, 0.0f,
+    add (id::pitch,    "Pitch",           { -24.0f, 24.0f, 1.0f }, 0.0f,
          [] (float v, int) { auto s = roundToInt (v); return (s > 0 ? "+" : "") + String (s) + " st"; });
-    add (id::spread,   u8 ("Estéreo"),    { 0.0f, 100.0f }, 70.0f, pct);
+    add (id::spread,   "Stereo",          { 0.0f, 100.0f }, 70.0f, pct);
     add (id::feedback, "Feedback",        { 0.0f, 95.0f }, 25.0f, pct);
-    add (id::decay,    "Decaimento",      skewed (0.2f, 10.0f, 2.0f), 3.0f,
+    add (id::decay,    "Decay",           skewed (0.2f, 10.0f, 2.0f), 3.0f,
          [] (float v, int) { return String (v, 1) + " s"; });
-    add (id::tone,     "Tom",             { -1.0f, 1.0f }, 0.0f,
+    add (id::tone,     "Tone",            { -1.0f, 1.0f }, 0.0f,
          [] (float v, int)
          {
              if (std::abs (v) < 0.02f) return String ("ABERTO");
              return v < 0.0f ? "LP " + hzText (toneLowpassHz (v)) : "HP " + hzText (toneHighpassHz (v));
          });
-    add (id::output,   "Ganho",           { -36.0f, 12.0f }, 0.0f,
+    add (id::output,   "Gain",            { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
-    add (id::mix,      "Mix",             { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::mix,      "Dry/Wet",         { 0.0f, 100.0f }, 50.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::reverse, 1 }, "Reverso", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::freeze, 1 }, "Congelar", false));

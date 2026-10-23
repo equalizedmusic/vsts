@@ -58,13 +58,13 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::reverse, "Reverso",             { 0.0f, 100.0f }, 35.0f, pct);
     add (id::tape,    "Fita",                { 0.0f, 24.0f, 1.0f }, 10.0f,
          [] (float v, int) { return u8 ("±") + String (roundToInt (v)) + " st"; });
-    add (id::filter,  "Filtro",              { 0.0f, 100.0f }, 55.0f, pct);
+    add (id::filter,  "Filter",              { 0.0f, 100.0f }, 55.0f, pct);
     add (id::crush,   "Crush",               { 0.0f, 100.0f }, 25.0f,
          [] (float v, int) { return String (crushBits (v)) + " bit"; });
     choice (id::spin,     "Giro",            { "1/4", "1/8", "1/16", "1/32" }, 2);
-    add (id::output,  "Ganho",               { -36.0f, 12.0f }, 0.0f,
+    add (id::output,  "Gain",                { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
-    add (id::mix,     "Mix",                 { 0.0f, 100.0f }, 70.0f, pct);
+    add (id::mix,     "Dry/Wet",             { 0.0f, 100.0f }, 70.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mutate, 1 }, "Transmutar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::hold, 1 }, "Segurar", false));

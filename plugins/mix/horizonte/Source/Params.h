@@ -67,22 +67,22 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto bal  = [] (float v, int) { return balanceText (v); };
     auto deg  = [] (float v, int) { return degText (v); };
 
-    add (id::width,     "Largura",                 { 0.0f, 200.0f }, 100.0f, pct);
-    add (id::widthLow,  "Largura graves",          { 0.0f, 200.0f }, 100.0f, pct);
-    add (id::widthHigh, "Largura agudos",          { 0.0f, 200.0f }, 100.0f, pct);
+    add (id::width,     "Width",                   { 0.0f, 200.0f }, 100.0f, pct);
+    add (id::widthLow,  "Low width",               { 0.0f, 200.0f }, 100.0f, pct);
+    add (id::widthHigh, "High width",              { 0.0f, 200.0f }, 100.0f, pct);
     NormalisableRange<float> xoverRange (80.0f, 4000.0f);
     xoverRange.setSkewForCentre (500.0f);
     NormalisableRange<float> monoRange (0.0f, 300.0f);
     monoRange.setSkewForCentre (80.0f);
 
-    add (id::xover,     u8 ("Divisão"),            xoverRange, 400.0f, hz);
-    add (id::monoBass,  "Grave mono",              monoRange, 0.0f, mono);
-    add (id::balance,   u8 ("Balanço"),            { -100.0f, 100.0f }, 0.0f, bal);
-    add (id::rotation,  u8 ("Rotação"),            { -45.0f, 45.0f }, 0.0f, deg);
-    add (id::output,    "Ganho",                   { -24.0f, 12.0f }, 0.0f, db);
+    add (id::xover,     "Crossover",               xoverRange, 400.0f, hz);
+    add (id::monoBass,  "Mono bass",               monoRange, 0.0f, mono);
+    add (id::balance,   "Balance",                 { -100.0f, 100.0f }, 0.0f, bal);
+    add (id::rotation,  "Rotation",                { -45.0f, 45.0f }, 0.0f, deg);
+    add (id::output,    "Gain",                    { -24.0f, 12.0f }, 0.0f, db);
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::monoListen, 1 }, "Ouvir em mono", false));
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::sideListen, 1 }, u8 ("Ouvir só o lado"), false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::monoListen, 1 }, "Mono", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::sideListen, 1 }, "Side solo", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;
 }

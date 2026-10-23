@@ -269,15 +269,15 @@ GraoEditor::GraoEditor (GraoProcessor& p)
     : AudioProcessorEditor (&p), proc (p), tape (p), pad (p.apvts),
       grainMacro (p.apvts, id::grain,    u8 ("GRÃO"),      true,  theme::amber),
       spaceMacro (p.apvts, id::space,    u8 ("ESPAÇO"),    true,  theme::coral),
-      size       (p.apvts, id::size,     "TAMANHO",        false, theme::cream),
-      density    (p.apvts, id::density,  "DENSIDADE",      false, theme::cream),
-      spray      (p.apvts, id::spray,    u8 ("DISPERSÃO"), false, theme::cream),
-      pitch      (p.apvts, id::pitch,    u8 ("AFINAÇÃO"),  false, theme::cream),
-      spread     (p.apvts, id::spread,   u8 ("ESTÉREO"),   false, theme::cream),
+      size       (p.apvts, id::size,     "SIZE",           false, theme::cream),
+      density    (p.apvts, id::density,  "DENSITY",        false, theme::cream),
+      spray      (p.apvts, id::spray,    "SPRAY",          false, theme::cream),
+      pitch      (p.apvts, id::pitch,    "PITCH",          false, theme::cream),
+      spread     (p.apvts, id::spread,   "STEREO",         false, theme::cream),
       feedback   (p.apvts, id::feedback, "FEEDBACK",       false, theme::cream),
-      decay      (p.apvts, id::decay,    "DECAIMENTO",     false, theme::cream),
-      tone       (p.apvts, id::tone,     "TOM",            false, theme::cream),
-      output     (p.apvts, id::output,   "GANHO",          false, theme::cream),
+      decay      (p.apvts, id::decay,    "DECAY",          false, theme::cream),
+      tone       (p.apvts, id::tone,     "TONE",           false, theme::cream),
+      output     (p.apvts, id::output,   "GAIN",           false, theme::cream),
       mix        (p.apvts, id::mix),
       reverseKey ("REVERSO", theme::coral),
       freezeKey  ("CONGELAR", theme::ice)
@@ -489,12 +489,12 @@ void GraoEditor::drawCanvas (juce::Graphics& g)
     drawTitle (g, 22.0f,  226.0f, "CAMPO ", "XY");
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), u8 ("GRÃO"));
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), u8 ("ESPAÇO"));
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
     drawDesc (g, { 396.0f, 252.0f, 140.0f, 90.0f }, u8 ("MACRO GRÃO"),
-              u8 ("Quanto o som é picado: tamanho, densidade e variação de afinação."));
+              u8 ("Quanto o som é picado: SIZE, DENSITY e variação de PITCH."));
     drawDesc (g, { 664.0f, 252.0f, 140.0f, 90.0f }, u8 ("MACRO ESPAÇO"),
-              u8 ("Abertura estéreo, repetição dos grãos e cauda do ambiente."));
+              u8 ("Abertura STEREO, FEEDBACK dos grãos e DECAY do ambiente."));
 }
 
 void GraoEditor::layoutCanvas()

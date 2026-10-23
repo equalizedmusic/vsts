@@ -154,13 +154,13 @@ void WaveStrip::paint (juce::Graphics& g)
 
     g.setColour (theme::panel);
     g.fillRoundedRectangle (r, 4.0f);
-    drawTitle (g, 12.0f, 7.0f, "FORMA DE ONDA ", u8 ("· O QUE SAI E O QUE A BARRAGEM SEGURA, AO VIVO"));
+    drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· O QUE SAI E O QUE A BARRAGEM SEGURA, AO VIVO"));
     {
         float x = W - 10.0f;
-        legendItem (g, x, theme::amber, "TETO", true);
-        legendItem (g, x, theme::ice, u8 ("REDUÇÃO"), true);
+        legendItem (g, x, theme::amber, "CEILING", true);
+        legendItem (g, x, theme::ice, "GAIN REDUCTION", true);
         legendItem (g, x, theme::coral, "SEGURADO", false);
-        legendItem (g, x, theme::cream, u8 ("SAÍDA"), false);
+        legendItem (g, x, theme::cream, "OUTPUT", false);
     }
 
     const float x0 = 12.0f, x1 = W - 12.0f, top = 26.0f, bot = H - 10.0f;
@@ -207,7 +207,7 @@ void WaveStrip::paint (juce::Graphics& g)
     g.fillRect (x0, yPos - 0.5f, x1 - x0, 1.2f);
     g.fillRect (x0, yNeg - 0.5f, x1 - x0, 1.2f);
     g.setFont (theme::mono (9.5f));
-    g.drawText ("TETO " + neg (tpText (ceilDb)),
+    g.drawText ("CEILING " + neg (tpText (ceilDb)),
                 juce::Rectangle<float> (x0 + 6.0f, yPos - 13.0f, 140.0f, 11.0f), juce::Justification::centredLeft);
 
     // redução de ganho por cima (azul), com a régua em dB à direita
@@ -263,7 +263,7 @@ void LoudnessView::paint (juce::Graphics& g)
     // ---- integrado e a distância até o alvo ----
     g.setColour (theme::dim);
     g.setFont (theme::sans (9.0f, true, 0.2f));
-    g.drawText ("INTEGRADO", juce::Rectangle<float> (0.0f, 0.0f, W, 12.0f), juce::Justification::centredLeft);
+    g.drawText ("INTEGRATED", juce::Rectangle<float> (0.0f, 0.0f, W, 12.0f), juce::Justification::centredLeft);
     g.setColour (hasInt ? theme::cream : theme::dim);
     g.setFont (theme::mono (30.0f));
     g.drawText (lufsText (integ), juce::Rectangle<float> (0.0f, 14.0f, W, 36.0f), juce::Justification::centredLeft);
@@ -274,9 +274,9 @@ void LoudnessView::paint (juce::Graphics& g)
         {
             const float d = integ - tgt;
             const auto  amount = juce::String (std::abs (d), 1).replaceCharacter ('.', ',');
-            if (std::abs (d) < 0.5f) { txt = "NO ALVO";                                 c = theme::leaf; }
-            else if (d > 0.0f)       { txt = "+" + amount + u8 (" LU ACIMA DO ALVO");   c = theme::amber; }
-            else                     { txt = u8 ("−") + amount + u8 (" LU ABAIXO DO ALVO"); c = theme::cream; }
+            if (std::abs (d) < 0.5f) { txt = "ON TARGET";                                 c = theme::leaf; }
+            else if (d > 0.0f)       { txt = "+" + amount + u8 (" LU ACIMA DO TARGET");   c = theme::amber; }
+            else                     { txt = u8 ("−") + amount + u8 (" LU ABAIXO DO TARGET"); c = theme::cream; }
         }
         g.setColour (c);
         g.setFont (theme::sans (9.5f, true, 0.12f));
@@ -327,8 +327,8 @@ void LoudnessView::paint (juce::Graphics& g)
     }
 
     // ---- leituras ----
-    labelValue (g, W, 132.0f, u8 ("MOMENTÂNEO (400 ms)"), lufsText (mom), mom > none ? theme::cream : theme::dim);
-    labelValue (g, W, 154.0f, "CURTO (3 s)", lufsText (st), st > none ? theme::cream : theme::dim);
+    labelValue (g, W, 132.0f, "MOMENTARY (400 ms)", lufsText (mom), mom > none ? theme::cream : theme::dim);
+    labelValue (g, W, 154.0f, "SHORT-TERM (3 s)", lufsText (st), st > none ? theme::cream : theme::dim);
     labelValue (g, W, 176.0f, "TEMPO MEDIDO", timeText (secs), theme::cream);
 
     g.setColour (theme::dim);
@@ -344,7 +344,7 @@ void LoudnessView::paint (juce::Graphics& g)
     g.drawRoundedRectangle (sel.reduced (0.5f), 3.0f, 1.0f);
     g.setColour (theme::dim);
     g.setFont (theme::sans (8.5f, true, 0.2f));
-    g.drawText ("ALVO", juce::Rectangle<float> (sel.getX() + 10.0f, sel.getY() + 5.0f, 100.0f, 11.0f), juce::Justification::centredLeft);
+    g.drawText ("TARGET", juce::Rectangle<float> (sel.getX() + 10.0f, sel.getY() + 5.0f, 100.0f, 11.0f), juce::Justification::centredLeft);
     g.setColour (theme::cream);
     g.setFont (theme::mono (12.5f));
     g.drawText (neg (targetText (ti)), juce::Rectangle<float> (sel.getX() + 10.0f, sel.getY() + 18.0f, sel.getWidth() - 36.0f, 16.0f),
@@ -416,18 +416,18 @@ void StatsView::paint (juce::Graphics& g)
     g.drawText (grText (grNow), juce::Rectangle<float> (0.0f, 14.0f, W, 36.0f), juce::Justification::centredLeft);
     thinBar (g, W, grNow / 12.0f, 56.0f, theme::ice);
 
-    labelValue (g, W, 78.0f, u8 ("MÁXIMO (3 s)"), grText (grMax), grMax > 0.05f ? theme::ice : theme::dim);
+    labelValue (g, W, 78.0f, "MAX (3 s)", grText (grMax), grMax > 0.05f ? theme::ice : theme::dim);
     thinBar (g, W, grMax / 12.0f, 94.0f, theme::ice.withAlpha (0.6f));
 
-    labelValue (g, W, 116.0f, "PICO DEPOIS DO ENCHER", dbfsText (pkIn), theme::cream);
+    labelValue (g, W, 116.0f, "PEAK DEPOIS DO ENCHER", dbfsText (pkIn), theme::cream);
     thinBar (g, W, dbBar (pkIn), 132.0f, theme::coral.withAlpha (0.7f));
 
-    labelValue (g, W, 154.0f, u8 ("PICO NA SAÍDA"), dbfsText (pkOut), theme::cream);
+    labelValue (g, W, 154.0f, "OUTPUT PEAK", dbfsText (pkOut), theme::cream);
     thinBar (g, W, dbBar (pkOut), 170.0f, theme::cream.withAlpha (0.7f));
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (10.5f));
-    g.drawFittedText (u8 ("A detecção é em true peak (4×): o TETO vale também entre as amostras. "
+    g.drawFittedText (u8 ("A detecção é em true peak (4×): o CEILING vale também entre as amostras. "
                           "O som que sai é o próprio, só com ganho (não passa pelo filtro do oversampling)."),
                       juce::Rectangle<int> (0, 194, (int) W, 80), juce::Justification::topLeft, 5);
 }
@@ -455,8 +455,8 @@ void PeakReadout::paint (juce::Graphics& g)
         g.setFont (theme::mono (14.0f));
         g.drawText (dbfsText (gain), juce::Rectangle<float> (0.0f, y + 14.0f, W, 18.0f), juce::Justification::centredLeft);
     };
-    block (0.0f,  "PICO NA ENTRADA", inMax);
-    block (44.0f, u8 ("PICO NA SAÍDA"), outMax);
+    block (0.0f,  "INPUT PEAK", inMax);
+    block (44.0f, "OUTPUT PEAK", outMax);
 }
 
 // =====================================================================
@@ -466,13 +466,13 @@ BarragemEditor::BarragemEditor (BarragemProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), loudness (p),
       // cor do knob = cor do que ele mexe no desenho
       fillMacro (p.apvts, id::drive,   "ENCHER",    true,  theme::coral),
-      ceiling   (p.apvts, id::ceiling, "TETO",      false, theme::amber),
-      release   (p.apvts, id::release, "SOLTURA",   false, theme::ice),
+      ceiling   (p.apvts, id::ceiling, "CEILING",   false, theme::amber),
+      release   (p.apvts, id::release, "RELEASE",   false, theme::ice),
       look      (p.apvts, id::look,    "LOOKAHEAD", false, theme::ice),
       link      (p.apvts, id::link,    "LINK L/R",  false, theme::cream),
-      autoKey   ("SOLTURA AUTO", theme::ice),
-      deltaKey  (u8 ("OUVIR DIFERENÇA"), theme::coral),
-      resetKey  ("ZERAR INTEGRADO", theme::leaf)
+      autoKey   ("AUTO RELEASE", theme::ice),
+      deltaKey  ("DELTA", theme::coral),
+      resetKey  ("RESET INTEGRATED", theme::leaf)
 {
     setLookAndFeel (&lnf);
 
@@ -669,7 +669,7 @@ void BarragemEditor::drawCanvas (juce::Graphics& g)
     {
         const double ms = 1000.0 * (double) proc.getLatencySamples() / juce::jmax (1.0, proc.rate.load());
         const auto   f  = theme::mono (11.5f);
-        const juce::String label (u8 ("LATÊNCIA ")), value (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms");
+        const juce::String label ("LATENCY "), value (juce::String (ms, 2).replaceCharacter ('.', ',') + " ms");
         const float right = 604.0f;
         juce::AttributedString s;
         s.append (label, f, theme::dim);
@@ -700,10 +700,10 @@ void BarragemEditor::drawCanvas (juce::Graphics& g)
     drawTitle (g, 22.0f,  226.0f, "LOUDNESS ", u8 ("· LUFS"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "LIMITE");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), u8 ("ANÁLISE"));
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
     drawDesc (g, { 396.0f, 250.0f, 140.0f, 70.0f }, "MACRO ENCHER",
-              u8 ("Empurra o som contra o TETO; o que passaria vira coral."));
+              u8 ("Empurra o som contra o CEILING; o que passaria vira coral."));
 }
 
 void BarragemEditor::layoutCanvas()

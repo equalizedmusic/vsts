@@ -38,7 +38,7 @@ namespace id
 
 // faixa de cada passo: VOLUME 0–100, PAN −100–100, FILTRO 0–100 (100 = aberto)
 enum Lane { laneVol, lanePan, laneFlt, numLanes };
-inline const char* const laneNames[numLanes] = { "VOLUME", "PAN", "FILTRO" };
+inline const char* const laneNames[numLanes] = { "VOLUME", "PAN", "FILTER" };
 
 inline const char* laneId (int lane, int step)
 {
@@ -92,25 +92,25 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     for (auto* d : divNames) divs.add (d);
     for (auto* t : filterNames) types.add (u8 (t));
 
-    add (id::depth,    "Profundidade",  { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::depth,    "Depth",         { 0.0f, 100.0f }, 100.0f, pct);
     choice (id::div,   u8 ("Divisão"),  divs, 2);
-    add (id::length,   "Passos",        { 1.0f, 16.0f, 1.0f }, 16.0f, [] (float v, int) { return String (roundToInt (v)); });
+    add (id::length,   "Steps",         { 1.0f, 16.0f, 1.0f }, 16.0f, [] (float v, int) { return String (roundToInt (v)); });
     add (id::swing,    "Swing",         { 0.0f, 100.0f }, 0.0f, pct);
     add (id::offset,   "Deslocar",      { 0.0f, 15.0f, 1.0f }, 0.0f, [] (float v, int) { return "+" + String (roundToInt (v)); });
-    add (id::width,    "Largura",       { 5.0f, 100.0f }, 60.0f, pct);
-    add (id::attack,   "Ataque",        skewed (0.5f, 50.0f, 5.0f), 2.0f, [] (float v, int) { return msText (v); });
-    add (id::release,  "Soltura",       skewed (1.0f, 200.0f, 20.0f), 15.0f, [] (float v, int) { return msText (v); });
-    choice (id::filtType, "Filtro",     types, 0);
-    add (id::reso,     u8 ("Ressonância"), { 0.0f, 100.0f }, 25.0f, pct);
-    add (id::output,   "Ganho",         { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,      "Mix",           { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::width,    "Width",         { 5.0f, 100.0f }, 60.0f, pct);
+    add (id::attack,   "Attack",        skewed (0.5f, 50.0f, 5.0f), 2.0f, [] (float v, int) { return msText (v); });
+    add (id::release,  "Release",       skewed (1.0f, 200.0f, 20.0f), 15.0f, [] (float v, int) { return msText (v); });
+    choice (id::filtType, "Filter",     types, 0);
+    add (id::reso,     "Resonance",     { 0.0f, 100.0f }, 25.0f, pct);
+    add (id::output,   "Gain",          { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,      "Dry/Wet",       { 0.0f, 100.0f }, 100.0f, pct);
 
     for (int i = 0; i < numSteps; ++i)
     {
         const auto n = String (i + 1).paddedLeft ('0', 2);
         add (id::vol[i], "Volume " + n, { 0.0f, 100.0f }, defaultVol (i), pct);
         add (id::pan[i], "Pan " + n,    { -100.0f, 100.0f }, 0.0f, [] (float v, int) { return panText (v); });
-        add (id::flt[i], "Filtro " + n, { 0.0f, 100.0f }, 100.0f, pct);
+        add (id::flt[i], "Filter " + n, { 0.0f, 100.0f }, 100.0f, pct);
     }
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::hold, 1 }, "Prender", false));

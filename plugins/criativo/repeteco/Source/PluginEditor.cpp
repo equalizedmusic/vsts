@@ -324,7 +324,7 @@ void BucketView::paint (juce::Graphics& g)
         return s;
     };
     const double clk = (double) bbdStages / (2.0 * juce::jmax (0.001, delay));
-    auto sl = line ("TEMPO ", timeName (uiSettings (proc)));
+    auto sl = line ("TIME ", timeName (uiSettings (proc)));
     auto sr = line (u8 ("RELÓGIO "), clk >= 1000.0 ? juce::String (clk / 1000.0, 1).replaceCharacter ('.', ',') + " kHz"
                                                    : juce::String (juce::roundToInt (clk)) + " Hz");
     sl.setJustification (juce::Justification::centredLeft);
@@ -339,17 +339,17 @@ void BucketView::paint (juce::Graphics& g)
 RepetecoEditor::RepetecoEditor (RepetecoProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), buckets (p),
       // cor do knob = cor do que ele mexe no desenho
-      timeMacro   (p.apvts, id::time,     "TEMPO",             true,  theme::amber),
-      range       (p.apvts, id::range,    "FAIXA",             false, theme::amber),
+      timeMacro   (p.apvts, id::time,     "TIME",              true,  theme::amber),
+      range       (p.apvts, id::range,    "RANGE",             false, theme::amber),
       sync        (p.apvts, id::sync,     "SYNC",              false, theme::amber),
       drive       (p.apvts, id::drive,    "DRIVE",             false, theme::cream),
       pingPong    (p.apvts, id::pingPong, "PING-PONG",         false, theme::cream),
-      fbMacro     (p.apvts, id::feedback, u8 ("REALIMENTAÇÃO"), true,  theme::coral),
-      lfoRate     (p.apvts, id::lfoRate,  "LFO TAXA",          false, theme::violet),
-      lfoAmt      (p.apvts, id::lfoAmt,   "LFO QUANT.",        false, theme::violet),
-      lfoShape    (p.apvts, id::lfoShape, "FORMA",             false, theme::violet),
+      fbMacro     (p.apvts, id::feedback, "FEEDBACK",          true,  theme::coral),
+      lfoRate     (p.apvts, id::lfoRate,  "LFO RATE",          false, theme::violet),
+      lfoAmt      (p.apvts, id::lfoAmt,   "LFO AMOUNT",        false, theme::violet),
+      lfoShape    (p.apvts, id::lfoShape, "SHAPE",             false, theme::violet),
       dark        (p.apvts, id::dark,     "ESCURO",            false, theme::coral),
-      output      (p.apvts, id::output,   "GANHO",             false, theme::cream),
+      output      (p.apvts, id::output,   "GAIN",           false, theme::cream),
       mix         (p.apvts, id::mix),
       infiniteKey ("INFINITO", theme::amber),
       killKey     ("MATAR", theme::coral)
@@ -546,13 +546,13 @@ void RepetecoEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
     drawTitle (g, 22.0f,  226.0f, "BALDES ", u8 ("· 1024 ESTÁGIOS"));
-    drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "TEMPO");
-    drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), u8 ("REALIMENTAÇÃO"));
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "TIME");
+    drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "FEEDBACK");
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO TEMPO",
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 110.0f }, "MACRO TIME",
               u8 ("Distância entre as repetições, no grid do host. Mexer com som passando estica o eco."));
-    drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, u8 ("MACRO REALIMENT."),
+    drawDesc (g, { 664.0f, 252.0f, 140.0f, 110.0f }, "MACRO FEEDBACK",
               u8 ("Quantas vezes o eco volta. Passa de 100% e entra em auto-oscilação."));
 }
 

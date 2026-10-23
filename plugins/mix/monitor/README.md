@@ -10,32 +10,32 @@ pico e RMS em dBFS, espectro, correlação de fase e goniômetro. Os presets sã
 
 | Bloco | Leitura | Unidade | O que mostra |
 |---|---|---|---|
-| LOUDNESS | Integrado (verde) | LUFS | Desde o ZERAR. Ao lado: NO ALVO / ACIMA / ABAIXO, comparando com o ALVO ± FAIXA |
-| | Momentâneo (creme) | LUFS | Janela de 400 ms |
-| | Curto (âmbar) e curto máximo | LUFS | Janela de 3 s; o máximo é desde o ZERAR |
-| | LRA (azul) | LU | Faixa de loudness (percentis 10 a 95 dos curtos); avisa se passar do LRA MÁX |
-| | True peak máx (coral) | dBTP | Maior pico entre amostras desde o ZERAR; avisa se passar do TETO TP |
+| LOUDNESS | Integrated (verde) | LUFS | Desde o ZERAR. Ao lado: ON TARGET / ACIMA / ABAIXO, comparando com o TARGET ± FAIXA |
+| | Momentary (creme) | LUFS | Janela de 400 ms |
+| | Short-term (âmbar) e short-term max | LUFS | Janela de 3 s; o máximo é desde o ZERAR |
+| | LRA (azul) | LU | Faixa de loudness (percentis 10 a 95 dos curtos); avisa se passar do LRA MAX |
+| | True peak max (coral) | dBTP | Maior pico entre amostras desde o ZERAR; avisa (OVER CEILING) se passar do TP CEIL |
 | | Tempo medido | — | Desde o ZERAR |
-| HISTÓRICO | curto (âmbar), momentâneo (creme leve) | LUFS | Últimos 60 s. Linha violeta = ALVO, faixa violeta = FAIXA, coral leve = acima; tracejado verde = integrado; colchete azul à direita = LRA |
-| ESPECTRO | ao vivo (âmbar), média (creme) | dBFS | FFT de 4096 pontos, 20 Hz a 20 kHz; a média anda devagar (~3 s). Um seno de 0 dBFS marca 0 |
-| ESTÉREO | goniômetro (creme) | — | Vertical = mono; só L sobe para a esquerda, só R para a direita. Escala automática |
-| | Correlação | −1 a +1 | Verde = em fase; coral = negativa (some no mono) |
-| NÍVEL | Pico (creme), TP (coral), RMS (azul) | dBFS / dBTP / dBFS | Barras com a marca do máximo dos últimos 2 s (o número é a marca). Linha coral = TETO TP. RMS sem a correção de +3 dB (seno de 0 dBFS = −3 dBFS RMS) |
+| HISTÓRICO | short (âmbar), momentâneo (creme leve) | LUFS | Últimos 60 s. Linha violeta = TARGET, faixa violeta = FAIXA, coral leve = acima; tracejado verde = integrado; colchete azul à direita = LRA |
+| SPECTRUM | ao vivo (âmbar), média (creme) | dBFS | FFT de 4096 pontos, 20 Hz a 20 kHz; a média anda devagar (~3 s). Um seno de 0 dBFS marca 0 |
+| STEREO | goniômetro (creme) | — | Vertical = mono; só L sobe para a esquerda, só R para a direita. Escala automática |
+| | Correlation | −1 a +1 | Verde = em fase; coral = negativa (some no mono) |
+| LEVEL | Peak (creme), TP (coral), RMS (azul) | dBFS / dBTP / dBFS | Barras com a marca do máximo dos últimos 2 s (o número é a marca). Linha coral = TP CEIL. RMS sem a correção de +3 dB (seno de 0 dBFS = −3 dBFS RMS) |
 
 ## Controles
 
 | Bloco | Controle | Faixa | O que faz |
 |---|---|---|---|
-| 01 ALVO | **Macro ALVO** | −36 a −6 LUFS | Loudness integrado pedido (linha violeta) |
-| | Teto TP | −6 a 0 dBTP | True peak máximo aceito (linha coral no NÍVEL) |
-| | Faixa | ±0,5 a ±6 LU | Tolerância em volta do ALVO (faixa violeta) |
-| | LRA máx | 3 a 30 LU | LRA máximo aceito |
-| 02 CHECAGEM | OUVIR EM MONO | liga/desliga | Soma L+R nos dois lados (só o que se ouve) |
-| | OUVIR NO ALVO | liga/desliga | Baixa o volume até o ALVO a partir do integrado, como as plataformas fazem; nunca sobe |
+| 01 TARGET | **Macro TARGET** | −36 a −6 LUFS | Loudness integrado pedido (linha violeta) |
+| | TP ceil | −6 a 0 dBTP | True peak máximo aceito (linha coral no LEVEL) |
+| | Faixa | ±0,5 a ±6 LU | Tolerância em volta do TARGET (faixa violeta) |
+| | LRA max | 3 a 30 LU | LRA máximo aceito |
+| 02 CHECAGEM | MONO | liga/desliga | Soma L+R nos dois lados (só o que se ouve) |
+| | MATCH TARGET | liga/desliga | Baixa o volume até o TARGET a partir do integrado, como as plataformas fazem; nunca sobe |
 | | ZERAR | toque | Recomeça integrado, LRA, curto máximo, true peak máximo e o tempo |
 | | CONGELAR | liga/desliga | Para a tela (a medição continua). Não é parâmetro |
 
-A medição é sempre da **entrada**, antes das checagens. Os presets não mexem em MONO, NO ALVO,
+A medição é sempre da **entrada**, antes das checagens. Os presets não mexem em MONO, MATCH TARGET,
 CONGELAR nem no bypass. Entrada mono conta como um canal só no loudness, como pede a norma.
 
 **Latência:** nenhuma. O oversampling do true peak é só análise; o áudio passa direto.

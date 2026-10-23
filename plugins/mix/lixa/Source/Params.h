@@ -70,16 +70,16 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     NormalisableRange<float> relRange (5.0f, 200.0f);
     relRange.setSkewForCentre (50.0f);
 
-    add (id::lo,      "Freq. baixa",           loRange,           4000.0f,  hz);
-    add (id::hi,      "Freq. alta",            hiRange,           10000.0f, hz);
-    add (id::thresh,  "Limiar",                { -60.0f, 0.0f },  -24.0f,   db);
-    add (id::range,   u8 ("Redução máxima"),   { 0.0f, 24.0f },   8.0f,     red);
-    add (id::attack,  "Ataque",                atkRange,          1.0f,     ms);
-    add (id::release, "Soltura",               relRange,          40.0f,    ms);
+    add (id::lo,      "Low freq",              loRange,           4000.0f,  hz);
+    add (id::hi,      "High freq",             hiRange,           10000.0f, hz);
+    add (id::thresh,  "Threshold",             { -60.0f, 0.0f },  -24.0f,   db);
+    add (id::range,   "Range",                 { 0.0f, 24.0f },   8.0f,     red);
+    add (id::attack,  "Attack",                atkRange,          1.0f,     ms);
+    add (id::release, "Release",               relRange,          40.0f,    ms);
     add (id::link,    "Link",                  { 0.0f, 100.0f },  100.0f,   pct);
-    add (id::output,  "Ganho",                 { -12.0f, 12.0f }, 0.0f,     db);
+    add (id::output,  "Gain",                  { -12.0f, 12.0f }, 0.0f,     db);
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::wide, 1 }, "Banda larga", false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::wide, 1 }, "Wideband", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, u8 ("Só o corte"), false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;

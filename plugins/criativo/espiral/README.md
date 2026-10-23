@@ -12,20 +12,20 @@ a volta não estala.
 |---|---|---|---|
 | ESPIRAL | visual | — | Cada voz é um cometa: centro = grave, borda = agudo; o brilho é o volume da voz |
 | RESPOSTA | visual | — | Curva de frequência do que sai agora (seco + processado), com a faixa de cada voz |
-| 01 MOVIMENTO | **Macro FAIXA** | 1–10 oitavas | Quanto a espiral percorre em volta do CENTRO |
+| 01 MOVIMENTO | **Macro RANGE** | 1–10 oitavas | Quanto a espiral percorre em volta do CENTER |
 | | Ciclo | 1 tempo … 16 compassos | Duração de uma volta inteira, no BPM do projeto |
 | | Direção | Sobe · Desce · Vai e volta | Sentido da varredura; *vai e volta* inverte a cada volta |
-| | Centro | 100 Hz – 4 kHz | Meio da faixa (desliza a faixa inteira quando bate no limite de 20 Hz / 18 kHz) |
-| | Estéreo | 0–100% | Defasagem entre L e R (100% = meia distância entre vozes) |
-| 02 COR | **Macro RESSONÂNCIA** | 0–100% | Realimentação: vales mais fundos e picos cantando |
+| | Center | 100 Hz – 4 kHz | Meio da faixa (desliza a faixa inteira quando bate no limite de 20 Hz / 18 kHz) |
+| | Stereo | 0–100% | Defasagem entre L e R (100% = meia distância entre vozes) |
+| 02 COR | **Macro RESONANCE** | 0–100% | Realimentação: vales mais fundos e picos cantando |
 | | Modo | Phaser · Flanger | Phaser = passa-tudo em cascata; flanger = pente de atraso (0,05–25 ms). A troca é em crossfade |
-| | Estágios | 4 · 6 · 8 · 12 | Só no phaser: mais estágios = mais vales |
+| | Stages | 4 · 6 · 8 · 12 | Só no phaser: mais estágios = mais vales |
 | | Drive | 0–100% | Saturação do processado (sinal baixo passa igual, pico satura) |
-| | Tom | 1 kHz – aberto | Passa-baixa no processado |
-| 03 SAÍDA | Congelar | liga/desliga | Para a espiral onde está; ao soltar, segue dali |
+| | Tone | 1 kHz – aberto | Passa-baixa no processado |
+| 03 OUTPUT | Congelar | liga/desliga | Para a espiral onde está; ao soltar, segue dali |
 | | Dobrar | liga/desliga | Dobra a velocidade (bom para viradas); ao soltar, segue dali |
-| | Mix | 0–100% | Seco ↔ processado |
-| | Ganho | −36 a +12 dB | Volume final |
+| | Dry/Wet | 0–100% | Seco ↔ processado |
+| | Gain | −36 a +12 dB | Volume final |
 
 Com o Ableton tocando, a volta segue a régua do projeto (**SYNC**) e se alinha no play. Se o
 Ableton pular (loop, mudança de posição), a espiral acelera ou freia até 50% para alcançar,

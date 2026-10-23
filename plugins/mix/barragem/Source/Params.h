@@ -93,14 +93,14 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         targetNames.add (targetText (i));
 
     add (id::drive,   "Encher",    { 0.0f, 24.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::ceiling, "Teto",      { -12.0f, 0.0f }, -1.0f, [] (float v, int) { return tpText (v); });
-    add (id::release, "Soltura",   skewed (1.0f, 1000.0f, 80.0f), 100.0f, [] (float v, int) { return msText (v); });
+    add (id::ceiling, "Ceiling",   { -12.0f, 0.0f }, -1.0f, [] (float v, int) { return tpText (v); });
+    add (id::release, "Release",   skewed (1.0f, 1000.0f, 80.0f), 100.0f, [] (float v, int) { return msText (v); });
     add (id::look,    "Lookahead", { 0.5f, maxLookMs }, 2.0f, [] (float v, int) { return msText (v); });
     add (id::link,    "Link",      { 0.0f, 100.0f }, 100.0f, pct);
 
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoRel, 1 }, "Soltura auto", true));
-    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { id::target, 1 }, "Alvo", targetNames, 0));
-    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, u8 ("Ouvir diferença"), false));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoRel, 1 }, "Auto release", true));
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { id::target, 1 }, "Target", targetNames, 0));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, "Delta", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));
     return layout;
 }

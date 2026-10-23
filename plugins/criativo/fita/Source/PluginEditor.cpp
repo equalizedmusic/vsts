@@ -319,8 +319,8 @@ void MachineStrip::paint (juce::Graphics& g)
         const float hfHz = juce::jmin (vc.hfHz[juce::jlimit (0, 2, sp)], 20000.0f * std::pow (0.2f, wear));
         g.setColour (theme::dim);
         g.setFont (theme::mono (10.0f));
-        g.drawText ("GRAVE " + paramText (proc, id::bump) + " @ " + hzText (vc.bumpHz[juce::jlimit (0, 2, sp)])
-                        + u8 (" · AGUDO ATÉ ") + hzText (hfHz),
+        g.drawText ("HEAD BUMP " + paramText (proc, id::bump) + " @ " + hzText (vc.bumpHz[juce::jlimit (0, 2, sp)])
+                        + u8 (" · HIGH CUT ") + hzText (hfHz),
                     juce::Rectangle<float> (px1 - 420.0f, 6.0f, 420.0f, 14.0f), juce::Justification::centredRight);
     }
 
@@ -334,7 +334,7 @@ void MachineStrip::paint (juce::Graphics& g)
 
         g.setColour (theme::dim);
         g.setFont (theme::sans (9.0f, true, 0.2f));
-        g.drawText ("VELOCIDADE DA FITA", juce::Rectangle<float> (tx, 26.0f, tw, 12.0f), juce::Justification::centredLeft);
+        g.drawText ("TAPE SPEED", juce::Rectangle<float> (tx, 26.0f, tw, 12.0f), juce::Justification::centredLeft);
 
         g.setColour (st == tRunning ? theme::cream : c);
         g.setFont (theme::mono (26.0f));
@@ -510,7 +510,7 @@ void ReelView::paint (juce::Graphics& g)
         return s;
     };
     auto sl = line ("CONTADOR ", juce::String ((int) proc.engine.counter.load() % 10000).paddedLeft ('0', 4));
-    auto sr = line ("VELOC. ", ipsText (tapeIps (m, choiceIndex (proc, id::speed))) + " IPS");
+    auto sr = line ("SPEED ", ipsText (tapeIps (m, choiceIndex (proc, id::speed))) + " IPS");
     sl.setJustification (juce::Justification::centredLeft);
     sr.setJustification (juce::Justification::centredRight);
     sl.draw (g, { 0.0f, 242.0f, W, 14.0f });
@@ -522,17 +522,17 @@ void ReelView::paint (juce::Graphics& g)
 // =====================================================================
 FitaEditor::FitaEditor (FitaProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), reels (p),
-      driveMacro (p.apvts, id::drive,   u8 ("SATURAÇÃO"), true,  theme::amber),
+      driveMacro (p.apvts, id::drive,   "SATURATION",     true,  theme::amber),
       wowMacro   (p.apvts, id::wow,     "WOW",            true,  theme::coral),
       model      (p.apvts, id::model,   "MODELO",         false, theme::cream),
-      speed      (p.apvts, id::speed,   "VELOCIDADE",     false, theme::cream),
-      bump       (p.apvts, id::bump,    "GRAVE",          false, theme::cream),
-      wear       (p.apvts, id::wear,    "DESGASTE",       false, theme::cream),
+      speed      (p.apvts, id::speed,   "SPEED",          false, theme::cream),
+      bump       (p.apvts, id::bump,    "HEAD BUMP",      false, theme::cream),
+      wear       (p.apvts, id::wear,    "WEAR",           false, theme::cream),
       flutter    (p.apvts, id::flutter, "FLUTTER",        false, theme::cream),
-      hiss       (p.apvts, id::hiss,    "CHIADO",         false, theme::cream),
+      hiss       (p.apvts, id::hiss,    "HISS",           false, theme::cream),
       brake      (p.apvts, id::brake,   "FREIO",          false, theme::cream),
       start      (p.apvts, id::start,   "PARTIDA",        false, theme::cream),
-      output     (p.apvts, id::output,  "GANHO",          false, theme::cream),
+      output     (p.apvts, id::output,  "GAIN",           false, theme::cream),
       mix        (p.apvts, id::mix),
       stopKey    ("TAPE STOP", theme::coral)
 {
@@ -727,7 +727,7 @@ void FitaEditor::drawCanvas (juce::Graphics& g)
     g.setColour (theme::line);
     g.fillRect (tagX - 10.0f, 24.0f, 1.0f, 22.0f);
     const auto tagFont = theme::sans (9.5f, false, 0.2f);
-    const juce::String tag1 ("TAPE MACHINE"), tag2 (u8 ("SATURAÇÃO · WOW · STOP"));
+    const juce::String tag1 ("TAPE MACHINE"), tag2 (u8 ("SATURATION · WOW · STOP"));
     g.setColour (theme::dim);
     g.setFont (tagFont);
     g.drawText (tag1, juce::Rectangle<float> (tagX, 22.0f, 180.0f, 12.0f), juce::Justification::centredLeft);
@@ -777,9 +777,9 @@ void FitaEditor::drawCanvas (juce::Graphics& g)
     drawTitle (g, 22.0f,  226.0f, u8 ("MÁQUINA "), u8 ("· ") + paramText (proc, id::model));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), u8 ("GRAVAÇÃO"));
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "TRANSPORTE");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 90.0f }, u8 ("MACRO SATURAÇÃO"),
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 90.0f }, "MACRO SATURATION",
               u8 ("Quanto a fita é empurrada. Sinal baixo passa igual; os picos arredondam e ganham cor."));
     drawDesc (g, { 664.0f, 252.0f, 140.0f, 90.0f }, "MACRO WOW",
               u8 ("Oscilação lenta da velocidade. Pouco dá vida; muito é fita derretida."));

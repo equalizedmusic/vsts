@@ -121,7 +121,7 @@ void LoudnessView::paint (juce::Graphics& g)
     // ---- integrado (a leitura principal) ----
     g.setColour (theme::dim);
     g.setFont (theme::sans (9.0f, true, 0.18f));
-    g.drawText ("INTEGRADO", juce::Rectangle<float> (12.0f, 28.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
+    g.drawText ("INTEGRATED", juce::Rectangle<float> (12.0f, 28.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
 
     const bool hasI = rd.integrated > -70.0f;
     {
@@ -140,7 +140,7 @@ void LoudnessView::paint (juce::Graphics& g)
     else
     {
         const float d = rd.integrated - target;
-        if (std::abs (d) <= tol)  { chip = "NO ALVO"; chipColour = theme::leaf; }
+        if (std::abs (d) <= tol)  { chip = "ON TARGET"; chipColour = theme::leaf; }
         else if (d > 0.0f)        { chip = "+" + num (d, 1) + " LU ACIMA"; chipColour = theme::coral; }
         else                      { chip = num (d, 1) + " LU ABAIXO"; chipColour = theme::cream; }
     }
@@ -160,9 +160,9 @@ void LoudnessView::paint (juce::Graphics& g)
     {
         const auto f = theme::mono (10.5f);
         juce::AttributedString s;
-        s.append ("ALVO ", f, theme::dim);
+        s.append ("TARGET ", f, theme::dim);
         s.append (num (target, 0) + " LUFS " + u8 ("±") + num (tol, 1), f, theme::violet);
-        s.append (u8 ("  ·  TETO "), f, theme::dim);
+        s.append (u8 ("  ·  CEILING "), f, theme::dim);
         s.append (num (tpLim, 1) + " dBTP", f, theme::coral);
         s.setJustification (juce::Justification::centredLeft);
         s.draw (g, { 12.0f, 82.0f, W - 24.0f, 14.0f });
@@ -189,13 +189,13 @@ void LoudnessView::paint (juce::Graphics& g)
     };
 
     const float tpDb = juce::Decibels::gainToDecibels (rd.truePeakMax, -120.0f);
-    row (0, u8 ("MOMENTÂNEO · 400 ms"), lufsText (rd.momentary) + " LUFS", theme::cream, {});
-    row (1, u8 ("CURTO · 3 s"),          lufsText (rd.shortTerm) + " LUFS", theme::amber, {});
-    row (2, u8 ("CURTO MÁXIMO"),         lufsText (rd.shortMax) + " LUFS",  theme::amber, {});
+    row (0, u8 ("MOMENTARY · 400 ms"),  lufsText (rd.momentary) + " LUFS", theme::cream, {});
+    row (1, u8 ("SHORT-TERM · 3 s"),    lufsText (rd.shortTerm) + " LUFS", theme::amber, {});
+    row (2, "SHORT-TERM MAX",           lufsText (rd.shortMax) + " LUFS",  theme::amber, {});
     row (3, "LRA", rd.lraLo > -70.0f ? num (rd.lra, 1) + " LU" : juce::String (u8 ("— LU")), theme::ice,
-         rd.lraLo > -70.0f && rd.lra > lraLim ? juce::String (u8 ("ACIMA DO MÁX")) : juce::String());
-    row (4, u8 ("TRUE PEAK MÁX"), gainText (rd.truePeakMax) + " dBTP", theme::coral,
-         rd.truePeakMax > 1.0e-6f && tpDb > tpLim ? juce::String ("ACIMA DO TETO") : juce::String());
+         rd.lraLo > -70.0f && rd.lra > lraLim ? juce::String ("ACIMA DO MAX") : juce::String());
+    row (4, "TRUE PEAK MAX", gainText (rd.truePeakMax) + " dBTP", theme::coral,
+         rd.truePeakMax > 1.0e-6f && tpDb > tpLim ? juce::String ("OVER CEILING") : juce::String());
     row (5, "TEMPO MEDIDO", clockText (rd.seconds), theme::txt, {});
 
     drawPanelEdge (g, r);
@@ -233,9 +233,9 @@ void HistoryView::paint (juce::Graphics& g)
     {
         float x = W - 10.0f;
         legendItem (g, x, theme::cream.withAlpha (0.5f), "MOM.", true);
-        legendItem (g, x, theme::amber, "CURTO", true);
-        legendItem (g, x, theme::leaf, "INTEGR.", true);
-        legendItem (g, x, theme::violet, "ALVO", true);
+        legendItem (g, x, theme::amber, "SHORT", true);
+        legendItem (g, x, theme::leaf, "INTEG.", true);
+        legendItem (g, x, theme::violet, "TARGET", true);
     }
 
     const float x0 = 36.0f, x1 = W - 26.0f, top = 26.0f, bot = H - 20.0f;
@@ -327,7 +327,7 @@ void SpectrumView::paint (juce::Graphics& g)
     const float W = r.getWidth(), H = r.getHeight();
 
     drawPanel (g, r);
-    drawTitle (g, 12.0f, 7.0f, "ESPECTRO ", u8 ("· dBFS"));
+    drawTitle (g, 12.0f, 7.0f, "SPECTRUM ", u8 ("· dBFS"));
     {
         float x = W - 10.0f;
         legendItem (g, x, theme::cream, u8 ("MÉDIA"), true);
@@ -419,7 +419,7 @@ void StereoView::paint (juce::Graphics& g)
     const float W = r.getWidth();
 
     drawPanel (g, r);
-    drawTitle (g, 12.0f, 7.0f, u8 ("ESTÉREO "), u8 ("· FASE"));
+    drawTitle (g, 12.0f, 7.0f, "STEREO ", u8 ("· PHASE"));
 
     const float S = W - 24.0f;
     const juce::Rectangle<float> box (12.0f, 26.0f, S, S);
@@ -452,7 +452,7 @@ void StereoView::paint (juce::Graphics& g)
     const juce::Colour cc = corrSm < 0.0f ? theme::coral : theme::leaf;
     g.setColour (theme::dim);
     g.setFont (theme::sans (9.0f, true, 0.18f));
-    g.drawText (u8 ("CORRELAÇÃO"), juce::Rectangle<float> (12.0f, yC, 120.0f, 12.0f), juce::Justification::centredLeft);
+    g.drawText ("CORRELATION", juce::Rectangle<float> (12.0f, yC, 120.0f, 12.0f), juce::Justification::centredLeft);
     g.setColour (cc);
     g.setFont (theme::mono (11.0f));
     g.drawText ((corrSm > 0.005f ? "+" : "") + num (corrSm, 2), juce::Rectangle<float> (12.0f, yC, S, 12.0f),
@@ -510,7 +510,7 @@ void LevelView::paint (juce::Graphics& g)
     const float W = r.getWidth(), H = r.getHeight();
 
     drawPanel (g, r);
-    drawTitle (g, 12.0f, 7.0f, u8 ("NÍVEL "), u8 ("· dB"));
+    drawTitle (g, 12.0f, 7.0f, "LEVEL ", u8 ("· dB"));
 
     const float top = 30.0f, bot = H - 52.0f, lo = -60.0f, hi = 3.0f;
     auto yOf = [=] (float db) { return bot - (juce::jlimit (lo, hi, db) - lo) / (hi - lo) * (bot - top); };
@@ -526,7 +526,7 @@ void LevelView::paint (juce::Graphics& g)
     }
 
     const juce::Colour colours[3] = { theme::cream, theme::coral, theme::ice };
-    const char* names[3] = { "PICO", "TP", "RMS" };
+    const char* names[3] = { "PEAK", "TP", "RMS" };
     const char* units[3] = { "dBFS", "dBTP", "dBFS" };
     const float colW  = (W - 26.0f) / 3.0f;
     const float tpLim = param (proc, id::tpMax);
@@ -583,7 +583,7 @@ void ListenInfo::paint (juce::Graphics& g)
 {
     const auto f = theme::mono (10.5f);
     juce::AttributedString s;
-    s.append ("NO ALVO ", f, theme::dim);
+    s.append ("MATCH ", f, theme::dim);
     if (! active)
         s.append ("DESLIGADO", f, theme::dim);
     else if (pending)
@@ -600,12 +600,12 @@ void ListenInfo::paint (juce::Graphics& g)
 MonitorEditor::MonitorEditor (MonitorProcessor& p)
     : AudioProcessorEditor (&p), proc (p), loud (p), history (p), spectrum (p), stereo (p), level (p),
       // cor do knob = cor do que ele mexe no desenho
-      targetMacro (p.apvts, id::target, "ALVO",          true,  theme::violet),
-      tpKnob      (p.apvts, id::tpMax,  "TETO TP",       false, theme::coral),
+      targetMacro (p.apvts, id::target, "TARGET",        true,  theme::violet),
+      tpKnob      (p.apvts, id::tpMax,  "TP CEIL",       false, theme::coral),
       tolKnob     (p.apvts, id::tol,    "FAIXA",         false, theme::violet),
-      lraKnob     (p.apvts, id::lraMax, u8 ("LRA MÁX"),  false, theme::ice),
-      monoKey     ("OUVIR EM MONO", theme::cream),
-      matchKey    ("OUVIR NO ALVO", theme::violet),
+      lraKnob     (p.apvts, id::lraMax, "LRA MAX",       false, theme::ice),
+      monoKey     ("MONO", theme::cream),
+      matchKey    ("MATCH TARGET", theme::violet),
       resetKey    ("ZERAR", theme::amber),
       freezeKey   ("CONGELAR", theme::ice)
 {
@@ -846,7 +846,7 @@ void MonitorEditor::drawCanvas (juce::Graphics& g)
     // ---- latência: nenhuma (o true peak é só análise) ----
     {
         juce::AttributedString s;
-        s.append (u8 ("LATÊNCIA "), theme::mono (11.5f), theme::dim);
+        s.append ("LATENCY ", theme::mono (11.5f), theme::dim);
         s.append ("ZERO", theme::mono (11.5f), theme::cream);
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
@@ -856,16 +856,16 @@ void MonitorEditor::drawCanvas (juce::Graphics& g)
 
     // ---- coluna de controles ----
     drawCard (g, { 782.0f, 66.0f, 206.0f, 502.0f });
-    drawTitle (g, 792.0f, 76.0f,  u8 ("01 · "), "ALVO");
+    drawTitle (g, 792.0f, 76.0f,  u8 ("01 · "), "TARGET");
     drawTitle (g, 792.0f, 300.0f, u8 ("02 · "), "CHECAGEM");
     g.setColour (theme::line);
     g.fillRect (792.0f, 292.0f, 186.0f, 1.0f);
 
-    drawDesc (g, { 890.0f, 98.0f, 92.0f, 92.0f }, "ALVO",
+    drawDesc (g, { 890.0f, 98.0f, 92.0f, 92.0f }, "TARGET",
               u8 ("LUFS integrado que a plataforma pede."));
     drawDesc (g, { 792.0f, 436.0f, 188.0f, 126.0f }, "CHECAGEM",
-              u8 ("MONO e NO ALVO só mudam o que você ouve; a medição é sempre da entrada. "
-                  "NO ALVO baixa o volume até o ALVO, como as plataformas fazem. "
+              u8 ("MONO e MATCH só mudam o que você ouve; a medição é sempre da entrada. "
+                  "MATCH baixa o volume até o TARGET, como as plataformas fazem. "
                   "ZERAR recomeça integrado, LRA e máximos; CONGELAR para a tela."));
 }
 

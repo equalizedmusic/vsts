@@ -62,21 +62,21 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     StringArray divs;
     for (auto* d : divNames) divs.add (d);
 
-    add (id::cutoff,    "Corte",            cutRange, 1200.0f, [] (float v, int) { return hzText (v); });
-    add (id::resonance, u8 ("Ressonância"), { 0.0f, 100.0f }, 35.0f, pct);
-    choice (id::poles,  "Polos",            StringArray (u8 ("2 · 12 dB"), u8 ("4 · 24 dB")), 1);
+    add (id::cutoff,    "Cutoff",           cutRange, 1200.0f, [] (float v, int) { return hzText (v); });
+    add (id::resonance, "Resonance",        { 0.0f, 100.0f }, 35.0f, pct);
+    choice (id::poles,  "Poles",          StringArray (u8 ("2 · 12 dB"), u8 ("4 · 24 dB")), 1);
     add (id::drive,     "Drive",            { 0.0f, 24.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    choice (id::range,  "Faixa",            { "Alta", "Baixa" }, 0);
+    choice (id::range,  "Range",            { "High", "Low" }, 0);
     add (id::envAmt,    "Envelope",         { -100.0f, 100.0f }, 0.0f,
          [] (float v, int) { return (v > 0.5f ? "+" : "") + String (roundToInt (v)) + "%"; });
-    add (id::smooth,    u8 ("Suavização"),  { 0.0f, 100.0f }, 25.0f,
-         [] (float v, int) { return v < 20.0f ? String (u8 ("Rápido")) : v < 60.0f ? String (u8 ("Médio")) : String ("Lento"); });
+    add (id::smooth,    "Smooth",           { 0.0f, 100.0f }, 25.0f,
+         [] (float v, int) { return v < 20.0f ? String ("Fast") : v < 60.0f ? String ("Medium") : String ("Slow"); });
     choice (id::lfoRate, "LFO",             divs, 5);
-    add (id::lfoAmt,    "LFO Quant.",       { 0.0f, 100.0f }, 0.0f, pct);
-    add (id::sens,      "Sensibilidade",    { -48.0f, 0.0f }, -18.0f,
+    add (id::lfoAmt,    "LFO Amount",      { 0.0f, 100.0f }, 0.0f, pct);
+    add (id::sens,      "Sensitivity",   { -48.0f, 0.0f }, -18.0f,
          [] (float v, int) { return dbText (v).replace ("-", u8 ("−")); });
-    add (id::output,    "Ganho",            { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Mix",              { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,       "Dry/Wet",             { 0.0f, 100.0f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::open, 1 }, "Abrir", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::smoke, 1 }, u8 ("Fumaça"), false));

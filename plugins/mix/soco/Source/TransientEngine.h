@@ -15,7 +15,7 @@ constexpr float levelFloor   = 1.0e-4f; // −80 dB: abaixo disso o detector tra
 
 // filtro do detector (o que ele "ouve" para achar o golpe)
 enum DetMode { detAll = 0, detLow, detHigh, numDetModes };
-inline const char* const detModeNames[numDetModes] = { "Tudo", "Graves", "Agudos" };
+inline const char* const detModeNames[numDetModes] = { "Full", "Low", "High" };
 
 // coeficiente de um seguidor de envelope com constante de tempo em ms
 inline float coefMs (float ms, float fs)

@@ -9,20 +9,20 @@ entrada × saída.
 
 | Bloco | Controle | Faixa | O que faz |
 |---|---|---|---|
-| OSCILOSCÓPIO | visual | ~23 ms | Entrada (cinza), portadora (coral) e saída (âmbar) |
+| OSCILLOSCOPE | visual | ~23 ms | INPUT (cinza), CARRIER (coral) e OUTPUT (âmbar) |
 | ANEL | visual | — | Anel coral = portadora girando; arco violeta = quanto o LFO empurra agora; Lissajous no meio |
-| 01 PORTADORA | **Macro FREQUÊNCIA** | 0–100% da faixa | A nota que multiplica o som |
-| | Faixa | Baixa / Alta | Baixa 0,5–80 Hz (tremolo); alta 30 Hz–4 kHz (metálico) |
+| 01 CARRIER | **Macro FREQUENCY** | 0–100% da faixa | A nota que multiplica o som |
+| | Range | Low / High | Low 0,5–80 Hz (tremolo); High 30 Hz–4 kHz (metálico) |
 | | Afinar | Livre / Semitom | Semitom prende a portadora na nota mais perto |
 | | Drive | 0 a +24 dB | Satura a entrada antes de multiplicar |
-| | Estéreo | 0–100% | Defasa a portadora da direita (até meia volta) |
-| 02 LFO | **Macro QUANTIDADE** | 0–100% | Até ±2 oitavas na portadora |
-| | Taxa | 1/32 a 4 comp | Divisão no grid |
-| | Forma | seno, triângulo, quadrada, rampa, aleatória | |
+| | Stereo | 0–100% | Defasa a portadora da direita (até meia volta) |
+| 02 LFO | **Macro AMOUNT** | 0–100% | Até ±2 oitavas na portadora |
+| | Rate | 1/32 a 4 comp | Divisão no grid |
+| | Shape | Sine, Triangle, Square, Ramp, Random | |
 | | Sync | Grid / Livre | Livre roda sozinho, sem esperar o play |
-| | Fase | 0–360° | Desloca o LFO dentro do grid |
-| 03 SAÍDA | DOBRAR | liga/desliga | Portadora uma oitava acima, deslizando |
-| | Mix / Ganho | | Seco ↔ modulado (padrão 70%) e volume final |
+| | Phase | 0–360° | Desloca o LFO dentro do grid |
+| 03 OUTPUT | DOBRAR | liga/desliga | Portadora uma oitava acima, deslizando |
+| | Dry/Wet / Gain | | Seco ↔ modulado (padrão 70%) e volume final |
 
 **Sincronia:** o LFO segue a régua do host. Com o host parado, o cabeçalho mostra *AGUARDANDO PLAY*
 e o LFO fica parado na posição do cursor; no play ele entra no grid.

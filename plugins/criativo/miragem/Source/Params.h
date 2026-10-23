@@ -71,18 +71,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     for (auto* n : intervalNames) intervals.add (u8 (n));
     for (auto* n : revNames) lens.add (n);
 
-    add (id::decay,     "Cauda",            skewed (0.3f, 30.0f, 4.0f), 4.5f, [] (float v, int) { return secText (v); });
-    add (id::size,      "Tamanho",          { 0.0f, 100.0f }, 70.0f, pct);
-    add (id::predelay,  u8 ("Pré-delay"),   { 0.0f, 250.0f }, 20.0f, [] (float v, int) { return String (roundToInt (v)) + " ms"; });
-    add (id::dark,      "Escuro",           { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::lowCut,    "Corte grave",      skewed (20.0f, 1000.0f, 150.0f), 120.0f, [] (float v, int) { return hzText (v); });
+    add (id::decay,     "Decay",            skewed (0.3f, 30.0f, 4.0f), 4.5f, [] (float v, int) { return secText (v); });
+    add (id::size,      "Size",             { 0.0f, 100.0f }, 70.0f, pct);
+    add (id::predelay,  "Pre-delay",        { 0.0f, 250.0f }, 20.0f, [] (float v, int) { return String (roundToInt (v)) + " ms"; });
+    add (id::dark,      "Damping",          { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::lowCut,    "Low cut",          skewed (20.0f, 1000.0f, 150.0f), 120.0f, [] (float v, int) { return hzText (v); });
     add (id::shimmer,   "Shimmer",          { 0.0f, 100.0f }, 35.0f, pct);
-    choice (id::interval, "Tom",            intervals, 0);
-    add (id::motion,    "Movimento",        { 0.0f, 100.0f }, 35.0f, pct);
+    choice (id::interval, "Interval",       intervals, 0);
+    add (id::motion,    "Modulation",       { 0.0f, 100.0f }, 35.0f, pct);
     add (id::duck,      "Duck",             { 0.0f, 100.0f }, 0.0f, pct);
     choice (id::revLen, "Janela Rev.",      lens, 1);
-    add (id::output,    "Ganho",            { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Mix",              { 0.0f, 100.0f }, 30.0f, pct);
+    add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::mix,       "Dry/Wet",          { 0.0f, 100.0f }, 30.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::freeze, 1 }, "Congelar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::reverse, 1 }, "Reverso", false));

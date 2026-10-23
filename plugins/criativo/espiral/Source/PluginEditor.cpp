@@ -304,17 +304,17 @@ void SpiralView::paint (juce::Graphics& g)
 // =====================================================================
 EspiralEditor::EspiralEditor (EspiralProcessor& p)
     : AudioProcessorEditor (&p), proc (p), strip (p), spiral (p),
-      rangeMacro (p.apvts, id::range,     "FAIXA",              true,  theme::amber),
-      resMacro   (p.apvts, id::resonance, u8 ("RESSONÂNCIA"),   true,  theme::coral),
+      rangeMacro (p.apvts, id::range,     "RANGE",              true,  theme::amber),
+      resMacro   (p.apvts, id::resonance, "RESONANCE",          true,  theme::coral),
       cycle      (p.apvts, id::cycle,     "CICLO",              false, theme::cream),
       direction  (p.apvts, id::direction, u8 ("DIREÇÃO"),       false, theme::cream),
-      centre     (p.apvts, id::centre,    "CENTRO",             false, theme::cream),
-      stereo     (p.apvts, id::stereo,    u8 ("ESTÉREO"),       false, theme::cream),
+      centre     (p.apvts, id::centre,    "CENTER",             false, theme::cream),
+      stereo     (p.apvts, id::stereo,    "STEREO",             false, theme::cream),
       mode       (p.apvts, id::mode,      "MODO",               false, theme::cream),
-      stages     (p.apvts, id::stages,    u8 ("ESTÁGIOS"),      false, theme::cream),
+      stages     (p.apvts, id::stages,    "STAGES",             false, theme::cream),
       drive      (p.apvts, id::drive,     "DRIVE",              false, theme::cream),
-      tone       (p.apvts, id::tone,      "TOM",                false, theme::cream),
-      output     (p.apvts, id::output,    "GANHO",              false, theme::cream),
+      tone       (p.apvts, id::tone,      "TONE",               false, theme::cream),
+      output     (p.apvts, id::output,    "GAIN",               false, theme::cream),
       mix        (p.apvts, id::mix),
       freezeKey  ("CONGELAR", theme::ice),
       twiceKey   ("DOBRAR", theme::coral)
@@ -554,15 +554,15 @@ void EspiralEditor::drawCanvas (juce::Graphics& g)
     drawCard (g, { 552.0f, 216.0f, 258.0f, 352.0f });
     drawCard (g, { 820.0f, 216.0f, 168.0f, 352.0f });
 
-    drawTitle (g, 22.0f,  226.0f, "ESPIRAL ", u8 ("· 4 VOZES"));
+    drawTitle (g, 22.0f,  226.0f, "ESPIRAL ", u8 ("· 4 VOICES"));
     drawTitle (g, 294.0f, 226.0f, u8 ("01 · "), "MOVIMENTO");
     drawTitle (g, 562.0f, 226.0f, u8 ("02 · "), "COR");
-    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), u8 ("SAÍDA"));
+    drawTitle (g, 830.0f, 226.0f, u8 ("03 · "), "OUTPUT");
 
-    drawDesc (g, { 396.0f, 252.0f, 140.0f, 90.0f }, "MACRO FAIXA",
+    drawDesc (g, { 396.0f, 252.0f, 140.0f, 90.0f }, "MACRO RANGE",
               u8 ("Quantas oitavas a espiral percorre. Pouco é sutil; tudo é a subida sem fim."));
-    drawDesc (g, { 664.0f, 252.0f, 140.0f, 90.0f }, u8 ("MACRO RESSONÂNCIA"),
-              u8 ("Realimentação: mais = vales cantando, metálico e ácido."));
+    drawDesc (g, { 664.0f, 252.0f, 140.0f, 90.0f }, "MACRO RESONANCE",
+              u8 ("FEEDBACK: mais = vales cantando, metálico e ácido."));
 }
 
 void EspiralEditor::layoutCanvas()
