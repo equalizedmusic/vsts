@@ -19,10 +19,23 @@ void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix,
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
+}
+
+// contador do compasso embaixo do FOGUINHO em LEDs de hardware: mesma posição e cores do drawBeatDots
+// (o 1 em coral, os outros em âmbar); o tempo atual acende e esmorece até o próximo
+void drawBeatLeds (juce::Graphics& g, float cx, float y, const chama::DanceState& d)
+{
+    const bool on = d.dancing && ! d.drop;
+    const int beat = juce::jlimit (0, 3, (int) std::floor (d.beatPos));
+    const float b = d.beatPos - std::floor (d.beatPos);
+    for (int k = 0; k < 4; ++k)
+    {
+        const float x = cx + ((float) k - 1.5f) * 16.0f;
+        const bool lit = on && k == beat;
+        const auto c = k == 0 ? theme::coral : theme::amber;
+        real::led (g, { x, y }, 3.8f, c, lit ? 1.0f - 0.45f * b : 0.0f);
+    }
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -63,8 +76,7 @@ void HeatStrip::set (const FlameState& s)
 void HeatStrip::paint (juce::Graphics& g)
 {
     const auto r = getLocalBounds().toFloat();
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     {
         juce::Graphics::ScopedSaveState save (g);
         juce::Path clip;
@@ -99,8 +111,7 @@ void HeatStrip::paint (juce::Graphics& g)
     for (int k = 0; k < 6; ++k)
     {
         const juce::Rectangle<float> chip (12.0f + (float) k * 160.0f, 24.0f, 150.0f, 38.0f);
-        g.setColour (theme::dark.withAlpha (0.78f));
-        g.fillRoundedRectangle (chip, 3.0f);
+        real::screen (g, chip, 3.0f);
         g.setColour (tint[k]);
         g.fillRect (chip.getX(), chip.getY() + 6.0f, 2.0f, chip.getHeight() - 12.0f);
         g.setColour (theme::dim);
@@ -109,10 +120,8 @@ void HeatStrip::paint (juce::Graphics& g)
         g.setColour (theme::cream);
         g.setFont (theme::mono (13.0f));
         g.drawText (vals[k], chip.reduced (10.0f, 4.0f).removeFromBottom (16.0f), juce::Justification::centredLeft);
+        real::glass (g, chip, 3.0f);
     }
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -144,13 +153,13 @@ void FlameStage::set (const FlameState& s)
 void FlameStage::paint (juce::Graphics& g)
 {
     const auto r = getLocalBounds().toFloat();
+    const auto scr = r.reduced (1.5f);   // tela embutida: o rebaixo desenha 1 px fora
+    real::screen (g, scr, 4.0f);
     {
         juce::Graphics::ScopedSaveState save (g);
         juce::Path clip;
-        clip.addRoundedRectangle (r, 4.0f);
+        clip.addRoundedRectangle (scr, 4.0f);
         g.reduceClipRegion (clip);
-        g.setColour (theme::dark);
-        g.fillRoundedRectangle (r, 4.0f);
         const auto fp = fireParams();
         fire.draw (g, r, fp);
         drawSparks (g, r, fp, 60);
@@ -160,7 +169,7 @@ void FlameStage::paint (juce::Graphics& g)
         drawDancer (g, cx, floorY, st.dance);
         g.setColour (theme::dark.withAlpha (0.7f));
         g.fillRoundedRectangle (juce::Rectangle<float> (cx - 40.0f, floorY + 15.0f, 80.0f, 18.0f), 9.0f);
-        drawBeatDots (g, cx, floorY + 24.0f, st.dance);
+        drawBeatLeds (g, cx, floorY + 24.0f, st.dance);
     }
 
     // fundo escuro atrás do nome: com o fogo no talo, o texto não some
@@ -170,6 +179,8 @@ void FlameStage::paint (juce::Graphics& g)
     g.setFont (theme::sans (14.0f, true, 0.3f));
     g.drawText (st.drop ? "DROP" : "CHAMA", juce::Rectangle<float> (0.0f, r.getBottom() - 34.0f, r.getWidth(), 18.0f),
                 juce::Justification::centred);
+
+    real::glass (g, scr, 4.0f);
 }
 
 // =====================================================================
@@ -379,7 +390,7 @@ void ChamaEditor::paint (juce::Graphics& g)
 
 void ChamaEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: chama ----
     {
@@ -441,13 +452,7 @@ void ChamaEditor::drawCanvas (juce::Graphics& g)
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
         const juce::Rectangle<float> led (right - w - 13.0f, 30.5f, 7.0f, 7.0f);
-        if (syn)
-        {
-            g.setColour (theme::amber.withAlpha (0.3f));
-            g.fillEllipse (led.expanded (3.0f));
-        }
-        g.setColour (syn ? theme::amber : theme::off);
-        g.fillEllipse (led);
+        real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
     }
 
     // ---- cards ----

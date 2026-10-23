@@ -137,12 +137,9 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        auto r = getLocalBounds().toFloat().reduced (0.5f);
+        auto r = getLocalBounds().toFloat().reduced (1.5f);   // o rebaixo do screen sai 1 px para fora
         const bool over = isMouseOver();
-        g.setColour (theme::dark);
-        g.fillRoundedRectangle (r, 3.0f);
-        g.setColour (over ? theme::dim : theme::line);
-        g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        real::screen (g, r, 3.0f);
         g.setColour (accent);
         g.fillRoundedRectangle (r.getX() + 1.5f, r.getY() + 3.0f, 2.0f, r.getHeight() - 6.0f, 1.0f);   // filete na cor do bloco
 
@@ -182,6 +179,13 @@ public:
         g.drawFittedText (textFor (current), text,
                           caption.isNotEmpty() || groupInBox ? juce::Justification::centredLeft : juce::Justification::centred,
                           1, 0.75f);
+
+        real::glass (g, r, 3.0f);
+        if (over)
+        {
+            g.setColour (theme::dim);
+            g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        }
     }
 
     void mouseDown (const juce::MouseEvent& e) override
@@ -250,16 +254,22 @@ public:
         const float d = juce::jmin (10.0f, h - 4.0f);
         const float x = hasText ? 3.0f : ((float) getWidth() - d) * 0.5f;
         const juce::Rectangle<float> led (x, (h - d) * 0.5f, d, d);
+        const auto c = led.getCentre();
 
-        if (on)
         {
-            g.setColour (ledColour.withAlpha (0.3f));
-            g.fillEllipse (led.expanded (2.5f));
+            // o halo do LED é maior que o botão: recorta num círculo para não aparecer a quina do componente
+            juce::Graphics::ScopedSaveState save (g);
+            const float halo = juce::jmin (c.x, c.y, h - c.y);
+            juce::Path clip;
+            clip.addEllipse (real::circle (c, halo));
+            g.reduceClipRegion (clip);
+            real::led (g, c, d * 0.5f, ledColour, on ? 1.0f : 0.0f);
         }
-        g.setColour (on ? ledColour : theme::off);
-        g.fillEllipse (led);
-        g.setColour (over ? theme::dim : theme::dark);
-        g.drawEllipse (led, 1.0f);
+        if (over)
+        {
+            g.setColour (theme::dim);
+            g.drawEllipse (led.expanded (1.5f), 1.0f);
+        }
 
         if (hasText)
         {
@@ -286,11 +296,8 @@ public:
 
     void paintButton (juce::Graphics& g, bool over, bool) override
     {
-        auto r = getLocalBounds().toFloat().reduced (0.5f);
-        g.setColour (theme::dark);
-        g.fillRoundedRectangle (r, 3.0f);
-        g.setColour (over ? theme::dim : theme::line);
-        g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        auto r = getLocalBounds().toFloat().reduced (1.5f);   // o rebaixo do screen sai 1 px para fora
+        real::screen (g, r, 3.0f);
 
         const bool on = getToggleState();
         const auto left  = r.withWidth (r.getWidth() * 0.5f);
@@ -305,6 +312,13 @@ public:
         g.drawText (offLabel, left, juce::Justification::centred, false);
         g.setColour (on ? theme::cream : theme::dim);
         g.drawText (onLabel, right, juce::Justification::centred, false);
+
+        real::glass (g, r, 3.0f);
+        if (over)
+        {
+            g.setColour (theme::dim);
+            g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        }
     }
 
 private:
@@ -337,8 +351,8 @@ public:
         const float w = (float) getWidth() / (float) n, h = (float) getHeight();
         const int hover = isMouseOver() ? indexAt ((float) getMouseXYRelative().x) : -1;
 
-        g.setColour (theme::panel);
-        g.fillRoundedRectangle (getLocalBounds().toFloat(), 3.0f);
+        const auto sr = getLocalBounds().toFloat().reduced (1.5f);   // o rebaixo do screen sai 1 px para fora
+        real::screen (g, sr, 3.0f);
         for (int i = 0; i < names.size(); ++i)
         {
             const juce::Rectangle<float> r ((float) i * w, 0.0f, w, h);
@@ -358,8 +372,7 @@ public:
             g.setFont (theme::sans (9.5f, true, 0.25f));
             g.drawText (names[i], r, juce::Justification::centred, false);
         }
-        g.setColour (theme::line);
-        g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 3.0f, 1.0f);
+        real::glass (g, sr, 3.0f);
     }
 
     void mouseDown (const juce::MouseEvent& e) override
@@ -406,9 +419,8 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        auto r = getLocalBounds().toFloat().reduced (0.5f);
-        g.setColour (theme::dark);
-        g.fillRoundedRectangle (r, 3.0f);
+        auto r = getLocalBounds().toFloat().reduced (1.5f);   // o rebaixo do screen sai 1 px para fora
+        real::screen (g, r, 3.0f);
 
         const auto  range = getRange();
         const float span = (float) juce::jmax (std::abs (range.getStart()), std::abs (range.getEnd()));
@@ -443,8 +455,12 @@ public:
         g.drawText (getTextFromValue (getValue()), r.reduced (7.0f, 0.0f),
                     f >= 0.0f ? juce::Justification::centredLeft : juce::Justification::centredRight, false);
 
-        g.setColour (isMouseOverOrDragging() ? theme::dim : theme::line);
-        g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        real::glass (g, r, 3.0f);
+        if (isMouseOverOrDragging())
+        {
+            g.setColour (theme::dim);
+            g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        }
     }
 
 private:

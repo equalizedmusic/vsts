@@ -30,10 +30,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -100,13 +97,7 @@ void drawPreStatus (juce::Graphics& g, float preMs, int sync, float bpm, bool ho
 
     const bool lit = sync > 0 && host;
     const juce::Rectangle<float> led (right - juce::jmax (ta.getWidth(), tb.getWidth()) - 13.0f, 30.5f, 7.0f, 7.0f);
-    if (lit)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (lit ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, lit ? 1.0f : 0.0f);
 }
 
 float param (SalaProcessor& p, const char* pid)
@@ -159,8 +150,7 @@ void ResponseView::paint (juce::Graphics& g)
     const float erF = erFactor (sz);
     const float span = juce::jmax (0.3f, pre + dec * 1.08f);
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "RESPOSTA ", u8 ("· RT60 ") + secText (dec) + u8 (" · PRE-DELAY ") + msText (pre * 1000.0f));
     {
         float x = W - 10.0f;
@@ -172,8 +162,8 @@ void ResponseView::paint (juce::Graphics& g)
     }
 
     const float x0 = 12.0f, x1 = W - 12.0f, top = 26.0f, bot = H - 10.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> screenR (x0, top, x1 - x0, bot - top);
+    real::screen (g, screenR, 3.0f);
 
     const float gx0 = x0 + 34.0f, gx1 = x1 - 10.0f, gy0 = top + 8.0f, gy1 = bot - 16.0f;
     auto xOf = [=] (float sec) { return gx0 + std::sqrt (juce::jlimit (0.0f, 1.0f, sec / span)) * (gx1 - gx0); };
@@ -297,8 +287,7 @@ void ResponseView::paint (juce::Graphics& g)
         }
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, screenR, 3.0f);
 }
 
 // =====================================================================
@@ -314,8 +303,8 @@ void TailEqView::paint (juce::Graphics& g)
     const float wid = param (proc, id::width) * 0.01f;
     const float energy = juce::jlimit (0.0f, 1.0f, (juce::Decibels::gainToDecibels (levelShown, -60.0f) + 60.0f) / 60.0f);
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    const auto screenR = juce::Rectangle<float> (0.0f, 0.0f, S, S).reduced (1.5f);
+    real::screen (g, screenR, 4.0f);
 
     const float gx0 = 30.0f, gx1 = S - 16.0f, gy0 = 14.0f, gy1 = S - 78.0f;
     auto xOf = [=] (float hz) { return gx0 + (std::log10 (juce::jmax (20.0f, hz)) - std::log10 (20.0f)) / 3.0f * (gx1 - gx0); };
@@ -427,6 +416,8 @@ void TailEqView::paint (juce::Graphics& g)
         g.drawText ("150%", juce::Rectangle<float> (gx1 - 50.0f, by + 9.0f, 50.0f, 11.0f), juce::Justification::centredRight);
         g.drawText ("WIDTH", juce::Rectangle<float> (gx0, by + 9.0f, gx1 - gx0, 11.0f), juce::Justification::centred);
     }
+
+    real::glass (g, screenR, 4.0f);
 
     auto line = [] (const juce::String& a, const juce::String& b)
     {
@@ -626,7 +617,7 @@ void SalaEditor::paint (juce::Graphics& g)
 
 void SalaEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: a sala, a fonte no canto e as ondas batendo nas paredes ----
     {

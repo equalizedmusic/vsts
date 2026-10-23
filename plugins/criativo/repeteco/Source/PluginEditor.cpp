@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -107,13 +104,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    if (syn)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (syn ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 // eixo de frequência em log, 20 Hz–20 kHz
@@ -176,8 +167,7 @@ void RepeatsStrip::paint (juce::Graphics& g)
     const float dk  = param (proc, id::dark) * 0.01f;
     const double delay = proc.engine.delayNow.load();
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, u8 ("REPETIÇÕES "), u8 ("· ") + timeName (s) + u8 (" · ")
                                                     + (inf ? juce::String ("INFINITO") : juce::String (juce::roundToInt (param (proc, id::feedback))) + "%"));
     {
@@ -189,8 +179,8 @@ void RepeatsStrip::paint (juce::Graphics& g)
     }
 
     const float x0 = 12.0f, x1 = W - 12.0f, y0 = 26.0f, y1 = H - 20.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, y0, x1 - x0, y1 - y0, 3.0f);
+    const juce::Rectangle<float> scr (x0, y0, x1 - x0, y1 - y0);
+    real::screen (g, scr, 3.0f);
 
     const int   bars = 14;
     const float step = (x1 - x0 - 20.0f) / (float) bars;
@@ -238,8 +228,7 @@ void RepeatsStrip::paint (juce::Graphics& g)
         }
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, scr, 3.0f);
 }
 
 // =====================================================================
@@ -253,8 +242,8 @@ void BucketView::paint (juce::Graphics& g)
     const float fb  = inf ? 1.0f : proc.engine.fbNow.load();
     const float norm = histNorm (proc);
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    const auto scr = juce::Rectangle<float> (0.0f, 0.0f, S, S).reduced (1.5f);   // o rebaixo desenha 1 px para fora
+    real::screen (g, scr, 4.0f);
 
     // 30 baldes em zigue-zague; o primeiro acabou de receber, o último está saindo
     const int cols = 6, rows = 5;
@@ -314,6 +303,8 @@ void BucketView::paint (juce::Graphics& g)
         g.setColour (theme::coral.withAlpha (0.2f + 0.8f * juce::jmin (1.0f, fb)));
         g.fillPath (dashed);
     }
+
+    real::glass (g, scr, 4.0f);
 
     // rodapé: tempo e o relógio que um BBD de 1024 estágios precisaria
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -488,7 +479,7 @@ void RepetecoEditor::timerCallback()
         lastBpm = bpm;
         lastSync = syn;
         lastWaiting = wt;
-        canvas.repaint (380, 18, 236, 32);
+        canvas.repaint (370, 10, 246, 48);   // folga para o brilho do LED de sync
     }
 }
 
@@ -512,7 +503,7 @@ void RepetecoEditor::paint (juce::Graphics& g)
 
 void RepetecoEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: balde com carga ----
     g.setColour (theme::amber.withAlpha (0.5f));

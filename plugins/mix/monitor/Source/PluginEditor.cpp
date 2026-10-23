@@ -29,22 +29,14 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
+// placa que ocupa o componente todo: 1 px para dentro (a sombra da placa é cortada na borda do componente);
+// o bisel da placa substitui o contorno que era desenhado no fim
 void drawPanel (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-}
-
-void drawPanelEdge (juce::Graphics& g, juce::Rectangle<float> r)
-{
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r.reduced (1.0f));
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -197,8 +189,6 @@ void LoudnessView::paint (juce::Graphics& g)
     row (4, "TRUE PEAK MAX", gainText (rd.truePeakMax) + " dBTP", theme::coral,
          rd.truePeakMax > 1.0e-6f && tpDb > tpLim ? juce::String ("OVER CEILING") : juce::String());
     row (5, "TEMPO MEDIDO", clockText (rd.seconds), theme::txt, {});
-
-    drawPanelEdge (g, r);
 }
 
 // =====================================================================
@@ -242,8 +232,8 @@ void HistoryView::paint (juce::Graphics& g)
     const float hi = target + 9.0f, lo = target - 27.0f;
     auto yOf = [=] (float l) { return bot - (juce::jlimit (lo, hi, l) - lo) / (hi - lo) * (bot - top); };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> screenR (x0, top, x1 - x0, bot - top);
+    real::screen (g, screenR, 3.0f);
 
     // acima da faixa: coral bem leve; a faixa aceita em volta do alvo: violeta
     const float yTolHi = yOf (target + tol), yTolLo = yOf (target - tol);
@@ -298,6 +288,8 @@ void HistoryView::paint (juce::Graphics& g)
     g.setColour (theme::amber);
     g.strokePath (curve (sht), juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
+    real::glass (g, screenR, 3.0f);
+
     // LRA: colchete azul do percentil 10 ao 95
     if (rd.lraLo > -70.0f && rd.lraHi > -70.0f)
     {
@@ -309,8 +301,6 @@ void HistoryView::paint (juce::Graphics& g)
         g.setFont (theme::sans (7.5f, true, 0.1f));
         g.drawText ("LRA", juce::Rectangle<float> (x1 + 1.0f, bot + 4.0f, 24.0f, 12.0f), juce::Justification::centred);
     }
-
-    drawPanelEdge (g, r);
 }
 
 // =====================================================================
@@ -341,8 +331,8 @@ void SpectrumView::paint (juce::Graphics& g)
     auto xOfCol = [=] (int c) { return x0 + (x1 - x0) * ((float) c + 0.5f) / (float) nCols; };
     auto xOfHz  = [=] (float f) { return x0 + (x1 - x0) * std::log (f / 20.0f) / std::log (1000.0f); };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> screenR (x0, top, x1 - x0, bot - top);
+    real::screen (g, screenR, 3.0f);
 
     g.setFont (theme::mono (8.5f));
     for (int d = 0; d >= -90; d -= 18)
@@ -386,7 +376,7 @@ void SpectrumView::paint (juce::Graphics& g)
     g.setColour (theme::cream);
     g.strokePath (mean, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
-    drawPanelEdge (g, r);
+    real::glass (g, screenR, 3.0f);
 }
 
 // =====================================================================
@@ -423,8 +413,7 @@ void StereoView::paint (juce::Graphics& g)
 
     const float S = W - 24.0f;
     const juce::Rectangle<float> box (12.0f, 26.0f, S, S);
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (box, 3.0f);
+    real::screen (g, box, 3.0f);
     const auto  c = box.getCentre();
     const float half = S * 0.5f - 8.0f;
 
@@ -446,6 +435,8 @@ void StereoView::paint (juce::Graphics& g)
         const float y = c.y - juce::jlimit (-1.0f, 1.0f, py[(size_t) k] * zoom) * half;
         g.fillRect (x - 0.75f, y - 0.75f, 1.5f, 1.5f);
     }
+
+    real::glass (g, box, 3.0f);
 
     // correlação: +1 = mono, 0 = largo, negativo = fase invertida (some no mono)
     const float yC = box.getBottom() + 10.0f;
@@ -472,8 +463,6 @@ void StereoView::paint (juce::Graphics& g)
     g.drawText (u8 ("−1"), juce::Rectangle<float> (12.0f, by + 9.0f, 30.0f, 11.0f), juce::Justification::centredLeft);
     g.drawText ("0", juce::Rectangle<float> (mid - 15.0f, by + 9.0f, 30.0f, 11.0f), juce::Justification::centred);
     g.drawText ("+1", juce::Rectangle<float> (12.0f + S - 30.0f, by + 9.0f, 30.0f, 11.0f), juce::Justification::centredRight);
-
-    drawPanelEdge (g, r);
 }
 
 // =====================================================================
@@ -536,8 +525,7 @@ void LevelView::paint (juce::Graphics& g)
         const auto  k  = (size_t) i;
         const float cx = 24.0f + colW * ((float) i + 0.5f);
         const juce::Rectangle<float> bar (cx - 8.0f, top, 16.0f, bot - top);
-        g.setColour (theme::dark);
-        g.fillRect (bar);
+        real::screen (g, bar, 2.0f);
         g.setColour (colours[i].withAlpha (0.85f));
         g.fillRect (bar.withTop (yOf (level[k])));
         if (hold[k] > lo)
@@ -550,6 +538,7 @@ void LevelView::paint (juce::Graphics& g)
             g.setColour (theme::coral.withAlpha (0.7f));
             g.fillRect (bar.getX() - 3.0f, yOf (tpLim) - 0.5f, bar.getWidth() + 6.0f, 1.0f);
         }
+        real::glass (g, bar, 2.0f);
 
         // número = marca segurada (o máximo dos últimos 2 s)
         const juce::Rectangle<float> col (cx - colW * 0.5f, bot + 6.0f, colW, 12.0f);
@@ -563,8 +552,6 @@ void LevelView::paint (juce::Graphics& g)
         g.setFont (theme::sans (7.5f, false, 0.1f));
         g.drawText (units[i], col.translated (0.0f, 26.0f), juce::Justification::centred);
     }
-
-    drawPanelEdge (g, r);
 }
 
 // =====================================================================
@@ -798,7 +785,7 @@ void MonitorEditor::paint (juce::Graphics& g)
 
 void MonitorEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: telinha de medidor com quatro barras ----
     {

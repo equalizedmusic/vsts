@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -67,8 +64,7 @@ float vuPos (float db)
 
 void drawVu (juce::Graphics& g, juce::Rectangle<float> r, float needleDb, const juce::String& label)
 {
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::screen (g, r, 4.0f);
     const auto face = r.reduced (5.0f);
     g.setColour (theme::cream.darker (0.12f));
     g.fillRoundedRectangle (face, 3.0f);
@@ -119,6 +115,9 @@ void drawVu (juce::Graphics& g, juce::Rectangle<float> r, float needleDb, const 
     const float a = angleOf (juce::jlimit (-23.0f, 4.0f, needleDb));
     g.setColour (theme::dark);
     g.drawLine (juce::Line<float> (pt (R * 0.35f, a), pt (R + 8.0f, a)), 1.4f);
+
+    // vidro sobre o mostrador (a moldura escura em volta é o real::screen acima)
+    real::glass (g, face, 3.0f);
 }
 
 // ---------------- máquina ----------------
@@ -255,8 +254,7 @@ void MachineStrip::paint (juce::Graphics& g)
     const int   m  = choiceIndex (proc, id::model), sp = choiceIndex (proc, id::speed);
     const float fs = proc.engine.rate.load();
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
 
     drawTitle (g, 12.0f, 7.0f, u8 ("MÁQUINA "), machineText (proc));
 
@@ -347,13 +345,7 @@ void MachineStrip::paint (juce::Graphics& g)
         g.fillRoundedRectangle (tx, 76.0f, tw * v, 5.0f, 2.0f);
 
         const juce::Rectangle<float> led (tx, 92.5f, 7.0f, 7.0f);
-        if (st != tRunning)
-        {
-            g.setColour (c.withAlpha (0.3f));
-            g.fillEllipse (led.expanded (3.0f));
-        }
-        g.setColour (st != tRunning ? c : theme::off);
-        g.fillEllipse (led);
+        real::led (g, led.getCentre(), 3.5f, c, st != tRunning ? 1.0f : 0.0f);
         g.setColour (st != tRunning ? theme::cream : theme::dim);
         g.setFont (theme::sans (10.0f, true, 0.15f));
         g.drawText (names[juce::jlimit (0, 3, st)], juce::Rectangle<float> (tx + 14.0f, 89.0f, tw - 14.0f, 14.0f),
@@ -366,9 +358,6 @@ void MachineStrip::paint (juce::Graphics& g)
         g.drawText ("PARTIDA " + paramText (proc, id::start), juce::Rectangle<float> (tx, 121.0f, tw, 12.0f),
                     juce::Justification::centredLeft);
     }
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -414,8 +403,8 @@ void ReelView::paint (juce::Graphics& g)
     const float tapeY = cas ? 166.0f : 196.0f;
     const float tapeW = m == modelWide ? 4.0f : cas ? 1.6f : 2.2f;
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, W, 232.0f, 4.0f);
+    const juce::Rectangle<float> scr (1.5f, 1.5f, W - 3.0f, 229.0f);
+    real::screen (g, scr, 4.0f);
 
     drawHeads (g, tapeY, capA);
 
@@ -500,6 +489,7 @@ void ReelView::paint (juce::Graphics& g)
     }
 
     drawRoller (g, tapeY, capA);
+    real::glass (g, scr, 4.0f);
 
     // contador e velocidade
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -703,7 +693,7 @@ void FitaEditor::paint (juce::Graphics& g)
 
 void FitaEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: rolo de fita ----
     g.setColour (theme::amber);
@@ -759,13 +749,7 @@ void FitaEditor::drawCanvas (juce::Graphics& g)
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
         const juce::Rectangle<float> led (right - w - 13.0f, 30.5f, 7.0f, 7.0f);
-        if (syn)
-        {
-            g.setColour (theme::amber.withAlpha (0.3f));
-            g.fillEllipse (led.expanded (3.0f));
-        }
-        g.setColour (syn ? theme::amber : theme::off);
-        g.fillEllipse (led);
+        real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
     }
 
     // ---- cards ----

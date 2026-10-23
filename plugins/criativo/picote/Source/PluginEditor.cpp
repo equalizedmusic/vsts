@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -107,13 +104,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    if (syn)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (syn ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 float param (PicoteProcessor& p, const char* pid)
@@ -150,22 +141,26 @@ void StepGrid::paint (juce::Graphics& g)
     const bool  held = proc.engine.holding.load();
     const auto  col  = laneColour (lane);
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "STEPS ", u8 ("·"));
 
-    // abas: VOLUME · PAN · FILTRO
+    // abas: VOLUME · PAN · FILTRO (seletor embutido; a aba ativa acende na cor da faixa)
     for (int i = 0; i < numLanes; ++i)
     {
         const auto tr = tabRect (i);
         const bool on = i == lane;
-        g.setColour (on ? laneColour (i).withAlpha (0.15f) : theme::panel2);
-        g.fillRoundedRectangle (tr, 3.0f);
-        g.setColour (on ? laneColour (i) : theme::line);
-        g.drawRoundedRectangle (tr.reduced (0.5f), 3.0f, 1.0f);
+        real::screen (g, tr, 3.0f);
+        if (on)
+        {
+            g.setColour (laneColour (i).withAlpha (0.15f));
+            g.fillRoundedRectangle (tr, 3.0f);
+            g.setColour (laneColour (i));
+            g.drawRoundedRectangle (tr.reduced (0.5f), 3.0f, 1.0f);
+        }
         g.setColour (on ? theme::cream : theme::dim);
         g.setFont (theme::sans (9.0f, true, 0.15f));
         g.drawText (laneNames[i], tr, juce::Justification::centred);
+        real::glass (g, tr, 3.0f);
     }
     {
         juce::AttributedString a;
@@ -217,6 +212,10 @@ void StepGrid::paint (juce::Graphics& g)
             g.setColour (held ? theme::coral : theme::cream);
             g.drawRoundedRectangle (cell.reduced (0.5f), 2.0f, 1.5f);
         }
+        // LED do passo (estilo sequenciador): acende no passo que está tocando
+        if (active)
+            real::led (g, { cell.getRight() - 7.0f, cell.getY() + 8.0f }, 2.2f,
+                       held ? theme::coral : theme::cream, i == now ? 1.0f : 0.0f);
         g.setColour (active ? theme::dim : theme::off);
         g.setFont (theme::mono (8.5f));
         g.drawText (juce::String (i + 1), cell.withHeight (12.0f).translated (0.0f, 2.0f), juce::Justification::centred);
@@ -229,9 +228,6 @@ void StepGrid::paint (juce::Graphics& g)
         g.drawText ("D", juce::Rectangle<float> (2.0f, area.getY(), 10.0f, 12.0f), juce::Justification::centred);
         g.drawText ("E", juce::Rectangle<float> (2.0f, area.getBottom() - 12.0f, 10.0f, 12.0f), juce::Justification::centred);
     }
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 void StepGrid::setFromMouse (juce::Point<float> p)
@@ -300,8 +296,8 @@ void SliceView::paint (juce::Graphics& g)
     const float depth = param (proc, id::depth) * 0.01f;
     const float vol   = param (proc, id::vol[juce::jlimit (0, numSteps - 1, now)]) * 0.01f;
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    const auto scr = juce::Rectangle<float> (0.0f, 0.0f, S, S).reduced (1.5f);   // o rebaixo desenha 1 px para fora
+    real::screen (g, scr, 4.0f);
 
     // envelope do passo atual: dois passos lado a lado, chão = 1 − PROFUNDIDADE
     {
@@ -353,13 +349,11 @@ void SliceView::paint (juce::Graphics& g)
             const float v  = param (proc, id::vol[i]) * 0.01f;
             const float d  = 4.0f + 8.0f * v;
             const bool  on = i == now;
+            // cada passo é um LED: o que toca acende cheio; os outros na intensidade do volume
             if (on)
-            {
-                g.setColour ((held ? theme::coral : theme::cream).withAlpha (0.3f));
-                g.fillEllipse (px - d, py - d, d * 2.0f, d * 2.0f);
-            }
-            g.setColour (on ? (held ? theme::coral : theme::cream) : v > 0.01f ? theme::amber.withAlpha (0.4f + 0.6f * v) : theme::off);
-            g.fillEllipse (px - d * 0.5f, py - d * 0.5f, d, d);
+                real::led (g, { px, py }, d * 0.5f, held ? theme::coral : theme::cream, 1.0f);
+            else
+                real::led (g, { px, py }, d * 0.5f, theme::amber, v > 0.01f ? 0.25f + 0.45f * v : 0.0f);
         }
         g.setColour (held ? theme::coral : theme::cream);
         g.setFont (theme::mono (22.0f));
@@ -368,6 +362,8 @@ void SliceView::paint (juce::Graphics& g)
         g.setFont (theme::sans (8.5f, true, 0.15f));
         g.drawText (held ? "PRESO" : "STEP", juce::Rectangle<float> (cx - 40.0f, cy + 8.0f, 80.0f, 12.0f), juce::Justification::centred);
     }
+
+    real::glass (g, scr, 4.0f);
 
     auto line = [] (const juce::String& a, const juce::String& b)
     {
@@ -550,7 +546,7 @@ void PicoteEditor::timerCallback()
         lastBpm = bpm;
         lastSync = syn;
         lastWaiting = wt;
-        canvas.repaint (380, 18, 236, 32);
+        canvas.repaint (370, 10, 246, 48);   // folga para o brilho do LED de sync
     }
 }
 
@@ -574,7 +570,7 @@ void PicoteEditor::paint (juce::Graphics& g)
 
 void PicoteEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: tesoura picando uma onda ----
     g.setColour (theme::amber.withAlpha (0.5f));

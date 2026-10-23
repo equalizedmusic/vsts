@@ -30,10 +30,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -108,13 +105,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    if (syn)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (syn ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 // eixo de frequência em log, 20 Hz–20 kHz
@@ -157,8 +148,7 @@ void ResponseStrip::paint (juce::Graphics& g)
     const float now  = juce::jlimit (minHz, top, proc.engine.cutNow.load());
     const float envA = param (proc, id::envAmt) * 0.01f;
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "RESPOSTA ", four ? u8 ("· 4 POLES · 24 dB/OCT") : u8 ("· 2 POLES · 12 dB/OCT"));
     {
         juce::AttributedString s;
@@ -171,8 +161,8 @@ void ResponseStrip::paint (juce::Graphics& g)
     }
 
     const float x0 = 12.0f, x1 = W - 12.0f, y0 = 26.0f, y1 = H - 20.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, y0, x1 - x0, y1 - y0, 3.0f);
+    const juce::Rectangle<float> scr (x0, y0, x1 - x0, y1 - y0);
+    real::screen (g, scr, 3.0f);
 
     // grade: frequência e 0 dB
     g.setFont (theme::mono (9.0f));
@@ -243,8 +233,7 @@ void ResponseStrip::paint (juce::Graphics& g)
     g.setColour (theme::leaf);
     g.fillRect (juce::jmin (bx, px), y1 - 3.0f, std::abs (px - bx), 3.0f);
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, scr, 3.0f);
 }
 
 // =====================================================================
@@ -266,8 +255,8 @@ void LadderView::paint (juce::Graphics& g)
     const float smoke = proc.engine.smokeNow.load();
     const float lv    = juce::jlimit (0.0f, 1.0f, juce::Decibels::gainToDecibels (level, -60.0f) / 48.0f + 1.0f);
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    const juce::Rectangle<float> scr (1.5f, 1.5f, S - 3.0f, S - 3.0f);
+    real::screen (g, scr, 4.0f);
 
     const float L = 72.0f, R = 168.0f;
     const float ys[4] = { 46.0f, 92.0f, 138.0f, 184.0f };
@@ -354,7 +343,7 @@ void LadderView::paint (juce::Graphics& g)
     if (smoke > 0.01f)
     {
         g.setColour (theme::leaf.withAlpha (0.10f * smoke));
-        g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+        g.fillRoundedRectangle (scr, 4.0f);
     }
 
     // envelope (à esquerda)
@@ -370,6 +359,7 @@ void LadderView::paint (juce::Graphics& g)
         txt.applyTransform (juce::AffineTransform::rotation (-juce::MathConstants<float>::halfPi).translated (19.0f, 160.0f));
         g.fillPath (txt);
     }
+    real::glass (g, scr, 4.0f);
 
     // rodapé: quanto o envelope está mexendo e o corte de agora
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -567,7 +557,7 @@ void F1Editor::paint (juce::Graphics& g)
 
 void F1Editor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: folha de sete pontas dentro do anel ----
     {

@@ -32,10 +32,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -264,8 +261,7 @@ void SpectrumView::paint (juce::Graphics& g)
     const auto  pa = plotArea();
     const double fs = juce::jmax (8000.0, proc.rate.load());
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "SPECTRUM ", u8 ("· ARRASTE AS BORDAS DA FAIXA DE DETECÇÃO"));
     {
         float x = W - 10.0f;
@@ -275,8 +271,7 @@ void SpectrumView::paint (juce::Graphics& g)
         legendItem (g, x, theme::dim, "INPUT", false);
     }
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (pa, 3.0f);
+    real::screen (g, pa, 3.0f);
 
     // grade
     g.setFont (theme::mono (9.0f));
@@ -358,8 +353,7 @@ void SpectrumView::paint (juce::Graphics& g)
     g.drawText (hzText (lo), juce::Rectangle<float> (xl - 76.0f, pa.getY() + 4.0f, 70.0f, 12.0f), juce::Justification::centredRight);
     g.drawText (hzText (hi), juce::Rectangle<float> (xh + 6.0f, pa.getY() + 4.0f, 70.0f, 12.0f), juce::Justification::centredLeft);
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, pa, 3.0f);
 }
 
 // =====================================================================
@@ -418,8 +412,8 @@ void ReductionView::paint (juce::Graphics& g)
 
     // histórico: a redução desce do topo (coral); a linha tracejada é o RANGE
     const juce::Rectangle<float> area (0.0f, 112.0f, W, H - 112.0f - 16.0f);
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (area, 3.0f);
+    const auto screenR = area.reduced (1.0f, 0.0f);   // 1 px para dentro nas laterais: o rebaixo cabe no componente
+    real::screen (g, screenR, 3.0f);
     const float scaleDb = juce::jmax (6.0f, range * 1.15f);
     auto yFor = [&area, scaleDb] (float db) { return area.getY() + juce::jlimit (0.0f, 1.0f, db / scaleDb) * area.getHeight(); };
 
@@ -456,6 +450,8 @@ void ReductionView::paint (juce::Graphics& g)
         g.setColour (theme::coral.withAlpha (0.5f));
         g.fillPath (dashed);
     }
+
+    real::glass (g, screenR, 3.0f);
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (9.0f, false, 0.1f));
@@ -670,7 +666,7 @@ void LixaEditor::paint (juce::Graphics& g)
 
 void LixaEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: folha de lixa (grãos) ----
     {

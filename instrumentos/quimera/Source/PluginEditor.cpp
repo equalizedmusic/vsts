@@ -47,10 +47,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 // nome, duas linhas de descrição e a marca, a partir do x = 56 (o logo fica antes)
@@ -117,13 +114,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, float brandEnd, float rig
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    if (syn)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (syn ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 // logo: máscara metade orgânica (folha, à esquerda) e metade circuito (à direita)
@@ -379,9 +370,9 @@ void WaveView::paint (juce::Graphics& g)
     const float k     = on ? 1.0f : 0.45f;
     const auto& bank  = WaveBank::instance();
     constexpr int frames = WaveBank::frames, len = WaveBank::size;
+    const auto  sr    = r.reduced (1.5f);   // a tela; o rebaixo do screen sai 1 px para fora
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 3.0f);
+    real::screen (g, sr, 3.0f);
 
     // piso em perspectiva
     g.setColour (theme::line);
@@ -459,8 +450,7 @@ void WaveView::paint (juce::Graphics& g)
         g.drawText ("DESLIGADO", r.reduced (6.0f, 3.0f), juce::Justification::topRight, false);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+    real::glass (g, sr, 3.0f);
 }
 
 // =====================================================================
@@ -513,9 +503,9 @@ void FilterView::paint (juce::Graphics& g)
     const float base  = juce::jlimit (20.0f, 20000.0f, cutP->load());
     const float now   = liveCut();
     const float k     = on ? 1.0f : 0.4f;
+    const auto  sr    = r.reduced (1.5f);   // a tela; o rebaixo do screen sai 1 px para fora
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 3.0f);
+    real::screen (g, sr, 3.0f);
 
     const float x0 = 4.0f, x1 = r.getWidth() - 4.0f, y0 = 16.0f, y1 = r.getHeight() - 4.0f;
     g.setColour (theme::line);
@@ -586,8 +576,7 @@ void FilterView::paint (juce::Graphics& g)
         g.drawText ("DESLIGADO", juce::Rectangle<float> (6.0f, 2.0f, r.getWidth() - 12.0f, 12.0f), juce::Justification::centredRight, false);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+    real::glass (g, sr, 3.0f);
 }
 
 // =====================================================================
@@ -635,9 +624,9 @@ void EnvView::paint (juce::Graphics& g)
     const float a  = aP->load(), d = dP->load(), rl = rP->load(), c = cP->load();
     const float s  = juce::jlimit (0.0f, 1.0f, sP->load() * 0.01f);
     const auto  col = theme::cream;
+    const auto  sr  = r.reduced (1.5f);   // a tela; o rebaixo do screen sai 1 px para fora
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 3.0f);
+    real::screen (g, sr, 3.0f);
 
     // largura de cada trecho em escala log do tempo (o sustain tem largura fixa)
     const float wa = std::log1p (a / 10.0f) + 0.3f, wd = std::log1p (d / 10.0f) + 0.3f;
@@ -695,8 +684,7 @@ void EnvView::paint (juce::Graphics& g)
         g.fillEllipse (x - 3.0f, y - 3.0f, 6.0f, 6.0f);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+    real::glass (g, sr, 3.0f);
 }
 
 // =====================================================================
@@ -753,9 +741,9 @@ void LfoView::paint (juce::Graphics& g)
     const int   shape = juce::jlimit (0, numLfoShapes - 1, juce::roundToInt (shapeP->load()));
     const auto  col = theme::leaf;
     const float x0 = 5.0f, x1 = r.getWidth() - 5.0f, cy = r.getCentreY(), amp = r.getHeight() * 0.38f;
+    const auto  sr = r.reduced (1.5f);   // a tela; o rebaixo do screen sai 1 px para fora
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 3.0f);
+    real::screen (g, sr, 3.0f);
     g.setColour (theme::line);
     g.fillRect (x0, cy, x1 - x0, 1.0f);
 
@@ -789,8 +777,7 @@ void LfoView::paint (juce::Graphics& g)
     g.setFont (theme::mono (8.5f));
     g.drawText (shownInfo.isNotEmpty() ? shownInfo : infoText(), r.reduced (5.0f, 2.0f), juce::Justification::topRight, false);
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+    real::glass (g, sr, 3.0f);
 }
 
 // =====================================================================
@@ -828,9 +815,9 @@ void ScopeView::paint (juce::Graphics& g)
     const auto  r  = getLocalBounds().toFloat();
     const float cy = r.getCentreY(), amp = r.getHeight() * 0.44f;
     const float x0 = 6.0f, x1 = r.getWidth() - 6.0f;
+    const auto  sr = r.reduced (1.5f);   // a tela; o rebaixo do screen sai 1 px para fora
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 3.0f);
+    real::screen (g, sr, 3.0f);
 
     g.setColour (theme::line.withAlpha (0.6f));
     for (int k = 1; k < 16; ++k)
@@ -860,8 +847,7 @@ void ScopeView::paint (juce::Graphics& g)
     s.setJustification (juce::Justification::topRight);
     s.draw (g, r.reduced (10.0f, 6.0f));
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+    real::glass (g, sr, 3.0f);
 }
 
 // =====================================================================
@@ -896,10 +882,7 @@ void VoiceMeter::paint (juce::Graphics& g)
     const auto& tel = proc.engine.tel;
     const int count = juce::jmax (0, shownCount), limit = juce::jlimit (1, maxVoices, shownLimit);
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 3.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 3.0f, 1.0f);
+    real::card (g, getLocalBounds().toFloat().reduced (1.0f), 3.0f);
 
     g.setColour (theme::dim);
     g.setFont (theme::sans (8.0f, true, 0.2f));
@@ -920,13 +903,10 @@ void VoiceMeter::paint (juce::Graphics& g)
         if (on)
         {
             const float lv = juce::jlimit (0.0f, 1.0f, tel.voice[(size_t) i].level.load());
-            g.setColour (theme::amber.withAlpha (0.25f * lv));
-            g.fillEllipse (dot.expanded (2.0f));
-            g.setColour (theme::amber.withAlpha (0.4f + 0.6f * lv));
+            real::led (g, dot.getCentre(), 2.5f, theme::amber, 0.4f + 0.6f * lv);
         }
-        else
-            g.setColour (i < limit ? theme::segOff : theme::ledOff);
-        g.fillEllipse (dot);
+        else   // além do limite a lente fica sem cor nenhuma (mais apagada)
+            real::led (g, dot.getCentre(), 2.5f, i < limit ? theme::amber : theme::ledOff, 0.0f);
     }
 }
 
@@ -990,13 +970,7 @@ void MatrixRow::paint (juce::Graphics& g)
 
     // LED: acende com o tanto que a fonte está mexendo agora
     const juce::Rectangle<float> led (27.0f, r.getCentreY() - 3.5f, 7.0f, 7.0f);
-    if (a > 0.02f)
-    {
-        g.setColour (col.withAlpha (0.35f * a));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (shownUsed ? col.withAlpha (0.35f + 0.65f * a) : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, shownUsed ? col : theme::off, shownUsed ? 0.35f + 0.65f * a : 0.0f);
 
     for (float ax : { 216.0f, 465.0f })
     {
@@ -1639,7 +1613,7 @@ void QuimeraEditor::paint (juce::Graphics& g)
 // ---------------- fundo da tela: cabeçalho, cartões, títulos e textos ----------------
 void QuimeraEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) qui::baseW, (float) qui::baseH);
 
     drawLogo (g);
     const float brandEnd = drawBrand (g, "QUIMERA", "SINTETIZADOR WAVETABLE", u8 ("ORGÂNICO + METÁLICO · MPE"));
@@ -1660,6 +1634,9 @@ void QuimeraEditor::drawCanvas (juce::Graphics& g)
     for (const auto& c : cards)
         if (visible (c.tab))
             drawCard (g, c.r);
+
+    // poço do teclado (o teclado fica embutido na placa de baixo; mesmo lugar do buildBottom)
+    real::recess (g, juce::Rectangle<float> (108.0f, 622.0f, 940.0f, 100.0f), 2.0f);
 
     if (currentTab == 0)
     {

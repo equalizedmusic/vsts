@@ -30,10 +30,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -95,8 +92,7 @@ void ColorStrip::paint (juce::Graphics& g)
     const auto  r = getLocalBounds().toFloat();
     const float W = r.getWidth(), H = r.getHeight();
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "MESA ", u8 ("· AO VIVO"));
     {
         juce::AttributedString s;
@@ -118,8 +114,8 @@ void ColorStrip::paint (juce::Graphics& g)
     const float lo = -96.0f, hi = 24.0f;
     auto yOf = [=] (float db) { return bot - 1.0f - (juce::jlimit (lo, hi, db) - lo) / (hi - lo) * (bot - top - 2.0f); };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> scr (x0, top, x1 - x0, bot - top);
+    real::screen (g, scr, 3.0f);
 
     // mais antigo à esquerda, agora à direita
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
@@ -170,8 +166,7 @@ void ColorStrip::paint (juce::Graphics& g)
                     juce::Rectangle<float> (x0 + 6.0f, y - 12.0f, 140.0f, 10.0f), juce::Justification::centredLeft);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, scr, 3.0f);
 }
 
 // =====================================================================
@@ -188,8 +183,8 @@ void CurveView::paint (juce::Graphics& g)
     auto px = [=] (float v) { return S * 0.5f + v / R * half; };
     auto py = [=] (float v) { return S * 0.5f - juce::jlimit (-R, R, v) / R * half; };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    const juce::Rectangle<float> scr (1.5f, 1.5f, S - 3.0f, S - 3.0f);   // o rebaixo da tela desenha 1 px fora
+    real::screen (g, scr, 4.0f);
 
     // eixos e a diagonal (canal sem cor)
     g.setColour (theme::segOff);
@@ -234,6 +229,7 @@ void CurveView::paint (juce::Graphics& g)
         g.setColour (theme::coral);
         g.fillEllipse (px (xin) - 4.0f, py (y) - 4.0f, 8.0f, 8.0f);
     }
+    real::glass (g, scr, 4.0f);
 
     // rodapé: modelo, drive e a descrição do modelo
     auto line = [] (const juce::String& a, const juce::String& b, juce::Colour c)
@@ -314,13 +310,14 @@ void HarmonicsView::paint (juce::Graphics& g)
         const float x    = (float) (k - 2) * (barW + gap);
         const bool  even = (k % 2) == 0;
 
-        g.setColour (theme::dark);
-        g.fillRoundedRectangle (x, barTop, barW, barH, 3.0f);
+        const juce::Rectangle<float> well (x, barTop, barW, barH);
+        real::screen (g, well, 3.0f);
         if (frac > 0.0f)
         {
             g.setColour (even ? theme::coral : theme::coral.withAlpha (0.55f));
             g.fillRoundedRectangle (x, barTop + barH * (1.0f - frac), barW, barH * frac, 3.0f);
         }
+        real::glass (g, well, 3.0f);
 
         g.setColour (rel > floorDb ? theme::cream : theme::dim);
         g.setFont (theme::mono (10.5f));
@@ -363,8 +360,7 @@ void HarmonicsView::paint (juce::Graphics& g)
     {
         return plot.getY() + (dbTop - juce::jlimit (dbBot, dbTop, db)) / (dbTop - dbBot) * plot.getHeight();
     };
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (plot, 3.0f);
+    real::screen (g, plot, 3.0f);
     g.setColour (theme::line);
     g.fillRect (plot.getX(), yOf (0.0f), plot.getWidth(), 1.0f);
     g.setColour (theme::line.withAlpha (0.5f));
@@ -406,6 +402,7 @@ void HarmonicsView::paint (juce::Graphics& g)
         g.setColour (theme::leaf);
         g.strokePath (eq, juce::PathStrokeType (2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
+    real::glass (g, plot, 3.0f);
 
     // ---- vazamento e ruído ----
     g.setFont (theme::mono (10.0f));
@@ -612,7 +609,7 @@ void ConsoleEditor::paint (juce::Graphics& g)
 
 void ConsoleEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: três faders de mesa ----
     {

@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -107,13 +104,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    if (syn)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (syn ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 // eixo de frequência em log, 20 Hz–20 kHz
@@ -157,8 +148,7 @@ void MirageView::paint (juce::Graphics& g)
     const float mot = param (proc, id::motion) * 0.01f;
     const auto  hill = frz ? theme::ice : theme::amber;
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "MIRAGEM ", u8 ("· DECAY ") + secText (param (proc, id::decay))
                                             + (frz ? juce::String (u8 (" · CONGELADA")) : juce::String())
                                             + (rev ? juce::String (u8 (" · REVERSO")) : juce::String()));
@@ -175,6 +165,8 @@ void MirageView::paint (juce::Graphics& g)
     const float x0 = 12.0f, x1 = W - 12.0f, y0 = 26.0f, y1 = H - 10.0f;
     const float horizon = y0 + (y1 - y0) * 0.64f;
     const float sceneW = x1 - x0, skyH = horizon - y0;
+    const juce::Rectangle<float> scene (x0, y0, sceneW, y1 - y0);
+    real::screen (g, scene, 2.0f);
 
     // céu: escuro em cima, brilho no horizonte (o shimmer acende o céu)
     {
@@ -256,8 +248,7 @@ void MirageView::paint (juce::Graphics& g)
         g.fillRect (x0, horizon, sceneW, 1.0f);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, scene, 2.0f);
 }
 
 // =====================================================================
@@ -271,8 +262,8 @@ void DecayView::paint (juce::Graphics& g)
     const float shm = param (proc, id::shimmer) * 0.01f;
     const float span = juce::jmax (1.0f, pre + juce::jmin (dec * 1.15f, 30.0f));
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    const auto scr = juce::Rectangle<float> (0.0f, 0.0f, S, S).reduced (1.5f);   // o rebaixo desenha 1 px para fora
+    real::screen (g, scr, 4.0f);
 
     const float gx0 = 30.0f, gx1 = S - 10.0f, gy0 = 14.0f, gy1 = S - 54.0f;
     auto xOf = [=] (float sec) { return gx0 + juce::jlimit (0.0f, 1.0f, sec / span) * (gx1 - gx0); };
@@ -346,6 +337,8 @@ void DecayView::paint (juce::Graphics& g)
         g.drawText ("20k", juce::Rectangle<float> (gx1 - 40.0f, by + 10.0f, 40.0f, 11.0f), juce::Justification::centredRight);
         g.drawText ("TONE", juce::Rectangle<float> (gx0, by + 10.0f, gx1 - gx0, 11.0f), juce::Justification::centred);
     }
+
+    real::glass (g, scr, 4.0f);
 
     auto line = [] (const juce::String& a, const juce::String& b)
     {
@@ -519,7 +512,7 @@ void MiragemEditor::timerCallback()
         lastBpm = bpm;
         lastSync = syn;
         lastWaiting = wt;
-        canvas.repaint (380, 18, 236, 32);
+        canvas.repaint (370, 10, 246, 48);   // folga para o brilho do LED de sync
     }
 }
 
@@ -543,7 +536,7 @@ void MiragemEditor::paint (juce::Graphics& g)
 
 void MiragemEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: sol no horizonte e o reflexo tremendo ----
     g.setColour (theme::amber.withAlpha (0.5f));

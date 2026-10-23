@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -107,13 +104,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    if (syn)
-    {
-        g.setColour (theme::amber.withAlpha (0.3f));
-        g.fillEllipse (led.expanded (3.0f));
-    }
-    g.setColour (syn ? theme::amber : theme::off);
-    g.fillEllipse (led);
+    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 // eixo de frequência em log, 20 Hz–20 kHz
@@ -160,8 +151,7 @@ void ScopeStrip::paint (juce::Graphics& g)
     const auto  r = getLocalBounds().toFloat();
     const float W = r.getWidth(), H = r.getHeight();
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "OSCILLOSCOPE ", u8 ("· INPUT × CARRIER"));
     {
         const float lfoA = param (proc, id::lfoAmt);
@@ -178,8 +168,8 @@ void ScopeStrip::paint (juce::Graphics& g)
 
     const float x0 = 12.0f, x1 = W - 12.0f, y0 = 26.0f, y1 = H - 22.0f;
     const float mid = (y0 + y1) * 0.5f, half = (y1 - y0) * 0.5f - 4.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, y0, x1 - x0, y1 - y0, 3.0f);
+    const juce::Rectangle<float> scr (x0, y0, x1 - x0, y1 - y0);
+    real::screen (g, scr, 3.0f);
     g.setColour (theme::ledOff);
     g.fillRect (x0, mid, x1 - x0, 1.0f);
     for (int k = 1; k < 16; ++k)
@@ -209,13 +199,11 @@ void ScopeStrip::paint (juce::Graphics& g)
     trace (in,  scale,  theme::dim.withAlpha (0.6f),   1.2f);
     trace (car, 0.35f,  theme::coral.withAlpha (0.55f), 1.0f);
     trace (out, scale,  theme::amber,                   1.6f);
+    real::glass (g, scr, 3.0f);
 
     legendItem (g, x0 + 4.0f,   y1 + 5.0f, theme::dim,   "INPUT");
     legendItem (g, x0 + 84.0f,  y1 + 5.0f, theme::coral, "CARRIER");
     legendItem (g, x0 + 176.0f, y1 + 5.0f, theme::amber, "OUTPUT");
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -236,8 +224,10 @@ void RingView::paint (juce::Graphics& g)
     const float lfo = proc.engine.lfoNow.load();
     const float lfoA = param (proc, id::lfoAmt) * 0.01f;
 
-    g.setColour (theme::dark);
-    g.fillEllipse (1.0f, 1.0f, S - 2.0f, S - 2.0f);
+    // tela redonda (rebaixo + fundo escuro); o vidro vai por cima depois do Lissajous
+    const juce::Rectangle<float> scr (1.5f, 1.5f, S - 3.0f, S - 3.0f);
+    const float scrCorner = (S - 3.0f) * 0.5f;
+    real::screen (g, scr, scrCorner);
 
     // anel de fora: a portadora girando
     for (int i = 0; i < 48; ++i)
@@ -296,6 +286,7 @@ void RingView::paint (juce::Graphics& g)
     }
     g.setColour (theme::cream);
     g.fillEllipse (C - 2.5f, C - 2.5f, 5.0f, 5.0f);
+    real::glass (g, scr, scrCorner);
 
     // rodapé
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -490,7 +481,7 @@ void RingerEditor::paint (juce::Graphics& g)
 
 void RingerEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: dois anéis entrelaçados ----
     g.setColour (theme::amber.withAlpha (0.5f));

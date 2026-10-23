@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -84,8 +81,7 @@ void HistoryView::paint (juce::Graphics& g)
     const float W = r.getWidth(), H = r.getHeight();
     const auto  c = curveOf (proc.readSettings());
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, u8 ("HISTÓRICO "), u8 ("· INPUT E GAIN REDUCTION, ÚLTIMOS 4 s"));
     {
         float x = W - 10.0f;
@@ -101,8 +97,8 @@ void HistoryView::paint (juce::Graphics& g)
         return bot - (juce::jlimit (lvlLo, 0.0f, db) - lvlLo) / (0.0f - lvlLo) * (bot - top);
     };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> screenR (x0, top, x1 - x0, bot - top);
+    real::screen (g, screenR, 3.0f);
 
     // grade do nível (dBFS), com a escala na direita
     g.setFont (theme::mono (9.0f));
@@ -169,8 +165,7 @@ void HistoryView::paint (juce::Graphics& g)
                     juce::Rectangle<float> (x1 - 130.0f, yT - 13.0f, 124.0f, 11.0f), juce::Justification::centredRight);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, screenR, 3.0f);
 }
 
 // =====================================================================
@@ -185,8 +180,9 @@ void CurveView::paint (juce::Graphics& g)
     auto px = [S, lo, hi, pad] (float v) { return pad + (juce::jlimit (lo, hi, v) - lo) / (hi - lo) * (S - 2.0f * pad); };
     auto py = [S, lo, hi, pad] (float v) { return S - pad - (juce::jlimit (lo, hi, v) - lo) / (hi - lo) * (S - 2.0f * pad); };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    // a tela ocupa o componente todo: o gráfico (S × S) e o rodapé com os números embaixo dele
+    const auto screenR = getLocalBounds().toFloat().reduced (1.5f);
+    real::screen (g, screenR, 3.0f);
 
     // grade a cada 12 dB
     g.setColour (theme::segOff.withAlpha (0.6f));
@@ -287,10 +283,13 @@ void CurveView::paint (juce::Graphics& g)
     r1.setJustification (juce::Justification::centredRight);
     l2.setJustification (juce::Justification::centredLeft);
     r2.setJustification (juce::Justification::centredRight);
-    l1.draw (g, { 0.0f, S + 8.0f, S, 14.0f });
-    r1.draw (g, { 0.0f, S + 8.0f, S, 14.0f });
-    l2.draw (g, { 0.0f, S + 26.0f, S, 14.0f });
-    r2.draw (g, { 0.0f, S + 26.0f, S, 14.0f });
+    // rodapé recuado 8 px das bordas, para não encostar no rebaixo da tela
+    l1.draw (g, { 8.0f, S + 8.0f, S - 16.0f, 14.0f });
+    r1.draw (g, { 8.0f, S + 8.0f, S - 16.0f, 14.0f });
+    l2.draw (g, { 8.0f, S + 26.0f, S - 16.0f, 14.0f });
+    r2.draw (g, { 8.0f, S + 26.0f, S - 16.0f, 14.0f });
+
+    real::glass (g, screenR, 3.0f);
 }
 
 // =====================================================================
@@ -305,35 +304,41 @@ void GrReadout::update (float grDb, float dt)
 
 void GrReadout::paint (juce::Graphics& g)
 {
-    const float W = (float) getWidth();
-    auto label = [&g] (const juce::String& t, float y)
+    // a leitura inteira é uma tela embutida; o conteúdo fica recuado 8 px das bordas
+    const auto screenR = getLocalBounds().toFloat().reduced (1.5f);
+    real::screen (g, screenR, 3.0f);
+
+    const float X = 8.0f, W = (float) getWidth() - 16.0f;
+    auto label = [&] (const juce::String& t, float y)
     {
         g.setColour (theme::dim);
         g.setFont (theme::sans (9.0f, true, 0.2f));
-        g.drawText (t, juce::Rectangle<float> (0.0f, y, 200.0f, 12.0f), juce::Justification::centredLeft);
+        g.drawText (t, juce::Rectangle<float> (X, y, 200.0f, 12.0f), juce::Justification::centredLeft);
     };
-    auto value = [&g, W] (const juce::String& t, float y, juce::Colour col)
+    auto value = [&] (const juce::String& t, float y, juce::Colour col)
     {
         g.setColour (col);
         g.setFont (theme::mono (11.0f));
-        g.drawText (t, juce::Rectangle<float> (0.0f, y, W, 12.0f), juce::Justification::centredRight);
+        g.drawText (t, juce::Rectangle<float> (X, y, W, 12.0f), juce::Justification::centredRight);
     };
 
-    label ("GAIN REDUCTION", 0.0f);
-    value ("MAX " + grText (grMax), 0.0f, grMax > 0.05f ? theme::coral : theme::dim);
+    label ("GAIN REDUCTION", 4.0f);
+    value ("MAX " + grText (grMax), 4.0f, grMax > 0.05f ? theme::coral : theme::dim);
     g.setColour (grNow > 0.05f ? theme::coral : theme::dim);
     g.setFont (theme::mono (26.0f));
-    g.drawText (grText (grNow), juce::Rectangle<float> (0.0f, 13.0f, W, 30.0f), juce::Justification::centredLeft);
+    g.drawText (grText (grNow), juce::Rectangle<float> (X, 15.0f, W, 28.0f), juce::Justification::centredLeft);
 
     g.setColour (theme::segOff);
-    g.fillRoundedRectangle (0.0f, 47.0f, W, 4.0f, 2.0f);
+    g.fillRoundedRectangle (X, 45.0f, W, 4.0f, 2.0f);
     g.setColour (theme::coral.withAlpha (0.5f));
-    g.fillRoundedRectangle (0.0f, 47.0f, W * juce::jlimit (0.0f, 1.0f, grMax / 24.0f), 4.0f, 2.0f);
+    g.fillRoundedRectangle (X, 45.0f, W * juce::jlimit (0.0f, 1.0f, grMax / 24.0f), 4.0f, 2.0f);
     g.setColour (theme::coral);
-    g.fillRoundedRectangle (0.0f, 47.0f, W * juce::jlimit (0.0f, 1.0f, grNow / 24.0f), 4.0f, 2.0f);
+    g.fillRoundedRectangle (X, 45.0f, W * juce::jlimit (0.0f, 1.0f, grNow / 24.0f), 4.0f, 2.0f);
 
-    label ("MAKEUP APLICADO", 60.0f);
-    value (dbSigned (makeupDb), 60.0f, std::abs (makeupDb) > 0.05f ? theme::leaf : theme::dim);
+    label ("MAKEUP APLICADO", 55.0f);
+    value (dbSigned (makeupDb), 55.0f, std::abs (makeupDb) > 0.05f ? theme::leaf : theme::dim);
+
+    real::glass (g, screenR, 3.0f);
 }
 
 // =====================================================================
@@ -518,7 +523,7 @@ void TornoEditor::paint (juce::Graphics& g)
 
 void TornoEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: as duas castanhas do torno apertando a peça ----
     {

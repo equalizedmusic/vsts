@@ -44,10 +44,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -75,8 +72,7 @@ void PatternStrip::paint (juce::Graphics& g)
     const int   step = proc.engine.step.load (std::memory_order_relaxed);
     const float frac = proc.engine.stepFrac.load (std::memory_order_relaxed);
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
 
     for (int s = 0; s < numSteps; ++s)
     {
@@ -167,9 +163,6 @@ void PatternStrip::paint (juce::Graphics& g)
         g.setFont (theme::sans (9.0f, true, 0.2f));
         g.drawText ("SEGURANDO", badge.withTrimmedLeft (16.0f), juce::Justification::centred);
     }
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -187,8 +180,10 @@ void Mandala::paint (juce::Graphics& g)
     const int   step = proc.engine.step.load (std::memory_order_relaxed);
     const float frac = proc.engine.stepFrac.load (std::memory_order_relaxed);
 
-    g.setColour (theme::dark);
-    g.fillEllipse (1.0f, 1.0f, MS - 2.0f, MS - 2.0f);
+    // tela redonda: canto = metade do lado vira círculo
+    const juce::Rectangle<float> scr (1.5f, 1.5f, MS - 3.0f, MS - 3.0f);
+    const float scrCorner = scr.getWidth() * 0.5f;
+    real::screen (g, scr, scrCorner);
 
     // anéis: REPETE por fora, CRUSH por dentro
     for (int l = 0; l < numLanes; ++l)
@@ -257,6 +252,7 @@ void Mandala::paint (juce::Graphics& g)
     }
     g.setColour (theme::cream);
     g.fillEllipse (MC - 2.5f, MC - 2.5f, 5.0f, 5.0f);
+    real::glass (g, scr, scrCorner);
 
     // passo e semente
     auto line = [] (const juce::String& a, const juce::String& b, const juce::String& c)
@@ -294,11 +290,7 @@ void Mandala::mouseDown (const juce::MouseEvent& e)
 // =====================================================================
 void ChipButton::paintButton (juce::Graphics& g, bool over, bool down)
 {
-    auto r = getLocalBounds().toFloat().reduced (0.5f);
-    g.setColour (theme::panel2);
-    g.fillRoundedRectangle (r, 3.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r, 3.0f, 1.0f);
+    const auto r = real::keycap (g, getLocalBounds().toFloat().reduced (1.5f), 3.0f, down);
 
     const auto c = over || down ? theme::amber : theme::dim;
     g.setColour (c);
@@ -494,7 +486,7 @@ void CaleidoEditor::paint (juce::Graphics& g)
 
 void CaleidoEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: três lâminas de caleidoscópio ----
     g.setColour (theme::amber);
@@ -564,13 +556,7 @@ void CaleidoEditor::drawCanvas (juce::Graphics& g)
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
         const juce::Rectangle<float> led (right - w - 13.0f, 30.5f, 7.0f, 7.0f);
-        if (syn)
-        {
-            g.setColour (theme::amber.withAlpha (0.3f));
-            g.fillEllipse (led.expanded (3.0f));
-        }
-        g.setColour (syn ? theme::amber : theme::off);
-        g.fillEllipse (led);
+        real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
     }
 
     // ---- cards ----

@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -83,8 +80,7 @@ void WaveStrip::paint (juce::Graphics& g)
     const auto  shape = currentShape (proc);
     const bool  asymOn = param (proc, id::asym) > 0.5f;
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· O QUE PASSA E O QUE A NAVALHA CORTA, AO VIVO"));
     {
         float x = W - 10.0f;
@@ -95,8 +91,8 @@ void WaveStrip::paint (juce::Graphics& g)
 
     const float x0 = 12.0f, x1 = W - 12.0f, top = 26.0f, bot = H - 10.0f;
     const float mid = (top + bot) * 0.5f, half = (bot - top) * 0.5f - 2.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> screenR (x0, top, x1 - x0, bot - top);
+    real::screen (g, screenR, 3.0f);
 
     // mais antigo à esquerda, agora à direita
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
@@ -132,12 +128,11 @@ void WaveStrip::paint (juce::Graphics& g)
     g.drawText ("CEILING " + dbText (param (proc, id::ceiling)).replace ("-", u8 ("−")),
                 juce::Rectangle<float> (x0 + 6.0f, yPos - 13.0f, 120.0f, 11.0f), juce::Justification::centredLeft);
 
+    real::glass (g, screenR, 3.0f);
+
     // escala acompanha os picos devagar (sem pular a cada frame)
     const float target = juce::jlimit (shape.ceiling * 1.25f, shape.ceiling * 8.0f, maxIn * 1.1f);
     range += (target - range) * 0.08f;
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -153,8 +148,9 @@ void CurveView::paint (juce::Graphics& g)
     auto px = [=] (float v) { return S * 0.5f + v / R * half; };
     auto py = [=] (float v) { return S * 0.5f - v / R * half; };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, S, S, 4.0f);
+    // tela quadrada no topo do componente (o rodapé fica embaixo); 1,5 px para dentro: o rebaixo cabe no componente
+    const juce::Rectangle<float> screenR (1.5f, 1.5f, S - 3.0f, S - 3.0f);
+    real::screen (g, screenR, 4.0f);
 
     // eixos e a diagonal (sem corte)
     g.setColour (theme::segOff);
@@ -204,6 +200,8 @@ void CurveView::paint (juce::Graphics& g)
         g.setColour (theme::coral);
         g.fillEllipse (px (xin) - 4.0f, py (y) - 4.0f, 8.0f, 8.0f);
     }
+
+    real::glass (g, screenR, 4.0f);
 
     // rodapé
     auto line = [] (const juce::String& a, const juce::String& b)
@@ -455,7 +453,7 @@ void NavalhaEditor::paint (juce::Graphics& g)
 
 void NavalhaEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: lâmina de barbear ----
     {

@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -93,8 +90,7 @@ void WaveStrip::paint (juce::Graphics& g)
     const auto  r = getLocalBounds().toFloat();
     const float W = r.getWidth(), H = r.getHeight();
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· ANTES E DEPOIS DO SOCO, AO VIVO"));
     {
         float x = W - 10.0f;
@@ -109,9 +105,9 @@ void WaveStrip::paint (juce::Graphics& g)
     const float lTop = H - 40.0f, lBot = H - 8.0f;      // faixa do ganho aplicado
     const float mid = (top + bot) * 0.5f, half = (bot - top) * 0.5f - 2.0f;
     const float lMid = (lTop + lBot) * 0.5f, lHalf = (lBot - lTop) * 0.5f - 2.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
-    g.fillRoundedRectangle (x0, lTop, x1 - x0, lBot - lTop, 3.0f);
+    const juce::Rectangle<float> waveR (x0, top, x1 - x0, bot - top), laneR (x0, lTop, x1 - x0, lBot - lTop);
+    real::screen (g, waveR, 3.0f);
+    real::screen (g, laneR, 3.0f);
 
     // mais antigo à esquerda, agora à direita
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
@@ -184,12 +180,12 @@ void WaveStrip::paint (juce::Graphics& g)
     g.drawText ("GAIN APLICADO", juce::Rectangle<float> (x0 + 6.0f, lTop + 2.0f, 120.0f, 10.0f), juce::Justification::centredLeft);
     g.drawText (u8 ("±15 dB"), juce::Rectangle<float> (x1 - 66.0f, lTop + 2.0f, 60.0f, 10.0f), juce::Justification::centredRight);
 
+    real::glass (g, waveR, 3.0f);
+    real::glass (g, laneR, 3.0f);
+
     // escala acompanha os picos devagar (sem pular a cada frame)
     const float target = juce::jlimit (0.02f, 4.0f, maxV * 1.1f);
     range += (target - range) * 0.08f;
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -235,8 +231,8 @@ void HitView::paint (juce::Graphics& g)
     auto xOfT = [=] (float tAbs) { return x0 + std::sqrt (juce::jlimit (0.0f, 1.0f, tAbs / span)) * (x1 - x0); };
     auto yOf  = [=] (float db) { return y0 + (12.0f - juce::jlimit (-48.0f, 12.0f, db)) / 60.0f * (y1 - y0); };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, W, PH, 4.0f);
+    const auto screenR = juce::Rectangle<float> (0.0f, 0.0f, W, PH).reduced (1.5f);
+    real::screen (g, screenR, 4.0f);
 
     // grade de dB
     g.setFont (theme::mono (8.5f));
@@ -299,6 +295,8 @@ void HitView::paint (juce::Graphics& g)
         g.drawText (txt, juce::Rectangle<float> (x - 15.0f, y1 + 4.0f, 30.0f, 11.0f), juce::Justification::centred);
     }
 
+    real::glass (g, screenR, 4.0f);
+
     // rodapé: o máximo de cada parte nesse golpe
     auto line = [] (const juce::String& a, const juce::String& b, juce::Colour c)
     {
@@ -340,8 +338,8 @@ void DetectorView::paint (juce::Graphics& g)
         return 0.0f;
     };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, 0.0f, W, H, 4.0f);
+    const auto screenR = getLocalBounds().toFloat().reduced (1.5f);
+    real::screen (g, screenR, 4.0f);
 
     g.setFont (theme::mono (8.5f));
     for (float f : { 100.0f, 1000.0f, 10000.0f })
@@ -383,6 +381,8 @@ void DetectorView::paint (juce::Graphics& g)
     s.append (mode == detAll ? u8 (" · O SOM INTEIRO") : u8 (" · CUTOFF ") + hzText (fc), theme::mono (10.0f), theme::dim);
     s.setJustification (juce::Justification::centredLeft);
     s.draw (g, { 8.0f, 4.0f, W - 16.0f, 13.0f });
+
+    real::glass (g, screenR, 4.0f);
 }
 
 // =====================================================================
@@ -629,7 +629,7 @@ void SocoEditor::paint (juce::Graphics& g)
 
 void SocoEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: o golpe (miolo coral e o estalo em volta) ----
     {

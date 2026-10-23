@@ -34,10 +34,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -208,8 +205,7 @@ void SpectrumView::paint (juce::Graphics& g)
     const auto  a = plotArea();
     const float fs = (float) juce::jmax (1.0, proc.rate.load());
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "SPECTRUM ", u8 ("· ARRASTE AS LINHAS PARA MUDAR OS CROSSOVERS"));
     {
         float x = W - 10.0f;
@@ -217,8 +213,7 @@ void SpectrumView::paint (juce::Graphics& g)
         legendItem (g, x, theme::cream, "GR (COR DA BANDA)");
     }
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (a, 3.0f);
+    real::screen (g, a, 3.0f);
 
     // grade de frequência
     g.setFont (theme::mono (9.0f));
@@ -359,8 +354,7 @@ void SpectrumView::paint (juce::Graphics& g)
         g.drawText (hzText (hz), tag, juce::Justification::centred);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, a, 3.0f);
 }
 
 void SpectrumView::mouseMove (const juce::MouseEvent& e)
@@ -644,7 +638,7 @@ void PrismaEditor::paint (juce::Graphics& g)
 
 void PrismaEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: um prisma que abre o feixe nas 4 bandas ----
     {

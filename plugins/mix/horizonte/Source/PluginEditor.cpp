@@ -30,10 +30,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -151,8 +148,8 @@ void GonioView::paint (juce::Graphics& g)
     const float rad = S * 0.5f - 18.0f;
     const float d = rad * 0.70710678f;
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (r, 4.0f);
+    const auto screenR = r.reduced (1.5f);
+    real::screen (g, screenR, 4.0f);
 
     // grade: círculos, eixo M (em pé), eixo S (deitado), diagonais L e R
     g.setColour (theme::segOff);
@@ -213,8 +210,7 @@ void GonioView::paint (juce::Graphics& g)
     g.drawText ("ESCALA " + signedText (scaleDb, 0) + " dBFS", juce::Rectangle<float> (8.0f, r.getBottom() - 16.0f, 160.0f, 12.0f),
                 juce::Justification::centredLeft);
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, screenR, 4.0f);
 }
 
 // =====================================================================
@@ -260,8 +256,8 @@ void CorrelationView::paint (juce::Graphics& g)
 
     // barra −1..+1: negativo (some em mono) em coral, positivo em verde
     const float barY = 18.0f, barH = 14.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, barY, W, barH, 2.0f);
+    const juce::Rectangle<float> barR (1.0f, barY, W - 2.0f, barH);   // 1 px para dentro: o rebaixo cabe no componente
+    real::screen (g, barR, 2.0f);
     g.setColour (theme::coral.withAlpha (0.18f));
     g.fillRect (1.0f, barY + 1.0f, W * 0.5f - 1.0f, barH - 2.0f);
     g.setColour (theme::leaf.withAlpha (0.14f));
@@ -278,6 +274,7 @@ void CorrelationView::paint (juce::Graphics& g)
         g.setColour (corrColour (corrMin).withAlpha (0.6f));
         g.fillRect (xm - 0.5f, barY + 2.0f, 1.0f, barH - 4.0f);
     }
+    real::glass (g, barR, 2.0f);   // o ponteiro fica na frente do vidro
     const float xn = juce::jlimit (1.5f, W - 1.5f, W * (corr + 1.0f) * 0.5f);
     g.setColour (active ? corrColour (corr) : theme::off);
     g.fillRoundedRectangle (xn - 1.5f, barY - 3.0f, 3.0f, barH + 6.0f, 1.0f);
@@ -317,8 +314,7 @@ void WidthCurve::paint (juce::Graphics& g)
     const auto  r = getLocalBounds().toFloat();
     const float W = r.getWidth(), H = r.getHeight();
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, u8 ("WIDTH POR FREQUÊNCIA "), u8 ("· SIDE (S)"));
     {
         float x = W - 10.0f;
@@ -329,8 +325,8 @@ void WidthCurve::paint (juce::Graphics& g)
     }
 
     float x0 = 46.0f, x1 = W - 14.0f, top = 30.0f, bot = H - 20.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (12.0f, top - 6.0f, W - 24.0f, bot - top + 10.0f, 3.0f);
+    const juce::Rectangle<float> screenR (12.0f, top - 6.0f, W - 24.0f, bot - top + 10.0f);
+    real::screen (g, screenR, 3.0f);
 
     // eixo x: 20 Hz a 20 kHz (log); eixo y: 0% a 300% do lado
     auto fx = [=] (float f) { return x0 + (x1 - x0) * std::log (f / 20.0f) / std::log (1000.0f); };
@@ -425,8 +421,7 @@ void WidthCurve::paint (juce::Graphics& g)
     g.setColour (theme::violet);
     g.strokePath (curvePath, juce::PathStrokeType (2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, screenR, 3.0f);
 }
 
 // =====================================================================
@@ -604,7 +599,7 @@ void HorizonteEditor::paint (juce::Graphics& g)
 
 void HorizonteEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: dois círculos (L e R) sobre a linha do horizonte ----
     {

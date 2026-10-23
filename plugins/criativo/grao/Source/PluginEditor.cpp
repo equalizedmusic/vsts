@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 } // namespace
 
@@ -45,8 +42,7 @@ void TapeView::paint (juce::Graphics& g)
     const float W      = r.getWidth(), H = r.getHeight(), mid = H * 0.5f + 8.0f;
     const bool  frozen = proc.apvts.getRawParameterValue (id::freeze)->load() > 0.5f;
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
 
     // régua de tempo
     g.setFont (theme::mono (9.5f));
@@ -128,9 +124,6 @@ void TapeView::paint (juce::Graphics& g)
     }
 
     drawTitle (g, 12.0f, 7.0f, "FITA ", u8 ("· 4 s"));
-
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
 }
 
 // =====================================================================
@@ -157,8 +150,8 @@ void XYPad::paint (juce::Graphics& g)
     const float PS = f.getWidth();
     const float px = space->getValue() * PS, py = (1.0f - grain->getValue()) * PS;
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (f, 3.0f);
+    const auto scr = f.reduced (1.5f);   // o rebaixo da tela desenha 1 px para fora
+    real::screen (g, scr, 3.0f);
 
     // campo de pontos: acende perto do cursor
     const int N = 16;
@@ -218,8 +211,7 @@ void XYPad::paint (juce::Graphics& g)
         g.drawText (u8 ("GRÃO →"), juce::Rectangle<float> (0.0f, 0.0f, 64.0f, 12.0f), juce::Justification::centredLeft);
     }
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (f.reduced (0.5f), 3.0f, 1.0f);
+    real::glass (g, scr, 3.0f);
 
     // valores
     auto line = [] (const juce::String& a, int v)
@@ -429,7 +421,7 @@ void GraoEditor::paint (juce::Graphics& g)
 
 void GraoEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo ----
     g.setColour (theme::amber);

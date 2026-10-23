@@ -17,6 +17,9 @@ class ScaledCanvas : public juce::Component
 public:
     std::function<void (juce::Graphics&)> onPaint;
     void paint (juce::Graphics& g) override { if (onPaint) onPaint (g); }
+
+private:
+    juce::SharedResourcePointer<real::Texture> texture;   // grão do metal vivo enquanto a janela existe
 };
 
 // ---------------- knob (grande: macro; pequeno: com nome e valor embaixo) ----------------
@@ -96,7 +99,7 @@ private:
     std::unique_ptr<APVTS::SliderAttachment> attachment;
 };
 
-// ---------------- tecla liga/desliga (REVERSO, CONGELAR) ----------------
+// ---------------- chave liga/desliga (REVERSO, CONGELAR): basculante creme + lâmpada piloto na cor do controle ----------------
 class KeyButton : public juce::Button
 {
 public:
@@ -107,25 +110,33 @@ public:
 
     void paintButton (juce::Graphics& g, bool over, bool) override
     {
-        auto r = getLocalBounds().toFloat().reduced (0.5f);
-        g.setColour (theme::panel2);
-        g.fillRoundedRectangle (r, 3.0f);
-        g.setColour (over ? theme::dim : theme::line);
-        g.drawRoundedRectangle (r, 3.0f, 1.0f);
-
-        const bool on = getToggleState();
-        auto led = juce::Rectangle<float> (18.0f, 3.0f).withCentre ({ r.getCentreX(), r.getY() + 13.0f });
-        if (on)
-        {
-            g.setColour (ledColour.withAlpha (0.3f));
-            g.fillRoundedRectangle (led.expanded (3.0f, 2.0f), 3.0f);
-        }
-        g.setColour (on ? ledColour : theme::off);
-        g.fillRoundedRectangle (led, 1.5f);
-
-        g.setColour (on ? theme::cream : theme::dim);
+        const bool on  = getToggleState();
+        const auto r   = getLocalBounds().toFloat();
+        const auto col = on ? theme::cream : over ? theme::txt : theme::dim;
         g.setFont (theme::sans (8.5f, true, 0.15f));
-        g.drawText (getButtonText(), r.withTrimmedTop (18.0f), juce::Justification::centred);
+
+        if (r.getWidth() >= 120.0f)
+        {
+            // larga: chave em pé | nome | lâmpada
+            const float rh = juce::jmin (28.0f, r.getHeight() - 6.0f), rw = 17.0f;
+            real::rocker (g, { r.getX() + 6.0f, r.getCentreY() - rh * 0.5f, rw, rh }, on);
+            real::engraved (g, getButtonText(), { r.getX() + rw + 16.0f, r.getY(), r.getWidth() - rw - 34.0f, r.getHeight() },
+                            col, juce::Justification::centredLeft);
+            real::jewel (g, { r.getRight() - 12.0f, r.getCentreY() }, 4.6f, ledColour, on);
+        }
+        else
+        {
+            // estreita: chave deitada e lâmpada em cima, nome embaixo
+            const float rw = 26.0f, rh = 12.0f, lr = 3.4f, gap = 7.0f;
+            const float x0 = r.getCentreX() - (rw + gap + lr * 2.0f) * 0.5f, cy = r.getY() + 3.0f + rh * 0.5f;
+            real::rocker (g, { x0, cy - rh * 0.5f, rw, rh }, on);
+            real::jewel (g, { x0 + rw + gap + lr, cy }, lr, ledColour, on);
+            const auto txt = r.withTrimmedTop (rh + 5.0f);
+            g.setColour (real::black (0.6f));
+            g.drawFittedText (getButtonText(), txt.translated (0.0f, 1.0f).toNearestInt(), juce::Justification::centred, 2, 0.8f);
+            g.setColour (col);
+            g.drawFittedText (getButtonText(), txt.toNearestInt(), juce::Justification::centred, 2, 0.8f);
+        }
     }
 
 private:
@@ -140,21 +151,23 @@ public:
 
     void paintButton (juce::Graphics& g, bool over, bool) override
     {
-        auto r = getLocalBounds().toFloat().reduced (0.5f);
-        g.setColour (theme::panel2);
-        g.fillEllipse (r);
-        g.setColour (over ? theme::dim : theme::line);
-        g.drawEllipse (r, 1.0f);
+        // botão redondo de metal com o LED no meio
+        auto r = getLocalBounds().toFloat().reduced (1.5f);
+        const auto  c  = r.getCentre();
+        const float rr = r.getWidth() * 0.5f, rc = rr - 2.5f;
+        g.setColour (real::white (0.07f));
+        g.fillEllipse (real::circle (c.translated (0.0f, 0.8f), rr));
+        g.setColour (real::black (0.85f));
+        g.fillEllipse (real::circle (c, rr));
 
-        const bool active = ! getToggleState();
-        auto dot = juce::Rectangle<float> (10.0f, 10.0f).withCentre (r.getCentre());
-        if (active)
-        {
-            g.setColour (theme::amber.withAlpha (0.25f));
-            g.fillEllipse (dot.expanded (4.0f));
-        }
-        g.setColour (active ? theme::amber : theme::off);
-        g.fillEllipse (dot);
+        g.setGradientFill (real::radial (c.translated (0.0f, 2.0f), rc + 2.0f, real::black (0.6f), real::black (0.0f)));
+        g.fillEllipse (real::circle (c.translated (0.0f, 2.0f), rc + 2.0f));
+        g.setGradientFill (real::vertical (juce::Colour (over ? 0xff625a4e : 0xff575045), c.y - rc, juce::Colour (0xff1a1713), c.y + rc));
+        g.fillEllipse (real::circle (c, rc));
+        g.setGradientFill (real::vertical (real::white (0.25f), c.y - rc, real::black (0.6f), c.y + rc));
+        g.drawEllipse (real::circle (c, rc - 0.5f), 1.0f);
+
+        real::led (g, c, 4.2f, theme::amber, getToggleState() ? 0.0f : 1.0f);
     }
 };
 
@@ -167,14 +180,11 @@ public:
 
     void paintButton (juce::Graphics& g, bool over, bool down) override
     {
-        auto r = getLocalBounds().toFloat();
-        g.setColour (theme::panel2);
-        g.fillRect (r);
-        g.setColour (theme::line);
-        g.drawRect (r, 1.0f);
+        auto r = getLocalBounds().toFloat().reduced (1.0f);
+        real::keycap (g, r, 3.0f, down);
 
         g.setColour (down || over ? theme::amber : theme::dim);
-        const auto c = r.getCentre();
+        const auto c = r.getCentre().translated (0.0f, down ? 0.5f : 0.0f);
         juce::Path p;
         if (icon == Icon::prev)      p.addTriangle (c.x - 4.0f, c.y, c.x + 3.0f, c.y - 4.5f, c.x + 3.0f, c.y + 4.5f);
         else if (icon == Icon::next) p.addTriangle (c.x + 4.0f, c.y, c.x - 3.0f, c.y - 4.5f, c.x - 3.0f, c.y + 4.5f);
@@ -205,12 +215,8 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        auto r = getLocalBounds().toFloat();
-        g.setColour (theme::dark);
-        g.fillRect (r);
-        g.setColour (theme::line);
-        g.drawLine (r.getX(), r.getY() + 0.5f, r.getRight(), r.getY() + 0.5f);
-        g.drawLine (r.getX(), r.getBottom() - 0.5f, r.getRight(), r.getBottom() - 0.5f);
+        auto r = getLocalBounds().toFloat().reduced (1.0f);
+        real::screen (g, r, 2.0f);
 
         auto inner = getLocalBounds().reduced (12, 0);
         g.setColour (theme::dim);
@@ -220,6 +226,7 @@ public:
         g.setColour (theme::cream);
         g.setFont (theme::mono (12.5f));
         g.drawText (name, inner, juce::Justification::centredLeft, true);
+        real::glass (g, r, 2.0f);
     }
 
     void mouseUp (const juce::MouseEvent&) override { if (onClick) onClick(); }
@@ -321,8 +328,7 @@ public:
         {
             const float f = (float) i / (float) (leds - 1);
             const bool lit = level > 0.0f && f <= level;
-            g.setColour (! lit ? theme::ledOff : f > 0.85f ? theme::coral : f > 0.65f ? theme::amber : theme::cream);
-            g.fillRoundedRectangle (x, y, w, h, 1.0f);
+            real::ledBar (g, { x, y, w, h }, f > 0.85f ? theme::coral : f > 0.65f ? theme::amber : theme::cream, lit ? 1.0f : 0.0f, 0.45f);
         }
         g.setColour (theme::dim);
         g.setFont (theme::sans (8.5f, false, 0.1f));

@@ -29,10 +29,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::card (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -152,8 +149,7 @@ void WaveStrip::paint (juce::Graphics& g)
     const float ceilDb = param (proc, id::ceiling);
     const float ceilG  = juce::Decibels::decibelsToGain (ceilDb);
 
-    g.setColour (theme::panel);
-    g.fillRoundedRectangle (r, 4.0f);
+    real::card (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· O QUE SAI E O QUE A BARRAGEM SEGURA, AO VIVO"));
     {
         float x = W - 10.0f;
@@ -165,8 +161,8 @@ void WaveStrip::paint (juce::Graphics& g)
 
     const float x0 = 12.0f, x1 = W - 12.0f, top = 26.0f, bot = H - 10.0f;
     const float mid = (top + bot) * 0.5f, half = (bot - top) * 0.5f - 2.0f;
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (x0, top, x1 - x0, bot - top, 3.0f);
+    const juce::Rectangle<float> scr (x0, top, x1 - x0, bot - top);
+    real::screen (g, scr, 3.0f);
 
     // mais antigo à esquerda, agora à direita
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
@@ -235,8 +231,7 @@ void WaveStrip::paint (juce::Graphics& g)
     if (maxGr > 11.0f)     grRange = 24.0f;
     else if (maxGr < 9.0f) grRange = 12.0f;
 
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+    real::glass (g, scr, 3.0f);
 }
 
 // =====================================================================
@@ -287,8 +282,8 @@ void LoudnessView::paint (juce::Graphics& g)
     const float lo = -32.0f, hi = -4.0f, barY = 84.0f, barH = 18.0f;
     auto xOf = [W, lo, hi] (float v) { return juce::jlimit (0.0f, W, (v - lo) / (hi - lo) * W); };
 
-    g.setColour (theme::dark);
-    g.fillRoundedRectangle (0.0f, barY, W, barH, 3.0f);
+    const juce::Rectangle<float> barR (0.0f, barY, W, barH);
+    real::screen (g, barR, 3.0f);
     if (st > none)
     {
         g.setColour (theme::cream.withAlpha (0.35f));
@@ -312,8 +307,7 @@ void LoudnessView::paint (juce::Graphics& g)
         g.setColour (theme::cream);
         g.fillPath (tri);
     }
-    g.setColour (theme::line);
-    g.drawRoundedRectangle (0.5f, barY + 0.5f, W - 1.0f, barH - 1.0f, 3.0f, 1.0f);
+    real::glass (g, barR, 3.0f);
 
     g.setFont (theme::mono (8.5f));
     for (int v = -30; v <= -6; v += 6)
@@ -644,7 +638,7 @@ void BarragemEditor::paint (juce::Graphics& g)
 
 void BarragemEditor::drawCanvas (juce::Graphics& g)
 {
-    g.fillAll (theme::bg);
+    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
 
     // ---- logo: água represada (azul) contra o muro (creme); a crista âmbar é o TETO ----
     g.setColour (theme::ice.withAlpha (0.85f));
