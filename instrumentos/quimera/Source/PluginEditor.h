@@ -198,6 +198,7 @@ private:
     void showPresetMenu();
     void presetMenuChosen (int result);
     void askNewPreset();
+    void importBank();
     void drawCanvas (juce::Graphics&);
     void setScale (float scale);
     void setTab (int tab);
@@ -238,6 +239,7 @@ private:
     float lastBpm = 0.0f;
     bool  lastSync = false;
 
+    std::unique_ptr<juce::FileChooser> chooser;   // "Importar banco de presets…"
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (QuimeraEditor)

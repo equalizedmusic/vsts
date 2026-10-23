@@ -20,8 +20,27 @@ Todas as tabelas são geradas por código (nada copiado de outro synth). Suporta
 **MPE:** com o botão MPE ligado, cada nota tem o próprio bend (até 96 st), pressure e slide (CC74), que entram na MOD MATRIX.
 Sem MPE, o aftertouch vira Pressure. Trocar de preset não mexe em MPE, MPE Bend e SEGURAR.
 
-**Presets:** Init e 20 por categoria — BASS, LEAD, PLUCK, PAD, ATMOS, PERC, DRUMS, KEYS e FX (181).
-Presets do usuário com Salvar como / Salvar alterações / Renomear / Apagar, como nos efeitos da casa.
+**Presets:** o menu abre primeiro os bancos e depois as categorias.
+- **FACTORY 1**: Init e 40 por categoria — BASS, LEAD, PLUCK, PAD, ATMOS, PERC, DRUMS, KEYS e FX (361).
+- **Bancos avulsos** (FACTORY 2, …): aparecem embaixo do FACTORY 1, cada um com as suas categorias.
+- **USER**: os presets do usuário, com Salvar como / Salvar alterações / Renomear / Apagar, como nos efeitos da casa.
+
+**Banco avulso (`.qmrbank`):** a pessoa baixa o arquivo, abre o menu de presets > *Importar banco de presets…* e
+escolhe o arquivo. O QUIMERA copia o banco para a pasta dele (Windows: `%APPDATA%\InsideStudioSP\QUIMERA\Banks`;
+Mac: `~/Library/Audio/Presets/InsideStudioSP/QUIMERA/Banks`); importar de novo um banco com o mesmo nome substitui a
+versão anterior. *Remover banco* manda o arquivo para a lixeira. O formato é XML:
+
+```xml
+<QUIMERABANK format="1" name="Factory 2" author="InsideStudioSP">
+  <PRESET name="Grave Novo" category="BASS">
+    <PARAM id="facut" value="220"/>   <!-- valor real, igual ao preset salvo pelo plugin -->
+  </PRESET>
+</QUIMERABANK>
+```
+
+Para montar um banco: salve os presets no QUIMERA (vão para USER), separe os `.xml` em pastas com o nome da
+categoria (`BASS`, `LEAD`, …) e rode `python tools/montar-banco.py <pasta> "Factory 2"`. O que o preset não traz
+volta ao padrão; MPE, MPE Bend e SEGURAR são ignorados.
 
 Janela de 75% a 200% (base 1200×740).
 

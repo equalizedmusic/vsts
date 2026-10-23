@@ -41,7 +41,7 @@ O instalador (`InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`) sai no release
 
 | Instrumento | O que é |
 |---|---|
-| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos e 180 presets |
+| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, 360 presets (40 por categoria) e bancos avulsos `.qmrbank` |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.

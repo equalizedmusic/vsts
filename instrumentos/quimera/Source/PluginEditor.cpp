@@ -8,7 +8,8 @@ using namespace quimera;
 namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
-constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuNoUser = 20005;
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuNoUser = 20005,
+              menuImport = 20006, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
 
 juce::Rectangle<int> R (int x, int y, int w, int h)
 {
@@ -1400,41 +1401,58 @@ void QuimeraEditor::showPresetMenu()
 {
     juce::PopupMenu menu;
     const auto names = proc.getPresetNames();
+    const auto bankNames = proc.getBankNames();
     const int  cur = proc.getPresetIndex();
+    const int  numBanks = bankNames.size();
 
-    // Init no topo; os de fábrica em submenus por categoria; os do usuário em MEUS PRESETS
-    std::array<juce::PopupMenu, numCategories> cats;
-    std::array<bool, numCategories> catTicked {};
+    // Init no topo; cada banco (FACTORY 1 e os importados, embaixo dele) abre as categorias; os do usuário em USER.
+    // A categoria numCategories é OUTROS (preset de banco importado sem categoria).
+    std::vector<std::array<juce::PopupMenu, numCategories + 1>> cats ((size_t) numBanks);
+    std::vector<std::array<bool, numCategories + 1>> catTicked ((size_t) numBanks);
     juce::PopupMenu user;
     bool userTicked = false;
-    for (int i = 0; i < names.size(); ++i)
+    for (int i = 0; i < names.size() && i + 1 < sizeMenuBase; ++i)
     {
         const int  c = proc.getPresetCategory (i);
+        const int  b = proc.getPresetBank (i);
         const bool ticked = i == cur;
         if (c < 0)
             menu.addItem (i + 1, names[i], true, ticked);
-        else if (c < numCategories)
-        {
-            cats[(size_t) c].addItem (i + 1, names[i], true, ticked);
-            catTicked[(size_t) c] = catTicked[(size_t) c] || ticked;
-        }
-        else
+        else if (b == QuimeraProcessor::bankUser)
         {
             user.addItem (i + 1, names[i], true, ticked);
             userTicked = userTicked || ticked;
         }
+        else if (b >= 0 && b < numBanks)
+        {
+            const auto k = (size_t) juce::jlimit (0, numCategories, c);
+            cats[(size_t) b][k].addItem (i + 1, names[i], true, ticked);
+            catTicked[(size_t) b][k] = catTicked[(size_t) b][k] || ticked;
+        }
     }
     menu.addSeparator();
-    for (int c = 0; c < numCategories; ++c)
-        if (cats[(size_t) c].getNumItems() > 0)
-            menu.addSubMenu (u8 (categoryNames[c]), cats[(size_t) c], true, std::unique_ptr<juce::Drawable>(), catTicked[(size_t) c]);
-    menu.addSeparator();
+    for (int b = 0; b < numBanks; ++b)
+    {
+        juce::PopupMenu bank;
+        bool bankTicked = false;
+        for (int c = 0; c <= numCategories; ++c)
+        {
+            auto& sub = cats[(size_t) b][(size_t) c];
+            if (sub.getNumItems() == 0) continue;
+            const bool t = catTicked[(size_t) b][(size_t) c];
+            bank.addSubMenu (c < numCategories ? u8 (categoryNames[c]) : juce::String ("OUTROS"), sub, true,
+                             std::unique_ptr<juce::Drawable>(), t);
+            bankTicked = bankTicked || t;
+        }
+        if (bank.getNumItems() > 0)
+            menu.addSubMenu (bankNames[b].toUpperCase(), bank, true, std::unique_ptr<juce::Drawable>(), bankTicked);
+    }
     if (user.getNumItems() > 0)
-        menu.addSubMenu ("MEUS PRESETS", user, true, std::unique_ptr<juce::Drawable>(), userTicked);
+        menu.addSubMenu ("USER", user, true, std::unique_ptr<juce::Drawable>(), userTicked);
     else
-        menu.addItem (menuNoUser, "MEUS PRESETS (nenhum ainda)", false);
+        menu.addItem (menuNoUser, "USER (nenhum ainda)", false);
 
-    // presets do usuário dá para gravar por cima, renomear e apagar; os de fábrica não mudam
+    // presets do usuário dá para gravar por cima, renomear e apagar; os de fábrica e os dos bancos não mudam
     menu.addSeparator();
     menu.addItem (menuSaveAs, u8 ("Salvar como novo preset…"));
     if (proc.isUserPreset())
@@ -1443,6 +1461,17 @@ void QuimeraEditor::showPresetMenu()
         menu.addItem (menuOverwrite, u8 ("Salvar alterações em “") + name + u8 ("”"));
         menu.addItem (menuRename,    u8 ("Renomear “") + name + u8 ("”…"));
         menu.addItem (menuDelete,    u8 ("Apagar “") + name + u8 ("”…"));
+    }
+
+    // bancos avulsos (.qmrbank)
+    menu.addSeparator();
+    menu.addItem (menuImport, u8 ("Importar banco de presets…"));
+    if (numBanks > 1)
+    {
+        juce::PopupMenu remove;
+        for (int b = 1; b < numBanks; ++b)
+            remove.addItem (menuRemoveBank + b, bankNames[b].toUpperCase());
+        menu.addSubMenu ("Remover banco", remove);
     }
 
     juce::PopupMenu sizes;
@@ -1468,6 +1497,29 @@ void QuimeraEditor::askNewPreset()
                     [safe] (const juce::String& name) { if (safe != nullptr) safe->proc.saveUserPreset (name); });
 }
 
+// abre o navegador de arquivos; o banco escolhido é copiado para a pasta do QUIMERA e entra no menu
+void QuimeraEditor::importBank()
+{
+    auto start = juce::File::getSpecialLocation (juce::File::userHomeDirectory);
+    if (start.getChildFile ("Downloads").isDirectory()) start = start.getChildFile ("Downloads");
+    chooser = std::make_unique<juce::FileChooser> (u8 ("Importar banco de presets do QUIMERA"), start, "*.qmrbank");
+
+    juce::Component::SafePointer<QuimeraEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [safe] (const juce::FileChooser& fc)
+                          {
+                              const auto file = fc.getResult();
+                              if (safe == nullptr || ! file.existsAsFile()) return;
+                              juce::String name;
+                              const auto err = safe->proc.importBank (file, name);
+                              if (err.isNotEmpty())
+                                  safe->dialog.inform (safe->canvas, u8 ("Não deu para importar"), err);
+                              else
+                                  safe->dialog.inform (safe->canvas, "Banco importado",
+                                                       u8 ("“") + name.toUpperCase() + u8 ("” já está no menu de presets, embaixo do FACTORY 1."));
+                          });
+}
+
 void QuimeraEditor::presetMenuChosen (int result)
 {
     if (result > sizeMenuBase && result < menuSaveAs)
@@ -1477,6 +1529,16 @@ void QuimeraEditor::presetMenuChosen (int result)
     }
 
     juce::Component::SafePointer<QuimeraEditor> safe (this);
+    if (result > menuRemoveBank)
+    {
+        const int  bank = result - menuRemoveBank;
+        const auto bankName = proc.getBankNames()[bank].toUpperCase();
+        dialog.confirm (canvas, "Remover banco",
+                        u8 ("“") + bankName + u8 ("” vai para a lixeira e sai do menu. Os presets do USER não mudam."), "Remover",
+                        [safe, bank] { if (safe != nullptr) safe->proc.removeBank (bank); });
+        return;
+    }
+
     const auto name = proc.getPresetName();
     switch (result)
     {
@@ -1497,6 +1559,9 @@ void QuimeraEditor::presetMenuChosen (int result)
             dialog.confirm (canvas, "Apagar preset",
                             u8 ("“") + name + u8 ("” vai para a lixeira. O som atual continua no plugin."), "Apagar",
                             [safe] { if (safe != nullptr) safe->proc.deleteUserPreset(); });
+            break;
+        case menuImport:
+            importBank();
             break;
         case menuNoUser:
             break;
@@ -1540,7 +1605,7 @@ void QuimeraEditor::timerCallback()
     if (meterOut != nullptr) meterOut->setLevel (levelOut);
 
     if (presetName != nullptr)
-        presetName->set (proc.getPresetName(), proc.getPresetIndex(), proc.getPresetNames().size());
+        presetName->set (proc.getPresetName(), proc.getPresetIndex(), proc.getNumPresets());
 
     const float bpm = proc.shownBpm.load();
     const bool  syn = proc.synced.load();

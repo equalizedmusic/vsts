@@ -1,6 +1,8 @@
 // QUIMERA — banco de presets de fábrica.
-// O Init primeiro e depois 20 por categoria, na ordem de categoryNames (BASS, LEAD, PLUCK, PAD, ATMOS, PERC,
-// DRUMS, KEYS, FX). Valores REAIS (%, Hz, ms, st, dB); listas e liga/desliga = índice / 0 ou 1.
+// O Init primeiro e depois 40 por categoria, na ordem de categoryNames (BASS, LEAD, PLUCK, PAD, ATMOS, PERC,
+// DRUMS, KEYS, FX): 20 aqui e mais 20 em presets/<categoria>-2.inc, incluído no fim de cada categoria.
+// Tudo isso é o banco FACTORY 1; bancos avulsos (.qmrbank) são lidos pelo processador.
+// Valores REAIS (%, Hz, ms, st, dB); listas e liga/desliga = índice / 0 ou 1.
 // O que não aparece volta ao PADRÃO do parâmetro (ver createLayout em Params.h).
 // mpe, mpeBend e hold NUNCA entram aqui (são de performance).
 
@@ -83,7 +85,7 @@ namespace
 std::vector<FactoryPreset> factoryPresets()
 {
     std::vector<FactoryPreset> p;
-    p.reserve (1 + numCategories * 20);
+    p.reserve (1 + numCategories * 40);
 
     p.push_back ({ -1, u8 ("Init · Quimera"), {} });
 
@@ -258,6 +260,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::cmpOn, 1 }, { id::cmpMode, cp::multibanda }, { id::cmpAmt, 50 },
           { id::polyMode, pm::mono }, { id::volume, -12 } },
         { { srcRandom, dstO1Pos, 15 }, { srcMacro1, dstFACut, 40 }, { srcMacro2, dstO2Level, 40 } }));
+
+    #include "presets/baixo-2.inc"
 
     // =====================================================================================================
     // LEAD
@@ -438,6 +442,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::dlyOn, 1 }, { id::dlyDiv, dv::d4 }, { id::dlyFb, 30 }, { id::dlyMix, 18 }, { id::volume, -11 } },
         { { srcPressure, dstFACut, 30 }, { srcSlide, dstO1Pos, 30 }, { srcMacro1, dstO2Level, 50 } }));
 
+    #include "presets/lead-2.inc"
+
     // =====================================================================================================
     // PLUCK
     // =====================================================================================================
@@ -602,6 +608,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::dlyOn, 1 }, { id::dlyDiv, dv::d8t }, { id::dlyMix, 25 },
           { id::revOn, 1 }, { id::revType, rv::hall }, { id::revMix, 30 }, { id::volume, -5 } },
         { { srcRandom, dstO1Pos, 25 }, { srcMacro1, dstO2Level, 50 } }));
+
+    #include "presets/pluck-2.inc"
 
     // =====================================================================================================
     // PAD
@@ -814,6 +822,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::hypOn, 1 }, { id::hypMix, 40 },
           { id::revOn, 1 }, { id::revType, rv::hall }, { id::revMix, 40 }, { id::volume, -12 } },
         { { srcLfo1, dstO2Pos, 40 }, { srcPressure, dstFACut, 25 }, { srcSlide, dstO2Level, 50 } }));
+
+    #include "presets/pad-2.inc"
 
     // =====================================================================================================
     // ATMOS
@@ -1033,6 +1043,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::revOn, 1 }, { id::revType, rv::hall }, { id::revDecay, 18 }, { id::revMix, 50 }, { id::volume, -10 } },
         { { srcLfo1, dstO1Pos, 50 }, { srcLfo2, dstFACut, 35 }, { srcPressure, dstFACut, 30 }, { srcSlide, dstO1Pos, 40 } }));
 
+    #include "presets/atmos-2.inc"
+
     // =====================================================================================================
     // PERC
     // =====================================================================================================
@@ -1190,6 +1202,8 @@ std::vector<FactoryPreset> factoryPresets()
           { E (2, "d"), 120 },
           { id::revOn, 1 }, { id::revType, rv::sala }, { id::revMix, 25 }, { id::volume, -6 } },
         { { srcEnv3, dstO1Pos, -50 }, { srcRandom, dstO1Pos, 15 }, { srcVel, dstFACut, 20 } }));
+
+    #include "presets/perc-2.inc"
 
     // =====================================================================================================
     // BATERIA (sustain 0; bumbo e chimbal em mono para cortar a nota anterior)
@@ -1383,6 +1397,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::voices, 4 }, { id::velAmp, 80 }, { id::volume, -6 } },
         { { srcEnv3, dstPitch, 20 }, { srcVel, dstNoiseLevel, 20 } }));
 
+    #include "presets/bateria-2.inc"
+
     // =====================================================================================================
     // TECLAS
     // =====================================================================================================
@@ -1570,6 +1586,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::velAmp, 30 }, { id::volume, -8 } },
         { { srcMacro1, dstO1Pos, 50 }, { srcPressure, dstAmp, 30 } }));
 
+    #include "presets/teclas-2.inc"
+
     // =====================================================================================================
     // FX
     // =====================================================================================================
@@ -1753,6 +1771,8 @@ std::vector<FactoryPreset> factoryPresets()
           { id::revOn, 1 }, { id::revType, rv::hall }, { id::revMix, 40 }, { id::volume, -10 } },
         { { srcEnv3, dstO1Pos, 100 }, { srcEnv3, dstFACut, 40 }, { srcLfo1, dstAmp, 40 }, { srcEnv3, dstLfo1Rate, 40 },
           { srcMacro1, dstPitch, 25 } }));
+
+    #include "presets/fx-2.inc"
 
     return p;
 }

@@ -562,6 +562,6 @@ struct FactoryPreset
     std::vector<std::pair<juce::String, float>> values;    // valores reais; o que faltar volta ao padrão
 };
 
-// Presets.cpp: o Init primeiro e depois 20 por categoria, na ordem de categoryNames
+// Presets.cpp: o Init primeiro e depois 40 por categoria (banco FACTORY 1), na ordem de categoryNames
 std::vector<FactoryPreset> factoryPresets();
 } // namespace quimera
