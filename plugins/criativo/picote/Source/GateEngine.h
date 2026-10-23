@@ -72,13 +72,13 @@ inline float stepCutoff (float open01, int type)
     }
 }
 
-// envelope de um passo: sobe no ATAQUE, fica aberto até a LARGURA e cai na SOLTURA
-inline float stepEnvelope (double tSec, double stepSec, float width01, float attackMs, float releaseMs)
+// envelope de um passo (desenho do editor): sobe no ATTACK a partir de 'start', fica aberto até a LARGURA e cai no RELEASE
+inline float stepEnvelope (double tSec, double stepSec, float width01, float attackMs, float releaseMs, float start = 0.0f)
 {
     const double open = juce::jmax (0.001, stepSec * (double) width01);
-    const double att  = juce::jmax (0.0002, attackMs * 0.001);
-    const double rel  = juce::jmax (0.0005, releaseMs * 0.001);
-    double e = juce::jmin (1.0, tSec / att);
+    const double att  = juce::jmax (0.001, attackMs * 0.001);
+    const double rel  = juce::jmax (0.003, releaseMs * 0.001);
+    double e = start + (1.0 - start) * juce::jmin (1.0, tSec / att);
     if (tSec > open) e *= std::exp (-(tSec - open) / (rel * 0.35));
     return (float) e;
 }
@@ -95,11 +95,12 @@ public:
     {
         fs = sampleRate;
         holdLenMax = (int) (fs * maxHoldSec);
-        for (auto& b : holdBuf) b.assign ((size_t) holdLenMax, 0.0f);
+        holdSeamMax = juce::jmax (16, (int) (0.004 * fs));
+        for (auto& b : holdBuf) b.assign ((size_t) (holdLenMax + holdSeamMax), 0.0f);
         holdState = holdOff;
-        holdW = 0; holdLen = 0;
+        holdW = 0; holdLen = 0; holdSeam = 0;
         ic1.fill (0.0f); ic2.fill (0.0f);
-        gainSm = 1.0f; panSm = 0.0f; cutSm = -1.0f;
+        gainSm = 1.0f; panSm = 0.0f; cutSm = -1.0f; openSm = -1.0f; lvl = 0.0f;
         lastIdx = -1; stepAcc = 0.0f;
         freePpq = 0.0;
         for (auto& p : stepPeak) p.store (0.0f);
@@ -118,6 +119,10 @@ public:
         const double basePpq = own ? freePpq : s.ppq;
         const float  q = 0.6f + 9.0f * s.reso * s.reso;
         const float  k = 1.0f / q;
+        // envelope contínuo: sobe em reta no ATTACK e cai em curva no RELEASE, sempre a partir de onde está.
+        // Recomeçar do zero em cada passo cortava o som na virada (o estalo, pior com LARGURA alta ou RELEASE longo)
+        const float riseStep = 1.0f / (juce::jmax (0.001f, s.attackMs * 0.001f) * (float) fs);
+        const float fallCoef = 1.0f - std::exp (-1.0f / (juce::jmax (0.001f, s.releaseMs * 0.001f * 0.35f) * (float) fs));
 
         // PRENDER: grava o próximo passo inteiro e repete até soltar
         if (s.hold && holdState == holdOff) holdState = holdArmed;
@@ -128,7 +133,9 @@ public:
         double frac = 0.0;
         for (int i = 0; i < n; ++i)
         {
-            const auto pos = stepAt (basePpq + ppqStep * i, beatsPerStep, s.swing);
+            auto pos = stepAt (basePpq + ppqStep * i, beatsPerStep, s.swing);
+            // o PPQ do host pode voltar uma fração na virada do bloco: recuar um passo é tremida, não pulo
+            if (lastIdx >= 0 && pos.index == lastIdx - 1) { pos.index = lastIdx; pos.frac = 0.0; }
             const double stepSec = pos.lenBeats * 60.0 / s.bpm;
             const bool newStep = pos.index != lastIdx;
             if (newStep)
@@ -141,6 +148,7 @@ public:
                     holdState = holdRecording;
                     holdStep = patternStep (pos.index, s.length, s.offset);
                     holdLen = juce::jlimit (1, holdLenMax, (int) (stepSec * fs));
+                    holdSeam = juce::jmin (holdSeamMax, holdLen / 4);
                     holdW = 0;
                 }
             }
@@ -155,25 +163,39 @@ public:
             {
                 holdBuf[0][(size_t) holdW] = xl;
                 holdBuf[1][(size_t) holdW] = xr;
-                if (++holdW >= holdLen) holdState = holdLooping;
+                // grava uns ms a mais do que o passo: é o que emenda o fim do laço no começo sem estalo
+                if (++holdW >= holdLen + holdSeam) holdState = holdLooping;
             }
             const float hm = holdMix.getNextValue();
             if (hm > 0.0f && holdLen > 0)
             {
                 const int rp = (int) ((int64_t) (pos.frac * stepSec * fs) % holdLen);
-                xl += (holdBuf[0][(size_t) rp] - xl) * hm;
-                xr += (holdBuf[1][(size_t) rp] - xr) * hm;
+                float hl = holdBuf[0][(size_t) rp], hr = holdBuf[1][(size_t) rp];
+                if (rp < holdSeam)
+                {
+                    const float x = (float) rp / (float) holdSeam;
+                    hl = hl * x + holdBuf[0][(size_t) (holdLen + rp)] * (1.0f - x);
+                    hr = hr * x + holdBuf[1][(size_t) (holdLen + rp)] * (1.0f - x);
+                }
+                xl += (hl - xl) * hm;
+                xr += (hr - xr) * hm;
             }
             stepAcc = juce::jmax (stepAcc, std::abs (xl), std::abs (xr));
 
             // ganho do passo: PROFUNDIDADE decide o quanto fecha entre um golpe e outro
-            const float env  = stepEnvelope (pos.frac * stepSec, stepSec, s.width, s.attackMs, s.releaseMs);
-            const float gTar = 1.0f - s.depth + s.depth * s.vol[(size_t) step] * env;
+            const bool  gateOpen = pos.frac * stepSec < juce::jmax (0.001, stepSec * (double) s.width);
+            const float lTar = gateOpen ? s.vol[(size_t) step] : 0.0f;
+            if (lvl < lTar) lvl = juce::jmin (lTar, lvl + riseStep);
+            else            lvl += (lTar - lvl) * fallCoef;
+            const float gTar = 1.0f - s.depth + s.depth * lvl;
             gainSm += (gTar - gainSm) * smGain;
             panSm  += (s.pan[(size_t) step] - panSm) * smPan;
 
             // filtro do passo (state variable TPT); 100% aberto no passa-baixa/alta = sem filtro
-            const float open = s.flt[(size_t) step];
+            // a abertura também desliza: o "aberto = sem filtro" mudava de uma vez entre passos e estalava
+            if (openSm < 0.0f) openSm = s.flt[(size_t) step];
+            openSm += (s.flt[(size_t) step] - openSm) * smCut;
+            const float open = openSm;
             const float cTar = std::log (stepCutoff (open, s.filtType));
             if (cutSm < 0.0f) cutSm = cTar;
             cutSm += (cTar - cutSm) * smCut;
@@ -216,10 +238,10 @@ private:
 
     double fs = 44100.0, freePpq = 0.0;
     std::array<std::vector<float>, 2> holdBuf;
-    int holdLenMax = 1, holdLen = 0, holdW = 0, holdStep = 0;
+    int holdLenMax = 1, holdLen = 0, holdW = 0, holdStep = 0, holdSeamMax = 16, holdSeam = 0;
     HoldState holdState = holdOff;
     std::array<float, 2> ic1 {}, ic2 {};
-    float gainSm = 1.0f, panSm = 0.0f, cutSm = -1.0f;
+    float gainSm = 1.0f, panSm = 0.0f, cutSm = -1.0f, openSm = -1.0f, lvl = 0.0f;
     float smGain = 0.05f, smPan = 0.01f, smCut = 0.01f;
     int64_t lastIdx = -1;
     int lastStep = 0;

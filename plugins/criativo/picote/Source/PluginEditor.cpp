@@ -313,11 +313,12 @@ void SliceView::paint (juce::Graphics& g)
 
         juce::Path env, fill;
         const int pts = 120;
+        const float e0 = stepEnvelope (stepSec, stepSec, w, at, rl);   // o passo começa de onde o anterior parou
         for (int k = 0; k <= pts; ++k)
         {
             const double u = 2.0 * (double) k / pts;            // dois passos
             const double t = (u - std::floor (u)) * stepSec;
-            const float  e = stepEnvelope (u >= 2.0 ? stepSec : t, stepSec, w, at, rl);
+            const float  e = stepEnvelope (u >= 2.0 ? stepSec : t, stepSec, w, at, rl, e0);
             const float  gn = 1.0f - depth + depth * vol * e;
             const float  x = ex0 + (ex1 - ex0) * (float) (u / 2.0);
             if (k == 0) env.startNewSubPath (x, yOf (gn)); else env.lineTo (x, yOf (gn));
