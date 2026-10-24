@@ -79,6 +79,9 @@ private:
     void drawHeader (juce::Graphics&);
     void drawMeter (juce::Graphics&);
     void showPresetMenu();
+    void presetMenuChosen (int result);
+    void askNewPreset();
+    void importBank();
     void setScale (float scale);
 
     static constexpr int openSettle = 15;   // quadros do timer (30 Hz) até a janela assentar ao abrir
@@ -94,6 +97,9 @@ private:
     std::array<StepCell*, limao::maxSteps> cells {};
     ScopeView*  scope = nullptr;
     PresetName* presetName = nullptr;
+
+    PresetDialog dialog;                           // nome do preset, confirmações
+    std::unique_ptr<juce::FileChooser> chooser;   // "Importar banco de presets…"
 
     int   lastStep = -2, lastLen = -1, lastVersion = -1;
     float level = 0.0f, shownLevel = -1.0f;

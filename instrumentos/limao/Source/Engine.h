@@ -38,7 +38,9 @@ public:
         z.fill (0.0f);
         hpIn = hpFb = 0.0f;
         phase = 0.0;
-        amp = fenv = accCap = 0.0f;
+        amp = fenv = fenvOut = accCap = 0.0f;
+        accGain = 1.0f;
+        smoothReady = false;
         gate = false;
         stage = Stage::idle;
     }
@@ -52,6 +54,8 @@ public:
             gliding = true;                  // desliza: sem redisparar envelope
         else
         {
+            // vinda do silêncio: filtro zerado (o estado parado de outra nota estalava na volta)
+            if (stage == Stage::idle) { z.fill (0.0f); hpFb = 0.0f; fenvOut = 0.0f; }
             gliding = false;
             pitch   = target;
             fenv    = 1.0f;
@@ -74,11 +78,14 @@ public:
     void render (float* out, int n, const Settings& s)
     {
         const float sr = (float) fs;
-        const float acid = s.acid;
-        // ÁCIDO: abre envelope, ressonância e um pouco do corte juntos
-        const float reso   = juce::jlimit (0.0f, 1.0f, s.reso + acid * 0.35f * (1.0f - s.reso));
-        const float envmod = juce::jlimit (0.0f, 1.0f, s.envmod + acid * 0.5f * (1.0f - s.envmod));
-        const float baseLg = std::log2 (juce::jlimit (30.0f, 14000.0f, s.cutoff)) + acid * 0.6f;
+        // knobs sem degrau: cada um anda até o valor novo em ~20 ms (girar o knob não estala)
+        const float cutTg = std::log2 (juce::jlimit (30.0f, 14000.0f, s.cutoff));
+        if (! smoothReady)
+        {
+            smCut = cutTg; smReso = s.reso; smEnv = s.envmod; smAcid = s.acid; smAcc = s.accent;
+            smoothReady = true;
+        }
+        const float kSm = 1.0f - std::exp (-1.0f / (0.02f * sr));
 
         // accent encurta o decay do filtro (no 303 a nota acentuada usa o decay mínimo)
         const float decMs  = accentOn ? juce::jmin (s.decayMs, 220.0f) : s.decayMs;
@@ -88,17 +95,29 @@ public:
         const float aRel   = std::exp (-1.0f / (0.008f * sr));
         const float glide  = 1.0f - std::exp (-1.0f / (juce::jmax (1.0f, s.slideMs) * 0.001f * sr / 3.0f));
         const float accRise = 1.0f - std::exp (-1.0f / (0.012f * sr));
-        const float accFall = 1.0f - std::exp (-1.0f / ((0.08f + 0.25f * reso) * sr));  // reso alta: o accent "empilha"
+        const float accFall = 1.0f - std::exp (-1.0f / ((0.08f + 0.25f * smReso) * sr));  // reso alta: o accent "empilha"
         const float hpCoef = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 35.0f / sr);
         const float fbHp   = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 120.0f / sr);
         const float topLg  = std::log2 (juce::jmin (18000.0f, sr * 0.45f));
-        const float k      = 4.15f * std::pow (reso, 0.8f);
-        const float makeup = 1.0f + k * 0.42f;
-        const float accAmt = s.accent;
+        const float fAtk   = 1.0f - std::exp (-1.0f / (0.0015f * sr));                   // o filtro abre em ~1,5 ms
+        const float accSm  = 1.0f - std::exp (-1.0f / (0.004f * sr));                    // ganho do accent sem degrau
 
         float lastFc = 500.0f;
         for (int i = 0; i < n; ++i)
         {
+            smCut  += (cutTg - smCut) * kSm;
+            smReso += (s.reso - smReso) * kSm;
+            smEnv  += (s.envmod - smEnv) * kSm;
+            smAcid += (s.acid - smAcid) * kSm;
+            smAcc  += (s.accent - smAcc) * kSm;
+            // ÁCIDO: abre envelope, ressonância e um pouco do corte juntos
+            const float reso   = juce::jlimit (0.0f, 1.0f, smReso + smAcid * 0.35f * (1.0f - smReso));
+            const float envmod = juce::jlimit (0.0f, 1.0f, smEnv + smAcid * 0.5f * (1.0f - smEnv));
+            const float baseLg = smCut + smAcid * 0.6f;
+            const float k      = 4.15f * std::pow (reso, 0.8f);
+            const float makeup = 1.0f + k * 0.42f;
+            const float accAmt = smAcc;
+
             // envelopes
             switch (stage)
             {
@@ -108,7 +127,9 @@ public:
                 case Stage::idle:    break;
             }
             fenv *= fDec;
-            const float accTarget = accentOn && gate ? fenv : 0.0f;
+            fenvOut += (fenv - fenvOut) * fAtk;
+            const float accTarget = accentOn && gate ? fenvOut : 0.0f;
+            accGain += ((accentOn ? 1.0f + accAmt * 0.9f : 1.0f) - accGain) * accSm;
             accCap += (accTarget - accCap) * (accTarget > accCap ? accRise : accFall);
 
             if (stage == Stage::idle) { out[i] = 0.0f; continue; }
@@ -137,7 +158,7 @@ public:
             }
 
             // corte: knob + envelope + accent (que soma no corte e no volume)
-            float lg = baseLg + envmod * fenv * 4.8f + accAmt * accCap * 2.6f;
+            float lg = baseLg + envmod * fenvOut * 4.8f + accAmt * accCap * 2.6f;
             lg = juce::jlimit (4.5f, topLg, lg);
             const float fc = std::exp2 (lg);
             lastFc = fc;
@@ -164,12 +185,12 @@ public:
                 if (d == 2) y3 = y;
             }
 
-            const float vca = amp * (1.0f + (accentOn ? accAmt * 0.9f : 0.0f));
+            const float vca = amp * accGain;
             out[i] = y3 * makeup * vca * 0.55f;
         }
 
         cutNow.store (lastFc);
-        envNow.store (fenv);
+        envNow.store (fenvOut);
         accNow.store (accCap);
     }
 
@@ -188,7 +209,9 @@ private:
     std::array<float, 4> z {};
     float hpIn = 0.0f, hpFb = 0.0f;
     float pitch = 36.0f, target = 36.0f;
-    float amp = 0.0f, fenv = 0.0f, accCap = 0.0f;
+    float amp = 0.0f, fenv = 0.0f, fenvOut = 0.0f, accCap = 0.0f, accGain = 1.0f;
+    float smCut = 9.0f, smReso = 0.0f, smEnv = 0.0f, smAcid = 0.0f, smAcc = 0.0f;
+    bool  smoothReady = false;
     bool  gate = false, gliding = false, accentOn = false;
     Stage stage = Stage::idle;
 };
@@ -208,6 +231,10 @@ public:
         timeSm.setCurrentAndTargetValue ((float) (fs * 0.375));
         crushHold = 0.0f;
         crushCount = 0.0f;
+        driveSm.reset (fs, 0.03);
+        driveSm.setCurrentAndTargetValue (0.0f);
+        driveReady = false;
+        dcX = dcY = 0.0f;
 
         reverb.setSampleRate (fs);
         reverb.reset();
@@ -221,14 +248,17 @@ public:
     void process (const float* in, float* l, float* r, int n, const Settings& s)
     {
         // ---- drive ----
-        const float d = s.drive;
-        const float pre = 1.0f + d * d * 24.0f;
-        const float post = 1.0f / std::sqrt (pre) * (1.0f + d * 0.6f);
-        const float bits = 16.0f - d * 12.5f;
-        const float levels = std::exp2 (bits) * 0.5f;
-        const float hold = 1.0f + d * 10.0f;    // reduz a taxa junto
+        // o knob anda em rampa (girar não estala) e um passa-altas de 12 Hz tira o DC que o TUBE assimétrico cria
+        if (! driveReady) { driveSm.setCurrentAndTargetValue (s.drive); driveReady = true; }
+        driveSm.setTargetValue (s.drive);
+        const float dcR = 1.0f - juce::MathConstants<float>::twoPi * 12.0f / (float) fs;
         for (int i = 0; i < n; ++i)
         {
+            const float d = driveSm.getNextValue();
+            const float pre = 1.0f + d * d * 24.0f;
+            const float post = 1.0f / std::sqrt (pre) * (1.0f + d * 0.6f);
+            const float levels = std::exp2 (16.0f - d * 12.5f) * 0.5f;
+            const float hold = 1.0f + d * 10.0f;    // reduz a taxa junto
             float x = in[i];
             if (s.drvType == 0)        // TUBE: assimétrico, quente
                 x = (std::tanh (x * pre + 0.25f) - std::tanh (0.25f)) * post;
@@ -243,7 +273,10 @@ public:
                 if (crushCount >= hold) { crushCount -= hold; crushHold = std::round (x * levels) / levels; }
                 x = d < 0.01f ? x : crushHold;
             }
-            l[i] = r[i] = x;
+            const float y = x - dcX + dcR * dcY;
+            dcX = x;
+            dcY = y;
+            l[i] = r[i] = y;
         }
 
         // ---- delay no tempo, pingue-pongue, cada volta mais escura ----
@@ -308,6 +341,9 @@ private:
     int dlPos = 0;
     juce::SmoothedValue<float> timeSm, dlMixSm, rvMixSm;
     float crushHold = 0.0f, crushCount = 0.0f;
+    juce::SmoothedValue<float> driveSm;
+    bool  driveReady = false;
+    float dcX = 0.0f, dcY = 0.0f;
     juce::Reverb reverb;
     std::vector<float> wetL, wetR;
 };

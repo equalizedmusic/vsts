@@ -84,15 +84,25 @@ inline void sectionTitle (juce::Graphics& g, float x, float y, float w, const ju
     g.fillRect (x + 26.0f, y + 16.5f, w - 26.0f, 1.0f);
 }
 
-// escala 0–10 em tinta preta em volta do knob (mesma geometria do real::knob)
+// o knob fica um pouco menor que a caixa e com o TOPO (tampa e ponteiro) no centro dela: a escala é centrada
+// no mesmo ponto, então o ponteiro aponta certo para cada número e a saia não invade os números de baixo.
+// real::knob põe o topo 0,65 × altura da saia acima do centro da caixa que recebe: aqui a caixa desce isso.
+inline RF knobBox (RF box, bool big)
+{
+    const float f  = big ? 0.82f : 0.9f;
+    const float k  = juce::jmin (box.getWidth(), box.getHeight()) / (big ? 92.0f : 64.0f) * f;
+    const float hg = (big ? 9.0f : 6.5f) * k;
+    return box.withSizeKeepingCentre (box.getWidth() * f, box.getHeight() * f).translated (0.0f, hg * 0.65f);
+}
+
+// escala 0–10 em tinta preta em volta do knob, centrada na tampa
 inline void inkScale (juce::Graphics& g, RF box, bool big)
 {
     const float pi = juce::MathConstants<float>::pi;
     const float k  = juce::jmin (box.getWidth(), box.getHeight()) / (big ? 92.0f : 64.0f);
     const float cx = box.getCentreX();
-    const float hg = (big ? 9.0f : 6.5f) * k;
-    const float cy = box.getCentreY() + hg * 0.35f;
-    const float t1 = (big ? 33.0f : 25.0f) * k, t2 = (big ? 37.0f : 28.5f) * k;
+    const float cy = box.getCentreY();
+    const float t1 = (big ? 32.5f : 25.0f) * k, t2 = (big ? 36.0f : 28.5f) * k;
     for (int i = 0; i <= 10; ++i)
     {
         const float an = pi * 1.25f + pi * 1.5f * (float) i / 10.0f;
@@ -105,7 +115,7 @@ inline void inkScale (juce::Graphics& g, RF box, bool big)
         g.strokePath (l, juce::PathStrokeType ((major ? 1.5f : 1.0f) * k));
         if (big)
         {
-            const float rn = 40.5f * k;     // cabe dentro da caixa do knob (não corta)
+            const float rn = 40.5f * k;     // cabe dentro da caixa do knob (não corta), espaço igual em volta
             g.setColour (ink.withAlpha (0.85f));
             g.setFont (theme::sans (7.0f * k, true));
             g.drawText (juce::String (i), RF (cx + rn * std::sin (an) - 8.0f * k, cy - rn * std::cos (an) - 5.0f * k, 16.0f * k, 10.0f * k),
@@ -124,7 +134,7 @@ public:
         const bool big = (bool) slider.getProperties()["big"];
         const auto box = juce::Rectangle<int> (x, y, width, height).toFloat();
         inkScale (g, box, big);
-        real::knob (g, box, pos, slider.findColour (juce::Slider::rotarySliderFillColourId), big, {}, false);
+        real::knob (g, knobBox (box, big), pos, slider.findColour (juce::Slider::rotarySliderFillColourId), big, {}, false);
     }
 };
 

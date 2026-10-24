@@ -4,124 +4,71 @@
 #include "Params.h"
 
 // LIMÃO — presets de fábrica. Cada um traz o som E o padrão do sequenciador.
+// O banco FACTORY 1 está em presets/fabrica.inc (GERADO por tools/gerar-presets.py); bancos avulsos (.lmobank)
+// e os presets do usuário são lidos pelo processador.
 // Padrão em texto: um item por passo, separados por espaço —
 //   número = nota em semitons a partir do Dó 2 (0 = C2, 12 = C3, −2 = A#1), "-" = pausa, "~" = ligadura (segura a anterior)
 //   acc/sld: "x" = accent / slide naquele passo, "." = sem
 // O que o preset não traz volta ao padrão; o liga/desliga do sequenciador é performance e não muda.
 namespace limao
 {
+// ---------------- categorias (o preset guarda o ÍNDICE; o nome só aparece no menu) ----------------
+inline constexpr int numCategories = 9;
+inline const char* const categoryNames[numCategories] = { "CLÁSSICO", "ACID HOUSE", "ACID TECHNO", "TRANCE", "BASS",
+                                                          "LEAD", "SQUELCH", "DUB", "FX" };
+
+// como está escrito no código (fábrica): texto estático
 struct FactoryPreset
 {
     const char* name;
+    int category;                                          // −1 = Init (fora das categorias)
     std::vector<std::pair<const char*, float>> values;
     const char* notes;
     const char* acc;
     const char* sld;
 };
 
+// como o processador usa (fábrica e bancos importados)
+struct PresetData
+{
+    juce::String name;
+    int category = -1;
+    std::vector<std::pair<juce::String, float>> values;
+    juce::String notes, acc, sld;
+};
+
+// o Init primeiro e depois o banco FACTORY 1 (40 por categoria), gerado por tools/gerar-presets.py
 inline const std::vector<FactoryPreset>& factoryPresets()
 {
     static const std::vector<FactoryPreset> list {
-        { "Init",
-          {},
-          "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
-          "................", "................" },
-
-        { "303 Clássico",
-          { { "cutoff", 460.0f }, { "reso", 72.0f }, { "envmod", 62.0f }, { "decay", 340.0f }, { "accent", 70.0f }, { "slide", 60.0f },
-            { "drive", 18.0f } },
-          "0 0 12 0 ~ 3 0 15 0 10 - 0 7 0 12 3",
-          "x...x..x...x..x.", "..x....x.....x.." },
-
-        { "Acid House",
-          { { "cutoff", 380.0f }, { "reso", 82.0f }, { "envmod", 70.0f }, { "decay", 520.0f }, { "accent", 75.0f }, { "slide", 70.0f },
-            { "drive", 30.0f }, { "rvon", 1.0f }, { "rvmix", 14.0f } },
-          "0 12 0 0 7 - 0 10 12 0 3 0 - 5 0 12",
-          "x.....x.x...x...", ".x.....x.x....x." },
-
-        { "Techno Pesado",
-          { { "wave", 1.0f }, { "cutoff", 300.0f }, { "reso", 55.0f }, { "envmod", 72.0f }, { "decay", 220.0f }, { "accent", 80.0f },
-            { "drvtype", 1.0f }, { "drive", 58.0f }, { "dlon", 1.0f }, { "dldiv", 3.0f }, { "dlfb", 35.0f }, { "dlmix", 16.0f } },
-          "0 0 - 0 0 - 0 12 0 0 - 0 1 0 - 0",
-          "x..x..x.x..x..x.", "......x........." },
-
-        { "Psytrance Rolling",
-          { { "cutoff", 820.0f }, { "reso", 42.0f }, { "envmod", 45.0f }, { "decay", 150.0f }, { "accent", 40.0f }, { "slide", 30.0f },
-            { "drive", 25.0f }, { "volume", -5.0f } },
-          "- 4 4 4 - 4 4 4 - 4 4 4 - 4 4 7",
-          ".x...x...x...x..", "................" },
-
-        { "Lead Gritado",
-          { { "wave", 1.0f }, { "cutoff", 900.0f }, { "reso", 86.0f }, { "envmod", 58.0f }, { "decay", 700.0f }, { "accent", 70.0f },
-            { "slide", 110.0f }, { "drvtype", 0.0f }, { "drive", 62.0f }, { "dlon", 1.0f }, { "dldiv", 3.0f }, { "dlfb", 55.0f },
-            { "dlmix", 30.0f }, { "rvon", 1.0f }, { "rvsize", 60.0f }, { "rvmix", 22.0f }, { "seqlen", 32.0f } },
-          "12 ~ 15 12 ~ 19 ~ 17 15 ~ 12 10 12 ~ - 7 12 ~ 15 17 ~ 19 22 ~ 24 ~ 19 17 15 ~ 12 -",
-          "x....x..x...x.....x..x..x...x...", ".x...x...x...x...x..x...x...x..." },
-
-        { "Squelch 32",
-          { { "cutoff", 420.0f }, { "reso", 88.0f }, { "envmod", 66.0f }, { "decay", 300.0f }, { "accent", 85.0f }, { "slide", 55.0f },
-            { "drive", 35.0f }, { "acid", 25.0f }, { "seqlen", 32.0f } },
-          "0 0 12 3 0 - 15 0 0 10 0 7 12 0 - 3 0 0 12 5 0 - 17 0 0 10 0 7 15 12 - 0",
-          "x..x...x..x...x.x..x..x...x..x..", "..x....x...x...x..x....x..x....x" },
-
-        { "Borracha",
-          { { "cutoff", 220.0f }, { "reso", 60.0f }, { "envmod", 85.0f }, { "decay", 600.0f }, { "accent", 50.0f }, { "slide", 120.0f },
-            { "drive", 15.0f } },
-          "0 ~ 7 0 ~ 12 0 ~ 5 7 ~ 0 3 ~ 0 ~",
-          "x.....x.....x...", "x.x..x..x.x..x.." },
-
-        { "Sereia",
-          { { "cutoff", 900.0f }, { "reso", 96.0f }, { "envmod", 40.0f }, { "decay", 900.0f }, { "accent", 55.0f }, { "slide", 180.0f },
-            { "drive", 22.0f }, { "dlon", 1.0f }, { "dldiv", 2.0f }, { "dlfb", 60.0f }, { "dlmix", 25.0f }, { "rvon", 1.0f }, { "rvmix", 25.0f } },
-          "12 ~ 24 ~ 19 ~ 12 ~ 15 ~ 22 ~ 17 ~ 12 ~",
-          "x.......x.......", "x.x.x.x.x.x.x.x." },
-
-        { "Bitcrush Ácido",
-          { { "cutoff", 600.0f }, { "reso", 70.0f }, { "envmod", 60.0f }, { "decay", 260.0f }, { "accent", 70.0f },
-            { "drvtype", 2.0f }, { "drive", 48.0f } },
-          "0 12 0 15 0 12 - 10 0 12 0 7 - 3 0 5",
-          "x...x...x...x...", "...x.......x...." },
-
-        { "Minimal",
-          { { "cutoff", 520.0f }, { "reso", 50.0f }, { "envmod", 50.0f }, { "decay", 200.0f }, { "accent", 60.0f },
-            { "drive", 10.0f }, { "dlon", 1.0f }, { "dldiv", 3.0f }, { "dlfb", 40.0f }, { "dlmix", 22.0f } },
-          "0 - - 0 - - 12 - 0 - - - 3 - - -",
-          "x.....x.....x...", "................" },
-
-        { "Dub Ácido",
-          { { "cutoff", 350.0f }, { "reso", 75.0f }, { "envmod", 55.0f }, { "decay", 450.0f }, { "accent", 60.0f }, { "slide", 80.0f },
-            { "drive", 20.0f }, { "dlon", 1.0f }, { "dldiv", 3.0f }, { "dlfb", 72.0f }, { "dlmix", 38.0f },
-            { "rvon", 1.0f }, { "rvsize", 75.0f }, { "rvmix", 28.0f }, { "seqrate", 4.0f } },
-          "0 - 7 ~ 10 - 0 12",
-          "x...x...", "..x....x" },
-
-        { "Garagem Swing",
-          { { "cutoff", 500.0f }, { "reso", 68.0f }, { "envmod", 60.0f }, { "decay", 320.0f }, { "accent", 65.0f },
-            { "drive", 28.0f }, { "swing", 45.0f } },
-          "0 0 3 0 5 0 3 0 0 12 0 10 7 0 5 3",
-          "x...x...x...x...", "....x.......x..." },
-
-        { "Ácido Total",
-          { { "wave", 1.0f }, { "cutoff", 380.0f }, { "reso", 80.0f }, { "envmod", 70.0f }, { "decay", 260.0f }, { "accent", 90.0f },
-            { "slide", 50.0f }, { "acid", 70.0f }, { "drvtype", 1.0f }, { "drive", 45.0f }, { "dlon", 1.0f }, { "dlmix", 18.0f } },
-          "0 12 0 0 15 0 12 3 0 0 17 0 12 0 10 7",
-          "x.x...x.x.x...x.", ".x...x...x...x.." },
-
-        { "Sub Grave",
-          { { "cutoff", 160.0f }, { "reso", 30.0f }, { "envmod", 35.0f }, { "decay", 500.0f }, { "accent", 40.0f }, { "tune", -12.0f },
-            { "drive", 8.0f } },
-          "0 ~ - 0 - 0 ~ - 0 ~ - 0 3 ~ 0 -",
-          "x.......x.......", "................" },
+        { "Init", -1, {}, "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0", "................", "................" },
+       #include "presets/fabrica.inc"
     };
     return list;
 }
 
+inline std::vector<PresetData> factoryPresetData()
+{
+    std::vector<PresetData> out;
+    for (const auto& f : factoryPresets())
+    {
+        PresetData p;
+        p.name = u8 (f.name);
+        p.category = f.category;
+        for (const auto& v : f.values) p.values.emplace_back (v.first, v.second);
+        p.notes = f.notes;
+        p.acc = f.acc;
+        p.sld = f.sld;
+        out.push_back (std::move (p));
+    }
+    return out;
+}
+
 // texto do preset → padrão; devolve o número de passos
-inline int parsePattern (const FactoryPreset& p, Pattern& out)
+inline int parsePattern (const juce::String& notes, const juce::String& acc, const juce::String& sld, Pattern& out)
 {
     out.clear();
-    const auto items = juce::StringArray::fromTokens (juce::String (p.notes), " ", "");
-    const juce::String acc (p.acc), sld (p.sld);
+    const auto items = juce::StringArray::fromTokens (notes, " ", "");
     const int n = juce::jmin (maxSteps, items.size());
     for (int i = 0; i < n; ++i)
     {
@@ -135,6 +82,21 @@ inline int parsePattern (const FactoryPreset& p, Pattern& out)
         out.set (i, s);
     }
     return juce::jmax (1, n);
+}
+
+// padrão → texto (o mesmo formato dos presets), só os primeiros len passos
+inline void patternToText (const Pattern& pat, int len, juce::String& notes, juce::String& acc, juce::String& sld)
+{
+    juce::StringArray items;
+    acc = sld = {};
+    for (int i = 0; i < juce::jlimit (1, maxSteps, len); ++i)
+    {
+        const auto s = pat.get (i);
+        items.add (s.mode == Mode::rest ? juce::String ("-") : s.mode == Mode::tie ? juce::String ("~") : juce::String (s.pitch));
+        acc << (s.accent ? "x" : ".");
+        sld << (s.slide ? "x" : ".");
+    }
+    notes = items.joinIntoString (" ");
 }
 
 // ALEATORIZAR: linha ácida na escala menor (com uma blue note de vez em quando), muita tônica e oitava,

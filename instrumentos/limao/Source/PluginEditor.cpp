@@ -97,7 +97,9 @@ juce::String hzText (float hz)
     return hz >= 1000.0f ? juce::String (hz / 1000.0f, 2) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz";
 }
 
-constexpr int menuSizeBase = 1000;
+constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuNoUser = 20005,
+              menuImport = 20006, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
 } // namespace
 
 // =====================================================================
@@ -320,16 +322,14 @@ LimaoEditor::LimaoEditor (LimaoProcessor& p) : AudioProcessorEditor (&p), proc (
     using lim::SilverKnob;
 
     // ---- cabeçalho: preset ----
-    presetName = add<PresetName> ({ 712, 30, 250, 32 });
+    presetName = add<PresetName> ({ 712, 30, 220, 32 });
     presetName->onClick = [this] { showPresetMenu(); };
-    auto* prev = add<IconButton> ({ 966, 31, 30, 30 }, IconButton::Icon::prev);
-    auto* next = add<IconButton> ({ 998, 31, 30, 30 }, IconButton::Icon::next);
-    prev->onClick = [this]
-    {
-        const int n = proc.getPresetNames().size();
-        proc.loadPreset ((proc.getPresetIndex() - 1 + n) % n);
-    };
-    next->onClick = [this] { proc.loadPreset ((proc.getPresetIndex() + 1) % proc.getPresetNames().size()); };
+    auto* prev = add<IconButton> ({ 934, 31, 30, 30 }, IconButton::Icon::prev);
+    auto* next = add<IconButton> ({ 966, 31, 30, 30 }, IconButton::Icon::next);
+    auto* save = add<IconButton> ({ 998, 31, 30, 30 }, IconButton::Icon::save);
+    prev->onClick = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
+    next->onClick = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
+    save->onClick = [this] { askNewPreset(); };
 
     // ---- VOZ ----
     const int ky = 122, kw = 80, kh = 100;
@@ -403,6 +403,7 @@ LimaoEditor::LimaoEditor (LimaoProcessor& p) : AudioProcessorEditor (&p), proc (
 
 LimaoEditor::~LimaoEditor()
 {
+    dialog.close();
     stopTimer();
     setLookAndFeel (nullptr);
 }
@@ -417,23 +418,174 @@ void LimaoEditor::showPresetMenu()
 {
     juce::PopupMenu menu;
     const auto names = proc.getPresetNames();
-    for (int i = 0; i < names.size(); ++i)
-        menu.addItem (i + 1, names[i], true, i == proc.getPresetIndex());
+    const auto bankNames = proc.getBankNames();
+    const int  cur = proc.getPresetIndex();
+    const int  numBanks = bankNames.size();
+
+    // Init no topo; cada banco (FACTORY 1 e os importados, embaixo dele) abre as categorias; os do usuário em USER.
+    // A categoria numCategories é OUTROS (preset de banco importado sem categoria).
+    std::vector<std::array<juce::PopupMenu, numCategories + 1>> cats ((size_t) numBanks);
+    std::vector<std::array<bool, numCategories + 1>> catTicked ((size_t) numBanks);
+    juce::PopupMenu user;
+    bool userTicked = false;
+    for (int i = 0; i < names.size() && i + 1 < sizeMenuBase; ++i)
+    {
+        const int  c = proc.getPresetCategory (i);
+        const int  b = proc.getPresetBank (i);
+        const bool ticked = i == cur;
+        if (c < 0)
+            menu.addItem (i + 1, names[i], true, ticked);
+        else if (b == LimaoProcessor::bankUser)
+        {
+            user.addItem (i + 1, names[i], true, ticked);
+            userTicked = userTicked || ticked;
+        }
+        else if (b >= 0 && b < numBanks)
+        {
+            const auto k = (size_t) juce::jlimit (0, numCategories, c);
+            cats[(size_t) b][k].addItem (i + 1, names[i], true, ticked);
+            catTicked[(size_t) b][k] = catTicked[(size_t) b][k] || ticked;
+        }
+    }
+    menu.addSeparator();
+    for (int b = 0; b < numBanks; ++b)
+    {
+        juce::PopupMenu bank;
+        bool bankTicked = false;
+        for (int c = 0; c <= numCategories; ++c)
+        {
+            auto& sub = cats[(size_t) b][(size_t) c];
+            if (sub.getNumItems() == 0) continue;
+            const bool t = catTicked[(size_t) b][(size_t) c];
+            bank.addSubMenu (c < numCategories ? u8 (categoryNames[c]) : juce::String ("OUTROS"), sub, true,
+                             std::unique_ptr<juce::Drawable>(), t);
+            bankTicked = bankTicked || t;
+        }
+        if (bank.getNumItems() > 0)
+            menu.addSubMenu (bankNames[b].toUpperCase(), bank, true, std::unique_ptr<juce::Drawable>(), bankTicked);
+    }
+    if (user.getNumItems() > 0)
+        menu.addSubMenu ("USER", user, true, std::unique_ptr<juce::Drawable>(), userTicked);
+    else
+        menu.addItem (menuNoUser, "USER (nenhum ainda)", false);
+
+    // presets do usuário dá para gravar por cima, renomear e apagar; os de fábrica e os dos bancos não mudam
+    menu.addSeparator();
+    menu.addItem (menuSaveAs, u8 ("Salvar como novo preset…"));
+    if (proc.isUserPreset())
+    {
+        const auto name = proc.getPresetName();
+        menu.addItem (menuOverwrite, u8 ("Salvar alterações em “") + name + u8 ("”"));
+        menu.addItem (menuRename,    u8 ("Renomear “") + name + u8 ("”…"));
+        menu.addItem (menuDelete,    u8 ("Apagar “") + name + u8 ("”…"));
+    }
+
+    // bancos avulsos (.lmobank)
+    menu.addSeparator();
+    menu.addItem (menuImport, u8 ("Importar banco de presets…"));
+    if (numBanks > 1)
+    {
+        juce::PopupMenu remove;
+        for (int b = 1; b < numBanks; ++b)
+            remove.addItem (menuRemoveBank + b, bankNames[b].toUpperCase());
+        menu.addSubMenu ("Remover banco", remove);
+    }
 
     juce::PopupMenu sizes;
     const float current = proc.uiScale.load();
     for (int pct : { 75, 100, 125, 150, 175, 200 })
-        sizes.addItem (menuSizeBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
+        sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
 
     juce::Component::SafePointer<LimaoEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetName), [safe] (int result)
     {
-        if (safe == nullptr || result <= 0) return;
-        if (result > menuSizeBase) safe->setScale ((float) (result - menuSizeBase) / 100.0f);
-        else                       safe->proc.loadPreset (result - 1);
+        if (safe != nullptr && result > 0)
+            safe->presetMenuChosen (result);
     });
+}
+
+void LimaoEditor::askNewPreset()
+{
+    juce::Component::SafePointer<LimaoEditor> safe (this);
+    dialog.askName (canvas, "Salvar preset", proc.suggestPresetName(),
+                    [safe] (const juce::String& name) { if (safe != nullptr) safe->proc.saveUserPreset (name); });
+}
+
+// abre o navegador de arquivos; o banco escolhido é copiado para a pasta do LIMÃO e entra no menu
+void LimaoEditor::importBank()
+{
+    auto start = juce::File::getSpecialLocation (juce::File::userHomeDirectory);
+    if (start.getChildFile ("Downloads").isDirectory()) start = start.getChildFile ("Downloads");
+    chooser = std::make_unique<juce::FileChooser> (u8 ("Importar banco de presets do LIMÃO"), start, "*.lmobank");
+
+    juce::Component::SafePointer<LimaoEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [safe] (const juce::FileChooser& fc)
+                          {
+                              const auto file = fc.getResult();
+                              if (safe == nullptr || ! file.existsAsFile()) return;
+                              juce::String name;
+                              const auto err = safe->proc.importBank (file, name);
+                              if (err.isNotEmpty())
+                                  safe->dialog.inform (safe->canvas, u8 ("Não deu para importar"), err);
+                              else
+                                  safe->dialog.inform (safe->canvas, "Banco importado",
+                                                       u8 ("“") + name.toUpperCase() + u8 ("” já está no menu de presets, embaixo do FACTORY 1."));
+                          });
+}
+
+void LimaoEditor::presetMenuChosen (int result)
+{
+    if (result > sizeMenuBase && result < menuSaveAs)
+    {
+        setScale ((float) (result - sizeMenuBase) / 100.0f);
+        return;
+    }
+
+    juce::Component::SafePointer<LimaoEditor> safe (this);
+    if (result > menuRemoveBank)
+    {
+        const int  bank = result - menuRemoveBank;
+        const auto bankName = proc.getBankNames()[bank].toUpperCase();
+        dialog.confirm (canvas, "Remover banco",
+                        u8 ("“") + bankName + u8 ("” vai para a lixeira e sai do menu. Os presets do USER não mudam."), "Remover",
+                        [safe, bank] { if (safe != nullptr) safe->proc.removeBank (bank); });
+        return;
+    }
+
+    const auto name = proc.getPresetName();
+    switch (result)
+    {
+        case menuSaveAs:
+            askNewPreset();
+            break;
+        case menuOverwrite:
+            proc.overwriteUserPreset();
+            break;
+        case menuRename:
+            dialog.askName (canvas, "Renomear preset", name, [safe] (const juce::String& newName)
+            {
+                if (safe != nullptr && ! safe->proc.renameUserPreset (newName))
+                    safe->dialog.inform (safe->canvas, u8 ("Não deu para renomear"), u8 ("Já existe um preset com esse nome."));
+            });
+            break;
+        case menuDelete:
+            dialog.confirm (canvas, "Apagar preset",
+                            u8 ("“") + name + u8 ("” vai para a lixeira. O som atual continua no plugin."), "Apagar",
+                            [safe] { if (safe != nullptr) safe->proc.deleteUserPreset(); });
+            break;
+        case menuImport:
+            importBank();
+            break;
+        case menuNoUser:
+            break;
+        default:
+            if (result > 0 && result < sizeMenuBase)
+                proc.loadPreset (result - 1);
+            break;
+    }
 }
 
 // ---------------- timer (30 Hz) ----------------
@@ -471,7 +623,7 @@ void LimaoEditor::timerCallback()
         canvas.repaint (1040, 22, 124, 48);
     }
 
-    presetName->set (proc.getPresetName(), proc.getPresetIndex(), proc.getPresetNames().size());
+    presetName->set (proc.getPresetName(), proc.getPresetIndex(), proc.getNumPresets());
 
     const float bpm = proc.shownBpm.load();
     const bool  syn = proc.synced.load();
