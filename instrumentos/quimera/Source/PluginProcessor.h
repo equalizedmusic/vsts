@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "Arp.h"
 #include "Engine.h"
 #include "Fx.h"
 #include "Params.h"
@@ -64,6 +65,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     quimera::Engine  engine;
     quimera::FxRack  fx;
+    quimera::Arp     arp;                                // arp.stepNow = passo aceso na tela
     juce::MidiKeyboardState keyboard;                    // teclado da tela (e mostra as notas do host)
 
     std::atomic<float> meterOut { 0.0f };
@@ -104,6 +106,7 @@ private:
 
     quimera::SnapshotReader reader;
     quimera::Snapshot snap;
+    juce::MidiBuffer arpMidi;                            // o que o motor recebe (teclas ou arpejo)
     juce::SmoothedValue<float> volSm;
     double currentRate = 44100.0;
     double freePpq = 0.0;   // relógio próprio quando o host não dá a régua

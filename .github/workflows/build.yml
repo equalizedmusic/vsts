@@ -65,9 +65,13 @@ jobs:
           fi
           # um instalador por linha: InsideStudioSP-Criativo-mac.dmg, InsideStudioSP-Mix-win.exe…
           if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
+          # versão = o primeiro "## x.y.z" de novidades/<Linha>.md (a mesma que o CMake pôs nos plugins)
+          export PYTHONIOENCODING=utf-8
+          versao() { $PY instalador/versao.py "$1" | tr -d '\r'; }   # o python do Windows termina a linha com \r
           for d in linha/*; do
             l=$(basename "$d")
-            PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote "$(echo "${l:0:1}" | tr a-z A-Z)${l:1}" --origem "$d" --versao "0.1.${{ github.run_number }}" --saida .
+            P="$(echo "${l:0:1}" | tr a-z A-Z)${l:1}"
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote "$P" --origem "$d" --versao "$(versao "$P")" --saida .
           done
           { find dist linha -maxdepth 3; ls -l InsideStudioSP-*; } | tee pack.log
 
@@ -111,6 +115,10 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5   # só para ler novidades/ e instalador/versao.py
+        with:
+          path: src
+
       - uses: actions/download-artifact@v5
         with:
           path: report
@@ -125,7 +133,8 @@ jobs:
           mkdir -p pacotes
           mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
-          { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null; } > status.txt
+          { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null
+            for p in Criativo Mix; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
           cat status.txt
           git init -q
           git checkout -q -b builds
@@ -142,3 +151,9 @@ jobs:
           gh release delete latest-build --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
           gh release create latest-build * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Último build" --notes-file ../report/status.txt --prerelease
+
+      - name: Releases das versões (criativo-v…, mix-v…)
+        if: hashFiles('pacotes/*') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash src/.github/scripts/release-versoes.sh pacotes report src Criativo Mix

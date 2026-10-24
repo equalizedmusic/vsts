@@ -20,5 +20,7 @@
   "SALA":      ["SALA",      "reverb limpo"],
   "MONITOR":   ["MONITOR",   "medidor de pico e LUFS"],
   "NAVALHA":   ["NAVALHA",   "clipper"],
-  "QUIMERA":   ["QUIMERA",   "sintetizador: 3 osciladores wavetable, MPE"]
+  "QUIMERA":   ["QUIMERA",   "sintetizador: 3 osciladores wavetable, MPE, arpejador"],
+  "LIMAO":     ["LIMÃO",     "bassline ácido mono com sequenciador de 32 passos"],
+  "VACINA":    ["VACINA",    "virtual-analógico polifônico de 16 vozes"]
 }

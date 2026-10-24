@@ -90,12 +90,12 @@ void LcdDisplay::paint (juce::Graphics& g)
     const auto r = getLocalBounds().toFloat().reduced (5.0f);
     vac::glassUnder (g, r, 3.0f);
     const auto in = r.reduced (12.0f, 7.0f);
-    vac::oledText (g, l1, in.withHeight (13.0f), 10.0f, juce::Justification::centredLeft, vac::inkDim);
-    vac::oledText (g, l1r, in.withHeight (13.0f), 10.0f, juce::Justification::centredRight, vac::inkDim);
+    vac::oledText (g, l1, in.withHeight (13.0f), 11.5f, juce::Justification::centredLeft, vac::inkDim);
+    vac::oledText (g, l1r, in.withHeight (13.0f), 11.5f, juce::Justification::centredRight, vac::inkDim);
     g.setColour (vac::inkDim.withAlpha (0.35f));
     g.fillRect (in.getX(), in.getY() + 15.0f, in.getWidth(), 0.7f);
     vac::oledText (g, l2, in.withTrimmedTop (17.0f).withHeight (30.0f), 23.0f, juce::Justification::centredLeft, vac::ink, false);
-    vac::oledText (g, l3, in.withTrimmedTop (48.0f).withHeight (14.0f), 10.5f, juce::Justification::centredLeft, vac::redInk);
+    vac::oledText (g, l3, in.withTrimmedTop (48.0f).withHeight (15.0f), 12.0f, juce::Justification::centredLeft, vac::redInk);
     vac::glassOver (g, r, 3.0f);
 }
 
@@ -155,7 +155,7 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     key (840, 26, "PREV")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
     key (840, 64, "NEXT")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
 
-    add<vac::LedList> ({ 890, 40, 70, 40 }, keyModeNames, true, 13.0f)->bind (st, id::keyMode);
+    add<vac::LedList> ({ 888, 40, 72, 45 }, keyModeNames, true, 15.0f)->bind (st, id::keyMode);
     knob (990, 38, 30, id::porta, "GLIDE");
     knob (1042, 38, 30, id::bendRange, "BEND");
     knob (1094, 38, 30, id::unison, "UNISON");
@@ -166,17 +166,17 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
 
     // ================= OSCILADORES =================
     oscScopes[0] = scope ({ 60, 136, 170, 94 });
-    add<vac::LedList> ({ 242, 140, 74, 40 }, model1Names, true, 13.0f)->bind (st, id::osc1Model);
-    wave1Box = box ({ 238, 188, 156, 28 }, id::osc1Table, "WAVETABLE");
+    add<vac::LedList> ({ 242, 140, 84, 45 }, model1Names, true, 15.0f)->bind (st, id::osc1Model);
+    wave1Box = box ({ 238, 192, 156, 28 }, id::osc1Table, "WAVETABLE");
     knob (92, 244, 44, id::osc1Shape, "SHAPE", red);
     knob (168, 244, 44, id::osc1Pw, "PULSE W");
     knob (244, 244, 44, id::osc1Semi, "SEMITONE");
     knob (320, 244, 44, id::osc1Spread, "SUPER SPREAD");
 
     oscScopes[1] = scope ({ 422, 136, 170, 94 });
-    add<vac::LedList> ({ 604, 140, 74, 28 }, model2Names, true, 13.0f)->bind (st, id::osc2Model);
+    add<vac::LedList> ({ 604, 140, 84, 30 }, model2Names, true, 15.0f)->bind (st, id::osc2Model);
     attach (*key (724, 138, "SYNC", true), id::osc2Sync);
-    wave2Box = box ({ 600, 188, 204, 28 }, id::osc2Table, "WAVETABLE");
+    wave2Box = box ({ 600, 192, 204, 28 }, id::osc2Table, "WAVETABLE");
     knob (450, 244, 44, id::osc2Shape, "SHAPE", red);
     knob (524, 244, 44, id::osc2Pw, "PULSE W");
     knob (598, 244, 44, id::osc2Semi, "SEMITONE");
@@ -199,18 +199,18 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
 
     // ================= FILTROS =================
     filterScope = scope ({ 60, 384, 238, 104 });
-    add<vac::LedList> ({ 68, 500, 84, 28 }, routingNames, true, 13.0f)->bind (st, id::routing);
+    add<vac::LedList> ({ 68, 498, 96, 30 }, routingNames, true, 15.0f)->bind (st, id::routing);
     knob (196, 494, 34, id::filtBal, "BALANCE");
-    box ({ 64, 548, 120, 28 }, id::satType, "SATURATION");
-    knob (240, 542, 34, id::satAmt, "SAT DRIVE", red);
+    box ({ 64, 550, 120, 28 }, id::satType, "SATURATION");
+    knob (240, 544, 34, id::satAmt, "SAT DRIVE", red);
 
-    add<vac::LedList> ({ 314, 400, 66, 92 }, f1ModeNames, true, 13.0f)->bind (st, id::f1Mode);
+    add<vac::LedList> ({ 312, 398, 74, 105 }, f1ModeNames, true, 15.0f)->bind (st, id::f1Mode);
     knob (456, 398, 66, id::cutoff, "CUTOFF", red);
     knob (340, 512, 36, id::reso1, "RESONANCE");
     knob (412, 512, 36, id::env1, "ENV AMOUNT");
     knob (484, 512, 36, id::key1, "KEY TRACK");
 
-    add<vac::LedList> ({ 540, 400, 66, 80 }, f2ModeNames, true, 13.0f)->bind (st, id::f2Mode);
+    add<vac::LedList> ({ 538, 398, 74, 90 }, f2ModeNames, true, 15.0f)->bind (st, id::f2Mode);
     knob (674, 404, 48, id::cutoff2, "CUTOFF 2");
     knob (566, 512, 36, id::reso2, "RESONANCE");
     knob (638, 512, 36, id::env2, "ENV AMOUNT");
@@ -265,8 +265,8 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     // ================= ARP =================
     attach (*key (1172, 640, "ARP ON", true), id::arpOn);
     attach (*key (1172, 686, "HOLD", true), id::arpHold);
-    add<vac::LedList> ({ 1230, 636, 78, 80 }, arpModeNames, true, 13.0f)->bind (st, id::arpMode);
-    box ({ 1310, 640, 70, 28 }, id::arpOct, "OCTAVES");
+    add<vac::LedList> ({ 1226, 634, 88, 90 }, arpModeNames, true, 15.0f)->bind (st, id::arpMode);
+    box ({ 1318, 640, 64, 28 }, id::arpOct, "OCTAVES");
     knob (1196, 752, 38, id::arpRate, "RATE");
     knob (1270, 752, 38, id::arpGate, "GATE");
 
@@ -414,7 +414,7 @@ void VacinaEditor::buildScopes()
         g.fillRect (xc - 0.5f, r.getY(), 1.0f, r.getHeight());
         const float hz = fc1;
         vac::oledText (g, hz >= 1000.0f ? juce::String (hz / 1000.0f, 2) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz",
-                       r.withTrimmedTop (r.getHeight() - 12.0f), 9.0f, juce::Justification::bottomRight, vac::redInk);
+                       r.withTrimmedTop (r.getHeight() - 14.0f), 10.5f, juce::Justification::bottomRight, vac::redInk);
     };
 
     // ---- envelopes: ADSR com a inclinação do sustain ----
@@ -580,6 +580,10 @@ void VacinaEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+   #ifdef JucePlugin_VersionString   // (a foto do workflow shots compila a tela fora do plugin)
+    menu.addSeparator();
+    menu.addItem (sizeMenuBase - 1, juce::String ("VACINA ") + JucePlugin_VersionString, false, false);
+   #endif
 
     // o menu (e cada camada: banco → categoria → preset) abre DENTRO da janela do plugin: como janela solta,
     // a camada de dentro ficava por baixo da janela do plugin (que o host deixa sempre na frente) e não dava clique
@@ -892,20 +896,19 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
 
     vac::subTitle (g, { 310.0f, 382.0f, 216.0f, 12.0f }, "FILTER 1");
     vac::subTitle (g, { 534.0f, 382.0f, 210.0f, 12.0f }, "FILTER 2");
-    vac::silkText (g, "MODE", { 314.0f, 492.0f, 60.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
-    vac::silkText (g, "MODE", { 540.0f, 480.0f, 60.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
-    vac::silkText (g, "ROUTING", { 68.0f, 528.0f, 84.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
-    vac::silkText (g, "MODEL", { 242.0f, 128.0f, 74.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
-    vac::silkText (g, "MODEL", { 604.0f, 128.0f, 74.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
-    vac::silkText (g, "KEY MODE", { 890.0f, 28.0f, 70.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
-    vac::silkText (g, "MODE", { 1230.0f, 718.0f, 70.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    // (os modos dos filtros ficam sem a legenda MODE: a lista de 7 já encosta nos knobs de baixo)
+    vac::silkText (g, "ROUTING", { 68.0f, 530.0f, 84.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
+    vac::silkText (g, "MODEL", { 242.0f, 126.0f, 74.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
+    vac::silkText (g, "MODEL", { 604.0f, 126.0f, 74.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
+    vac::silkText (g, "KEY MODE", { 888.0f, 27.0f, 72.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
+    vac::silkText (g, "MODE", { 1226.0f, 726.0f, 70.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
     for (int k = 0; k < 2; ++k)
     {
         vac::subTitle (g, { 56.0f + (float) k * 260.0f, 750.0f, 236.0f, 12.0f }, "DESTINATIONS", vac::redInk);
     }
     vac::subTitle (g, { 778.0f, 626.0f, 344.0f, 12.0f }, "SOURCE                      DESTINATION                  AMT");
     for (int k = 0; k < numSlots; ++k)
-        vac::silkText (g, juce::String (k + 1), { 778.0f, 646.0f + (float) k * 31.0f, 16.0f, 29.0f }, juce::Justification::centred, 9.0f);
+        vac::silkText (g, juce::String (k + 1), { 778.0f, 646.0f + (float) k * 31.0f, 16.0f, 29.0f }, juce::Justification::centred, 10.5f);
 
     // grupos dos efeitos
     const struct { float x, w; const char* n; } fx[] = { { 58.0f, 152.0f, "DISTORTION" }, { 218.0f, 120.0f, "ANALOG BOOST" },
@@ -917,7 +920,7 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
 
     // nomes embaixo dos campos de visor
     for (auto& c : captions)
-        vac::silkText (g, c.second, c.first.translated (0.0f, 1.0f), juce::Justification::centredTop, 7.5f, true, vac::silkDim);
+        vac::silkText (g, c.second, c.first.translated (0.0f, 1.0f).withHeight (11.0f), juce::Justification::centredTop, 9.0f, true, vac::silkDim);
 
     // placa do modelo (com dois parafusos) no canto de baixo
     {
@@ -947,11 +950,11 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
 
     // estado: MIDI, SYNC e BPM
     real::led (g, midiLedPos, 2.6f, vac::red, midiLit ? 1.0f : 0.0f);
-    vac::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 5.0f, 40.0f, 10.0f }, juce::Justification::centredLeft, 7.5f);
+    vac::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
     real::led (g, syncLedPos, 2.6f, vac::red, lastSync ? 1.0f : 0.0f);
-    vac::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 5.0f, 40.0f, 10.0f }, juce::Justification::centredLeft, 7.5f);
-    vac::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 168.0f, 83.0f, 74.0f, 10.0f },
-                   juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
+    vac::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 168.0f, 82.0f, 78.0f, 12.0f },
+                   juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
 
     drawMeter (g);
 }

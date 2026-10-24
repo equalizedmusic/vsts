@@ -1,6 +1,7 @@
 // QUIMERA — banco de presets de fábrica.
 // O Init primeiro e depois 40 por categoria, na ordem de categoryNames (BASS, LEAD, PLUCK, PAD, ATMOS, PERC,
-// DRUMS, KEYS, FX): 20 aqui e mais 20 em presets/<categoria>-2.inc, incluído no fim de cada categoria.
+// DRUMS, KEYS, FX): 20 aqui e mais 20 em presets/<categoria>-2.inc, incluído no fim de cada categoria; os 40 de ARP
+// ficam em presets/arp.inc (gerado por tools/gerar-arp.py).
 // Tudo isso é o banco FACTORY 1; bancos avulsos (.qmrbank) são lidos pelo processador.
 // Valores REAIS (%, Hz, ms, st, dB); listas e liga/desliga = índice / 0 ou 1.
 // O que não aparece volta ao PADRÃO do parâmetro (ver createLayout em Params.h).
@@ -49,7 +50,7 @@ namespace
     }
 
     // categorias
-    constexpr int cBaixo = 0, cLead = 1, cPluck = 2, cPad = 3, cAtmos = 4, cPerc = 5, cBateria = 6, cTeclas = 7, cFx = 8;
+    constexpr int cBaixo = 0, cLead = 1, cPluck = 2, cPad = 3, cAtmos = 4, cPerc = 5, cBateria = 6, cTeclas = 7, cFx = 8, cArp = 9;
 
     // tabelas (índice em tableNames)
     namespace tb
@@ -1773,6 +1774,11 @@ std::vector<FactoryPreset> factoryPresets()
           { srcMacro1, dstPitch, 25 } }));
 
     #include "presets/fx-2.inc"
+
+    // =====================================================================================================
+    // ARP (o arpejador ligado; categoria nova, por isso no fim da lista)
+    // =====================================================================================================
+    #include "presets/arp.inc"
 
     return p;
 }

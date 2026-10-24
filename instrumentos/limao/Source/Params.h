@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
 #include <atomic>
+#include "Scales.h"
 
 // LIMÃO — bassline ácido monofônico (alma de 303) com sequenciador de até 32 passos.
 // Aqui ficam os ids dos parâmetros, as listas e o padrão do sequenciador.
@@ -29,7 +30,8 @@ inline const juce::String wave = "wave", tune = "tune", cutoff = "cutoff", reso 
                           dlOn = "dlon", dlDiv = "dldiv", dlFb = "dlfb", dlMix = "dlmix",
                           rvOn = "rvon", rvSize = "rvsize", rvMix = "rvmix",
                           volume = "volume",
-                          seqOn = "seqon", seqLen = "seqlen", seqRate = "seqrate", swing = "swing";
+                          seqOn = "seqon", seqLen = "seqlen", seqRate = "seqrate", swing = "swing",
+                          scale = "scale", root = "root";
 }
 
 inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
@@ -94,6 +96,9 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (new AudioParameterChoice ({ id::seqRate, 1 }, "Rate", rateNames, 2));
     add (new AudioParameterFloat ({ id::swing, 1 }, "Swing", NormalisableRange<float> (0.0f, 75.0f), 0.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
+    // SCALE + ROOT: as notas dos passos tocam encaixadas na escala (CHROMATIC = como estão)
+    add (new AudioParameterChoice ({ id::scale, 1 }, "Scale", scales::scaleNames, 0));
+    add (new AudioParameterChoice ({ id::root, 1 }, "Root", scales::rootNames, 0));
 
     return { p.begin(), p.end() };
 }
@@ -171,6 +176,12 @@ struct Pattern
         }
     }
 };
+
+// nota que o passo toca de verdade com SCALE + ROOT (pitch relativo ao Dó 2, como no Step)
+inline int scaledPitch (int pitch, int scale, int root)
+{
+    return scales::snap (36 + pitch, scale, root) - 36;
+}
 
 inline juce::String noteName (int pitch)
 {

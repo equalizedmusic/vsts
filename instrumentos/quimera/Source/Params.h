@@ -5,6 +5,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
+#include "Scales.h"
 #include <utility>
 #include <vector>
 
@@ -90,6 +91,12 @@ inline const char* const divNames[numDivs] = { "1/32", "1/16T", "1/16", "1/8T", 
 inline constexpr double divBeats[numDivs] = { 0.125, 1.0 / 6.0, 0.25, 1.0 / 3.0, 0.375, 0.5, 2.0 / 3.0,
                                               0.75, 1.0, 1.5, 2.0, 4.0, 8.0, 16.0 };
 
+// ---------------- arpejador ----------------
+inline constexpr int numArpSteps = 16, numArpModes = 9;
+enum ArpMode { arpUp, arpDown, arpUpDown, arpDownUp, arpRandom, arpAsPlayed, arpChord, arpConverge, arpDiverge };
+inline const char* const arpModeNames[numArpModes] = { "Up", "Down", "Up/Down", "Down/Up", "Random", "As Played", "Chord",
+                                                       "Converge", "Diverge" };
+
 // ---------------- matriz de modulação ----------------
 // Fontes: env 0..1; LFO −1..1; velocidade 0..1; nota (nota−60)/60; mod wheel 0..1; pressão 0..1 (MPE ou aftertouch);
 // slide 0..1 (MPE CC74); bend −1..1; aleatório por nota −1..1 (sorteado no note-on); macros 0..1.
@@ -126,9 +133,10 @@ inline const char* const compNames[2]   = { "Single", "Multiband" };   // multib
 
 // ---------------- categorias dos presets ----------------
 // (o preset guarda o ÍNDICE da categoria; o nome só aparece no menu)
-inline constexpr int numCategories = 9;
+// ARP entrou depois: fica no fim para não mudar o índice das outras (bancos e projetos antigos)
+inline constexpr int numCategories = 10;
 inline const char* const categoryNames[numCategories] = { "BASS", "LEAD", "PLUCK", "PAD", "ATMOS", "PERC",
-                                                          "DRUMS", "KEYS", "FX" };
+                                                          "DRUMS", "KEYS", "FX", "ARP" };
 
 // ---------------- ids ----------------
 // Osc n = 1..3:  o<n>on o<n>tab o<n>pos o<n>warp o<n>wamt o<n>oct o<n>semi o<n>fine o<n>lvl o<n>pan
@@ -143,6 +151,9 @@ inline juce::String envId (int e, const char* field)      { return "e" + juce::S
 inline juce::String lfoId (int l, const char* field)      { return "l" + juce::String (l + 1) + field; }
 inline juce::String slotId (int s, const char* field)     { return "m" + juce::String (s + 1).paddedLeft ('0', 2) + field; }
 inline juce::String macroId (int m)                       { return "mac" + juce::String (m + 1); }
+// Arp: passo n = 1..16 ligado "as01".."as16", com acento "aa01".."aa16"
+inline juce::String arpStepId (int s)                     { return "as" + juce::String (s + 1).paddedLeft ('0', 2); }
+inline juce::String arpAccId (int s)                      { return "aa" + juce::String (s + 1).paddedLeft ('0', 2); }
 
 namespace id
 {
@@ -184,6 +195,12 @@ namespace id
     inline constexpr const char* eqHigh = "eqhigh";
     inline constexpr const char* cmpOn = "cpon";  inline constexpr const char* cmpMode = "cpmode";
     inline constexpr const char* cmpAmt = "cpamt"; inline constexpr const char* cmpMix = "cpmix";
+    // arpejador (entra no preset; o SEGURAR trava o acorde)
+    inline constexpr const char* arpOn = "arpon";     inline constexpr const char* arpMode = "arpmode";
+    inline constexpr const char* arpRate = "arprate"; inline constexpr const char* arpOct = "arpoct";
+    inline constexpr const char* arpGate = "arpgate"; inline constexpr const char* arpSwing = "arpswing";
+    inline constexpr const char* arpLen = "arplen";   inline constexpr const char* arpAcc = "arpacc";
+    inline constexpr const char* arpScale = "arpscale"; inline constexpr const char* arpRoot = "arproot";
 }
 
 // ---------------- textos ----------------
@@ -404,6 +421,23 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::cmpAmt, "Compressor Amount", { 0.0f, 100.0f }, 40.0f, pct);
     add (id::cmpMix, "Compressor Dry/Wet", { 0.0f, 100.0f }, 100.0f, pct);
 
+    // ---- arpejador (desligado no Init; padrão: 16 passos ligados, sem acento) ----
+    toggle (id::arpOn, "Arp Ligado", false);
+    choice (id::arpMode, "Arp Mode", toArray (arpModeNames, numArpModes), 0);
+    choice (id::arpRate, "Arp Rate", divs, 2);
+    add (id::arpOct, "Arp Octaves", { 1.0f, 4.0f, 1.0f }, 1.0f, [] (float v, int) { return String (roundToInt (v)) + " oct"; });
+    add (id::arpGate, "Arp Gate", { 5.0f, 100.0f }, 60.0f, pct);
+    add (id::arpSwing, "Arp Swing", { 0.0f, 100.0f }, 0.0f, pct);
+    add (id::arpLen, "Arp Length", { 1.0f, (float) numArpSteps, 1.0f }, 16.0f, [] (float v, int) { return String (roundToInt (v)); });
+    add (id::arpAcc, "Arp Accent", { 0.0f, 100.0f }, 50.0f, pct);
+    choice (id::arpScale, "Arp Scale", scales::scaleNames, 0);   // CHROMATIC = sem escala
+    choice (id::arpRoot, "Arp Root", scales::rootNames, 0);
+    for (int s = 0; s < numArpSteps; ++s)
+    {
+        toggle (arpStepId (s), "Arp Step " + String (s + 1), true);
+        toggle (arpAccId (s), "Arp Accent " + String (s + 1), false);
+    }
+
     return layout;
 }
 
@@ -424,6 +458,13 @@ struct FilterSnap
 struct EnvSnap  { float a = 2, d = 300, s = 100, r = 180, curve = 0; };
 struct LfoSnap  { int shape = 0, div = 8, mode = 1; bool sync = true; float rate = 2, rise = 0; };
 struct SlotSnap { int src = 0, dst = 0; float amt = 0; };
+struct ArpSnap
+{
+    bool  on = false;
+    int   mode = 0, rate = 2, octaves = 1, length = 16, scale = 0, root = 0;
+    float gate = 60, swing = 0, accent = 50;
+    std::array<bool, numArpSteps> step {}, acc {};
+};
 
 struct Snapshot
 {
@@ -440,6 +481,7 @@ struct Snapshot
     float glide = 0, bend = 2, drift = 15, velAmp = 50, volume = -6;
     bool  mpe = false, hold = false;
     float mpeBend = 48;
+    ArpSnap arp;
 
     struct
     {
@@ -505,6 +547,10 @@ public:
         x.revOn = b(); x.revType = n(); x.revSize = f(); x.revDecay = f(); x.revDamp = f(); x.revMix = f();
         x.eqOn = b(); x.eqLow = f(); x.eqMid = f(); x.eqMidF = f(); x.eqHigh = f();
         x.cmpOn = b(); x.cmpMode = n(); x.cmpAmt = f(); x.cmpMix = f();
+        auto& a = out.arp;
+        a.on = b(); a.mode = n(); a.rate = n(); a.octaves = n(); a.gate = f(); a.swing = f(); a.length = n(); a.accent = f();
+        a.scale = n(); a.root = n();
+        for (int s = 0; s < numArpSteps; ++s) { a.step[(size_t) s] = b(); a.acc[(size_t) s] = b(); }
         jassert (i == cache.size());
     }
 
@@ -546,8 +592,15 @@ private:
                            id::dlyOn, id::dlyDiv, id::dlyFb, id::dlyPing, id::dlyTone, id::dlyMix,
                            id::revOn, id::revType, id::revSize, id::revDecay, id::revDamp, id::revMix,
                            id::eqOn, id::eqLow, id::eqMid, id::eqMidF, id::eqHigh,
-                           id::cmpOn, id::cmpMode, id::cmpAmt, id::cmpMix })
+                           id::cmpOn, id::cmpMode, id::cmpAmt, id::cmpMix,
+                           id::arpOn, id::arpMode, id::arpRate, id::arpOct, id::arpGate, id::arpSwing, id::arpLen, id::arpAcc,
+                           id::arpScale, id::arpRoot })
             p (pid);
+        for (int s = 0; s < numArpSteps; ++s)
+        {
+            p (arpStepId (s));
+            p (arpAccId (s));
+        }
     }
 
     juce::AudioProcessorValueTreeState& st;
@@ -562,6 +615,6 @@ struct FactoryPreset
     std::vector<std::pair<juce::String, float>> values;    // valores reais; o que faltar volta ao padrão
 };
 
-// Presets.cpp: o Init primeiro e depois 40 por categoria (banco FACTORY 1), na ordem de categoryNames
+// Presets.cpp: o Init primeiro e depois 40 por categoria (banco FACTORY 1), na ordem de categoryNames (ARP por último)
 std::vector<FactoryPreset> factoryPresets();
 } // namespace quimera

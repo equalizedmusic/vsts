@@ -42,8 +42,8 @@ com a QUIMERA e, separados, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LI
 
 | Instrumento | O que é |
 |---|---|
-| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, 360 presets (40 por categoria) e bancos avulsos `.qmrbank` |
-| [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
+| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador de 16 passos com SCALE/ROOT, 400 presets (40 por categoria, com ARP) e bancos avulsos `.qmrbank` |
+| [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing, SCALE/ROOT e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
 | [VACINA](instrumentos/vacina/README.md) | Virtual-analógico polifônico de 16 vozes, leve no processador: OSC 1 CLASSIC (seno → triângulo → serra → pulso) ou SUPER (7 serras), OSC 2 com SYNC e FM, SUB e NOISE, dois filtros (LP 24 ladder, LP 12, HP, BP, BS) em série ou paralelo, 2 LFOs, matriz de 3 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.vcnbank`; painel grafite com laterais de madeira e visor de cristal líquido |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
@@ -70,6 +70,35 @@ Não precisa de Mac nem de Visual Studio: todo push na `main` dispara o GitHub A
 - **branch `builds`**: os logs de compilação e do pluginval e o `status.txt`.
 
 Push só em `.md` não dispara build. Um push novo cancela o build que estiver rodando.
+
+## Versões e notas de versão
+
+Cada pacote tem um arquivo de novidades em `novidades/`:
+
+| Pacote (instalador) | Arquivo | Release fixo |
+|---|---|---|
+| `InsideStudioSP-Criativo` | `novidades/Criativo.md` | `criativo-vX.Y.Z` |
+| `InsideStudioSP-Mix` | `novidades/Mix.md` | `mix-vX.Y.Z` |
+| `InsideStudioSP-Instrumentos` (QUIMERA) | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
+| `InsideStudioSP-Limao` | `novidades/Limao.md` | `limao-vX.Y.Z` |
+| `InsideStudioSP-Vacina` | `novidades/Vacina.md` | `vacina-vX.Y.Z` |
+
+O primeiro título `## X.Y.Z — data` do arquivo é a **versão atual**. Ela vai para:
+- os plugins, pelo `VERSION` do CMake (o host mostra; nos instrumentos ela também aparece no fim do menu de presets);
+- o instalador, pelo `instalador/versao.py`, que o workflow passa ao `montar.py`;
+- o release fixo daquela versão, que tem os dois instaladores e o texto da seção como nota.
+
+**Para lançar:** no mesmo commit da mudança, escreva a seção nova no topo do arquivo do pacote, com o que mudou em
+linguagem de usuário. O build publica o release `…-vX.Y.Z` só quando:
+- a tag ainda não existe (versão já lançada não é sobrescrita);
+- saíram os instaladores dos dois sistemas;
+- o pluginval não falhou.
+
+Os releases `latest-build` e `latest-instrumentos` continuam sendo sempre o último build.
+Sem subir a versão, o build só atualiza o `latest-*`. Como push só em `.md` não dispara build dos efeitos, a versão
+nova da linha criativa ou de mix vai junto com a mudança de código.
+
+Número: `X.Y.Z`. Z = correção, Y = recurso novo, X = mudança grande (preset ou projeto antigo que deixa de abrir igual).
 
 ## Instalar
 

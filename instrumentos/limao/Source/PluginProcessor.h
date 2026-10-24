@@ -63,7 +63,9 @@ public:
     void randomizePattern();
     void clearPattern();
     void shiftPattern (int dir);      // gira o padrão um passo para a esquerda (−1) ou direita (+1)
-    void transposePattern (int semis);
+    void transposePattern (int semis);   // com SCALE: anda graus da escala
+    int  scaleNow() const { return juce::roundToInt (pScale->load()); }   // índice em scales::scaleNames (0 = CHROMATIC)
+    int  rootNow() const  { return juce::roundToInt (pRoot->load()); }    // 0 = C … 11 = B
 
     juce::AudioProcessorValueTreeState apvts;
     limao::Pattern pattern;
@@ -159,6 +161,8 @@ private:
     std::atomic<float>* pSeqLen = nullptr;
     std::atomic<float>* pRate = nullptr;
     std::atomic<float>* pSwing = nullptr;
+    std::atomic<float>* pScale = nullptr;
+    std::atomic<float>* pRoot = nullptr;
     juce::SmoothedValue<float> volSm;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LimaoProcessor)

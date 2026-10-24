@@ -1,3 +1,6 @@
+# versão: o primeiro "## x.y.z" de novidades/Quimera.md
+vsts_versao(Quimera.md QUIMERA_VERSAO)
+
 juce_add_plugin(Quimera
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.quimera
@@ -5,7 +8,7 @@ juce_add_plugin(Quimera
     PLUGIN_CODE                 Qmr1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "QUIMERA"
-    VERSION                     0.1.0
+    VERSION                     ${QUIMERA_VERSAO}
     IS_SYNTH                    TRUE
     NEEDS_MIDI_INPUT            TRUE
     NEEDS_MIDI_OUTPUT           FALSE

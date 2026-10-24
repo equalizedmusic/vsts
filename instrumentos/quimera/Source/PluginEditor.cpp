@@ -999,6 +999,7 @@ QuimeraEditor::QuimeraEditor (QuimeraProcessor& p) : AudioProcessorEditor (&p), 
     buildSynth();
     buildMatrix();
     buildFx();
+    buildArp();
     buildBottom();
     setTab (0);
 
@@ -1074,7 +1075,8 @@ void QuimeraEditor::buildHeader()
     names.add ("SYNTH");
     names.add ("MOD MATRIX");
     names.add ("FX");
-    tabs = add<TabBar> (-1, R (12, 64, 330, 22), names);
+    names.add ("ARP");
+    tabs = add<TabBar> (-1, R (12, 64, 440, 22), names);
     tabs->onChange = [this] (int t) { setTab (t); };
 }
 
@@ -1334,6 +1336,110 @@ void QuimeraEditor::buildFx()
     }
 }
 
+void QuimeraEditor::buildArp()
+{
+    const auto col = theme::amber;
+
+    // ---- liga, modo e knobs ----
+    addCard (3, 12, 92, 1176, 158);
+    addTitle (3, 22.0f, 101.5f, u8 ("ARP · "), "ARPEGGIATOR", col);
+    attachButton (*add<KeyButton> (3, R (22, 126, 96, 50), juce::String ("ARP ON"), col), id::arpOn);
+    add<ChoiceBox> (3, R (130, 122, 190, 20), proc.apvts, id::arpMode, col, juce::String ("MODE"));
+    add<ChoiceBox> (3, R (130, 146, 190, 20), proc.apvts, id::arpScale, col, juce::String ("SCALE"));
+    add<ChoiceBox> (3, R (130, 170, 190, 20), proc.apvts, id::arpRoot, col, juce::String ("ROOT"));
+    addCaption (3, 130.0f, 196.0f, 196.0f, 44.0f,
+                u8 ("SCALE: notas na escala (uma tecla só = a escala inteira). SEGURAR trava o acorde."),
+                juce::Justification::topLeft, 8.5f, false);
+    const char* ids[] = { id::arpRate, id::arpOct, id::arpGate, id::arpSwing, id::arpLen, id::arpAcc };
+    const juce::String labs[] = { "RATE", "OCTAVES", "GATE", "SWING", "LENGTH", "ACCENT" };
+    for (int k = 0; k < 6; ++k)
+        add<Knob> (3, R (336 + k * 76, 116, 68, 90), proc.apvts, juce::String (ids[k]), labs[k], false, col);
+    addDesc (3, 812.0f, 112.0f, 366.0f, 130.0f, "COMO FUNCIONA",
+             u8 ("Segure um acorde: o ARP toca as notas uma a uma no tempo do projeto (parado, num relógio próprio). "
+                 "GATE 100% emenda uma nota na outra; com o VOICE em Legato vira slide. SWING atrasa os passos pares. "
+                 "ACCENT reforça a força das notas nos passos marcados."));
+
+    // ---- os 16 passos: ligado/pausa e acento ----
+    addCard (3, 12, 258, 1176, 210);
+    addTitle (3, 22.0f, 267.5f, u8 ("STEPS · "), "16 PASSOS", col);
+    addCaption (3, 22.0f, 310.0f, 74.0f, 20.0f, "PASSO");
+    addCaption (3, 22.0f, 372.0f, 74.0f, 20.0f, "ACCENT");
+    for (int s = 0; s < numArpSteps; ++s)
+    {
+        const int x = 100 + s * 67;
+        arpSteps[(size_t) s] = add<StepPad> (3, R (x, 284, 63, 72), col);
+        attachButton (*arpSteps[(size_t) s], arpStepId (s));
+        arpAccents[(size_t) s] = add<StepPad> (3, R (x, 362, 63, 34), theme::coral);
+        attachButton (*arpAccents[(size_t) s], arpAccId (s));
+        addCaption (3, (float) x, 400.0f, 63.0f, 14.0f, juce::String (s + 1), juce::Justification::centred, s % 4 == 0 ? 10.5f : 9.0f, s % 4 == 0);
+    }
+    addCaption (3, 22.0f, 424.0f, 1150.0f, 36.0f,
+                u8 ("Passo apagado = pausa (não toca nota, o arpejo segue). Os passos depois do LENGTH ficam esmaecidos e não tocam. "
+                    "O passo que está tocando ganha a moldura clara."),
+                juce::Justification::centredLeft, 9.0f, false);
+    arpLenP = raw (proc, id::arpLen);
+
+    // ---- padrões prontos (só preenchem os passos; depois dá para mexer um a um) ----
+    addCard (3, 12, 476, 1176, 132);
+    addTitle (3, 22.0f, 485.5f, u8 ("PADRÕES · "), "PRONTOS", col);
+    const juce::String pats[] = { "TODOS", "ALTERNADO", "CONTRATEMPO", "GALOPE", "TRESILLO 3-3-2", u8 ("ALEATÓRIO"),
+                                  "ACENTO NO TEMPO", "SEM ACENTO" };
+    for (int k = 0; k < 8; ++k)
+    {
+        auto* b = add<PillButton> (3, R (22 + k * 145, 512, 137, 28), pats[k]);
+        b->onClick = [this, k] { setArpPattern (k); };
+    }
+    addCaption (3, 22.0f, 552.0f, 1150.0f, 44.0f,
+                u8 ("Os seis primeiros trocam quais passos tocam (ALEATÓRIO sorteia também os acentos); ACENTO NO TEMPO marca "
+                    "o 1, 5, 9 e 13. A categoria ARP do menu de presets traz 40 sons já com o arpejo ligado."),
+                juce::Justification::centredLeft, 9.0f, false);
+}
+
+void QuimeraEditor::setArpPattern (int pattern)
+{
+    juce::Random rnd;
+    auto set = [this] (const juce::String& pid, bool on)
+    {
+        if (auto* p = proc.apvts.getParameter (pid))
+        {
+            p->beginChangeGesture();
+            p->setValueNotifyingHost (on ? 1.0f : 0.0f);
+            p->endChangeGesture();
+        }
+    };
+    for (int s = 0; s < numArpSteps; ++s)
+    {
+        switch (pattern)
+        {
+            case 0: set (arpStepId (s), true); break;
+            case 1: set (arpStepId (s), s % 2 == 0); break;
+            case 2: set (arpStepId (s), s % 4 == 2); break;
+            case 3: set (arpStepId (s), s % 4 != 1); break;
+            case 4: set (arpStepId (s), s % 8 == 0 || s % 8 == 3 || s % 8 == 6); break;
+            case 5: set (arpStepId (s), s == 0 || rnd.nextFloat() < 0.7f); set (arpAccId (s), rnd.nextFloat() < 0.25f); break;
+            case 6: set (arpAccId (s), s % 4 == 0); break;
+            default: set (arpAccId (s), false); break;
+        }
+    }
+}
+
+// passo aceso e passos fora do LENGTH (30 Hz, só com a aba ARP aberta)
+void QuimeraEditor::tickArp()
+{
+    const int now = proc.arp.stepNow.load();
+    const int len = arpLenP != nullptr ? juce::roundToInt (arpLenP->load()) : numArpSteps;
+    if (now == shownArpStep && len == shownArpLen) return;
+    shownArpStep = now;
+    shownArpLen = len;
+    for (int s = 0; s < numArpSteps; ++s)
+    {
+        if (arpSteps[(size_t) s] == nullptr) continue;
+        arpSteps[(size_t) s]->setPlaying (s == now);
+        arpSteps[(size_t) s]->setOutside (s >= len);
+        arpAccents[(size_t) s]->setOutside (s >= len);
+    }
+}
+
 void QuimeraEditor::buildBottom()
 {
     addCard (-1, 12, 616, 1176, 112);
@@ -1351,7 +1457,7 @@ void QuimeraEditor::buildBottom()
 // ---------------- abas ----------------
 void QuimeraEditor::setTab (int tab)
 {
-    currentTab = juce::jlimit (0, 2, tab);
+    currentTab = juce::jlimit (0, (int) tabItems.size() - 1, tab);
     for (size_t k = 0; k < tabItems.size(); ++k)
         for (auto* c : tabItems[k])
             c->setVisible ((int) k == currentTab);
@@ -1457,9 +1563,15 @@ void QuimeraEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+   #ifdef JucePlugin_VersionString   // (a foto do workflow shots compila a tela fora do plugin)
+    menu.addSeparator();
+    menu.addItem (sizeMenuBase - 1, juce::String ("QUIMERA ") + JucePlugin_VersionString, false, false);
+   #endif
 
+    // o menu (e cada camada: banco → categoria → preset) abre DENTRO da janela do plugin: como janela solta,
+    // a camada de dentro ficava por baixo da janela do plugin (que o host deixa sempre na frente) e não dava clique
     juce::Component::SafePointer<QuimeraEditor> safe (this);
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetName),
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetName).withParentComponent (this),
                         [safe] (int result)
                         {
                             if (safe != nullptr && result > 0)
@@ -1570,6 +1682,8 @@ void QuimeraEditor::timerCallback()
     {
         for (auto* r : rows) if (r != nullptr) r->tick();
     }
+    else if (currentTab == 3)
+        tickArp();
     else
     {
         if (scope != nullptr) scope->tick();
@@ -1633,10 +1747,11 @@ void QuimeraEditor::drawCanvas (juce::Graphics& g)
     {
         const juce::String hint = currentTab == 0 ? u8 ("ARRASTE NA VERTICAL · DUPLO CLIQUE VOLTA AO PADRÃO · SETAS TROCAM A LISTA")
                                 : currentTab == 1 ? u8 ("O BRILHO MOSTRA A MODULAÇÃO AGORA · DUPLO CLIQUE NO AMOUNT ZERA")
-                                                  : u8 ("ORDEM FIXA: HYPER → DISTORTION → … → COMPRESSOR · O LED LIGA O EFEITO");
+                                : currentTab == 3 ? u8 ("CLIQUE NOS PASSOS: LIGA OU DÁ PAUSA · SEGURAR TRAVA O ACORDE")
+                                                  : u8 ("ORDEM FIXA: HYPER → … → COMPRESSOR · O LED LIGA O EFEITO");
         g.setColour (theme::dim);
         g.setFont (theme::sans (8.5f, true, 0.15f));
-        g.drawText (hint, juce::Rectangle<float> (352.0f, 64.0f, 836.0f, 22.0f), juce::Justification::centredRight, true);
+        g.drawText (hint, juce::Rectangle<float> (462.0f, 64.0f, 726.0f, 22.0f), juce::Justification::centredRight, true);
     }
 
     auto visible = [this] (int tab) { return tab < 0 || tab == currentTab; };

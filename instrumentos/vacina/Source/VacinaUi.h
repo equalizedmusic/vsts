@@ -76,13 +76,13 @@ inline void section (juce::Graphics& g, RF r, const juce::String& title)
 // rótulo pequeno com filete dos lados (ex.: "— FILTER 1 —" dentro de uma seção)
 inline void subTitle (juce::Graphics& g, RF r, const juce::String& t, juce::Colour c = silkDim)
 {
-    g.setFont (theme::sans (8.5f, true, 0.12f));
+    g.setFont (theme::sans (9.5f, true, 0.12f));
     const float tw = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), t) + 10.0f;
     const float y = r.getCentreY();
     g.setColour (silkDim.withAlpha (0.35f));
     g.fillRect (r.getX(), y, (r.getWidth() - tw) * 0.5f, 0.8f);
     g.fillRect (r.getCentreX() + tw * 0.5f, y, (r.getWidth() - tw) * 0.5f, 0.8f);
-    silkText (g, t, r, juce::Justification::centred, 8.5f, true, c, 0.12f);
+    silkText (g, t, r, juce::Justification::centred, 9.5f, true, c, 0.12f);
 }
 
 // ---------------- visor OLED: poço no painel, vidro escuro, reflexo por cima (glassOver depois do conteúdo) ----------------
@@ -242,7 +242,7 @@ public:
         const float top = (float) slider.getBottom() - 1.0f, w = (float) getWidth();
         const bool live = showValue > 0;
         silkText (g, live ? param->getCurrentValueAsText() : label, { -10.0f, top, w + 20.0f, 11.0f },
-                  juce::Justification::centred, 8.5f, true, live ? redInk : silk);
+                  juce::Justification::centred, 9.5f, true, live ? redInk : silk);
     }
 
     void mouseEnter (const juce::MouseEvent&) override { showValue |= 1; repaint(); }
@@ -295,8 +295,8 @@ public:
         if (led)
             real::led (g, { kr.getRight() + 8.0f, kr.getCentreY() }, 2.6f, red, getToggleState() ? 1.0f : 0.0f);
         if (getButtonText().isNotEmpty())
-            silkText (g, getButtonText(), { kx - 40.0f, kr.getBottom() + 3.0f, 80.0f, 10.0f },
-                      juce::Justification::centred, 8.0f);
+            silkText (g, getButtonText(), { kx - 40.0f, kr.getBottom() + 3.0f, 80.0f, 11.0f },
+                      juce::Justification::centred, 9.0f);
     }
 
     static constexpr float keyW = 30.0f, keyH = 15.0f;
@@ -339,13 +339,13 @@ public:
             const bool on = i == index;
             if (vertical)
             {
-                real::led (g, { r.getX() + 4.0f, r.getCentreY() }, 2.4f, red, on ? 1.0f : 0.0f);
-                silkText (g, names[i], r.withTrimmedLeft (11.0f), juce::Justification::centredLeft, 8.0f, true, on ? silk : silkDim);
+                real::led (g, { r.getX() + 4.5f, r.getCentreY() }, 2.9f, red, on ? 1.0f : 0.0f);
+                silkText (g, names[i], r.withTrimmedLeft (13.0f), juce::Justification::centredLeft, 10.5f, true, on ? silk : silkDim);
             }
             else
             {
                 real::led (g, { r.getCentreX(), r.getY() + 4.0f }, 2.4f, red, on ? 1.0f : 0.0f);
-                silkText (g, names[i], r.withTrimmedTop (9.0f).expanded (6.0f, 0.0f), juce::Justification::centredTop, 8.0f, true,
+                silkText (g, names[i], r.withTrimmedTop (9.0f).expanded (6.0f, 0.0f), juce::Justification::centredTop, 10.5f, true,
                           on ? silk : silkDim);
             }
         }
@@ -387,7 +387,7 @@ public:
         glassUnder (g, r, 2.0f);
         const auto txt = param->getCurrentValueAsText();
         const bool offish = txt == "OFF" || dim;
-        oledText (g, txt, r.reduced (4.0f, 0.0f), 10.5f, juce::Justification::centred, offish ? inkDim : ink);
+        oledText (g, txt, r.reduced (4.0f, 0.0f), 12.0f, juce::Justification::centred, offish ? inkDim : ink);
         // setinhas de "tem lista"
         g.setColour (inkDim.withAlpha (0.8f));
         juce::Path tri;
@@ -475,7 +475,7 @@ public:
             juce::Graphics::ScopedSaveState save (g);
             g.reduceClipRegion (r.toNearestInt());
             if (draw) draw (g, r.reduced (5.0f, 6.0f));
-            if (caption) oledText (g, caption(), r.reduced (6.0f, 3.0f).withHeight (12.0f), 8.5f,
+            if (caption) oledText (g, caption(), r.reduced (6.0f, 3.0f).withHeight (13.0f), 10.0f,
                                    juce::Justification::topLeft, inkDim, true);
         }
         glassOver (g, r, 3.0f);

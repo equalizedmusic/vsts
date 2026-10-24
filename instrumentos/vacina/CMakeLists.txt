@@ -1,3 +1,6 @@
+# versão: o primeiro "## x.y.z" de novidades/Vacina.md
+vsts_versao(Vacina.md VACINA_VERSAO)
+
 juce_add_plugin(Vacina
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.vacina
@@ -5,7 +8,7 @@ juce_add_plugin(Vacina
     PLUGIN_CODE                 Vcn1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "VACINA"
-    VERSION                     0.1.0
+    VERSION                     ${VACINA_VERSAO}
     IS_SYNTH                    TRUE
     NEEDS_MIDI_INPUT            TRUE
     NEEDS_MIDI_OUTPUT           FALSE

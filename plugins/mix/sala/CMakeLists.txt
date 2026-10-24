@@ -5,7 +5,7 @@ juce_add_plugin(Sala
     PLUGIN_CODE                 Sal1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "SALA"
-    VERSION                     0.1.0
+    VERSION                     ${VSTS_VERSAO}
     IS_SYNTH                    FALSE
     NEEDS_MIDI_INPUT            FALSE
     NEEDS_MIDI_OUTPUT           FALSE

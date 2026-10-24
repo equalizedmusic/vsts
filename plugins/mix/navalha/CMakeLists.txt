@@ -5,7 +5,7 @@ juce_add_plugin(Navalha
     PLUGIN_CODE                 Nav1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "NAVALHA"
-    VERSION                     0.1.0
+    VERSION                     ${VSTS_VERSAO}
     IS_SYNTH                    FALSE
     NEEDS_MIDI_INPUT            FALSE
     NEEDS_MIDI_OUTPUT           FALSE

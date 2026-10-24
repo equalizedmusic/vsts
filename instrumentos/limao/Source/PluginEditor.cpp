@@ -139,7 +139,7 @@ void StepCell::paint (juce::Graphics& g)
     {
         g.setColour (st.accent ? juce::Colour (0xffffd27a) : lim::lemon);
         g.setFont (theme::mono (15.0f));
-        g.drawText (noteName (st.pitch), nr, juce::Justification::centred, false);
+        g.drawText (noteName (scaledPitch (st.pitch, proc.scaleNow(), proc.rootNow())), nr, juce::Justification::centred, false);
     }
     else if (st.mode == Mode::tie)
     {
@@ -206,7 +206,16 @@ void StepCell::mouseDrag (const juce::MouseEvent& e)
 {
     if (pressed != noteZone) return;
     auto st = proc.pattern.get (index);
-    const int pitch = juce::jlimit (-12, 24, dragStartPitch - e.getDistanceFromDragStartY() / 6);
+    // com SCALE, cada 6 px é um grau da escala (sem escala, um semitom)
+    const int steps = -e.getDistanceFromDragStartY() / 6, sc = proc.scaleNow(), rt = proc.rootNow();
+    int pitch = dragStartPitch + steps;
+    if (scales::active (sc))
+    {
+        int m = 36 + scaledPitch (dragStartPitch, sc, rt);
+        for (int k = 0; k < std::abs (steps); ++k) m = scales::step (m, steps, sc, rt);
+        pitch = m - 36;
+    }
+    pitch = juce::jlimit (-12, 24, pitch);
     if (pitch == st.pitch && st.mode == Mode::note) return;
     if (std::abs (e.getDistanceFromDragStartY()) < 3) return;
     st.pitch = pitch;
@@ -228,7 +237,8 @@ void StepCell::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheel
 {
     if (zoneAt (e.position) != noteZone || w.deltaY == 0.0f) return;
     auto st = proc.pattern.get (index);
-    st.pitch = juce::jlimit (-12, 24, st.pitch + (w.deltaY > 0.0f ? 1 : -1));
+    const int dir = w.deltaY > 0.0f ? 1 : -1, sc = proc.scaleNow();
+    st.pitch = juce::jlimit (-12, 24, scales::active (sc) ? scales::step (36 + st.pitch, dir, sc, proc.rootNow()) - 36 : st.pitch + dir);
     st.mode  = Mode::note;
     proc.pattern.set (index, st);
     repaint();
@@ -374,8 +384,10 @@ LimaoEditor::LimaoEditor (LimaoProcessor& p) : AudioProcessorEditor (&p), proc (
     auto* right = add<lim::ActionKey> ({ 652, 481, 34, 28 }, ">");
     auto* down  = add<lim::ActionKey> ({ 714, 481, 34, 28 }, juce::String::fromUTF8 ("−1"));
     auto* up    = add<lim::ActionKey> ({ 750, 481, 34, 28 }, "+1");
-    auto* rnd   = add<lim::ActionKey> ({ 922, 481, 128, 28 }, "ALEATORIZAR");
-    auto* clr   = add<lim::ActionKey> ({ 1056, 481, 88, 28 }, "LIMPAR");
+    add<lim::ParamBox> ({ 800, 482, 112, 26 }, st, id::scale, lim::lemon);
+    add<lim::ParamBox> ({ 916, 482, 52, 26 }, st, id::root, lim::lemon);
+    auto* rnd   = add<lim::ActionKey> ({ 978, 481, 100, 28 }, "ALEATORIZAR");
+    auto* clr   = add<lim::ActionKey> ({ 1082, 481, 62, 28 }, "LIMPAR");
     left->onClick  = [this] { proc.shiftPattern (-1); };
     right->onClick = [this] { proc.shiftPattern (1); };
     down->onClick  = [this] { proc.transposePattern (-1); };
@@ -497,9 +509,15 @@ void LimaoEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+   #ifdef JucePlugin_VersionString   // (a foto do workflow shots compila a tela fora do plugin)
+    menu.addSeparator();
+    menu.addItem (sizeMenuBase - 1, juce::String::fromUTF8 ("LIMÃO ") + JucePlugin_VersionString, false, false);
+   #endif
 
+    // o menu (e cada camada: banco → categoria → preset) abre DENTRO da janela do plugin: como janela solta,
+    // a camada de dentro ficava por baixo da janela do plugin (que o host deixa sempre na frente) e não dava clique
     juce::Component::SafePointer<LimaoEditor> safe (this);
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetName), [safe] (int result)
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetName).withParentComponent (this), [safe] (int result)
     {
         if (safe != nullptr && result > 0)
             safe->presetMenuChosen (result);
@@ -601,7 +619,8 @@ void LimaoEditor::timerCallback()
 
     const int step = proc.playStep.load();
     const int len  = juce::roundToInt (proc.apvts.getRawParameterValue (id::seqLen)->load());
-    const int ver  = proc.patternVersion.load();
+    // trocar SCALE ou ROOT muda o nome da nota nos visores: conta como padrão novo
+    const int ver  = proc.patternVersion.load() * 256 + proc.scaleNow() * 12 + proc.rootNow();
     if (step != lastStep || len != lastLen || ver != lastVersion)
     {
         for (int i = 0; i < maxSteps; ++i)
@@ -703,9 +722,12 @@ void LimaoEditor::drawCanvas (juce::Graphics& g)
     real::engraved (g, "SWING",  { 464.0f, 482.0f, 54.0f, 26.0f }, theme::dim, juce::Justification::centredRight);
     real::engraved (g, "GIRAR",  { 616.0f, 509.0f, 70.0f, 12.0f }, theme::dim, juce::Justification::centred);
     real::engraved (g, "TRANSP", { 714.0f, 509.0f, 70.0f, 12.0f }, theme::dim, juce::Justification::centred);
+    real::engraved (g, "SCALE",  { 800.0f, 509.0f, 112.0f, 12.0f }, theme::dim, juce::Justification::centred);
+    real::engraved (g, "ROOT",   { 916.0f, 509.0f, 52.0f, 12.0f }, theme::dim, juce::Justification::centred);
     g.setFont (theme::sans (8.0f, false, 0.08f));
-    real::engraved (g, juce::String::fromUTF8 ("ARRASTE NO VISOR = NOTA · DUPLO CLIQUE = PAUSA · TECLADO TRANSPÕE (DÓ 3 = 0)"),
-                    { 640.0f, 452.0f, 504.0f, 18.0f }, theme::dim, juce::Justification::centredRight);
+    real::engraved (g, juce::String::fromUTF8 ("ARRASTE NO VISOR = NOTA · DUPLO CLIQUE = PAUSA · TECLADO TRANSPÕE (DÓ 3 = 0) · "
+                                               "SCALE + ROOT ENCAIXAM AS NOTAS NA ESCALA"),
+                    { 270.0f, 452.0f, 874.0f, 18.0f }, theme::dim, juce::Justification::centredRight);
 
     // marcas de tempo (cada 4 passos) embaixo das duas fileiras
     for (int row = 0; row < 2; ++row)

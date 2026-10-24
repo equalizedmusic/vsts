@@ -1,3 +1,6 @@
+# versão: o primeiro "## x.y.z" de novidades/Limao.md
+vsts_versao(Limao.md LIMAO_VERSAO)
+
 juce_add_plugin(Limao
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.limao
@@ -5,7 +8,7 @@ juce_add_plugin(Limao
     PLUGIN_CODE                 Lmo1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "LIMAO"
-    VERSION                     0.1.0
+    VERSION                     ${LIMAO_VERSAO}
     IS_SYNTH                    TRUE
     NEEDS_MIDI_INPUT            TRUE
     NEEDS_MIDI_OUTPUT           FALSE

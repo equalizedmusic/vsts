@@ -27,6 +27,8 @@ void QuimeraProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     engine.prepare (sampleRate, n);
     fx.prepare (sampleRate, n);
     keyboard.reset();
+    arp.reset();
+    arpMidi.ensureSize (2048);
 
     reader.read (snap);
     volSm.reset (sampleRate, 0.05);
@@ -65,7 +67,12 @@ void QuimeraProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     synced.store (sync);
 
     reader.read (snap);
-    engine.process (buffer, midi, snap, clock);
+
+    // arpejador na frente do motor: troca as teclas pelas notas do arpejo. Com ele ligado o SEGURAR trava o
+    // acorde do arpejo (o motor não segura nada, senão as notas do arpejo ficariam presas)
+    arp.process (midi, arpMidi, n, snap.arp, snap.hold, sync, hostPpq, bpm / 60.0 / currentRate);
+    if (snap.arp.on) snap.hold = false;
+    engine.process (buffer, arpMidi, snap, clock);
 
     auto* l = buffer.getWritePointer (0);
     auto* r = buffer.getWritePointer (1);

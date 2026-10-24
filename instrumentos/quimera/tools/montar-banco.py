@@ -4,7 +4,7 @@
 Uso:
     python montar-banco.py <pasta> "<nome do banco>" [saida.qmrbank] [--autor "InsideStudioSP"]
 
-<pasta> tem uma subpasta por categoria (BASS, LEAD, PLUCK, PAD, ATMOS, PERC, DRUMS, KEYS, FX) com os
+<pasta> tem uma subpasta por categoria (BASS, LEAD, PLUCK, PAD, ATMOS, PERC, DRUMS, KEYS, FX, ARP) com os
 .xml salvos pelo "Salvar como novo preset…" do QUIMERA. Ficam em:
     Windows: %APPDATA%\\InsideStudioSP\\QUIMERA\\Presets
     Mac:     ~/Library/Audio/Presets/InsideStudioSP/QUIMERA
@@ -16,7 +16,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-CATEGORIAS = ["BASS", "LEAD", "PLUCK", "PAD", "ATMOS", "PERC", "DRUMS", "KEYS", "FX"]
+CATEGORIAS = ["BASS", "LEAD", "PLUCK", "PAD", "ATMOS", "PERC", "DRUMS", "KEYS", "FX", "ARP"]
 PERFORMANCE = {"mpe", "mpebend", "hold"}   # o preset não mexe neles
 
 

@@ -266,7 +266,11 @@ private:
             return;
 
         juce::Component::SafePointer<ParamBox> safe (this);
-        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this), [safe] (int result)
+        // lista dentro da janela do plugin (como janela solta ela pode abrir por baixo da janela do host)
+        auto opts = juce::PopupMenu::Options().withTargetComponent (this);
+        if (auto* editor = findParentComponentOfClass<juce::AudioProcessorEditor>())
+            opts = opts.withParentComponent (editor);
+        menu.showMenuAsync (opts, [safe] (int result)
         {
             if (safe == nullptr || result <= 0) return;
             const float v = result >= 1000 ? (float) (result - 1000) : (float) (result - 1);

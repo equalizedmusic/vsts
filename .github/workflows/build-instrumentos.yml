@@ -1,11 +1,14 @@
 name: build-instrumentos
 
 # Instrumentos (VSTi, pasta instrumentos/): build separado do pack de efeitos, só roda quando instrumentos/ muda.
-# Resultado no branch "builds-instrumentos" e no release "latest-instrumentos".
+# Resultado no branch "builds-instrumentos" e no release "latest-instrumentos" (sempre o último build).
+# Versões: cada pacote tem novidades/<arquivo>.md; o primeiro "## x.y.z" é a versão (plugin + instalador). Quando
+# ela é nova e os dois sistemas passaram, sai também o release fixo "<pacote>-vx.y.z" com a seção como nota.
 on:
   push:
     branches: [main]
-    paths: ['instrumentos/**', 'instalador/**', '.github/workflows/build-instrumentos.yml']
+    paths: ['instrumentos/**', 'instalador/**', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Vacina.md',
+            '.github/workflows/build-instrumentos.yml']
   workflow_dispatch:
 
 permissions:
@@ -73,14 +76,16 @@ jobs:
           fi
           # um instalador com todos os instrumentos: InsideStudioSP-Instrumentos-mac.dmg / -win.exe
           if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
-          PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Instrumentos --origem dist --versao "0.1.${{ github.run_number }}" --saida .
+          export PYTHONIOENCODING=utf-8
+          versao() { $PY instalador/versao.py "$1" | tr -d '\r'; }   # o python do Windows termina a linha com \r
+          $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Instrumentos --origem dist --versao "$(versao Instrumentos)" --saida .
           # LIMÃO: InsideStudioSP-Limao-mac.dmg / -win.exe
           if [ -d dist-limao/VST3 ]; then
-            PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Limao --origem dist-limao --versao "0.1.${{ github.run_number }}" --saida .
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Limao --origem dist-limao --versao "$(versao Limao)" --saida .
           fi
           # VACINA: InsideStudioSP-Vacina-mac.dmg / -win.exe
           if [ -d dist-vacina/VST3 ]; then
-            PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Vacina --origem dist-vacina --versao "0.1.${{ github.run_number }}" --saida .
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Vacina --origem dist-vacina --versao "$(versao Vacina)" --saida .
           fi
           { find dist -maxdepth 2; find dist-limao dist-vacina -maxdepth 2 2>/dev/null; ls -l InsideStudioSP-*; } | tee pack.log
 
@@ -125,6 +130,10 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5   # só para ler novidades/ e instalador/versao.py
+        with:
+          path: src
+
       - uses: actions/download-artifact@v5
         with:
           path: report
@@ -137,7 +146,8 @@ jobs:
           mkdir -p pacotes
           mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
-          { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null; } > status.txt
+          { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null
+            for p in Instrumentos Limao Vacina; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
           cat status.txt
           git init -q
           git checkout -q -b builds-instrumentos
@@ -154,3 +164,9 @@ jobs:
           gh release delete latest-instrumentos --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
           gh release create latest-instrumentos * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Último build dos instrumentos" --notes-file ../report/status.txt --prerelease
+
+      - name: Releases das versões (quimera-v…, limao-v…, vacina-v…)
+        if: hashFiles('pacotes/*') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash src/.github/scripts/release-versoes.sh pacotes report src Instrumentos Limao Vacina

@@ -14,6 +14,7 @@ LimaoProcessor::LimaoProcessor()
     pDlOn = raw (id::dlOn);      pDlDiv = raw (id::dlDiv);   pDlFb = raw (id::dlFb);    pDlMix = raw (id::dlMix);
     pRvOn = raw (id::rvOn);      pRvSize = raw (id::rvSize); pRvMix = raw (id::rvMix);  pVol = raw (id::volume);
     pSeqOn = raw (id::seqOn);    pSeqLen = raw (id::seqLen); pRate = raw (id::seqRate); pSwing = raw (id::swing);
+    pScale = raw (id::scale);    pRoot = raw (id::root);
 
     factory = factoryPresetData();
     refreshBanks();
@@ -200,7 +201,8 @@ void LimaoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
             else if (st.mode == Mode::note)
             {
                 const bool legato = contiguous && prev.slide && prev.mode != Mode::rest && voice.isGateOn();
-                startNote (36 + st.pitch + transpose, st.accent, legato);
+                // SCALE + ROOT encaixam a nota do passo; o teclado transpõe depois (a escala vai junto)
+                startNote (36 + scaledPitch (st.pitch, scaleNow(), rootNow()) + transpose, st.accent, legato);
             }
             // ligadura: segue a nota anterior (se não havia nota, fica em silêncio)
 
@@ -648,7 +650,7 @@ void LimaoProcessor::deleteUserPreset()
 void LimaoProcessor::randomizePattern()
 {
     juce::Random rnd;
-    randomize (pattern, juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load())), rnd);
+    randomize (pattern, juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load())), rnd, scaleNow(), rootNow());
     ++patternVersion;
 }
 
@@ -668,12 +670,15 @@ void LimaoProcessor::shiftPattern (int dir)
     ++patternVersion;
 }
 
+// com SCALE, o −1 / +1 anda um grau da escala (sem escala, um semitom)
 void LimaoProcessor::transposePattern (int semis)
 {
+    const int sc = scaleNow(), rt = rootNow();
     for (int i = 0; i < maxSteps; ++i)
     {
         auto st = pattern.get (i);
-        st.pitch = juce::jlimit (-12, 24, st.pitch + semis);
+        const int moved = scales::active (sc) ? scales::step (36 + st.pitch, semis, sc, rt) - 36 : st.pitch + semis;
+        st.pitch = juce::jlimit (-12, 24, moved);
         pattern.set (i, st);
     }
     ++patternVersion;

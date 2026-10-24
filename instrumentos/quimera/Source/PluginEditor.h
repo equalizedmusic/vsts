@@ -192,7 +192,10 @@ private:
     void buildSynth();
     void buildMatrix();
     void buildFx();
+    void buildArp();
     void buildBottom();
+    void tickArp();
+    void setArpPattern (int pattern);   // botões de padrão prontos da aba ARP
 
     void timerCallback() override;
     void showPresetMenu();
@@ -214,7 +217,7 @@ private:
     ScaledCanvas canvas;   // tudo fica aqui dentro, em 1200×740, e é ampliado junto
     std::vector<std::unique_ptr<juce::Component>> owned;
     std::vector<std::unique_ptr<APVTS::ButtonAttachment>> buttonAtts;   // depois dos componentes: some antes deles
-    std::array<std::vector<juce::Component*>, 3> tabItems;
+    std::array<std::vector<juce::Component*>, 4> tabItems;   // SYNTH, MOD MATRIX, FX, ARP
     std::vector<Card> cards;
     std::vector<Title> titles;
     std::vector<Caption> captions;
@@ -237,6 +240,9 @@ private:
     std::array<std::atomic<float>*, quimera::numLfos> lfoSyncP {};
     std::array<int, quimera::numLfos>            lastLfoSync {};
     std::array<MatrixRow*, quimera::numSlots>    rows {};
+    std::array<StepPad*, quimera::numArpSteps>   arpSteps {}, arpAccents {};
+    std::atomic<float>* arpLenP = nullptr;
+    int shownArpStep = -2, shownArpLen = -1;
 
     int   currentTab = 0;
     float levelOut = 0.0f;

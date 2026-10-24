@@ -23,6 +23,20 @@ FetchContent_MakeAvailable(JUCE)
 
 set(VSTS_FORMATS VST3 AU)
 
+# versão de cada instrumento = o primeiro "## x.y.z" de novidades/<Arquivo>.md (o mesmo que o instalador e o
+# release usam; ver instalador/versao.py). Ex.: vsts_versao(Limao.md LIMAO_VERSAO)
+function(vsts_versao arquivo saida)
+    set(md "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../novidades/${arquivo}")
+    file(STRINGS "${md}" titulos REGEX "^## [0-9]+\\.[0-9]+\\.[0-9]+")
+    if(NOT titulos)
+        message(FATAL_ERROR "${md}: nenhum título '## x.y.z'")
+    endif()
+    list(GET titulos 0 primeiro)
+    string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" v "${primeiro}")
+    set(${saida} "${v}" PARENT_SCOPE)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${md}")
+endfunction()
+
 # cada pasta em instrumentos/ com CMakeLists.txt é um instrumento
 file(GLOB inst_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/*")
 foreach(dir ${inst_dirs})

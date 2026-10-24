@@ -5,7 +5,7 @@ juce_add_plugin(F1
     PLUGIN_CODE                 InF1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "F1"
-    VERSION                     0.1.0
+    VERSION                     ${VSTS_VERSAO}
     IS_SYNTH                    FALSE
     NEEDS_MIDI_INPUT            FALSE
     NEEDS_MIDI_OUTPUT           FALSE

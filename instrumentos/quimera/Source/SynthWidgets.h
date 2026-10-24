@@ -215,7 +215,11 @@ private:
         }
 
         juce::Component::SafePointer<ChoiceBox> safe (this);
-        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMinimumWidth (getWidth()),
+        // lista dentro da janela do plugin (como janela solta ela pode abrir por baixo da janela do host)
+        auto opts = juce::PopupMenu::Options().withTargetComponent (this).withMinimumWidth (getWidth());
+        if (auto* editor = findParentComponentOfClass<juce::AudioProcessorEditor>())
+            opts = opts.withParentComponent (editor);
+        m.showMenuAsync (opts,
                          [safe] (int result)
                          {
                              if (safe != nullptr && result > 0)
@@ -607,4 +611,66 @@ public:
 private:
     const quimera::Telemetry& tel;
     bool wasActive = true;
+};
+
+// ---------------- passo do arpejo: pad aceso quando ligado; o passo que está tocando ganha moldura ----------------
+class StepPad : public juce::Button
+{
+public:
+    explicit StepPad (juce::Colour c) : juce::Button ({}), colour (c) { setClickingTogglesState (true); }
+
+    void setPlaying (bool p) { if (p != playing) { playing = p; repaint(); } }
+    void setOutside (bool o) { if (o != outside) { outside = o; repaint(); } }   // passo depois do LENGTH
+
+    void paintButton (juce::Graphics& g, bool over, bool) override
+    {
+        const auto r = getLocalBounds().toFloat().reduced (1.5f);
+        real::screen (g, r, 3.0f);
+        const float a = outside ? 0.25f : 1.0f;
+        if (getToggleState())
+        {
+            const auto in = r.reduced (3.0f);
+            g.setGradientFill (real::vertical (colour.withAlpha (0.95f * a), in.getY(), colour.darker (0.5f).withAlpha (0.85f * a), in.getBottom()));
+            g.fillRoundedRectangle (in, 2.5f);
+            g.setColour (juce::Colours::white.withAlpha (0.18f * a));
+            g.fillRoundedRectangle (in.withHeight (juce::jmin (5.0f, in.getHeight() * 0.3f)), 2.0f);
+        }
+        if (playing && ! outside)
+        {
+            g.setColour (theme::cream);
+            g.drawRoundedRectangle (r.reduced (1.0f), 3.0f, 2.0f);
+        }
+        else if (over)
+        {
+            g.setColour (theme::dim);
+            g.drawRoundedRectangle (r.reduced (1.0f), 3.0f, 1.0f);
+        }
+        real::glass (g, r, 3.0f);
+    }
+
+private:
+    juce::Colour colour;
+    bool playing = false, outside = false;
+};
+
+// ---------------- botão de ação (texto num rebaixo; não fica preso) ----------------
+class PillButton : public juce::Button
+{
+public:
+    explicit PillButton (const juce::String& text) : juce::Button (text) {}
+
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        const auto r = getLocalBounds().toFloat().reduced (1.5f);
+        real::screen (g, r, 3.0f);
+        if (down)
+        {
+            g.setColour (theme::panel2);
+            g.fillRoundedRectangle (r.reduced (1.0f), 3.0f);
+        }
+        g.setColour (down || over ? theme::cream : theme::txt);
+        g.setFont (theme::sans (9.5f, true, 0.12f));
+        g.drawFittedText (getButtonText(), r.toNearestInt().reduced (4, 0), juce::Justification::centred, 1, 0.8f);
+        real::glass (g, r, 3.0f);
+    }
 };

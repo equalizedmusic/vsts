@@ -51,7 +51,11 @@ num harness que toca cada preset): trocar de preset não dá pulo de volume.
 
 O menu de presets (e as listas dos campos) abre **dentro** da janela do plugin: como janela solta, a camada de
 dentro (banco → categoria → preset) podia ficar por baixo da janela do plugin, que o host deixa sempre na frente.
-No mesmo menu fica o tamanho da janela (60–180%, salvo no projeto; começa em 85%).
+No mesmo menu ficam o tamanho da janela (60–180%, salvo no projeto; começa em 85%) e a versão (`novidades/Vacina.md`).
+
+**Letras:** as listas de LEDs (modo dos filtros, MODEL, modos do ARP, KEY MODE, ROUTING) usam 10,5 pt em passos de
+15 px; os nomes dos knobs ficam em 9,5 pt, os campos de visor em 12 pt e as legendas em 9 pt. Não descer disso: a
+janela abre em 85% e abaixo disso as letras ficavam ilegíveis.
 
 **Sem estalo:** os knobs contínuos da voz andam em rampa (~12 ms), níveis do mixer, corte, atraso do COMB e ganho são
 interpolados dentro do bloco de controle, voz roubada sobe do nível em que estava, os filtros zeram quando a nota vem

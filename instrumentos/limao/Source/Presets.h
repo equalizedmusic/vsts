@@ -99,12 +99,26 @@ inline void patternToText (const Pattern& pat, int len, juce::String& notes, juc
     notes = items.joinIntoString (" ");
 }
 
-// ALEATORIZAR: linha ácida na escala menor (com uma blue note de vez em quando), muita tônica e oitava,
-// accents e slides espalhados. Só mexe nos primeiros len passos.
-inline void randomize (Pattern& pat, int len, juce::Random& rnd)
+// ALEATORIZAR: linha ácida, muita tônica e oitava, accents e slides espalhados. Só mexe nos primeiros len passos.
+// Sem SCALE (CHROMATIC): menor em Dó com uma blue note de vez em quando. Com SCALE + ROOT: só notas da escala,
+// a partir da tônica escolhida (tônica de F# para cima começa uma oitava abaixo, para o baixo não subir demais).
+inline void randomize (Pattern& pat, int len, juce::Random& rnd, int scaleIdx = 0, int rootNote = 0)
 {
-    static const int scale[] = { 0, 3, 5, 7, 10, 12, 15, 6 };
-    static const int weight[] = { 30, 12, 8, 12, 10, 18, 6, 4 };
+    std::vector<int> scale { 0, 3, 5, 7, 10, 12, 15, 6 };
+    std::vector<int> weight { 30, 12, 8, 12, 10, 18, 6, 4 };
+    if (scales::active (scaleIdx))
+    {
+        scale.clear();
+        weight.clear();
+        const int base = rootNote > 5 ? rootNote - 12 : rootNote;   // relativo ao Dó 2
+        for (int n = base; n <= base + 15; ++n)
+        {
+            if (! scales::contains (36 + n, scaleIdx, rootNote)) continue;
+            const int d = n - base;
+            scale.push_back (n);
+            weight.push_back (d == 0 ? 30 : d == 12 ? 18 : d == 7 ? 12 : d > 12 ? 4 : 8);
+        }
+    }
     int total = 0;
     for (int w : weight) total += w;
 
@@ -119,7 +133,8 @@ inline void randomize (Pattern& pat, int len, juce::Random& rnd)
             s.mode = Mode::note;
             int r = rnd.nextInt (total), k = 0;
             while (r >= weight[k]) { r -= weight[k]; ++k; }
-            s.pitch = scale[k] - (rnd.nextInt (10) == 0 ? 12 : 0);
+            s.pitch = scale[(size_t) k];
+            if (rnd.nextInt (10) == 0 && s.pitch - 12 >= -12) s.pitch -= 12;   // uma oitava abaixo de vez em quando
         }
         s.accent = rnd.nextInt (100) < 28;
         s.slide  = s.mode != Mode::rest && rnd.nextInt (100) < 22;

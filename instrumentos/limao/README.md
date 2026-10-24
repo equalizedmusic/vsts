@@ -15,7 +15,13 @@ knobs Moog da casa e osciloscópio. Instalador próprio (`InsideStudioSP-Limao-w
 | DELAY | no tempo (1/16 a 3/8), pingue-pongue, cada volta mais escura; FEEDBACK e MIX |
 | REVERB | SIZE e MIX |
 | SAÍDA | VOLUME e medidor de pico em LEDs |
-| SEQUENCIADOR | liga/desliga, PASSOS (1–32), RATE (1/32 a 1/8), SWING, GIRAR (◀ ▶), TRANSP (−1 / +1), ALEATORIZAR e LIMPAR |
+| SEQUENCIADOR | liga/desliga, PASSOS (1–32), RATE (1/32 a 1/8), SWING, GIRAR (◀ ▶), TRANSP (−1 / +1), SCALE + ROOT, ALEATORIZAR e LIMPAR |
+
+**SCALE + ROOT** (13 escalas; CHROMATIC = desligado): a nota de cada passo toca encaixada na escala (a de fora vai
+para a da escala mais perto) e o visor mostra a nota que toca. Arrastar, a rodinha e o TRANSP andam um grau da
+escala, e ALEATORIZAR gera a linha só com notas da escala, a partir da tônica. O padrão guardado não muda: voltar para
+CHROMATIC toca como estava. A transposição pelo teclado vem depois da escala, então ela vai junto. SCALE e ROOT entram
+no preset (os de fábrica são CHROMATIC). As escalas ficam em `Source/Scales.h`, o mesmo arquivo da QUIMERA.
 
 **Cada passo:** visor da nota (arraste na vertical ou roda do mouse = muda a nota, de C1 a C4; duplo clique = nota ↔
 pausa), tecla NOTA / PAUSA / LIGA (ligadura segura a nota anterior), ACC (accent) e SLD (slide para o próximo passo).
@@ -37,7 +43,9 @@ sequenciador. O padrão editado fica salvo no projeto. Igual à QUIMERA:
 - O banco de fábrica é GERADO: `python tools/gerar-presets.py` reescreve `Source/presets/fabrica.inc` (receitas por
   categoria com semente fixa; os 14 feitos à mão entram primeiro).
 
-No menu do preset também fica o tamanho da janela (75–200%, salvo no projeto).
+No menu do preset também ficam o tamanho da janela (75–200%, salvo no projeto) e a versão (`novidades/Limao.md`).
+Os menus abrem **dentro** da janela do plugin: como janela solta, a lista de dentro (banco → categoria → preset) ficava
+por baixo da janela do plugin com ela grande.
 
 **Sem estalo:** os knobs andam em rampa (~20 ms, inclusive o DRIVE), o ganho do ACCENT sobe e desce em ~4 ms (antes
 pulava na hora, com a nota ainda soando), o filtro abre em ~1,5 ms, o filtro zera quando a nota vem do silêncio e um

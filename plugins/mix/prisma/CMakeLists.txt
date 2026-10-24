@@ -5,7 +5,7 @@ juce_add_plugin(Prisma
     PLUGIN_CODE                 Prs1
     FORMATS                     ${VSTS_FORMATS}
     PRODUCT_NAME                "PRISMA"
-    VERSION                     0.1.0
+    VERSION                     ${VSTS_VERSAO}
     IS_SYNTH                    FALSE
     NEEDS_MIDI_INPUT            FALSE
     NEEDS_MIDI_OUTPUT           FALSE
