@@ -1,0 +1,12 @@
+dist
+dist/VST3
+dist/VST3/QUIMERA.vst3
+dist-limao
+dist-limao/VST3
+dist-limao/VST3/LIMAO.vst3
+dist-vacina
+dist-vacina/VST3
+dist-vacina/VST3/VACINA.vst3
+-rwxr-xr-x 1 runneradmin 197121 5687696 Oct 24 20:39 InsideStudioSP-Instrumentos-win.exe
+-rwxr-xr-x 1 runneradmin 197121 4646339 Oct 24 20:39 InsideStudioSP-Limao-win.exe
+-rwxr-xr-x 1 runneradmin 197121 4698744 Oct 24 20:39 InsideStudioSP-Vacina-win.exe

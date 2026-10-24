@@ -1,0 +1,4 @@
+commit=e28404b24c7ff58d1736b748c165344ba452c8b1
+run=https://github.com/equalizedmusic/vsts/actions/runs/40129940431
+mac: build=success pacote=success pluginval=success
+win: build=success pacote=success pluginval=success

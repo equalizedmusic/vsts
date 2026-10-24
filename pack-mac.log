@@ -1,0 +1,18 @@
+dist
+dist/VST3
+dist/VST3/QUIMERA.vst3
+dist/AU
+dist/AU/QUIMERA.component
+dist-limao
+dist-limao/VST3
+dist-limao/VST3/LIMAO.vst3
+dist-limao/AU
+dist-limao/AU/LIMAO.component
+dist-vacina
+dist-vacina/VST3
+dist-vacina/VST3/VACINA.vst3
+dist-vacina/AU
+dist-vacina/AU/VACINA.component
+-rw-r--r--@ 1 runner  staff  13809633 Oct 24 20:56 InsideStudioSP-Instrumentos-mac.dmg
+-rw-r--r--@ 1 runner  staff  10355460 Oct 24 20:56 InsideStudioSP-Limao-mac.dmg
+-rw-r--r--@ 1 runner  staff  10742987 Oct 24 20:56 InsideStudioSP-Vacina-mac.dmg
