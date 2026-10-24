@@ -39,7 +39,7 @@ void LcdDisplay::paint (juce::Graphics& g)
 vac::VKnob* VacinaEditor::knob (int cx, int y, int size, const juce::String& pid, const juce::String& label,
                                 juce::Colour pointer, const juce::String& sub)
 {
-    const int w = juce::jmax (size + 8, 58);
+    const int w = juce::jmax (size + 8, label.length() > 11 ? 80 : 58);   // nome comprido (MASTER VOLUME) não corta
     return add<vac::VKnob> ({ cx - w / 2, y, w, size + 8 + (sub.isNotEmpty() ? 22 : 12) }, proc.apvts, pid, label, size, pointer, sub);
 }
 
