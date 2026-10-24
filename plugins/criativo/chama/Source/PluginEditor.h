@@ -30,7 +30,7 @@ private:
     chama::FireRenderer fire;
 };
 
-// ---------------- palco: as chamas crescem atrás do knob e o FOGUINHO dança no tempo ----------------
+// ---------------- palco: tela limpa atrás do knob e o FOGUINHO dançando no tempo ----------------
 class FlameStage : public juce::Component
 {
 public:
@@ -39,10 +39,7 @@ public:
     void paint (juce::Graphics& g) override;
 
 private:
-    chama::FireParams fireParams() const;
-
     FlameState st;
-    chama::FireRenderer fire;
 };
 
 class ChamaEditor : public juce::AudioProcessorEditor, private juce::Timer
@@ -62,6 +59,10 @@ private:
     void drawCanvas (juce::Graphics&);
     void layoutCanvas();
     void setScale (float scale);
+
+    static constexpr int openSettle = 15;   // quadros do timer (30 Hz) até a janela assentar ao abrir
+    float openScale = 1.0f;                 // tamanho salvo no projeto, lido no construtor
+    int   openTicks = 0;
 
     ChamaProcessor& proc;
     BrandLookAndFeel lnf;

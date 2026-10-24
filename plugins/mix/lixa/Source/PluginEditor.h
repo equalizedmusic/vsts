@@ -79,6 +79,10 @@ private:
     void layoutCanvas();
     void setScale (float scale);
 
+    static constexpr int openSettle = 15;   // quadros do timer (30 Hz) até a janela assentar ao abrir
+    float openScale = 1.0f;                 // tamanho salvo no projeto, lido no construtor
+    int   openTicks = 0;
+
     LixaProcessor& proc;
     BrandLookAndFeel lnf;
 

@@ -201,6 +201,10 @@ private:
     void importBank();
     void drawCanvas (juce::Graphics&);
     void setScale (float scale);
+
+    static constexpr int openSettle = 15;   // quadros do timer (30 Hz) até a janela assentar ao abrir
+    float openScale = 1.0f;                 // tamanho salvo no projeto, lido no construtor
+    int   openTicks = 0;
     void setTab (int tab);
     void updateLfoVisibility (bool force);
 

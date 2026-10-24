@@ -298,8 +298,10 @@ inline void engraved (juce::Graphics& g, const juce::String& text, RF area, juce
 
 // knob estilo Moog / Diva: preto canelado visto de cima com leve inclinação (a lateral aparece embaixo),
 // caneluras que giram com o valor, tampa de alumínio torneado, risco pintado na cor do que ele controla
-// e escala 0–10 serigrafada no painel. box = área quadrada; big = macro (números na escala e valor embaixo)
-inline void knob (juce::Graphics& g, RF box, float pos, juce::Colour on, bool big, const juce::String& valueText = {})
+// e escala 0–10 serigrafada no painel. box = área quadrada; big = macro (números na escala e valor embaixo);
+// numbered = false tira os números e as marcas da escala (só o knob)
+inline void knob (juce::Graphics& g, RF box, float pos, juce::Colour on, bool big, const juce::String& valueText = {},
+                  bool numbered = true)
 {
     using juce::Colour;
     const float pi = juce::MathConstants<float>::pi;
@@ -322,6 +324,7 @@ inline void knob (juce::Graphics& g, RF box, float pos, juce::Colour on, bool bi
     };
 
     // escala serigrafada no painel
+    if (numbered)
     {
         const float t1 = (big ? 33.0f : 25.0f) * k, t2 = (big ? 37.0f : 28.5f) * k;
         for (int i = 0; i <= 10; ++i)
@@ -570,9 +573,10 @@ public:
                            float, float, juce::Slider& slider) override
     {
         const bool big = (bool) slider.getProperties()["big"];
+        const bool clean = (bool) slider.getProperties()["clean"];   // knob limpo: sem escala nem valor
         real::knob (g, juce::Rectangle<int> (x, y, width, height).toFloat(), pos,
                     slider.findColour (juce::Slider::rotarySliderFillColourId), big,
-                    big ? juce::String (juce::roundToInt (slider.getValue())) : juce::String());
+                    big && ! clean ? juce::String (juce::roundToInt (slider.getValue())) : juce::String(), ! clean);
     }
 
     // fader vertical do DRY/WET: trilho rebaixado com a barra de LED acesa e tampa de fader de mesa

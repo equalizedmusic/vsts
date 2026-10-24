@@ -1003,11 +1003,14 @@ QuimeraEditor::QuimeraEditor (QuimeraProcessor& p) : AudioProcessorEditor (&p), 
     setTab (0);
 
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
+    // o tamanho salvo é lido ANTES do setResizeLimits: ele encolhe a janela ainda vazia para o mínimo
+    // e o resized() gravaria 75% por cima do que o usuário escolheu
+    openScale = proc.uiScale.load();
     setResizable (true, true);
     setResizeLimits (juce::roundToInt ((float) qui::baseW * qui::minScale), juce::roundToInt ((float) qui::baseH * qui::minScale),
                      juce::roundToInt ((float) qui::baseW * qui::maxScale), juce::roundToInt ((float) qui::baseH * qui::maxScale));
     getConstrainer()->setFixedAspectRatio ((double) qui::baseW / (double) qui::baseH);
-    setScale (proc.uiScale.load());
+    setScale (openScale);
     startTimerHz (30);
 }
 
@@ -1549,6 +1552,12 @@ void QuimeraEditor::presetMenuChosen (int result)
 // ---------------- timer (30 Hz): só a aba aberta se mexe ----------------
 void QuimeraEditor::timerCallback()
 {
+    // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
+    // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
+    if (openTicks < openSettle && ++openTicks == openSettle
+        && std::abs ((float) getWidth() / (float) qui::baseW - openScale) > 0.005f)
+        setScale (openScale);
+
     if (currentTab == 0)
     {
         for (auto* w : waves)   if (w != nullptr) w->tick();
@@ -1602,7 +1611,8 @@ void QuimeraEditor::resized()
 {
     const float scale = (float) getWidth() / (float) qui::baseW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
-    proc.uiScale = scale;
+    if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
+        proc.uiScale = scale;
 }
 
 void QuimeraEditor::paint (juce::Graphics& g)

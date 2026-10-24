@@ -125,28 +125,11 @@ void HeatStrip::paint (juce::Graphics& g)
 }
 
 // =====================================================================
-// PALCO DO KNOB
+// PALCO DO KNOB: tela limpa atrás do knob (o fogo fica na faixa de cima) e o FOGUINHO
 // =====================================================================
-FireParams FlameStage::fireParams() const
-{
-    FireParams fp;
-    fp.heat = st.drop ? 0.0f : st.heat;
-    fp.level = st.level;
-    fp.noise = st.noise;
-    fp.space = st.space;
-    fp.pulse = st.pulse;
-    fp.t = st.t;
-    fp.centred = true;
-    return fp;
-}
-
 void FlameStage::set (const FlameState& s)
 {
     st = s;
-    const auto r = getLocalBounds().toFloat();
-    if (! r.isEmpty())
-        fire.render (juce::jmax (8, (int) (r.getWidth() / 3.0f)), juce::jmax (4, (int) (r.getHeight() / 3.0f)),
-                     r.getWidth() / r.getHeight(), fireParams());
     repaint();
 }
 
@@ -160,9 +143,6 @@ void FlameStage::paint (juce::Graphics& g)
         juce::Path clip;
         clip.addRoundedRectangle (scr, 4.0f);
         g.reduceClipRegion (clip);
-        const auto fp = fireParams();
-        fire.draw (g, r, fp);
-        drawSparks (g, r, fp, 60);
 
         // o FOGUINHO dança à direita do knob, no tempo do projeto; embaixo, o compasso 1-2-3-4
         const float cx = r.getX() + r.getWidth() * 0.855f, floorY = r.getBottom() - 44.0f;
@@ -196,6 +176,7 @@ ChamaEditor::ChamaEditor (ChamaProcessor& p)
       dropKey   ("DROP", theme::ice)
 {
     setLookAndFeel (&lnf);
+    chamaKnob.setClean (true);   // o FOGUINHO já mostra o quanto de CHAMA tem
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
     canvas.setBounds (0, 0, ui::baseW, ui::baseH);
@@ -217,11 +198,14 @@ ChamaEditor::ChamaEditor (ChamaProcessor& p)
     layoutCanvas();
 
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
+    // o tamanho salvo é lido ANTES do setResizeLimits: ele encolhe a janela ainda vazia para o mínimo
+    // e o resized() gravaria 75% por cima do que o usuário escolheu
+    openScale = proc.uiScale.load();
     setResizable (true, true);
     setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
                      juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
     getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
-    setScale (proc.uiScale.load());
+    setScale (openScale);
     startTimerHz (30);
 }
 
@@ -310,6 +294,12 @@ void ChamaEditor::presetMenuChosen (int result)
 
 void ChamaEditor::timerCallback()
 {
+    // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
+    // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
+    if (openTicks < openSettle && ++openTicks == openSettle
+        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        setScale (openScale);
+
     const double now = juce::Time::getMillisecondCounterHiRes();
     const float  dt  = lastTick > 0.0 ? (float) juce::jlimit (0.0, 0.1, (now - lastTick) * 0.001) : 1.0f / 30.0f;
     lastTick = now;
@@ -380,7 +370,8 @@ void ChamaEditor::resized()
 {
     const float scale = (float) getWidth() / (float) ui::baseW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
-    proc.uiScale = scale;
+    if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
+        proc.uiScale = scale;
 }
 
 void ChamaEditor::paint (juce::Graphics& g)

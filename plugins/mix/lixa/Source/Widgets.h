@@ -42,6 +42,13 @@ public:
         slider.setDoubleClickReturnValue (true, (double) param->convertFrom0to1 (param->getDefaultValue()));
     }
 
+    // knob limpo: sem escala serigrafada nem valor embaixo, só o botão
+    void setClean (bool clean)
+    {
+        slider.getProperties().set ("clean", clean);
+        slider.repaint();
+    }
+
     void resized() override
     {
         if (isBig) slider.setBounds (getLocalBounds());

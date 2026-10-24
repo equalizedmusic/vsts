@@ -35,13 +35,58 @@ inline juce::Path teardrop (float w, float h, float tipX)
     return p;
 }
 
-inline void fireFill (juce::Graphics& g, juce::Point<float> core, float radius, float bright)
+// silhueta de chama com a base em (0,0): base redonda, uma língua de cada lado e a ponta em (tipX, −h).
+// fl/fr = altura das línguas (0–1); sway = balanço das línguas
+inline juce::Path flame (float w, float h, float tipX, float fl, float fr, float sway)
 {
-    juce::ColourGradient cg (juce::Colour::fromFloatRGBA (1.0f, 0.95f, 0.78f, 1.0f), core.x, core.y,
-                             juce::Colour::fromFloatRGBA (0.85f, 0.16f, 0.04f, 1.0f), core.x, core.y + radius, true);
-    cg.addColour (0.35, juce::Colour::fromFloatRGBA (1.0f, 0.80f, 0.30f + 0.15f * bright, 1.0f));
-    cg.addColour (0.70, juce::Colour::fromFloatRGBA (1.0f, 0.45f, 0.08f, 1.0f));
-    g.setGradientFill (cg);
+    juce::Path p;
+    p.startNewSubPath (0.0f, 0.0f);
+    p.cubicTo (w * 0.3f, 0.0f, w * 0.5f, -h * 0.12f, w * 0.5f, -h * 0.3f);
+    p.cubicTo (w * 0.5f, -h * 0.4f, w * 0.46f, -h * 0.44f, w * 0.4f + sway, -h * (0.5f + 0.2f * fr));
+    p.quadraticTo (w * 0.3f, -h * 0.5f, w * 0.2f, -h * 0.56f);
+    p.cubicTo (w * 0.22f, -h * 0.74f, tipX + w * 0.1f, -h * 0.86f, tipX, -h);
+    p.cubicTo (tipX - w * 0.12f, -h * 0.84f, -w * 0.22f, -h * 0.72f, -w * 0.2f, -h * 0.54f);
+    p.quadraticTo (-w * 0.3f, -h * 0.46f, -w * 0.4f + sway, -h * (0.46f + 0.2f * fl));
+    p.cubicTo (-w * 0.46f, -h * 0.4f, -w * 0.5f, -h * 0.38f, -w * 0.5f, -h * 0.28f);
+    p.cubicTo (-w * 0.5f, -h * 0.12f, -w * 0.3f, 0.0f, 0.0f, 0.0f);
+    p.closeSubPath();
+    return p;
+}
+
+// braço = filete de fogo que afina da largura w0 (ombro) até w1 (ponta), ao longo de uma curva quadrática
+inline juce::Path wisp (juce::Point<float> p0, juce::Point<float> pc, juce::Point<float> p1, float w0, float w1)
+{
+    constexpr int n = 12;
+    juce::Point<float> l[n + 1], r[n + 1];
+    for (int i = 0; i <= n; ++i)
+    {
+        const float t = (float) i / (float) n, u = 1.0f - t;
+        const auto  p  = p0 * (u * u) + pc * (2.0f * u * t) + p1 * (t * t);
+        const auto  dv = (pc - p0) * (2.0f * u) + (p1 - pc) * (2.0f * t);
+        const float len = juce::jmax (1.0e-4f, dv.getDistanceFromOrigin());
+        const float ww  = (w0 + (w1 - w0) * t) * 0.5f;
+        const juce::Point<float> nrm (-dv.y / len * ww, dv.x / len * ww);
+        l[i] = p + nrm;
+        r[i] = p - nrm;
+    }
+    juce::Path a;
+    a.startNewSubPath (l[0]);
+    for (int i = 1; i <= n; ++i) a.lineTo (l[i]);
+    for (int i = n; i >= 0; --i) a.lineTo (r[i]);
+    a.closeSubPath();
+    return a;
+}
+
+inline juce::Colour mixRgb (juce::Colour a, juce::Colour b, float t) { return a.interpolatedWith (b, clamp01 (t)); }
+
+inline juce::ColourGradient vgrad (juce::Colour top, float y0, juce::Colour bottom, float y1)
+{
+    return juce::ColourGradient (top, 0.0f, y0, bottom, 0.0f, y1, false);
+}
+
+inline juce::ColourGradient rgrad (juce::Point<float> c, float r, juce::Colour inner, juce::Colour outer)
+{
+    return juce::ColourGradient (inner, c.x, c.y, outer, c.x + r, c.y, true);
 }
 
 // estrelinha de 4 pontas (as faíscas de alegria)
@@ -63,6 +108,7 @@ inline void star (juce::Graphics& g, float x, float y, float r, juce::Colour c)
 inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceState& d)
 {
     using namespace dancer_detail;
+    using juce::Colour;
     const float pi   = juce::MathConstants<float>::pi;
     const bool  on   = d.dancing && ! d.drop;
     const float e    = d.drop ? 0.0f : clamp01 (d.euph);
@@ -73,7 +119,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
     // ---- movimento no tempo ----
     const float jumpAmt = on ? std::pow (clamp01 ((e - 0.35f) / 0.65f), 1.3f) : 0.0f;
     const float hop     = on ? std::sin (pi * b) : 0.0f;                    // sobe entre um tempo e outro
-    const float jump    = 44.0f * jumpAmt * accent * hop;
+    const float jump    = 40.0f * jumpAmt * accent * hop;
     const float land    = on ? std::exp (-b * 9.0f) : 0.0f;                 // achata ao cair no tempo
     const float nod     = on ? (0.35f + 0.65f * clamp01 (e * 2.0f)) * std::exp (-b * 6.0f) : 0.0f;
     const float breathe = 0.5f + 0.5f * std::sin (d.t * 2.1f);
@@ -84,49 +130,62 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
     float sy = 1.0f - (0.06f + 0.14f * e) * land + 0.09f * hop * jumpAmt + 0.025f * breathe - 0.05f * nod;
     if (d.drop) { sx = 1.14f; sy = 0.80f; }
 
-    const float w = 66.0f * sx, h = 92.0f * sy;
+    const float grow = d.drop ? 0.8f : 0.82f + 0.3f * e;                  // cresce com a CHAMA
+    const float w = 60.0f * sx * grow, h = 100.0f * sy * grow;
     const float footY = floorY - jump;
 
-    // ---- sombra no chão: encolhe quando ele pula ----
+    // cores: brasa de boa → laranja → amarelo quase branco no talo
+    const auto outerC = mixRgb (Colour (0xffc42812), Colour (0xffff5c1a), e);
+    const auto midC   = mixRgb (Colour (0xffec6018), Colour (0xffffa028), e);
+    const auto innC   = mixRgb (Colour (0xffffb23c), Colour (0xffffe478), e);
+    const auto coreC  = mixRgb (Colour (0xffffd68c), Colour (0xfffffae4), e);
+
+    // ---- chão: brilho quente + sombra que encolhe quando ele pula ----
     {
-        const float k = 1.0f - 0.45f * clamp01 (jump / 55.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.45f * k));
-        g.fillEllipse (cx - w * 0.5f * k, floorY - 4.0f, w * k, 8.0f);
-        g.setColour (juce::Colour::fromFloatRGBA (1.0f, 0.45f, 0.1f, 0.12f + 0.2f * e));
-        g.fillEllipse (cx - w * 0.8f, floorY - 7.0f, w * 1.6f, 14.0f);
+        const float k = 1.0f - 0.45f * clamp01 (jump / 50.0f);
+        g.setGradientFill (rgrad ({ cx, floorY }, w * 1.3f, Colour::fromFloatRGBA (1.0f, 0.47f, 0.12f, 0.22f + 0.25f * e),
+                                  Colour::fromFloatRGBA (1.0f, 0.35f, 0.08f, 0.0f)));
+        g.fillEllipse (cx - w * 1.3f, floorY - 12.0f, w * 2.6f, 24.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.5f * k));
+        g.fillEllipse (cx - w * 0.42f * k, floorY - 3.5f, w * 0.84f * k, 7.0f);
     }
 
     juce::Graphics::ScopedSaveState save (g);
-    g.addTransform (juce::AffineTransform::rotation (tilt).translated (cx, footY - 6.0f));
-
-    const auto dark = juce::Colour (0xff3a0d06);
+    g.addTransform (juce::AffineTransform::rotation (tilt).translated (cx, footY - 3.0f));
 
     // ---- halo: brilha mais quando ele está eufórico ----
     {
-        const float r = h * (0.75f + 0.35f * e + 0.15f * land * e);
-        juce::ColourGradient halo (juce::Colour::fromFloatRGBA (1.0f, 0.55f, 0.15f, 0.10f + 0.30f * e), 0.0f, -h * 0.45f,
-                                   juce::Colour::fromFloatRGBA (1.0f, 0.40f, 0.10f, 0.0f), 0.0f, -h * 0.45f + r, true);
+        const float r = h * (0.65f + 0.35f * e + 0.15f * land * e);
+        auto halo = rgrad ({ 0.0f, -h * 0.4f }, r, Colour::fromFloatRGBA (1.0f, 0.51f, 0.16f, 0.14f + 0.3f * e),
+                           Colour::fromFloatRGBA (1.0f, 0.39f, 0.1f, 0.0f));
+        halo.addColour (0.5, Colour::fromFloatRGBA (1.0f, 0.43f, 0.12f, 0.05f + 0.1f * e));
         g.setGradientFill (halo);
-        g.fillEllipse (-r, -h * 0.45f - r, r * 2.0f, r * 2.0f);
+        g.fillEllipse (-r, -h * 0.4f - r, r * 2.0f, r * 2.0f);
     }
 
-    // ---- pés: pendurados no ar quando ele pula ----
+    // ---- brasas subindo: mais e mais alto quanto mais CHAMA ----
     {
-        const float hang = 5.0f * clamp01 (jump / 40.0f);
-        for (float s : { -1.0f, 1.0f })
+        const int n = juce::roundToInt (2.0f + 10.0f * e);
+        for (int i = 0; i < n; ++i)
         {
-            g.setColour (dark);
-            g.fillEllipse (s * w * 0.2f - 9.0f, -2.0f + hang * (s > 0 ? 1.0f : 0.6f), 18.0f, 9.0f);
-            g.setColour (juce::Colour (0xffb8300c));
-            g.fillEllipse (s * w * 0.2f - 7.5f, -1.0f + hang * (s > 0 ? 1.0f : 0.6f), 15.0f, 6.0f);
+            const float sp  = 0.35f + 0.5f * hashf (i + 3);
+            const float cyc = std::fmod (d.t * sp + hashf (i + 11), 1.0f);
+            const float x   = (hashf (i + 29) - 0.5f) * w * 0.9f + std::sin (d.t * 2.0f + (float) i) * 6.0f * cyc;
+            const float y   = -h * (0.55f + cyc * (0.7f + 0.6f * e));
+            const float a   = (1.0f - cyc) * (0.4f + 0.6f * e);
+            const float r   = 1.0f + 1.3f * hashf (i + 41);
+            g.setColour (Colour::fromFloatRGBA (1.0f, 0.59f, 0.2f, a * 0.35f));
+            g.fillEllipse (x - r * 2.6f, y - r * 2.6f, r * 5.2f, r * 5.2f);
+            g.setColour (Colour::fromFloatRGBA (1.0f, 0.89f, 0.59f, a));
+            g.fillEllipse (x - r, y - r, r * 2.0f, r * 2.0f);
         }
     }
 
-    // ---- braços: caídos de boa → balançando → pra cima socando o ar no tempo ----
+    // ---- braços (atrás do corpo): caídos de boa → balançando → pra cima socando o ar no tempo ----
     const float lift = clamp01 ((e - 0.22f) / 0.55f);
     for (float s : { -1.0f, 1.0f })
     {
-        float ang = 0.35f + 2.25f * lift;                               // 0 = para baixo, π = para cima
+        float ang = 0.45f + 2.15f * lift;                               // 0 = para baixo, π = para cima
         if (on)
         {
             if (e > 0.8f)       ang += 0.40f * std::sin (2.0f * pi * b);                  // soca o ar
@@ -136,56 +195,53 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
         else if (d.drop)
             ang = 0.9f;
 
-        const juce::Point<float> sh (s * w * 0.42f, -h * 0.36f);
-        const float L = h * 0.42f;
+        const juce::Point<float> sh (s * w * 0.36f, -h * 0.3f);
+        const float L = h * 0.36f;
         const juce::Point<float> hand (sh.x + s * L * std::sin (ang), sh.y + L * std::cos (ang));
-        const juce::Point<float> elbow ((sh.x + hand.x) * 0.5f + s * 6.0f, (sh.y + hand.y) * 0.5f + 4.0f);
+        const juce::Point<float> elbow ((sh.x + hand.x) * 0.5f + s * 5.0f, (sh.y + hand.y) * 0.5f + 3.0f);
 
-        juce::Path arm;
-        arm.startNewSubPath (sh);
-        arm.quadraticTo (elbow, hand);
-        g.setColour (dark);
-        g.strokePath (arm, juce::PathStrokeType (9.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-        g.setColour (juce::Colour (0xffff7a1e));
-        g.strokePath (arm, juce::PathStrokeType (5.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-        g.setColour (dark);
-        g.fillEllipse (hand.x - 6.5f, hand.y - 6.5f, 13.0f, 13.0f);
-        g.setColour (juce::Colour (0xffffb347));
-        g.fillEllipse (hand.x - 4.5f, hand.y - 4.5f, 9.0f, 9.0f);
+        g.setColour (outerC);
+        g.fillPath (wisp (sh, elbow, hand, 9.0f * grow, 3.0f * grow));
+        g.setColour (midC);
+        g.fillPath (wisp ({ sh.x * 0.95f, sh.y }, elbow, hand, 4.5f * grow, 1.6f * grow));
+        g.setColour (innC);
+        g.fillEllipse (hand.x - 3.6f * grow, hand.y - 3.6f * grow, 7.2f * grow, 7.2f * grow);
+        g.setColour (Colour::fromFloatRGBA (1.0f, 0.96f, 0.84f, 0.8f));
+        g.fillEllipse (hand.x - 0.8f - 1.4f * grow, hand.y - 0.8f - 1.4f * grow, 2.8f * grow, 2.8f * grow);
     }
 
-    // ---- cabelo de fogo: três pontas que crescem com a euforia ----
-    for (int i = 0; i < 3; ++i)
+    // ---- corpo: três camadas de chama (brasa por fora, amarelo por dentro) e o miolo claro ----
     {
-        const float s   = (float) (i - 1);
-        const float fl  = 0.75f + 0.25f * std::sin (d.t * (8.0f + 2.0f * (float) i) + (float) i * 2.1f);
-        const float hh  = h * (0.20f + 0.32f * e + 0.10f * land * e) * fl * (i == 1 ? 1.25f : 1.0f);
-        const float sway = std::sin (d.t * 5.0f + (float) i) * 4.0f - tilt * 30.0f;
-        juce::Graphics::ScopedSaveState hs (g);
-        g.addTransform (juce::AffineTransform::rotation (s * 0.45f).translated (s * w * 0.2f, -h * 0.78f));
-        auto tip = teardrop (w * 0.34f, hh + w * 0.17f, sway);
-        fireFill (g, { 0.0f, -w * 0.08f }, hh, e);
-        g.fillPath (tip);
-    }
+        const float lick = 0.45f + 0.55f * e;
+        const float fl   = 0.5f + 0.5f * std::sin (d.t * (7.0f + 5.0f * e) + 1.3f);
+        const float fr   = 0.5f + 0.5f * std::sin (d.t * (8.5f + 5.0f * e) + 4.1f);
+        const float tip  = std::sin (d.t * 6.0f) * 3.0f * grow - tilt * 24.0f;
+        const float sway = std::sin (d.t * 4.3f) * 2.5f * grow;
 
-    // ---- corpo: gota de fogo com miolo claro ----
-    {
-        auto bodyPath = teardrop (w, h, std::sin (d.t * 6.0f) * 3.0f - tilt * 20.0f);
-        g.setColour (dark);
-        g.strokePath (bodyPath, juce::PathStrokeType (3.0f));
-        fireFill (g, { 0.0f, -h * 0.30f }, h * 0.62f, e);
-        g.fillPath (bodyPath);
+        auto outer = flame (w, h, tip, fl * lick, fr * lick, sway);
+        g.setGradientFill (vgrad (mixRgb (outerC, Colour (0xff96140a), 0.35f), -h, outerC, 0.0f));
+        g.fillPath (outer);
+        g.setColour (Colour::fromFloatRGBA (0.35f, 0.05f, 0.02f, 0.55f));
+        g.strokePath (outer, juce::PathStrokeType (1.2f));
 
-        auto core = teardrop (w * 0.52f, h * 0.48f, 0.0f);
-        core.applyTransform (juce::AffineTransform::translation (0.0f, -h * 0.07f));
-        g.setColour (juce::Colour::fromFloatRGBA (1.0f, 0.93f, 0.62f, 0.35f + 0.35f * e));
-        g.fillPath (core);
+        auto mid = flame (w * 0.74f, h * 0.8f, tip * 0.8f, (1.0f - fl) * lick, (1.0f - fr) * lick, -sway * 0.6f);
+        mid.applyTransform (juce::AffineTransform::translation (0.0f, -h * 0.02f));
+        g.setGradientFill (vgrad (midC, -h * 0.82f, mixRgb (midC, Colour (0xffffc85a), 0.4f), -h * 0.02f));
+        g.fillPath (mid);
+
+        auto inner = teardrop (w * 0.5f, h * 0.56f, tip * 0.5f);
+        inner.applyTransform (juce::AffineTransform::translation (0.0f, -h * 0.035f));
+        g.setGradientFill (vgrad (innC, -h * 0.6f, mixRgb (innC, coreC, 0.6f), -h * 0.035f));
+        g.fillPath (inner);
+
+        g.setGradientFill (rgrad ({ 0.0f, -h * 0.13f }, w * 0.24f, coreC.withAlpha (0.85f), coreC.withAlpha (0.0f)));
+        g.fillEllipse (-w * 0.24f, -h * 0.26f, w * 0.48f, h * 0.26f);
     }
 
     // ---- rosto ----
-    const float eyeY = -h * 0.50f, eyeDx = w * 0.17f, er = w * 0.085f;
+    const float eyeY = -h * 0.34f, eyeDx = w * 0.14f, er = w * 0.07f;
     const float look = -er * 0.35f;   // olha para o knob, à esquerda
-    const auto  ink  = juce::Colour (0xff1a0703);
+    const auto  ink  = Colour (0xff2a0904);
 
     // olhos
     for (float s : { -1.0f, 1.0f })
@@ -209,10 +265,10 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
             g.setColour (ink);
             g.fillEllipse (ex - er + look, eyeY - er * 1.15f, er * 2.0f, er * 2.3f);
             g.setColour (juce::Colours::white);
-            g.fillEllipse (ex - er * 0.35f + look, eyeY - er * 0.75f, er * 0.7f, er * 0.7f);
+            g.fillEllipse (ex - er * 0.53f + look, eyeY - er * 0.8f, er * 0.76f, er * 0.76f);
         }
         else if (e < 0.85f)
-        {   // feliz: olho fechado em "^"
+        {   // feliz: olho fechado em arco
             juce::Path a;
             a.startNewSubPath (ex - er * 1.1f, eyeY + er * 0.4f);
             a.quadraticTo (ex, eyeY - er * 1.4f, ex + er * 1.1f, eyeY + er * 0.4f);
@@ -232,28 +288,28 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
     // sobrancelhas sobem com a euforia
     if (e > 0.4f && ! d.drop)
     {
-        const float up = er * (1.6f + 1.4f * clamp01 ((e - 0.4f) / 0.6f) + 0.6f * land);
+        const float up = er * (1.7f + 1.3f * clamp01 ((e - 0.4f) / 0.6f) + 0.6f * land);
         for (float s : { -1.0f, 1.0f })
         {
             juce::Path br;
-            br.startNewSubPath (s * eyeDx - er * 1.1f, eyeY - up + s * er * 0.25f);
-            br.quadraticTo (s * eyeDx, eyeY - up - er * 0.6f, s * eyeDx + er * 1.1f, eyeY - up - s * er * 0.25f);
+            br.startNewSubPath (s * eyeDx - er * 1.05f, eyeY - up + s * er * 0.25f);
+            br.quadraticTo (s * eyeDx, eyeY - up - er * 0.6f, s * eyeDx + er * 1.05f, eyeY - up - s * er * 0.25f);
             g.setColour (ink);
-            g.strokePath (br, juce::PathStrokeType (er * 0.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.strokePath (br, juce::PathStrokeType (er * 0.38f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         }
     }
 
     // bochecha corada
     if (e > 0.45f && ! d.drop)
     {
-        g.setColour (juce::Colour (0xffff3b5c).withAlpha (0.35f * clamp01 ((e - 0.45f) / 0.3f)));
+        g.setColour (Colour (0xffff4650).withAlpha (0.4f * clamp01 ((e - 0.45f) / 0.3f)));
         for (float s : { -1.0f, 1.0f })
-            g.fillEllipse (s * w * 0.3f - er * 1.1f, eyeY + er * 1.4f, er * 2.2f, er * 1.2f);
+            g.fillEllipse (s * w * 0.25f - er * 1.05f, eyeY + er * 1.35f, er * 2.1f, er * 1.1f);
     }
 
     // boca: risquinho → sorriso → boca aberta → gritando no tempo
     {
-        const float my = -h * 0.30f;
+        const float my = -h * 0.21f;
         g.setColour (ink);
         if (d.drop)
         {
@@ -262,22 +318,22 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
         else if (e < 0.2f)
         {
             juce::Path m;
-            m.startNewSubPath (-w * 0.07f, my);
-            m.quadraticTo (0.0f, my + er * 0.4f, w * 0.07f, my);
+            m.startNewSubPath (-w * 0.06f, my);
+            m.quadraticTo (0.0f, my + er * 0.4f, w * 0.06f, my);
             g.strokePath (m, juce::PathStrokeType (er * 0.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         }
         else if (e < 0.55f)
         {
             juce::Path m;
-            m.startNewSubPath (-w * 0.12f, my - er * 0.2f);
-            m.quadraticTo (0.0f, my + er * 1.6f, w * 0.12f, my - er * 0.2f);
+            m.startNewSubPath (-w * 0.1f, my - er * 0.2f);
+            m.quadraticTo (0.0f, my + er * 1.6f, w * 0.1f, my - er * 0.2f);
             g.strokePath (m, juce::PathStrokeType (er * 0.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         }
         else
         {
             const float big  = clamp01 ((e - 0.55f) / 0.45f);
             const float open = er * (1.2f + 1.8f * big) * (0.75f + 0.35f * (on ? 1.0f - b : 0.5f));
-            const float mw   = w * (0.13f + 0.08f * big);
+            const float mw   = w * (0.11f + 0.07f * big);
             juce::Path m;
             m.startNewSubPath (-mw, my - er * 0.2f);
             m.quadraticTo (0.0f, my - er * 0.6f, mw, my - er * 0.2f);
@@ -285,7 +341,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
             m.quadraticTo (-mw * 0.9f, my + open, -mw, my - er * 0.2f);
             m.closeSubPath();
             g.fillPath (m);
-            g.setColour (juce::Colour (0xffe8344a));
+            g.setColour (Colour (0xffe8344a));
             g.fillEllipse (-mw * 0.5f, my + open * 0.45f, mw, open * 0.5f);
         }
     }
@@ -301,7 +357,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
             const float rr = h * (0.55f + 0.55f * b) * (0.8f + 0.4f * hashf (d.beatAbs * 7 + i));
             const float x  = std::sin (a) * rr, y = -h * 0.55f - std::cos (a) * rr;
             star (g, x, y, (2.5f + 3.5f * k) * (1.0f - b * 0.6f),
-                  (i % 2 == 0 ? juce::Colour (0xfff4e9d4) : juce::Colour (0xffffb347)).withAlpha (k * (1.0f - b)));
+                  (i % 2 == 0 ? Colour (0xfff4e9d4) : Colour (0xffffb347)).withAlpha (k * (1.0f - b)));
         }
     }
 }

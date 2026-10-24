@@ -629,11 +629,14 @@ MonitorEditor::MonitorEditor (MonitorProcessor& p)
     layoutCanvas();
 
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
+    // o tamanho salvo é lido ANTES do setResizeLimits: ele encolhe a janela ainda vazia para o mínimo
+    // e o resized() gravaria 75% por cima do que o usuário escolheu
+    openScale = proc.uiScale.load();
     setResizable (true, true);
     setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
                      juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
     getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
-    setScale (proc.uiScale.load());
+    setScale (openScale);
     startTimerHz (30);
 }
 
@@ -722,6 +725,12 @@ void MonitorEditor::presetMenuChosen (int result)
 
 void MonitorEditor::timerCallback()
 {
+    // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
+    // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
+    if (openTicks < openSettle && ++openTicks == openSettle
+        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        setScale (openScale);
+
     const double now = juce::Time::getMillisecondCounterHiRes();
     const float  dt  = lastTick > 0.0 ? (float) juce::jlimit (0.0, 0.1, (now - lastTick) * 0.001) : 1.0f / 30.0f;
     lastTick = now;
@@ -775,7 +784,8 @@ void MonitorEditor::resized()
 {
     const float scale = (float) getWidth() / (float) ui::baseW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
-    proc.uiScale = scale;
+    if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
+        proc.uiScale = scale;
 }
 
 void MonitorEditor::paint (juce::Graphics& g)
