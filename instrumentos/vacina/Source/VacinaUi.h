@@ -386,7 +386,7 @@ public:
         const auto r = getLocalBounds().toFloat().reduced (3.5f, 3.0f);
         glassUnder (g, r, 2.0f);
         const auto txt = param->getCurrentValueAsText();
-        const bool offish = txt == "OFF";
+        const bool offish = txt == "OFF" || dim;
         oledText (g, txt, r.reduced (4.0f, 0.0f), 10.5f, juce::Justification::centred, offish ? inkDim : ink);
         // setinhas de "tem lista"
         g.setColour (inkDim.withAlpha (0.8f));
@@ -396,6 +396,8 @@ public:
         g.fillPath (tri);
         glassOver (g, r, 2.0f);
     }
+
+    void setDim (bool d) { if (d != dim) { dim = d; repaint(); } }
 
     void mouseDown (const juce::MouseEvent&) override
     {
@@ -454,7 +456,7 @@ private:
     juce::AudioParameterChoice* choice = nullptr;
     std::unique_ptr<juce::ParameterAttachment> attachment;
     float startNorm = 0.0f;
-    bool dragged = false;
+    bool dragged = false, dim = false;
 };
 
 // ---------------- visor que se redesenha sozinho quando os parâmetros que ele mostra mudam ----------------

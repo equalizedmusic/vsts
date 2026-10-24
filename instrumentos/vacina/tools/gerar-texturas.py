@@ -220,7 +220,7 @@ def chapa(W=2880, H=1920, seed=5):
     rng = np.random.default_rng(seed)
     peel = blur(rng.standard_normal((H, W)), 2.2) * 1.0 + blur(rng.standard_normal((H, W)), 6.0) * 1.2
     n = normais(peel, 0.9)
-    base = np.array([0.0215, 0.0222, 0.0245])
+    base = np.array([0.034, 0.035, 0.038])
     alb = np.ones((H, W, 3)) * base
     grain = rng.standard_normal((H, W)) * 0.035 + blur(rng.standard_normal((H, W)), 30.0) * 0.6
     alb *= (1 + grain)[..., None]

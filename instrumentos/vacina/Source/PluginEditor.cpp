@@ -167,7 +167,7 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     // ================= OSCILADORES =================
     oscScopes[0] = scope ({ 60, 136, 170, 94 });
     add<vac::LedList> ({ 242, 140, 74, 40 }, model1Names, true, 13.0f)->bind (st, id::osc1Model);
-    box ({ 238, 188, 156, 28 }, id::osc1Table, "WAVETABLE");
+    wave1Box = box ({ 238, 188, 156, 28 }, id::osc1Table, "WAVETABLE");
     knob (92, 244, 44, id::osc1Shape, "SHAPE", red);
     knob (168, 244, 44, id::osc1Pw, "PULSE W");
     knob (244, 244, 44, id::osc1Semi, "SEMITONE");
@@ -176,7 +176,7 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     oscScopes[1] = scope ({ 422, 136, 170, 94 });
     add<vac::LedList> ({ 604, 140, 74, 28 }, model2Names, true, 13.0f)->bind (st, id::osc2Model);
     attach (*key (724, 138, "SYNC", true), id::osc2Sync);
-    box ({ 600, 188, 204, 28 }, id::osc2Table, "WAVETABLE");
+    wave2Box = box ({ 600, 188, 204, 28 }, id::osc2Table, "WAVETABLE");
     knob (450, 244, 44, id::osc2Shape, "SHAPE", red);
     knob (524, 244, 44, id::osc2Pw, "PULSE W");
     knob (598, 244, 44, id::osc2Semi, "SEMITONE");
@@ -271,23 +271,23 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     knob (1270, 752, 38, id::arpGate, "GATE");
 
     // ================= EFEITOS =================
-    box ({ 64, 876, 80, 28 }, id::distType, "TYPE");
-    knob (180, 870, 34, id::distAmt, "AMOUNT", red);
-    knob (250, 870, 34, id::boostAmt, "AMOUNT", red);
-    knob (308, 870, 34, id::boostTune, "TUNE");
-    knob (378, 870, 34, id::choMix, "MIX");
-    knob (436, 870, 34, id::choInt, "DEPTH");
-    knob (506, 870, 34, id::phaMix, "MIX");
-    knob (564, 870, 34, id::phaInt, "DEPTH");
-    knob (634, 870, 34, id::dlySend, "SEND", red);
-    knob (692, 870, 34, id::dlyTime, "TIME");
-    knob (750, 870, 34, id::dlyFb, "FEEDBACK");
-    knob (820, 870, 34, id::rvbSend, "SEND", red);
-    knob (878, 870, 34, id::rvbSize, "SIZE");
-    knob (936, 870, 34, id::rvbDamp, "DAMPING");
-    knob (1006, 870, 34, id::eqLow, "LOW");
-    knob (1064, 870, 34, id::eqMid, "MID");
-    knob (1122, 870, 34, id::eqHigh, "HIGH");
+    box ({ 64, 884, 80, 28 }, id::distType, "TYPE");
+    knob (180, 878, 34, id::distAmt, "AMOUNT", red);
+    knob (250, 878, 34, id::boostAmt, "AMOUNT", red);
+    knob (308, 878, 34, id::boostTune, "TUNE");
+    knob (378, 878, 34, id::choMix, "MIX");
+    knob (436, 878, 34, id::choInt, "DEPTH");
+    knob (506, 878, 34, id::phaMix, "MIX");
+    knob (564, 878, 34, id::phaInt, "DEPTH");
+    knob (634, 878, 34, id::dlySend, "SEND", red);
+    knob (692, 878, 34, id::dlyTime, "TIME");
+    knob (750, 878, 34, id::dlyFb, "FEEDBACK");
+    knob (820, 878, 34, id::rvbSend, "SEND", red);
+    knob (878, 878, 34, id::rvbSize, "SIZE");
+    knob (936, 878, 34, id::rvbDamp, "DAMPING");
+    knob (1006, 878, 34, id::eqLow, "LOW");
+    knob (1064, 878, 34, id::eqMid, "MID");
+    knob (1122, 878, 34, id::eqHigh, "HIGH");
 
     buildScopes();
 
@@ -698,6 +698,9 @@ void VacinaEditor::timerCallback()
     lcd->set (proc.getPresetGroup(), count, proc.getPresetName(), bottom);
 
     for (auto* s : scopes) s->poll();
+    // o campo WAVETABLE só fica aceso com o oscilador em WAVE
+    wave1Box->setDim (juce::roundToInt (pv (id::osc1Model)) != 2);
+    wave2Box->setDim (juce::roundToInt (pv (id::osc2Model)) != 1);
 
     // LEDs dos LFOs (piscam no ritmo de cada um)
     const float lv[3] = { proc.synth.lfo1Now.load(), proc.synth.lfo2Now.load(), proc.synth.lfo3Now.load() };
@@ -910,7 +913,7 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
                                                        { 602.0f, 180.0f, "DELAY" }, { 788.0f, 180.0f, "REVERB" },
                                                        { 974.0f, 180.0f, "EQ" } };
     for (auto& f : fx)
-        vac::subTitle (g, { f.x, 858.0f, f.w - 8.0f, 12.0f }, f.n);
+        vac::subTitle (g, { f.x, 866.0f, f.w - 8.0f, 12.0f }, f.n);
 
     // nomes embaixo dos campos de visor
     for (auto& c : captions)
@@ -930,7 +933,7 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
         g.drawText ("VACINA", plate.withTrimmedTop (16.0f).withHeight (28.0f), juce::Justification::centred, false);
         g.setColour (vac::red);
         g.fillRect (plate.getCentreX() - 40.0f, plate.getY() + 50.0f, 80.0f, 1.2f);
-        vac::silkText (g, "16 VOICES  ·  3 OSC  ·  24 WAVETABLES", plate.withTrimmedTop (56.0f).withHeight (12.0f),
+        vac::silkText (g, u8 ("16 VOICES  ·  3 OSC  ·  24 WAVETABLES"), plate.withTrimmedTop (56.0f).withHeight (12.0f),
                        juce::Justification::centred, 7.5f, true, vac::silkDim, 0.12f);
         if (art->screw.isValid())
             for (float sx : { plate.getX() + 12.0f, plate.getRight() - 12.0f })

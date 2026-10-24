@@ -82,6 +82,8 @@ private:
     std::array<vac::Scope*, 2> envScopes {};
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> captions;   // nomes serigrafados embaixo dos campos
     LcdDisplay* lcd = nullptr;
+    vac::LcdBox* wave1Box = nullptr;
+    vac::LcdBox* wave2Box = nullptr;
 
     PresetDialog dialog;                           // nome do preset, confirmações
     std::unique_ptr<juce::FileChooser> chooser;   // "Importar banco de presets…"
