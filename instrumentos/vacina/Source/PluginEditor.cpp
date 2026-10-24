@@ -104,7 +104,8 @@ void LcdDisplay::paint (juce::Graphics& g)
 // =====================================================================
 vac::VKnob* VacinaEditor::knob (int cx, int y, int size, const juce::String& pid, const juce::String& label, juce::Colour pointer)
 {
-    const int w = juce::jmax (size + 14, 62);
+    // largo para o nome não cortar (SUPER SPREAD); o VKnob não pega clique fora do knob, então pode sobrepor o vizinho
+    const int w = juce::jmax (size + 14, 92);
     return add<vac::VKnob> ({ cx - w / 2, y, w, size + 10 + (label.isNotEmpty() ? 12 : 0) }, proc.apvts, pid, label, size, pointer);
 }
 

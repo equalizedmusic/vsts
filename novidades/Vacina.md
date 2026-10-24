@@ -4,6 +4,9 @@ Pacote do instalador: `InsideStudioSP-Vacina`. A versão é o primeiro título `
 ela entra no plugin, no instalador e no release `vacina-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.1 — 2026-10-24
+- O nome do knob SUPER SPREAD (OSC 1) aparecia cortado nas bordas. Agora aparece inteiro.
+
 ## 0.3.0 — 2026-10-24
 - Letras maiores na tela, principalmente nas listas de LEDs:
   - modo dos filtros 1 e 2;

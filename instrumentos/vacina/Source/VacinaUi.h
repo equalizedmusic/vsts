@@ -227,6 +227,7 @@ public:
         slider.setDoubleClickReturnValue (true, (double) param->convertFrom0to1 (param->getDefaultValue()));
         slider.addListener (this);
         slider.addMouseListener (this, false);
+        setInterceptsMouseClicks (false, true);   // só o knob recebe clique: a sobra da largura não tampa o vizinho
     }
 
     ~VKnob() override { slider.removeListener (this); }
@@ -241,7 +242,7 @@ public:
         if (label.isEmpty()) return;                          // knob sem nome (matriz): o valor aparece no visor
         const float top = (float) slider.getBottom() - 1.0f, w = (float) getWidth();
         const bool live = showValue > 0;
-        silkText (g, live ? param->getCurrentValueAsText() : label, { -10.0f, top, w + 20.0f, 11.0f },
+        silkText (g, live ? param->getCurrentValueAsText() : label, { 0.0f, top, w, 12.0f },
                   juce::Justification::centred, 9.5f, true, live ? redInk : silk);
     }
 
