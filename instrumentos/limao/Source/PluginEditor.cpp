@@ -168,9 +168,9 @@ void StepCell::paint (juce::Graphics& g)
     auto smallKey = [&g] (RF r, bool down, bool on, juce::Colour c, const juce::String& txt)
     {
         const auto cap = real::keycap (g, r, 3.0f, down);
-        real::led (g, { cap.getX() + 8.0f, cap.getCentreY() }, 2.6f, c, on ? 1.0f : 0.0f);
-        g.setFont (theme::sans (8.0f, true, 0.08f));
-        real::engraved (g, txt, cap.withTrimmedLeft (13.0f), on ? theme::cream : theme::dim, juce::Justification::centred);
+        real::led (g, { cap.getX() + 6.0f, cap.getCentreY() }, 2.2f, c, on ? 1.0f : 0.0f);
+        g.setFont (theme::sans (7.0f, true));
+        real::engraved (g, txt, cap.withTrimmedLeft (10.0f), on ? theme::cream : theme::dim, juce::Justification::centred);
     };
     smallKey (accRect(), pressed == accZone, st.accent, theme::coral, "ACC");
     smallKey (slideRect(), pressed == slideZone, st.slide, theme::ice, "SLD");
@@ -524,8 +524,8 @@ void LimaoEditor::drawCanvas (juce::Graphics& g)
     // ---- VOZ ----
     lim::sectionTitle (g, 44.0f, 98.0f, 556.0f, "VOZ");
     lim::inkText (g, "WAVE", { 44.0f, 250.0f, 56.0f, 26.0f }, juce::Justification::centredLeft, 9.5f);
-    lim::inkText (g, juce::String::fromUTF8 ("ACCENT: + volume e + corte, acumula em accents seguidos  ·  SLIDE: desliza para a nota seguinte"),
-                  { 220.0f, 250.0f, 380.0f, 26.0f }, juce::Justification::centredLeft, 8.0f, false, lim::inkDim);
+    lim::inkText (g, juce::String::fromUTF8 ("ACCENT soma volume e corte  ·  SLIDE desliza até a próxima nota"),
+                  { 222.0f, 250.0f, 388.0f, 26.0f }, juce::Justification::centredLeft, 8.0f, false, lim::inkDim);
     lim::sectionTitle (g, 622.0f, 98.0f, 142.0f, "MACRO");
 
     // ---- EFEITOS ----
@@ -535,8 +535,6 @@ void LimaoEditor::drawCanvas (juce::Graphics& g)
     lim::inkText (g, "TIME", { 262.0f, 394.0f, 36.0f, 26.0f }, juce::Justification::centredLeft, 8.5f);
     lim::sectionTitle (g, 600.0f, 310.0f, 300.0f, "REVERB");
     lim::sectionTitle (g, 940.0f, 310.0f, 222.0f, juce::String::fromUTF8 ("SAÍDA"));
-    lim::inkText (g, juce::String::fromUTF8 ("MONOFÔNICO · ALMA DE 303"), { 1046.0f, 360.0f, 116.0f, 40.0f },
-                  juce::Justification::centredLeft, 8.0f, true, lim::inkDim);
 
     // ---- SEQUENCIADOR ----
     const RF plate (40.0f, 446.0f, W - 80.0f, 282.0f);

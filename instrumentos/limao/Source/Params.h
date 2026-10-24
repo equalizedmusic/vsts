@@ -53,7 +53,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (new AudioParameterChoice ({ id::wave, 1 }, "Wave", waveNames, 0));
     add (new AudioParameterFloat ({ id::tune, 1 }, "Tune", NormalisableRange<float> (-12.0f, 12.0f, 0.01f), 0.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction ([] (float v, int)
-                                  { return (v > 0.005f ? "+" : "") + String (v, 2) + " st"; })));
+                                  { return std::abs (v) < 0.005f ? String ("0.00 st") : (v > 0.0f ? "+" : "") + String (v, 2) + " st"; })));
     add (new AudioParameterFloat ({ id::cutoff, 1 }, "Cutoff", cutRange, 520.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction (hz)));
     add (new AudioParameterFloat ({ id::reso, 1 }, "Resonance", NormalisableRange<float> (0.0f, 100.0f), 65.0f,
