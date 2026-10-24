@@ -63,25 +63,37 @@ void VacinaProcessor::readSettings()
 {
     s.keyMode   = geti (id::keyMode);
     s.portaMs   = get (id::porta);
+    s.bendRange = get (id::bendRange);
+    s.drift     = get (id::drift) * 0.01f;
     s.unison    = geti (id::unison);
     s.uniDetune = get (id::uniDetune) * 0.01f;
     s.uniSpread = get (id::uniSpread) * 0.01f;
 
     s.model1  = geti (id::osc1Model);
+    s.table1  = geti (id::osc1Table);
     s.shape1  = get (id::osc1Shape) * 0.01f;
     s.pw1     = get (id::osc1Pw) * 0.01f;
     s.semi1   = get (id::osc1Semi);
     s.spread1 = get (id::osc1Spread) * 0.01f;
+    s.vol1    = get (id::osc1Vol) * 0.01f;
+    s.model2  = geti (id::osc2Model);
+    s.table2  = geti (id::osc2Table);
     s.shape2  = get (id::osc2Shape) * 0.01f;
     s.pw2     = get (id::osc2Pw) * 0.01f;
     s.semi2   = get (id::osc2Semi);
     s.detune2 = get (id::osc2Detune);
     s.sync2   = get (id::osc2Sync) > 0.5f;
+    s.vol2    = get (id::osc2Vol) * 0.01f;
     s.fm      = get (id::fmAmt) * 0.01f;
-    s.bal     = get (id::oscBal) * 0.01f;
+    s.shape3  = get (id::osc3Shape) * 0.01f;
+    s.semi3   = get (id::osc3Semi);
+    s.detune3 = get (id::osc3Detune);
+    s.vol3    = get (id::osc3Vol) * 0.01f;
     s.sub     = get (id::subVol) * 0.01f;
     s.oscVol  = get (id::oscVol) * 0.01f;
     s.noise   = get (id::noiseVol) * 0.01f;
+    s.noiseColor = get (id::noiseColor) * 0.01f;
+    s.ring    = get (id::ringVol) * 0.01f;
 
     s.cutoff  = get (id::cutoff);
     s.cutoff2 = get (id::cutoff2);
@@ -95,9 +107,13 @@ void VacinaProcessor::readSettings()
     s.env2    = get (id::env2) * 0.01f;
     s.key1    = get (id::key1) * 0.01f;
     s.key2    = get (id::key2) * 0.01f;
+    s.satType = geti (id::satType);
+    s.satAmt  = get (id::satAmt) * 0.01f;
 
     s.fA = get (id::fA); s.fD = get (id::fD); s.fS = get (id::fS) * 0.01f; s.fR = get (id::fR); s.fVel = get (id::fVel) * 0.01f;
     s.aA = get (id::aA); s.aD = get (id::aD); s.aS = get (id::aS) * 0.01f; s.aR = get (id::aR); s.aVel = get (id::aVel) * 0.01f;
+    s.fSlope = get (id::fSlope) * 0.01f;
+    s.aSlope = get (id::aSlope) * 0.01f;
 
     s.l1Rate  = get (id::lfo1Rate);  s.l1Shape = geti (id::lfo1Shape); s.l1Sync = geti (id::lfo1Sync);
     s.l1Pitch = get (id::lfo1Pitch) * 0.01f; s.l1Cut = get (id::lfo1Cut) * 0.01f;
@@ -105,6 +121,8 @@ void VacinaProcessor::readSettings()
     s.l2Rate  = get (id::lfo2Rate);  s.l2Shape = geti (id::lfo2Shape); s.l2Sync = geti (id::lfo2Sync);
     s.l2Shp   = get (id::lfo2Shp) * 0.01f; s.l2Fm = get (id::lfo2Fm) * 0.01f;
     s.l2Cut   = get (id::lfo2Cut) * 0.01f; s.l2Pan = get (id::lfo2Pan) * 0.01f;
+    s.l3Rate  = get (id::lfo3Rate);  s.l3Shape = geti (id::lfo3Shape); s.l3Sync = geti (id::lfo3Sync);
+    s.l3Dst   = geti (id::lfo3Dst);  s.l3Amt   = get (id::lfo3Amt) * 0.01f;
 
     for (int k = 0; k < numSlots; ++k)
     {
@@ -320,7 +338,7 @@ void VacinaProcessor::setStateInformation (const void* data, int sizeInBytes)
             presetName  = tree.getProperty ("presetName", presetName).toString();
             presetBank  = tree.getProperty ("presetBank", juce::String()).toString();
             presetIndex = findPreset (presetName, presetBank);
-            uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
+            uiScale     = juce::jlimit (0.6f, 1.8f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
 }
 

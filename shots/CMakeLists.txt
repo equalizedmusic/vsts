@@ -27,15 +27,21 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
         file(GLOB srcs "${dir}/Source/*.cpp")
         target_sources(${t} PRIVATE ${srcs} ShotMain.cpp)
         target_include_directories(${t} PRIVATE "${dir}/Source")
+        # imagens embutidas (Source/img → PluginImg.h), quando o plugin tem
+        file(GLOB imgs "${dir}/Source/img/*")
+        if(imgs)
+            juce_add_binary_data(${t}_img HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${imgs})
+            target_link_libraries(${t} PRIVATE ${t}_img)
+        endif()
         target_compile_definitions(${t} PRIVATE
             JUCE_WEB_BROWSER=0
             JUCE_USE_CURL=0
             JUCE_MODAL_LOOPS_PERMITTED=1
             SHOT_PLUGIN="${upper}")
         if(dir IN_LIST inst_dirs)
-            # synth: sem entrada, toca acordes por MIDI; foto a 200% da tela base (VACINA 1360×600, os outros 1200×740)
+            # synth: sem entrada, toca acordes por MIDI; foto a 200% da tela base (VACINA 1440×960, os outros 1200×740)
             if(name STREQUAL "vacina")
-                target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2720 SHOT_H=1200)
+                target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2880 SHOT_H=1920)
             else()
                 target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2400 SHOT_H=1480)
             endif()

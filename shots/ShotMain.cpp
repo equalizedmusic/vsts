@@ -184,6 +184,9 @@ int main (int argc, char** argv)
     AudioThread audio (*proc, head);
     audio.startThread();
     juce::MessageManager::getInstance()->runDispatchLoopUntil (4500);
+    // o editor pode ter voltado ao tamanho salvo depois de abrir: de novo em 200% para a foto
+    editor->setSize (SHOT_W, SHOT_H);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
     const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
     audio.stopThread (3000);
 

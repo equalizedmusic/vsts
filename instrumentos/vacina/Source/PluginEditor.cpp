@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include <complex>
 
 using namespace vacina;
 using vac::RF;
@@ -10,43 +11,114 @@ constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, men
               menuImport = 20006, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
 
 // posições fixas desenhadas no painel (o timer repinta só elas)
-const juce::Point<float> lfoLedPos { 506.0f, 60.0f };
-const juce::Point<float> midiLedPos { 434.0f, 470.0f };
-const juce::Point<float> syncLedPos { 434.0f, 490.0f };
-const juce::Rectangle<int> meterArea { 830, 440, 64, 110 };
-const juce::Rectangle<int> statusArea { 420, 458, 80, 60 };
+const juce::Point<float> midiLedPos { 66.0f, 88.0f };
+const juce::Point<float> syncLedPos { 118.0f, 88.0f };
+const juce::Rectangle<int> statusArea { 56, 78, 190, 22 };
+const juce::Rectangle<int> meterArea { 1352, 20, 40, 88 };
+const juce::Point<float> lfoLedPos[3] = { { 288.0f, 621.0f }, { 548.0f, 621.0f }, { 748.0f, 621.0f } };
+
+// ---------------- o que os visores desenham ----------------
+float lfoShape (int shape, float t)
+{
+    static const float sh[8] = { 0.6f, -0.3f, 0.9f, -0.7f, 0.2f, -0.9f, 0.5f, 0.0f };
+    t -= std::floor (t);
+    switch (shape)
+    {
+        case 0:  return std::sin (juce::MathConstants<float>::twoPi * t);
+        case 1:  return 1.0f - 4.0f * std::abs (t - 0.5f);
+        case 2:  return 1.0f - 2.0f * t;
+        case 3:  return t < 0.5f ? 1.0f : -1.0f;
+        case 4:  return sh[(int) (t * 8.0f) & 7];
+        default:
+        {
+            const float p = t * 8.0f;
+            const int i = (int) p;
+            const float f = p - (float) i, a = sh[(i + 7) & 7], b = sh[i & 7];
+            return a + (b - a) * (0.5f - 0.5f * std::cos (juce::MathConstants<float>::pi * f));
+        }
+    }
+}
+
+// módulo da resposta de um filtro (modos na numeração do FILTRO 1: 0 LP24 … 6 VOWEL) na frequência f
+float filterMag (int mode, float f, float fc, float reso)
+{
+    using C = std::complex<float>;
+    const float w = f / juce::jmax (1.0f, fc);
+    const C s (0.0f, w);
+    const float K = 2.0f * (1.0f - 0.97f * reso);
+    const C den = s * s + K * s + 1.0f;
+    switch (mode)
+    {
+        case 0: { const float k = 3.9f * reso; return std::abs ((1.0f + k * 0.45f) / (std::pow (1.0f + s, 4.0f) + k)); }
+        case 1:  return std::abs (1.0f / den);
+        case 2:  return std::abs (s * s / den);
+        case 3:  return std::abs (K * s / den);
+        case 4:  return std::abs ((s * s + 1.0f) / den);
+        case 5:
+        {
+            const float fb = 0.5f + 0.49f * reso;
+            const C z = std::polar (1.0f, -juce::MathConstants<float>::twoPi * w);
+            return std::abs (1.0f / (1.0f - fb * 0.9f * z)) * (1.0f - 0.45f * fb);
+        }
+        default:
+        {
+            static constexpr float F[5][3] = { { 300.0f, 870.0f, 2240.0f }, { 570.0f, 840.0f, 2410.0f }, { 730.0f, 1090.0f, 2440.0f },
+                                               { 530.0f, 1840.0f, 2480.0f }, { 270.0f, 2290.0f, 3010.0f } };
+            const float pos = juce::jlimit (0.0f, 1.0f, (std::log2 (juce::jmax (20.0f, fc)) - 7.6f) / 4.6f) * 4.0f;
+            const int i = juce::jmin (3, (int) pos);
+            const float fr = pos - (float) i, q = 0.9f - 0.8f * reso;
+            float m = 0.0f;
+            const float gains[3] = { 1.0f, 0.7f, 0.45f };
+            for (int b = 0; b < 3; ++b)
+            {
+                const float fb = F[i][b] + (F[i + 1][b] - F[i][b]) * fr;
+                const float kb = 2.0f * q * (b == 0 ? 0.55f : 0.35f);
+                const C sb (0.0f, f / fb);
+                m += gains[b] * std::abs (kb * sb / (sb * sb + kb * sb + 1.0f));
+            }
+            return m * 1.6f;
+        }
+    }
+}
 } // namespace
 
 // =====================================================================
-// VISOR
+// VISOR DO PRESET
 // =====================================================================
 void LcdDisplay::paint (juce::Graphics& g)
 {
-    const auto r = getLocalBounds().toFloat().reduced (6.0f);
-    vac::lcdGlass (g, r, 2.0f);
-    const auto in = r.reduced (10.0f, 6.0f);
-    vac::lcdText (g, l1, in.withHeight (14.0f), 10.5f, juce::Justification::centredLeft);
-    g.setColour (vac::lcdInk.withAlpha (0.5f));
-    g.fillRect (in.getX(), in.getY() + 16.0f, in.getWidth(), 0.8f);
-    vac::lcdText (g, l2, in.withTrimmedTop (18.0f).withHeight (28.0f), 19.0f, juce::Justification::centredLeft);
-    vac::lcdText (g, l3, in.withTrimmedTop (48.0f).withHeight (16.0f), 11.0f, juce::Justification::centredLeft);
-    vac::lcdFinish (g, r, 2.0f);
+    const auto r = getLocalBounds().toFloat().reduced (5.0f);
+    vac::glassUnder (g, r, 3.0f);
+    const auto in = r.reduced (12.0f, 7.0f);
+    vac::oledText (g, l1, in.withHeight (13.0f), 10.0f, juce::Justification::centredLeft, vac::inkDim);
+    vac::oledText (g, l1r, in.withHeight (13.0f), 10.0f, juce::Justification::centredRight, vac::inkDim);
+    g.setColour (vac::inkDim.withAlpha (0.35f));
+    g.fillRect (in.getX(), in.getY() + 15.0f, in.getWidth(), 0.7f);
+    vac::oledText (g, l2, in.withTrimmedTop (17.0f).withHeight (30.0f), 23.0f, juce::Justification::centredLeft, vac::ink, false);
+    vac::oledText (g, l3, in.withTrimmedTop (48.0f).withHeight (14.0f), 10.5f, juce::Justification::centredLeft, vac::redInk);
+    vac::glassOver (g, r, 3.0f);
 }
 
 // =====================================================================
 // EDITOR
 // =====================================================================
-vac::VKnob* VacinaEditor::knob (int cx, int y, int size, const juce::String& pid, const juce::String& label,
-                                juce::Colour pointer, const juce::String& sub)
+vac::VKnob* VacinaEditor::knob (int cx, int y, int size, const juce::String& pid, const juce::String& label, juce::Colour pointer)
 {
-    const int w = juce::jmax (size + 8, label.length() > 11 ? 80 : 58);   // nome comprido (MASTER VOLUME) não corta
-    return add<vac::VKnob> ({ cx - w / 2, y, w, size + 8 + (sub.isNotEmpty() ? 22 : 12) }, proc.apvts, pid, label, size, pointer, sub);
+    const int w = juce::jmax (size + 14, 62);
+    return add<vac::VKnob> ({ cx - w / 2, y, w, size + 10 + (label.isNotEmpty() ? 12 : 0) }, proc.apvts, pid, label, size, pointer);
 }
 
-vac::Key* VacinaEditor::key (int x, int y, const juce::String& label, bool led)
+vac::Key* VacinaEditor::key (int cx, int y, const juce::String& label, bool led)
 {
-    // a caixa começa padX antes da tecla: x é onde a tecla aparece
-    return add<vac::Key> ({ x - (int) vac::Key::padX, y, 50 + (led ? 14 : 0), label.isNotEmpty() ? 28 : 16 }, label, led);
+    const int w = 64 + (led ? 20 : 0);
+    return add<vac::Key> ({ cx - 32, y, w, label.isNotEmpty() ? 32 : 20 }, label, led);
+}
+
+vac::LcdBox* VacinaEditor::box (juce::Rectangle<int> r, const juce::String& pid, const juce::String& caption)
+{
+    if (caption.isNotEmpty())
+        captions.push_back ({ RF ((float) r.getX(), (float) r.getBottom(), (float) r.getWidth(), 10.0f), caption });
+    return add<vac::LcdBox> (r, proc.apvts, pid);
 }
 
 void VacinaEditor::attach (juce::Button& b, const juce::String& paramId)
@@ -55,24 +127,12 @@ void VacinaEditor::attach (juce::Button& b, const juce::String& paramId)
     buttonAtts.push_back (std::make_unique<APVTS::ButtonAttachment> (proc.apvts, paramId, b));
 }
 
-// tecla que passa para a próxima opção da lista (volta ao começo no fim)
-void VacinaEditor::cycle (const juce::String& paramId)
+vac::Scope* VacinaEditor::scope (juce::Rectangle<int> r)
 {
-    auto* p = proc.apvts.getParameter (paramId);
-    const int steps = juce::jmax (2, p->getNumSteps());
-    const int idx = (juce::roundToInt (p->getValue() * (float) (steps - 1)) + 1) % steps;
-    p->beginChangeGesture();
-    p->setValueNotifyingHost ((float) idx / (float) (steps - 1));
-    p->endChangeGesture();
-}
-
-void VacinaEditor::showPage (Pages& p, int index)
-{
-    p.current = juce::jlimit (0, (int) p.items.size() - 1, index);
-    for (size_t i = 0; i < p.items.size(); ++i)
-        for (auto* c : p.items[i])
-            c->setVisible ((int) i == p.current);
-    if (p.leds != nullptr) p.leds->setIndex (p.current);
+    auto* s = add<vac::Scope> (r);
+    s->setInterceptsMouseClicks (false, false);
+    scopes.push_back (s);
+    return s;
 }
 
 VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), proc (p)
@@ -87,147 +147,153 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     auto& st = proc.apvts;
     const auto red = vac::red;
 
-    // páginas: cada lista de LEDs troca o que aparece e a tecla SELECT passa para a próxima
-    auto pageLeds = [this] (Pages& pg, juce::Rectangle<int> r, juce::StringArray names, bool vertical, float step)
-    {
-        pg.leds = add<vac::LedList> (r, names, vertical, step);
-        pg.leds->onSelect = [this, &pg] (int i) { showPage (pg, i); };
-        pg.items.resize ((size_t) names.size());
-    };
-    auto selectKey = [this] (Pages& pg, int x, int y)
-    {
-        key (x, y, "SELECT")->onClick = [this, &pg] { nextPage (pg); };
-    };
-
-    // ================= MASTER, MATRIX, ARP =================
-    knob (92, 70, 46, id::volume, "MASTER VOLUME");
-
-    for (int k = 0; k < numSlots; ++k)
-    {
-        const int y = 56 + k * 28;
-        add<vac::LcdBox> ({ 160, y, 72, 24 }, st, id::mSrc (k));
-        add<vac::LcdBox> ({ 236, y, 72, 24 }, st, id::mDst (k));
-        add<vac::VKnob> ({ 308, y - 3, 30, 30 }, st, id::mAmt (k), "", 22, red);
-    }
-
-    attach (*key (60, 182, "ARP ON", true), id::arpOn);
-    attach (*key (60, 222, "HOLD", true), id::arpHold);
-    add<vac::LcdBox> ({ 56, 258, 52, 24 }, st, id::arpOct);
-    auto* arpMode = add<vac::LedList> ({ 122, 178, 74, 78 }, arpModeNames, true, 13.0f);
-    arpMode->bind (st, id::arpMode);
-    key (126, 262, "MODE")->onClick = [this] { cycle (id::arpMode); };
-    knob (238, 184, 40, id::arpRate, "RATE");
-    knob (296, 184, 40, id::arpGate, "GATE");
-
-    // ================= MODULATORS (LFO 1 / LFO 2) =================
-    selectKey (lfoPages, 348, 58);
-    pageLeds (lfoPages, { 386, 52, 70, 26 }, { "LFO 1", "LFO 2" }, false, 34.0f);
-    auto* sh1 = add<vac::LedList> ({ 512, 50, 52, 78 }, lfoShapeNames, true, 13.0f);
-    auto* sh2 = add<vac::LedList> ({ 512, 50, 52, 78 }, lfoShapeNames, true, 13.0f);
-    sh1->bind (st, id::lfo1Shape);
-    sh2->bind (st, id::lfo2Shape);
-    auto* shk1 = key (516, 132, "SHAPE");
-    auto* shk2 = key (516, 132, "SHAPE");
-    shk1->onClick = [this] { cycle (id::lfo1Shape); };
-    shk2->onClick = [this] { cycle (id::lfo2Shape); };
-    lfoPages.items[0] = { knob (470, 84, 44, id::lfo1Rate, "RATE"), add<vac::LcdBox> ({ 346, 98, 76, 24 }, st, id::lfo1Sync), sh1, shk1,
-                          knob (368, 186, 40, id::lfo1Pitch, "OSC PITCH"), knob (422, 186, 40, id::lfo1Cut, "CUTOFF"),
-                          knob (476, 186, 40, id::lfo1Pw, "PULSE W"), knob (530, 186, 40, id::lfo1Amp, "AMP") };
-    lfoPages.items[1] = { knob (470, 84, 44, id::lfo2Rate, "RATE"), add<vac::LcdBox> ({ 346, 98, 76, 24 }, st, id::lfo2Sync), sh2, shk2,
-                          knob (368, 186, 40, id::lfo2Shp, "OSC SHAPE"), knob (422, 186, 40, id::lfo2Fm, "FM"),
-                          knob (476, 186, 40, id::lfo2Cut, "CUTOFF"), knob (530, 186, 40, id::lfo2Pan, "PAN") };
-
-    // ================= OSCILLATORS =================
-    selectKey (oscPages, 836, 58);
-    pageLeds (oscPages, { 868, 52, 42, 28 }, { "OSC 1", "OSC 2" }, true, 13.0f);
-    auto* model = add<vac::LedList> ({ 868, 94, 46, 28 }, modelNames, true, 13.0f);
-    model->bind (st, id::osc1Model);
-    auto* modelKey = key (836, 100, "MODEL");
-    modelKey->onClick = [this] { cycle (id::osc1Model); };
-    auto* sync = key (836, 100, "SYNC", true);
-    attach (*sync, id::osc2Sync);
-    oscPages.items[0] = { knob (606, 54, 46, id::osc1Shape, "SHAPE"), knob (666, 54, 46, id::osc1Pw, "PULSE WIDTH"),
-                          knob (726, 54, 46, id::osc1Semi, "SEMITONE"), knob (786, 54, 46, id::osc1Spread, "SPREAD", vac::silk, "SUPER"),
-                          model, modelKey };
-    oscPages.items[1] = { knob (606, 54, 46, id::osc2Shape, "SHAPE"), knob (666, 54, 46, id::osc2Pw, "PULSE WIDTH"),
-                          knob (726, 54, 46, id::osc2Semi, "SEMITONE"), knob (786, 54, 46, id::osc2Detune, "DETUNE"), sync };
-
-    key (588, 188, "KEY MODE")->onClick = [this] { cycle (id::keyMode); };
-    add<vac::LedList> ({ 624, 180, 50, 40 }, keyModeNames, true, 13.0f)->bind (st, id::keyMode);
-    knob (716, 178, 44, id::porta, "PORTAMENTO");
-    knob (790, 178, 44, id::fmAmt, "FM AMOUNT", red, "OSC 1 > OSC 2");
-
-    // ================= MIX =================
-    knob (961, 54, 46, id::oscBal, "OSC BALANCE");
-    knob (961, 178, 44, id::subVol, "SUB OSC");
-    knob (961, 326, 46, id::oscVol, "OSC VOLUME", vac::silk, "SATURATION");
-    knob (961, 452, 44, id::noiseVol, "NOISE VOLUME");
-
-    // ================= FILTERS =================
-    knob (1050, 50, 52, id::cutoff, "CUTOFF", red);
-    knob (1050, 178, 44, id::cutoff2, "CUTOFF 2", vac::silk, "OFFSET");
-    knob (1278, 54, 44, id::filtBal, "BALANCE", vac::silk, "FILT 1 / 2");
-    selectKey (filtPages, 1094, 186);
-    pageLeds (filtPages, { 1128, 180, 44, 28 }, { "FILT 1", "FILT 2" }, true, 13.0f);
-    auto* m1 = add<vac::LedList> ({ 1216, 176, 46, 66 }, f1ModeNames, true, 13.0f);
-    auto* m2 = add<vac::LedList> ({ 1216, 176, 46, 66 }, f2ModeNames, true, 13.0f);
-    m1->bind (st, id::f1Mode);
-    m2->bind (st, id::f2Mode);
-    auto* mk1 = key (1182, 186, "MODE");
-    auto* mk2 = key (1182, 186, "MODE");
-    mk1->onClick = [this] { cycle (id::f1Mode); };
-    mk2->onClick = [this] { cycle (id::f2Mode); };
-    filtPages.items[0] = { knob (1112, 54, 44, id::reso1, "RESONANCE"), knob (1166, 54, 44, id::env1, "ENV AMOUNT"),
-                           knob (1222, 54, 44, id::key1, "KEY FOLLOW"), m1, mk1 };
-    filtPages.items[1] = { knob (1112, 54, 44, id::reso2, "RESONANCE"), knob (1166, 54, 44, id::env2, "ENV AMOUNT"),
-                           knob (1222, 54, 44, id::key2, "KEY FOLLOW"), m2, mk2 };
-    key (1268, 186, "ROUTING")->onClick = [this] { cycle (id::routing); };
-    add<vac::LedList> ({ 1270, 218, 34, 28 }, routingNames, true, 13.0f)->bind (st, id::routing);
-
-    // ================= EFFECTS =================
-    selectKey (fxUpPages, 66, 334);
-    pageLeds (fxUpPages, { 104, 328, 60, 40 }, { "DELAY", "REVERB", "EQ" }, true, 13.0f);
-    fxUpPages.items[0] = { knob (212, 326, 44, id::dlySend, "SEND"), knob (280, 326, 44, id::dlyTime, "TIME", vac::silk, "TEMPO"),
-                           knob (348, 326, 44, id::dlyFb, "FEEDBACK") };
-    fxUpPages.items[1] = { knob (212, 326, 44, id::rvbSend, "SEND"), knob (280, 326, 44, id::rvbSize, "SIZE"),
-                           knob (348, 326, 44, id::rvbDamp, "DAMPING") };
-    fxUpPages.items[2] = { knob (212, 326, 44, id::eqLow, "LOW", vac::silk, "150 Hz"), knob (280, 326, 44, id::eqMid, "MID", vac::silk, "1.2 kHz"),
-                           knob (348, 326, 44, id::eqHigh, "HIGH", vac::silk, "6 kHz") };
-
-    selectKey (fxLoPages, 66, 452);
-    pageLeds (fxLoPages, { 104, 446, 80, 54 }, { "DISTORTION", "ANALOG BOOST", "CHORUS", "PHASER" }, true, 13.0f);
-    fxLoPages.items[0] = { knob (246, 446, 44, id::distType, "TYPE"), knob (322, 446, 44, id::distAmt, "INTENSITY", red) };
-    fxLoPages.items[1] = { knob (246, 446, 44, id::boostAmt, "INTENSITY", red), knob (322, 446, 44, id::boostTune, "TUNE") };
-    fxLoPages.items[2] = { knob (246, 446, 44, id::choMix, "MIX"), knob (322, 446, 44, id::choInt, "INTENSITY") };
-    fxLoPages.items[3] = { knob (246, 446, 44, id::phaMix, "MIX"), knob (322, 446, 44, id::phaInt, "INTENSITY") };
-
-    // ================= CENTRO: visor, presets, unison =================
-    lcd = add<LcdDisplay> ({ 498, 342, 312, 98 });
+    // ================= CABEÇALHO: presets, VOICE, MASTER =================
+    lcd = add<LcdDisplay> ({ 336, 20, 470, 84 });
     lcd->onClick = [this] { showPresetMenu(); };
-    key (438, 352, "BROWSE")->onClick = [this] { showPresetMenu(); };
-    key (438, 396, "STORE")->onClick = [this] { askNewPreset(); };
-    key (832, 352, "PREV")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
-    key (832, 396, "NEXT")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
-    knob (566, 456, 44, id::unison, "UNISON", vac::silk, "VALUE 1");
-    knob (654, 456, 44, id::uniDetune, "DETUNE", vac::silk, "VALUE 2");
-    knob (742, 456, 44, id::uniSpread, "PAN SPREAD", vac::silk, "VALUE 3");
+    key (296, 26, "BROWSE")->onClick = [this] { showPresetMenu(); };
+    key (296, 64, "STORE")->onClick = [this] { askNewPreset(); };
+    key (840, 26, "PREV")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
+    key (840, 64, "NEXT")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
+
+    add<vac::LedList> ({ 890, 40, 70, 40 }, keyModeNames, true, 13.0f)->bind (st, id::keyMode);
+    knob (990, 38, 30, id::porta, "GLIDE");
+    knob (1042, 38, 30, id::bendRange, "BEND");
+    knob (1094, 38, 30, id::unison, "UNISON");
+    knob (1146, 38, 30, id::uniDetune, "DETUNE");
+    knob (1198, 38, 30, id::uniSpread, "SPREAD");
+    knob (1250, 38, 30, id::drift, "ANALOG");
+    knob (1314, 28, 46, id::volume, "MASTER");
+
+    // ================= OSCILADORES =================
+    oscScopes[0] = scope ({ 60, 136, 170, 94 });
+    add<vac::LedList> ({ 242, 140, 74, 40 }, model1Names, true, 13.0f)->bind (st, id::osc1Model);
+    box ({ 238, 188, 156, 28 }, id::osc1Table, "WAVETABLE");
+    knob (92, 244, 44, id::osc1Shape, "SHAPE", red);
+    knob (168, 244, 44, id::osc1Pw, "PULSE W");
+    knob (244, 244, 44, id::osc1Semi, "SEMITONE");
+    knob (320, 244, 44, id::osc1Spread, "SUPER SPREAD");
+
+    oscScopes[1] = scope ({ 422, 136, 170, 94 });
+    add<vac::LedList> ({ 604, 140, 74, 28 }, model2Names, true, 13.0f)->bind (st, id::osc2Model);
+    attach (*key (724, 138, "SYNC", true), id::osc2Sync);
+    box ({ 600, 188, 204, 28 }, id::osc2Table, "WAVETABLE");
+    knob (450, 244, 44, id::osc2Shape, "SHAPE", red);
+    knob (524, 244, 44, id::osc2Pw, "PULSE W");
+    knob (598, 244, 44, id::osc2Semi, "SEMITONE");
+    knob (672, 244, 44, id::osc2Detune, "DETUNE");
+    knob (750, 244, 44, id::fmAmt, "FM 1 > 2", red);
+
+    oscScopes[2] = scope ({ 832, 136, 178, 94 });
+    knob (862, 244, 40, id::osc3Shape, "SHAPE", red);
+    knob (921, 244, 40, id::osc3Semi, "SEMITONE");
+    knob (980, 244, 40, id::osc3Detune, "DETUNE");
+
+    knob (1074, 138, 44, id::osc1Vol, "OSC 1");
+    knob (1160, 138, 44, id::osc2Vol, "OSC 2");
+    knob (1246, 138, 44, id::osc3Vol, "OSC 3");
+    knob (1332, 138, 44, id::subVol, "SUB");
+    knob (1074, 244, 44, id::noiseVol, "NOISE");
+    knob (1160, 244, 44, id::noiseColor, "NOISE COLOR");
+    knob (1246, 244, 44, id::ringVol, "RING MOD");
+    knob (1332, 244, 44, id::oscVol, "DRIVE", red);
+
+    // ================= FILTROS =================
+    filterScope = scope ({ 60, 384, 238, 104 });
+    add<vac::LedList> ({ 68, 500, 84, 28 }, routingNames, true, 13.0f)->bind (st, id::routing);
+    knob (196, 494, 34, id::filtBal, "BALANCE");
+    box ({ 64, 548, 120, 28 }, id::satType, "SATURATION");
+    knob (240, 542, 34, id::satAmt, "SAT DRIVE", red);
+
+    add<vac::LedList> ({ 314, 400, 66, 92 }, f1ModeNames, true, 13.0f)->bind (st, id::f1Mode);
+    knob (456, 398, 66, id::cutoff, "CUTOFF", red);
+    knob (340, 512, 36, id::reso1, "RESONANCE");
+    knob (412, 512, 36, id::env1, "ENV AMOUNT");
+    knob (484, 512, 36, id::key1, "KEY TRACK");
+
+    add<vac::LedList> ({ 540, 400, 66, 80 }, f2ModeNames, true, 13.0f)->bind (st, id::f2Mode);
+    knob (674, 404, 48, id::cutoff2, "CUTOFF 2");
+    knob (566, 512, 36, id::reso2, "RESONANCE");
+    knob (638, 512, 36, id::env2, "ENV AMOUNT");
+    knob (710, 512, 36, id::key2, "KEY TRACK");
 
     // ================= ENVELOPES =================
-    const char* const envNames[5] = { "ATTACK", "DECAY", "SUSTAIN", "RELEASE", "VELOCITY" };
-    const juce::String fIds[5] = { id::fA, id::fD, id::fS, id::fR, id::fVel };
-    const juce::String aIds[5] = { id::aA, id::aD, id::aS, id::aR, id::aVel };
-    for (int i = 0; i < 5; ++i)
+    const char* const envNames[6] = { "ATTACK", "DECAY", "SUSTAIN", "RELEASE", "SLOPE", "VELOCITY" };
+    const juce::String fIds[6] = { id::fA, id::fD, id::fS, id::fR, id::fSlope, id::fVel };
+    const juce::String aIds[6] = { id::aA, id::aD, id::aS, id::aR, id::aSlope, id::aVel };
+    envScopes[0] = scope ({ 770, 392, 160, 86 });
+    envScopes[1] = scope ({ 770, 502, 160, 86 });
+    for (int i = 0; i < 6; ++i)
     {
-        knob (1048 + i * 56, 322, 42, fIds[i], envNames[i]);
-        knob (1048 + i * 56, 452, 42, aIds[i], envNames[i]);
+        knob (968 + i * 74, 396, 38, fIds[i], envNames[i]);
+        knob (968 + i * 74, 506, 38, aIds[i], envNames[i]);
     }
 
-    for (auto* pg : { &oscPages, &lfoPages, &filtPages, &fxUpPages, &fxLoPages })
-        showPage (*pg, 0);
+    // ================= LFOs =================
+    const juce::String rateIds[3]  = { id::lfo1Rate, id::lfo2Rate, id::lfo3Rate };
+    const juce::String shapeIds[3] = { id::lfo1Shape, id::lfo2Shape, id::lfo3Shape };
+    const juce::String syncIds[3]  = { id::lfo1Sync, id::lfo2Sync, id::lfo3Sync };
+    const int lx[3] = { 50, 310, 570 };
+    for (int k = 0; k < 3; ++k)
+    {
+        const int x = lx[k];
+        const bool small = k == 2;
+        lfoScopes[(size_t) k] = scope ({ x + 10, 634, small ? 104 : 132, 72 });
+        knob (x + (small ? 156 : 196), 634, 40, rateIds[k], "RATE");
+        box ({ x + 10, 710, small ? 84 : 112, 26 }, shapeIds[k], "SHAPE");
+        box ({ x + (small ? 98 : 128), 710, small ? 84 : 112, 26 }, syncIds[k], "CLOCK");
+    }
+    knob (82, 768, 30, id::lfo1Pitch, "PITCH");
+    knob (140, 768, 30, id::lfo1Cut, "CUTOFF");
+    knob (198, 768, 30, id::lfo1Pw, "PULSE W");
+    knob (256, 768, 30, id::lfo1Amp, "AMP");
+    knob (342, 768, 30, id::lfo2Shp, "SHAPE");
+    knob (400, 768, 30, id::lfo2Fm, "FM");
+    knob (458, 768, 30, id::lfo2Cut, "CUTOFF");
+    knob (516, 768, 30, id::lfo2Pan, "PAN");
+    box ({ 580, 772, 116, 26 }, id::lfo3Dst, "DESTINATION");
+    knob (724, 766, 30, id::lfo3Amt, "AMOUNT", red);
+
+    // ================= MATRIZ =================
+    for (int k = 0; k < numSlots; ++k)
+    {
+        const int y = 646 + k * 31;
+        box ({ 796, y, 140, 29 }, id::mSrc (k));
+        box ({ 940, y, 150, 29 }, id::mDst (k));
+        knob (1110, y - 2, 22, id::mAmt (k), {}, red);
+    }
+
+    // ================= ARP =================
+    attach (*key (1172, 640, "ARP ON", true), id::arpOn);
+    attach (*key (1172, 686, "HOLD", true), id::arpHold);
+    add<vac::LedList> ({ 1230, 636, 78, 80 }, arpModeNames, true, 13.0f)->bind (st, id::arpMode);
+    box ({ 1310, 640, 70, 28 }, id::arpOct, "OCTAVES");
+    knob (1196, 752, 38, id::arpRate, "RATE");
+    knob (1270, 752, 38, id::arpGate, "GATE");
+
+    // ================= EFEITOS =================
+    box ({ 64, 876, 80, 28 }, id::distType, "TYPE");
+    knob (180, 870, 34, id::distAmt, "AMOUNT", red);
+    knob (250, 870, 34, id::boostAmt, "AMOUNT", red);
+    knob (308, 870, 34, id::boostTune, "TUNE");
+    knob (378, 870, 34, id::choMix, "MIX");
+    knob (436, 870, 34, id::choInt, "DEPTH");
+    knob (506, 870, 34, id::phaMix, "MIX");
+    knob (564, 870, 34, id::phaInt, "DEPTH");
+    knob (634, 870, 34, id::dlySend, "SEND", red);
+    knob (692, 870, 34, id::dlyTime, "TIME");
+    knob (750, 870, 34, id::dlyFb, "FEEDBACK");
+    knob (820, 870, 34, id::rvbSend, "SEND", red);
+    knob (878, 870, 34, id::rvbSize, "SIZE");
+    knob (936, 870, 34, id::rvbDamp, "DAMPING");
+    knob (1006, 870, 34, id::eqLow, "LOW");
+    knob (1064, 870, 34, id::eqMid, "MID");
+    knob (1122, 870, 34, id::eqHigh, "HIGH");
+
+    buildScopes();
 
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto.
     // o tamanho salvo é lido ANTES do setResizeLimits: ele encolhe a janela ainda vazia para o mínimo
-    // e o resized() gravaria 75% por cima do que o usuário escolheu
+    // e o resized() gravaria o mínimo por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
     setResizeLimits (juce::roundToInt ((float) vac::baseW * vac::minScale), juce::roundToInt ((float) vac::baseH * vac::minScale),
@@ -242,6 +308,192 @@ VacinaEditor::~VacinaEditor()
     dialog.close();
     stopTimer();
     setLookAndFeel (nullptr);
+}
+
+// ---------------- o que cada visor desenha ----------------
+void VacinaEditor::buildScopes()
+{
+    // ---- osciladores: um ciclo da forma de onda atual ----
+    for (int o = 0; o < 3; ++o)
+    {
+        auto* s = oscScopes[(size_t) o];
+        const juce::String shp = o == 0 ? id::osc1Shape : o == 1 ? id::osc2Shape : id::osc3Shape;
+        auto modelOf = [this, o] { return o == 0 ? juce::roundToInt (pv (id::osc1Model)) : o == 1 ? juce::roundToInt (pv (id::osc2Model)) * 2 : 0; };
+        auto tableOf = [this, o] { return juce::roundToInt (pv (o == 0 ? id::osc1Table : id::osc2Table)); };
+        s->hash = [this, o, shp, modelOf, tableOf]
+        {
+            const float pw = o == 0 ? pv (id::osc1Pw) : o == 1 ? pv (id::osc2Pw) : 50.0f;
+            return pv (shp) + pw * 0.37f + (float) modelOf() * 1000.0f + (float) tableOf() * 10000.0f
+                 + (o == 0 ? pv (id::osc1Spread) * 0.013f : 0.0f);
+        };
+        s->caption = [o, modelOf, tableOf]
+        {
+            const int m = modelOf();
+            const juce::String n = "OSC " + juce::String (o + 1) + "  ";
+            if (m == 2) return n + tableNames[tableOf()];
+            return n + (m == 1 ? "SUPER" : "CLASSIC");
+        };
+        s->draw = [this, o, shp, modelOf, tableOf] (juce::Graphics& g, RF r)
+        {
+            vac::gridLines (g, r, 4, 2);
+            const int m = modelOf();
+            const float shape = pv (shp) * 0.01f;
+            const float pw = (o == 0 ? pv (id::osc1Pw) : o == 1 ? pv (id::osc2Pw) : 50.0f) * 0.01f;
+            const int table = tableOf();
+            const auto& bank = WaveBank::instance();
+            auto sample = [&] (float t, float detune)
+            {
+                t += detune;
+                t -= std::floor (t);
+                if (m == 2) return bank.read (table, shape, t, 0);
+                if (m == 1) return 2.0f * t - 1.0f;
+                return Voice::classic (t, 0.0f, shape, pw);
+            };
+            const int n = 240;
+            auto trace = [&] (float detune)
+            {
+                juce::Path p;
+                for (int i = 0; i <= n; ++i)
+                {
+                    const float t = (float) i / (float) n;
+                    const float y = r.getCentreY() - juce::jlimit (-1.1f, 1.1f, sample (t * 2.0f, detune)) * r.getHeight() * 0.40f;
+                    const float x = r.getX() + t * r.getWidth();
+                    if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
+                }
+                return p;
+            };
+            if (m == 1)   // SUPER: as serras vizinhas defasadas, mais fracas
+            {
+                const float spread = pv (id::osc1Spread) * 0.01f;
+                for (float d : { -0.11f, 0.07f, 0.19f })
+                    vac::glowPath (g, trace (d * (0.3f + spread)), vac::ink.withAlpha (0.35f), 1.0f);
+            }
+            vac::glowPath (g, trace (0.0f), vac::ink, 1.5f);
+        };
+    }
+
+    // ---- filtros: a curva dos dois juntos, como estão roteados ----
+    filterScope->hash = [this]
+    {
+        return std::log2 (pv (id::cutoff)) * 1.0f + pv (id::reso1) * 0.011f + pv (id::reso2) * 0.0137f + pv (id::f1Mode) * 31.0f
+             + pv (id::f2Mode) * 257.0f + pv (id::cutoff2) * 0.71f + pv (id::filtBal) * 0.0093f + pv (id::routing) * 3001.0f;
+    };
+    filterScope->caption = [this]
+    {
+        return "FILTERS  " + f1ModeNames[juce::roundToInt (pv (id::f1Mode))] + " > " + f2ModeNames[juce::roundToInt (pv (id::f2Mode))];
+    };
+    filterScope->draw = [this] (juce::Graphics& g, RF r)
+    {
+        vac::gridLines (g, r, 6, 4);
+        const float fc1 = pv (id::cutoff), fc2 = fc1 * std::exp2 (pv (id::cutoff2) / 12.0f);
+        const int m1 = juce::roundToInt (pv (id::f1Mode)), m2 = juce::roundToInt (pv (id::f2Mode)) + 1;
+        const float r1 = pv (id::reso1) * 0.01f, r2 = pv (id::reso2) * 0.01f, bal = pv (id::filtBal) * 0.01f;
+        const bool par = pv (id::routing) > 0.5f;
+        juce::Path p;
+        const int n = 220;
+        for (int i = 0; i <= n; ++i)
+        {
+            const float t = (float) i / (float) n;
+            const float f = 20.0f * std::pow (1000.0f, t);
+            const float h1 = filterMag (m1, f, fc1, r1), h2 = filterMag (m2, f, fc2, r2);
+            const float h = par ? (1.0f - bal) * h1 + bal * h2 : h1 * ((1.0f - bal) + bal * h2);
+            const float db = juce::jlimit (-36.0f, 18.0f, juce::Decibels::gainToDecibels (h, -60.0f));
+            const float y = r.getY() + (18.0f - db) / 54.0f * r.getHeight();
+            const float x = r.getX() + t * r.getWidth();
+            if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
+        }
+        juce::Path fill (p);
+        fill.lineTo (r.getRight(), r.getBottom());
+        fill.lineTo (r.getX(), r.getBottom());
+        fill.closeSubPath();
+        g.setGradientFill (real::vertical (vac::ink.withAlpha (0.16f), r.getY(), vac::ink.withAlpha (0.0f), r.getBottom()));
+        g.fillPath (fill);
+        vac::glowPath (g, p, vac::ink, 1.5f);
+        const float xc = r.getX() + std::log10 (juce::jlimit (20.0f, 20000.0f, fc1) / 20.0f) / 3.0f * r.getWidth();
+        g.setColour (vac::red.withAlpha (0.8f));
+        g.fillRect (xc - 0.5f, r.getY(), 1.0f, r.getHeight());
+        const float hz = fc1;
+        vac::oledText (g, hz >= 1000.0f ? juce::String (hz / 1000.0f, 2) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz",
+                       r.withTrimmedTop (r.getHeight() - 12.0f), 9.0f, juce::Justification::bottomRight, vac::redInk);
+    };
+
+    // ---- envelopes: ADSR com a inclinação do sustain ----
+    for (int e = 0; e < 2; ++e)
+    {
+        const juce::String a = e == 0 ? id::fA : id::aA, d = e == 0 ? id::fD : id::aD, su = e == 0 ? id::fS : id::aS,
+                           rl = e == 0 ? id::fR : id::aR, sl = e == 0 ? id::fSlope : id::aSlope;
+        auto* s = envScopes[(size_t) e];
+        s->hash = [this, a, d, su, rl, sl] { return pv (a) * 1.3f + pv (d) * 0.71f + pv (su) * 17.0f + pv (rl) * 0.37f + pv (sl) * 101.0f; };
+        s->caption = [e] { return juce::String (e == 0 ? "FILTER ENV" : "AMP ENV"); };
+        s->draw = [this, a, d, su, rl, sl] (juce::Graphics& g, RF r)
+        {
+            vac::gridLines (g, r, 4, 2);
+            const float A = pv (a), D = pv (d), S = pv (su) * 0.01f, Rl = pv (rl), slope = pv (sl) * 0.01f;
+            auto len = [] (float ms) { return std::sqrt (ms + 4.0f); };
+            const float hold = 40.0f;
+            const float sum = len (A) + len (D) + hold + len (Rl);
+            const float k = r.getWidth() / sum;
+            const float x0 = r.getX(), x1 = x0 + len (A) * k, x2 = x1 + len (D) * k, x3 = x2 + hold * k, x4 = r.getRight();
+            auto Y = [&] (float v) { return r.getBottom() - v * r.getHeight() * 0.92f; };
+            juce::Path p;
+            p.startNewSubPath (x0, Y (0.0f));
+            p.lineTo (x1, Y (1.0f));
+            for (int i = 1; i <= 24; ++i)
+            {
+                const float t = (float) i / 24.0f;
+                p.lineTo (x1 + (x2 - x1) * t, Y (S + (1.0f - S) * std::exp (-t * 4.6f)));
+            }
+            float end = S;
+            for (int i = 1; i <= 16; ++i)
+            {
+                const float t = (float) i / 16.0f;
+                if (std::abs (slope) > 0.005f)
+                {
+                    const float tgt = slope > 0.0f ? 1.0f : 0.0f;
+                    end = S + (tgt - S) * (1.0f - std::exp (-t * 3.0f * std::abs (slope)));
+                }
+                p.lineTo (x2 + (x3 - x2) * t, Y (end));
+            }
+            for (int i = 1; i <= 24; ++i)
+            {
+                const float t = (float) i / 24.0f;
+                p.lineTo (x3 + (x4 - x3) * t, Y (end * std::exp (-t * 4.6f)));
+            }
+            juce::Path fill (p);
+            fill.lineTo (x4, r.getBottom());
+            fill.closeSubPath();
+            g.setGradientFill (real::vertical (vac::ink.withAlpha (0.14f), r.getY(), vac::ink.withAlpha (0.0f), r.getBottom()));
+            g.fillPath (fill);
+            vac::glowPath (g, p, vac::ink, 1.4f);
+        };
+    }
+
+    // ---- LFOs: dois ciclos da forma ----
+    const juce::String shapeIds[3] = { id::lfo1Shape, id::lfo2Shape, id::lfo3Shape };
+    for (int l = 0; l < 3; ++l)
+    {
+        const juce::String sid = shapeIds[l];
+        auto* s = lfoScopes[(size_t) l];
+        s->hash = [this, sid] { return pv (sid); };
+        s->caption = [l] { return "LFO " + juce::String (l + 1); };
+        s->draw = [this, sid] (juce::Graphics& g, RF r)
+        {
+            vac::gridLines (g, r, 4, 2);
+            const int shape = juce::roundToInt (pv (sid));
+            juce::Path p;
+            const int n = 200;
+            for (int i = 0; i <= n; ++i)
+            {
+                const float t = (float) i / (float) n;
+                const float y = r.getCentreY() - lfoShape (shape, t * 2.0f) * r.getHeight() * 0.38f;
+                const float x = r.getX() + t * r.getWidth();
+                if (i == 0) p.startNewSubPath (x, y);
+                else if (shape >= 3 && shape != 5) { p.lineTo (x, p.getCurrentPosition().y); p.lineTo (x, y); }
+                else p.lineTo (x, y);
+            }
+            vac::glowPath (g, p, vac::ink, 1.4f);
+        };
+    }
 }
 
 // ---------------- menu de presets (com o tamanho da janela) ----------------
@@ -324,7 +576,7 @@ void VacinaEditor::showPresetMenu()
 
     juce::PopupMenu sizes;
     const float current = proc.uiScale.load();
-    for (int pct : { 75, 100, 125, 150, 175, 200 })
+    for (int pct : { 60, 75, 90, 100, 125, 150, 180 })
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
@@ -430,7 +682,7 @@ void VacinaEditor::timerCallback()
         && std::abs ((float) getWidth() / (float) vac::baseW - openScale) > 0.005f)
         setScale (openScale);
 
-    // visor: preset e, por 2,5 s, o último parâmetro mexido (nome e valor)
+    // visor: banco/categoria, posição, nome e, por 2,5 s, o último parâmetro mexido (nome e valor)
     const int touch = proc.touchCount.load();
     if (touch != lastTouch) { lastTouch = touch; touchTimer = proc.lastTouched.load() >= 0 ? 75 : 0; }
     if (touchTimer > 0) --touchTimer;
@@ -440,17 +692,21 @@ void VacinaEditor::timerCallback()
     if (touchTimer > 0 && idx >= 0 && idx < params.size())
         bottom = params[idx]->getName (40).toUpperCase() + ": " + params[idx]->getCurrentValueAsText();
     else
-        bottom = "VOICES " + juce::String (proc.synth.activeVoices.load()).paddedLeft ('0', 2) + "/16   "
-               + juce::String (proc.shownBpm.load(), 1) + " BPM";
-    lcd->set ("SINGLE  " + proc.getPresetGroup(), proc.getPresetName(), bottom);
+        bottom = "VOICES " + juce::String (proc.synth.activeVoices.load()).paddedLeft ('0', 2) + "/16";
+    const int pi = proc.getPresetIndex();
+    const juce::String count = pi >= 0 ? juce::String (pi + 1).paddedLeft ('0', 3) + "/" + juce::String (proc.getNumPresets()) : juce::String();
+    lcd->set (proc.getPresetGroup(), count, proc.getPresetName(), bottom);
 
-    // LED do LFO (pisca no ritmo do LFO da página aberta)
-    const float lfo = lfoPages.current == 0 ? proc.synth.lfo1Now.load() : proc.synth.lfo2Now.load();
-    if (std::abs (lfo - lfoShown) > 0.03f)
-    {
-        lfoShown = lfo;
-        canvas.repaint (juce::Rectangle<int> ((int) lfoLedPos.x - 12, (int) lfoLedPos.y - 12, 24, 24));
-    }
+    for (auto* s : scopes) s->poll();
+
+    // LEDs dos LFOs (piscam no ritmo de cada um)
+    const float lv[3] = { proc.synth.lfo1Now.load(), proc.synth.lfo2Now.load(), proc.synth.lfo3Now.load() };
+    for (int k = 0; k < 3; ++k)
+        if (std::abs (lv[k] - lfoShown[(size_t) k]) > 0.03f)
+        {
+            lfoShown[(size_t) k] = lv[k];
+            canvas.repaint (juce::Rectangle<int> ((int) lfoLedPos[k].x - 12, (int) lfoLedPos[k].y - 12, 24, 24));
+        }
 
     // MIDI e SYNC
     const int midi = proc.midiActivity.load();
@@ -498,29 +754,88 @@ void VacinaEditor::paint (juce::Graphics& g)
 }
 
 // ---------------- o aparelho ----------------
-// logo: frasco de vacina (tampa, gargalo e o líquido com a gota) + o nome
-void VacinaEditor::drawLogo (juce::Graphics& g, float x, float y, float s)
+// lateral de madeira (mogno envernizado) — a mesma de antes
+static void woodCheek (juce::Graphics& g, RF r, bool left)
 {
+    using juce::Colour;
+    juce::Path p;
+    p.addRoundedRectangle (r, 9.0f);
+    for (int i = 6; i >= 1; --i)
+    {
+        g.setColour (real::black (0.12f));
+        g.fillRoundedRectangle (r.expanded ((float) i * 0.6f).translated (left ? -1.0f : 1.0f, (float) i), 9.0f + (float) i);
+    }
+    juce::ColourGradient cg (Colour (0xff2c0d08), r.getX(), 0.0f, Colour (0xff2c0d08), r.getRight(), 0.0f, false);
+    cg.addColour (left ? 0.22 : 0.18, Colour (0xff6d2416));
+    cg.addColour (left ? 0.5 : 0.45, Colour (0xff8a3320));
+    cg.addColour (left ? 0.8 : 0.78, Colour (0xff5e1e12));
+    g.setGradientFill (cg);
+    g.fillPath (p);
+    {
+        juce::Graphics::ScopedSaveState save (g);
+        g.reduceClipRegion (p);
+        juce::Random rnd (left ? 77 : 131);
+        for (int i = 0; i < 90; ++i)
+        {
+            const float x0 = r.getX() + rnd.nextFloat() * r.getWidth();
+            const float amp = 0.4f + rnd.nextFloat() * 2.2f, freq = 0.006f + rnd.nextFloat() * 0.02f, ph = rnd.nextFloat() * 6.28f;
+            juce::Path vein;
+            for (float y = r.getY() - 4.0f; y <= r.getBottom() + 4.0f; y += 6.0f)
+            {
+                const float x = x0 + amp * std::sin (y * freq + ph) + 0.7f * std::sin (y * freq * 3.7f + ph * 2.0f);
+                if (y <= r.getY() - 4.0f) vein.startNewSubPath (x, y); else vein.lineTo (x, y);
+            }
+            const bool dark = rnd.nextFloat() < 0.7f;
+            g.setColour (dark ? Colour (0xff1a0603).withAlpha (0.10f + rnd.nextFloat() * 0.22f)
+                              : Colour (0xffc0603f).withAlpha (0.05f + rnd.nextFloat() * 0.10f));
+            g.strokePath (vein, juce::PathStrokeType (0.4f + rnd.nextFloat() * 1.3f));
+        }
+        for (int i = 0; i < 360; ++i)
+        {
+            const float x = r.getX() + rnd.nextFloat() * r.getWidth(), y = r.getY() + rnd.nextFloat() * r.getHeight();
+            g.setColour (Colour (0xff140402).withAlpha (0.18f + rnd.nextFloat() * 0.25f));
+            g.fillRect (x, y, 0.7f, 1.5f + rnd.nextFloat() * 3.0f);
+        }
+        const float hx = r.getX() + r.getWidth() * (left ? 0.42f : 0.38f);
+        juce::ColourGradient hl (real::white (0.0f), hx - 7.0f, 0.0f, real::white (0.0f), hx + 7.0f, 0.0f, false);
+        hl.addColour (0.5, real::white (0.16f));
+        g.setGradientFill (hl);
+        g.fillRect (r);
+        g.setGradientFill (real::vertical (real::white (0.14f), r.getY(), real::white (0.0f), r.getY() + 40.0f));
+        g.fillRect (r);
+        g.setGradientFill (real::vertical (real::black (0.0f), r.getBottom() - 50.0f, real::black (0.35f), r.getBottom()));
+        g.fillRect (r);
+    }
+    auto bevel = real::vertical (Colour (0xffd88a66).withAlpha (0.5f), r.getY(), real::black (0.7f), r.getBottom());
+    bevel.addColour (0.05, real::white (0.06f));
+    g.setGradientFill (bevel);
+    g.drawRoundedRectangle (r.reduced (0.6f), 9.0f, 1.2f);
+}
+
+// logo: frasco de vacina (tampa, gargalo e o líquido com a gota) + o nome
+void VacinaEditor::drawLogo (juce::Graphics& g, float x, float y)
+{
+    const float s = 1.6f;
     const auto c = vac::silk;
     juce::Path vial;
     vial.addRoundedRectangle (x + 2.0f * s, y + 6.0f * s, 12.0f * s, 16.0f * s, 2.5f * s);
     g.setColour (c);
-    g.strokePath (vial, juce::PathStrokeType (1.6f * s));
-    g.fillRoundedRectangle (x + 1.0f * s, y, 14.0f * s, 4.5f * s, 1.0f * s);          // tampa
-    g.fillRect (x + 4.0f * s, y + 4.0f * s, 8.0f * s, 2.5f * s);                      // gargalo
+    g.strokePath (vial, juce::PathStrokeType (1.4f * s));
+    g.fillRoundedRectangle (x + 1.0f * s, y, 14.0f * s, 4.5f * s, 1.0f * s);
+    g.fillRect (x + 4.0f * s, y + 4.0f * s, 8.0f * s, 2.5f * s);
     g.setColour (vac::red);
-    g.fillRoundedRectangle (x + 3.6f * s, y + 13.0f * s, 8.8f * s, 7.4f * s, 1.5f * s);  // o líquido
+    g.fillRoundedRectangle (x + 3.6f * s, y + 13.0f * s, 8.8f * s, 7.4f * s, 1.5f * s);
     juce::Path drop;
     drop.startNewSubPath (x + 8.0f * s, y + 8.0f * s);
     drop.quadraticTo (x + 10.5f * s, y + 11.5f * s, x + 8.0f * s, y + 12.4f * s);
     drop.quadraticTo (x + 5.5f * s, y + 11.5f * s, x + 8.0f * s, y + 8.0f * s);
     g.fillPath (drop);
 
-    g.setFont (theme::sans (17.0f * s, true, 0.06f));
-    g.setColour (real::black (0.6f));
-    g.drawText ("VACINA", RF (x + 21.0f * s, y + 1.0f * s, 120.0f * s, 22.0f * s), juce::Justification::centredLeft, false);
+    g.setFont (theme::sans (30.0f, true, 0.10f));
     g.setColour (c);
-    g.drawText ("VACINA", RF (x + 21.0f * s, y, 120.0f * s, 22.0f * s), juce::Justification::centredLeft, false);
+    g.drawText ("VACINA", RF (x + 34.0f, y - 2.0f, 180.0f, 32.0f), juce::Justification::centredLeft, false);
+    vac::silkText (g, "VIRTUAL ANALOG SYNTHESIZER", { x + 35.0f, y + 29.0f, 190.0f, 10.0f }, juce::Justification::centredLeft,
+                   7.5f, true, vac::silkDim, 0.18f);
 }
 
 void VacinaEditor::drawCanvas (juce::Graphics& g)
@@ -528,92 +843,112 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
     const float W = (float) vac::baseW, H = (float) vac::baseH;
     g.fillAll (juce::Colour (0xff0d0d0e));
 
-    // chapa grafite entre as duas laterais de madeira
-    vac::panel (g, { 34.0f, 10.0f, W - 68.0f, H - 20.0f }, 4.0f);
-    vac::woodCheek (g, { 2.0f, 2.0f, 40.0f, H - 4.0f }, true);
-    vac::woodCheek (g, { W - 42.0f, 2.0f, 40.0f, H - 4.0f }, false);
-
-    // conectores da traseira, serigrafados na beirada de cima
+    // chapa (imagem renderizada) entre as duas laterais de madeira
+    const RF panel (30.0f, 6.0f, W - 60.0f, H - 12.0f);
+    for (int i = 6; i >= 1; --i)
     {
-        const char* const jacks[] = { "USB", "MIDI IN", "MIDI OUT", "IN L", "IN R", "OUT 1 L", "OUT 1 R", "OUT 2 L", "OUT 2 R",
-                                      "OUT 3 L", "OUT 3 R", "12V DC IN", "PHONES" };
-        float x = 360.0f;
-        for (auto* j : jacks)
+        g.setColour (real::black (0.14f));
+        g.fillRoundedRectangle (panel.expanded ((float) i).translated (0.0f, (float) i * 0.8f), 4.0f + (float) i);
+    }
+    {
+        juce::Graphics::ScopedSaveState save (g);
+        juce::Path face;
+        face.addRoundedRectangle (panel, 4.0f);
+        g.reduceClipRegion (face);
+        if (art->panel.isValid())
         {
-            vac::silkText (g, j, { x, 15.0f, 64.0f, 9.0f }, juce::Justification::centred, 6.5f, true, vac::silkDim);
-            x += 72.0f;
+            g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+            g.drawImage (art->panel, panel, juce::RectanglePlacement::stretchToFit);
         }
+        else
+            g.fillAll (juce::Colour (0xff2a2b2e));
     }
+    auto bevel = real::vertical (real::white (0.22f), panel.getY(), real::black (0.7f), panel.getBottom());
+    bevel.addColour (0.03, real::white (0.05f));
+    g.setGradientFill (bevel);
+    g.drawRoundedRectangle (panel.reduced (0.5f), 4.0f, 1.4f);
+    woodCheek (g, { 2.0f, 2.0f, 40.0f, H - 4.0f }, true);
+    woodCheek (g, { W - 42.0f, 2.0f, 40.0f, H - 4.0f }, false);
 
-    drawLogo (g, 54.0f, 26.0f, 1.0f);
+    drawLogo (g, 56.0f, 24.0f);
 
-    // ---- títulos e marcações ----
-    vac::sectionTitle (g, { 162.0f, 34.0f, 172.0f, 14.0f }, "MATRIX");
+    // ---- seções ----
+    vac::section (g, { 876.0f, 16.0f, 404.0f, 92.0f }, "VOICE");
+    vac::section (g, { 50.0f, 116.0f, 352.0f, 238.0f }, "OSC 1");
+    vac::section (g, { 412.0f, 116.0f, 400.0f, 238.0f }, "OSC 2");
+    vac::section (g, { 822.0f, 116.0f, 196.0f, 238.0f }, "OSC 3");
+    vac::section (g, { 1028.0f, 116.0f, 362.0f, 238.0f }, "MIXER");
+    vac::section (g, { 50.0f, 364.0f, 700.0f, 240.0f }, "FILTERS");
+    vac::section (g, { 760.0f, 364.0f, 630.0f, 240.0f }, "ENVELOPES");
+    vac::section (g, { 50.0f, 614.0f, 250.0f, 224.0f }, "LFO 1");
+    vac::section (g, { 310.0f, 614.0f, 250.0f, 224.0f }, "LFO 2");
+    vac::section (g, { 570.0f, 614.0f, 190.0f, 224.0f }, "LFO 3");
+    vac::section (g, { 770.0f, 614.0f, 360.0f, 224.0f }, "MOD MATRIX");
+    vac::section (g, { 1140.0f, 614.0f, 250.0f, 224.0f }, "ARP");
+    vac::section (g, { 50.0f, 848.0f, 1100.0f, 96.0f }, "EFFECTS");
+
+    vac::subTitle (g, { 310.0f, 382.0f, 216.0f, 12.0f }, "FILTER 1");
+    vac::subTitle (g, { 534.0f, 382.0f, 210.0f, 12.0f }, "FILTER 2");
+    vac::silkText (g, "MODE", { 314.0f, 492.0f, 60.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "MODE", { 540.0f, 480.0f, 60.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "ROUTING", { 68.0f, 528.0f, 84.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "MODEL", { 242.0f, 128.0f, 74.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "MODEL", { 604.0f, 128.0f, 74.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "KEY MODE", { 890.0f, 28.0f, 70.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    vac::silkText (g, "MODE", { 1230.0f, 718.0f, 70.0f, 10.0f }, juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
+    for (int k = 0; k < 2; ++k)
+    {
+        vac::subTitle (g, { 56.0f + (float) k * 260.0f, 750.0f, 236.0f, 12.0f }, "DESTINATIONS", vac::redInk);
+    }
+    vac::subTitle (g, { 778.0f, 626.0f, 344.0f, 12.0f }, "SOURCE                      DESTINATION                  AMT");
     for (int k = 0; k < numSlots; ++k)
-        vac::silkText (g, juce::String (k + 1), { 148.0f, 56.0f + (float) k * 28.0f, 12.0f, 24.0f }, juce::Justification::centred, 8.0f);
-    vac::silkText (g, "SOURCE", { 160.0f, 140.0f, 72.0f, 10.0f }, juce::Justification::centred, 7.0f, true, vac::silkDim);
-    vac::silkText (g, "DESTINATION", { 236.0f, 140.0f, 72.0f, 10.0f }, juce::Justification::centred, 7.0f, true, vac::silkDim);
-    vac::silkText (g, "AMOUNT", { 300.0f, 140.0f, 46.0f, 10.0f }, juce::Justification::centred, 7.0f, true, vac::silkDim);
+        vac::silkText (g, juce::String (k + 1), { 778.0f, 646.0f + (float) k * 31.0f, 16.0f, 29.0f }, juce::Justification::centred, 9.0f);
 
-    vac::sectionTitle (g, { 50.0f, 160.0f, 284.0f, 14.0f }, "ARP");
-    vac::silkText (g, "OCTAVES", { 52.0f, 283.0f, 60.0f, 10.0f }, juce::Justification::centred, 7.0f);
+    // grupos dos efeitos
+    const struct { float x, w; const char* n; } fx[] = { { 58.0f, 152.0f, "DISTORTION" }, { 218.0f, 120.0f, "ANALOG BOOST" },
+                                                       { 346.0f, 120.0f, "CHORUS" }, { 474.0f, 120.0f, "PHASER" },
+                                                       { 602.0f, 180.0f, "DELAY" }, { 788.0f, 180.0f, "REVERB" },
+                                                       { 974.0f, 180.0f, "EQ" } };
+    for (auto& f : fx)
+        vac::subTitle (g, { f.x, 858.0f, f.w - 8.0f, 12.0f }, f.n);
 
-    vac::sectionTitle (g, { 340.0f, 34.0f, 228.0f, 14.0f }, "MODULATORS");
-    vac::silkText (g, "CLOCK", { 346.0f, 123.0f, 76.0f, 10.0f }, juce::Justification::centred, 7.0f);
-    vac::silkText (g, "DESTINATIONS", { 346.0f, 164.0f, 210.0f, 10.0f }, juce::Justification::centredLeft, 7.0f, true, vac::redInk);
+    // nomes embaixo dos campos de visor
+    for (auto& c : captions)
+        vac::silkText (g, c.second, c.first.translated (0.0f, 1.0f), juce::Justification::centredTop, 7.5f, true, vac::silkDim);
+
+    // placa do modelo (com dois parafusos) no canto de baixo
     {
-        const float lfo = lfoPages.current == 0 ? proc.synth.lfo1Now.load() : proc.synth.lfo2Now.load();
-        real::led (g, lfoLedPos, 2.6f, vac::red, 0.5f + 0.5f * lfo);
-    }
-
-    vac::sectionTitle (g, { 576.0f, 34.0f, 334.0f, 14.0f }, "OSCILLATORS");
-
-    vac::sectionTitle (g, { 916.0f, 34.0f, 96.0f, 14.0f }, "MIX");
-    // seta do "V" entre as metades do MIX (detalhe do painel)
-    {
-        juce::Path v;
-        v.addTriangle (946.0f, 262.0f, 976.0f, 262.0f, 961.0f, 290.0f);
-        g.setColour (real::black (0.5f));
-        g.fillPath (v, juce::AffineTransform::translation (0.0f, 1.0f));
-        g.setColour (vac::silkDim.withAlpha (0.55f));
-        g.fillPath (v);
-        g.setColour (juce::Colour (0xff2a2b2e));
-        g.fillPath (v, juce::AffineTransform::scale (0.55f, 0.55f, 961.0f, 270.0f));
-    }
-
-    vac::sectionTitle (g, { 1016.0f, 34.0f, 296.0f, 14.0f }, "FILTERS");
-
-    vac::sectionTitle (g, { 50.0f, 300.0f, 354.0f, 14.0f }, "EFFECTS");
-    vac::groupFrame (g, { 56.0f, 320.0f, 342.0f, 104.0f });
-    vac::groupFrame (g, { 56.0f, 436.0f, 342.0f, 112.0f });
-
-    vac::sectionTitle (g, { 1016.0f, 300.0f, 296.0f, 14.0f }, "FILTER ENVELOPE");
-    vac::sectionTitle (g, { 1016.0f, 430.0f, 296.0f, 14.0f }, "AMPLIFIER ENVELOPE");
-
-    // placa do modelo em cima do visor
-    {
-        const RF plate (560.0f, 312.0f, 188.0f, 22.0f);
-        g.setGradientFill (real::vertical (juce::Colour (0xff3b3c40), plate.getY(), juce::Colour (0xff1c1d1f), plate.getBottom()));
-        g.fillRoundedRectangle (plate, 3.0f);
-        g.setColour (real::white (0.12f));
-        g.drawRoundedRectangle (plate.reduced (0.5f), 3.0f, 0.8f);
-        g.setFont (theme::sans (13.0f, true, 0.3f));
+        const RF plate (1162.0f, 852.0f, 226.0f, 90.0f);
+        g.setGradientFill (real::vertical (juce::Colour (0xff3a3b3f), plate.getY(), juce::Colour (0xff1b1c1e), plate.getBottom()));
+        g.fillRoundedRectangle (plate, 4.0f);
+        g.setColour (real::white (0.10f));
+        g.drawRoundedRectangle (plate.reduced (0.5f), 4.0f, 0.8f);
+        g.setColour (real::black (0.6f));
+        g.drawRoundedRectangle (plate.expanded (0.8f).translated (0.0f, 0.8f), 4.5f, 0.8f);
+        g.setFont (theme::sans (22.0f, true, 0.32f));
         g.setColour (vac::silk);
-        g.drawText ("VACINA", plate.withTrimmedRight (60.0f), juce::Justification::centredRight, false);
+        g.drawText ("VACINA", plate.withTrimmedTop (16.0f).withHeight (28.0f), juce::Justification::centred, false);
         g.setColour (vac::red);
-        g.fillRect (plate.getRight() - 56.0f, plate.getY() + 5.0f, 1.2f, 12.0f);
-        g.setFont (theme::sans (8.0f, true, 0.2f));
-        g.setColour (vac::silkDim);
-        g.drawText ("DESKTOP", RF (plate.getRight() - 52.0f, plate.getY(), 48.0f, plate.getHeight()), juce::Justification::centredLeft, false);
+        g.fillRect (plate.getCentreX() - 40.0f, plate.getY() + 50.0f, 80.0f, 1.2f);
+        vac::silkText (g, "16 VOICES  ·  3 OSC  ·  24 WAVETABLES", plate.withTrimmedTop (56.0f).withHeight (12.0f),
+                       juce::Justification::centred, 7.5f, true, vac::silkDim, 0.12f);
+        if (art->screw.isValid())
+            for (float sx : { plate.getX() + 12.0f, plate.getRight() - 12.0f })
+                g.drawImage (art->screw, RF (sx - 8.0f, plate.getCentreY() - 8.0f, 16.0f, 16.0f), juce::RectanglePlacement::stretchToFit);
     }
+
+    // LEDs dos LFOs
+    const float lv[3] = { proc.synth.lfo1Now.load(), proc.synth.lfo2Now.load(), proc.synth.lfo3Now.load() };
+    for (int k = 0; k < 3; ++k)
+        real::led (g, lfoLedPos[k], 2.6f, vac::red, 0.5f + 0.5f * lv[k]);
 
     // estado: MIDI, SYNC e BPM
     real::led (g, midiLedPos, 2.6f, vac::red, midiLit ? 1.0f : 0.0f);
-    vac::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 5.0f, 40.0f, 10.0f }, juce::Justification::centredLeft, 7.0f);
+    vac::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 5.0f, 40.0f, 10.0f }, juce::Justification::centredLeft, 7.5f);
     real::led (g, syncLedPos, 2.6f, vac::red, lastSync ? 1.0f : 0.0f);
-    vac::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 5.0f, 40.0f, 10.0f }, juce::Justification::centredLeft, 7.0f);
-    vac::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 424.0f, 503.0f, 74.0f, 10.0f },
-                   juce::Justification::centredLeft, 7.0f, true, vac::silkDim);
+    vac::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 5.0f, 40.0f, 10.0f }, juce::Justification::centredLeft, 7.5f);
+    vac::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 168.0f, 83.0f, 74.0f, 10.0f },
+                   juce::Justification::centredLeft, 7.5f, true, vac::silkDim);
 
     drawMeter (g);
 }
@@ -621,7 +956,7 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
 // medidor de saída em LEDs (pico), dois canais
 void VacinaEditor::drawMeter (juce::Graphics& g)
 {
-    const int leds = 12;
+    const int leds = 11;
     const float levels[2] = { levelL, levelR };
     for (int c = 0; c < 2; ++c)
     {
@@ -631,10 +966,10 @@ void VacinaEditor::drawMeter (juce::Graphics& g)
         {
             const float f = (float) i / (float) (leds - 1);
             const auto col = f > 0.85f ? vac::red : f > 0.6f ? theme::amber : theme::leaf;
-            real::ledBar (g, { (float) meterArea.getX() + 14.0f + (float) c * 18.0f, (float) meterArea.getBottom() - 22.0f - (float) i * 7.0f, 10.0f, 4.0f },
+            real::ledBar (g, { (float) meterArea.getX() + 8.0f + (float) c * 14.0f, (float) meterArea.getBottom() - 18.0f - (float) i * 6.2f, 9.0f, 3.6f },
                           col, levels[c] > 0.0005f && f <= v ? 1.0f : 0.0f, 0.4f);
         }
     }
-    vac::silkText (g, "L     R", { (float) meterArea.getX(), (float) meterArea.getBottom() - 14.0f, (float) meterArea.getWidth(), 10.0f },
+    vac::silkText (g, "L   R", { (float) meterArea.getX(), (float) meterArea.getBottom() - 12.0f, (float) meterArea.getWidth(), 10.0f },
                    juce::Justification::centred, 7.0f);
 }

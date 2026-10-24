@@ -66,7 +66,7 @@ public:
     vacina::Fx    fx;
 
     std::atomic<float> meterL { 0.0f }, meterR { 0.0f };
-    std::atomic<float> uiScale { 1.0f };            // tamanho da janela, salvo no projeto
+    std::atomic<float> uiScale { 0.85f };            // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 120.0f };
     std::atomic<bool>  synced { false };
     std::atomic<int>   lastTouched { -1 };          // último parâmetro mexido (índice em getParameters), para o visor

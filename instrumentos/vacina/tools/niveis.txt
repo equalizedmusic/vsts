@@ -1,0 +1,360 @@
+Reese Paulista;0.9
+Ácido Sulfúrico;4.9
+Subsolo;2.4
+Elástico;5.0
+Slap de Fábrica;9.0
+Rosnado;-3.8
+Serra Elétrica;0.5
+Boca de Lobo;10.9
+Ponte Estaiada;0.5
+Fermento;2.7
+Caixa d'Água;2.6
+Mola Solta;5.0
+Contrabaixo de Bar;11.1
+Dragão de Metrô;-4.7
+Motor de Popa;1.1
+Vogal Grave;8.3
+Concreto Armado;1.6
+Gota Corrosiva;2.9
+Grave de Garagem;1.5
+Borracha Quente;6.6
+Dedão;11.9
+Mastigador;-2.5
+Rasgo;3.0
+Uau Grave;7.5
+Marginal Pinheiros;-0.4
+Bisturi;4.8
+Tambor de Borracha;2.5
+Dente de Metal;4.5
+Groove do Centro;11.0
+Turbina;-3.7
+Faísca Grave;2.0
+Garganta;7.3
+Viaduto;1.9
+Tubo de Ensaio;2.5
+Batimento;1.9
+Fio Desencapado;4.5
+Baile de Sexta;5.4
+Wobble do Vizinho;-2.3
+Lixa;1.3
+Tuba Falante;9.1
+Sirene da Madrugada;9.6
+Febre Alta;6.5
+Fliperama;4.6
+Cantora de Rádio;6.4
+Sino de Vidro;9.9
+Guitarra de Mentira;-3.8
+Flauta de Lata;3.3
+Robô Cantor;13.2
+Agulha Quente;10.0
+Torcida;6.0
+Cartucho;5.7
+Coral de Uma Só;4.6
+Campainha;9.6
+Amplificador Fritando;-2.6
+Assobio;3.1
+Telefone Antigo;14.0
+Fio de Prata;13.7
+Grito de Gol;6.5
+Oito Bits;5.5
+Voz no Túnel;7.7
+Metal Líquido;10.9
+Microfonia;-2.6
+Sopro;3.2
+Rádio Pirata;12.7
+Holofote;12.4
+Farol Alto;7.0
+Pixel Teimoso;5.6
+Aaah Elétrico;8.1
+Prata Fina;11.6
+Grito Sujo;-3.6
+Ocarina;3.1
+Lata de Sardinha;18.0
+Linha Cruzada;9.9
+Pico de Energia;6.8
+Game Over;6.7
+Sereia;4.6
+Cristal Partido;11.1
+Válvula Quente;-2.0
+Pífano;3.9
+Sinal Fraco;12.1
+Cobertor;-4.4
+Maré Cheia;8.0
+Coro da Catedral;-4.5
+Céu Aberto;0.3
+Cordas da Chuva;-2.2
+Cristaleira;4.3
+Veludo;-7.1
+Subida de Serra;1.4
+Fim de Tarde;-3.1
+Respiração;1.1
+Monges;-5.3
+Ponte de Luz;-2.9
+Violoncelo Fantasma;-2.2
+Lustre;5.8
+Seda Antiga;-6.7
+Nascente;-0.3
+Café Coado;-3.1
+Aurora;2.7
+Vozes do Porão;-3.8
+Clarão;-0.2
+Orquestra Vazia;-2.1
+Gelo Fino;3.1
+Fita Cassete;-7.0
+Ventania;-0.3
+Varanda;-2.6
+Movimento Lento;3.8
+Capela;-2.6
+Vitral;-3.9
+Sala de Ensaio;-3.0
+Caixinha de Joias;3.3
+Anos Oitenta;-7.1
+Cortina Abrindo;0.5
+Domingo Lento;1.6
+Vidro Soprado;6.7
+Hino Distante;-3.0
+Alvorada;-3.1
+Arco Lento;-2.9
+Orvalho;6.7
+Neon Rosa;-6.5
+Holofotes;-0.7
+Violão de Nylon;15.6
+Pingo de Chuva;15.6
+Marimba de Vidro;13.0
+Moedinha;13.9
+Lâmina;17.9
+Ampola;11.4
+Uó;15.1
+Palma;17.1
+Harpa de Corda;14.2
+Estalo de Dedo;15.9
+Kalimba;12.2
+Botão de Elevador;12.7
+Moeda de Prata;18.0
+Dose Única;11.4
+Bolha;12.1
+Graveto;16.8
+Cavaquinho;18.0
+Gota de Néon;16.8
+Xilofone;16.8
+Ping;12.9
+Clique Metálico;17.4
+Reforço;12.5
+Tô;11.5
+Casca de Noz;16.8
+Koto;15.7
+Picada;14.7
+Gamelão;13.9
+Bip;13.2
+Arame;14.2
+Vacina de Gotinha;11.0
+Pato de Borracha;15.7
+Pedrinha;18.0
+Berimbau;17.7
+Seringa;16.2
+Vibrafone;12.8
+Toque de Celular;11.8
+Alfinete;17.0
+Anticorpo;11.4
+Boca Fechada;15.0
+Chocalho;15.8
+Escada Rolante;9.7
+Joystick;14.3
+Carrilhão;13.0
+Formigueiro;1.5
+Pingue-Pongue;11.2
+Dado Viciado;10.5
+Acorde de Pista;6.2
+Caleidoscópio;17.0
+Metrô Linha Azul;10.6
+Contador;11.1
+Caixa de Música;11.5
+Ciranda Ácida;4.5
+Eco do Vale;16.6
+Loteria;8.9
+Stab de Garagem;8.3
+Engrenagem;9.4
+Esteira;10.2
+Cronômetro;9.7
+Sinos da Praça;10.1
+Centrífuga;2.6
+Ricochete;15.2
+Cara ou Coroa;11.0
+Rave de 92;6.7
+Hélice;13.3
+Relógio de Ponto;11.1
+Dígito;8.1
+Cata-Vento;12.1
+Pipeta;3.1
+Bate-Volta;15.0
+Roleta;11.5
+Soco;8.2
+Vitrola;9.0
+Elevador;10.7
+Calculadora;9.6
+Móbile;15.4
+Reagente;5.2
+Quique;13.6
+Sorteio;8.7
+Batida Seca;8.7
+Carrossel;9.8
+Piano Elétrico;3.0
+Órgão de Igreja;-0.3
+Clavinete;1.0
+Celesta;6.0
+Metais;-0.3
+Cordas de Novela;-0.8
+Harpa;6.3
+Piano de Fita;3.6
+Rhodes de Mentira;2.4
+Órgão de Quermesse;0.3
+Funk de Elevador;14.3
+Sino de Natal;7.6
+Fanfarra;6.4
+Orquestra de Bolso;-0.3
+Saltério;6.3
+Rádio de Pilha;3.4
+Sala de Jazz;3.2
+Hammond da Tia;1.7
+Wah Wah;0.7
+Glockenspiel;5.3
+Trompete de Plástico;-0.3
+Violinos;-0.4
+Cítara;5.1
+Toca-Discos;4.1
+Bossa;3.4
+Rock Progressivo;-0.6
+Pé de Pato;6.9
+Ding Dong;5.5
+Banda da Cidade;6.3
+Sala de Concerto;-0.3
+Dulcimer;7.0
+Lo-Fi de Domingo;3.4
+Fim de Noite;2.7
+Gospel;-0.3
+Suingue;9.4
+Vidro Tocado;5.4
+Sopro de Bronze;-0.0
+Abertura;0.3
+Bandolim;5.8
+Piano Empoeirado;4.0
+Dose Dupla;-3.7
+Aspirador;2.0
+Muralha;-7.4
+Stab de Trance;4.5
+Serra Afiada;-4.3
+Exército;-3.2
+Neblina Densa;0.6
+Gate Picotado;-1.3
+Hino do Clube;-3.3
+Hoover de 91;2.4
+Estádio;-7.5
+Centelha;4.8
+Navalha;-4.0
+Enxame;-3.2
+Sombra;0.5
+Trance Cortado;-1.6
+Mãos pro Alto;-3.3
+Sirene de Rave;1.7
+Catedral de Luz;-7.0
+Fogos;4.3
+Motosserra;-3.9
+Multidão;-4.0
+Eclipse;1.0
+Estrobo;-1.1
+Pista Cheia;-4.7
+Furacão;2.5
+Horizonte;-6.0
+Estouro;4.4
+Corte Fino;-3.5
+Arquibancada Lotada;-3.3
+Penumbra;1.3
+Pulsação;-0.8
+Clímax;-5.1
+Turbilhão;2.5
+Imensidão;-7.8
+Confete;4.8
+Esmeril;-4.0
+Avalanche;-3.4
+Noite Fechada;0.6
+Cardíaco;-0.8
+Vento Sul;10.8
+Subterrâneo;-1.1
+Estação Espacial;4.9
+Tubos de Metal;9.4
+Fantasma;-1.3
+Geleira;7.3
+Submarino;3.5
+Sala de Espera;2.4
+Brisa do Mar;5.8
+Caverna;-1.4
+Órbita;5.1
+Cano Cantante;11.6
+Sussurro;4.8
+Lava Lenta;6.1
+Aquário;2.6
+Quarentena;0.3
+Tempestade;11.0
+Usina;1.8
+Satélite;3.6
+Garrafa Soprada;8.1
+Assombração;-0.7
+Placas Tectônicas;3.4
+Fundo do Mar;2.9
+Laboratório Noturno;0.3
+Rajada;8.1
+Transformador;0.3
+Via Láctea;11.0
+Túnel;10.2
+Eco de Voz;-3.3
+Erosão;6.0
+Mergulho;1.5
+Isolamento;3.7
+Corrente de Ar;10.9
+Zumbido Antigo;-1.7
+Poeira Cósmica;6.9
+Poço;18.0
+Vozes no Rádio;5.1
+Fóssil;7.9
+Bolhas;4.0
+Imunidade;1.8
+Decolagem;9.6
+Queda Livre;10.1
+Laser;18.0
+Computador de Bordo;9.5
+Impacto;0.1
+Defeito;6.9
+Alarme;1.2
+Sucata;11.7
+Subida;17.0
+Pouso;9.6
+Raio;15.4
+Androide;8.8
+Trovão;0.0
+Tela Azul;12.1
+Ambulância;0.6
+Ferro-Velho;13.6
+Turbina Ligando;13.7
+Desliga;10.0
+Zap;15.1
+Telemetria;5.6
+Porta Batendo;1.4
+Vírus;10.6
+Sirene;5.5
+Panela;10.0
+Lançamento;15.3
+Apagão;10.8
+Pistola de Brinquedo;12.6
+Código Morse;7.0
+Explosão Distante;0.1
+Bug;11.8
+Alerta;6.3
+Metal Retorcido;11.6
+Contagem Regressiva;9.8
+Mergulho de Avião;9.9
+Disparo;18.0
+Sonda;6.8
+Estrondo;1.8
+Pane;9.7
+Plantão;5.4
+Sino Rachado;12.8
