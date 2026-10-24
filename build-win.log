@@ -1,0 +1,2479 @@
+-- Building for: Visual Studio 18 2026
+-- The C compiler identification is MSVC 19.51.36260.0
+-- The CXX compiler identification is MSVC 19.51.36260.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- VST2 SDK ausente (sdk/vst2): gerando só VST3/AU
+-- Configuring done (104.1s)
+-- Generating done (1.0s)
+-- Build files have been written to: D:/a/vsts/vsts/build
+MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+
+  Checking File Globs
+  1>Checking Build System
+  Generating Caleido_artefacts/JuceLibraryCode/Caleido_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  Building VST3 manifest helper for Barragem
+  Generating Barragem_artefacts/JuceLibraryCode/Barragem_resources.rc
+  Building VST3 manifest helper for Caleido
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  Caleido_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido_rc_lib.dir\Release\Caleido_rc_lib.lib
+  Barragem_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem_rc_lib.dir\Release\Barragem_rc_lib.lib
+  Generating Chama_artefacts/JuceLibraryCode/Chama_resources.rc
+  Building VST3 manifest helper for Chama
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  Chama_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\chama\Chama_rc_lib.dir\Release\Chama_rc_lib.lib
+  Generating ConsoleIsp_artefacts/JuceLibraryCode/ConsoleIsp_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  ConsoleIsp_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp_rc_lib.dir\Release\ConsoleIsp_rc_lib.lib
+  Building VST3 manifest helper for ConsoleIsp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info - done
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.3s)
+  -- Configuring done (2.3s)
+  -- Generating done (0.0s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Caleido
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Barragem
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.3s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Chama
+    1>Checking Build System
+    1>Checking Build System
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    juce_VST3ManifestHelper.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.2s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/ConsoleIsp
+    1>Checking Build System
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  
+    juce_VST3ManifestHelper.cpp
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Caleido\vst3_helper.exe
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Chama\vst3_helper.exe
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Barragem\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\ConsoleIsp\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  PluginProcessor.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  Generating Espiral_artefacts/JuceLibraryCode/Espiral_resources.rc
+  juce_audio_processors.cpp
+  PluginEditor.cpp
+  juce_gui_extra.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  Espiral_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral_rc_lib.dir\Release\Espiral_rc_lib.lib
+  Building VST3 manifest helper for Espiral
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+  (compiling source file '../../../../plugins/criativo/chama/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(62,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(60,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'chama::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+  (compiling source file '../../../../plugins/criativo/chama/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(62,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(60,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'chama::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+  (compiling source file '../../../../plugins/mix/barragem/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\barragem\Source\Params.h(120,46):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\barragem\Source\Params.h(118,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'barragem::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem.vcxproj]
+  (compiling source file '../../../../plugins/mix/barragem/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\barragem\Source\Params.h(120,46):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\barragem\Source\Params.h(118,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'barragem::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_4.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_gui_basics_5.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+  (compiling source file '../../../../plugins/criativo/caleido/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(86,45):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(85,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'caleido::factoryPresets'
+  
+  juce_gui_basics_5.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+  (compiling source file '../../../../plugins/criativo/caleido/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(86,45):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(85,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'caleido::factoryPresets'
+  
+  Generating F1_artefacts/JuceLibraryCode/F1_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_graphics.cpp
+  juce_graphics.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  juce_graphics_Harfbuzz.cpp
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (24.2s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Espiral
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  juce_core.cpp
+  juce_events.cpp
+  juce_core.cpp
+    1>Checking Build System
+  juce_graphics_Harfbuzz.cpp
+  F1_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\f1\F1_rc_lib.dir\Release\F1_rc_lib.lib
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Espiral\vst3_helper.exe
+  juce_audio_utils.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+  (compiling source file '../../../../plugins/mix/console/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\console\Source\Params.h(98,45):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\console\Source\Params.h(96,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'console::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp.vcxproj]
+  (compiling source file '../../../../plugins/mix/console/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\console\Source\Params.h(98,45):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\console\Source\Params.h(96,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'console::factoryPresets'
+  
+  juce_dsp.cpp
+  juce_dsp.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_gui_basics_4.cpp
+  juce_dsp.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics_Sheenbidi.c
+  Generating Fita_artefacts/JuceLibraryCode/Fita_resources.rc
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  Building VST3 manifest helper for F1
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_graphics.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Fita_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\fita\Fita_rc_lib.dir\Release\Fita_rc_lib.lib
+  Chama.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\chama\Chama_artefacts\Release\CHAMA_SharedCode.lib
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+  (compiling source file '../../../../plugins/criativo/espiral/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(91,40):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(89,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'espiral::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+  (compiling source file '../../../../plugins/criativo/espiral/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(91,40):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(89,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'espiral::factoryPresets'
+  
+  Building VST3 manifest helper for Fita
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Barragem.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem_artefacts\Release\BARRAGEM_SharedCode.lib
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (16.2s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/F1
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  
+  juce_audio_processors_headless.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_gui_basics_5.cpp
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_graphics.cpp
+    juce_VST3ManifestHelper.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (14.3s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Fita
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  juce_graphics_Harfbuzz.cpp
+    1>Checking Build System
+  juce_events.cpp
+  juce_core.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\F1\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  juce_audio_processors_headless.cpp
+  Building VST3 manifest helper for Grao
+  juce_audio_processors_headless_ara.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  juce_audio_processors_headless_lv2_libs.cpp
+  -- Detecting CXX compiler ABI info
+  juce_audio_basics.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Fita\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (14.1s)
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Grao
+  Generating Grao_artefacts/JuceLibraryCode/Grao_resources.rc
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/grao/CMakeLists.txt
+    1>Checking Build System
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+  juce_graphics_Sheenbidi.c
+  Grao_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\grao\Grao_rc_lib.dir\Release\Grao_rc_lib.lib
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_utils.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_audio_formats.cpp
+  juce_audio_formats_flac_2.c
+  juce_audio_devices.cpp
+  Generating Horizonte_artefacts/JuceLibraryCode/Horizonte_resources.rc
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  juce_audio_formats_opusfile.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/horizonte/CMakeLists.txt
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Grao\vst3_helper.exe
+  juce_dsp.cpp
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Horizonte_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte_rc_lib.dir\Release\Horizonte_rc_lib.lib
+  Building VST3 manifest helper for Horizonte
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/grao/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+  (compiling source file '../../../../plugins/criativo/f1/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(99,46):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(97,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'f1::factoryPresets'
+  
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+  (compiling source file '../../../../plugins/criativo/f1/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(99,46):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(97,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'f1::factoryPresets'
+  
+  -- Detecting CXX compiler ABI info
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+  juce_gui_basics_3.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics_4.cpp
+  Caleido.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido_artefacts\Release\CALEIDO_SharedCode.lib
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (11.9s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Horizonte
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  Generating Lixa_artefacts/JuceLibraryCode/Lixa_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/lixa/CMakeLists.txt
+  ConsoleIsp.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp_artefacts\Release\CONSOLE_SharedCode.lib
+    1>Checking Build System
+  juce_gui_basics_5.cpp
+  Lixa_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\lixa\Lixa_rc_lib.dir\Release\Lixa_rc_lib.lib
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+  (compiling source file '../../../../plugins/criativo/fita/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\fita\Source\Params.h(93,44):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\fita\Source\Params.h(91,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'fita::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\fita\Fita.vcxproj]
+  (compiling source file '../../../../plugins/criativo/fita/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\fita\Source\Params.h(93,44):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\fita\Source\Params.h(91,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'fita::factoryPresets'
+  
+    juce_VST3ManifestHelper.cpp
+  juce_graphics.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/grao/CMakeLists.txt
+  Building VST3 manifest helper for Lixa
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Horizonte\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics_5.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_graphics.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/horizonte/CMakeLists.txt
+  juce_graphics_Harfbuzz.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+  (compiling source file '../../../../plugins/criativo/grao/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\grao\Source\Params.h(99,39):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\grao\Source\Params.h(98,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'grao::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\grao\Grao.vcxproj]
+  juce_audio_processors_headless.cpp
+  (compiling source file '../../../../plugins/criativo/grao/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\grao\Source\Params.h(99,39):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\grao\Source\Params.h(98,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'grao::factoryPresets'
+  
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_audio_processors_headless_ara.cpp
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_events.cpp
+  juce_graphics_libwebp_utils.c
+  juce_audio_basics.cpp
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_core.cpp
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_gui_basics.cpp
+  juce_audio_formats_opus.c
+  juce_gui_basics_2.cpp
+  -- Detecting CXX compiler ABI info - done
+  juce_audio_formats_opusfile.c
+  juce_gui_basics_3.cpp
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (20.1s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Lixa
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  juce_gui_basics_4.cpp
+  
+    1>Checking Build System
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_gui_basics_5.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Espiral.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral_artefacts\Release\ESPIRAL_SharedCode.lib
+  juce_audio_processors_headless.cpp
+  juce_audio_devices.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_dsp.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Lixa\vst3_helper.exe
+  Generating Miragem_artefacts/JuceLibraryCode/Miragem_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/miragem/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/lixa/CMakeLists.txt
+  Miragem_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem_rc_lib.dir\Release\Miragem_rc_lib.lib
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_dsp.cpp
+  Building VST3 manifest helper for Miragem
+  juce_audio_processors_headless.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/horizonte/CMakeLists.txt
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  -- Detecting CXX compiler ABI info
+  juce_audio_basics.cpp
+  juce_graphics_Sheenbidi.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/lixa/CMakeLists.txt
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  PluginProcessor.cpp
+  -- Detecting CXX compiler ABI info - done
+  PluginEditor.cpp
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (15.5s)
+  -- Generating done (0.2s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Miragem
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  F1.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\f1\F1_artefacts\Release\F1_SharedCode.lib
+    1>Checking Build System
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+  (compiling source file '../../../../plugins/mix/horizonte/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\horizonte\Source\Params.h(100,42):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\horizonte\Source\Params.h(98,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'horizonte::factoryPresets'
+  
+  juce_dsp.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte.vcxproj]
+  (compiling source file '../../../../plugins/mix/horizonte/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\horizonte\Source\Params.h(100,42):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\horizonte\Source\Params.h(98,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'horizonte::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_4.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_gui_basics_5.cpp
+  Fita.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\fita\Fita_artefacts\Release\FITA_SharedCode.lib
+  juce_graphics.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics_Sheenbidi.c
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Miragem\vst3_helper.exe
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  Generating Monitor_artefacts/JuceLibraryCode/Monitor_resources.rc
+  juce_graphics.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/monitor/CMakeLists.txt
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_graphics_Harfbuzz.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_audio_formats_opusfile.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/miragem/CMakeLists.txt
+  juce_events.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  juce_core.cpp
+  juce_events.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  Building VST3 manifest helper for Monitor
+  Grao.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\grao\Grao_artefacts\Release\GRAO_SharedCode.lib
+  juce_core.cpp
+  Monitor_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor_rc_lib.dir\Release\Monitor_rc_lib.lib
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (14.0s)
+  -- Generating done (0.2s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Monitor
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+    1>Checking Build System
+  juce_dsp.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/f1/F1_artefacts/Release/VST3/F1.lib and object D:/a/vsts/vsts/build/plugins/criativo/f1/F1_artefacts/Release/VST3/F1.exp
+  Generating code
+  juce_dsp.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/miragem/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Monitor\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_lunasvg.c
+  juce_graphics_libjpg_2.c
+  juce_core_zlib.c
+  juce_graphics_libjpg_3.c
+  juce_audio_formats_flac_1.c
+  juce_graphics_libpng.c
+  juce_audio_formats_flac_2.c
+  juce_graphics_libwebp_dec.c
+  juce_audio_formats_ogg.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_audio_formats_opus.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/monitor/CMakeLists.txt
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_audio_formats_opusfile.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+  (compiling source file '../../../../plugins/criativo/miragem/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\miragem\Source\Params.h(105,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\miragem\Source\Params.h(103,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'miragem::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem.vcxproj]
+  (compiling source file '../../../../plugins/criativo/miragem/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\miragem\Source\Params.h(105,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\miragem\Source\Params.h(103,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'miragem::factoryPresets'
+  
+  Generating Navalha_artefacts/JuceLibraryCode/Navalha_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/navalha/CMakeLists.txt
+  Horizonte.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte_artefacts\Release\HORIZONTE_SharedCode.lib
+  Navalha_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha_rc_lib.dir\Release\Navalha_rc_lib.lib
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/monitor/CMakeLists.txt
+  Lixa.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\lixa\Lixa_artefacts\Release\LIXA_SharedCode.lib
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+  (compiling source file '../../../../plugins/mix/monitor/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\monitor\Source\Params.h(68,42):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\monitor\Source\Params.h(66,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'medidor::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor.vcxproj]
+  (compiling source file '../../../../plugins/mix/monitor/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\monitor\Source\Params.h(68,42):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\monitor\Source\Params.h(66,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'medidor::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  Building VST3 manifest helper for Navalha
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_events.cpp
+  juce_core.cpp
+  juce_audio_utils.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/mix/console/ConsoleIsp_artefacts/Release/VST3/CONSOLE.lib and object D:/a/vsts/vsts/build/plugins/mix/console/ConsoleIsp_artefacts/Release/VST3/CONSOLE.exp
+  juce_audio_formats.cpp
+  Generating code
+  juce_audio_devices.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_dsp.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (40.0s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Navalha
+  juce_audio_processors_headless.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  juce_audio_processors_headless_ara.cpp
+  
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+    1>Checking Build System
+  juce_audio_utils.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_dsp.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Navalha\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/navalha/CMakeLists.txt
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_core_zlib.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opusfile.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/navalha/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Miragem.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem_artefacts\Release\MIRAGEM_SharedCode.lib
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+  (compiling source file '../../../../plugins/mix/navalha/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\navalha\Source\Params.h(68,41):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\navalha\Source\Params.h(66,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'navalha::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha.vcxproj]
+  (compiling source file '../../../../plugins/mix/navalha/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\navalha\Source\Params.h(68,41):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\navalha\Source\Params.h(66,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'navalha::factoryPresets'
+  
+  Monitor.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor_artefacts\Release\MONITOR_SharedCode.lib
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  Generating Picote_artefacts/JuceLibraryCode/Picote_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/picote/CMakeLists.txt
+  juce_gui_basics_4.cpp
+  Picote_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\picote\Picote_rc_lib.dir\Release\Picote_rc_lib.lib
+  juce_gui_basics_5.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/espiral/Espiral_artefacts/Release/VST3/ESPIRAL.lib and object D:/a/vsts/vsts/build/plugins/criativo/espiral/Espiral_artefacts/Release/VST3/ESPIRAL.exp
+  Generating code
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  Building VST3 manifest helper for Picote
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_audio_utils.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  juce_audio_formats.cpp
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  juce_audio_devices.cpp
+  -- Configuring done (28.8s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Picote
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+  juce_dsp.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Picote\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/picote/CMakeLists.txt
+  Finished generating code
+  F1_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\f1\F1_artefacts\Release\VST3\F1.vst3\Contents\x86_64-win\F1.vst3
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/picote/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+  (compiling source file '../../../../plugins/criativo/picote/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\picote\Source\Params.h(155,93):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\picote\Source\Params.h(153,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'picote::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\picote\Picote.vcxproj]
+  (compiling source file '../../../../plugins/criativo/picote/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\picote\Source\Params.h(155,93):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\picote\Source\Params.h(153,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'picote::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/f1/F1_artefacts/Release/VST3/F1.vst3/Contents/Resources/moduleinfo.json
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  Building VST3 manifest helper for Prisma
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  Generating Prisma_artefacts/JuceLibraryCode/Prisma_resources.rc
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/prisma/CMakeLists.txt
+  -- Detecting CXX compiler ABI info - done
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (19.1s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Prisma
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  Finished generating code
+  Prisma_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\prisma\Prisma_rc_lib.dir\Release\Prisma_rc_lib.lib
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  ConsoleIsp_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp_artefacts\Release\VST3\CONSOLE.vst3\Contents\x86_64-win\CONSOLE.vst3
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/grao/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/console/ConsoleIsp_artefacts/Release/VST3/CONSOLE.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Prisma\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_graphics_Sheenbidi.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/prisma/CMakeLists.txt
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Generating Repeteco_artefacts/JuceLibraryCode/Repeteco_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/repeteco/CMakeLists.txt
+  Picote.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\picote\Picote_artefacts\Release\PICOTE_SharedCode.lib
+  Building VST3 manifest helper for Repeteco
+  Repeteco_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco_rc_lib.dir\Release\Repeteco_rc_lib.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/prisma/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (13.2s)
+  -- Generating done (0.0s)
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Repeteco
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+  juce_gui_basics_5.cpp
+  Finished generating code
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+  juce_graphics.cpp
+  Building VST3 manifest helper for Ringer
+  Espiral_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral_artefacts\Release\VST3\ESPIRAL.vst3\Contents\x86_64-win\ESPIRAL.vst3
+  juce_graphics_Harfbuzz.cpp
+  Generating Ringer_artefacts/JuceLibraryCode/Ringer_resources.rc
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/ringer/CMakeLists.txt
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/horizonte/CMakeLists.txt
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_events.cpp
+  juce_core.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Repeteco\vst3_helper.exe
+  Ringer_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer_rc_lib.dir\Release\Ringer_rc_lib.lib
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_core_CompilationTime.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/repeteco/CMakeLists.txt
+  juce_data_structures.cpp
+  Navalha.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha_artefacts\Release\NAVALHA_SharedCode.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/navalha/CMakeLists.txt
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (9.9s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Ringer
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/chama/Chama_artefacts/Release/VST3/CHAMA.lib and object D:/a/vsts/vsts/build/plugins/criativo/chama/Chama_artefacts/Release/VST3/CHAMA.exp
+  Generating code
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Ringer\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_dsp.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/ringer/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/lixa/CMakeLists.txt
+  Generating Sala_artefacts/JuceLibraryCode/Sala_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/repeteco/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/sala/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Sala_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\sala\Sala_rc_lib.dir\Release\Sala_rc_lib.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/ringer/CMakeLists.txt
+  Building VST3 manifest helper for Sala
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+  (compiling source file '../../../../plugins/criativo/repeteco/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\repeteco\Source\Params.h(90,48):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\repeteco\Source\Params.h(88,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'repeteco::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco.vcxproj]
+  (compiling source file '../../../../plugins/criativo/repeteco/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\repeteco\Source\Params.h(90,48):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\repeteco\Source\Params.h(88,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'repeteco::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_gui_basics_3.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+  (compiling source file '../../../../plugins/criativo/ringer/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\ringer\Source\Params.h(95,40):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\ringer\Source\Params.h(93,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'ringer::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer.vcxproj]
+  (compiling source file '../../../../plugins/criativo/ringer/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\ringer\Source\Params.h(95,40):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\ringer\Source\Params.h(93,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'ringer::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_graphics.cpp
+  -- Configuring done (16.8s)
+  Generating Soco_artefacts/JuceLibraryCode/Soco_resources.rc
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Sala
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  juce_gui_basics_3.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/soco/CMakeLists.txt
+  juce_gui_basics_4.cpp
+  Building VST3 manifest helper for Soco
+    1>Checking Build System
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_gui_basics_5.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Soco_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\soco\Soco_rc_lib.dir\Release\Soco_rc_lib.lib
+    juce_VST3ManifestHelper.cpp
+  juce_graphics.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_audio_processors_headless.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Sala\vst3_helper.exe
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (21.9s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Soco
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/sala/CMakeLists.txt
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_audio_processors_headless.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_audio_processors_headless_ara.cpp
+  Generating Torno_artefacts/JuceLibraryCode/Torno_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/torno/CMakeLists.txt
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_dsp.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_audio_utils.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Soco\vst3_helper.exe
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_audio_formats.cpp
+  juce_graphics_libwebp_dec.c
+  Torno_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\torno\Torno_rc_lib.dir\Release\Torno_rc_lib.lib
+  juce_audio_devices.cpp
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/soco/CMakeLists.txt
+  Prisma.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\prisma\Prisma_artefacts\Release\PRISMA_SharedCode.lib
+  juce_dsp.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/sala/CMakeLists.txt
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_core_zlib.c
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+  (compiling source file '../../../../plugins/mix/sala/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\sala\Source\Params.h(108,44):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\sala\Source\Params.h(106,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'sala::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\sala\Sala.vcxproj]
+  (compiling source file '../../../../plugins/mix/sala/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\sala\Source\Params.h(108,44):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\sala\Source\Params.h(106,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'sala::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Repeteco.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco_artefacts\Release\REPETECO_SharedCode.lib
+  Building VST3 manifest helper for Torno
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (16.1s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Torno
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+  Ringer.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer_artefacts\Release\RINGER_SharedCode.lib
+  juce_graphics_Harfbuzz.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/soco/CMakeLists.txt
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Torno\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/torno/CMakeLists.txt
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_audio_utils.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/repeteco/CMakeLists.txt
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+  (compiling source file '../../../../plugins/mix/soco/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\soco\Source\Params.h(100,42):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\soco\Source\Params.h(98,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'soco::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\soco\Soco.vcxproj]
+  (compiling source file '../../../../plugins/mix/soco/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\soco\Source\Params.h(100,42):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\soco\Source\Params.h(98,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'soco::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_dsp.cpp
+  juce_gui_basics_4.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/mix/lixa/Lixa_artefacts/Release/VST3/LIXA.lib and object D:/a/vsts/vsts/build/plugins/mix/lixa/Lixa_artefacts/Release/VST3/LIXA.exp
+  Generating code
+  juce_gui_basics_5.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/torno/CMakeLists.txt
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/repeteco/Repeteco_artefacts/Release/VST3/REPETECO.lib and object D:/a/vsts/vsts/build/plugins/criativo/repeteco/Repeteco_artefacts/Release/VST3/REPETECO.exp
+  Generating code
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+  (compiling source file '../../../../plugins/mix/torno/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\torno\Source\Params.h(101,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\torno\Source\Params.h(99,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'torno::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\mix\torno\Torno.vcxproj]
+  (compiling source file '../../../../plugins/mix/torno/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\mix\torno\Source\Params.h(101,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\mix\torno\Source\Params.h(99,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'torno::factoryPresets'
+  
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_gui_basics.cpp
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_gui_basics_2.cpp
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_gui_basics_3.cpp
+  juce_audio_formats_opusfile.c
+  juce_gui_basics_4.cpp
+  juce_dsp.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  Sala.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\sala\Sala_artefacts\Release\SALA_SharedCode.lib
+  Finished generating code
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  Chama_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\chama\Chama_artefacts\Release\VST3\CHAMA.vst3\Contents\x86_64-win\CHAMA.vst3
+     Creating library D:/a/vsts/vsts/build/plugins/mix/navalha/Navalha_artefacts/Release/VST3/NAVALHA.lib and object D:/a/vsts/vsts/build/plugins/mix/navalha/Navalha_artefacts/Release/VST3/NAVALHA.exp
+  Generating code
+  juce_dsp.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Soco.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\soco\Soco_artefacts\Release\SOCO_SharedCode.lib
+  Torno.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\torno\Torno_artefacts\Release\TORNO_SharedCode.lib
+  Finished generating code
+  Repeteco_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\repeteco\Repeteco_artefacts\Release\VST3\REPETECO.vst3\Contents\x86_64-win\REPETECO.vst3
+  Finished generating code
+  Lixa_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\lixa\Lixa_artefacts\Release\VST3\LIXA.vst3\Contents\x86_64-win\LIXA.vst3
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/soco/CMakeLists.txt
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/repeteco/Repeteco_artefacts/Release/VST3/REPETECO.vst3/Contents/Resources/moduleinfo.json
+     Creating library D:/a/vsts/vsts/build/plugins/mix/barragem/Barragem_artefacts/Release/VST3/BARRAGEM.lib and object D:/a/vsts/vsts/build/plugins/mix/barragem/Barragem_artefacts/Release/VST3/BARRAGEM.exp
+  Generating code
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/mix/soco/Soco_artefacts/Release/VST3/SOCO.lib and object D:/a/vsts/vsts/build/plugins/mix/soco/Soco_artefacts/Release/VST3/SOCO.exp
+  Generating code
+  Finished generating code
+  Navalha_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\navalha\Navalha_artefacts\Release\VST3\NAVALHA.vst3\Contents\x86_64-win\NAVALHA.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/navalha/Navalha_artefacts/Release/VST3/NAVALHA.vst3/Contents/Resources/moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/chama/Chama_artefacts/Release/VST3/CHAMA.vst3/Contents/Resources/moduleinfo.json
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/mix/horizonte/Horizonte_artefacts/Release/VST3/HORIZONTE.lib and object D:/a/vsts/vsts/build/plugins/mix/horizonte/Horizonte_artefacts/Release/VST3/HORIZONTE.exp
+  Generating code
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/fita/Fita_artefacts/Release/VST3/FITA.lib and object D:/a/vsts/vsts/build/plugins/criativo/fita/Fita_artefacts/Release/VST3/FITA.exp
+  Generating code
+  Finished generating code
+  Finished generating code
+  Barragem_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem_artefacts\Release\VST3\BARRAGEM.vst3\Contents\x86_64-win\BARRAGEM.vst3
+  Soco_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\soco\Soco_artefacts\Release\VST3\SOCO.vst3\Contents\x86_64-win\SOCO.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/lixa/Lixa_artefacts/Release/VST3/LIXA.vst3/Contents/Resources/moduleinfo.json
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/caleido/Caleido_artefacts/Release/VST3/CALEIDO.lib and object D:/a/vsts/vsts/build/plugins/criativo/caleido/Caleido_artefacts/Release/VST3/CALEIDO.exp
+  Generating code
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/miragem/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/prisma/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/picote/CMakeLists.txt
+  Finished generating code
+  Horizonte_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\horizonte\Horizonte_artefacts\Release\VST3\HORIZONTE.vst3\Contents\x86_64-win\HORIZONTE.vst3
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/monitor/CMakeLists.txt
+  Finished generating code
+  Fita_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\fita\Fita_artefacts\Release\VST3\FITA.vst3\Contents\x86_64-win\FITA.vst3
+  removing moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/fita/Fita_artefacts/Release/VST3/FITA.vst3/Contents/Resources/moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/horizonte/Horizonte_artefacts/Release/VST3/HORIZONTE.vst3/Contents/Resources/moduleinfo.json
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/miragem/Miragem_artefacts/Release/VST3/MIRAGEM.lib and object D:/a/vsts/vsts/build/plugins/criativo/miragem/Miragem_artefacts/Release/VST3/MIRAGEM.exp
+  Generating code
+  Finished generating code
+  Caleido_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido_artefacts\Release\VST3\CALEIDO.vst3\Contents\x86_64-win\CALEIDO.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/soco/Soco_artefacts/Release/VST3/SOCO.vst3/Contents/Resources/moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/caleido/Caleido_artefacts/Release/VST3/CALEIDO.vst3/Contents/Resources/moduleinfo.json
+  Finished generating code
+  Miragem_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\miragem\Miragem_artefacts\Release\VST3\MIRAGEM.vst3\Contents\x86_64-win\MIRAGEM.vst3
+  removing moduleinfo.json
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  creating D:/a/vsts/vsts/build/plugins/criativo/miragem/Miragem_artefacts/Release/VST3/MIRAGEM.vst3/Contents/Resources/moduleinfo.json
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/barragem/Barragem_artefacts/Release/VST3/BARRAGEM.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/sala/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/ringer/CMakeLists.txt
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/espiral/Espiral_artefacts/Release/VST3/ESPIRAL.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/torno/CMakeLists.txt
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/mix/prisma/Prisma_artefacts/Release/VST3/PRISMA.lib and object D:/a/vsts/vsts/build/plugins/mix/prisma/Prisma_artefacts/Release/VST3/PRISMA.exp
+  Generating code
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/ringer/Ringer_artefacts/Release/VST3/RINGER.lib and object D:/a/vsts/vsts/build/plugins/criativo/ringer/Ringer_artefacts/Release/VST3/RINGER.exp
+  Generating code
+     Creating library D:/a/vsts/vsts/build/plugins/mix/torno/Torno_artefacts/Release/VST3/TORNO.lib and object D:/a/vsts/vsts/build/plugins/mix/torno/Torno_artefacts/Release/VST3/TORNO.exp
+  Generating code
+  Finished generating code
+  Finished generating code
+  Ringer_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\ringer\Ringer_artefacts\Release\VST3\RINGER.vst3\Contents\x86_64-win\RINGER.vst3
+  Torno_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\torno\Torno_artefacts\Release\VST3\TORNO.vst3\Contents\x86_64-win\TORNO.vst3
+     Creating library D:/a/vsts/vsts/build/plugins/mix/sala/Sala_artefacts/Release/VST3/SALA.lib and object D:/a/vsts/vsts/build/plugins/mix/sala/Sala_artefacts/Release/VST3/SALA.exp
+  Generating code
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/grao/Grao_artefacts/Release/VST3/GRAO.lib and object D:/a/vsts/vsts/build/plugins/criativo/grao/Grao_artefacts/Release/VST3/GRAO.exp
+  Generating code
+  Finished generating code
+  Prisma_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\prisma\Prisma_artefacts\Release\VST3\PRISMA.vst3\Contents\x86_64-win\PRISMA.vst3
+     Creating library D:/a/vsts/vsts/build/plugins/mix/monitor/Monitor_artefacts/Release/VST3/MONITOR.lib and object D:/a/vsts/vsts/build/plugins/mix/monitor/Monitor_artefacts/Release/VST3/MONITOR.exp
+  Generating code
+  Finished generating code
+  Sala_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\sala\Sala_artefacts\Release\VST3\SALA.vst3\Contents\x86_64-win\SALA.vst3
+  Finished generating code
+  Monitor_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\monitor\Monitor_artefacts\Release\VST3\MONITOR.vst3\Contents\x86_64-win\MONITOR.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/prisma/Prisma_artefacts/Release/VST3/PRISMA.vst3/Contents/Resources/moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/monitor/Monitor_artefacts/Release/VST3/MONITOR.vst3/Contents/Resources/moduleinfo.json
+  Finished generating code
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/picote/Picote_artefacts/Release/VST3/PICOTE.lib and object D:/a/vsts/vsts/build/plugins/criativo/picote/Picote_artefacts/Release/VST3/PICOTE.exp
+  Grao_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\grao\Grao_artefacts\Release\VST3\GRAO.vst3\Contents\x86_64-win\GRAO.vst3
+  Generating code
+  Finished generating code
+  Picote_VST3.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\picote\Picote_artefacts\Release\VST3\PICOTE.vst3\Contents\x86_64-win\PICOTE.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/picote/Picote_artefacts/Release/VST3/PICOTE.vst3/Contents/Resources/moduleinfo.json
+  removing moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/grao/Grao_artefacts/Release/VST3/GRAO.vst3/Contents/Resources/moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/sala/Sala_artefacts/Release/VST3/SALA.vst3/Contents/Resources/moduleinfo.json
+  removing moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/criativo/ringer/Ringer_artefacts/Release/VST3/RINGER.vst3/Contents/Resources/moduleinfo.json
+  creating D:/a/vsts/vsts/build/plugins/mix/torno/Torno_artefacts/Release/VST3/TORNO.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/CMakeLists.txt
