@@ -1,0 +1,70 @@
+== build/shot_soco_artefacts/Release/shot_soco
+SOCO: ok
+== build/shot_horizonte_artefacts/Release/shot_horizonte
+HORIZONTE: ok
+== build/shot_chama_artefacts/Release/shot_chama
+CHAMA: ok
+== build/shot_vacina_artefacts/Release/shot_vacina
+VACINA: ok
+== build/shot_sala_artefacts/Release/shot_sala
+SALA: ok
+== build/shot_espiral_artefacts/Release/shot_espiral
+ESPIRAL: ok
+== build/shot_miragem_artefacts/Release/shot_miragem
+MIRAGEM: ok
+== build/shot_fita_artefacts/Release/shot_fita
+FITA: ok
+== build/shot_repeteco_artefacts/Release/shot_repeteco
+REPETECO: ok
+== build/shot_navalha_artefacts/Release/shot_navalha
+NAVALHA: ok
+== build/shot_prisma_artefacts/Release/shot_prisma
+PRISMA: ok
+== build/shot_monitor_artefacts/Release/shot_monitor
+MONITOR: ok
+== build/shot_barragem_artefacts/Release/shot_barragem
+BARRAGEM: ok
+== build/shot_lixa_artefacts/Release/shot_lixa
+LIXA: ok
+== build/shot_caleido_artefacts/Release/shot_caleido
+CALEIDO: ok
+== build/shot_ringer_artefacts/Release/shot_ringer
+RINGER: ok
+== build/shot_quimera_artefacts/Release/shot_quimera
+QUIMERA: ok
+== build/shot_picote_artefacts/Release/shot_picote
+PICOTE: ok
+== build/shot_limao_artefacts/Release/shot_limao
+LIMAO: ok
+== build/shot_console_artefacts/Release/shot_console
+CONSOLE: ok
+== build/shot_grao_artefacts/Release/shot_grao
+GRAO: ok
+== build/shot_torno_artefacts/Release/shot_torno
+TORNO: ok
+== build/shot_f1_artefacts/Release/shot_f1
+F1: ok
+total 31624
+-rw-r--r--  1 runner  staff  724074 Oct 24 20:55 BARRAGEM.png
+-rw-r--r--  1 runner  staff  803305 Oct 24 20:55 CALEIDO.png
+-rw-r--r--  1 runner  staff  669379 Oct 24 20:54 CHAMA.png
+-rw-r--r--  1 runner  staff  661777 Oct 24 20:56 CONSOLE.png
+-rw-r--r--  1 runner  staff  768508 Oct 24 20:54 ESPIRAL.png
+-rw-r--r--  1 runner  staff  728372 Oct 24 20:56 F1.png
+-rw-r--r--  1 runner  staff  773861 Oct 24 20:55 FITA.png
+-rw-r--r--  1 runner  staff  704804 Oct 24 20:56 GRAO.png
+-rw-r--r--  1 runner  staff  714723 Oct 24 20:54 HORIZONTE.png
+-rw-r--r--  1 runner  staff  545193 Oct 24 20:55 LIMAO.png
+-rw-r--r--  1 runner  staff  663399 Oct 24 20:55 LIXA.png
+-rw-r--r--  1 runner  staff  705859 Oct 24 20:54 MIRAGEM.png
+-rw-r--r--  1 runner  staff  700532 Oct 24 20:55 MONITOR.png
+-rw-r--r--  1 runner  staff  669863 Oct 24 20:55 NAVALHA.png
+-rw-r--r--  1 runner  staff  705902 Oct 24 20:55 PICOTE.png
+-rw-r--r--  1 runner  staff  775538 Oct 24 20:55 PRISMA.png
+-rw-r--r--  1 runner  staff  732856 Oct 24 20:55 QUIMERA.png
+-rw-r--r--  1 runner  staff  677230 Oct 24 20:55 REPETECO.png
+-rw-r--r--  1 runner  staff  766082 Oct 24 20:55 RINGER.png
+-rw-r--r--  1 runner  staff  727997 Oct 24 20:54 SALA.png
+-rw-r--r--  1 runner  staff  684880 Oct 24 20:54 SOCO.png
+-rw-r--r--  1 runner  staff  684835 Oct 24 20:56 TORNO.png
+-rw-r--r--  1 runner  staff  549312 Oct 24 20:54 VACINA.png
