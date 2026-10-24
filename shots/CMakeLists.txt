@@ -33,8 +33,12 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
             JUCE_MODAL_LOOPS_PERMITTED=1
             SHOT_PLUGIN="${upper}")
         if(dir IN_LIST inst_dirs)
-            # synth: sem entrada, toca acordes por MIDI; tela base 1200×740 (foto a 200%)
-            target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2400 SHOT_H=1480)
+            # synth: sem entrada, toca acordes por MIDI; foto a 200% da tela base (VACINA 1360×600, os outros 1200×740)
+            if(name STREQUAL "vacina")
+                target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2720 SHOT_H=1200)
+            else()
+                target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2400 SHOT_H=1480)
+            endif()
         endif()
         target_link_libraries(${t}
             PRIVATE
