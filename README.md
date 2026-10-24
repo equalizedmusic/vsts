@@ -37,11 +37,13 @@ separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
 
 Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
-O instalador (`InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`) sai no release `latest-instrumentos`; os logs, no branch `builds-instrumentos`.
+Os instaladores saem no release `latest-instrumentos` (os logs, no branch `builds-instrumentos`): `InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`
+com a QUIMERA e, separado, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO.
 
 | Instrumento | O que é |
 |---|---|
 | [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, 360 presets (40 por categoria) e bancos avulsos `.qmrbank` |
+| [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.

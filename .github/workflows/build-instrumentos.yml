@@ -56,8 +56,14 @@ jobs:
             done
           done
           find dist \( -name '*.exp' -o -name '*.lib' \) -delete
+          # o LIMÃO tem instalador próprio (não vai no pacote da QUIMERA)
+          for fmt in VST3 AU; do
+            for b in dist/$fmt/LIMAO.*; do
+              if [ -e "$b" ]; then mkdir -p "dist-limao/$fmt"; mv "$b" "dist-limao/$fmt/"; fi
+            done
+          done
           if [ "${{ matrix.name }}" = mac ]; then
-            for b in dist/*/*; do codesign --force --deep --sign - "$b"; done
+            for b in dist/*/* dist-limao/*/*; do if [ -e "$b" ]; then codesign --force --deep --sign - "$b"; fi; done
           fi
           if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
             choco install innosetup -y --no-progress > /dev/null
@@ -65,7 +71,11 @@ jobs:
           # um instalador com todos os instrumentos: InsideStudioSP-Instrumentos-mac.dmg / -win.exe
           if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
           PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Instrumentos --origem dist --versao "0.1.${{ github.run_number }}" --saida .
-          { find dist -maxdepth 2; ls -l InsideStudioSP-*; } | tee pack.log
+          # LIMÃO: InsideStudioSP-Limao-mac.dmg / -win.exe
+          if [ -d dist-limao/VST3 ]; then
+            PYTHONIOENCODING=utf-8 $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Limao --origem dist-limao --versao "0.1.${{ github.run_number }}" --saida .
+          fi
+          { find dist -maxdepth 2; find dist-limao -maxdepth 2 2>/dev/null; ls -l InsideStudioSP-*; } | tee pack.log
 
       - name: pluginval
         id: pluginval
@@ -82,7 +92,8 @@ jobs:
             7z x -y pv.zip > /dev/null
             PV=./pluginval.exe
           fi
-          for p in dist/VST3/*.vst3; do
+          for p in dist/VST3/*.vst3 dist-limao/VST3/*.vst3; do
+            [ -e "$p" ] || continue
             "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log
           done
 

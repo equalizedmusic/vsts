@@ -142,6 +142,11 @@ void applyLook (juce::AudioProcessor& p)
     if (name == "SOCO")    { setParam (p, "attack", 60.0f); setParam (p, "sustain", -30.0f); }
     if (name == "LIXA")    { setParam (p, "thresh", -42.0f); setParam (p, "range", 10.0f); }
     if (name == "HORIZONTE") { setParam (p, "width", 140.0f); }
+    if (name == "LIMAO")
+    {
+        // o sequenciador toca o padrão do preset (host tocando a 145); ácido e delay para a foto ter vida
+        setParam (p, "acid", 35.0f); setParam (p, "dlon", 1.0f); setParam (p, "drive", 35.0f);
+    }
     if (name == "QUIMERA")
     {
         // os 3 osciladores (analógico, modelado e wavetable), o filtro B e alguns efeitos ligados
