@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Theme.h"
+#include "Hardware.h"   // LED, lâmpada e tecla renderizados (instrumentos/_hardware)
 
 using APVTS = juce::AudioProcessorValueTreeState;
 
@@ -129,7 +130,7 @@ public:
             real::rocker (g, { r.getX() + 6.0f, r.getCentreY() - rh * 0.5f, rw, rh }, on);
             real::engraved (g, getButtonText(), { r.getX() + rw + 16.0f, r.getY(), r.getWidth() - rw - 34.0f, r.getHeight() },
                             col, juce::Justification::centredLeft);
-            real::jewel (g, { r.getRight() - 12.0f, r.getCentreY() }, 4.6f, ledColour, on);
+            hw::lamp (g, { r.getRight() - 12.0f, r.getCentreY() }, 4.6f, ledColour, on);
         }
         else
         {
@@ -137,7 +138,7 @@ public:
             const float rw = 26.0f, rh = 12.0f, lr = 3.4f, gap = 7.0f;
             const float x0 = r.getCentreX() - (rw + gap + lr * 2.0f) * 0.5f, cy = r.getY() + 3.0f + rh * 0.5f;
             real::rocker (g, { x0, cy - rh * 0.5f, rw, rh }, on);
-            real::jewel (g, { x0 + rw + gap + lr, cy }, lr, ledColour, on);
+            hw::lamp (g, { x0 + rw + gap + lr, cy }, lr, ledColour, on);
             const auto txt = r.withTrimmedTop (rh + 5.0f);
             g.setColour (real::black (0.6f));
             g.drawFittedText (getButtonText(), txt.translated (0.0f, 1.0f).toNearestInt(), juce::Justification::centred, 2, 0.8f);
@@ -174,7 +175,7 @@ public:
         g.setGradientFill (real::vertical (real::white (0.25f), c.y - rc, real::black (0.6f), c.y + rc));
         g.drawEllipse (real::circle (c, rc - 0.5f), 1.0f);
 
-        real::led (g, c, 4.2f, theme::amber, getToggleState() ? 0.0f : 1.0f);
+        hw::led (g, c, 4.2f, theme::amber, getToggleState() ? 0.0f : 1.0f);
     }
 };
 
@@ -188,7 +189,7 @@ public:
     void paintButton (juce::Graphics& g, bool over, bool down) override
     {
         auto r = getLocalBounds().toFloat().reduced (1.0f);
-        real::keycap (g, r, 3.0f, down);
+        hw::keycap (g, r, 3.0f, down);
 
         g.setColour (down || over ? theme::amber : theme::dim);
         const auto c = r.getCentre().translated (0.0f, down ? 0.5f : 0.0f);

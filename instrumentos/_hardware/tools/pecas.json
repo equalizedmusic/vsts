@@ -1,0 +1,67 @@
+{
+ "madeira": {
+  "tam": [
+   73,
+   1729
+  ]
+ },
+ "lampada": {
+  "tam": 160,
+  "centro": [
+   0.4706,
+   0.4452
+  ],
+  "raio_lente": 0.2176
+ },
+ "led": {
+  "tam": 96,
+  "centro": [
+   0.4733,
+   0.4546
+  ],
+  "raio_domo": 0.2333
+ },
+ "tecla": {
+  "tam": [
+   250,
+   186
+  ],
+  "face": [
+   24,
+   21,
+   216,
+   149
+  ],
+  "fatia": 35
+ },
+ "knob_preto": {
+  "quadros": 16,
+  "caneluras": 30,
+  "tam": 320,
+  "centro_face": [
+   0.4437,
+   0.3896
+  ],
+  "centro_base": [
+   0.4437,
+   0.4325
+  ],
+  "raio": 0.3125,
+  "raio_face": 0.83
+ },
+ "knob_alu": {
+  "quadros": 16,
+  "caneluras": 18,
+  "tam": 320,
+  "centro_face": [
+   0.4437,
+   0.3914
+  ],
+  "centro_base": [
+   0.4437,
+   0.4325
+  ],
+  "raio": 0.3125,
+  "raio_face": 0.6
+ }
+}

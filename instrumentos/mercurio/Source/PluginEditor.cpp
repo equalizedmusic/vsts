@@ -816,51 +816,6 @@ void MercurioEditor::paint (juce::Graphics& g)
 }
 
 // ---------------- o aparelho ----------------
-// lateral de alumínio fresado, anodizado grafite: aletas de dissipador, reflexo vertical e chanfro polido
-static void metalCheek (juce::Graphics& g, RF r, bool left)
-{
-    using juce::Colour;
-    juce::Path p;
-    p.addRoundedRectangle (r, 6.0f);
-    for (int i = 6; i >= 1; --i)
-    {
-        g.setColour (real::black (0.12f));
-        g.fillRoundedRectangle (r.expanded ((float) i * 0.6f).translated (left ? -1.0f : 1.0f, (float) i), 6.0f + (float) i);
-    }
-    // corpo: mais claro no terço de dentro (a luz vem de cima-esquerda e bate na face voltada para o painel)
-    juce::ColourGradient cg (Colour (0xff121316), r.getX(), 0.0f, Colour (0xff121316), r.getRight(), 0.0f, false);
-    cg.addColour (left ? 0.30 : 0.70, Colour (0xff42464e));
-    cg.addColour (0.50, Colour (0xff2b2e34));
-    cg.addColour (left ? 0.80 : 0.20, Colour (0xff1c1e22));
-    g.setGradientFill (cg);
-    g.fillPath (p);
-    {
-        juce::Graphics::ScopedSaveState save (g);
-        g.reduceClipRegion (p);
-        // aletas: sulco escuro com a luz pegando na borda de baixo
-        for (float y = r.getY() + 22.0f; y < r.getBottom() - 22.0f; y += 11.0f)
-        {
-            g.setColour (real::black (0.55f));
-            g.fillRect (r.getX() + 8.0f, y, r.getWidth() - 16.0f, 3.2f);
-            g.setColour (real::white (0.09f));
-            g.fillRect (r.getX() + 8.0f, y + 3.2f, r.getWidth() - 16.0f, 0.8f);
-        }
-        const float hx = r.getX() + r.getWidth() * (left ? 0.32f : 0.68f);
-        juce::ColourGradient hl (real::white (0.0f), hx - 6.0f, 0.0f, real::white (0.0f), hx + 6.0f, 0.0f, false);
-        hl.addColour (0.5, real::white (0.18f));
-        g.setGradientFill (hl);
-        g.fillRect (r);
-        g.setGradientFill (real::vertical (real::white (0.12f), r.getY(), real::white (0.0f), r.getY() + 30.0f));
-        g.fillRect (r);
-        g.setGradientFill (real::vertical (real::black (0.0f), r.getBottom() - 40.0f, real::black (0.4f), r.getBottom()));
-        g.fillRect (r);
-    }
-    auto bevel = real::vertical (real::white (0.30f), r.getY(), real::black (0.7f), r.getBottom());
-    bevel.addColour (0.05, real::white (0.08f));
-    g.setGradientFill (bevel);
-    g.drawRoundedRectangle (r.reduced (0.6f), 6.0f, 1.2f);
-}
-
 // faixa de alumínio anodizado preto (em cima e embaixo), escovada, com o filete iridescente na borda do alumínio
 static void anodizedBand (juce::Graphics& g, RF r, bool top)
 {
@@ -960,8 +915,8 @@ void MercurioEditor::drawCanvas (juce::Graphics& g)
     bevel.addColour (0.03, real::white (0.06f));
     g.setGradientFill (bevel);
     g.drawRoundedRectangle (panel.reduced (0.5f), 4.0f, 1.4f);
-    metalCheek (g, { 2.0f, 2.0f, 40.0f, H - 4.0f }, true);
-    metalCheek (g, { W - 42.0f, 2.0f, 40.0f, H - 4.0f }, false);
+    hw::cheek (g, { 0.0f, 0.0f, 42.0f, H }, true);     // laterais de nogueira renderizadas (instrumentos/_hardware)
+    hw::cheek (g, { W - 42.0f, 0.0f, 42.0f, H }, false);
 
     drawLogo (g, 56.0f, 22.0f);
 
@@ -1054,12 +1009,12 @@ void MercurioEditor::drawCanvas (juce::Graphics& g)
     // LEDs dos LFOs
     const float lv[3] = { proc.synth.lfo1Now.load(), proc.synth.lfo2Now.load(), proc.synth.lfo3Now.load() };
     for (int k = 0; k < 3; ++k)
-        real::led (g, lfoLedPos[k], 2.6f, mrc::hot, 0.5f + 0.5f * lv[k]);
+        hw::led (g, lfoLedPos[k], 2.6f, mrc::hot, 0.5f + 0.5f * lv[k]);
 
     // estado: MIDI, SYNC e BPM
-    real::led (g, midiLedPos, 2.6f, mrc::hot, midiLit ? 1.0f : 0.0f);
+    hw::led (g, midiLedPos, 2.6f, mrc::hot, midiLit ? 1.0f : 0.0f);
     mrc::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
-    real::led (g, syncLedPos, 2.6f, mrc::hot, lastSync ? 1.0f : 0.0f);
+    hw::led (g, syncLedPos, 2.6f, mrc::hot, lastSync ? 1.0f : 0.0f);
     mrc::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
     mrc::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 168.0f, 82.0f, 78.0f, 12.0f },
                    juce::Justification::centredLeft, 9.0f, true, mrc::silkDim);

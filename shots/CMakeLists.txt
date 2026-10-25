@@ -55,7 +55,7 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
     endif()
 endforeach()
 
-# SÉRIE KNOB (plugins/knob/<pedal>): base comum em plugins/knob/_comum + o Pedal.cpp de cada um; foto a 200% (1000×1284)
+# SÉRIE KNOB (plugins/knob/<pedal>): base comum em plugins/knob/_comum + o Pedal.cpp de cada um; foto a 200% do recorte do pedal (848×1092)
 set(knob_comum "${CMAKE_CURRENT_SOURCE_DIR}/../plugins/knob/_comum")
 file(GLOB knob_imgs "${knob_comum}/assets/*.png" "${knob_comum}/assets/*.jpg")
 if(knob_imgs)
@@ -74,7 +74,7 @@ foreach(dir ${plugin_dirs})
             JUCE_WEB_BROWSER=0
             JUCE_USE_CURL=0
             JUCE_MODAL_LOOPS_PERMITTED=1
-            SHOT_PLUGIN="${upper}" SHOT_W=1000 SHOT_H=1284)
+            SHOT_PLUGIN="${upper}" SHOT_W=848 SHOT_H=1092)
         target_link_libraries(${t}
             PRIVATE
                 shot_serieknob_data

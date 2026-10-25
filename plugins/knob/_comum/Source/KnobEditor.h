@@ -5,7 +5,7 @@
 
 // interface comum da SÉRIE KNOB: o pedal renderizado no Blender (fundo, knobs em quadros, alavanca, plaquinha do
 // nome) e, por cima, o que muda ao vivo — lâmpadas, linha e emblema do knob, visor do SHAPE e os textos da faixa.
-// Tudo é desenhado no espaço da imagem (1000 x 1284) e escalado para a janela.
+// Tudo é desenhado no espaço da imagem (1000 x 1284); a janela mostra só o recorte do pedal (848 x 1092), escalado.
 class KnobEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:

@@ -212,7 +212,7 @@ private:
     void updateLfoVisibility (bool force);
 
     QuimeraProcessor& proc;
-    BrandLookAndFeel lnf;
+    QuimeraLookAndFeel lnf;
 
     ScaledCanvas canvas;   // tudo fica aqui dentro, em 1200×740, e é ampliado junto
     std::vector<std::unique_ptr<juce::Component>> owned;

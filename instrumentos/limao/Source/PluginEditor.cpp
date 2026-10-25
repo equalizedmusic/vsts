@@ -47,29 +47,6 @@ void limePlate (juce::Graphics& g, RF r, float corner)
     g.drawRoundedRectangle (r.reduced (0.5f), corner, 1.0f);
 }
 
-// lateral de plástico preto (as "orelhas" do aparelho)
-void endCheek (juce::Graphics& g, RF r, bool left)
-{
-    juce::Path p;
-    p.addRoundedRectangle (r.getX(), r.getY(), r.getWidth(), r.getHeight(), 7.0f, 7.0f, left, ! left, left, ! left);
-    juce::ColourGradient cg (juce::Colour (left ? 0xff050505 : 0xff1d1e20), r.getX(), 0.0f,
-                             juce::Colour (left ? 0xff1d1e20 : 0xff050505), r.getRight(), 0.0f, false);
-    cg.addColour (0.5, juce::Colour (0xff17181a));
-    g.setGradientFill (cg);
-    g.fillPath (p);
-    real::fillTexture (g, p, 0.8f);
-    g.setGradientFill (real::vertical (real::white (0.10f), r.getY(), real::white (0.0f), r.getY() + 60.0f));
-    g.fillPath (p);
-    // frisos de borracha
-    for (float y = r.getY() + 40.0f; y < r.getBottom() - 40.0f; y += 6.0f)
-    {
-        g.setColour (real::black (0.5f));
-        g.fillRect (r.getX() + 7.0f, y, r.getWidth() - 14.0f, 1.0f);
-        g.setColour (real::white (0.05f));
-        g.fillRect (r.getX() + 7.0f, y + 1.0f, r.getWidth() - 14.0f, 1.0f);
-    }
-}
-
 // logo: fatia de limão (casca verde, parte branca e os gomos)
 void drawLogo (juce::Graphics& g, juce::Point<float> c, float r)
 {
@@ -125,7 +102,7 @@ void StepCell::paint (juce::Graphics& g)
     g.setFont (theme::mono (9.5f));
     g.setColour (index % 4 == 0 ? theme::cream : theme::dim);
     g.drawText (juce::String (index + 1).paddedLeft ('0', 2), RF (4.0f, 1.0f, 26.0f, 13.0f), juce::Justification::centredLeft, false);
-    real::led (g, { w - 11.0f, 8.0f }, 3.4f, lim::lemon, playing ? 1.0f : 0.0f);
+    hw::led (g, { w - 11.0f, 8.0f }, 3.4f, lim::lemon, playing ? 1.0f : 0.0f);
 
     // visor da nota
     const auto nr = noteRect();
@@ -157,9 +134,10 @@ void StepCell::paint (juce::Graphics& g)
     }
     real::glass (g, nr, 2.0f);
 
-    // tecla do modo
+    // tecla do modo: acende verde-limão no passo que está tocando (a luz corre pelas teclas, como numa bateria eletrônica)
     {
-        const auto cap = real::keycap (g, gateRect(), 3.0f, pressed == gateZone);
+        const auto cap = hw::keycap (g, gateRect(), 3.0f, pressed == gateZone, lim::lemon,
+                                     playing && st.mode != Mode::rest ? 1.0f : 0.0f);
         const juce::String txt = st.mode == Mode::note ? "NOTA" : st.mode == Mode::tie ? "LIGA" : "PAUSA";
         const auto col = st.mode == Mode::note ? theme::cream : st.mode == Mode::tie ? theme::ice : theme::dim;
         g.setFont (theme::sans (8.5f, true, 0.1f));
@@ -169,8 +147,8 @@ void StepCell::paint (juce::Graphics& g)
     // ACC e SLD: tecla com o LED dentro
     auto smallKey = [&g] (RF r, bool down, bool on, juce::Colour c, const juce::String& txt)
     {
-        const auto cap = real::keycap (g, r, 3.0f, down);
-        real::led (g, { cap.getX() + 6.0f, cap.getCentreY() }, 2.2f, c, on ? 1.0f : 0.0f);
+        const auto cap = hw::keycap (g, r, 3.0f, down);
+        hw::led (g, { cap.getX() + 6.0f, cap.getCentreY() }, 2.2f, c, on ? 1.0f : 0.0f);
         g.setFont (theme::sans (7.0f, true));
         real::engraved (g, txt, cap.withTrimmedLeft (10.0f), on ? theme::cream : theme::dim, juce::Justification::centred);
     };
@@ -682,8 +660,8 @@ void LimaoEditor::drawCanvas (juce::Graphics& g)
 
     // corpo prateado entre as duas laterais pretas
     lim::silver (g, { 22.0f, 0.0f, W - 44.0f, H }, 2.0f);
-    endCheek (g, { 0.0f, 0.0f, 24.0f, H }, true);
-    endCheek (g, { W - 24.0f, 0.0f, 24.0f, H }, false);
+    hw::cheek (g, { 0.0f, 0.0f, 24.0f, H }, true);
+    hw::cheek (g, { W - 24.0f, 0.0f, 24.0f, H }, false);
 
     const juce::Point<float> screws[] = { { 34.0f, 96.0f }, { W - 34.0f, 96.0f }, { 34.0f, 434.0f }, { W - 34.0f, 434.0f },
                                           { 34.0f, H - 8.0f }, { W - 34.0f, H - 8.0f } };
@@ -778,7 +756,7 @@ void LimaoEditor::drawHeader (juce::Graphics& g)
         g.drawText (juce::String (proc.shownBpm.load(), 1) + " BPM", RF (590.0f, 30.0f, 112.0f, 14.0f), juce::Justification::centredRight);
         g.setColour (syn ? juce::Colours::white : darkGreen.withAlpha (0.75f));
         g.drawFittedText (state, juce::Rectangle<int> (560, 45, 142, 14), juce::Justification::centredRight, 1, 0.8f);
-        real::led (g, { 600.0f, 38.0f }, 3.4f, lim::lemon, syn ? 1.0f : 0.0f);
+        hw::led (g, { 600.0f, 38.0f }, 3.4f, lim::lemon, syn ? 1.0f : 0.0f);
     }
 
     drawMeter (g);

@@ -7,7 +7,10 @@ using namespace sk;
 namespace
 {
 constexpr float W = mapa::W, H = mapa::H;
-constexpr int baseLargura = 500;
+// a janela mostra só o pedal: o render tem em volta o fundo do estúdio (cinza), que fica de fora.
+// Recorte medido no fundo.jpg (a caixa de madeira vai de x 58–941 embaixo a 74–924 em cima, y 108–1201)
+constexpr float CX = 76.0f, CY = 109.0f, CW = 848.0f, CH = 1092.0f;
+constexpr int baseLargura = 424;   // 50% do recorte (o pedal no mesmo tamanho de antes)
 const juce::Colour creme (0xffede3cc);
 
 juce::Image carregar (const juce::String& nome)
@@ -62,15 +65,15 @@ KnobEditor::KnobEditor (KnobProcessor& p)
     alav[1] = carregar ("alav_midi.png");
     alav[2] = carregar ("alav_audio.png");
 
-    limites.setFixedAspectRatio (W / H);
-    limites.setSizeLimits ((int) (baseLargura * 0.6f), (int) (baseLargura * 0.6f * H / W),
-                           (int) (baseLargura * 2.0f), (int) (baseLargura * 2.0f * H / W));
+    limites.setFixedAspectRatio (CW / CH);
+    limites.setSizeLimits ((int) (baseLargura * 0.6f), (int) (baseLargura * 0.6f * CH / CW),
+                           (int) (baseLargura * 2.0f), (int) (baseLargura * 2.0f * CH / CW));
     canto = std::make_unique<juce::ResizableCornerComponent> (this, &limites);
     addAndMakeVisible (*canto);
     setResizable (true, false);
     setConstrainer (&limites);
     const float k = proc.uiScale.load();
-    setSize (juce::roundToInt (baseLargura * k), juce::roundToInt (baseLargura * k * H / W));
+    setSize (juce::roundToInt (baseLargura * k), juce::roundToInt (baseLargura * k * CH / CW));
     disparosVistos = proc.disparos.load();
     startTimerHz (30);
 }
@@ -86,7 +89,7 @@ void KnobEditor::resized()
 
 juce::Point<float> KnobEditor::naImagem (juce::Point<float> p) const
 {
-    return p * (W / (float) juce::jmax (1, getWidth()));
+    return p * (CW / (float) juce::jmax (1, getWidth())) + juce::Point<float> (CX, CY);
 }
 
 float KnobEditor::valorDe (const juce::String& pid) const
@@ -108,13 +111,13 @@ void KnobEditor::definir (const juce::String& pid, float v)
 // fundo + plaquinha do nome já na escala da tela: o paint só copia
 void KnobEditor::montarEstatico()
 {
-    const float escala = juce::Component::getApproximateScaleFactorForComponent (this) * (float) getWidth() / W;
+    const float escala = juce::Component::getApproximateScaleFactorForComponent (this) * (float) getWidth() / CW;
     if (std::abs (escala - escalaEstatico) < 1.0e-4f && estatico.isValid()) return;
     escalaEstatico = escala;
-    estatico = juce::Image (juce::Image::RGB, juce::jmax (1, juce::roundToInt (W * escala)), juce::jmax (1, juce::roundToInt (H * escala)), true);
+    estatico = juce::Image (juce::Image::RGB, juce::jmax (1, juce::roundToInt (CW * escala)), juce::jmax (1, juce::roundToInt (CH * escala)), true);
     juce::Graphics g (estatico);
     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-    g.addTransform (juce::AffineTransform::scale (escala));
+    g.addTransform (juce::AffineTransform::translation (-CX, -CY).scaled (escala));
     if (fundo.isValid()) g.drawImage (fundo, { 0, 0, W, H });
     else g.fillAll (juce::Colour (0xff1c1c1c));
     if (nome.isValid()) g.drawImage (nome, ret (mapa::retNome));
@@ -127,7 +130,7 @@ void KnobEditor::paint (juce::Graphics& g)
     g.drawImage (estatico, getLocalBounds().toFloat());
 
     g.saveState();
-    g.addTransform (juce::AffineTransform::scale ((float) getWidth() / W));
+    g.addTransform (juce::AffineTransform::translation (-CX, -CY).scaled ((float) getWidth() / CW));
     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
 
     const float valor = valorDe (id::valor);

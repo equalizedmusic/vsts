@@ -12,6 +12,52 @@
 #include "Widgets.h"
 #include "Engine.h"
 
+// knob Moog RENDERIZADO (baquelite preto canelado + tampa de alumínio torneado, instrumentos/_hardware) com a escala
+// serigrafada da casa em volta; a face de cima fica no centro da escala, o risco na cor do que ele controla
+class QuimeraLookAndFeel : public BrandLookAndFeel
+{
+public:
+    void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height, float pos,
+                           float, float, juce::Slider& slider) override
+    {
+        using RF = juce::Rectangle<float>;
+        const bool  big = (bool) slider.getProperties()["big"];
+        const auto  box = juce::Rectangle<int> (x, y, width, height).toFloat();
+        const float pi  = juce::MathConstants<float>::pi;
+        const float k   = juce::jmin (box.getWidth(), box.getHeight()) / (big ? 92.0f : 64.0f);
+        const float hg  = (big ? 9.0f : 6.5f) * k;
+        const juce::Point<float> c (box.getCentreX(), box.getCentreY() + hg * 0.35f - hg * 0.5f);
+        const float t1 = (big ? 33.0f : 25.0f) * k, t2 = (big ? 37.0f : 28.5f) * k;
+        for (int i = 0; i <= 10; ++i)
+        {
+            const float an = pi * 1.25f + pi * 1.5f * (float) i / 10.0f;
+            const bool major = i % 5 == 0;
+            const float r1 = major ? t1 - 1.2f * k : t1;
+            juce::Path l;
+            l.startNewSubPath (c.x + r1 * std::sin (an), c.y - r1 * std::cos (an));
+            l.lineTo (c.x + t2 * std::sin (an), c.y - t2 * std::cos (an));
+            g.setColour (theme::txt.withAlpha (major ? 0.8f : 0.45f));
+            g.strokePath (l, juce::PathStrokeType ((major ? 1.3f : 0.9f) * k));
+            if (big)
+            {
+                const float rn = 41.5f * k;
+                g.setColour (theme::txt.withAlpha (0.7f));
+                g.setFont (theme::sans (7.5f * k, true));
+                g.drawText (juce::String (i), RF (c.x + rn * std::sin (an) - 8.0f * k, c.y - rn * std::cos (an) - 6.0f * k, 16.0f * k, 12.0f * k),
+                            juce::Justification::centred, false);
+            }
+        }
+        hw::knob (g, c, (big ? 27.0f : 19.5f) * k, pos, slider.findColour (juce::Slider::rotarySliderFillColourId));
+        if (big)
+        {
+            g.setColour (theme::txt);
+            g.setFont (theme::mono (11.0f * k));
+            g.drawText (juce::String (juce::roundToInt (slider.getValue())), RF (box.getX(), box.getBottom() - 13.0f * k, box.getWidth(), 13.0f * k),
+                        juce::Justification::centred, false);
+        }
+    }
+};
+
 // ---------------- tela do synth: desenhada em 1200×740 e ampliada inteira (75–200%) ----------------
 namespace qui
 {
@@ -267,7 +313,7 @@ public:
             juce::Path clip;
             clip.addEllipse (real::circle (c, halo));
             g.reduceClipRegion (clip);
-            real::led (g, c, d * 0.5f, ledColour, on ? 1.0f : 0.0f);
+            hw::led (g, c, d * 0.5f, ledColour, on ? 1.0f : 0.0f);
         }
         if (over)
         {

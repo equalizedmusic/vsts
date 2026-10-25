@@ -10,6 +10,7 @@
 #include "Theme.h"
 #include "Widgets.h"
 #include "Params.h"
+#include "Hardware.h"
 
 namespace lim
 {
@@ -124,7 +125,8 @@ inline void inkScale (juce::Graphics& g, RF box, bool big)
     }
 }
 
-// knob Moog com escala em tinta preta (o desenho do knob é o da casa, sem a escala clara)
+// knob Moog renderizado (baquelite canelado + tampa de alumínio torneado) com escala em tinta preta;
+// a face de cima fica no centro da escala
 class LimaoLookAndFeel : public BrandLookAndFeel
 {
 public:
@@ -134,7 +136,8 @@ public:
         const bool big = (bool) slider.getProperties()["big"];
         const auto box = juce::Rectangle<int> (x, y, width, height).toFloat();
         inkScale (g, box, big);
-        real::knob (g, knobBox (box, big), pos, slider.findColour (juce::Slider::rotarySliderFillColourId), big, {}, false);
+        const float k = juce::jmin (box.getWidth(), box.getHeight()) / (big ? 92.0f : 64.0f);
+        hw::knob (g, box.getCentre(), (big ? 25.0f : 19.5f) * k, pos, slider.findColour (juce::Slider::rotarySliderFillColourId));
     }
 };
 
@@ -311,7 +314,7 @@ public:
         }
         else
             inkText (g, getButtonText(), txt, juce::Justification::centredLeft, 9.5f, true, on ? ink : inkDim);
-        real::jewel (g, { r.getRight() - 10.0f, r.getCentreY() }, 4.6f, ledColour, on);
+        hw::lamp (g, { r.getRight() - 10.0f, r.getCentreY() }, 4.6f, ledColour, on);
     }
 
 private:
@@ -327,7 +330,7 @@ public:
 
     void paintButton (juce::Graphics& g, bool over, bool down) override
     {
-        const auto cap = real::keycap (g, getLocalBounds().toFloat().reduced (1.0f), 3.0f, down);
+        const auto cap = hw::keycap (g, getLocalBounds().toFloat().reduced (1.0f), 3.0f, down, lemon, down ? 0.35f : 0.0f);
         g.setFont (theme::sans (9.0f, true, 0.12f));
         real::engraved (g, getButtonText(), cap.translated (0.0f, down ? 0.5f : 0.0f),
                         over || down ? lemon : theme::cream, juce::Justification::centred);

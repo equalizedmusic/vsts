@@ -3,8 +3,8 @@ name: shots
 # Fotos das interfaces (para divulgação). Roda sozinho quando shots/ muda, ou à mão.
 on:
   push:
-    branches: [main]
-    paths: ['shots/**', 'instrumentos/**', '.github/workflows/shots.yml']
+    branches: [main, 'visual-*']   # visual-*: prévia de visual antes de ir para o main (não gera instalador)
+    paths: ['shots/**', 'instrumentos/**', 'plugins/knob/_comum/**', '.github/workflows/shots.yml']
   workflow_dispatch:
 
 permissions:

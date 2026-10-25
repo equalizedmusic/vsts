@@ -114,7 +114,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, float brandEnd, float rig
         tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
 
     const juce::Rectangle<float> led (right - w - 13.0f, ledY, 7.0f, 7.0f);
-    real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
+    hw::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
 }
 
 // logo: máscara metade orgânica (folha, à esquerda) e metade circuito (à direita)
@@ -903,10 +903,10 @@ void VoiceMeter::paint (juce::Graphics& g)
         if (on)
         {
             const float lv = juce::jlimit (0.0f, 1.0f, tel.voice[(size_t) i].level.load());
-            real::led (g, dot.getCentre(), 2.5f, theme::amber, 0.4f + 0.6f * lv);
+            hw::led (g, dot.getCentre(), 2.5f, theme::amber, 0.4f + 0.6f * lv);
         }
         else   // além do limite a lente fica sem cor nenhuma (mais apagada)
-            real::led (g, dot.getCentre(), 2.5f, i < limit ? theme::amber : theme::ledOff, 0.0f);
+            hw::led (g, dot.getCentre(), 2.5f, i < limit ? theme::amber : theme::ledOff, 0.0f);
     }
 }
 
@@ -970,7 +970,7 @@ void MatrixRow::paint (juce::Graphics& g)
 
     // LED: acende com o tanto que a fonte está mexendo agora
     const juce::Rectangle<float> led (27.0f, r.getCentreY() - 3.5f, 7.0f, 7.0f);
-    real::led (g, led.getCentre(), 3.5f, shownUsed ? col : theme::off, shownUsed ? 0.35f + 0.65f * a : 0.0f);
+    hw::led (g, led.getCentre(), 3.5f, shownUsed ? col : theme::off, shownUsed ? 0.35f + 0.65f * a : 0.0f);
 
     for (float ax : { 216.0f, 465.0f })
     {

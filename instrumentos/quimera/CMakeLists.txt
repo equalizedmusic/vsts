@@ -26,6 +26,10 @@ target_sources(Quimera PRIVATE
     Source/Fx.cpp
     Source/Presets.cpp)
 
+# peças de hardware renderizadas (instrumentos/_hardware/tools/pecas.py): knob, lâmpada, LED, tecla
+file(GLOB quimera_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
+juce_add_binary_data(QuimeraImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${quimera_img})
+
 target_compile_definitions(Quimera PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
@@ -33,6 +37,7 @@ target_compile_definitions(Quimera PUBLIC
 
 target_link_libraries(Quimera
     PRIVATE
+        QuimeraImg
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

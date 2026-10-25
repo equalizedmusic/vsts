@@ -22,6 +22,10 @@ target_sources(Limao PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp)
 
+# peças de hardware renderizadas (instrumentos/_hardware/tools/pecas.py): knob, lâmpada, LED, tecla, madeira
+file(GLOB limao_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
+juce_add_binary_data(LimaoImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${limao_img})
+
 target_compile_definitions(Limao PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
@@ -29,6 +33,7 @@ target_compile_definitions(Limao PUBLIC
 
 target_link_libraries(Limao
     PRIVATE
+        LimaoImg
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

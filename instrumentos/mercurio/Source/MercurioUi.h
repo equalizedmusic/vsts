@@ -13,6 +13,7 @@
 #include "Widgets.h"
 #include "Params.h"
 #include "PluginImg.h"
+#include "Hardware.h"
 
 namespace mrc
 {
@@ -187,7 +188,8 @@ inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float p
     const float d  = juce::jmin (box.getWidth(), box.getHeight()) * 0.80f;
     const float R  = d * 0.5f;
     const float cx = box.getCentreX(), cy = box.getCentreY();
-    const float a0 = pi * 1.25f, a1 = pi * 2.75f, a = a0 + (a1 - a0) * pos;
+    const float a0 = pi * 1.25f, a1 = pi * 2.75f;
+    juce::ignoreUnused (img);   // o corpo agora é o knob do hw (o knob.png antigo não é mais desenhado)
     auto pt = [cx, cy] (float r, float an) { return PF (cx + r * std::sin (an), cy - r * std::cos (an)); };
 
     // escala: 11 traços (o do meio maior nos bipolares)
@@ -202,34 +204,10 @@ inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float p
         g.strokePath (t, juce::PathStrokeType (major ? 1.2f : 0.9f));
     }
 
-    // corpo renderizado (o knob ocupa 72% da imagem; a tampa preta, 62% do raio)
-    if (img.isValid())
-    {
-        const float s = d / 0.72f;
-        g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-        g.setOpacity (1.0f);   // a imagem herda a transparência da última cor: desenhar sempre opaca
-        g.drawImage (img, RF (cx - s * 0.5f, cy - s * 0.5f, s, s), juce::RectanglePlacement::stretchToFit);
-    }
-
-    // marca gravada no anel de alumínio
-    {
-        juce::Path m;
-        m.startNewSubPath (pt (R * 0.73f, a));
-        m.lineTo (pt (R * 0.86f, a));
-        g.setColour (real::black (0.55f));
-        g.strokePath (m, juce::PathStrokeType (juce::jmax (1.0f, d * 0.03f), juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    }
-    // ponteiro aceso na tampa preta
-    juce::Path pl;
-    pl.startNewSubPath (pt (R * 0.16f, a));
-    pl.lineTo (pt (R * 0.54f, a));
-    const float w = juce::jmax (1.5f, d * 0.05f);
-    g.setColour (pointer.withAlpha (0.22f));
-    g.strokePath (pl, juce::PathStrokeType (w * 2.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    g.setColour (pointer);
-    g.strokePath (pl, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    // knob de alumínio usinado renderizado no Blender (instrumentos/_hardware): saia no raio da escala,
+    // marca gravada no alumínio e ponteiro aceso na tampa preta
+    hw::knob (g, { cx, cy }, R * 0.82f, pos, pointer, hw::Knob::alu);
 }
-
 class MercurioLookAndFeel : public BrandLookAndFeel
 {
 public:
@@ -327,23 +305,15 @@ public:
         g.fillRoundedRectangle (kr.expanded (1.6f), 3.0f);
         g.setColour (real::white (0.06f));
         g.drawRoundedRectangle (kr.expanded (1.6f).translated (0.0f, 0.8f), 3.0f, 0.7f);
-        // tampa (a imagem tem a tecla em 78% × 62%, centrada um pouco acima)
-        if (art->key.isValid())
+        // tecla de plástico renderizada (instrumentos/_hardware); ligada, o topo acende em magenta
+        hw::keycap (g, kr, 2.5f, down, hot, led && getToggleState() ? 0.55f : 0.0f);
+        if (over && ! down)
         {
-            const float iw = keyW / 0.78f, ih = keyH / 0.62f;
-            RF dst (kr.getCentreX() - iw * 0.5f, kr.getCentreY() - ih * 0.44f, iw, ih);
-            if (down) dst = dst.translated (0.0f, 0.9f);
-            g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-            g.setOpacity (1.0f);
-            g.drawImage (art->key, dst, juce::RectanglePlacement::stretchToFit);
-            if (down || over)
-            {
-                g.setColour (down ? real::black (0.22f) : real::white (0.06f));
-                g.fillRoundedRectangle (kr.translated (0.0f, down ? 0.9f : 0.0f).reduced (0.5f), 2.5f);
-            }
+            g.setColour (real::white (0.05f));
+            g.fillRoundedRectangle (kr.reduced (1.0f), 2.5f);
         }
         if (led)
-            real::led (g, { kr.getRight() + 8.0f, kr.getCentreY() }, 2.6f, hot, getToggleState() ? 1.0f : 0.0f);
+            hw::led (g, { kr.getRight() + 8.0f, kr.getCentreY() }, 2.6f, hot, getToggleState() ? 1.0f : 0.0f);
         if (getButtonText().isNotEmpty())
             silkText (g, getButtonText(), { kx - 40.0f, kr.getBottom() + 3.0f, 80.0f, 11.0f },
                       juce::Justification::centred, 9.5f, true, textOn ((float) getY()));
@@ -390,12 +360,12 @@ public:
             const bool on = i == index;
             if (vertical)
             {
-                real::led (g, { r.getX() + 4.5f, r.getCentreY() }, 2.9f, hot, on ? 1.0f : 0.0f);
+                hw::led (g, { r.getX() + 4.5f, r.getCentreY() }, 2.9f, hot, on ? 1.0f : 0.0f);
                 silkText (g, names[i], r.withTrimmedLeft (13.0f), juce::Justification::centredLeft, 10.5f, true, on ? textOn (y) : dimOn (y));
             }
             else
             {
-                real::led (g, { r.getCentreX(), r.getY() + 4.0f }, 2.4f, hot, on ? 1.0f : 0.0f);
+                hw::led (g, { r.getCentreX(), r.getY() + 4.0f }, 2.4f, hot, on ? 1.0f : 0.0f);
                 silkText (g, names[i], r.withTrimmedTop (9.0f).expanded (6.0f, 0.0f), juce::Justification::centredTop, 10.5f, true,
                           on ? textOn (y) : dimOn (y));
             }
