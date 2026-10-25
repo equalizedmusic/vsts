@@ -45,7 +45,7 @@ jobs:
         run: |
           set -e
           mkdir -p dist
-          # dist/ = todos; linha/<criativo|mix>/ = só os da linha (vem de plugins/<linha>/<plugin>)
+          # dist/ = todos; linha/<criativo|mix|knob>/ = só os da linha (vem de plugins/<linha>/<plugin>)
           for art in $(find build -type d -name '*_artefacts'); do
             linha=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*#\1#p')
             for fmt in VST3 AU VST; do
@@ -134,7 +134,7 @@ jobs:
           mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null
-            for p in Criativo Mix; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
+            for p in Criativo Mix Knob; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
           cat status.txt
           git init -q
           git checkout -q -b builds
@@ -152,8 +152,8 @@ jobs:
           gh release create latest-build * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Último build" --notes-file ../report/status.txt --prerelease
 
-      - name: Releases das versões (criativo-v…, mix-v…)
+      - name: Releases das versões (criativo-v…, mix-v…, knob-v…)
         if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash src/.github/scripts/release-versoes.sh pacotes report src Criativo Mix
+        run: bash src/.github/scripts/release-versoes.sh pacotes report src Criativo Mix Knob

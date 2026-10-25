@@ -21,6 +21,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACOTES = {
     "Criativo":     ("Criativo.md", "criativo", "Linha Criativa"),
     "Mix":          ("Mix.md",      "mix",      "Linha de Mix"),
+    "Knob":         ("Knob.md",     "knob",     "SÉRIE KNOB"),
     "Instrumentos": ("Quimera.md",  "quimera",  "QUIMERA"),
     "Limao":        ("Limao.md",    "limao",    "LIMÃO"),
     "Mercurio":     ("Mercurio.md", "mercurio", "MERCÚRIO"),

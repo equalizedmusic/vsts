@@ -46,8 +46,10 @@ function(vsts_versao arquivo saida)
 endfunction()
 vsts_versao(Criativo.md VSTS_VERSAO_criativo)
 vsts_versao(Mix.md VSTS_VERSAO_mix)
+vsts_versao(Knob.md VSTS_VERSAO_knob)
 
-# Cada pasta em plugins/<linha>/ com CMakeLists.txt é um plugin (linhas: criativo, mix)
+# Cada pasta em plugins/<linha>/ com CMakeLists.txt é um plugin (linhas: criativo, mix, knob).
+# Na knob, plugins/knob/_comum entra primeiro (ordem alfabética) e define o serie_knob_pedal() que os pedais usam.
 file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*/*")
 foreach(dir ${plugin_dirs})
     if(EXISTS "${dir}/CMakeLists.txt")

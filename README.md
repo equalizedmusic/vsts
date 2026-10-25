@@ -1,7 +1,7 @@
 # vsts
 
 Plugins de áudio da **InsideStudioSP**, feitos com [JUCE](https://juce.com). Os plugins ficam
-separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
+separados por linha: `plugins/criativo/<plugin>`, `plugins/mix/<plugin>` e `plugins/knob/<pedal>`.
 
 ## Linha criativa
 
@@ -32,6 +32,24 @@ separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
 | [SALA](plugins/mix/sala/README.md) | Reverb limpo e transparente para colocar tudo num mesmo espaço |
 | [MONITOR](plugins/mix/monitor/README.md) | Medidor de entrega: LUFS, LRA, true peak, espectro e correlação, sem mexer no som |
 | [NAVALHA](plugins/mix/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
+
+## SÉRIE KNOB
+
+Dez pedais de um knob grandão, todos no tempo do DAW, com TRIGGER por MIDI ou por ataque no sidechain
+([detalhes](plugins/knob/README.md)). A base é comum (`plugins/knob/_comum`); cada pedal só traz o motor de som.
+
+| Pedal | O que faz o knob |
+|---|---|
+| FOLE | Sidechain sincronizado: profundidade do "bombeado" (6 formas) |
+| PICADOR | Trance gate de 16 passos: corte e, no fim do curso, gate mais curto |
+| MARÉ | Filtro passa-baixa que abre e fecha no tempo: quanto desce e a ressonância |
+| VAIVÉM | Auto-pan no tempo: a abertura do passeio |
+| REPIQUE | Stutter / beat repeat: quanto do compasso vira repetição (ROLL, REPETE, DECAI, TRAVA) |
+| ECO | Delay de fita no tempo: a realimentação (SIMPLES, PING-PONG, FITA, DUB, ESPALHADO) |
+| AVESSO | Reverso no tempo: quantas fatias do compasso tocam ao contrário |
+| FREIO | Tape stop / tape start: quanto do ciclo a freada ocupa |
+| ESCADA | Sequenciador de pitch: o tamanho dos saltos, sempre dentro da escala |
+| MASTIGA | Bitcrush ritmado: o quanto morde no pico da forma |
 
 ## Instrumentos
 
@@ -65,7 +83,7 @@ Não precisa de Mac nem de Visual Studio: todo push na `main` dispara o GitHub A
 [pluginval](https://github.com/Tracktion/pluginval) e publica:
 
 - **Release `latest-build`**: um instalador por linha e por sistema: `InsideStudioSP-Criativo-win.exe` /
-  `-mac.dmg` e `InsideStudioSP-Mix-win.exe` / `-mac.dmg` (montados por `instalador/montar.py`; nomes e
+  `-mac.dmg`, `InsideStudioSP-Mix-win.exe` / `-mac.dmg` e `InsideStudioSP-Knob-win.exe` / `-mac.dmg` (montados por `instalador/montar.py`; nomes e
   descrições da lista em `instalador/catalogo.json`);
 - **branch `builds`**: os logs de compilação e do pluginval e o `status.txt`.
 
@@ -79,6 +97,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 |---|---|---|
 | `InsideStudioSP-Criativo` | `novidades/Criativo.md` | `criativo-vX.Y.Z` |
 | `InsideStudioSP-Mix` | `novidades/Mix.md` | `mix-vX.Y.Z` |
+| `InsideStudioSP-Knob` (SÉRIE KNOB) | `novidades/Knob.md` | `knob-vX.Y.Z` |
 | `InsideStudioSP-Instrumentos` (QUIMERA) | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
 | `InsideStudioSP-Limao` | `novidades/Limao.md` | `limao-vX.Y.Z` |
 | `InsideStudioSP-Mercurio` | `novidades/Mercurio.md` | `mercurio-vX.Y.Z` |
