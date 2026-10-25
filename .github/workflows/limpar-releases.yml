@@ -1,0 +1,35 @@
+name: limpar-releases
+
+# Deixa em Releases só a última versão de cada pacote: apaga os antigos "latest-*" e, em cada <prefixo>-vX.Y.Z,
+# tudo que não for a maior versão (release e tag). Roda quando este arquivo muda ou à mão (Actions > Run workflow).
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/limpar-releases.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  limpar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apagar releases antigos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          R="$GITHUB_REPOSITORY"
+          tags=$(gh release list -R "$R" --limit 200 --json tagName -q '.[].tagName')
+          echo "$tags"
+          for t in $(echo "$tags" | grep -E '^latest-' || true); do
+            gh release delete "$t" --yes --cleanup-tag -R "$R"; echo "apagado $t"
+          done
+          for p in $(echo "$tags" | grep -E -- '-v[0-9]' | sed 's/-v[0-9].*//' | sort -u); do
+            ultima=$(echo "$tags" | grep -E "^${p}-v[0-9]" | sort -V | tail -1)
+            for t in $(echo "$tags" | grep -E "^${p}-v[0-9]" | grep -vxF "$ultima" || true); do
+              gh release delete "$t" --yes --cleanup-tag -R "$R"; echo "apagado $t (fica $ultima)"
+            done
+          done
+          gh release list -R "$R" --limit 200
