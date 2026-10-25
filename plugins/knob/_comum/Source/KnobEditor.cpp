@@ -123,6 +123,7 @@ void KnobEditor::montarEstatico()
 void KnobEditor::paint (juce::Graphics& g)
 {
     montarEstatico();
+    g.setOpacity (1.0f);
     g.drawImage (estatico, getLocalBounds().toFloat());
 
     g.saveState();
@@ -136,6 +137,7 @@ void KnobEditor::paint (juce::Graphics& g)
     desenharKnobPequeno (g, rate, 135.0f - 45.0f * rateIdx, true);
     desenharKnobPequeno (g, mix, 135.0f - 2.7f * valorDe (id::mix), false);
     const int gat = juce::jlimit (0, 2, juce::roundToInt (valorDe (id::gatilho)));
+    g.setOpacity (1.0f);
     if (alav[gat].isValid()) g.drawImage (alav[gat], ret (mapa::retAlav));
     desenharVisor (g);
     desenharTextos (g);
@@ -178,6 +180,7 @@ void KnobEditor::desenharKnobGrande (juce::Graphics& g, float valor)
 {
     const float angGraus = 135.0f - 27.0f * valor;   // giro no Blender (anti-horário visto de cima)
     const int q = quadro (angGraus, 18);
+    g.setOpacity (1.0f);   // o drawImage herda a transparência da última cor (as lâmpadas): sem isso o knob sai translúcido
     if (knob[q].isValid()) g.drawImage (knob[q], ret (mapa::retKnob));
 
     const float a = juce::degreesToRadians (angGraus);
@@ -228,6 +231,7 @@ void KnobEditor::desenharKnobGrande (juce::Graphics& g, float valor)
 void KnobEditor::desenharKnobPequeno (juce::Graphics& g, const juce::Image* quadros, float angGraus, bool ehRate)
 {
     const int q = quadro (angGraus, 14);
+    g.setOpacity (1.0f);
     if (quadros[q].isValid()) g.drawImage (quadros[q], ret (ehRate ? mapa::retRate : mapa::retMix));
     const auto& e = ehRate ? mapa::rateTampa : mapa::mixTampa;
     const float a = juce::degreesToRadians (angGraus), R = 1.45f;

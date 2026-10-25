@@ -54,3 +54,33 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
                 juce::juce_recommended_config_flags)
     endif()
 endforeach()
+
+# SÉRIE KNOB (plugins/knob/<pedal>): base comum em plugins/knob/_comum + o Pedal.cpp de cada um; foto a 200% (1000×1284)
+set(knob_comum "${CMAKE_CURRENT_SOURCE_DIR}/../plugins/knob/_comum")
+file(GLOB knob_imgs "${knob_comum}/assets/*.png" "${knob_comum}/assets/*.jpg")
+if(knob_imgs)
+    juce_add_binary_data(shot_serieknob_data HEADER_NAME BinaryData_SerieKnob.h NAMESPACE SerieKnobData SOURCES ${knob_imgs})
+endif()
+foreach(dir ${plugin_dirs})
+    if(EXISTS "${dir}/Source/Pedal.cpp" AND knob_imgs)
+        get_filename_component(name "${dir}" NAME)
+        string(TOUPPER "${name}" upper)
+        set(t "shot_${name}")
+        juce_add_console_app(${t} PRODUCT_NAME "${t}")
+        target_sources(${t} PRIVATE "${knob_comum}/Source/KnobProcessor.cpp" "${knob_comum}/Source/KnobEditor.cpp"
+                                    "${dir}/Source/Pedal.cpp" ShotMain.cpp)
+        target_include_directories(${t} PRIVATE "${knob_comum}/Source" "${dir}/Source")
+        target_compile_definitions(${t} PRIVATE
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+            JUCE_MODAL_LOOPS_PERMITTED=1
+            SHOT_PLUGIN="${upper}" SHOT_W=1000 SHOT_H=1284)
+        target_link_libraries(${t}
+            PRIVATE
+                shot_serieknob_data
+                juce::juce_audio_utils
+                juce::juce_dsp
+            PUBLIC
+                juce::juce_recommended_config_flags)
+    endif()
+endforeach()
