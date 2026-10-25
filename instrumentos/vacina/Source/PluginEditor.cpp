@@ -162,41 +162,34 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     knob (1094, 38, 30, id::unison, "UNISON");
     knob (1146, 38, 30, id::uniDetune, "DETUNE");
     knob (1198, 38, 30, id::uniSpread, "SPREAD");
-    knob (1250, 38, 30, id::drift, "ANALOG");
+    knob (1250, 38, 30, id::drift, "DRIFT");
     knob (1314, 28, 46, id::volume, "MASTER");
 
-    // ================= OSCILADORES =================
-    oscScopes[0] = scope ({ 60, 136, 170, 94 });
-    add<vac::LedList> ({ 242, 140, 84, 45 }, model1Names, true, 15.0f)->bind (st, id::osc1Model);
-    wave1Box = box ({ 238, 192, 156, 28 }, id::osc1Table, "WAVETABLE");
-    knob (92, 244, 44, id::osc1Shape, "SHAPE", red);
-    knob (168, 244, 44, id::osc1Pw, "PULSE W");
-    knob (244, 244, 44, id::osc1Semi, "SEMITONE");
-    knob (320, 244, 44, id::osc1Spread, "SUPER SPREAD");
+    // ================= FM: algoritmo, realimentação e o que vem depois dos operadores =================
+    algoScope = scope ({ 58, 130, 284, 116 });
+    box ({ 60, 250, 280, 28 }, id::algo);
+    knob (80, 286, 32, id::feedback, "FEEDBACK", red);
+    knob (140, 286, 32, id::fold, "FOLD", red);
+    knob (200, 286, 32, id::ring, "RING MOD");
+    knob (260, 286, 32, id::noiseVol, "NOISE");
+    knob (320, 286, 32, id::oscVol, "DRIVE");
 
-    oscScopes[1] = scope ({ 422, 136, 170, 94 });
-    add<vac::LedList> ({ 604, 140, 84, 30 }, model2Names, true, 15.0f)->bind (st, id::osc2Model);
-    attach (*key (724, 138, "SYNC", true), id::osc2Sync);
-    wave2Box = box ({ 600, 192, 204, 28 }, id::osc2Table, "WAVETABLE");
-    knob (450, 244, 44, id::osc2Shape, "SHAPE", red);
-    knob (524, 244, 44, id::osc2Pw, "PULSE W");
-    knob (598, 244, 44, id::osc2Semi, "SEMITONE");
-    knob (672, 244, 44, id::osc2Detune, "DETUNE");
-    knob (750, 244, 44, id::fmAmt, "FM 1 > 2", red);
-
-    oscScopes[2] = scope ({ 832, 136, 178, 94 });
-    knob (862, 244, 40, id::osc3Shape, "SHAPE", red);
-    knob (921, 244, 40, id::osc3Semi, "SEMITONE");
-    knob (980, 244, 40, id::osc3Detune, "DETUNE");
-
-    knob (1074, 138, 44, id::osc1Vol, "OSC 1");
-    knob (1160, 138, 44, id::osc2Vol, "OSC 2");
-    knob (1246, 138, 44, id::osc3Vol, "OSC 3");
-    knob (1332, 138, 44, id::subVol, "SUB");
-    knob (1074, 244, 44, id::noiseVol, "NOISE");
-    knob (1160, 244, 44, id::noiseColor, "NOISE COLOR");
-    knob (1246, 244, 44, id::ringVol, "RING MOD");
-    knob (1332, 244, 44, id::oscVol, "DRIVE", red);
+    // ================= OPERADORES =================
+    for (int k = 0; k < numOps; ++k)
+    {
+        const int x0 = opX (k);
+        opScopes[(size_t) k] = scope ({ x0 + 6, 130, 152, 88 });
+        box ({ x0 + 160, 132, 86, 28 }, id::op (k, "wave"), "WAVE");
+        knob (x0 + 203, 172, 30, id::op (k, "lvl"), "LEVEL", red);
+        knob (x0 + 34, 224, 30, id::op (k, "coarse"), "RATIO");
+        knob (x0 + 94, 224, 30, id::op (k, "fine"), "FINE");
+        knob (x0 + 154, 224, 30, id::op (k, "det"), "DETUNE");
+        knob (x0 + 214, 224, 30, id::op (k, "vel"), "VELOCITY");
+        knob (x0 + 34, 286, 30, id::op (k, "a"), "ATTACK");
+        knob (x0 + 94, 286, 30, id::op (k, "d"), "DECAY");
+        knob (x0 + 154, 286, 30, id::op (k, "s"), "SUSTAIN");
+        knob (x0 + 214, 286, 30, id::op (k, "r"), "RELEASE");
+    }
 
     // ================= FILTROS =================
     filterScope = scope ({ 60, 384, 238, 104 });
@@ -245,10 +238,10 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     }
     knob (82, 768, 30, id::lfo1Pitch, "PITCH");
     knob (140, 768, 30, id::lfo1Cut, "CUTOFF");
-    knob (198, 768, 30, id::lfo1Pw, "PULSE W");
+    knob (198, 768, 30, id::lfo1Ratio, "RATIO");
     knob (256, 768, 30, id::lfo1Amp, "AMP");
-    knob (342, 768, 30, id::lfo2Shp, "SHAPE");
-    knob (400, 768, 30, id::lfo2Fm, "FM");
+    knob (342, 768, 30, id::lfo2Index, "FM INDEX");
+    knob (400, 768, 30, id::lfo2Fb, "FEEDBACK");
     knob (458, 768, 30, id::lfo2Cut, "CUTOFF");
     knob (516, 768, 30, id::lfo2Pan, "PAN");
     box ({ 580, 772, 116, 26 }, id::lfo3Dst, "DESTINATION");
@@ -314,62 +307,40 @@ VacinaEditor::~VacinaEditor()
 // ---------------- o que cada visor desenha ----------------
 void VacinaEditor::buildScopes()
 {
-    // ---- osciladores: um ciclo da forma de onda atual ----
-    for (int o = 0; o < 3; ++o)
+    // ---- algoritmo: quem modula quem; os portadores (que soam) acesos, a realimentação no OP 4 ----
+    algoScope->hash = [this] { return pv (id::algo) + pv (id::feedback) * 0.001f; };
+    algoScope->caption = [] { return juce::String ("ALGORITHM"); };
+    algoScope->draw = [this] (juce::Graphics& g, RF r) { drawAlgorithm (g, r, juce::roundToInt (pv (id::algo)), pv (id::feedback) * 0.01f); };
+
+    // ---- operadores: um ciclo da onda, com a razão e o papel (portador / modulador) ----
+    for (int k = 0; k < numOps; ++k)
     {
-        auto* s = oscScopes[(size_t) o];
-        const juce::String shp = o == 0 ? id::osc1Shape : o == 1 ? id::osc2Shape : id::osc3Shape;
-        auto modelOf = [this, o] { return o == 0 ? juce::roundToInt (pv (id::osc1Model)) : o == 1 ? juce::roundToInt (pv (id::osc2Model)) * 2 : 0; };
-        auto tableOf = [this, o] { return juce::roundToInt (pv (o == 0 ? id::osc1Table : id::osc2Table)); };
-        s->hash = [this, o, shp, modelOf, tableOf]
+        const juce::String wid = id::op (k, "wave"), cid = id::op (k, "coarse"), fid = id::op (k, "fine"), lid = id::op (k, "lvl");
+        auto* s = opScopes[(size_t) k];
+        auto carrier = [this, k] { return ((algos[juce::jlimit (0, numAlgos - 1, juce::roundToInt (pv (id::algo)))].carriers >> k) & 1) != 0; };
+        s->hash = [this, wid, cid, fid, lid, carrier]
         {
-            const float pw = o == 0 ? pv (id::osc1Pw) : o == 1 ? pv (id::osc2Pw) : 50.0f;
-            return pv (shp) + pw * 0.37f + (float) modelOf() * 1000.0f + (float) tableOf() * 10000.0f
-                 + (o == 0 ? pv (id::osc1Spread) * 0.013f : 0.0f);
+            return pv (wid) * 1000.0f + pv (cid) * 7.0f + pv (fid) * 0.013f + pv (lid) * 0.00071f + (carrier() ? 0.5f : 0.0f);
         };
-        s->caption = [o, modelOf, tableOf]
+        s->caption = [this, k, cid, fid, carrier]
         {
-            const int m = modelOf();
-            const juce::String n = "OSC " + juce::String (o + 1) + "  ";
-            if (m == 2) return n + tableNames[tableOf()];
-            return n + (m == 1 ? "SUPER" : "CLASSIC");
+            return "OP" + juce::String (k + 1) + "  x" + juce::String (opRatio (pv (cid), pv (fid)), 2) + (carrier() ? "  OUT" : "  MOD");
         };
-        s->draw = [this, o, shp, modelOf, tableOf] (juce::Graphics& g, RF r)
+        s->draw = [this, wid, lid, carrier] (juce::Graphics& g, RF r)
         {
             vac::gridLines (g, r, 4, 2);
-            const int m = modelOf();
-            const float shape = pv (shp) * 0.01f;
-            const float pw = (o == 0 ? pv (id::osc1Pw) : o == 1 ? pv (id::osc2Pw) : 50.0f) * 0.01f;
-            const int table = tableOf();
-            const auto& bank = WaveBank::instance();
-            auto sample = [&] (float t, float detune)
+            const int w = juce::roundToInt (pv (wid));
+            const float lv = juce::jmax (0.15f, pv (lid) * 0.01f);
+            juce::Path p;
+            const int n = 200;
+            for (int i = 0; i <= n; ++i)
             {
-                t += detune;
-                t -= std::floor (t);
-                if (m == 2) return bank.read (table, shape, t, 0);
-                if (m == 1) return 2.0f * t - 1.0f;
-                return Voice::classic (t, 0.0f, shape, pw);
-            };
-            const int n = 240;
-            auto trace = [&] (float detune)
-            {
-                juce::Path p;
-                for (int i = 0; i <= n; ++i)
-                {
-                    const float t = (float) i / (float) n;
-                    const float y = r.getCentreY() - juce::jlimit (-1.1f, 1.1f, sample (t * 2.0f, detune)) * r.getHeight() * 0.40f;
-                    const float x = r.getX() + t * r.getWidth();
-                    if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
-                }
-                return p;
-            };
-            if (m == 1)   // SUPER: as serras vizinhas defasadas, mais fracas
-            {
-                const float spread = pv (id::osc1Spread) * 0.01f;
-                for (float d : { -0.11f, 0.07f, 0.19f })
-                    vac::glowPath (g, trace (d * (0.3f + spread)), vac::ink.withAlpha (0.35f), 1.0f);
+                const float t = (float) i / (float) n;
+                const float y = r.getCentreY() + 5.0f - OpWaves::shape (w, t * 2.0f) * lv * (r.getHeight() - 14.0f) * 0.5f;
+                const float x = r.getX() + t * r.getWidth();
+                if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
             }
-            vac::glowPath (g, trace (0.0f), vac::ink, 1.5f);
+            vac::glowPath (g, p, carrier() ? vac::ink : vac::ink.withAlpha (0.6f), 1.5f);
         };
     }
 
@@ -495,6 +466,91 @@ void VacinaEditor::buildScopes()
             vac::glowPath (g, p, vac::ink, 1.4f);
         };
     }
+}
+
+// ---------------- desenho do algoritmo ----------------
+// posição de cada operador (coluna 0..3, linha 0..3 de cima para baixo) em cada algoritmo; os portadores ficam embaixo
+void VacinaEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedback)
+{
+    static constexpr float pos[numAlgos][numOps][2] = {
+        { { 1.5f, 3 }, { 1.5f, 2 }, { 1.5f, 1 }, { 1.5f, 0 } },   // 1  4 > 3 > 2 > 1
+        { { 1.5f, 2 }, { 1.5f, 1 }, { 1.0f, 0 }, { 2.0f, 0 } },   // 2  (3 + 4) > 2 > 1
+        { { 1.5f, 2 }, { 1.0f, 1 }, { 1.0f, 0 }, { 2.0f, 1 } },   // 3  3 > 2 > 1, 4 > 1
+        { { 1.5f, 2 }, { 1.0f, 1 }, { 2.0f, 1 }, { 2.0f, 0 } },   // 4  4 > 3 > 1, 2 > 1
+        { { 1.0f, 2 }, { 1.0f, 1 }, { 2.0f, 2 }, { 2.0f, 1 } },   // 5  2 > 1, 4 > 3
+        { { 0.5f, 2 }, { 1.5f, 2 }, { 2.5f, 2 }, { 1.5f, 1 } },   // 6  4 > 1, 2, 3
+        { { 0.5f, 2 }, { 1.5f, 2 }, { 2.5f, 2 }, { 2.5f, 1 } },   // 7  4 > 3; 1, 2, 3
+        { { 0.0f, 2 }, { 1.0f, 2 }, { 2.0f, 2 }, { 3.0f, 2 } },   // 8  os quatro soltos
+    };
+    algo = juce::jlimit (0, numAlgos - 1, algo);
+    const auto& al = algos[algo];
+    const float bw = 30.0f, bh = 17.0f;
+    const float top = r.getY() + 14.0f, bus = r.getBottom() - 4.0f;
+    const float rowStep = (bus - 8.0f - bh - top) / 3.0f;
+    float maxRow = 0.0f;
+    for (int k = 0; k < numOps; ++k) maxRow = juce::jmax (maxRow, pos[algo][k][1]);
+    const float shift = (3.0f - maxRow) * rowStep;                        // os portadores sempre na linha de baixo
+    auto box = [&] (int k)
+    {
+        const float cx = r.getX() + (pos[algo][k][0] + 0.5f) / 4.0f * r.getWidth();
+        return RF (cx - bw * 0.5f, top + shift + pos[algo][k][1] * rowStep, bw, bh);
+    };
+    // ligações: modulador (embaixo dele) → topo do modulado
+    for (int k = 0; k < numOps; ++k)
+        for (int j = 0; j < numOps; ++j)
+            if ((al.mods[k] >> j) & 1)
+            {
+                const auto a = box (j), b = box (k);
+                juce::Path p;
+                p.startNewSubPath (a.getCentreX(), a.getBottom());
+                p.lineTo (a.getCentreX(), (a.getBottom() + b.getY()) * 0.5f);
+                p.lineTo (b.getCentreX(), (a.getBottom() + b.getY()) * 0.5f);
+                p.lineTo (b.getCentreX(), b.getY());
+                vac::glowPath (g, p, vac::ink.withAlpha (0.75f), 1.2f);
+            }
+    // saída: cada portador desce até a barra
+    float busL = r.getRight(), busR = r.getX();
+    for (int k = 0; k < numOps; ++k)
+        if ((al.carriers >> k) & 1)
+        {
+            const auto b = box (k);
+            juce::Path p;
+            p.startNewSubPath (b.getCentreX(), b.getBottom());
+            p.lineTo (b.getCentreX(), bus);
+            vac::glowPath (g, p, vac::ink.withAlpha (0.75f), 1.2f);
+            busL = juce::jmin (busL, b.getCentreX());
+            busR = juce::jmax (busR, b.getCentreX());
+        }
+    {
+        juce::Path p;
+        p.startNewSubPath (busL - 6.0f, bus);
+        p.lineTo (busR + 6.0f, bus);
+        vac::glowPath (g, p, vac::ink, 1.6f);
+    }
+    // realimentação do OP 4: laço pela direita (mais forte, mais aceso)
+    {
+        const auto b = box (3);
+        juce::Path p;
+        p.startNewSubPath (b.getRight(), b.getCentreY());
+        p.lineTo (b.getRight() + 8.0f, b.getCentreY());
+        p.lineTo (b.getRight() + 8.0f, b.getY() - 5.0f);
+        p.lineTo (b.getCentreX(), b.getY() - 5.0f);
+        p.lineTo (b.getCentreX(), b.getY());
+        vac::glowPath (g, p, (feedback > 0.005f ? vac::redInk : vac::inkDim).withAlpha (0.4f + 0.6f * juce::jmin (1.0f, feedback * 2.0f)), 1.2f);
+    }
+    // caixas: portador cheio, modulador só o contorno
+    for (int k = 0; k < numOps; ++k)
+    {
+        const auto b = box (k);
+        const bool car = ((al.carriers >> k) & 1) != 0;
+        g.setColour (vac::ink.withAlpha (car ? 0.85f : 0.0f));
+        g.fillRoundedRectangle (b, 2.5f);
+        g.setColour (vac::ink.withAlpha (0.9f));
+        g.drawRoundedRectangle (b, 2.5f, 1.2f);
+        vac::oledText (g, juce::String (k + 1), b, 12.0f, juce::Justification::centred, car ? juce::Colour (0xff0b1a22) : vac::ink);
+    }
+    vac::oledText (g, algoNames[algo].fromLastOccurrenceOf (" ", false, false), r.withHeight (13.0f), 10.0f,
+                   juce::Justification::topRight, vac::redInk);
 }
 
 // ---------------- menu de presets (com o tamanho da janela) ----------------
@@ -703,9 +759,6 @@ void VacinaEditor::timerCallback()
     lcd->set (proc.getPresetGroup(), count, proc.getPresetName(), bottom);
 
     for (auto* s : scopes) s->poll();
-    // o campo WAVETABLE só fica aceso com o oscilador em WAVE
-    wave1Box->setDim (juce::roundToInt (pv (id::osc1Model)) != 2);
-    wave2Box->setDim (juce::roundToInt (pv (id::osc2Model)) != 1);
 
     // LEDs dos LFOs (piscam no ritmo de cada um)
     const float lv[3] = { proc.synth.lfo1Now.load(), proc.synth.lfo2Now.load(), proc.synth.lfo3Now.load() };
@@ -842,7 +895,7 @@ void VacinaEditor::drawLogo (juce::Graphics& g, float x, float y)
     g.setFont (theme::sans (30.0f, true, 0.10f));
     g.setColour (c);
     g.drawText ("VACINA", RF (x + 34.0f, y - 2.0f, 180.0f, 32.0f), juce::Justification::centredLeft, false);
-    vac::silkText (g, "VIRTUAL ANALOG SYNTHESIZER", { x + 35.0f, y + 29.0f, 190.0f, 10.0f }, juce::Justification::centredLeft,
+    vac::silkText (g, "4-OPERATOR FM SYNTHESIZER", { x + 35.0f, y + 29.0f, 190.0f, 10.0f }, juce::Justification::centredLeft,
                    7.5f, true, vac::silkDim, 0.18f);
 }
 
@@ -882,10 +935,9 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
 
     // ---- seções ----
     vac::section (g, { 876.0f, 16.0f, 404.0f, 92.0f }, "VOICE");
-    vac::section (g, { 50.0f, 116.0f, 352.0f, 238.0f }, "OSC 1");
-    vac::section (g, { 412.0f, 116.0f, 400.0f, 238.0f }, "OSC 2");
-    vac::section (g, { 822.0f, 116.0f, 196.0f, 238.0f }, "OSC 3");
-    vac::section (g, { 1028.0f, 116.0f, 362.0f, 238.0f }, "MIXER");
+    vac::section (g, { 50.0f, 116.0f, 300.0f, 238.0f }, "FM");
+    for (int k = 0; k < numOps; ++k)
+        vac::section (g, { (float) opX (k), 116.0f, 250.0f, 238.0f }, "OPERATOR " + juce::String (k + 1));
     vac::section (g, { 50.0f, 364.0f, 700.0f, 240.0f }, "FILTERS");
     vac::section (g, { 760.0f, 364.0f, 630.0f, 240.0f }, "ENVELOPES");
     vac::section (g, { 50.0f, 614.0f, 250.0f, 224.0f }, "LFO 1");
@@ -899,8 +951,6 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
     vac::subTitle (g, { 534.0f, 382.0f, 210.0f, 12.0f }, "FILTER 2");
     // (os modos dos filtros ficam sem a legenda MODE: a lista de 7 já encosta nos knobs de baixo)
     vac::silkText (g, "ROUTING", { 68.0f, 530.0f, 84.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
-    vac::silkText (g, "MODEL", { 242.0f, 126.0f, 74.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
-    vac::silkText (g, "MODEL", { 604.0f, 126.0f, 74.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
     vac::silkText (g, "KEY MODE", { 888.0f, 27.0f, 72.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
     vac::silkText (g, "MODE", { 1226.0f, 726.0f, 70.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
     for (int k = 0; k < 2; ++k)
@@ -937,7 +987,7 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
         g.drawText ("VACINA", plate.withTrimmedTop (16.0f).withHeight (28.0f), juce::Justification::centred, false);
         g.setColour (vac::red);
         g.fillRect (plate.getCentreX() - 40.0f, plate.getY() + 50.0f, 80.0f, 1.2f);
-        vac::silkText (g, u8 ("16 VOICES  ·  3 OSC  ·  24 WAVETABLES"), plate.withTrimmedTop (56.0f).withHeight (12.0f),
+        vac::silkText (g, u8 ("16 VOICES  ·  4 OPERATORS  ·  8 ALGORITHMS"), plate.withTrimmedTop (56.0f).withHeight (12.0f),
                        juce::Justification::centred, 7.5f, true, vac::silkDim, 0.12f);
         if (art->screw.isValid())
             for (float sx : { plate.getX() + 12.0f, plate.getRight() - 12.0f })

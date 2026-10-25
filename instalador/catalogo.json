@@ -22,5 +22,5 @@
   "NAVALHA":   ["NAVALHA",   "clipper"],
   "QUIMERA":   ["QUIMERA",   "sintetizador: 3 osciladores wavetable, MPE, arpejador"],
   "LIMAO":     ["LIMÃO",     "bassline ácido mono com sequenciador de 32 passos"],
-  "VACINA":    ["VACINA",    "virtual-analógico polifônico de 16 vozes"]
+  "VACINA":    ["VACINA",    "FM de 4 operadores, polifônico de 16 vozes"]
 }

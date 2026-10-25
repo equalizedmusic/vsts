@@ -7,16 +7,14 @@
 #include <cmath>
 #include <vector>
 #include "Params.h"
-#include "WaveBank.h"
 
-// VACINA — motor. Virtual-analógico leve: a modulação (envelopes, LFOs, matriz, glide, corte) roda em blocos de
-// controle de 32 amostras e só o que precisa de áudio (osciladores, filtros, ganho) roda por amostra, com os
-// coeficientes do filtro e o ganho interpolados dentro do bloco (sem degrau, sem estalo).
-//   OSC1 CLASSIC (SHAPE: seno → triângulo → serra → pulso), SUPER (7 serras com SPREAD) ou WAVE (24 tabelas, o SHAPE
-//   anda entre os quadros); OSC2 CLASSIC ou WAVE com SYNC e FM (vindo do OSC1); OSC3 CLASSIC; SUB (quadrada uma
-//   oitava abaixo), RING (OSC1 × OSC2) e NOISE com cor → OSC VOLUME (satura acima da metade) →
-//   FILTRO 1 (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) → SATURAÇÃO → FILTRO 2 (SVF, COMB, VOWEL), em série
-//   ou paralelo → VCA. ANALOG DRIFT: cada voz desafina e muda o corte um tiquinho, devagar, como num analógico.
+// VACINA — motor. FM de 4 operadores, leve: a modulação (envelopes, LFOs, matriz, glide, corte) roda em blocos de
+// controle de 32 amostras e só o que precisa de áudio (operadores, filtros, ganho) roda por amostra, com os níveis dos
+// operadores, os coeficientes do filtro e o ganho interpolados dentro do bloco (sem degrau, sem estalo).
+//   4 OPERADORES (8 formas de onda, razão COARSE × FINE, envelope ADSR e velocity próprios) ligados por um dos
+//   8 ALGORITMOS; o OP 4 tem realimentação → RING (portadores × onda do OP 2) → FOLD (dobra de onda) → NOISE →
+//   DRIVE → FILTRO 1 (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) → SATURAÇÃO → FILTRO 2 (SVF, COMB, VOWEL),
+//   em série ou paralelo → VCA. DRIFT: cada voz desafina um tiquinho, devagar.
 namespace vacina
 {
 inline float fastTanh (float x)
@@ -28,20 +26,24 @@ inline float fastTanh (float x)
 
 inline float clamp01 (float v) { return juce::jlimit (0.0f, 1.0f, v); }
 
+struct OpSettings
+{
+    int   wave = 0;
+    float ratio = 1.0f, detune = 0.0f, level = 0.0f, vel = 0.0f;
+    float a = 1.0f, d = 800.0f, s = 1.0f, r = 300.0f;
+};
+
 struct Settings
 {
     int   keyMode = 0;
-    float portaMs = 0.0f, bendRange = 2.0f, drift = 0.2f;
+    float portaMs = 0.0f, bendRange = 2.0f, drift = 0.0f;
     int   unison = 1;
     float uniDetune = 0.25f, uniSpread = 0.6f;
 
-    int   model1 = 0, table1 = 0, model2 = 0, table2 = 0;
-    float shape1 = 0.66f, pw1 = 0.5f, semi1 = 0.0f, spread1 = 0.4f, vol1 = 0.8f;
-    float shape2 = 0.66f, pw2 = 0.5f, semi2 = 0.0f, detune2 = 7.0f, vol2 = 0.0f;
-    bool  sync2 = false;
-    float fm = 0.0f;
-    float shape3 = 0.66f, semi3 = -12.0f, detune3 = 0.0f, vol3 = 0.0f;
-    float sub = 0.0f, oscVol = 0.5f, noise = 0.0f, noiseColor = 0.0f, ring = 0.0f;
+    int   algo = 0;
+    float fb = 0.0f;
+    std::array<OpSettings, numOps> op {};
+    float fold = 0.0f, ring = 0.0f, noise = 0.0f, oscVol = 0.5f;
 
     float cutoff = 2400.0f, cutoff2 = 0.0f, filtBal = 0.0f;
     int   routing = 0, f1Mode = 0, f2Mode = 0, satType = 0;
@@ -50,8 +52,8 @@ struct Settings
     float fA = 2.0f, fD = 450.0f, fS = 0.3f, fR = 350.0f, fVel = 0.3f, fSlope = 0.0f;
     float aA = 2.0f, aD = 600.0f, aS = 0.8f, aR = 300.0f, aVel = 0.4f, aSlope = 0.0f;
 
-    float l1Pitch = 0.0f, l1Cut = 0.0f, l1Pw = 0.0f, l1Amp = 0.0f;
-    float l2Shp = 0.0f, l2Fm = 0.0f, l2Cut = 0.0f, l2Pan = 0.0f;
+    float l1Pitch = 0.0f, l1Cut = 0.0f, l1Ratio = 0.0f, l1Amp = 0.0f;
+    float l2Index = 0.0f, l2Fb = 0.0f, l2Cut = 0.0f, l2Pan = 0.0f;
     float l1Rate = 5.0f, l2Rate = 0.4f, l3Rate = 1.5f, l3Amt = 0.0f;
     int   l1Shape = 0, l2Shape = 1, l3Shape = 0, l1Sync = 0, l2Sync = 0, l3Sync = 0, l3Dst = 0;
 
@@ -63,6 +65,62 @@ struct Settings
 struct Global
 {
     float lfo1 = 0.0f, lfo2 = 0.0f, lfo3 = 0.0f, wheel = 0.0f, after = 0.0f, bend = 0.0f;
+};
+
+// ---------------- formas de onda dos operadores: tabelas de 4096 pontos, montadas uma vez ----------------
+class OpWaves
+{
+public:
+    static constexpr int size = 4096;
+
+    static const OpWaves& instance() { static const OpWaves w; return w; }
+
+    // fase em ciclos (qualquer valor: a parte inteira é descartada)
+    inline float read (int wave, float ph) const
+    {
+        ph -= std::floor (ph);
+        const float p = ph * (float) size;
+        const int i = juce::jmin (size - 1, (int) p);
+        const float f = p - (float) i;
+        const auto& w = t[(size_t) wave];
+        return w[(size_t) i] + (w[(size_t) i + 1] - w[(size_t) i]) * f;
+    }
+
+    // valor exato (para os visores)
+    static float shape (int wave, float ph)
+    {
+        const float twoPi = juce::MathConstants<float>::twoPi;
+        ph -= std::floor (ph);
+        const float sn = std::sin (twoPi * ph);
+        switch (wave)
+        {
+            case 1:  return ph < 0.5f ? sn : 0.0f;                                         // HALF SINE
+            case 2:  return std::abs (sn);                                                 // ABS SINE
+            case 3:  return std::fmod (ph, 0.5f) < 0.25f ? std::abs (sn) : 0.0f;           // PULSE SINE
+            case 4:  return ph < 0.5f ? std::sin (2.0f * twoPi * ph) : 0.0f;               // ALT SINE
+            case 5:  return ph < 0.5f ? std::abs (std::sin (2.0f * twoPi * ph)) : 0.0f;    // CAMEL
+            case 6:  return std::tanh (5.0f * sn) / std::tanh (5.0f);                      // SQUARE (quina macia)
+            case 7:                                                                        // SAW (12 harmônicos)
+            {
+                float s = 0.0f;
+                for (int h = 1; h <= 12; ++h) s += std::sin (twoPi * (float) h * ph) / (float) h;
+                return s * 0.54f;
+            }
+            default: return sn;
+        }
+    }
+
+private:
+    OpWaves()
+    {
+        for (int w = 0; w < numWaves; ++w)
+        {
+            for (int i = 0; i <= size; ++i) t[(size_t) w][(size_t) i] = shape (w, (float) i / (float) size);
+        }
+    }
+
+    static constexpr int numWaves = 8;
+    std::array<std::array<float, size + 1>, numWaves> t {};
 };
 
 // ---------------- envelope ADSR (avança em blocos), com inclinação no sustain ----------------
@@ -262,13 +320,14 @@ public:
     bool isActive() const { return ! amp.isIdle(); }
     float level() const   { return amp.get(); }
 
-    void prepare (double sampleRate, uint32_t seed, const WaveBank* waves)
+    void prepare (double sampleRate, uint32_t seed)
     {
         fs = sampleRate;
-        bank = waves;
+        waves = &OpWaves::instance();
         rng = seed | 1u;
         amp.reset();
         fenv.reset();
+        for (auto& e : opEnv) e.reset();
         resetFilters();
         first = true;
     }
@@ -291,24 +350,21 @@ public:
             rnd = randomValue;
             amp.trigger();
             fenv.trigger();
+            for (auto& e : opEnv) e.trigger();
         }
         if (wasIdle)
         {
-            // vinda do silêncio: filtro zerado e fases conhecidas (o ataque sai sempre igual)
+            // vinda do silêncio: filtro zerado e os operadores na fase zero (o ataque FM sai sempre igual)
             resetFilters();
-            ph1 = 0.0;
-            ph2 = rand01();
-            ph3 = rand01();
-            phSub = 0.0;
-            for (auto& p : sp) p = rand01();
-            driftCut = rand01f() * 2.0f - 1.0f;                  // cada voz com o seu corte, como componentes de verdade
+            opPh.fill (0.0);
+            fb1 = fb2 = 0.0f;
             driftNow = driftTarget = rand01f() * 2.0f - 1.0f;
             first = true;
         }
     }
 
-    void release()  { gate = false; amp.noteOff(); fenv.noteOff(); }
-    void kill()     { gate = false; amp.reset(); fenv.reset(); note = -1; }
+    void release()  { gate = false; amp.noteOff(); fenv.noteOff(); for (auto& e : opEnv) e.noteOff(); }
+    void kill()     { gate = false; amp.reset(); fenv.reset(); for (auto& e : opEnv) e.reset(); note = -1; }
 
     // gera n amostras (n ≤ bloco de controle) e SOMA em l/r
     void render (float* l, float* r, int n, const Settings& s, const Global& gl, float glideCoef)
@@ -325,7 +381,7 @@ public:
                 mod[s.mDst[(size_t) k]] += src[s.mSrc[(size_t) k]] * s.mAmt[(size_t) k];
         if (s.l3Dst > 0 && s.l3Dst < numDsts) mod[s.l3Dst] += gl.lfo3 * s.l3Amt;
 
-        // ---- deriva analógica: alvo novo a cada ~0,4 s, andando devagar ----
+        // ---- deriva: alvo novo a cada ~0,4 s, andando devagar ----
         if ((driftClock -= n) <= 0)
         {
             driftClock = (int) (fs * (0.25 + 0.3 * rand01()));
@@ -338,49 +394,40 @@ public:
         pitch += (target - pitch) * glideCoef;
         const float vib = s.l1Pitch * std::abs (s.l1Pitch) * 12.0f * gl.lfo1;
         const float base = pitch + uniPitch + gl.bend * s.bendRange + vib + mod[dstPitch] * 24.0f + driftNow * drift * 0.18f;
-        const float inc1 = juce::jlimit (0.0f, 0.45f, 440.0f * std::exp2 ((base + s.semi1 - 69.0f) / 12.0f) / (float) fs);
-        const float inc2 = juce::jlimit (0.0f, 0.45f, 440.0f * std::exp2 ((base + s.semi2 + s.detune2 * 0.01f + mod[dstPitch2] * 24.0f
-                                                                           - driftNow * drift * 0.09f - 69.0f) / 12.0f) / (float) fs);
-        const float inc3 = juce::jlimit (0.0f, 0.45f, 440.0f * std::exp2 ((base + s.semi3 + s.detune3 * 0.01f + driftCut * drift * 0.06f
-                                                                           - 69.0f) / 12.0f) / (float) fs);
+        const float f0 = 440.0f * std::exp2 ((base - 69.0f) / 12.0f);
 
-        const float shape1 = clamp01 (s.shape1 + gl.lfo2 * s.l2Shp + mod[dstShape1]);
-        const float shape2 = clamp01 (s.shape2 + gl.lfo2 * s.l2Shp + mod[dstShape2]);
-        const float shape3 = clamp01 (s.shape3 + mod[dstShape3]);
-        const float pwMod  = gl.lfo1 * s.l1Pw * 0.45f + mod[dstPw] * 0.45f;
-        const float pw1    = juce::jlimit (0.04f, 0.96f, s.pw1 + pwMod);
-        const float pw2    = juce::jlimit (0.04f, 0.96f, s.pw2 + pwMod);
-        const float fmAmt  = clamp01 (s.fm + gl.lfo2 * s.l2Fm + mod[dstFm]);
-        const float pm     = fmAmt * fmAmt * 1.6f;
-        const float v1End  = clamp01 (s.vol1 + mod[dstVol1]), v2End = clamp01 (s.vol2 + mod[dstVol2]);
-        const float v3End  = clamp01 (s.vol3 + mod[dstVol3]), vsEnd = clamp01 (s.sub + mod[dstSub]);
-        const float vrEnd  = clamp01 (s.ring + mod[dstRing]), vnEnd = clamp01 (s.noise + mod[dstNoise]);
-        const int   model1 = s.model1, model2 = s.model2;
-        const bool  super  = model1 == 1, wave1 = model1 == 2, wave2 = model2 == 1;
-        const int   mip1   = wave1 ? WaveBank::mipFor (inc1) : 0, mip2 = wave2 ? WaveBank::mipFor (inc2) : 0;
-        const bool  osc3On = s.vol3 > 0.001f || mod[dstVol3] > 0.001f;
-
-        // SUPER: 7 serras espalhadas em volta da nota; os lados entram com o SHAPE
-        float superInc[7] {}, superGain[7] {};
-        if (super)
+        // ---- operadores: razão, nível (curva quadrática) e envelope; o modulador vira desvio de fase em ciclos ----
+        const auto& al = algos[juce::jlimit (0, numAlgos - 1, s.algo)];
+        int numCar = 0;
+        for (int k = 0; k < numOps; ++k) numCar += (al.carriers >> k) & 1;
+        const float carNorm = 1.0f / std::sqrt ((float) juce::jmax (1, numCar));
+        const float index   = gl.lfo2 * s.l2Index + mod[dstIndex];
+        const float lfoRat  = std::exp2 (gl.lfo1 * s.l1Ratio * std::abs (s.l1Ratio));
+        std::array<float, numOps> inc {}, aEnd {}, scale {};
+        std::array<int, numOps> wave {};
+        for (int k = 0; k < numOps; ++k)
         {
-            static constexpr float offs[7] = { -1.0f, -0.62f, -0.3f, 0.0f, 0.29f, 0.6f, 0.97f };
-            const float spread = clamp01 (s.spread1 + mod[dstSpread]);
-            const float semis  = std::pow (spread, 1.5f) * 0.9f;
-            const float side   = 0.15f + 0.85f * shape1;
-            const float norm   = 1.0f / std::sqrt (1.0f + 6.0f * side * side);
-            for (int k = 0; k < 7; ++k)
-            {
-                superInc[k]  = juce::jmin (0.45f, inc1 * std::exp2 (offs[k] * semis / 12.0f));
-                superGain[k] = (k == 3 ? 1.0f : side) * norm;
-            }
+            const auto& o = s.op[(size_t) k];
+            const bool car = ((al.carriers >> k) & 1) != 0;
+            const float e = opEnv[(size_t) k].advance (n, fs, o.a, o.d, o.s, o.r, 0.0f);
+            const float lv = clamp01 (o.level + mod[dstOp1 + k] + (car ? 0.0f : index));
+            const float velF = 1.0f - o.vel * (1.0f - vel);
+            aEnd[(size_t) k] = lv * lv * e * velF;
+            scale[(size_t) k] = car ? carNorm : 1.25f;              // nível 100 % de um modulador = 1,25 ciclo (~7,9 rad)
+            float ratio = o.ratio * std::exp2 (o.detune / 1200.0f);
+            if (k > 0) ratio *= std::exp2 (juce::jlimit (-1.0f, 1.0f, mod[dstRatio2 + k - 1]) * 2.0f);
+            if (! car) ratio *= lfoRat;
+            inc[(size_t) k] = juce::jlimit (0.0f, 0.49f, f0 * ratio / (float) fs);
+            wave[(size_t) k] = juce::jlimit (0, 7, o.wave);
         }
+        const float fbAmt = clamp01 (s.fb + gl.lfo2 * s.l2Fb + mod[dstFeedback]);
+        const float fbK   = fbAmt * fbAmt * 0.25f;                // no máximo meio ciclo (π): já quase ruído, como no DX
 
         // ---- corte (em oitavas) ----
         const float velF   = 1.0f - s.fVel * (1.0f - vel);
         const float keyOct = (pitch + uniPitch - 60.0f) / 12.0f;
         const float lfoCut = gl.lfo1 * s.l1Cut * 3.0f + gl.lfo2 * s.l2Cut * 3.0f;
-        const float baseLg = std::log2 (s.cutoff) + lfoCut + mod[dstCutoff] * 5.0f + driftCut * drift * 0.3f;
+        const float baseLg = std::log2 (s.cutoff) + lfoCut + mod[dstCutoff] * 5.0f;
         const float topLg  = std::log2 (juce::jmin (20000.0f, (float) fs * 0.45f));
         const float lc1 = juce::jlimit (4.0f, topLg, baseLg + s.env1 * fe * velF * 7.0f + s.key1 * keyOct);
         const float lc2 = juce::jlimit (4.0f, topLg, baseLg + s.cutoff2 / 12.0f + mod[dstCutoff2] * 5.0f
@@ -416,107 +463,71 @@ public:
         const float pan    = juce::jlimit (-1.0f, 1.0f, uniPan + gl.lfo2 * s.l2Pan + mod[dstPan]);
         const float plEnd  = std::cos ((pan + 1.0f) * pi * 0.25f), prEnd = std::sin ((pan + 1.0f) * pi * 0.25f);
 
-        // oscVol: até a metade é volume; acima satura antes do filtro
+        // DRIVE: até a metade é volume; acima satura antes do filtro
         const float drive  = s.oscVol <= 0.5f ? s.oscVol * 2.0f : 1.0f + (s.oscVol - 0.5f) * 10.0f;
         const bool  sat    = s.oscVol > 0.5f;
 
-        // cor do ruído: − escurece (passa-baixa), + clareia (tira o grave)
-        const float nc = s.noiseColor;
-        const float ncoef = nc < 0.0f ? std::exp (-2.0f * pi * (12000.0f * std::exp2 (nc * 6.0f)) / (float) fs) : 0.0f;
-        const float nhp   = nc > 0.0f ? std::exp (-2.0f * pi * (200.0f * std::exp2 (nc * 5.0f)) / (float) fs) : 0.0f;
+        const float rgEnd = clamp01 (s.ring + mod[dstRing]), flEnd = clamp01 (s.fold + mod[dstFold]);
+        const float vnEnd = clamp01 (s.noise + mod[dstNoise]);
 
         if (first)
         {
             gPrev1 = gEnd1; gPrev2 = gEnd2; ampPrev = 0.0f; plPrev = plEnd; prPrev = prEnd; fbPrev = fbEnd;
             dPrev1 = dEnd1; dPrev2 = dEnd2;
-            v1Prev = v1End; v2Prev = v2End; v3Prev = v3End; vsPrev = vsEnd; vrPrev = vrEnd; vnPrev = vnEnd;
+            rgPrev = rgEnd; flPrev = flEnd; vnPrev = vnEnd;
+            aPrev.fill (0.0f);
             first = false;
         }
         const float inv = 1.0f / (float) n;
         const float dg1 = (gEnd1 - gPrev1) * inv, dg2 = (gEnd2 - gPrev2) * inv, dA = (ampEnd - ampPrev) * inv;
         const float dpl = (plEnd - plPrev) * inv, dpr = (prEnd - prPrev) * inv, dfb = (fbEnd - fbPrev) * inv;
         const float dd1 = (dEnd1 - dPrev1) * inv, dd2 = (dEnd2 - dPrev2) * inv;
-        const float dv1 = (v1End - v1Prev) * inv, dv2 = (v2End - v2Prev) * inv, dv3 = (v3End - v3Prev) * inv;
-        const float dvs = (vsEnd - vsPrev) * inv, dvr = (vrEnd - vrPrev) * inv, dvn = (vnEnd - vnPrev) * inv;
+        const float drg = (rgEnd - rgPrev) * inv, dfl = (flEnd - flPrev) * inv, dvn = (vnEnd - vnPrev) * inv;
+        std::array<float, numOps> oa = aPrev, da {};
+        for (int k = 0; k < numOps; ++k) da[(size_t) k] = (aEnd[(size_t) k] - aPrev[(size_t) k]) * inv;
         float gg1 = gPrev1, gg2 = gPrev2, a = ampPrev, pl = plPrev, pr = prPrev, fb = fbPrev, cd1 = dPrev1, cd2 = dPrev2;
-        float v1 = v1Prev, v2 = v2Prev, v3 = v3Prev, vs = vsPrev, vr = vrPrev, vn = vnPrev;
+        float rg = rgPrev, fl = flPrev, vn = vnPrev;
         const bool parallel = s.routing == 1;
-        const int  table1 = s.table1, table2 = s.table2;
-        const bool needSub = vsEnd > 0.001f || vsPrev > 0.001f, needNoise = vnEnd > 0.001f || vnPrev > 0.001f;
-        const bool needRing = vrEnd > 0.001f || vrPrev > 0.001f;
-        const bool need2any = v2End > 0.001f || v2Prev > 0.001f || needRing;
+        const bool needNoise = vnEnd > 0.001f || vnPrev > 0.001f;
+        const bool needRing = rgEnd > 0.001f || rgPrev > 0.001f, needFold = flEnd > 0.001f || flPrev > 0.001f;
+        const auto& W = *waves;
 
         for (int i = 0; i < n; ++i)
         {
             gg1 += dg1; gg2 += dg2; a += dA; pl += dpl; pr += dpr; fb += dfb; cd1 += dd1; cd2 += dd2;
-            v1 += dv1; v2 += dv2; v3 += dv3; vs += dvs; vr += dvr; vn += dvn;
+            rg += drg; fl += dfl; vn += dvn;
 
-            // OSC1
-            float o1 = 0.0f;
-            bool wrapped = false;
-            if (super)
+            // OPERADORES: do 4 para o 1 (quem modula sempre tem número maior)
+            float y[numOps];
+            float x = 0.0f;
+            for (int k = numOps - 1; k >= 0; --k)
             {
-                for (int k = 0; k < 7; ++k)
-                {
-                    sp[k] += superInc[k];
-                    if (sp[k] >= 1.0) { sp[k] -= 1.0; if (k == 3) wrapped = true; }
-                    const float t = (float) sp[k];
-                    o1 += (2.0f * t - 1.0f - blep (t, superInc[k])) * superGain[k];
-                }
-            }
-            else
-            {
-                ph1 += inc1;
-                if (ph1 >= 1.0) { ph1 -= 1.0; wrapped = true; }
-                o1 = wave1 ? bank->read (table1, shape1, (float) ph1, mip1) : classic ((float) ph1, inc1, shape1, pw1);
-            }
-
-            // SUB: quadrada uma oitava abaixo do OSC1
-            float sub = 0.0f;
-            if (needSub)
-            {
-                phSub += inc1 * 0.5f;
-                if (phSub >= 1.0) phSub -= 1.0;
-                const float t = (float) phSub, dt = inc1 * 0.5f;
-                float t2 = t + 0.5f;
-                if (t2 >= 1.0f) t2 -= 1.0f;
-                sub = (t < 0.5f ? 1.0f : -1.0f) + blep (t, dt) - blep (t2, dt);
+                oa[(size_t) k] += da[(size_t) k];
+                float pm = 0.0f;
+                const unsigned m = al.mods[k];
+                for (int j = k + 1; j < numOps; ++j)
+                    if ((m >> j) & 1u) pm += y[j];
+                if (k == numOps - 1) pm += fbK * (fb1 + fb2);
+                opPh[(size_t) k] += inc[(size_t) k];
+                if (opPh[(size_t) k] >= 1.0) opPh[(size_t) k] -= 1.0;
+                const float w = W.read (wave[(size_t) k], (float) opPh[(size_t) k] + pm);
+                const float yn = w * oa[(size_t) k];
+                if (k == numOps - 1) { fb2 = fb1; fb1 = yn; }
+                y[k] = yn * scale[(size_t) k];
+                if ((al.carriers >> k) & 1) x += y[k];
             }
 
-            // OSC2: SYNC (recomeça junto com o OSC1) e FM (o OSC1 empurra a fase)
-            float o2 = 0.0f;
-            ph2 += inc2;
-            if (s.sync2 && wrapped)
-                ph2 = (super ? sp[3] : ph1) * (double) inc2 / (double) juce::jmax (1.0e-6f, super ? superInc[3] : inc1);
-            while (ph2 >= 1.0) ph2 -= 1.0;
-            if (need2any)
+            // RING: os portadores vezes a onda do OP 2 (sem o envelope dele)
+            if (needRing)
+                x += (x * W.read (wave[1], (float) opPh[1]) - x) * rg;
+            // FOLD: a onda dobra sobre si mesma (mais metal, mais harmônicos)
+            if (needFold)
             {
-                float t2 = (float) ph2;
-                if (pm > 0.0f)
-                {
-                    t2 += pm * o1;
-                    t2 -= std::floor (t2);
-                }
-                o2 = wave2 ? bank->read (table2, shape2, t2, mip2) : classic (t2, inc2, shape2, pw2);
+                const float fx = std::sin (x * (1.0f + fl * 7.0f) * 1.5707963f);
+                x += (fx * 0.9f - x) * juce::jmin (1.0f, fl * 4.0f);
             }
-
-            // OSC3
-            float o3 = 0.0f;
-            if (osc3On)
-            {
-                ph3 += inc3;
-                if (ph3 >= 1.0) ph3 -= 1.0;
-                o3 = classic ((float) ph3, inc3, shape3, 0.5f);
-            }
-
-            float x = o1 * v1 + o2 * v2 + o3 * v3 + sub * vs + o1 * o2 * vr;
             if (needNoise)
-            {
-                float w = rand01f() * 2.0f - 1.0f;
-                if (nc < 0.0f)      { nState = w + (nState - w) * ncoef; w = nState * (1.0f - nc * 1.5f); }
-                else if (nc > 0.0f) { const float h = w - nPrev; nPrev = w; nState = h + nState * nhp; w = nState; }
-                x += w * vn;
-            }
+                x += (rand01f() * 2.0f - 1.0f) * vn * 0.5f;
             x *= drive * 0.5f;
             if (sat) x = fastTanh (x);
 
@@ -544,54 +555,24 @@ public:
                     default: y2 = svf2.process (in2, gg2, k2, f2Mode); break;
                 }
             }
-            const float y = y1 + (y2 - y1) * fb;
+            const float yo = y1 + (y2 - y1) * fb;
 
-            const float out = y * a;
+            const float out = yo * a;
             l[i] += out * pl;
             r[i] += out * pr;
         }
         gPrev1 = gEnd1; gPrev2 = gEnd2; ampPrev = ampEnd; plPrev = plEnd; prPrev = prEnd; fbPrev = fbEnd;
         dPrev1 = dEnd1; dPrev2 = dEnd2;
-        v1Prev = v1End; v2Prev = v2End; v3Prev = v3End; vsPrev = vsEnd; vrPrev = vrEnd; vnPrev = vnEnd;
+        rgPrev = rgEnd; flPrev = flEnd; vnPrev = vnEnd;
+        aPrev = aEnd;
 
-        if (amp.isIdle()) { fenv.reset(); note = -1; }
-    }
-
-    // CLASSIC: o SHAPE passa por seno → triângulo → serra → pulso (PW = largura do pulso)
-    static inline float classic (float t, float dt, float shape, float pw)
-    {
-        const float a = shape * 3.0f;
-        if (a < 2.0f)
-        {
-            const float tri = 1.0f - 4.0f * std::abs (t - 0.5f);
-            if (a < 1.0f)
-            {
-                const float sn = -std::cos (juce::MathConstants<float>::twoPi * t);
-                return sn + (tri - sn) * a;
-            }
-            const float sw = 2.0f * t - 1.0f - blep (t, dt);
-            return tri + (sw - tri) * (a - 1.0f);
-        }
-        const float sw = 2.0f * t - 1.0f - blep (t, dt);
-        float t2 = t + 1.0f - pw;
-        if (t2 >= 1.0f) t2 -= 1.0f;
-        const float pulse = (t < pw ? 1.0f : -1.0f) + blep (t, dt) - blep (t2, dt) - (2.0f * pw - 1.0f);
-        return sw + (pulse - sw) * (a - 2.0f);
+        if (amp.isIdle()) { fenv.reset(); for (auto& e : opEnv) e.reset(); note = -1; }
     }
 
 private:
-    static inline float blep (float t, float dt)
-    {
-        if (dt <= 0.0f) return 0.0f;
-        if (t < dt)        { t /= dt;             return t + t - t * t - 1.0f; }
-        if (t > 1.0f - dt) { t = (t - 1.0f) / dt; return t * t + t + t + 1.0f; }
-        return 0.0f;
-    }
-
     void resetFilters()
     {
         svf1.reset(); svf2.reset(); ladder.reset(); comb1.reset(); comb2.reset(); vowel1.reset(); vowel2.reset(); satur.reset();
-        nState = nPrev = 0.0f;
     }
 
     uint32_t next() { rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5; return rng; }
@@ -599,21 +580,22 @@ private:
     double rand01()  { return (double) rand01f(); }
 
     double fs = 44100.0;
-    const WaveBank* bank = nullptr;
+    const OpWaves* waves = nullptr;
     Env amp, fenv;
+    std::array<Env, numOps> opEnv;
     Svf svf1, svf2;
     Ladder ladder;
     Comb comb1, comb2;
     Vowel vowel1, vowel2;
     Saturator satur;
-    double ph1 = 0.0, ph2 = 0.0, ph3 = 0.0, phSub = 0.0;
-    std::array<double, 7> sp {};
+    std::array<double, numOps> opPh {};
+    std::array<float, numOps> aPrev {};
+    float fb1 = 0.0f, fb2 = 0.0f;
     float pitch = 60.0f, target = 60.0f, vel = 1.0f, rnd = 0.0f, uniPitch = 0.0f, uniPan = 0.0f;
     float gPrev1 = 0.1f, gPrev2 = 0.1f, ampPrev = 0.0f, plPrev = 0.707f, prPrev = 0.707f, fbPrev = 0.0f;
     float dPrev1 = 100.0f, dPrev2 = 100.0f;
-    float v1Prev = 0.0f, v2Prev = 0.0f, v3Prev = 0.0f, vsPrev = 0.0f, vrPrev = 0.0f, vnPrev = 0.0f;
-    float nState = 0.0f, nPrev = 0.0f;
-    float driftNow = 0.0f, driftTarget = 0.0f, driftCut = 0.0f;
+    float rgPrev = 0.0f, flPrev = 0.0f, vnPrev = 0.0f;
+    float driftNow = 0.0f, driftTarget = 0.0f;
     int   driftClock = 0;
     bool  first = true;
     uint32_t rng = 1;
@@ -747,8 +729,7 @@ public:
     void prepare (double sampleRate)
     {
         fs = sampleRate;
-        const auto* waves = &WaveBank::instance();
-        for (int v = 0; v < maxVoices; ++v) voices[(size_t) v].prepare (fs, 0x9e3779b9u * (uint32_t) (v + 1), waves);
+        for (int v = 0; v < maxVoices; ++v) voices[(size_t) v].prepare (fs, 0x9e3779b9u * (uint32_t) (v + 1));
         lfo1.reset();
         lfo2.reset();
         lfo3.reset();
@@ -859,9 +840,8 @@ private:
     const Settings& smooth (const Settings& s, int len)
     {
         sm = s;
-        float* dst[] = { &sm.reso1, &sm.reso2, &sm.shape1, &sm.shape2, &sm.shape3, &sm.pw1, &sm.pw2, &sm.fm, &sm.vol1, &sm.vol2,
-                         &sm.vol3, &sm.sub, &sm.ring, &sm.oscVol, &sm.noise, &sm.filtBal, &sm.cutoff2, &sm.env1, &sm.env2,
-                         &sm.spread1, &sm.detune2, &sm.detune3, &sm.satAmt };
+        float* dst[] = { &sm.reso1, &sm.reso2, &sm.fb, &sm.fold, &sm.ring, &sm.noise, &sm.oscVol, &sm.filtBal, &sm.cutoff2,
+                         &sm.env1, &sm.env2, &sm.satAmt, &sm.op[0].level, &sm.op[1].level, &sm.op[2].level, &sm.op[3].level };
         static_assert (sizeof (dst) / sizeof (dst[0]) == numSmoothed, "lista dos knobs suavizados");
         const float lc = std::log2 (juce::jmax (20.0f, s.cutoff));
         if (! smReady)
@@ -933,7 +913,7 @@ private:
     bool sustainDown = false;
     float lastPitch = -1.0f, monoVel = 1.0f;
     uint64_t counter = 0;
-    static constexpr size_t numSmoothed = 23;
+    static constexpr size_t numSmoothed = 16;
     Settings sm;
     std::array<float, numSmoothed> smV {};
     float smLc = 11.0f;

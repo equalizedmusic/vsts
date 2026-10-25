@@ -18,8 +18,8 @@ VacinaProcessor::VacinaProcessor()
     refreshBanks();
     refreshUserPresets();
 
-    // abre num supersaw (o Init é uma serra crua)
-    const int start = findPreset ("Dose Dupla", {});
+    // abre num lead psicodélico (o Init é um seno puro)
+    const int start = findPreset (u8 ("Terceiro Olho"), {});
     loadPreset (start >= 0 ? start : 0);
 }
 
@@ -69,31 +69,22 @@ void VacinaProcessor::readSettings()
     s.uniDetune = get (id::uniDetune) * 0.01f;
     s.uniSpread = get (id::uniSpread) * 0.01f;
 
-    s.model1  = geti (id::osc1Model);
-    s.table1  = geti (id::osc1Table);
-    s.shape1  = get (id::osc1Shape) * 0.01f;
-    s.pw1     = get (id::osc1Pw) * 0.01f;
-    s.semi1   = get (id::osc1Semi);
-    s.spread1 = get (id::osc1Spread) * 0.01f;
-    s.vol1    = get (id::osc1Vol) * 0.01f;
-    s.model2  = geti (id::osc2Model);
-    s.table2  = geti (id::osc2Table);
-    s.shape2  = get (id::osc2Shape) * 0.01f;
-    s.pw2     = get (id::osc2Pw) * 0.01f;
-    s.semi2   = get (id::osc2Semi);
-    s.detune2 = get (id::osc2Detune);
-    s.sync2   = get (id::osc2Sync) > 0.5f;
-    s.vol2    = get (id::osc2Vol) * 0.01f;
-    s.fm      = get (id::fmAmt) * 0.01f;
-    s.shape3  = get (id::osc3Shape) * 0.01f;
-    s.semi3   = get (id::osc3Semi);
-    s.detune3 = get (id::osc3Detune);
-    s.vol3    = get (id::osc3Vol) * 0.01f;
-    s.sub     = get (id::subVol) * 0.01f;
-    s.oscVol  = get (id::oscVol) * 0.01f;
+    s.algo    = geti (id::algo);
+    s.fb      = get (id::feedback) * 0.01f;
+    for (int k = 0; k < numOps; ++k)
+    {
+        auto& o = s.op[(size_t) k];
+        o.wave   = geti (id::op (k, "wave"));
+        o.ratio  = opRatio (get (id::op (k, "coarse")), get (id::op (k, "fine")));
+        o.detune = get (id::op (k, "det"));
+        o.level  = get (id::op (k, "lvl")) * 0.01f;
+        o.vel    = get (id::op (k, "vel")) * 0.01f;
+        o.a = get (id::op (k, "a")); o.d = get (id::op (k, "d")); o.s = get (id::op (k, "s")) * 0.01f; o.r = get (id::op (k, "r"));
+    }
+    s.fold    = get (id::fold) * 0.01f;
+    s.ring    = get (id::ring) * 0.01f;
     s.noise   = get (id::noiseVol) * 0.01f;
-    s.noiseColor = get (id::noiseColor) * 0.01f;
-    s.ring    = get (id::ringVol) * 0.01f;
+    s.oscVol  = get (id::oscVol) * 0.01f;
 
     s.cutoff  = get (id::cutoff);
     s.cutoff2 = get (id::cutoff2);
@@ -117,9 +108,9 @@ void VacinaProcessor::readSettings()
 
     s.l1Rate  = get (id::lfo1Rate);  s.l1Shape = geti (id::lfo1Shape); s.l1Sync = geti (id::lfo1Sync);
     s.l1Pitch = get (id::lfo1Pitch) * 0.01f; s.l1Cut = get (id::lfo1Cut) * 0.01f;
-    s.l1Pw    = get (id::lfo1Pw) * 0.01f;    s.l1Amp = get (id::lfo1Amp) * 0.01f;
+    s.l1Ratio = get (id::lfo1Ratio) * 0.01f; s.l1Amp = get (id::lfo1Amp) * 0.01f;
     s.l2Rate  = get (id::lfo2Rate);  s.l2Shape = geti (id::lfo2Shape); s.l2Sync = geti (id::lfo2Sync);
-    s.l2Shp   = get (id::lfo2Shp) * 0.01f; s.l2Fm = get (id::lfo2Fm) * 0.01f;
+    s.l2Index = get (id::lfo2Index) * 0.01f; s.l2Fb = get (id::lfo2Fb) * 0.01f;
     s.l2Cut   = get (id::lfo2Cut) * 0.01f; s.l2Pan = get (id::lfo2Pan) * 0.01f;
     s.l3Rate  = get (id::lfo3Rate);  s.l3Shape = geti (id::lfo3Shape); s.l3Sync = geti (id::lfo3Sync);
     s.l3Dst   = geti (id::lfo3Dst);  s.l3Amt   = get (id::lfo3Amt) * 0.01f;

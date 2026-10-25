@@ -10,8 +10,8 @@ namespace vacina
 {
 // ---------------- categorias (o preset guarda o ÍNDICE; o nome só aparece no menu) ----------------
 inline constexpr int numCategories = 9;
-inline const char* const categoryNames[numCategories] = { "BASS", "LEAD", "PAD", "PLUCK", "ARP", "KEYS",
-                                                          "SUPERSAW", "ATMOSFERA", "FX" };
+inline const char* const categoryNames[numCategories] = { "BASS", "LEAD", "PAD", "PLUCK", "BELLS", "KEYS",
+                                                          "ARP", "TEXTURA", "FX" };
 
 // como está escrito no código (fábrica): texto estático
 struct FactoryPreset

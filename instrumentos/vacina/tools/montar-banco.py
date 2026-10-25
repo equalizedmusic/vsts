@@ -4,7 +4,7 @@
 Uso:
     python montar-banco.py <pasta> "<nome do banco>" [saida.vcnbank] [--autor "InsideStudioSP"]
 
-<pasta> tem uma subpasta por categoria (BASS, LEAD, PAD, PLUCK, ARP, KEYS, SUPERSAW, ATMOSFERA, FX)
+<pasta> tem uma subpasta por categoria (BASS, LEAD, PAD, PLUCK, BELLS, KEYS, ARP, TEXTURA, FX)
 com os .xml salvos pelo "Salvar como novo preset…" do VACINA. Ficam em:
     Windows: %APPDATA%\\InsideStudioSP\\VACINA\\Presets
     Mac:     ~/Library/Audio/Presets/InsideStudioSP/VACINA
@@ -17,7 +17,7 @@ import unicodedata
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-CATEGORIAS = ["BASS", "LEAD", "PAD", "PLUCK", "ARP", "KEYS", "SUPERSAW", "ATMOSFERA", "FX"]
+CATEGORIAS = ["BASS", "LEAD", "PAD", "PLUCK", "BELLS", "KEYS", "ARP", "TEXTURA", "FX"]
 
 
 def sem_acento(s):

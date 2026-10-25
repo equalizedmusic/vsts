@@ -55,6 +55,8 @@ private:
     vac::Scope* scope (juce::Rectangle<int> r);
 
     void buildScopes();
+    void drawAlgorithm (juce::Graphics&, juce::Rectangle<float> r, int algo, float feedback);
+    static int opX (int k) { return 360 + k * 258; }   // x de cada painel de operador
     void timerCallback() override;
     void drawCanvas (juce::Graphics&);
     void drawLogo (juce::Graphics&, float x, float y);
@@ -77,13 +79,13 @@ private:
     std::vector<std::unique_ptr<juce::Component>> owned;
     std::vector<std::unique_ptr<APVTS::ButtonAttachment>> buttonAtts;
     std::vector<vac::Scope*> scopes;
-    std::array<vac::Scope*, 3> oscScopes {}, lfoScopes {};
+    std::array<vac::Scope*, 4> opScopes {};
+    std::array<vac::Scope*, 3> lfoScopes {};
+    vac::Scope* algoScope = nullptr;
     vac::Scope* filterScope = nullptr;
     std::array<vac::Scope*, 2> envScopes {};
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> captions;   // nomes serigrafados embaixo dos campos
     LcdDisplay* lcd = nullptr;
-    vac::LcdBox* wave1Box = nullptr;
-    vac::LcdBox* wave2Box = nullptr;
 
     PresetDialog dialog;                           // nome do preset, confirmações
     std::unique_ptr<juce::FileChooser> chooser;   // "Importar banco de presets…"
