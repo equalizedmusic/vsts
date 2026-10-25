@@ -11,6 +11,10 @@ Windows: a pasta vem preenchida com a padrão do VST3 (C:\\Program Files\\Common
 Mac: VST3 e AU vão para as pastas padrão (/Library/Audio/Plug-Ins/...); o usuário escolhe
 "todos os usuários" ou "só para mim" (~/Library/...) no passo "Destino".
 Sem assinatura: o Windows mostra o SmartScreen e o Mac pede "Abrir mesmo assim" na primeira vez.
+
+Desinstalar: no Windows, "Aplicativos instalados" (InsideStudioSP <pacote>) ou o atalho "Desinstalar" no menu Iniciar;
+no Mac, "Desinstalar InsideStudioSP <pacote>.command" dentro do .dmg (apaga os .vst3/.component do pacote nas
+pastas do sistema e do usuário). Os presets do usuário ficam.
 """
 import argparse
 import json
@@ -47,6 +51,14 @@ def plugins_da_origem(origem):
 def rotulo(nome):
     titulo, desc = catalogo().get(nome, [nome, ""])
     return titulo, desc
+
+
+# nomes antigos de um plugin (renomeado): o instalador novo apaga o bundle velho e o desinstalador também
+ANTIGOS = {"MERCURIO": ["VACINA"]}
+
+
+def com_antigos(plugins):
+    return plugins + [a for p in plugins for a in ANTIGOS.get(p, [])]
 
 
 def ident(nome):
@@ -111,6 +123,11 @@ def iss(pacote, versao, origem, plugins, saida, nome_arquivo):
         titulo, desc = rotulo(p)
         texto = f"{titulo} — {desc}" if desc else titulo
         L.append(f'Name: "{ident(p)}"; Description: "{texto}"; Types: todos escolher')
+    antigos = [a for p in plugins for a in ANTIGOS.get(p, [])]
+    if antigos:
+        L += ["", "[InstallDelete]"]
+        L += [rf'Type: filesandordirs; Name: "{{app}}\{a}.vst3"' for a in antigos]
+    L += ["", "[Icons]", rf'Name: "{{autoprograms}}\{MARCA}\Desinstalar {MARCA} {pacote}"; Filename: "{{uninstallexe}}"']
     L += ["", "[Files]"]
     for p in plugins:
         src = os.path.join(origem, "VST3", p + ".vst3")
@@ -193,7 +210,32 @@ LEIAME = """{marca} {pacote} {versao}
 Se o Mac disser que não pode abrir o instalador (desenvolvedor não identificado):
 Ajustes do Sistema > Privacidade e Segurança > role até o aviso do instalador > "Abrir Mesmo Assim".
 
-Para desinstalar: apague o .vst3 e o .component do plugin nessas duas pastas.
+Para desinstalar: abra "Desinstalar {marca} {pacote}.command" (clique com o botão direito > Abrir).
+Ele apaga os plugins deste pacote das pastas do sistema e da sua pasta de usuário; os seus presets ficam.
+"""
+
+DESINSTALAR = """#!/bin/bash
+# Desinstala o {marca} {pacote}: apaga os plugins deste pacote (VST3 e AU) das pastas do sistema e do usuário
+# e esquece o registro do instalador. Os presets do usuário ficam.
+echo "Desinstalar {marca} {pacote}"
+echo "Plugins: {lista}"
+echo
+read -r -p "Confirma? (s/n) " r
+case "$r" in s|S|sim|SIM) ;; *) echo "Nada foi apagado."; exit 0;; esac
+echo "O Mac vai pedir a sua senha (para apagar de /Library)."
+for p in {nomes}; do
+  for d in "/Library/Audio/Plug-Ins/VST3" "$HOME/Library/Audio/Plug-Ins/VST3"; do
+    [ -e "$d/$p.vst3" ] && sudo rm -rf "$d/$p.vst3" && echo "apagado: $d/$p.vst3"
+  done
+  for d in "/Library/Audio/Plug-Ins/Components" "$HOME/Library/Audio/Plug-Ins/Components"; do
+    [ -e "$d/$p.component" ] && sudo rm -rf "$d/$p.component" && echo "apagado: $d/$p.component"
+  done
+done
+for r in $(pkgutil --pkgs | grep -E '^com\.insidestudiosp\.pkg\.({ids})\.'); do sudo pkgutil --forget "$r" >/dev/null; done
+killall -9 AudioComponentRegistrar 2>/dev/null   # o Mac esquece os AU apagados sem precisar reiniciar
+echo
+echo "Pronto. Feche e abra o DAW de novo."
+read -r -p "Enter para fechar."
 """
 
 
@@ -221,6 +263,12 @@ def montar_mac(a, plugins):
           os.path.join(palco, f"Instalar {MARCA} {a.pacote}.pkg"))
     with open(os.path.join(palco, "LEIA-ME.txt"), "w", encoding="utf-8") as f:
         f.write(LEIAME.format(marca=MARCA, pacote=a.pacote, versao=a.versao))
+    nomes = com_antigos(plugins)
+    des = os.path.join(palco, f"Desinstalar {MARCA} {a.pacote}.command")
+    with open(des, "w", encoding="utf-8", newline="\n") as f:
+        f.write(DESINSTALAR.format(marca=MARCA, pacote=a.pacote, lista=", ".join(rotulo(p)[0] for p in plugins),
+                                   nomes=" ".join(nomes), ids="|".join(ident(n) for n in nomes)))
+    os.chmod(des, 0o755)
     dmg = os.path.join(a.saida, f"{MARCA}-{a.pacote}-mac.dmg")
     for tentativa in range(3):  # o hdiutil dos runners às vezes falha com "Resource busy"
         try:
