@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera o banco FACTORY 1 do VACINA (FM de 4 operadores): Source/presets/fabrica.inc (9 categorias × 40 presets).
+"""Gera o banco FACTORY 1 do MERCURIO (FM de 4 operadores): Source/presets/fabrica.inc (9 categorias × 40 presets).
 
 Uso:
     python gerar-presets.py                 # escreve fabrica.inc (com o volume nivelado em niveis.txt, se existir)
@@ -1051,7 +1051,7 @@ def main():
 
     linhas = [
         "// GERADO por tools/gerar-presets.py — não editar à mão (mude o script e rode de novo).",
-        "// VACINA — banco FACTORY 1: 40 presets por categoria (8 arquétipos × 5), na ordem de categoryNames.",
+        "// MERCURIO — banco FACTORY 1: 40 presets por categoria (8 arquétipos × 5), na ordem de categoryNames.",
         "// { nome, categoria, { valores REAIS } }",
     ]
     atual = None

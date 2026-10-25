@@ -8,14 +8,14 @@
 #include <vector>
 #include "Params.h"
 
-// VACINA — motor. FM de 4 operadores, leve: a modulação (envelopes, LFOs, matriz, glide, corte) roda em blocos de
+// MERCÚRIO — motor. FM de 4 operadores, leve: a modulação (envelopes, LFOs, matriz, glide, corte) roda em blocos de
 // controle de 32 amostras e só o que precisa de áudio (operadores, filtros, ganho) roda por amostra, com os níveis dos
 // operadores, os coeficientes do filtro e o ganho interpolados dentro do bloco (sem degrau, sem estalo).
 //   4 OPERADORES (8 formas de onda, razão COARSE × FINE, envelope ADSR e velocity próprios) ligados por um dos
 //   8 ALGORITMOS; o OP 4 tem realimentação → RING (portadores × onda do OP 2) → FOLD (dobra de onda) → NOISE →
 //   DRIVE → FILTRO 1 (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) → SATURAÇÃO → FILTRO 2 (SVF, COMB, VOWEL),
 //   em série ou paralelo → VCA. DRIFT: cada voz desafina um tiquinho, devagar.
-namespace vacina
+namespace mercurio
 {
 inline float fastTanh (float x)
 {
@@ -1245,4 +1245,4 @@ private:
     juce::Reverb reverb;
     std::vector<float> wetL, wetR;
 };
-} // namespace vacina
+} // namespace mercurio

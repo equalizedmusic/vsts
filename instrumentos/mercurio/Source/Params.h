@@ -2,9 +2,9 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-// VACINA — sintetizador FM de 4 operadores, polifônico (16 vozes), leve no processador.
+// MERCÚRIO — sintetizador FM de 4 operadores, polifônico (16 vozes), leve no processador.
 // Aqui ficam os ids dos parâmetros e as listas (o parâmetro de escolha guarda o ÍNDICE).
-namespace vacina
+namespace mercurio
 {
 // texto com acento: o JUCE só aceita ASCII em const char*
 inline juce::String u8 (const char* s) { return juce::String::fromUTF8 (s); }
@@ -257,4 +257,4 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     return { p.begin(), p.end() };
 }
-} // namespace vacina
+} // namespace mercurio

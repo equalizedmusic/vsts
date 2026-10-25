@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera as texturas do VACINA (Source/img): knob, tecla, parafuso e a chapa do painel.
+"""Gera as texturas do MERCÚRIO (Source/img): knob de alumínio, tecla, parafuso e a chapa de alumínio escovado.
 
 Uso:
     python gerar-texturas.py
@@ -90,7 +90,8 @@ def luz(n, albedo, spec, shin, amb=0.10, fill=0.25, sheen=0.0, f0=0.05, box=6.0,
 
 
 def knob(N=288, ss=3):
-    """Knob preto de borracha macia: saia cônica serrilhada, tampa levemente abaulada, sombra no painel."""
+    """Knob de alumínio usinado: anel de cima torneado (brilho em leque que segue a luz), borda serrilhada,
+    chanfro polido e tampa de acrílico preto brilhante no meio (onde o ponteiro é pintado); sombra no painel."""
     S = N * ss
     R = 0.36 * S
     y, x = np.mgrid[0:S, 0:S].astype(np.float64)
@@ -99,51 +100,55 @@ def knob(N=288, ss=3):
     r = np.sqrt(dx * dx + dy * dy) / R
     th = np.arctan2(dy, dx)
 
-    top_r, sh_r = 0.78, 0.82
-    hTop = 0.30
+    cap_r, ch_r, knurl_r = 0.62, 0.68, 0.90
+    knurl = (r <= 1.0) & (r > knurl_r)
+    ring = (r <= knurl_r) & (r > ch_r)
+    cham = (r <= ch_r) & (r > cap_r)
+    cap = r <= cap_r
     h = np.zeros_like(r)
-    skirt = (r <= 1.0) & (r > sh_r)
-    h = np.where(skirt, (1.0 - r) / (1.0 - sh_r) * hTop, h)
-    # ombro arredondado entre a saia e a tampa
-    sh = (r <= sh_r) & (r > top_r)
-    t = (r - top_r) / (sh_r - top_r)
-    h = np.where(sh, hTop + 0.012 * (1 - t) ** 2 - 0.004 * t, h)
-    top = r <= top_r
-    h = np.where(top, hTop + 0.012 + 0.035 * (1 - (r / top_r) ** 2), h)
-    # serrilhado da saia (some perto da tampa e da base)
-    win = np.clip((r - sh_r) / 0.03, 0, 1) * np.clip((1.0 - r) / 0.03, 0, 1)
-    h = h + np.where(skirt, 0.010 * np.cos(44 * th) * win, 0)
-    # micro textura (borracha)
-    rng = np.random.default_rng(7)
-    micro = blur(rng.standard_normal((S, S)), 1.2 * ss) * 0.0009
-    h = h + np.where(r <= 1.0, micro, 0)
+    # borda serrilhada: desce arredondando até o painel, com os dentes
+    t = np.clip((r - knurl_r) / (1.0 - knurl_r), 0, 1)
+    h = np.where(knurl, 0.30 * (1 - t ** 2.2) + 0.012 * np.cos(72 * th) * np.sin(np.pi * t), h)
+    h = np.where(ring, 0.30 + 0.004 * (knurl_r - r), h)
+    tc = (r - cap_r) / (ch_r - cap_r)
+    h = np.where(cham, 0.30 - 0.035 * (1 - tc), h)                  # chanfro para dentro
+    h = np.where(cap, 0.265 - 0.010 * (1 - (r / cap_r) ** 2), h)     # tampa levemente côncava
 
     n = normais(h * R, 1.0)
     inside = r <= 1.0
-    alb = np.zeros((S, S, 3))
-    base = np.array([0.011, 0.011, 0.012])
-    alb[:] = base
-    alb[top] = np.array([0.013, 0.013, 0.014])
-    # oclusão perto da base da saia
-    ao = 1.0 - 0.45 * np.exp(-(1.0 - np.clip(r, 0, 1)) / 0.035)
-    alb = alb * ao[..., None]
+    rng = np.random.default_rng(7)
 
-    rgb_skirt = luz(n, alb, 0.03, 10, amb=0.10, fill=0.25, sheen=0.04, f0=0.05, box=2.2, rough=0.22)
-    rgb_top = luz(n, alb, 0.02, 30, amb=0.10, fill=0.25, sheen=0.02, f0=0.05, box=1.6, rough=0.16)
-    rgb = np.where(top[..., None], rgb_top, rgb_skirt)
-    # reflexo do ambiente na tampa: faixa clara suave em cima-esquerda
-    env = np.exp(-(((dx / R + 0.25) ** 2) / 0.10 + ((dy / R + 0.42) ** 2) / 0.02)) * 0.004
-    rgb = rgb + np.where(top, env, 0)[..., None]
+    # alumínio: riscos concêntricos do torno e o leque de brilho perpendicular à luz
+    lathe = blur(rng.standard_normal((S, S)), 0.6 * ss)
+    spun = np.cos(r * 520.0 + lathe * 0.8) * 0.5 + 0.5
+    lt = np.arctan2(L_KEY[1], L_KEY[0])
+    fan = (0.5 + 0.5 * np.cos(2 * (th - lt - np.pi / 2))) ** 6
+    alb = np.ones((S, S, 3)) * np.array([0.20, 0.21, 0.23])
+    alb = alb * (0.80 + 0.20 * spun)[..., None]
+    rgb_alu = luz(n, alb, 0.05, 30, amb=0.30, fill=0.30, f0=0.04, box=0.0, rough=0.28)
+    rgb_alu = rgb_alu + (fan * (0.22 + 0.16 * spun))[..., None] * np.array([1.0, 1.0, 1.04])
+    # serrilhado: mais escuro (a luz entra menos entre os dentes)
+    rgb_kn = luz(n, alb * 0.9, 0.25, 20, amb=0.20, fill=0.3, f0=0.10, box=0.6, rough=0.22)
+    # chanfro polido: espelho (céu claro em cima, chão escuro embaixo)
+    nz = np.clip(n[..., 2], 0, 1)
+    refl_y = 2 * nz * n[..., 1]
+    rgb_ch = np.clip(0.35 - refl_y * 1.6, 0.02, 0.9)[..., None] * np.array([0.92, 0.95, 1.0])
+    # tampa: acrílico preto brilhante
+    cap_alb = np.ones((S, S, 3)) * np.array([0.008, 0.008, 0.010])
+    rgb_cap = luz(n, cap_alb, 0.6, 80, amb=0.10, fill=0.2, f0=0.04, box=3.0, rough=0.10)
+    env = np.exp(-(((dx / R + 0.20) ** 2) / 0.06 + ((dy / R + 0.30) ** 2) / 0.012)) * 0.05
+    rgb_cap = rgb_cap + env[..., None]
+
+    rgb = np.where(cap[..., None], rgb_cap, np.where(cham[..., None], rgb_ch, np.where(ring[..., None], rgb_alu, rgb_kn)))
+    ao = 1.0 - 0.35 * np.exp(-(1.0 - np.clip(r, 0, 1)) / 0.03)
+    rgb = rgb * ao[..., None]
 
     mask = inside.astype(np.float64)
-    sh1 = sombra(mask, ss, 0.05 * R / ss, 0.10 * R / ss, 0.10 * R / ss, 0.78)
-    sh2 = sombra(mask, ss, 0.0, 0.02 * R / ss, 0.03 * R / ss, 0.65)
+    sh1 = sombra(mask, ss, 0.06 * R / ss, 0.12 * R / ss, 0.10 * R / ss, 0.70)
+    sh2 = sombra(mask, ss, 0.0, 0.02 * R / ss, 0.03 * R / ss, 0.60)
     shadow = 1 - (1 - sh1) * (1 - sh2)
-
-    # composição: knob por cima da sombra (sombra preta)
-    a_k = mask
-    a = a_k + shadow * (1 - a_k)
-    col = np.where(a[..., None] > 0, (rgb * a_k[..., None]) / np.maximum(a[..., None], 1e-6), 0)
+    a = mask + shadow * (1 - mask)
+    col = np.where(a[..., None] > 0, (rgb * mask[..., None]) / np.maximum(a[..., None], 1e-6), 0)
     return para_rgba(col, a, ss)
 
 
@@ -155,7 +160,7 @@ def rrect_sdf(x, y, w, h, rad):
 
 
 def tecla(W=180, H=96, ss=3):
-    """Tecla de borracha cinza (como as do painel): topo quase plano, borda arredondada, sombra embaixo."""
+    """Tecla preta acetinada: topo quase plano, borda arredondada, sombra embaixo."""
     SW, SH = W * ss, H * ss
     y, x = np.mgrid[0:SH, 0:SW].astype(np.float64)
     kw, kh = 0.78 * SW, 0.62 * SH
@@ -171,10 +176,10 @@ def tecla(W=180, H=96, ss=3):
     n = normais(h, 1.0)
     inside = (d < 0).astype(np.float64)
     alb = np.zeros((SH, SW, 3))
-    alb[:] = np.array([0.27, 0.27, 0.26])
+    alb[:] = np.array([0.022, 0.022, 0.025])
     ao = 1 - 0.35 * np.exp(-np.clip(-d, 0, None) / (0.05 * kh))
     alb *= ao[..., None]
-    rgb = luz(n, alb, 0.05, 12, amb=0.16, fill=0.25, sheen=0.05, f0=0.04, box=0.7, rough=0.30)
+    rgb = luz(n, alb, 0.10, 20, amb=0.16, fill=0.25, sheen=0.06, f0=0.05, box=2.0, rough=0.22)
     sh1 = sombra(inside, ss, 0.0, 0.10 * kh / ss, 0.10 * kh / ss, 0.80)
     sh2 = sombra(inside, ss, 0.0, 0.03 * kh / ss, 0.03 * kh / ss, 0.70)
     shadow = 1 - (1 - sh1) * (1 - sh2)
@@ -184,29 +189,27 @@ def tecla(W=180, H=96, ss=3):
 
 
 def parafuso(N=72, ss=4):
-    """Parafuso Phillips de cabeça panela, aço escovado, com a sombra do furo."""
+    """Parafuso de cabeça abaulada em aço inox, com sextavado interno (Allen), e o furo escuro em volta."""
     S = N * ss
     y, x = np.mgrid[0:S, 0:S].astype(np.float64)
     c = S / 2
     R = 0.36 * S
     dx, dy = x - c, y - c
     r = np.sqrt(dx * dx + dy * dy) / R
-    h = np.where(r < 1, np.sqrt(np.clip(1 - r ** 2, 0, 1)) * 0.35 * R, 0)
-    # fenda em cruz
-    w = 0.09 * R
-    cruz = (np.abs(dx) < w) & (np.abs(dy) < 0.55 * R) | (np.abs(dy) < w) & (np.abs(dx) < 0.55 * R)
-    h = np.where(cruz & (r < 1), h - 0.22 * R * np.clip(1 - np.maximum(np.abs(dx), np.abs(dy)) / (0.55 * R), 0, 1) ** 0.3, h)
+    h = np.where(r < 1, np.sqrt(np.clip(1 - r ** 2, 0, 1)) * 0.30 * R, 0)
+    ang = np.arctan2(dy, dx)
+    hexd = np.max(np.stack([np.abs(dx * np.cos(a) + dy * np.sin(a)) for a in (0, np.pi / 3, 2 * np.pi / 3)]), axis=0) / R
+    hole = hexd < 0.36
+    h = np.where(hole, h - 0.20 * R, h)
     n = normais(h, 1.0)
     inside = (r < 1).astype(np.float64)
-    ang = np.arctan2(dy, dx)
     rng = np.random.default_rng(3)
     brush = blur(rng.standard_normal((S, S)), 0.7 * ss)
     alb = np.zeros((S, S, 3))
-    alb[:] = np.array([0.075, 0.075, 0.08])
-    alb *= (1 + 0.10 * np.sin(ang * 3 + 0.4) + 0.06 * brush)[..., None]
-    alb = np.where(cruz[..., None], alb * 0.25, alb)
-    rgb = luz(n, alb, 0.25, 40, amb=0.12, fill=0.3, f0=0.25, box=0.9, rough=0.25)
-    # furo escuro em volta (rebaixo do painel)
+    alb[:] = np.array([0.42, 0.43, 0.45])
+    alb *= (1 + 0.08 * np.sin(ang * 2 + 0.4) + 0.05 * brush)[..., None]
+    alb = np.where(hole[..., None], alb * 0.05, alb)
+    rgb = luz(n, alb, 0.5, 40, amb=0.25, fill=0.3, f0=0.5, box=1.2, rough=0.22)
     ring = np.clip((1.12 - r) / 0.06, 0, 1) * (r >= 1)
     sh = sombra(inside, ss, 0.0, 0.05 * R / ss, 0.08 * R / ss, 0.8)
     a = inside + np.maximum(ring * 0.85, sh) * (1 - inside)
@@ -214,22 +217,34 @@ def parafuso(N=72, ss=4):
     return para_rgba(col, a, ss)
 
 
+def hblur(a, rad):
+    """Desfoque só na horizontal (três caixas), com a borda dando a volta."""
+    out = a
+    for _ in range(3):
+        p = np.pad(out, [(0, 0), (rad + 1, rad)], mode="wrap")
+        cs = np.cumsum(p, axis=1)
+        out = (cs[:, 2 * rad + 1:] - cs[:, :-2 * rad - 1]) / (2 * rad + 1)
+    return out
+
+
 def chapa(W=2880, H=1920, seed=5):
-    """Chapa do painel: pintura eletrostática grafite (casca de laranja fina iluminada), mais clara em
-    cima-esquerda e escurecendo para as bordas. Sem os detalhes (serigrafia, telas) — esses são desenhados por cima."""
+    """Chapa do painel: alumínio escovado na horizontal (riscos finos e compridos), anodizado natural de tom frio,
+    mais claro em cima-esquerda e escurecendo para as bordas. Sem os detalhes (serigrafia, telas) — esses são
+    desenhados por cima."""
     rng = np.random.default_rng(seed)
-    peel = blur(rng.standard_normal((H, W)), 2.2) * 1.0 + blur(rng.standard_normal((H, W)), 6.0) * 1.2
-    n = normais(peel, 0.9)
-    base = np.array([0.034, 0.035, 0.038])
-    alb = np.ones((H, W, 3)) * base
-    grain = rng.standard_normal((H, W)) * 0.035 + blur(rng.standard_normal((H, W)), 30.0) * 0.6
-    alb *= (1 + grain)[..., None]
-    rgb = luz(n, alb, 0.0, 10, amb=0.55, fill=0.3, f0=0.03, box=0.08, rough=0.45)
+    brush = hblur(rng.standard_normal((H, W)), 60) * 6.0 + hblur(rng.standard_normal((H, W)), 220) * 9.0
+    brush = brush / np.std(brush)
+    mancha = blur(rng.standard_normal((H // 8, W // 8)), 6.0)
+    mancha = np.kron(mancha / np.std(mancha), np.ones((8, 8)))[:H, :W]
+    alb = np.ones((H, W, 3)) * np.array([0.36, 0.375, 0.40])
+    alb *= (1 + 0.045 * brush + 0.02 * mancha)[..., None]
     y, x = np.mgrid[0:H, 0:W].astype(np.float64)
     u, v = x / W, y / H
-    grad = 1.10 - 0.18 * v - 0.06 * u + 0.08 * np.exp(-((u - 0.25) ** 2 / 0.08 + (v - 0.05) ** 2 / 0.05))
-    vig = 1 - 0.25 * (np.clip(np.abs(u - 0.5) * 2, 0, 1) ** 4 + np.clip(np.abs(v - 0.5) * 2, 0, 1) ** 4)
-    rgb = rgb * (grad * vig)[..., None]
+    grad = 1.10 - 0.16 * v - 0.05 * u + 0.10 * np.exp(-((u - 0.30) ** 2 / 0.10 + (v - 0.10) ** 2 / 0.06))
+    vig = 1 - 0.22 * (np.clip(np.abs(u - 0.5) * 2, 0, 1) ** 4 + np.clip(np.abs(v - 0.5) * 2, 0, 1) ** 4)
+    # escovado na horizontal estica o reflexo na vertical: faixas largas e suaves
+    sheen = 0.06 * np.exp(-((u - 0.62) ** 2) / 0.02) + 0.04 * np.exp(-((u - 0.18) ** 2) / 0.01)
+    rgb = alb * (grad * vig)[..., None] + (sheen * (1 + 0.05 * brush))[..., None]
     srgb = np.clip(rgb, 0, 1) ** (1 / 2.2)
     return Image.fromarray((srgb * 255).round().clip(0, 255).astype(np.uint8), "RGB")
 

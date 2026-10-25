@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 #include "PluginProcessor.h"
-#include "VacinaUi.h"
+#include "MercurioUi.h"
 
 // ---------------- o visor do preset (OLED): banco e categoria, o nome grande e o último parâmetro mexido ----------------
 class LcdDisplay : public juce::Component
@@ -26,11 +26,11 @@ private:
     juce::String l1, l1r, l2, l3;
 };
 
-class VacinaEditor : public juce::AudioProcessorEditor, private juce::Timer
+class MercurioEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
-    explicit VacinaEditor (VacinaProcessor&);
-    ~VacinaEditor() override;
+    explicit MercurioEditor (MercurioProcessor&);
+    ~MercurioEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -48,11 +48,11 @@ private:
     }
 
     // knob com o centro em cx (a caixa tem a largura do nome)
-    vac::VKnob* knob (int cx, int y, int size, const juce::String& pid, const juce::String& label, juce::Colour pointer = vac::silk);
-    vac::Key* key (int cx, int y, const juce::String& label, bool led = false);
-    vac::LcdBox* box (juce::Rectangle<int> r, const juce::String& pid, const juce::String& caption = {});
+    mrc::VKnob* knob (int cx, int y, int size, const juce::String& pid, const juce::String& label, juce::Colour pointer = mrc::silk);
+    mrc::Key* key (int cx, int y, const juce::String& label, bool led = false);
+    mrc::LcdBox* box (juce::Rectangle<int> r, const juce::String& pid, const juce::String& caption = {});
     void attach (juce::Button& b, const juce::String& paramId);
-    vac::Scope* scope (juce::Rectangle<int> r);
+    mrc::Scope* scope (juce::Rectangle<int> r);
 
     void buildScopes();
     void drawAlgorithm (juce::Graphics&, juce::Rectangle<float> r, int algo, float feedback);
@@ -72,18 +72,18 @@ private:
     float openScale = 1.0f;
     int   openTicks = 0;
 
-    VacinaProcessor& proc;
-    vac::VacinaLookAndFeel lnf;
-    juce::SharedResourcePointer<vac::Art> art;
+    MercurioProcessor& proc;
+    mrc::MercurioLookAndFeel lnf;
+    juce::SharedResourcePointer<mrc::Art> art;
     ScaledCanvas canvas;     // tudo em 1440×960, ampliado junto
     std::vector<std::unique_ptr<juce::Component>> owned;
     std::vector<std::unique_ptr<APVTS::ButtonAttachment>> buttonAtts;
-    std::vector<vac::Scope*> scopes;
-    std::array<vac::Scope*, 4> opScopes {};
-    std::array<vac::Scope*, 3> lfoScopes {};
-    vac::Scope* algoScope = nullptr;
-    vac::Scope* filterScope = nullptr;
-    std::array<vac::Scope*, 2> envScopes {};
+    std::vector<mrc::Scope*> scopes;
+    std::array<mrc::Scope*, 4> opScopes {};
+    std::array<mrc::Scope*, 3> lfoScopes {};
+    mrc::Scope* algoScope = nullptr;
+    mrc::Scope* filterScope = nullptr;
+    std::array<mrc::Scope*, 2> envScopes {};
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> captions;   // nomes serigrafados embaixo dos campos
     LcdDisplay* lcd = nullptr;
 
@@ -96,5 +96,5 @@ private:
     bool  midiLit = false, lastSync = false;
     float lastBpm = 0.0f;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VacinaEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MercurioEditor)
 };

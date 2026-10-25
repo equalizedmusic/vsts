@@ -1,5 +1,5 @@
 // GERADO por tools/gerar-presets.py — não editar à mão (mude o script e rode de novo).
-// VACINA — banco FACTORY 1: 40 presets por categoria (8 arquétipos × 5), na ordem de categoryNames.
+// MERCURIO — banco FACTORY 1: 40 presets por categoria (8 arquétipos × 5), na ordem de categoryNames.
 // { nome, categoria, { valores REAIS } }
 
 // ---- BASS ----

@@ -1,9 +1,9 @@
 #pragma once
 
-// VACINA — peças próprias da tela. Theme.h e Widgets.h são os da casa (iguais em todos, não mexer).
-// O que é material (chapa do painel, knob de borracha, tecla, parafuso) é imagem RENDERIZADA por
+// MERCÚRIO — peças próprias da tela. Theme.h e Widgets.h são os da casa (iguais em todos, não mexer).
+// O que é material (chapa de alumínio escovado, knob de alumínio usinado, tecla, parafuso) é imagem RENDERIZADA por
 // tools/gerar-texturas.py (relevo iluminado pixel a pixel, com sombra) e embutida no plugin (PluginImg.h);
-// a serigrafia, os LEDs, as laterais de madeira e os visores são desenhados aqui por cima.
+// a serigrafia, os LEDs, as faixas anodizadas, as laterais de metal e os visores são desenhados aqui por cima.
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <cmath>
@@ -14,20 +14,48 @@
 #include "Params.h"
 #include "PluginImg.h"
 
-namespace vac
+namespace mrc
 {
 inline constexpr int   baseW = 1440, baseH = 960;
 inline constexpr float minScale = 0.6f, maxScale = 1.8f;
 
-inline const juce::Colour silk    { 0xffe4e4e0 };   // serigrafia branca
-inline const juce::Colour silkDim { 0xff8d9095 };
-inline const juce::Colour red     { 0xffff3b2a };   // LEDs e segunda função
-inline const juce::Colour redInk  { 0xffe8503f };
-inline const juce::Colour ink     { 0xffd9f1ff };   // traço dos visores (OLED)
-inline const juce::Colour inkDim  { 0xff5f7d8c };
+// o aparelho tem duas superfícies: a chapa de alumínio escovado (tinta escura) e as duas faixas de
+// alumínio anodizado preto, em cima (presets, VOICE) e embaixo (EFFECTS) — nelas a serigrafia é branca
+inline constexpr float topBand = 110.0f, bottomBand = 842.0f;
+inline bool darkAt (float y) { return y < topBand || y >= bottomBand; }
+
+inline const juce::Colour silk     { 0xffe8eaee };   // serigrafia branca (faixas pretas)
+inline const juce::Colour silkDim  { 0xff8f949c };
+inline const juce::Colour print    { 0xff16181c };   // tinta escura (chapa de alumínio)
+inline const juce::Colour printDim { 0xff4d535c };
+inline const juce::Colour hot      { 0xffff2fa8 };   // LEDs e segunda função (magenta)
+inline const juce::Colour hotGlass { 0xffff6cc4 };   // magenta no vidro dos visores e nas faixas pretas
+inline const juce::Colour hotInk   { 0xffb0106e };   // magenta impresso no alumínio
+inline const juce::Colour ink      { 0xff8ff4ff };   // traço dos visores (OLED ciano)
+inline const juce::Colour inkDim   { 0xff3f7c86 };
+
+// cada operador tem a sua cor (ponteiro do LEVEL, onda no visor, caixa no desenho do algoritmo)
+inline const juce::Colour opColour[4] = { juce::Colour (0xff22d8ff), juce::Colour (0xffff3fb0),
+                                          juce::Colour (0xffa47dff), juce::Colour (0xffffb02e) };
+
+inline juce::Colour textOn (float y) { return darkAt (y) ? silk : print; }
+inline juce::Colour dimOn (float y)  { return darkAt (y) ? silkDim : printDim; }
+inline juce::Colour hotOn (float y)  { return darkAt (y) ? hotGlass : hotInk; }
 
 using RF = juce::Rectangle<float>;
 using PF = juce::Point<float>;
+
+// faixa iridescente (titânio aquecido / óleo na água): o toque psicodélico do metal
+inline juce::ColourGradient iridescent (RF r, float alpha)
+{
+    juce::ColourGradient cg (juce::Colour (0xffff3fb0).withAlpha (alpha), r.getX(), 0.0f,
+                             juce::Colour (0xffff3fb0).withAlpha (alpha), r.getRight(), 0.0f, false);
+    cg.addColour (0.20, juce::Colour (0xffa47dff).withAlpha (alpha));
+    cg.addColour (0.40, juce::Colour (0xff22d8ff).withAlpha (alpha));
+    cg.addColour (0.60, juce::Colour (0xff3dffb0).withAlpha (alpha));
+    cg.addColour (0.80, juce::Colour (0xffffb02e).withAlpha (alpha));
+    return cg;
+}
 
 // ---------------- imagens renderizadas (carregadas uma vez, compartilhadas) ----------------
 struct Art
@@ -43,11 +71,12 @@ struct Art
 };
 
 // ---------------- serigrafia: tinta branca impressa, sem relevo ----------------
+// sem cor: a da superfície onde o texto está (branca nas faixas pretas, escura no alumínio)
 inline void silkText (juce::Graphics& g, const juce::String& text, RF area, juce::Justification j,
-                      float size = 9.0f, bool bold = true, juce::Colour c = silk, float kerning = 0.06f)
+                      float size = 9.0f, bool bold = true, juce::Colour c = {}, float kerning = 0.06f)
 {
     g.setFont (theme::sans (size, bold, kerning));
-    g.setColour (c.withMultipliedAlpha (0.92f));
+    g.setColour ((c.isTransparent() ? textOn (area.getY()) : c).withMultipliedAlpha (0.92f));
     g.drawText (text, area, j, false);
 }
 
@@ -68,18 +97,25 @@ inline void section (juce::Graphics& g, RF r, const juce::String& title)
     frame.lineTo (r.getX(), top + c);
     frame.quadraticTo (r.getX(), top, r.getX() + c, top);
     frame.lineTo (r.getX() + 8.0f, top);
-    g.setColour (silkDim.withAlpha (0.42f));
+    // filete gravado: sulco escuro com a luz pegando na borda de baixo
+    if (! darkAt (r.getY()))
+    {
+        g.setColour (real::white (0.35f));
+        g.strokePath (frame, juce::PathStrokeType (0.9f), juce::AffineTransform::translation (0.0f, 0.9f));
+    }
+    g.setColour (dimOn (r.getY()).withAlpha (darkAt (r.getY()) ? 0.42f : 0.55f));
     g.strokePath (frame, juce::PathStrokeType (0.9f));
-    silkText (g, title, { r.getX() + 8.0f, r.getY(), tw + 4.0f, 12.0f }, juce::Justification::centred, 11.0f, true, silk, 0.16f);
+    silkText (g, title, { r.getX() + 8.0f, r.getY(), tw + 4.0f, 12.0f }, juce::Justification::centred, 11.0f, true, {}, 0.16f);
 }
 
 // rótulo pequeno com filete dos lados (ex.: "— FILTER 1 —" dentro de uma seção)
-inline void subTitle (juce::Graphics& g, RF r, const juce::String& t, juce::Colour c = silkDim)
+inline void subTitle (juce::Graphics& g, RF r, const juce::String& t, juce::Colour c = {})
 {
+    if (c.isTransparent()) c = dimOn (r.getY());
     g.setFont (theme::sans (9.5f, true, 0.12f));
     const float tw = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), t) + 10.0f;
     const float y = r.getCentreY();
-    g.setColour (silkDim.withAlpha (0.35f));
+    g.setColour (dimOn (r.getY()).withAlpha (0.40f));
     g.fillRect (r.getX(), y, (r.getWidth() - tw) * 0.5f, 0.8f);
     g.fillRect (r.getCentreX() + tw * 0.5f, y, (r.getWidth() - tw) * 0.5f, 0.8f);
     silkText (g, t, r, juce::Justification::centred, 9.5f, true, c, 0.12f);
@@ -144,7 +180,8 @@ inline void oledText (juce::Graphics& g, const juce::String& t, RF area, float s
 }
 
 // ---------------- knob: imagem renderizada + escala serigrafada + ponteiro pintado ----------------
-inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float pos, bool bipolar, juce::Colour pointer)
+inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float pos, bool bipolar, juce::Colour pointer,
+                      juce::Colour scale)
 {
     const float pi = juce::MathConstants<float>::pi;
     const float d  = juce::jmin (box.getWidth(), box.getHeight()) * 0.80f;
@@ -161,11 +198,11 @@ inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float p
         juce::Path t;
         t.startNewSubPath (pt (R + 2.4f, an));
         t.lineTo (pt (R + (major ? 6.0f : 4.4f), an));
-        g.setColour (silk.withAlpha (major ? 0.8f : 0.45f));
+        g.setColour (scale.withAlpha (major ? 0.85f : 0.5f));
         g.strokePath (t, juce::PathStrokeType (major ? 1.2f : 0.9f));
     }
 
-    // corpo renderizado (o knob ocupa 72% da imagem)
+    // corpo renderizado (o knob ocupa 72% da imagem; a tampa preta, 62% do raio)
     if (img.isValid())
     {
         const float s = d / 0.72f;
@@ -173,34 +210,44 @@ inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float p
         g.drawImage (img, RF (cx - s * 0.5f, cy - s * 0.5f, s, s), juce::RectanglePlacement::stretchToFit);
     }
 
-    // ponteiro pintado na tampa
-    const float rt = R * 0.78f;
+    // marca gravada no anel de alumínio
+    {
+        juce::Path m;
+        m.startNewSubPath (pt (R * 0.73f, a));
+        m.lineTo (pt (R * 0.86f, a));
+        g.setColour (real::black (0.55f));
+        g.strokePath (m, juce::PathStrokeType (juce::jmax (1.0f, d * 0.03f), juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+    // ponteiro aceso na tampa preta
     juce::Path pl;
-    pl.startNewSubPath (pt (rt * 0.30f, a));
-    pl.lineTo (pt (rt * 0.93f, a));
+    pl.startNewSubPath (pt (R * 0.16f, a));
+    pl.lineTo (pt (R * 0.54f, a));
     const float w = juce::jmax (1.5f, d * 0.05f);
-    g.setColour (real::black (0.6f));
-    g.strokePath (pl, juce::PathStrokeType (w + 1.2f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (pointer.withAlpha (0.22f));
+    g.strokePath (pl, juce::PathStrokeType (w * 2.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     g.setColour (pointer);
     g.strokePath (pl, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 }
 
-class VacinaLookAndFeel : public BrandLookAndFeel
+class MercurioLookAndFeel : public BrandLookAndFeel
 {
 public:
-    VacinaLookAndFeel()
+    MercurioLookAndFeel()
     {
         setColour (juce::PopupMenu::backgroundColourId, juce::Colour (0xff17181b));
         setColour (juce::PopupMenu::textColourId, silk);
-        setColour (juce::PopupMenu::highlightedBackgroundColourId, red.withAlpha (0.35f));
+        setColour (juce::PopupMenu::highlightedBackgroundColourId, hot.withAlpha (0.35f));
         setColour (juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
     }
 
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height, float pos,
                            float, float, juce::Slider& slider) override
     {
+        // a escala é serigrafia: a cor depende de onde o knob está (o VKnob é filho direto da tela)
+        const auto* holder = slider.getParentComponent();
+        const float py = holder != nullptr ? (float) holder->getY() : topBand;
         drawKnob (g, art->knob, juce::Rectangle<int> (x, y, width, height).toFloat(), pos,
-                  slider.getProperties()["bipolar"], slider.findColour (juce::Slider::rotarySliderFillColourId));
+                  slider.getProperties()["bipolar"], slider.findColour (juce::Slider::rotarySliderFillColourId), textOn (py));
     }
 
     juce::SharedResourcePointer<Art> art;
@@ -242,8 +289,9 @@ public:
         if (label.isEmpty()) return;                          // knob sem nome (matriz): o valor aparece no visor
         const float top = (float) slider.getBottom() - 1.0f, w = (float) getWidth();
         const bool live = showValue > 0;
+        const float y = (float) getY();
         silkText (g, live ? param->getCurrentValueAsText() : label, { 0.0f, top, w, 12.0f },
-                  juce::Justification::centred, 9.5f, true, live ? redInk : silk);
+                  juce::Justification::centred, 9.5f, true, live ? hotOn (y) : textOn (y));
     }
 
     void mouseEnter (const juce::MouseEvent&) override { showValue |= 1; repaint(); }
@@ -294,10 +342,10 @@ public:
             }
         }
         if (led)
-            real::led (g, { kr.getRight() + 8.0f, kr.getCentreY() }, 2.6f, red, getToggleState() ? 1.0f : 0.0f);
+            real::led (g, { kr.getRight() + 8.0f, kr.getCentreY() }, 2.6f, hot, getToggleState() ? 1.0f : 0.0f);
         if (getButtonText().isNotEmpty())
             silkText (g, getButtonText(), { kx - 40.0f, kr.getBottom() + 3.0f, 80.0f, 11.0f },
-                      juce::Justification::centred, 9.0f);
+                      juce::Justification::centred, 9.5f, true, textOn ((float) getY()));
     }
 
     static constexpr float keyW = 30.0f, keyH = 15.0f;
@@ -334,20 +382,21 @@ public:
 
     void paint (juce::Graphics& g) override
     {
+        const float y = (float) getY();
         for (int i = 0; i < names.size(); ++i)
         {
             const auto r = itemRect (i);
             const bool on = i == index;
             if (vertical)
             {
-                real::led (g, { r.getX() + 4.5f, r.getCentreY() }, 2.9f, red, on ? 1.0f : 0.0f);
-                silkText (g, names[i], r.withTrimmedLeft (13.0f), juce::Justification::centredLeft, 10.5f, true, on ? silk : silkDim);
+                real::led (g, { r.getX() + 4.5f, r.getCentreY() }, 2.9f, hot, on ? 1.0f : 0.0f);
+                silkText (g, names[i], r.withTrimmedLeft (13.0f), juce::Justification::centredLeft, 10.5f, true, on ? textOn (y) : dimOn (y));
             }
             else
             {
-                real::led (g, { r.getCentreX(), r.getY() + 4.0f }, 2.4f, red, on ? 1.0f : 0.0f);
+                real::led (g, { r.getCentreX(), r.getY() + 4.0f }, 2.4f, hot, on ? 1.0f : 0.0f);
                 silkText (g, names[i], r.withTrimmedTop (9.0f).expanded (6.0f, 0.0f), juce::Justification::centredTop, 10.5f, true,
-                          on ? silk : silkDim);
+                          on ? textOn (y) : dimOn (y));
             }
         }
     }
@@ -492,4 +541,4 @@ public:
 private:
     float last = -1.0e30f;
 };
-} // namespace vac
+} // namespace mrc

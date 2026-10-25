@@ -6,11 +6,11 @@
 #include "Params.h"
 #include "Presets.h"
 
-class VacinaProcessor : public juce::AudioProcessor, private juce::AudioProcessorParameter::Listener
+class MercurioProcessor : public juce::AudioProcessor, private juce::AudioProcessorParameter::Listener
 {
 public:
-    VacinaProcessor();
-    ~VacinaProcessor() override;
+    MercurioProcessor();
+    ~MercurioProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -21,7 +21,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "VACINA"; }
+    const juce::String getName() const override { return "MERCURIO"; }
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -56,14 +56,14 @@ public:
     bool renameUserPreset (const juce::String& newName);
     void deleteUserPreset();                             // vai para a lixeira
 
-    // bancos avulsos (.vcnbank): importar copia o arquivo para a pasta de bancos; remover manda para a lixeira
+    // bancos avulsos (.mrcbank): importar copia o arquivo para a pasta de bancos; remover manda para a lixeira
     // devolve vazio se deu certo, senão o motivo; em bankName vem o nome do banco
     juce::String importBank (const juce::File& file, juce::String& bankName);
     void removeBank (int bank);
 
     juce::AudioProcessorValueTreeState apvts;
-    vacina::Synth synth;
-    vacina::Fx    fx;
+    mercurio::Synth synth;
+    mercurio::Fx    fx;
 
     std::atomic<float> meterL { 0.0f }, meterR { 0.0f };
     std::atomic<float> uiScale { 0.85f };            // tamanho da janela, salvo no projeto
@@ -78,13 +78,13 @@ private:
     {
         juce::String name;
         juce::File   file;
-        std::vector<vacina::PresetData> presets;
+        std::vector<mercurio::PresetData> presets;
     };
     struct PresetEntry
     {
         int bank = 0, category = -1;
         juce::String name;
-        const vacina::PresetData* preset = nullptr;          // fábrica ou banco
+        const mercurio::PresetData* preset = nullptr;          // fábrica ou banco
         juce::File file;                                      // usuário
     };
 
@@ -106,19 +106,19 @@ private:
     void handleMidi (const juce::MidiMessage& m, bool arpOn);
     void arpNotesOff();
 
-    vacina::Settings   s;
-    vacina::FxSettings fxs;
+    mercurio::Settings   s;
+    mercurio::FxSettings fxs;
     double currentRate = 44100.0;
 
     // arpejador
-    vacina::Arp arp;
+    mercurio::Arp arp;
     std::vector<std::pair<int, int>> arpNow, arpNext;
     long long arpLastStep = -1;
     double    arpGateOff = -1.0, arpPpq = 0.0;
     bool      arpWasOn = false, arpHoldWas = false;
     juce::Random arpRnd;
 
-    std::vector<vacina::PresetData> factory;
+    std::vector<mercurio::PresetData> factory;
     std::vector<PresetBank> banks;
     juce::Array<juce::File> userFiles;
     std::vector<PresetEntry> entries;                    // a lista que o menu mostra, na ordem do índice global
@@ -132,5 +132,5 @@ private:
     juce::SmoothedValue<float> volSm;
     float dcL = 0, dcR = 0, dcYL = 0, dcYR = 0;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VacinaProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MercurioProcessor)
 };

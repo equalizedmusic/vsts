@@ -1,11 +1,11 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-using namespace vacina;
+using namespace mercurio;
 
-VacinaProcessor::VacinaProcessor()
+MercurioProcessor::MercurioProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "VACINA", createLayout())
+      apvts (*this, nullptr, "MERCURIO", createLayout())
 {
     for (auto* prm : getParameters())
     {
@@ -23,26 +23,26 @@ VacinaProcessor::VacinaProcessor()
     loadPreset (start >= 0 ? start : 0);
 }
 
-VacinaProcessor::~VacinaProcessor()
+MercurioProcessor::~MercurioProcessor()
 {
     for (auto* prm : getParameters())
         prm->removeListener (this);
 }
 
-void VacinaProcessor::parameterValueChanged (int parameterIndex, float)
+void MercurioProcessor::parameterValueChanged (int parameterIndex, float)
 {
     if (loading) return;
     lastTouched.store (parameterIndex);
     ++touchCount;
 }
 
-bool VacinaProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool MercurioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()
         && layouts.getMainInputChannelSet().isDisabled();
 }
 
-void VacinaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void MercurioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentRate = sampleRate;
     const int n = juce::jmax (1, samplesPerBlock);
@@ -59,7 +59,7 @@ void VacinaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     dcL = dcR = dcYL = dcYR = 0.0f;
 }
 
-void VacinaProcessor::readSettings()
+void MercurioProcessor::readSettings()
 {
     s.keyMode   = geti (id::keyMode);
     s.portaMs   = get (id::porta);
@@ -141,7 +141,7 @@ void VacinaProcessor::readSettings()
     fxs.phaInt   = get (id::phaInt) * 0.01f;
 }
 
-void VacinaProcessor::arpNotesOff()
+void MercurioProcessor::arpNotesOff()
 {
     for (auto& nv : arpNow) synth.noteOff (nv.first, s);
     arpNow.clear();
@@ -149,7 +149,7 @@ void VacinaProcessor::arpNotesOff()
 }
 
 // teclado: com o ARP ligado as notas vão para o arpejador; sem ele, direto para as vozes
-void VacinaProcessor::handleMidi (const juce::MidiMessage& m, bool arpOn)
+void MercurioProcessor::handleMidi (const juce::MidiMessage& m, bool arpOn)
 {
     const bool hold = get (id::arpHold) > 0.5f;
     if (m.isNoteOn())
@@ -186,7 +186,7 @@ void VacinaProcessor::handleMidi (const juce::MidiMessage& m, bool arpOn)
     }
 }
 
-void VacinaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
+void MercurioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
@@ -301,14 +301,14 @@ void VacinaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     meterR.store (juce::jmax (meterR.load(), pr));
 }
 
-juce::AudioProcessorEditor* VacinaProcessor::createEditor()
+juce::AudioProcessorEditor* MercurioProcessor::createEditor()
 {
-    return new VacinaEditor (*this);
+    return new MercurioEditor (*this);
 }
 
 // ---------------- estado ----------------
 
-void VacinaProcessor::getStateInformation (juce::MemoryBlock& destData)
+void MercurioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("presetName", presetName, nullptr);
@@ -318,7 +318,7 @@ void VacinaProcessor::getStateInformation (juce::MemoryBlock& destData)
         copyXmlToBinary (*xml, destData);
 }
 
-void VacinaProcessor::setStateInformation (const void* data, int sizeInBytes)
+void MercurioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
@@ -335,19 +335,19 @@ void VacinaProcessor::setStateInformation (const void* data, int sizeInBytes)
 
 // ---------------- presets ----------------
 //
-// Bancos avulsos: arquivo .vcnbank (XML) que a pessoa baixa e importa pelo menu de presets.
-//   <VACINABANK format="1" name="Factory 2" author="InsideStudioSP">
+// Bancos avulsos: arquivo .mrcbank (XML) que a pessoa baixa e importa pelo menu de presets.
+//   <MERCURIOBANK format="1" name="Factory 2" author="InsideStudioSP">
 //     <PRESET name="Hino" category="SUPERSAW">
 //       <PARAM id="cutoff" value="2400"/>          (valor REAL, igual ao estado salvo pelo plugin)
 //     </PRESET>
-//   </VACINABANK>
+//   </MERCURIOBANK>
 // category = nome em categoryNames (ou o índice); sem categoria ou desconhecida = OUTROS.
 // O que o preset não traz volta ao padrão.
 
 namespace
 {
-    const juce::String bankExt = ".vcnbank";
-    const juce::String bankTag = "VACINABANK";
+    const juce::String bankExt = ".mrcbank";
+    const juce::String bankTag = "MERCURIOBANK";
     const juce::String factoryBankName = "FACTORY 1";
     const juce::String userBankKey = "USER";   // presetBank salvo no projeto para os presets do usuário
 
@@ -356,9 +356,9 @@ namespace
     {
         auto xml = juce::parseXML (file);
         if (xml == nullptr || ! xml->hasTagName (bankTag))
-            return u8 ("O arquivo não é um banco de presets do VACINA.");
+            return u8 ("O arquivo não é um banco de presets do MERCÚRIO.");
         if (xml->getIntAttribute ("format", 1) > 1)
-            return u8 ("Esse banco é de uma versão mais nova do VACINA. Atualize o plugin.");
+            return u8 ("Esse banco é de uma versão mais nova do MERCÚRIO. Atualize o plugin.");
 
         name = xml->getStringAttribute ("name").trim();
         if (name.isEmpty()) name = file.getFileNameWithoutExtension().trim();
@@ -388,28 +388,28 @@ namespace
     }
 }
 
-juce::File VacinaProcessor::userPresetDir() const
+juce::File MercurioProcessor::userPresetDir() const
 {
    #if JUCE_MAC
     return juce::File::getSpecialLocation (juce::File::userHomeDirectory)
-               .getChildFile ("Library/Audio/Presets/InsideStudioSP/VACINA");
+               .getChildFile ("Library/Audio/Presets/InsideStudioSP/MERCURIO");
    #else
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-               .getChildFile ("InsideStudioSP/VACINA/Presets");
+               .getChildFile ("InsideStudioSP/MERCURIO/Presets");
    #endif
 }
 
-juce::File VacinaProcessor::bankDir() const
+juce::File MercurioProcessor::bankDir() const
 {
    #if JUCE_MAC
     return userPresetDir().getChildFile ("Banks");
    #else
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-               .getChildFile ("InsideStudioSP/VACINA/Banks");
+               .getChildFile ("InsideStudioSP/MERCURIO/Banks");
    #endif
 }
 
-void VacinaProcessor::refreshBanks()
+void MercurioProcessor::refreshBanks()
 {
     banks.clear();
     auto dir = bankDir();
@@ -426,7 +426,7 @@ void VacinaProcessor::refreshBanks()
     rebuildList();
 }
 
-void VacinaProcessor::refreshUserPresets()
+void MercurioProcessor::refreshUserPresets()
 {
     userFiles.clear();
     auto dir = userPresetDir();
@@ -437,7 +437,7 @@ void VacinaProcessor::refreshUserPresets()
     rebuildList();
 }
 
-void VacinaProcessor::rebuildList()
+void MercurioProcessor::rebuildList()
 {
     entries.clear();
     for (auto& p : factory)
@@ -449,33 +449,33 @@ void VacinaProcessor::rebuildList()
         entries.push_back ({ bankUser, numCategories, f.getFileNameWithoutExtension(), nullptr, f });
 }
 
-juce::StringArray VacinaProcessor::getPresetNames() const
+juce::StringArray MercurioProcessor::getPresetNames() const
 {
     juce::StringArray names;
     for (auto& e : entries) names.add (e.name);
     return names;
 }
 
-int VacinaProcessor::getPresetCategory (int index) const
+int MercurioProcessor::getPresetCategory (int index) const
 {
     if (index >= 0 && index < (int) entries.size()) return entries[(size_t) index].category;
     return numCategories;
 }
 
-int VacinaProcessor::getPresetBank (int index) const
+int MercurioProcessor::getPresetBank (int index) const
 {
     if (index >= 0 && index < (int) entries.size()) return entries[(size_t) index].bank;
     return bankUser;
 }
 
-juce::StringArray VacinaProcessor::getBankNames() const
+juce::StringArray MercurioProcessor::getBankNames() const
 {
     juce::StringArray names (factoryBankName);
     for (auto& b : banks) names.add (b.name);
     return names;
 }
 
-juce::String VacinaProcessor::getPresetGroup() const
+juce::String MercurioProcessor::getPresetGroup() const
 {
     if (presetIndex < 0 || presetIndex >= (int) entries.size()) return "EDITADO";
     const auto& e = entries[(size_t) presetIndex];
@@ -486,7 +486,7 @@ juce::String VacinaProcessor::getPresetGroup() const
 }
 
 // como o banco fica salvo no projeto: vazio = FACTORY 1, USER ou o nome do banco importado
-juce::String VacinaProcessor::bankKey (int bank) const
+juce::String MercurioProcessor::bankKey (int bank) const
 {
     if (bank == bankUser) return userBankKey;
     if (bank >= 1 && bank <= (int) banks.size()) return banks[(size_t) bank - 1].name;
@@ -494,7 +494,7 @@ juce::String VacinaProcessor::bankKey (int bank) const
 }
 
 // o mesmo nome pode existir em bancos diferentes: procura pelo par banco + nome
-int VacinaProcessor::findPreset (const juce::String& name, const juce::String& bank) const
+int MercurioProcessor::findPreset (const juce::String& name, const juce::String& bank) const
 {
     for (size_t i = 0; i < entries.size(); ++i)
     {
@@ -504,7 +504,7 @@ int VacinaProcessor::findPreset (const juce::String& name, const juce::String& b
     return -1;
 }
 
-void VacinaProcessor::applyValues (const std::function<bool (const juce::String&, float&)>& lookup)
+void MercurioProcessor::applyValues (const std::function<bool (const juce::String&, float&)>& lookup)
 {
     for (auto* prm : getParameters())
     {
@@ -518,7 +518,7 @@ void VacinaProcessor::applyValues (const std::function<bool (const juce::String&
     }
 }
 
-void VacinaProcessor::loadPreset (int index)
+void MercurioProcessor::loadPreset (int index)
 {
     refreshUserPresets();
     const int total = (int) entries.size();
@@ -558,13 +558,13 @@ void VacinaProcessor::loadPreset (int index)
     ++touchCount;
 }
 
-juce::String VacinaProcessor::importBank (const juce::File& file, juce::String& bankName)
+juce::String MercurioProcessor::importBank (const juce::File& file, juce::String& bankName)
 {
     std::vector<PresetData> presets;
     const auto err = parseBank (file, bankName, presets);
     if (err.isNotEmpty()) return err;
     if (bankName.equalsIgnoreCase (factoryBankName) || bankName.equalsIgnoreCase (userBankKey))
-        return u8 ("Esse nome de banco é reservado do VACINA.");
+        return u8 ("Esse nome de banco é reservado do MERCÚRIO.");
 
     // um banco com o mesmo nome é substituído (versão nova do mesmo pacote)
     auto dir = bankDir();
@@ -575,14 +575,14 @@ juce::String VacinaProcessor::importBank (const juce::File& file, juce::String& 
 
     auto target = dir.getChildFile (juce::File::createLegalFileName (bankName) + bankExt);
     if (target != file && ! file.copyFileTo (target))
-        return u8 ("Não deu para copiar o banco para a pasta do VACINA.");
+        return u8 ("Não deu para copiar o banco para a pasta do MERCÚRIO.");
 
     refreshBanks();
     presetIndex = findPreset (presetName, presetBank);
     return {};
 }
 
-void VacinaProcessor::removeBank (int bank)
+void MercurioProcessor::removeBank (int bank)
 {
     if (bank < 1 || bank > (int) banks.size()) return;
     auto file = banks[(size_t) bank - 1].file;
@@ -593,7 +593,7 @@ void VacinaProcessor::removeBank (int bank)
     presetIndex = findPreset (presetName, presetBank);
 }
 
-juce::File VacinaProcessor::currentUserFile() const
+juce::File MercurioProcessor::currentUserFile() const
 {
     if (presetIndex < 0 || presetIndex >= (int) entries.size()) return {};
     const auto& e = entries[(size_t) presetIndex];
@@ -601,12 +601,12 @@ juce::File VacinaProcessor::currentUserFile() const
     return e.file.existsAsFile() ? e.file : juce::File();
 }
 
-bool VacinaProcessor::isUserPreset() const
+bool MercurioProcessor::isUserPreset() const
 {
     return currentUserFile().existsAsFile();
 }
 
-juce::String VacinaProcessor::suggestPresetName() const
+juce::String MercurioProcessor::suggestPresetName() const
 {
     const auto dir = userPresetDir();
     for (int i = 1; i < 1000; ++i)
@@ -617,13 +617,13 @@ juce::String VacinaProcessor::suggestPresetName() const
     return "Meu preset";
 }
 
-void VacinaProcessor::writePreset (const juce::File& file)
+void MercurioProcessor::writePreset (const juce::File& file)
 {
     if (auto xml = apvts.copyState().createXml())
         xml->writeTo (file);
 }
 
-void VacinaProcessor::saveUserPreset (const juce::String& name)
+void MercurioProcessor::saveUserPreset (const juce::String& name)
 {
     const auto base = juce::File::createLegalFileName (name.trim());
     if (base.isEmpty()) return;
@@ -641,13 +641,13 @@ void VacinaProcessor::saveUserPreset (const juce::String& name)
     presetIndex = findPreset (presetName, presetBank);
 }
 
-void VacinaProcessor::overwriteUserPreset()
+void MercurioProcessor::overwriteUserPreset()
 {
     const auto file = currentUserFile();
     if (file.existsAsFile()) writePreset (file);
 }
 
-bool VacinaProcessor::renameUserPreset (const juce::String& newName)
+bool MercurioProcessor::renameUserPreset (const juce::String& newName)
 {
     const auto file = currentUserFile();
     const auto base = juce::File::createLegalFileName (newName.trim());
@@ -663,7 +663,7 @@ bool VacinaProcessor::renameUserPreset (const juce::String& newName)
     return true;
 }
 
-void VacinaProcessor::deleteUserPreset()
+void MercurioProcessor::deleteUserPreset()
 {
     auto file = currentUserFile();
     if (! file.existsAsFile()) return;
@@ -678,5 +678,5 @@ void VacinaProcessor::deleteUserPreset()
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new VacinaProcessor();
+    return new MercurioProcessor();
 }

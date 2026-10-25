@@ -38,13 +38,13 @@ separados por linha: `plugins/criativo/<plugin>` e `plugins/mix/<plugin>`.
 Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
 Os instaladores saem no release `latest-instrumentos` (os logs, no branch `builds-instrumentos`): `InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`
-com a QUIMERA e, separados, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Vacina-win.exe` / `-mac.dmg` com o VACINA.
+com a QUIMERA e, separados, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
 
 | Instrumento | O que é |
 |---|---|
 | [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador de 16 passos com SCALE/ROOT, 400 presets (40 por categoria, com ARP) e bancos avulsos `.qmrbank` |
 | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing, SCALE/ROOT e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
-| [VACINA](instrumentos/vacina/README.md) | Virtual-analógico polifônico de 16 vozes, leve no processador: OSC 1 CLASSIC (seno → triângulo → serra → pulso) ou SUPER (7 serras), OSC 2 com SYNC e FM, SUB e NOISE, dois filtros (LP 24 ladder, LP 12, HP, BP, BS) em série ou paralelo, 2 LFOs, matriz de 3 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.vcnbank`; painel grafite com laterais de madeira e visor de cristal líquido |
+| [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, polifônico de 16 vozes, puxado para o plástico, o metal e o psicodélico (era o VACINA): 8 algoritmos com o desenho na tela, 8 formas de onda por operador, RATIO × FINE para razões inarmônicas, realimentação, RING MOD e FOLD, dois filtros (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) em série ou paralelo, 3 LFOs (um na razão dos moduladores, outro no índice), matriz de 6 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.mrcbank`; painel de alumínio escovado com faixas anodizadas, knobs de alumínio usinado e visores OLED |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
@@ -81,7 +81,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Mix` | `novidades/Mix.md` | `mix-vX.Y.Z` |
 | `InsideStudioSP-Instrumentos` (QUIMERA) | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
 | `InsideStudioSP-Limao` | `novidades/Limao.md` | `limao-vX.Y.Z` |
-| `InsideStudioSP-Vacina` | `novidades/Vacina.md` | `vacina-vX.Y.Z` |
+| `InsideStudioSP-Mercurio` | `novidades/Mercurio.md` | `mercurio-vX.Y.Z` |
 
 O primeiro título `## X.Y.Z — data` do arquivo é a **versão atual**. Ela vai para:
 - os plugins, pelo `VERSION` do CMake (o host mostra; nos instrumentos ela também aparece no fim do menu de presets);

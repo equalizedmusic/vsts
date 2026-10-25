@@ -3,10 +3,10 @@
 #include <vector>
 #include "Params.h"
 
-// VACINA — presets de fábrica. O banco FACTORY 1 está em presets/fabrica.inc (GERADO por tools/gerar-presets.py);
-// bancos avulsos (.vcnbank) e os presets do usuário são lidos pelo processador.
+// MERCÚRIO — presets de fábrica. O banco FACTORY 1 está em presets/fabrica.inc (GERADO por tools/gerar-presets.py);
+// bancos avulsos (.mrcbank) e os presets do usuário são lidos pelo processador.
 // O que o preset não traz volta ao padrão do parâmetro.
-namespace vacina
+namespace mercurio
 {
 // ---------------- categorias (o preset guarda o ÍNDICE; o nome só aparece no menu) ----------------
 inline constexpr int numCategories = 9;
@@ -52,4 +52,4 @@ inline std::vector<PresetData> factoryPresetData()
     }
     return out;
 }
-} // namespace vacina
+} // namespace mercurio

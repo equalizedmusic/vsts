@@ -1,8 +1,8 @@
 #include "PluginEditor.h"
 #include <complex>
 
-using namespace vacina;
-using vac::RF;
+using namespace mercurio;
+using mrc::RF;
 
 namespace
 {
@@ -88,65 +88,65 @@ float filterMag (int mode, float f, float fc, float reso)
 void LcdDisplay::paint (juce::Graphics& g)
 {
     const auto r = getLocalBounds().toFloat().reduced (5.0f);
-    vac::glassUnder (g, r, 3.0f);
+    mrc::glassUnder (g, r, 3.0f);
     const auto in = r.reduced (12.0f, 7.0f);
-    vac::oledText (g, l1, in.withHeight (13.0f), 11.5f, juce::Justification::centredLeft, vac::inkDim);
-    vac::oledText (g, l1r, in.withHeight (13.0f), 11.5f, juce::Justification::centredRight, vac::inkDim);
-    g.setColour (vac::inkDim.withAlpha (0.35f));
+    mrc::oledText (g, l1, in.withHeight (13.0f), 11.5f, juce::Justification::centredLeft, mrc::inkDim);
+    mrc::oledText (g, l1r, in.withHeight (13.0f), 11.5f, juce::Justification::centredRight, mrc::inkDim);
+    g.setColour (mrc::inkDim.withAlpha (0.35f));
     g.fillRect (in.getX(), in.getY() + 15.0f, in.getWidth(), 0.7f);
-    vac::oledText (g, l2, in.withTrimmedTop (17.0f).withHeight (30.0f), 23.0f, juce::Justification::centredLeft, vac::ink, false);
-    vac::oledText (g, l3, in.withTrimmedTop (48.0f).withHeight (15.0f), 12.0f, juce::Justification::centredLeft, vac::redInk);
-    vac::glassOver (g, r, 3.0f);
+    mrc::oledText (g, l2, in.withTrimmedTop (17.0f).withHeight (30.0f), 23.0f, juce::Justification::centredLeft, mrc::ink, false);
+    mrc::oledText (g, l3, in.withTrimmedTop (48.0f).withHeight (15.0f), 12.0f, juce::Justification::centredLeft, mrc::hotGlass);
+    mrc::glassOver (g, r, 3.0f);
 }
 
 // =====================================================================
 // EDITOR
 // =====================================================================
-vac::VKnob* VacinaEditor::knob (int cx, int y, int size, const juce::String& pid, const juce::String& label, juce::Colour pointer)
+mrc::VKnob* MercurioEditor::knob (int cx, int y, int size, const juce::String& pid, const juce::String& label, juce::Colour pointer)
 {
     // largo para o nome não cortar (SUPER SPREAD); o VKnob não pega clique fora do knob, então pode sobrepor o vizinho
     const int w = juce::jmax (size + 14, 92);
-    return add<vac::VKnob> ({ cx - w / 2, y, w, size + 10 + (label.isNotEmpty() ? 12 : 0) }, proc.apvts, pid, label, size, pointer);
+    return add<mrc::VKnob> ({ cx - w / 2, y, w, size + 10 + (label.isNotEmpty() ? 12 : 0) }, proc.apvts, pid, label, size, pointer);
 }
 
-vac::Key* VacinaEditor::key (int cx, int y, const juce::String& label, bool led)
+mrc::Key* MercurioEditor::key (int cx, int y, const juce::String& label, bool led)
 {
     const int w = 64 + (led ? 20 : 0);
-    return add<vac::Key> ({ cx - 32, y, w, label.isNotEmpty() ? 32 : 20 }, label, led);
+    return add<mrc::Key> ({ cx - 32, y, w, label.isNotEmpty() ? 32 : 20 }, label, led);
 }
 
-vac::LcdBox* VacinaEditor::box (juce::Rectangle<int> r, const juce::String& pid, const juce::String& caption)
+mrc::LcdBox* MercurioEditor::box (juce::Rectangle<int> r, const juce::String& pid, const juce::String& caption)
 {
     if (caption.isNotEmpty())
         captions.push_back ({ RF ((float) r.getX(), (float) r.getBottom(), (float) r.getWidth(), 10.0f), caption });
-    return add<vac::LcdBox> (r, proc.apvts, pid);
+    return add<mrc::LcdBox> (r, proc.apvts, pid);
 }
 
-void VacinaEditor::attach (juce::Button& b, const juce::String& paramId)
+void MercurioEditor::attach (juce::Button& b, const juce::String& paramId)
 {
     b.setClickingTogglesState (true);
     buttonAtts.push_back (std::make_unique<APVTS::ButtonAttachment> (proc.apvts, paramId, b));
 }
 
-vac::Scope* VacinaEditor::scope (juce::Rectangle<int> r)
+mrc::Scope* MercurioEditor::scope (juce::Rectangle<int> r)
 {
-    auto* s = add<vac::Scope> (r);
+    auto* s = add<mrc::Scope> (r);
     s->setInterceptsMouseClicks (false, false);
     scopes.push_back (s);
     return s;
 }
 
-VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), proc (p)
+MercurioEditor::MercurioEditor (MercurioProcessor& p) : AudioProcessorEditor (&p), proc (p)
 {
     setLookAndFeel (&lnf);
     setWantsKeyboardFocus (false);
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
-    canvas.setBounds (0, 0, vac::baseW, vac::baseH);
+    canvas.setBounds (0, 0, mrc::baseW, mrc::baseH);
     addAndMakeVisible (canvas);
 
     auto& st = proc.apvts;
-    const auto red = vac::red;
+    const auto red = mrc::hot;
 
     // ================= CABEÇALHO: presets, VOICE, MASTER =================
     lcd = add<LcdDisplay> ({ 336, 20, 470, 84 });
@@ -156,7 +156,7 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     key (840, 26, "PREV")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() - 1); };
     key (840, 64, "NEXT")->onClick = [this] { proc.loadPreset (proc.getPresetIndex() + 1); };
 
-    add<vac::LedList> ({ 888, 40, 72, 45 }, keyModeNames, true, 15.0f)->bind (st, id::keyMode);
+    add<mrc::LedList> ({ 888, 40, 72, 45 }, keyModeNames, true, 15.0f)->bind (st, id::keyMode);
     knob (990, 38, 30, id::porta, "GLIDE");
     knob (1042, 38, 30, id::bendRange, "BEND");
     knob (1094, 38, 30, id::unison, "UNISON");
@@ -180,7 +180,7 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
         const int x0 = opX (k);
         opScopes[(size_t) k] = scope ({ x0 + 6, 130, 152, 88 });
         box ({ x0 + 160, 132, 86, 28 }, id::op (k, "wave"), "WAVE");
-        knob (x0 + 203, 172, 30, id::op (k, "lvl"), "LEVEL", red);
+        knob (x0 + 203, 172, 30, id::op (k, "lvl"), "LEVEL", mrc::opColour[k]);
         knob (x0 + 34, 224, 30, id::op (k, "coarse"), "RATIO");
         knob (x0 + 94, 224, 30, id::op (k, "fine"), "FINE");
         knob (x0 + 154, 224, 30, id::op (k, "det"), "DETUNE");
@@ -193,18 +193,18 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
 
     // ================= FILTROS =================
     filterScope = scope ({ 60, 384, 238, 104 });
-    add<vac::LedList> ({ 68, 498, 96, 30 }, routingNames, true, 15.0f)->bind (st, id::routing);
+    add<mrc::LedList> ({ 68, 498, 96, 30 }, routingNames, true, 15.0f)->bind (st, id::routing);
     knob (196, 494, 34, id::filtBal, "BALANCE");
     box ({ 64, 550, 120, 28 }, id::satType, "SATURATION");
     knob (240, 544, 34, id::satAmt, "SAT DRIVE", red);
 
-    add<vac::LedList> ({ 312, 398, 74, 105 }, f1ModeNames, true, 15.0f)->bind (st, id::f1Mode);
+    add<mrc::LedList> ({ 312, 398, 74, 105 }, f1ModeNames, true, 15.0f)->bind (st, id::f1Mode);
     knob (456, 398, 66, id::cutoff, "CUTOFF", red);
     knob (340, 512, 36, id::reso1, "RESONANCE");
     knob (412, 512, 36, id::env1, "ENV AMOUNT");
     knob (484, 512, 36, id::key1, "KEY TRACK");
 
-    add<vac::LedList> ({ 538, 398, 74, 90 }, f2ModeNames, true, 15.0f)->bind (st, id::f2Mode);
+    add<mrc::LedList> ({ 538, 398, 74, 90 }, f2ModeNames, true, 15.0f)->bind (st, id::f2Mode);
     knob (674, 404, 48, id::cutoff2, "CUTOFF 2");
     knob (566, 512, 36, id::reso2, "RESONANCE");
     knob (638, 512, 36, id::env2, "ENV AMOUNT");
@@ -259,7 +259,7 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     // ================= ARP =================
     attach (*key (1172, 640, "ARP ON", true), id::arpOn);
     attach (*key (1172, 686, "HOLD", true), id::arpHold);
-    add<vac::LedList> ({ 1226, 634, 88, 90 }, arpModeNames, true, 15.0f)->bind (st, id::arpMode);
+    add<mrc::LedList> ({ 1226, 634, 88, 90 }, arpModeNames, true, 15.0f)->bind (st, id::arpMode);
     box ({ 1318, 640, 64, 28 }, id::arpOct, "OCTAVES");
     knob (1196, 752, 38, id::arpRate, "RATE");
     knob (1270, 752, 38, id::arpGate, "GATE");
@@ -290,14 +290,14 @@ VacinaEditor::VacinaEditor (VacinaProcessor& p) : AudioProcessorEditor (&p), pro
     // e o resized() gravaria o mínimo por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt ((float) vac::baseW * vac::minScale), juce::roundToInt ((float) vac::baseH * vac::minScale),
-                     juce::roundToInt ((float) vac::baseW * vac::maxScale), juce::roundToInt ((float) vac::baseH * vac::maxScale));
-    getConstrainer()->setFixedAspectRatio ((double) vac::baseW / (double) vac::baseH);
+    setResizeLimits (juce::roundToInt ((float) mrc::baseW * mrc::minScale), juce::roundToInt ((float) mrc::baseH * mrc::minScale),
+                     juce::roundToInt ((float) mrc::baseW * mrc::maxScale), juce::roundToInt ((float) mrc::baseH * mrc::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) mrc::baseW / (double) mrc::baseH);
     setScale (openScale);
     startTimerHz (30);
 }
 
-VacinaEditor::~VacinaEditor()
+MercurioEditor::~MercurioEditor()
 {
     dialog.close();
     stopTimer();
@@ -305,7 +305,7 @@ VacinaEditor::~VacinaEditor()
 }
 
 // ---------------- o que cada visor desenha ----------------
-void VacinaEditor::buildScopes()
+void MercurioEditor::buildScopes()
 {
     // ---- algoritmo: quem modula quem; os portadores (que soam) acesos, a realimentação no OP 4 ----
     algoScope->hash = [this] { return pv (id::algo) + pv (id::feedback) * 0.001f; };
@@ -326,9 +326,9 @@ void VacinaEditor::buildScopes()
         {
             return "OP" + juce::String (k + 1) + "  x" + juce::String (opRatio (pv (cid), pv (fid)), 2) + (carrier() ? "  OUT" : "  MOD");
         };
-        s->draw = [this, wid, lid, carrier] (juce::Graphics& g, RF r)
+        s->draw = [this, k, wid, lid, carrier] (juce::Graphics& g, RF r)
         {
-            vac::gridLines (g, r, 4, 2);
+            mrc::gridLines (g, r, 4, 2);
             const int w = juce::roundToInt (pv (wid));
             const float lv = juce::jmax (0.15f, pv (lid) * 0.01f);
             juce::Path p;
@@ -340,7 +340,7 @@ void VacinaEditor::buildScopes()
                 const float x = r.getX() + t * r.getWidth();
                 if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
             }
-            vac::glowPath (g, p, carrier() ? vac::ink : vac::ink.withAlpha (0.6f), 1.5f);
+            mrc::glowPath (g, p, carrier() ? mrc::opColour[k] : mrc::opColour[k].withAlpha (0.55f), 1.5f);
         };
     }
 
@@ -356,7 +356,7 @@ void VacinaEditor::buildScopes()
     };
     filterScope->draw = [this] (juce::Graphics& g, RF r)
     {
-        vac::gridLines (g, r, 6, 4);
+        mrc::gridLines (g, r, 6, 4);
         const float fc1 = pv (id::cutoff), fc2 = fc1 * std::exp2 (pv (id::cutoff2) / 12.0f);
         const int m1 = juce::roundToInt (pv (id::f1Mode)), m2 = juce::roundToInt (pv (id::f2Mode)) + 1;
         const float r1 = pv (id::reso1) * 0.01f, r2 = pv (id::reso2) * 0.01f, bal = pv (id::filtBal) * 0.01f;
@@ -378,15 +378,15 @@ void VacinaEditor::buildScopes()
         fill.lineTo (r.getRight(), r.getBottom());
         fill.lineTo (r.getX(), r.getBottom());
         fill.closeSubPath();
-        g.setGradientFill (real::vertical (vac::ink.withAlpha (0.16f), r.getY(), vac::ink.withAlpha (0.0f), r.getBottom()));
+        g.setGradientFill (real::vertical (mrc::ink.withAlpha (0.16f), r.getY(), mrc::ink.withAlpha (0.0f), r.getBottom()));
         g.fillPath (fill);
-        vac::glowPath (g, p, vac::ink, 1.5f);
+        mrc::glowPath (g, p, mrc::ink, 1.5f);
         const float xc = r.getX() + std::log10 (juce::jlimit (20.0f, 20000.0f, fc1) / 20.0f) / 3.0f * r.getWidth();
-        g.setColour (vac::red.withAlpha (0.8f));
+        g.setColour (mrc::hot.withAlpha (0.8f));
         g.fillRect (xc - 0.5f, r.getY(), 1.0f, r.getHeight());
         const float hz = fc1;
-        vac::oledText (g, hz >= 1000.0f ? juce::String (hz / 1000.0f, 2) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz",
-                       r.withTrimmedTop (r.getHeight() - 14.0f), 10.5f, juce::Justification::bottomRight, vac::redInk);
+        mrc::oledText (g, hz >= 1000.0f ? juce::String (hz / 1000.0f, 2) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz",
+                       r.withTrimmedTop (r.getHeight() - 14.0f), 10.5f, juce::Justification::bottomRight, mrc::hotGlass);
     };
 
     // ---- envelopes: ADSR com a inclinação do sustain ----
@@ -399,7 +399,7 @@ void VacinaEditor::buildScopes()
         s->caption = [e] { return juce::String (e == 0 ? "FILTER ENV" : "AMP ENV"); };
         s->draw = [this, a, d, su, rl, sl] (juce::Graphics& g, RF r)
         {
-            vac::gridLines (g, r, 4, 2);
+            mrc::gridLines (g, r, 4, 2);
             const float A = pv (a), D = pv (d), S = pv (su) * 0.01f, Rl = pv (rl), slope = pv (sl) * 0.01f;
             auto len = [] (float ms) { return std::sqrt (ms + 4.0f); };
             const float hold = 40.0f;
@@ -434,9 +434,9 @@ void VacinaEditor::buildScopes()
             juce::Path fill (p);
             fill.lineTo (x4, r.getBottom());
             fill.closeSubPath();
-            g.setGradientFill (real::vertical (vac::ink.withAlpha (0.14f), r.getY(), vac::ink.withAlpha (0.0f), r.getBottom()));
+            g.setGradientFill (real::vertical (mrc::ink.withAlpha (0.14f), r.getY(), mrc::ink.withAlpha (0.0f), r.getBottom()));
             g.fillPath (fill);
-            vac::glowPath (g, p, vac::ink, 1.4f);
+            mrc::glowPath (g, p, mrc::ink, 1.4f);
         };
     }
 
@@ -450,7 +450,7 @@ void VacinaEditor::buildScopes()
         s->caption = [l] { return "LFO " + juce::String (l + 1); };
         s->draw = [this, sid] (juce::Graphics& g, RF r)
         {
-            vac::gridLines (g, r, 4, 2);
+            mrc::gridLines (g, r, 4, 2);
             const int shape = juce::roundToInt (pv (sid));
             juce::Path p;
             const int n = 200;
@@ -463,14 +463,14 @@ void VacinaEditor::buildScopes()
                 else if (shape >= 3 && shape != 5) { p.lineTo (x, p.getCurrentPosition().y); p.lineTo (x, y); }
                 else p.lineTo (x, y);
             }
-            vac::glowPath (g, p, vac::ink, 1.4f);
+            mrc::glowPath (g, p, mrc::ink, 1.4f);
         };
     }
 }
 
 // ---------------- desenho do algoritmo ----------------
 // posição de cada operador (coluna 0..3, linha 0..3 de cima para baixo) em cada algoritmo; os portadores ficam embaixo
-void VacinaEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedback)
+void MercurioEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedback)
 {
     static constexpr float pos[numAlgos][numOps][2] = {
         { { 1.5f, 3 }, { 1.5f, 2 }, { 1.5f, 1 }, { 1.5f, 0 } },   // 1  4 > 3 > 2 > 1
@@ -506,7 +506,7 @@ void VacinaEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedb
                 p.lineTo (a.getCentreX(), (a.getBottom() + b.getY()) * 0.5f);
                 p.lineTo (b.getCentreX(), (a.getBottom() + b.getY()) * 0.5f);
                 p.lineTo (b.getCentreX(), b.getY());
-                vac::glowPath (g, p, vac::ink.withAlpha (0.75f), 1.2f);
+                mrc::glowPath (g, p, mrc::ink.withAlpha (0.75f), 1.2f);
             }
     // saída: cada portador desce até a barra
     float busL = r.getRight(), busR = r.getX();
@@ -517,7 +517,7 @@ void VacinaEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedb
             juce::Path p;
             p.startNewSubPath (b.getCentreX(), b.getBottom());
             p.lineTo (b.getCentreX(), bus);
-            vac::glowPath (g, p, vac::ink.withAlpha (0.75f), 1.2f);
+            mrc::glowPath (g, p, mrc::ink.withAlpha (0.75f), 1.2f);
             busL = juce::jmin (busL, b.getCentreX());
             busR = juce::jmax (busR, b.getCentreX());
         }
@@ -525,7 +525,7 @@ void VacinaEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedb
         juce::Path p;
         p.startNewSubPath (busL - 6.0f, bus);
         p.lineTo (busR + 6.0f, bus);
-        vac::glowPath (g, p, vac::ink, 1.6f);
+        mrc::glowPath (g, p, mrc::ink, 1.6f);
     }
     // realimentação do OP 4: laço pela direita (mais forte, mais aceso)
     {
@@ -536,25 +536,26 @@ void VacinaEditor::drawAlgorithm (juce::Graphics& g, RF r, int algo, float feedb
         p.lineTo (b.getRight() + 8.0f, b.getY() - 5.0f);
         p.lineTo (b.getCentreX(), b.getY() - 5.0f);
         p.lineTo (b.getCentreX(), b.getY());
-        vac::glowPath (g, p, (feedback > 0.005f ? vac::redInk : vac::inkDim).withAlpha (0.4f + 0.6f * juce::jmin (1.0f, feedback * 2.0f)), 1.2f);
+        mrc::glowPath (g, p, (feedback > 0.005f ? mrc::opColour[3] : mrc::inkDim).withAlpha (0.4f + 0.6f * juce::jmin (1.0f, feedback * 2.0f)), 1.2f);
     }
     // caixas: portador cheio, modulador só o contorno
     for (int k = 0; k < numOps; ++k)
     {
         const auto b = box (k);
         const bool car = ((al.carriers >> k) & 1) != 0;
-        g.setColour (vac::ink.withAlpha (car ? 0.85f : 0.0f));
+        const auto oc = mrc::opColour[k];
+        g.setColour (oc.withAlpha (car ? 0.85f : 0.0f));
         g.fillRoundedRectangle (b, 2.5f);
-        g.setColour (vac::ink.withAlpha (0.9f));
+        g.setColour (oc.withAlpha (0.95f));
         g.drawRoundedRectangle (b, 2.5f, 1.2f);
-        vac::oledText (g, juce::String (k + 1), b, 12.0f, juce::Justification::centred, car ? juce::Colour (0xff0b1a22) : vac::ink);
+        mrc::oledText (g, juce::String (k + 1), b, 12.0f, juce::Justification::centred, car ? juce::Colour (0xff0b0d12) : oc);
     }
-    vac::oledText (g, algoNames[algo].fromLastOccurrenceOf (" ", false, false), r.withHeight (13.0f), 10.0f,
-                   juce::Justification::topRight, vac::redInk);
+    mrc::oledText (g, algoNames[algo].fromLastOccurrenceOf (" ", false, false), r.withHeight (13.0f), 10.0f,
+                   juce::Justification::topRight, mrc::hotGlass);
 }
 
 // ---------------- menu de presets (com o tamanho da janela) ----------------
-void VacinaEditor::showPresetMenu()
+void MercurioEditor::showPresetMenu()
 {
     juce::PopupMenu menu;
     const auto names = proc.getPresetNames();
@@ -575,7 +576,7 @@ void VacinaEditor::showPresetMenu()
         const bool ticked = i == cur;
         if (c < 0)
             menu.addItem (i + 1, names[i], true, ticked);
-        else if (b == VacinaProcessor::bankUser)
+        else if (b == MercurioProcessor::bankUser)
         {
             user.addItem (i + 1, names[i], true, ticked);
             userTicked = userTicked || ticked;
@@ -620,7 +621,7 @@ void VacinaEditor::showPresetMenu()
         menu.addItem (menuDelete,    u8 ("Apagar “") + name + u8 ("”…"));
     }
 
-    // bancos avulsos (.vcnbank)
+    // bancos avulsos (.mrcbank)
     menu.addSeparator();
     menu.addItem (menuImport, u8 ("Importar banco de presets…"));
     if (numBanks > 1)
@@ -639,12 +640,12 @@ void VacinaEditor::showPresetMenu()
     menu.addSubMenu ("Tamanho da janela", sizes);
    #ifdef JucePlugin_VersionString   // (a foto do workflow shots compila a tela fora do plugin)
     menu.addSeparator();
-    menu.addItem (sizeMenuBase - 1, juce::String ("VACINA ") + JucePlugin_VersionString, false, false);
+    menu.addItem (sizeMenuBase - 1, u8 ("MERCÚRIO ") + JucePlugin_VersionString, false, false);
    #endif
 
     // o menu (e cada camada: banco → categoria → preset) abre DENTRO da janela do plugin: como janela solta,
     // a camada de dentro ficava por baixo da janela do plugin (que o host deixa sempre na frente) e não dava clique
-    juce::Component::SafePointer<VacinaEditor> safe (this);
+    juce::Component::SafePointer<MercurioEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (lcd).withParentComponent (this), [safe] (int result)
     {
         if (safe != nullptr && result > 0)
@@ -652,21 +653,21 @@ void VacinaEditor::showPresetMenu()
     });
 }
 
-void VacinaEditor::askNewPreset()
+void MercurioEditor::askNewPreset()
 {
-    juce::Component::SafePointer<VacinaEditor> safe (this);
+    juce::Component::SafePointer<MercurioEditor> safe (this);
     dialog.askName (canvas, "Salvar preset", proc.suggestPresetName(),
                     [safe] (const juce::String& name) { if (safe != nullptr) safe->proc.saveUserPreset (name); });
 }
 
-// abre o navegador de arquivos; o banco escolhido é copiado para a pasta do VACINA e entra no menu
-void VacinaEditor::importBank()
+// abre o navegador de arquivos; o banco escolhido é copiado para a pasta do MERCÚRIO e entra no menu
+void MercurioEditor::importBank()
 {
     auto start = juce::File::getSpecialLocation (juce::File::userHomeDirectory);
     if (start.getChildFile ("Downloads").isDirectory()) start = start.getChildFile ("Downloads");
-    chooser = std::make_unique<juce::FileChooser> ("Importar banco de presets do VACINA", start, "*.vcnbank");
+    chooser = std::make_unique<juce::FileChooser> (u8 ("Importar banco de presets do MERCÚRIO"), start, "*.mrcbank");
 
-    juce::Component::SafePointer<VacinaEditor> safe (this);
+    juce::Component::SafePointer<MercurioEditor> safe (this);
     chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
                           [safe] (const juce::FileChooser& fc)
                           {
@@ -682,7 +683,7 @@ void VacinaEditor::importBank()
                           });
 }
 
-void VacinaEditor::presetMenuChosen (int result)
+void MercurioEditor::presetMenuChosen (int result)
 {
     if (result > sizeMenuBase && result < menuSaveAs)
     {
@@ -690,7 +691,7 @@ void VacinaEditor::presetMenuChosen (int result)
         return;
     }
 
-    juce::Component::SafePointer<VacinaEditor> safe (this);
+    juce::Component::SafePointer<MercurioEditor> safe (this);
     if (result > menuRemoveBank)
     {
         const int  bank = result - menuRemoveBank;
@@ -735,12 +736,12 @@ void VacinaEditor::presetMenuChosen (int result)
 }
 
 // ---------------- timer (30 Hz) ----------------
-void VacinaEditor::timerCallback()
+void MercurioEditor::timerCallback()
 {
     // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
     // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
     if (openTicks < openSettle && ++openTicks == openSettle
-        && std::abs ((float) getWidth() / (float) vac::baseW - openScale) > 0.005f)
+        && std::abs ((float) getWidth() / (float) mrc::baseW - openScale) > 0.005f)
         setScale (openScale);
 
     // visor: banco/categoria, posição, nome e, por 2,5 s, o último parâmetro mexido (nome e valor)
@@ -795,116 +796,144 @@ void VacinaEditor::timerCallback()
 }
 
 // ---------------- tamanho ----------------
-void VacinaEditor::setScale (float scale)
+void MercurioEditor::setScale (float scale)
 {
-    scale = juce::jlimit (vac::minScale, vac::maxScale, scale);
-    setSize (juce::roundToInt ((float) vac::baseW * scale), juce::roundToInt ((float) vac::baseH * scale));
+    scale = juce::jlimit (mrc::minScale, mrc::maxScale, scale);
+    setSize (juce::roundToInt ((float) mrc::baseW * scale), juce::roundToInt ((float) mrc::baseH * scale));
 }
 
-void VacinaEditor::resized()
+void MercurioEditor::resized()
 {
-    const float scale = (float) getWidth() / (float) vac::baseW;
+    const float scale = (float) getWidth() / (float) mrc::baseW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
         proc.uiScale = scale;
 }
 
-void VacinaEditor::paint (juce::Graphics& g)
+void MercurioEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff0d0d0e));
 }
 
 // ---------------- o aparelho ----------------
-// lateral de madeira (mogno envernizado) — a mesma de antes
-static void woodCheek (juce::Graphics& g, RF r, bool left)
+// lateral de alumínio fresado, anodizado grafite: aletas de dissipador, reflexo vertical e chanfro polido
+static void metalCheek (juce::Graphics& g, RF r, bool left)
 {
     using juce::Colour;
     juce::Path p;
-    p.addRoundedRectangle (r, 9.0f);
+    p.addRoundedRectangle (r, 6.0f);
     for (int i = 6; i >= 1; --i)
     {
         g.setColour (real::black (0.12f));
-        g.fillRoundedRectangle (r.expanded ((float) i * 0.6f).translated (left ? -1.0f : 1.0f, (float) i), 9.0f + (float) i);
+        g.fillRoundedRectangle (r.expanded ((float) i * 0.6f).translated (left ? -1.0f : 1.0f, (float) i), 6.0f + (float) i);
     }
-    juce::ColourGradient cg (Colour (0xff2c0d08), r.getX(), 0.0f, Colour (0xff2c0d08), r.getRight(), 0.0f, false);
-    cg.addColour (left ? 0.22 : 0.18, Colour (0xff6d2416));
-    cg.addColour (left ? 0.5 : 0.45, Colour (0xff8a3320));
-    cg.addColour (left ? 0.8 : 0.78, Colour (0xff5e1e12));
+    // corpo: mais claro no terço de dentro (a luz vem de cima-esquerda e bate na face voltada para o painel)
+    juce::ColourGradient cg (Colour (0xff121316), r.getX(), 0.0f, Colour (0xff121316), r.getRight(), 0.0f, false);
+    cg.addColour (left ? 0.30 : 0.70, Colour (0xff42464e));
+    cg.addColour (0.50, Colour (0xff2b2e34));
+    cg.addColour (left ? 0.80 : 0.20, Colour (0xff1c1e22));
     g.setGradientFill (cg);
     g.fillPath (p);
     {
         juce::Graphics::ScopedSaveState save (g);
         g.reduceClipRegion (p);
-        juce::Random rnd (left ? 77 : 131);
-        for (int i = 0; i < 90; ++i)
+        // aletas: sulco escuro com a luz pegando na borda de baixo
+        for (float y = r.getY() + 22.0f; y < r.getBottom() - 22.0f; y += 11.0f)
         {
-            const float x0 = r.getX() + rnd.nextFloat() * r.getWidth();
-            const float amp = 0.4f + rnd.nextFloat() * 2.2f, freq = 0.006f + rnd.nextFloat() * 0.02f, ph = rnd.nextFloat() * 6.28f;
-            juce::Path vein;
-            for (float y = r.getY() - 4.0f; y <= r.getBottom() + 4.0f; y += 6.0f)
-            {
-                const float x = x0 + amp * std::sin (y * freq + ph) + 0.7f * std::sin (y * freq * 3.7f + ph * 2.0f);
-                if (y <= r.getY() - 4.0f) vein.startNewSubPath (x, y); else vein.lineTo (x, y);
-            }
-            const bool dark = rnd.nextFloat() < 0.7f;
-            g.setColour (dark ? Colour (0xff1a0603).withAlpha (0.10f + rnd.nextFloat() * 0.22f)
-                              : Colour (0xffc0603f).withAlpha (0.05f + rnd.nextFloat() * 0.10f));
-            g.strokePath (vein, juce::PathStrokeType (0.4f + rnd.nextFloat() * 1.3f));
+            g.setColour (real::black (0.55f));
+            g.fillRect (r.getX() + 8.0f, y, r.getWidth() - 16.0f, 3.2f);
+            g.setColour (real::white (0.09f));
+            g.fillRect (r.getX() + 8.0f, y + 3.2f, r.getWidth() - 16.0f, 0.8f);
         }
-        for (int i = 0; i < 360; ++i)
-        {
-            const float x = r.getX() + rnd.nextFloat() * r.getWidth(), y = r.getY() + rnd.nextFloat() * r.getHeight();
-            g.setColour (Colour (0xff140402).withAlpha (0.18f + rnd.nextFloat() * 0.25f));
-            g.fillRect (x, y, 0.7f, 1.5f + rnd.nextFloat() * 3.0f);
-        }
-        const float hx = r.getX() + r.getWidth() * (left ? 0.42f : 0.38f);
-        juce::ColourGradient hl (real::white (0.0f), hx - 7.0f, 0.0f, real::white (0.0f), hx + 7.0f, 0.0f, false);
-        hl.addColour (0.5, real::white (0.16f));
+        const float hx = r.getX() + r.getWidth() * (left ? 0.32f : 0.68f);
+        juce::ColourGradient hl (real::white (0.0f), hx - 6.0f, 0.0f, real::white (0.0f), hx + 6.0f, 0.0f, false);
+        hl.addColour (0.5, real::white (0.18f));
         g.setGradientFill (hl);
         g.fillRect (r);
-        g.setGradientFill (real::vertical (real::white (0.14f), r.getY(), real::white (0.0f), r.getY() + 40.0f));
+        g.setGradientFill (real::vertical (real::white (0.12f), r.getY(), real::white (0.0f), r.getY() + 30.0f));
         g.fillRect (r);
-        g.setGradientFill (real::vertical (real::black (0.0f), r.getBottom() - 50.0f, real::black (0.35f), r.getBottom()));
+        g.setGradientFill (real::vertical (real::black (0.0f), r.getBottom() - 40.0f, real::black (0.4f), r.getBottom()));
         g.fillRect (r);
     }
-    auto bevel = real::vertical (Colour (0xffd88a66).withAlpha (0.5f), r.getY(), real::black (0.7f), r.getBottom());
-    bevel.addColour (0.05, real::white (0.06f));
+    auto bevel = real::vertical (real::white (0.30f), r.getY(), real::black (0.7f), r.getBottom());
+    bevel.addColour (0.05, real::white (0.08f));
     g.setGradientFill (bevel);
-    g.drawRoundedRectangle (r.reduced (0.6f), 9.0f, 1.2f);
+    g.drawRoundedRectangle (r.reduced (0.6f), 6.0f, 1.2f);
 }
 
-// logo: frasco de vacina (tampa, gargalo e o líquido com a gota) + o nome
-void VacinaEditor::drawLogo (juce::Graphics& g, float x, float y)
+// faixa de alumínio anodizado preto (em cima e embaixo), escovada, com o filete iridescente na borda do alumínio
+static void anodizedBand (juce::Graphics& g, RF r, bool top)
 {
-    const float s = 1.6f;
-    const auto c = vac::silk;
-    juce::Path vial;
-    vial.addRoundedRectangle (x + 2.0f * s, y + 6.0f * s, 12.0f * s, 16.0f * s, 2.5f * s);
-    g.setColour (c);
-    g.strokePath (vial, juce::PathStrokeType (1.4f * s));
-    g.fillRoundedRectangle (x + 1.0f * s, y, 14.0f * s, 4.5f * s, 1.0f * s);
-    g.fillRect (x + 4.0f * s, y + 4.0f * s, 8.0f * s, 2.5f * s);
-    g.setColour (vac::red);
-    g.fillRoundedRectangle (x + 3.6f * s, y + 13.0f * s, 8.8f * s, 7.4f * s, 1.5f * s);
-    juce::Path drop;
-    drop.startNewSubPath (x + 8.0f * s, y + 8.0f * s);
-    drop.quadraticTo (x + 10.5f * s, y + 11.5f * s, x + 8.0f * s, y + 12.4f * s);
-    drop.quadraticTo (x + 5.5f * s, y + 11.5f * s, x + 8.0f * s, y + 8.0f * s);
-    g.fillPath (drop);
-
-    g.setFont (theme::sans (30.0f, true, 0.10f));
-    g.setColour (c);
-    g.drawText ("VACINA", RF (x + 34.0f, y - 2.0f, 180.0f, 32.0f), juce::Justification::centredLeft, false);
-    vac::silkText (g, "4-OPERATOR FM SYNTHESIZER", { x + 35.0f, y + 29.0f, 190.0f, 10.0f }, juce::Justification::centredLeft,
-                   7.5f, true, vac::silkDim, 0.18f);
+    g.setGradientFill (real::vertical (juce::Colour (0xff202227), r.getY(), juce::Colour (0xff111215), r.getBottom()));
+    g.fillRect (r);
+    juce::Random rnd (top ? 909 : 313);
+    for (int i = 0; i < 320; ++i)
+    {
+        const float y = r.getY() + rnd.nextFloat() * r.getHeight();
+        const float x = r.getX() + rnd.nextFloat() * r.getWidth() * 0.9f - 60.0f;
+        g.setColour (real::white (0.012f + rnd.nextFloat() * 0.03f));
+        g.fillRect (x, y, 80.0f + rnd.nextFloat() * 420.0f, 0.6f);
+    }
+    // filete iridescente (titânio aquecido) e a sombra que a faixa faz no alumínio
+    const RF edge = top ? RF (r.getX(), r.getBottom() - 2.5f, r.getWidth(), 2.5f) : RF (r.getX(), r.getY(), r.getWidth(), 2.5f);
+    g.setGradientFill (mrc::iridescent (edge, 0.9f));
+    g.fillRect (edge);
+    g.setColour (real::white (0.25f));
+    g.fillRect (edge.withHeight (0.7f));
+    if (top)
+    {
+        g.setGradientFill (real::vertical (real::black (0.35f), r.getBottom(), real::black (0.0f), r.getBottom() + 6.0f));
+        g.fillRect (r.getX(), r.getBottom(), r.getWidth(), 6.0f);
+    }
+    else
+    {
+        g.setGradientFill (real::vertical (real::black (0.0f), r.getY() - 4.0f, real::black (0.25f), r.getY()));
+        g.fillRect (r.getX(), r.getY() - 4.0f, r.getWidth(), 4.0f);
+    }
 }
 
-void VacinaEditor::drawCanvas (juce::Graphics& g)
+// logo: gota de mercúrio (metal líquido cromado) + o nome em cromo
+void MercurioEditor::drawLogo (juce::Graphics& g, float x, float y)
 {
-    const float W = (float) vac::baseW, H = (float) vac::baseH;
+    using juce::Colour;
+    const RF drop (x, y + 2.0f, 26.0f, 32.0f);
+    juce::Path p;
+    p.startNewSubPath (drop.getCentreX(), drop.getY());
+    p.cubicTo (drop.getCentreX() + 4.0f, drop.getY() + 9.0f, drop.getRight(), drop.getY() + 14.0f, drop.getRight(), drop.getY() + 20.0f);
+    p.cubicTo (drop.getRight(), drop.getBottom() - 2.0f, drop.getX() + 20.0f, drop.getBottom(), drop.getCentreX(), drop.getBottom());
+    p.cubicTo (drop.getX() + 6.0f, drop.getBottom(), drop.getX(), drop.getBottom() - 2.0f, drop.getX(), drop.getY() + 20.0f);
+    p.cubicTo (drop.getX(), drop.getY() + 14.0f, drop.getCentreX() - 4.0f, drop.getY() + 9.0f, drop.getCentreX(), drop.getY());
+    p.closeSubPath();
+    // cromo: céu claro em cima, horizonte escuro no meio, chão refletido embaixo
+    auto chrome = real::vertical (Colour (0xfff4f6f9), drop.getY() + 6.0f, Colour (0xffc9d0d8), drop.getBottom());
+    chrome.addColour (0.45, Colour (0xff7e8590));
+    chrome.addColour (0.58, Colour (0xff23262c));
+    chrome.addColour (0.80, Colour (0xff6c737d));
+    g.setGradientFill (chrome);
+    g.fillPath (p);
+    g.setGradientFill (mrc::iridescent (drop, 0.28f));
+    g.fillPath (p);
+    g.setColour (real::white (0.85f));
+    g.fillEllipse (drop.getX() + 6.5f, drop.getY() + 15.0f, 5.0f, 7.0f);
+    g.setColour (real::black (0.6f));
+    g.strokePath (p, juce::PathStrokeType (0.8f));
+
+    const RF name (x + 36.0f, y - 1.0f, 200.0f, 30.0f);
+    g.setFont (theme::sans (27.0f, true, 0.08f));
+    auto txt = real::vertical (Colour (0xffffffff), name.getY() + 6.0f, Colour (0xffaab2bc), name.getBottom() - 6.0f);
+    txt.addColour (0.55, Colour (0xffd5dbe2));
+    g.setGradientFill (txt);
+    g.drawText (u8 ("MERCÚRIO"), name, juce::Justification::centredLeft, false);
+    mrc::silkText (g, "4-OPERATOR FM SYNTHESIZER", { x + 37.0f, y + 29.0f, 200.0f, 10.0f }, juce::Justification::centredLeft,
+                   8.0f, true, mrc::silkDim, 0.18f);
+}
+
+void MercurioEditor::drawCanvas (juce::Graphics& g)
+{
+    const float W = (float) mrc::baseW, H = (float) mrc::baseH;
     g.fillAll (juce::Colour (0xff0d0d0e));
 
-    // chapa (imagem renderizada) entre as duas laterais de madeira
+    // chapa de alumínio escovado (imagem renderizada) entre as duas laterais de metal, com as faixas anodizadas
     const RF panel (30.0f, 6.0f, W - 60.0f, H - 12.0f);
     for (int i = 6; i >= 1; --i)
     {
@@ -922,44 +951,53 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
             g.drawImage (art->panel, panel, juce::RectanglePlacement::stretchToFit);
         }
         else
-            g.fillAll (juce::Colour (0xff2a2b2e));
+            g.fillAll (juce::Colour (0xffa9adb3));
+        anodizedBand (g, { panel.getX(), panel.getY(), panel.getWidth(), mrc::topBand - panel.getY() }, true);
+        anodizedBand (g, { panel.getX(), mrc::bottomBand, panel.getWidth(), panel.getBottom() - mrc::bottomBand }, false);
     }
-    auto bevel = real::vertical (real::white (0.22f), panel.getY(), real::black (0.7f), panel.getBottom());
-    bevel.addColour (0.03, real::white (0.05f));
+    auto bevel = real::vertical (real::white (0.30f), panel.getY(), real::black (0.7f), panel.getBottom());
+    bevel.addColour (0.03, real::white (0.06f));
     g.setGradientFill (bevel);
     g.drawRoundedRectangle (panel.reduced (0.5f), 4.0f, 1.4f);
-    woodCheek (g, { 2.0f, 2.0f, 40.0f, H - 4.0f }, true);
-    woodCheek (g, { W - 42.0f, 2.0f, 40.0f, H - 4.0f }, false);
+    metalCheek (g, { 2.0f, 2.0f, 40.0f, H - 4.0f }, true);
+    metalCheek (g, { W - 42.0f, 2.0f, 40.0f, H - 4.0f }, false);
 
-    drawLogo (g, 56.0f, 24.0f);
+    drawLogo (g, 56.0f, 22.0f);
 
     // ---- seções ----
-    vac::section (g, { 876.0f, 16.0f, 404.0f, 92.0f }, "VOICE");
-    vac::section (g, { 50.0f, 116.0f, 300.0f, 238.0f }, "FM");
+    mrc::section (g, { 876.0f, 16.0f, 404.0f, 88.0f }, "VOICE");
+    mrc::section (g, { 50.0f, 116.0f, 300.0f, 238.0f }, "FM");
     for (int k = 0; k < numOps; ++k)
-        vac::section (g, { (float) opX (k), 116.0f, 250.0f, 238.0f }, "OPERATOR " + juce::String (k + 1));
-    vac::section (g, { 50.0f, 364.0f, 700.0f, 240.0f }, "FILTERS");
-    vac::section (g, { 760.0f, 364.0f, 630.0f, 240.0f }, "ENVELOPES");
-    vac::section (g, { 50.0f, 614.0f, 250.0f, 224.0f }, "LFO 1");
-    vac::section (g, { 310.0f, 614.0f, 250.0f, 224.0f }, "LFO 2");
-    vac::section (g, { 570.0f, 614.0f, 190.0f, 224.0f }, "LFO 3");
-    vac::section (g, { 770.0f, 614.0f, 360.0f, 224.0f }, "MOD MATRIX");
-    vac::section (g, { 1140.0f, 614.0f, 250.0f, 224.0f }, "ARP");
-    vac::section (g, { 50.0f, 848.0f, 1100.0f, 96.0f }, "EFFECTS");
-
-    vac::subTitle (g, { 310.0f, 382.0f, 216.0f, 12.0f }, "FILTER 1");
-    vac::subTitle (g, { 534.0f, 382.0f, 210.0f, 12.0f }, "FILTER 2");
-    // (os modos dos filtros ficam sem a legenda MODE: a lista de 7 já encosta nos knobs de baixo)
-    vac::silkText (g, "ROUTING", { 68.0f, 530.0f, 84.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
-    vac::silkText (g, "KEY MODE", { 888.0f, 27.0f, 72.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
-    vac::silkText (g, "MODE", { 1226.0f, 726.0f, 70.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
-    for (int k = 0; k < 2; ++k)
     {
-        vac::subTitle (g, { 56.0f + (float) k * 260.0f, 750.0f, 236.0f, 12.0f }, "DESTINATIONS", vac::redInk);
+        const RF r ((float) opX (k), 116.0f, 250.0f, 238.0f);
+        mrc::section (g, r, "OPERATOR " + juce::String (k + 1));
+        // a cor do operador: plaqueta no canto (a mesma do ponteiro do LEVEL, da onda e da caixa no algoritmo)
+        const RF tag (r.getRight() - 40.0f, r.getY() + 2.0f, 30.0f, 8.0f);
+        g.setColour (real::black (0.45f));
+        g.fillRoundedRectangle (tag.expanded (1.0f).translated (0.0f, 0.6f), 2.5f);
+        g.setGradientFill (real::vertical (mrc::opColour[k].brighter (0.25f), tag.getY(), mrc::opColour[k].darker (0.25f), tag.getBottom()));
+        g.fillRoundedRectangle (tag, 2.0f);
     }
-    vac::subTitle (g, { 778.0f, 626.0f, 344.0f, 12.0f }, "SOURCE                      DESTINATION                  AMT");
+    mrc::section (g, { 50.0f, 364.0f, 700.0f, 240.0f }, "FILTERS");
+    mrc::section (g, { 760.0f, 364.0f, 630.0f, 240.0f }, "ENVELOPES");
+    mrc::section (g, { 50.0f, 614.0f, 250.0f, 222.0f }, "LFO 1");
+    mrc::section (g, { 310.0f, 614.0f, 250.0f, 222.0f }, "LFO 2");
+    mrc::section (g, { 570.0f, 614.0f, 190.0f, 222.0f }, "LFO 3");
+    mrc::section (g, { 770.0f, 614.0f, 360.0f, 222.0f }, "MOD MATRIX");
+    mrc::section (g, { 1140.0f, 614.0f, 250.0f, 222.0f }, "ARP");
+    mrc::section (g, { 50.0f, 848.0f, 1100.0f, 96.0f }, "EFFECTS");
+
+    mrc::subTitle (g, { 310.0f, 382.0f, 216.0f, 12.0f }, "FILTER 1");
+    mrc::subTitle (g, { 534.0f, 382.0f, 210.0f, 12.0f }, "FILTER 2");
+    // (os modos dos filtros ficam sem a legenda MODE: a lista de 7 já encosta nos knobs de baixo)
+    mrc::silkText (g, "ROUTING", { 68.0f, 530.0f, 84.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, mrc::dimOn (530.0f));
+    mrc::silkText (g, "KEY MODE", { 888.0f, 27.0f, 72.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, mrc::dimOn (27.0f));
+    mrc::silkText (g, "MODE", { 1226.0f, 726.0f, 70.0f, 11.0f }, juce::Justification::centredLeft, 9.0f, true, mrc::dimOn (726.0f));
+    for (int k = 0; k < 2; ++k)
+        mrc::subTitle (g, { 56.0f + (float) k * 260.0f, 750.0f, 236.0f, 12.0f }, "DESTINATIONS", mrc::hotOn (750.0f));
+    mrc::subTitle (g, { 778.0f, 626.0f, 344.0f, 12.0f }, "SOURCE                      DESTINATION                  AMT");
     for (int k = 0; k < numSlots; ++k)
-        vac::silkText (g, juce::String (k + 1), { 778.0f, 646.0f + (float) k * 31.0f, 16.0f, 29.0f }, juce::Justification::centred, 10.5f);
+        mrc::silkText (g, juce::String (k + 1), { 778.0f, 646.0f + (float) k * 31.0f, 16.0f, 29.0f }, juce::Justification::centred, 10.5f);
 
     // grupos dos efeitos
     const struct { float x, w; const char* n; } fx[] = { { 58.0f, 152.0f, "DISTORTION" }, { 218.0f, 120.0f, "ANALOG BOOST" },
@@ -967,28 +1005,44 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
                                                        { 602.0f, 180.0f, "DELAY" }, { 788.0f, 180.0f, "REVERB" },
                                                        { 974.0f, 180.0f, "EQ" } };
     for (auto& f : fx)
-        vac::subTitle (g, { f.x, 866.0f, f.w - 8.0f, 12.0f }, f.n);
+        mrc::subTitle (g, { f.x, 866.0f, f.w - 8.0f, 12.0f }, f.n);
 
     // nomes embaixo dos campos de visor
     for (auto& c : captions)
-        vac::silkText (g, c.second, c.first.translated (0.0f, 1.0f).withHeight (11.0f), juce::Justification::centredTop, 9.0f, true, vac::silkDim);
+        mrc::silkText (g, c.second, c.first.translated (0.0f, 1.0f).withHeight (11.0f), juce::Justification::centredTop, 9.0f, true,
+                       mrc::dimOn (c.first.getY()));
 
-    // placa do modelo (com dois parafusos) no canto de baixo
+    // placa do modelo: alumínio escovado gravado, com dois parafusos Allen, na faixa preta de baixo
     {
         const RF plate (1162.0f, 852.0f, 226.0f, 90.0f);
-        g.setGradientFill (real::vertical (juce::Colour (0xff3a3b3f), plate.getY(), juce::Colour (0xff1b1c1e), plate.getBottom()));
-        g.fillRoundedRectangle (plate, 4.0f);
-        g.setColour (real::white (0.10f));
-        g.drawRoundedRectangle (plate.reduced (0.5f), 4.0f, 0.8f);
         g.setColour (real::black (0.6f));
-        g.drawRoundedRectangle (plate.expanded (0.8f).translated (0.0f, 0.8f), 4.5f, 0.8f);
-        g.setFont (theme::sans (22.0f, true, 0.32f));
-        g.setColour (vac::silk);
-        g.drawText ("VACINA", plate.withTrimmedTop (16.0f).withHeight (28.0f), juce::Justification::centred, false);
-        g.setColour (vac::red);
-        g.fillRect (plate.getCentreX() - 40.0f, plate.getY() + 50.0f, 80.0f, 1.2f);
-        vac::silkText (g, u8 ("16 VOICES  ·  4 OPERATORS  ·  8 ALGORITHMS"), plate.withTrimmedTop (56.0f).withHeight (12.0f),
-                       juce::Justification::centred, 7.5f, true, vac::silkDim, 0.12f);
+        g.fillRoundedRectangle (plate.expanded (1.2f).translated (0.0f, 1.2f), 4.5f);
+        if (art->panel.isValid())
+        {
+            juce::Graphics::ScopedSaveState save (g);
+            juce::Path pp;
+            pp.addRoundedRectangle (plate, 4.0f);
+            g.reduceClipRegion (pp);
+            g.drawImage (art->panel, plate, juce::RectanglePlacement::fillDestination);
+        }
+        else
+            g.fillRoundedRectangle (plate, 4.0f);
+        g.setGradientFill (real::vertical (real::white (0.18f), plate.getY(), real::black (0.18f), plate.getBottom()));
+        g.fillRoundedRectangle (plate, 4.0f);
+        g.setColour (real::white (0.45f));
+        g.drawRoundedRectangle (plate.reduced (0.5f), 4.0f, 0.8f);
+        // gravado: o sulco escuro e a luz na borda de baixo
+        const auto nameArea = plate.withTrimmedTop (16.0f).withHeight (28.0f);
+        g.setFont (theme::sans (22.0f, true, 0.30f));
+        g.setColour (real::white (0.5f));
+        g.drawText (u8 ("MERCÚRIO"), nameArea.translated (0.0f, 0.9f), juce::Justification::centred, false);
+        g.setColour (mrc::print);
+        g.drawText (u8 ("MERCÚRIO"), nameArea, juce::Justification::centred, false);
+        const RF rule (plate.getCentreX() - 56.0f, plate.getY() + 50.0f, 112.0f, 2.0f);
+        g.setGradientFill (mrc::iridescent (rule, 1.0f));
+        g.fillRect (rule);
+        mrc::silkText (g, u8 ("16 VOICES  ·  4 OPERATORS  ·  8 ALGORITHMS"), plate.withTrimmedTop (57.0f).withHeight (12.0f),
+                       juce::Justification::centred, 7.5f, true, mrc::printDim, 0.12f);
         if (art->screw.isValid())
             for (float sx : { plate.getX() + 12.0f, plate.getRight() - 12.0f })
                 g.drawImage (art->screw, RF (sx - 8.0f, plate.getCentreY() - 8.0f, 16.0f, 16.0f), juce::RectanglePlacement::stretchToFit);
@@ -997,21 +1051,21 @@ void VacinaEditor::drawCanvas (juce::Graphics& g)
     // LEDs dos LFOs
     const float lv[3] = { proc.synth.lfo1Now.load(), proc.synth.lfo2Now.load(), proc.synth.lfo3Now.load() };
     for (int k = 0; k < 3; ++k)
-        real::led (g, lfoLedPos[k], 2.6f, vac::red, 0.5f + 0.5f * lv[k]);
+        real::led (g, lfoLedPos[k], 2.6f, mrc::hot, 0.5f + 0.5f * lv[k]);
 
     // estado: MIDI, SYNC e BPM
-    real::led (g, midiLedPos, 2.6f, vac::red, midiLit ? 1.0f : 0.0f);
-    vac::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
-    real::led (g, syncLedPos, 2.6f, vac::red, lastSync ? 1.0f : 0.0f);
-    vac::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
-    vac::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 168.0f, 82.0f, 78.0f, 12.0f },
-                   juce::Justification::centredLeft, 9.0f, true, vac::silkDim);
+    real::led (g, midiLedPos, 2.6f, mrc::hot, midiLit ? 1.0f : 0.0f);
+    mrc::silkText (g, "MIDI", { midiLedPos.x + 7.0f, midiLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
+    real::led (g, syncLedPos, 2.6f, mrc::hot, lastSync ? 1.0f : 0.0f);
+    mrc::silkText (g, "SYNC", { syncLedPos.x + 7.0f, syncLedPos.y - 6.0f, 44.0f, 12.0f }, juce::Justification::centredLeft, 9.0f);
+    mrc::silkText (g, juce::String (proc.shownBpm.load(), 1) + " BPM", { 168.0f, 82.0f, 78.0f, 12.0f },
+                   juce::Justification::centredLeft, 9.0f, true, mrc::silkDim);
 
     drawMeter (g);
 }
 
 // medidor de saída em LEDs (pico), dois canais
-void VacinaEditor::drawMeter (juce::Graphics& g)
+void MercurioEditor::drawMeter (juce::Graphics& g)
 {
     const int leds = 11;
     const float levels[2] = { levelL, levelR };
@@ -1022,11 +1076,11 @@ void VacinaEditor::drawMeter (juce::Graphics& g)
         for (int i = 0; i < leds; ++i)
         {
             const float f = (float) i / (float) (leds - 1);
-            const auto col = f > 0.85f ? vac::red : f > 0.6f ? theme::amber : theme::leaf;
+            const auto col = f > 0.85f ? mrc::hot : f > 0.6f ? theme::amber : theme::leaf;
             real::ledBar (g, { (float) meterArea.getX() + 8.0f + (float) c * 14.0f, (float) meterArea.getBottom() - 18.0f - (float) i * 6.2f, 9.0f, 3.6f },
                           col, levels[c] > 0.0005f && f <= v ? 1.0f : 0.0f, 0.4f);
         }
     }
-    vac::silkText (g, "L   R", { (float) meterArea.getX(), (float) meterArea.getBottom() - 12.0f, (float) meterArea.getWidth(), 10.0f },
+    mrc::silkText (g, "L   R", { (float) meterArea.getX(), (float) meterArea.getBottom() - 12.0f, (float) meterArea.getWidth(), 10.0f },
                    juce::Justification::centred, 7.0f);
 }

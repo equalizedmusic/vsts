@@ -1,10 +1,18 @@
-# VACINA — novidades
+# MERCÚRIO — novidades
 
-Pacote do instalador: `InsideStudioSP-Vacina`. A versão é o primeiro título `## x.y.z` deste arquivo:
-ela entra no plugin, no instalador e no release `vacina-vx.y.z` do GitHub (com o texto da seção como nota).
+Pacote do instalador: `InsideStudioSP-Mercurio`. A versão é o primeiro título `## x.y.z` deste arquivo:
+ela entra no plugin, no instalador e no release `mercurio-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
 ## 0.4.0 — 2026-10-24
+- O VACINA agora se chama **MERCÚRIO**. Instalador `InsideStudioSP-Mercurio`, bancos `.mrcbank`. Para o DAW é um plugin
+  novo: projetos salvos com o VACINA continuam pedindo o VACINA.
+- Visual novo, metálico:
+  - chapa de alumínio escovado entre laterais de alumínio fresado;
+  - faixas de alumínio anodizado preto em cima e embaixo, com filete iridescente;
+  - knobs de alumínio usinado com tampa preta e ponteiro aceso;
+  - LEDs magenta e visores OLED ciano;
+  - cada operador com a sua cor (ponteiro do LEVEL, onda no visor e caixa no desenho do algoritmo).
 - Motor novo: FM de 4 operadores, no lugar do virtual-analógico (que fica com a QUIMERA).
   - 8 algoritmos, com o desenho de quem modula quem na tela.
   - 8 formas de onda por operador (SINE, HALF SINE, ABS SINE, PULSE SINE, ALT SINE, CAMEL, SQUARE, SAW).

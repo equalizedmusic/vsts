@@ -6,7 +6,7 @@
     python3 instalador/versao.py Limao --titulo    -> LIMÃO 0.3.0
     python3 instalador/versao.py Limao --notas     -> o texto da seção da versão atual (vira a nota do release)
 
-<pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Instrumentos, Limao, Vacina).
+<pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Instrumentos, Limao, Mercurio).
 O CMake lê a mesma versão (instrumentos/CMakeLists.txt e CMakeLists.txt da raiz), então plugin, instalador e
 release andam juntos: para lançar, basta escrever a seção nova no topo do arquivo de novidades.
 """
@@ -23,7 +23,7 @@ PACOTES = {
     "Mix":          ("Mix.md",      "mix",      "Linha de Mix"),
     "Instrumentos": ("Quimera.md",  "quimera",  "QUIMERA"),
     "Limao":        ("Limao.md",    "limao",    "LIMÃO"),
-    "Vacina":       ("Vacina.md",   "vacina",   "VACINA"),
+    "Mercurio":     ("Mercurio.md", "mercurio", "MERCÚRIO"),
 }
 
 TITULO = re.compile(r"^## (\d+\.\d+\.\d+)\b")

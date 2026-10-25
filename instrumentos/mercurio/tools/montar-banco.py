@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Monta um banco avulso de presets do VACINA (.vcnbank) a partir dos presets salvos no plugin.
+"""Monta um banco avulso de presets do MERCURIO (.mrcbank) a partir dos presets salvos no plugin.
 
 Uso:
-    python montar-banco.py <pasta> "<nome do banco>" [saida.vcnbank] [--autor "InsideStudioSP"]
+    python montar-banco.py <pasta> "<nome do banco>" [saida.mrcbank] [--autor "InsideStudioSP"]
 
 <pasta> tem uma subpasta por categoria (BASS, LEAD, PAD, PLUCK, BELLS, KEYS, ARP, TEXTURA, FX)
-com os .xml salvos pelo "Salvar como novo preset…" do VACINA. Ficam em:
-    Windows: %APPDATA%\\InsideStudioSP\\VACINA\\Presets
-    Mac:     ~/Library/Audio/Presets/InsideStudioSP/VACINA
+com os .xml salvos pelo "Salvar como novo preset…" do MERCURIO. Ficam em:
+    Windows: %APPDATA%\\InsideStudioSP\\MERCURIO\\Presets
+    Mac:     ~/Library/Audio/Presets/InsideStudioSP/MERCURIO
 O nome do preset é o nome do arquivo. .xml solto na raiz da pasta vai para OUTROS.
-Quem baixa o banco abre o VACINA, menu de presets > "Importar banco de presets…" e escolhe o arquivo.
+Quem baixa o banco abre o MERCURIO, menu de presets > "Importar banco de presets…" e escolhe o arquivo.
 """
 import argparse
 import sys
@@ -26,8 +26,8 @@ def sem_acento(s):
 
 def ler_preset(arquivo: Path):
     raiz = ET.parse(arquivo).getroot()
-    if raiz.tag != "VACINA":
-        raise ValueError(f"{arquivo.name}: não é um preset do VACINA")
+    if raiz.tag != "MERCURIO":
+        raise ValueError(f"{arquivo.name}: não é um preset do MERCURIO")
     return [(p.get("id"), p.get("value")) for p in raiz.iter("PARAM") if p.get("id") and p.get("value") is not None]
 
 
@@ -43,9 +43,9 @@ def main():
     if not pasta.is_dir():
         sys.exit(f"pasta não encontrada: {pasta}")
     if a.nome.strip().upper() in ("FACTORY 1", "USER"):
-        sys.exit("esse nome é reservado do VACINA")
+        sys.exit("esse nome é reservado do MERCURIO")
 
-    banco = ET.Element("VACINABANK", {"format": "1", "name": a.nome.strip(), "author": a.autor})
+    banco = ET.Element("MERCURIOBANK", {"format": "1", "name": a.nome.strip(), "author": a.autor})
     total = 0
     # subpasta com o nome da categoria (com ou sem acento, maiúscula ou minúscula); o resto avisa e pula
     por_nome = {sem_acento(c): c for c in CATEGORIAS}
@@ -66,7 +66,7 @@ def main():
     if total == 0:
         sys.exit("nenhum preset .xml encontrado")
 
-    saida = Path(a.saida) if a.saida else Path(a.nome.strip() + ".vcnbank")
+    saida = Path(a.saida) if a.saida else Path(a.nome.strip() + ".mrcbank")
     ET.indent(banco)
     ET.ElementTree(banco).write(saida, encoding="UTF-8", xml_declaration=True)
     print(f"{saida}: {total} presets")
