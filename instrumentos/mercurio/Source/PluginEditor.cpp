@@ -948,6 +948,7 @@ void MercurioEditor::drawCanvas (juce::Graphics& g)
         if (art->panel.isValid())
         {
             g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+            g.setOpacity (1.0f);   // a imagem herda a transparência da última cor: desenhar sempre opaca
             g.drawImage (art->panel, panel, juce::RectanglePlacement::stretchToFit);
         }
         else
@@ -1023,6 +1024,7 @@ void MercurioEditor::drawCanvas (juce::Graphics& g)
             juce::Path pp;
             pp.addRoundedRectangle (plate, 4.0f);
             g.reduceClipRegion (pp);
+            g.setOpacity (1.0f);   // a imagem herda a transparência da última cor: desenhar sempre opaca
             g.drawImage (art->panel, plate, juce::RectanglePlacement::fillDestination);
         }
         else
@@ -1043,6 +1045,7 @@ void MercurioEditor::drawCanvas (juce::Graphics& g)
         g.fillRect (rule);
         mrc::silkText (g, u8 ("16 VOICES  ·  4 OPERATORS  ·  8 ALGORITHMS"), plate.withTrimmedTop (57.0f).withHeight (12.0f),
                        juce::Justification::centred, 7.5f, true, mrc::printDim, 0.12f);
+        g.setOpacity (1.0f);   // a imagem herda a transparência da última cor: desenhar sempre opaca
         if (art->screw.isValid())
             for (float sx : { plate.getX() + 12.0f, plate.getRight() - 12.0f })
                 g.drawImage (art->screw, RF (sx - 8.0f, plate.getCentreY() - 8.0f, 16.0f, 16.0f), juce::RectanglePlacement::stretchToFit);

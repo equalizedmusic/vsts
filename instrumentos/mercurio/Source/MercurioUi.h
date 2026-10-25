@@ -207,6 +207,7 @@ inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float p
     {
         const float s = d / 0.72f;
         g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+        g.setOpacity (1.0f);   // a imagem herda a transparência da última cor: desenhar sempre opaca
         g.drawImage (img, RF (cx - s * 0.5f, cy - s * 0.5f, s, s), juce::RectanglePlacement::stretchToFit);
     }
 
