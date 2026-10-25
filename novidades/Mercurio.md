@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Mercurio`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `mercurio-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.0 — 2026-10-25
+- Visual de hardware: knobs de alumínio usinado, teclas que acendem em magenta, LEDs em domo e laterais de
+  nogueira.
+- Desinstalador: no Windows, atalho "Desinstalar" no menu Iniciar (além de Aplicativos instalados); no Mac,
+  "Desinstalar InsideStudioSP Mercurio.command" dentro do .dmg. Os presets do usuário ficam.
+- O instalador apaga o VACINA.vst3 do nome antigo, e o desinstalador também.
+
 ## 0.4.0 — 2026-10-24
 - O VACINA agora se chama **MERCÚRIO**. Instalador `InsideStudioSP-Mercurio`, bancos `.mrcbank`. Para o DAW é um plugin
   novo: projetos salvos com o VACINA continuam pedindo o VACINA.

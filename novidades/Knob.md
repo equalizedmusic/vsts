@@ -5,6 +5,11 @@ MASTIGA). A versão é o primeiro título `## x.y.z` deste arquivo: ela entra no
 `knob-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-10-25
+- A janela mostra só o pedal: saiu o cinza do estúdio em volta da caixa.
+- Desinstalador: no Windows, atalho "Desinstalar" no menu Iniciar (além de Aplicativos instalados); no Mac,
+  "Desinstalar InsideStudioSP Knob.command" dentro do .dmg. Os presets do usuário ficam.
+
 ## 0.1.0 — 2026-10-25
 - Primeira versão da SÉRIE KNOB, com 10 pedais de um knob grandão:
   - FOLE (sidechain), PICADOR (trance gate), MARÉ (filtro), VAIVÉM (auto-pan), REPIQUE (stutter), ECO (delay),

@@ -4,6 +4,11 @@ Pacote do instalador: `InsideStudioSP-Instrumentos`. A versão é o primeiro tí
 ela entra no plugin, no instalador e no release `quimera-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.0 — 2026-10-25
+- Visual de hardware: knobs Moog renderizados, LEDs, lâmpadas piloto e teclas de verdade.
+- Desinstalador: no Windows, atalho "Desinstalar" no menu Iniciar (além de Aplicativos instalados); no Mac,
+  "Desinstalar InsideStudioSP Instrumentos.command" dentro do .dmg. Os presets do usuário ficam.
+
 ## 0.3.0 — 2026-10-24
 - Arpejador: aba ARP nova, com 9 modos (Up, Down, Up/Down, Down/Up, Random, As Played, Chord, Converge e Diverge),
   RATE no tempo do projeto, OCTAVES (1–4), GATE (100% emenda as notas; com o VOICE em Legato vira slide), SWING,
