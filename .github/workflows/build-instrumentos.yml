@@ -1,9 +1,10 @@
 name: build-instrumentos
 
 # Instrumentos (VSTi, pasta instrumentos/): build separado do pack de efeitos, só roda quando instrumentos/ muda.
-# Resultado no branch "builds-instrumentos" e no release "latest-instrumentos" (sempre o último build).
+# Logs no branch "builds-instrumentos"; instaladores do run nos artefatos (aba Actions).
 # Versões: cada pacote tem novidades/<arquivo>.md; o primeiro "## x.y.z" é a versão (plugin + instalador). Quando
-# ela é nova e os dois sistemas passaram, sai também o release fixo "<pacote>-vx.y.z" com a seção como nota.
+# ela é nova e os dois sistemas passaram, sai o release fixo "<pacote>-vx.y.z" com a seção como nota, e o release
+# da versão anterior daquele pacote é apagado (em Releases fica só a última de cada um).
 on:
   push:
     branches: [main]
@@ -155,16 +156,8 @@ jobs:
           git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "build ${GITHUB_SHA::7}"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds-instrumentos
 
-      - name: Release "latest-instrumentos"
-        if: hashFiles('pacotes/*') != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cd pacotes
-          gh release delete latest-instrumentos --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
-          gh release create latest-instrumentos * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Último build dos instrumentos" --notes-file ../report/status.txt --prerelease
-
+      # sem release "latest-instrumentos": em Releases fica só a última versão de cada pacote. O instalador de um
+      # build sem versão nova fica nos artefatos do run (report-mac / report-win), na aba Actions.
       - name: Releases das versões (quimera-v…, limao-v…, mercurio-v…)
         if: hashFiles('pacotes/*') != ''
         env:

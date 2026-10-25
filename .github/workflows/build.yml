@@ -142,16 +142,8 @@ jobs:
           git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "build ${GITHUB_SHA::7}"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
 
-      - name: Release "latest-build"
-        if: hashFiles('pacotes/*') != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cd pacotes
-          gh release delete latest-build --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
-          gh release create latest-build * -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Último build" --notes-file ../report/status.txt --prerelease
-
+      # sem release "latest-build": em Releases fica só a última versão de cada pacote. O instalador de um build
+      # sem versão nova fica nos artefatos do run (report-mac / report-win), na aba Actions.
       - name: Releases das versões (criativo-v…, mix-v…, knob-v…)
         if: hashFiles('pacotes/*') != ''
         env:

@@ -55,8 +55,8 @@ Dez pedais de um knob grandão, todos no tempo do DAW, com TRIGGER por MIDI ou p
 
 Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
-Os instaladores saem no release `latest-instrumentos` (os logs, no branch `builds-instrumentos`): `InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg`
-com a QUIMERA e, separados, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
+Cada instrumento tem o seu instalador e o seu release (os logs ficam no branch `builds-instrumentos`): `InsideStudioSP-Quimera-win.exe` / `-mac.dmg`
+com a QUIMERA (no build ele ainda se chama pacote `Instrumentos`), `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
 
 | Instrumento | O que é |
 |---|---|
@@ -82,9 +82,10 @@ Não precisa de Mac nem de Visual Studio: todo push na `main` dispara o GitHub A
 (`.github/workflows/build.yml`), que compila no Mac e no Windows, roda o
 [pluginval](https://github.com/Tracktion/pluginval) e publica:
 
-- **Release `latest-build`**: um instalador por linha e por sistema: `InsideStudioSP-Criativo-win.exe` /
-  `-mac.dmg`, `InsideStudioSP-Mix-win.exe` / `-mac.dmg` e `InsideStudioSP-Knob-win.exe` / `-mac.dmg` (montados por `instalador/montar.py`; nomes e
-  descrições da lista em `instalador/catalogo.json`);
+- **Releases**: só a **última versão de cada pacote** (ver *Versões* abaixo), com um instalador por sistema:
+  `InsideStudioSP-Criativo-win.exe` / `-mac.dmg`, `InsideStudioSP-Mix-…` e `InsideStudioSP-Knob-…` (montados por
+  `instalador/montar.py`; nomes e descrições da lista em `instalador/catalogo.json`);
+- **artefatos do run** (aba Actions, `report-mac` / `report-win`): os instaladores de qualquer build, mesmo sem versão nova;
 - **branch `builds`**: os logs de compilação e do pluginval e o `status.txt`.
 
 Push só em `.md` não dispara build. Um push novo cancela o build que estiver rodando.
@@ -98,7 +99,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Criativo` | `novidades/Criativo.md` | `criativo-vX.Y.Z` |
 | `InsideStudioSP-Mix` | `novidades/Mix.md` | `mix-vX.Y.Z` |
 | `InsideStudioSP-Knob` (SÉRIE KNOB) | `novidades/Knob.md` | `knob-vX.Y.Z` |
-| `InsideStudioSP-Instrumentos` (QUIMERA) | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
+| `InsideStudioSP-Quimera` (pacote `Instrumentos` no build) | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
 | `InsideStudioSP-Limao` | `novidades/Limao.md` | `limao-vX.Y.Z` |
 | `InsideStudioSP-Mercurio` | `novidades/Mercurio.md` | `mercurio-vX.Y.Z` |
 
@@ -113,8 +114,9 @@ linguagem de usuário. O build publica o release `…-vX.Y.Z` só quando:
 - saíram os instaladores dos dois sistemas;
 - o pluginval não falhou.
 
-Os releases `latest-build` e `latest-instrumentos` continuam sendo sempre o último build.
-Sem subir a versão, o build só atualiza o `latest-*`. Como push só em `.md` não dispara build dos efeitos, a versão
+Criado o release novo, o da versão anterior daquele pacote (release e tag) é apagado: em Releases fica só a última
+de cada um. Sem subir a versão, o build não mexe nos releases; o instalador fica nos artefatos do run.
+Como push só em `.md` não dispara build dos efeitos, a versão
 nova da linha criativa ou de mix vai junto com a mudança de código.
 
 Número: `X.Y.Z`. Z = correção, Y = recurso novo, X = mudança grande (preset ou projeto antigo que deixa de abrir igual).

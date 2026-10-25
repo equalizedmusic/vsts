@@ -4,6 +4,7 @@
 #   - a versão é nova (a tag ainda não existe: versão já lançada não é sobrescrita — para lançar, suba a versão);
 #   - os dois instaladores do pacote existem (Mac e Windows);
 #   - o pluginval não falhou em nenhum dos dois sistemas.
+# Fica só a última versão de cada pacote: criado o release novo, os <prefixo>-v… anteriores (release e tag) são apagados.
 # Uso: release-versoes.sh <pasta dos instaladores> <pasta do relatório> <checkout do repo> <Pacote>...
 set -euo pipefail
 pacotes=$1; report=$2; src=$3; shift 3
@@ -26,13 +27,25 @@ for pac in "$@"; do
     echo "$tag já existe: mantido como está"
     continue
   fi
+  # nome publicado (o pacote Instrumentos sai como Quimera)
+  arq=$(python3 "$src/instalador/versao.py" "$pac" --arquivo)
+  pub=$(mktemp -d)
+  cp "$mac" "$pub/InsideStudioSP-$arq-mac.dmg"
+  cp "$win" "$pub/InsideStudioSP-$arq-win.exe"
   notas=$(mktemp)
   {
     python3 "$src/instalador/versao.py" "$pac" --notas
     echo
-    echo "Instaladores: \`$(basename "$win")\` (Windows) e \`$(basename "$mac")\` (Mac), aqui embaixo em Assets."
+    echo "Instaladores: \`InsideStudioSP-$arq-win.exe\` (Windows) e \`InsideStudioSP-$arq-mac.dmg\` (Mac), aqui embaixo em Assets."
   } > "$notas"
-  gh release create "$tag" "$mac" "$win" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-    --title "$titulo" --notes-file "$notas"
+  gh release create "$tag" "$pub/InsideStudioSP-$arq-mac.dmg" "$pub/InsideStudioSP-$arq-win.exe" \
+    -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$titulo" --notes-file "$notas"
   echo "release $tag criado"
+  prefixo=${tag%-v*}
+  gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' \
+    | grep -E "^${prefixo}-v[0-9]" | grep -vxF "$tag" \
+    | while read -r antiga; do
+        gh release delete "$antiga" --yes --cleanup-tag -R "$GITHUB_REPOSITORY"
+        echo "versão antiga $antiga apagada"
+      done || true
 done

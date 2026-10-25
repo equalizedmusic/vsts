@@ -5,6 +5,7 @@
     python3 instalador/versao.py Limao --tag       -> limao-v0.3.0
     python3 instalador/versao.py Limao --titulo    -> LIMÃO 0.3.0
     python3 instalador/versao.py Limao --notas     -> o texto da seção da versão atual (vira a nota do release)
+    python3 instalador/versao.py Instrumentos --arquivo -> Quimera (nome do instalador publicado no release)
 
 <pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Instrumentos, Limao, Mercurio).
 O CMake lê a mesma versão (instrumentos/CMakeLists.txt e CMakeLists.txt da raiz), então plugin, instalador e
@@ -26,6 +27,10 @@ PACOTES = {
     "Limao":        ("Limao.md",    "limao",    "LIMÃO"),
     "Mercurio":     ("Mercurio.md", "mercurio", "MERCÚRIO"),
 }
+
+# o pacote "Instrumentos" só tem a QUIMERA: no release o instalador sai como InsideStudioSP-Quimera-… (o montar.py
+# continua com "Instrumentos" para não mudar o AppId e o desinstalador de quem já instalou)
+ARQUIVO = {"Instrumentos": "Quimera"}
 
 TITULO = re.compile(r"^## (\d+\.\d+\.\d+)\b")
 
@@ -57,7 +62,11 @@ def main():
     g.add_argument("--tag", action="store_true")
     g.add_argument("--titulo", action="store_true")
     g.add_argument("--notas", action="store_true")
+    g.add_argument("--arquivo", action="store_true")
     a = ap.parse_args()
+    if a.arquivo:
+        print(ARQUIVO.get(a.pacote, a.pacote))
+        return
     versao, corpo = secoes(a.pacote)[0]
     _, prefixo, nome = PACOTES[a.pacote]
     if a.tag:
