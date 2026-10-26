@@ -556,10 +556,10 @@ inline void rocker (juce::Graphics& g, RF r, bool on)
 }
 } // namespace real
 
-class GraoLookAndFeel : public juce::LookAndFeel_V4
+class BrandLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    GraoLookAndFeel()
+    BrandLookAndFeel()
     {
         setColour (juce::PopupMenu::backgroundColourId, theme::panel2);
         setColour (juce::PopupMenu::textColourId, theme::txt);

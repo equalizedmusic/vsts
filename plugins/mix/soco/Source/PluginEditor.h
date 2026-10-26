@@ -84,9 +84,9 @@ private:
     int   openTicks = 0;
 
     SocoProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1064×580 (rack: 1000 de frente + as orelhas), e é ampliado junto
     WaveStrip strip;
     HitView hit;
     DetectorView detView;
@@ -98,7 +98,7 @@ private:
     BypassButton bypass;
     IconButton prevBtn { IconButton::Icon::prev }, nextBtn { IconButton::Icon::next }, saveBtn { IconButton::Icon::save };
     PresetName presetName;
-    LedMeter meterIn { "IN" }, meterOut { "OUT" };
+    VuMeter meterIn { "IN" }, meterOut { "OUT" };
     std::unique_ptr<APVTS::ButtonAttachment> deltaAtt, clipAtt, bypassAtt;
     float levelIn = 0.0f, levelOut = 0.0f;
     double lastTick = 0.0;

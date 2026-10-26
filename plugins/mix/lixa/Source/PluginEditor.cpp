@@ -7,6 +7,10 @@ namespace
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
+// rack de 19": a frente tem o layout de 1000 × 580 e as orelhas ficam dos lados
+constexpr int ear = 32, rackW = ui::baseW + 2 * ear;
+const juce::Colour tinta (0xff5a3f30);   // cor da frente do LIXA
+
 constexpr float specFloor = -96.0f;   // dB no pé do espectro
 constexpr float minFreq = 20.0f, maxFreq = 20000.0f;
 
@@ -32,7 +36,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    real::card (g, r);
+    painel::secao (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -261,7 +265,7 @@ void SpectrumView::paint (juce::Graphics& g)
     const auto  pa = plotArea();
     const double fs = juce::jmax (8000.0, proc.rate.load());
 
-    real::card (g, r.reduced (1.0f));
+    painel::secao (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "SPECTRUM ", u8 ("· ARRASTE AS BORDAS DA FAIXA DE DETECÇÃO"));
     {
         float x = W - 10.0f;
@@ -509,7 +513,7 @@ LixaEditor::LixaEditor (LixaProcessor& p)
     setLookAndFeel (&lnf);
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
-    canvas.setBounds (0, 0, ui::baseW, ui::baseH);
+    canvas.setBounds (0, 0, rackW, ui::baseH);
     addAndMakeVisible (canvas);
 
     for (auto* c : std::initializer_list<juce::Component*> {
@@ -534,9 +538,9 @@ LixaEditor::LixaEditor (LixaProcessor& p)
     // e o resized() gravaria 75% por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
-                     juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
-    getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
+    setResizeLimits (juce::roundToInt (rackW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
+                     juce::roundToInt (rackW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) rackW / (double) ui::baseH);
     setScale (openScale);
     startTimerHz (30);
 }
@@ -629,7 +633,7 @@ void LixaEditor::timerCallback()
     // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
     // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
     if (openTicks < openSettle && ++openTicks == openSettle
-        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        && std::abs ((float) getWidth() / (float) rackW - openScale) > 0.005f)
         setScale (openScale);
 
     const double now = juce::Time::getMillisecondCounterHiRes();
@@ -658,12 +662,12 @@ void LixaEditor::timerCallback()
 void LixaEditor::setScale (float scale)
 {
     scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
-    setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
+    setSize (juce::roundToInt ((float) rackW * scale), juce::roundToInt ((float) ui::baseH * scale));
 }
 
 void LixaEditor::resized()
 {
-    const float scale = (float) getWidth() / (float) ui::baseW;
+    const float scale = (float) getWidth() / (float) rackW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
         proc.uiScale = scale;
@@ -676,7 +680,8 @@ void LixaEditor::paint (juce::Graphics& g)
 
 void LixaEditor::drawCanvas (juce::Graphics& g)
 {
-    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
+    painel::rack (g, (float) rackW, (float) ui::baseH, (float) ear, tinta);
+    g.addTransform (juce::AffineTransform::translation ((float) ear, 0.0f));   // daqui em diante, o layout da frente
 
     // ---- logo: folha de lixa (grãos) ----
     {
@@ -779,7 +784,10 @@ void LixaEditor::layoutCanvas()
 
     deltaKey.setBounds (830, 294, 148, 40);
     output.setBounds   (830, 344, 148, 92);
-    meterIn.setBounds  (834, 446, 24, 112);
-    meterOut.setBounds (862, 446, 24, 112);
+    meterIn.setBounds  (830, 446, 60, 55);
+    meterOut.setBounds (830, 503, 60, 55);
     readout.setBounds  (894, 450, 88, 100);
+
+    for (auto* c : canvas.getChildren())   // a frente começa depois da orelha esquerda
+        c->setTopLeftPosition (c->getX() + ear, c->getY());
 }

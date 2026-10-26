@@ -119,9 +119,9 @@ private:
     int   openTicks = 0;
 
     MonitorProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1064×580 (rack: 1000 de frente + as orelhas), e é ampliado junto
     LoudnessView loud;
     HistoryView history;
     SpectrumView spectrum;

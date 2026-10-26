@@ -8,6 +8,11 @@ namespace
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
+// pedal: chapa esmaltada de 1000 × 580 (o layout) na moldura de madeira (laterais de 24, travessas de 20)
+constexpr int lado = 24, topo = 20, pedalW = ui::baseW + 2 * lado, pedalH = ui::baseH + 2 * topo;
+const juce::Colour esmalte (0xff1f5a6b);      // cor da chapa do ESPIRAL
+const juce::Colour serigrafia (0xffede3cc);   // tinta creme impressa na chapa
+
 // função, e não array global: cores copiadas do tema na carga do plugin podem ficar zeradas
 // (ordem de inicialização entre arquivos)
 juce::Colour voiceColour (int v)
@@ -43,7 +48,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    real::card (g, r);
+    painel::chapaPreta (g, r, false);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -84,7 +89,7 @@ void ResponseStrip::paint (juce::Graphics& g)
     auto fx = [=] (float hz) { return px0 + std::log (hz / 20.0f) / std::log (1000.0f) * (px1 - px0); };
     auto dy = [=] (float db) { return top + (dbTop - juce::jlimit (dbBot, dbTop, db)) / (dbTop - dbBot) * (bot - top); };
 
-    real::card (g, r.reduced (1.0f));
+    painel::chapaPreta (g, r.reduced (1.0f), false);
 
     // grade
     for (float hz : { 50.0f, 100.0f, 200.0f, 500.0f, 1000.0f, 2000.0f, 5000.0f, 10000.0f })
@@ -316,9 +321,11 @@ EspiralEditor::EspiralEditor (EspiralProcessor& p)
       twiceKey   ("DOBRAR", theme::coral)
 {
     setLookAndFeel (&lnf);
+    for (auto* k : { &rangeMacro, &resMacro, &cycle, &direction, &centre, &stereo, &mode, &stages, &drive, &tone, &output })
+        k->setPedal (true);   // knobs do pedal: os quadros renderizados da SÉRIE KNOB
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
-    canvas.setBounds (0, 0, ui::baseW, ui::baseH);
+    canvas.setBounds (0, 0, pedalW, pedalH);
     addAndMakeVisible (canvas);
 
     for (auto* c : std::initializer_list<juce::Component*> {
@@ -342,9 +349,9 @@ EspiralEditor::EspiralEditor (EspiralProcessor& p)
     // e o resized() gravaria 75% por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
-                     juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
-    getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
+    setResizeLimits (juce::roundToInt (pedalW * ui::minScale), juce::roundToInt (pedalH * ui::minScale),
+                     juce::roundToInt (pedalW * ui::maxScale), juce::roundToInt (pedalH * ui::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) pedalW / (double) pedalH);
     setScale (openScale);
     startTimerHz (30);
 }
@@ -437,7 +444,7 @@ void EspiralEditor::timerCallback()
     // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
     // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
     if (openTicks < openSettle && ++openTicks == openSettle
-        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        && std::abs ((float) getWidth() / (float) pedalW - openScale) > 0.005f)
         setScale (openScale);
 
     strip.repaint();
@@ -458,19 +465,19 @@ void EspiralEditor::timerCallback()
         lastBpm = bpm;
         lastSync = syn;
         lastWaiting = wt;
-        canvas.repaint (380, 18, 236, 32);
+        canvas.repaint (380 + lado, 18 + topo, 236, 32);
     }
 }
 
 void EspiralEditor::setScale (float scale)
 {
     scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
-    setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
+    setSize (juce::roundToInt ((float) pedalW * scale), juce::roundToInt ((float) pedalH * scale));
 }
 
 void EspiralEditor::resized()
 {
-    const float scale = (float) getWidth() / (float) ui::baseW;
+    const float scale = (float) getWidth() / (float) pedalW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
         proc.uiScale = scale;
@@ -483,7 +490,8 @@ void EspiralEditor::paint (juce::Graphics& g)
 
 void EspiralEditor::drawCanvas (juce::Graphics& g)
 {
-    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
+    painel::pedal (g, (float) pedalW, (float) pedalH, (float) lado, (float) topo, esmalte);
+    g.addTransform (juce::AffineTransform::translation ((float) lado, (float) topo));   // daqui em diante, o layout da chapa
 
     // ---- logo: espiral saindo do centro ----
     g.setColour (theme::amber);
@@ -510,10 +518,10 @@ void EspiralEditor::drawCanvas (juce::Graphics& g)
     g.setColour (theme::cream);
     g.setFont (nameFont);
     g.drawText (name, juce::Rectangle<float> (56.0f, 12.0f, 200.0f, 44.0f), juce::Justification::centredLeft);
-    g.setColour (theme::line);
+    g.setColour (serigrafia.withAlpha (0.35f));
     g.fillRect (tagX - 10.0f, 24.0f, 1.0f, 22.0f);
     const auto tagFont = theme::sans (9.5f, false, 0.2f);
-    g.setColour (theme::dim);
+    g.setColour (serigrafia.withAlpha (0.7f));
     g.setFont (tagFont);
     g.drawText ("INFINITE",                juce::Rectangle<float> (tagX, 22.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
     g.drawText (u8 ("PHASER · FLANGER"),   juce::Rectangle<float> (tagX, 35.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
@@ -521,9 +529,9 @@ void EspiralEditor::drawCanvas (juce::Graphics& g)
     // ---- marca ----
     {
         const float brandX = tagX + juce::jmax (textWidth (tagFont, "INFINITE"), textWidth (tagFont, u8 ("PHASER · FLANGER"))) + 20.0f;
-        g.setColour (theme::line);
+        g.setColour (serigrafia.withAlpha (0.35f));
         g.fillRect (brandX - 10.0f, 24.0f, 1.0f, 22.0f);
-        g.setColour (theme::dim);
+        g.setColour (serigrafia.withAlpha (0.7f));
         g.setFont (tagFont);
         g.drawText ("BY", juce::Rectangle<float> (brandX, 22.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
         g.setColour (theme::amber);
@@ -536,9 +544,9 @@ void EspiralEditor::drawCanvas (juce::Graphics& g)
         const bool syn = proc.synced.load();
         juce::AttributedString s;
         s.append (juce::String (proc.shownBpm.load(), 1), theme::mono (11.5f), theme::cream);
-        s.append (u8 (" BPM · "), theme::mono (11.5f), theme::dim);
+        s.append (u8 (" BPM · "), theme::mono (11.5f), serigrafia.withAlpha (0.7f));
         s.append (syn ? "SYNC" : proc.waiting.load() ? "AGUARDANDO PLAY" : "LIVRE", theme::mono (11.5f),
-                  syn ? theme::cream : theme::dim);
+                  syn ? theme::cream : serigrafia.withAlpha (0.7f));
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
         const float w = tl.getWidth(), right = 604.0f;
@@ -594,4 +602,7 @@ void EspiralEditor::layoutCanvas()
     output.setBounds (884, 296, 94, 92);
     meterIn.setBounds  (904, 446, 24, 112);
     meterOut.setBounds (932, 446, 24, 112);
+
+    for (auto* c : canvas.getChildren())   // a chapa começa dentro da moldura
+        c->setTopLeftPosition (c->getX() + lado, c->getY() + topo);
 }

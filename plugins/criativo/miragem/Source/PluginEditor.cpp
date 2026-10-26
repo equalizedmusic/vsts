@@ -7,6 +7,11 @@ namespace
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
+// pedal: chapa esmaltada de 1000 × 580 (o layout) na moldura de madeira (laterais de 24, travessas de 20)
+constexpr int lado = 24, topo = 20, pedalW = ui::baseW + 2 * lado, pedalH = ui::baseH + 2 * topo;
+const juce::Colour esmalte (0xff2a3f7a);      // cor da chapa do MIRAGEM
+const juce::Colour serigrafia (0xffede3cc);   // tinta creme impressa na chapa
+
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
     juce::AttributedString s;
@@ -29,7 +34,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    real::card (g, r);
+    painel::chapaPreta (g, r, false);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -148,7 +153,7 @@ void MirageView::paint (juce::Graphics& g)
     const float mot = param (proc, id::motion) * 0.01f;
     const auto  hill = frz ? theme::ice : theme::amber;
 
-    real::card (g, r.reduced (1.0f));
+    painel::chapaPreta (g, r.reduced (1.0f), false);
     drawTitle (g, 12.0f, 7.0f, "MIRAGEM ", u8 ("· DECAY ") + secText (param (proc, id::decay))
                                             + (frz ? juce::String (u8 (" · CONGELADA")) : juce::String())
                                             + (rev ? juce::String (u8 (" · REVERSO")) : juce::String()));
@@ -377,9 +382,11 @@ MiragemEditor::MiragemEditor (MiragemProcessor& p)
       reverseKey  ("REVERSO", theme::violet)
 {
     setLookAndFeel (&lnf);
+    for (auto* k : { &decayMacro, &size, &predelay, &dark, &lowCut, &shimMacro, &interval, &motion, &duck, &revLen, &output })
+        k->setPedal (true);   // knobs do pedal: os quadros renderizados da SÉRIE KNOB
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
-    canvas.setBounds (0, 0, ui::baseW, ui::baseH);
+    canvas.setBounds (0, 0, pedalW, pedalH);
     addAndMakeVisible (canvas);
 
     for (auto* c : std::initializer_list<juce::Component*> {
@@ -403,9 +410,9 @@ MiragemEditor::MiragemEditor (MiragemProcessor& p)
     // e o resized() gravaria 75% por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
-                     juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
-    getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
+    setResizeLimits (juce::roundToInt (pedalW * ui::minScale), juce::roundToInt (pedalH * ui::minScale),
+                     juce::roundToInt (pedalW * ui::maxScale), juce::roundToInt (pedalH * ui::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) pedalW / (double) pedalH);
     setScale (openScale);
     startTimerHz (30);
 }
@@ -498,7 +505,7 @@ void MiragemEditor::timerCallback()
     // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
     // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
     if (openTicks < openSettle && ++openTicks == openSettle
-        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        && std::abs ((float) getWidth() / (float) pedalW - openScale) > 0.005f)
         setScale (openScale);
 
     decayView.levelShown = juce::jmax (proc.engine.levelNow.exchange (0.0f), decayView.levelShown * 0.9f);
@@ -521,19 +528,19 @@ void MiragemEditor::timerCallback()
         lastBpm = bpm;
         lastSync = syn;
         lastWaiting = wt;
-        canvas.repaint (370, 10, 246, 48);   // folga para o brilho do LED de sync
+        canvas.repaint (370 + lado, 10 + topo, 246, 48);   // folga para o brilho do LED de sync
     }
 }
 
 void MiragemEditor::setScale (float scale)
 {
     scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
-    setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
+    setSize (juce::roundToInt ((float) pedalW * scale), juce::roundToInt ((float) pedalH * scale));
 }
 
 void MiragemEditor::resized()
 {
-    const float scale = (float) getWidth() / (float) ui::baseW;
+    const float scale = (float) getWidth() / (float) pedalW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
         proc.uiScale = scale;
@@ -546,7 +553,8 @@ void MiragemEditor::paint (juce::Graphics& g)
 
 void MiragemEditor::drawCanvas (juce::Graphics& g)
 {
-    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
+    painel::pedal (g, (float) pedalW, (float) pedalH, (float) lado, (float) topo, esmalte);
+    g.addTransform (juce::AffineTransform::translation ((float) lado, (float) topo));   // daqui em diante, o layout da chapa
 
     // ---- logo: sol no horizonte e o reflexo tremendo ----
     g.setColour (theme::amber.withAlpha (0.5f));
@@ -614,4 +622,7 @@ void MiragemEditor::layoutCanvas()
     output.setBounds (884, 296, 94, 92);
     meterIn.setBounds  (904, 446, 24, 112);
     meterOut.setBounds (932, 446, 24, 112);
+
+    for (auto* c : canvas.getChildren())   // a chapa começa dentro da moldura
+        c->setTopLeftPosition (c->getX() + lado, c->getY() + topo);
 }

@@ -50,9 +50,9 @@ private:
     int   openTicks = 0;
 
     MiragemProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1048×620 (pedal: 1000×580 de chapa + a moldura), e é ampliado junto
     MirageView mirage;
     DecayView decayView;
     Knob decayMacro, size, predelay, dark, lowCut, shimMacro, interval, motion, duck, revLen, output;

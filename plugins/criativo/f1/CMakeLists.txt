@@ -19,6 +19,10 @@ target_sources(F1 PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp)
 
+# peças renderizadas (instrumentos/_hardware/tools/pecas.py): knobs do pedal (SÉRIE KNOB), lâmpada, LED, tecla e a madeira da moldura
+file(GLOB f1_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
+juce_add_binary_data(F1Img HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${f1_img})
+
 target_compile_definitions(F1 PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
@@ -26,6 +30,7 @@ target_compile_definitions(F1 PUBLIC
 
 target_link_libraries(F1
     PRIVATE
+        F1Img
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

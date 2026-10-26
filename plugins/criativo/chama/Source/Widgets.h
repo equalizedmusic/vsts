@@ -396,6 +396,13 @@ public:
             {
                 const float s = juce::jmin (box.getWidth() / 500.0f, box.getHeight() / 508.0f);
                 painel::knobGrande (g, { box.getCentreX(), box.getY() + 224.7f * s }, s, pos, emblema);
+                if (! clean)   // macro: o valor serigrafado embaixo, como no knob Moog
+                {
+                    g.setColour (theme::txt);
+                    g.setFont (theme::mono (11.0f));
+                    g.drawText (juce::String (juce::roundToInt (slider.getValue())), box.withTop (box.getBottom() - 12.0f),
+                                juce::Justification::centred, false);
+                }
             }
             else
                 painel::knobMini (g, box.getCentre().translated (0.0f, -4.0f), juce::jmin (box.getWidth(), box.getHeight()) / 160.0f, pos);

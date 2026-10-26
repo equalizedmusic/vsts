@@ -55,9 +55,9 @@ private:
     int   openTicks = 0;
 
     FitaProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1048×620 (pedal: 1000×580 de chapa + a moldura), e é ampliado junto
     MachineStrip strip;
     ReelView reels;
     Knob driveMacro, wowMacro, model, speed, bump, wear, flutter, hiss, brake, start, output;

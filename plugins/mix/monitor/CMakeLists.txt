@@ -19,6 +19,10 @@ target_sources(Monitor PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp)
 
+# peças renderizadas (instrumentos/_hardware/tools/pecas.py): knob, lâmpada, LED, tecla
+file(GLOB monitor_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
+juce_add_binary_data(MonitorImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${monitor_img})
+
 target_compile_definitions(Monitor PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
@@ -26,6 +30,7 @@ target_compile_definitions(Monitor PUBLIC
 
 target_link_libraries(Monitor
     PRIVATE
+        MonitorImg
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC

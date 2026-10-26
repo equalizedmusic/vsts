@@ -7,6 +7,10 @@ namespace
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
+// rack de 19": a frente tem o layout de 1000 × 580 e as orelhas ficam dos lados
+constexpr int ear = 32, rackW = ui::baseW + 2 * ear;
+const juce::Colour tinta (0xff4a4f3a);   // cor da frente do BARRAGEM
+
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
     juce::AttributedString s;
@@ -29,7 +33,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    real::card (g, r);
+    painel::secao (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -149,7 +153,7 @@ void WaveStrip::paint (juce::Graphics& g)
     const float ceilDb = param (proc, id::ceiling);
     const float ceilG  = juce::Decibels::decibelsToGain (ceilDb);
 
-    real::card (g, r.reduced (1.0f));
+    painel::secao (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "WAVEFORM ", u8 ("· O QUE SAI E O QUE A BARRAGEM SEGURA, AO VIVO"));
     {
         float x = W - 10.0f;
@@ -471,7 +475,7 @@ BarragemEditor::BarragemEditor (BarragemProcessor& p)
     setLookAndFeel (&lnf);
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
-    canvas.setBounds (0, 0, ui::baseW, ui::baseH);
+    canvas.setBounds (0, 0, rackW, ui::baseH);
     addAndMakeVisible (canvas);
 
     for (auto* c : std::initializer_list<juce::Component*> {
@@ -504,9 +508,9 @@ BarragemEditor::BarragemEditor (BarragemProcessor& p)
     // e o resized() gravaria 75% por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
-                     juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
-    getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
+    setResizeLimits (juce::roundToInt (rackW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
+                     juce::roundToInt (rackW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) rackW / (double) ui::baseH);
     setScale (openScale);
     startTimerHz (30);
 }
@@ -599,7 +603,7 @@ void BarragemEditor::timerCallback()
     // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
     // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
     if (openTicks < openSettle && ++openTicks == openSettle
-        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        && std::abs ((float) getWidth() / (float) rackW - openScale) > 0.005f)
         setScale (openScale);
 
     const double now = juce::Time::getMillisecondCounterHiRes();
@@ -630,12 +634,12 @@ void BarragemEditor::timerCallback()
 void BarragemEditor::setScale (float scale)
 {
     scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
-    setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
+    setSize (juce::roundToInt ((float) rackW * scale), juce::roundToInt ((float) ui::baseH * scale));
 }
 
 void BarragemEditor::resized()
 {
-    const float scale = (float) getWidth() / (float) ui::baseW;
+    const float scale = (float) getWidth() / (float) rackW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
         proc.uiScale = scale;
@@ -648,7 +652,8 @@ void BarragemEditor::paint (juce::Graphics& g)
 
 void BarragemEditor::drawCanvas (juce::Graphics& g)
 {
-    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
+    painel::rack (g, (float) rackW, (float) ui::baseH, (float) ear, tinta);
+    g.addTransform (juce::AffineTransform::translation ((float) ear, 0.0f));   // daqui em diante, o layout da frente
 
     // ---- logo: água represada (azul) contra o muro (creme); a crista âmbar é o TETO ----
     g.setColour (theme::ice.withAlpha (0.85f));
@@ -733,6 +738,9 @@ void BarragemEditor::layoutCanvas()
     deltaKey.setBounds (830, 246, 148, 40);
     resetKey.setBounds (830, 292, 148, 40);
     readout.setBounds  (830, 346, 148, 80);
-    meterIn.setBounds  (878, 446, 24, 112);
-    meterOut.setBounds (906, 446, 24, 112);
+    meterIn.setBounds  (857, 446, 94, 55);
+    meterOut.setBounds (857, 503, 94, 55);
+
+    for (auto* c : canvas.getChildren())   // a frente começa depois da orelha esquerda
+        c->setTopLeftPosition (c->getX() + ear, c->getY());
 }

@@ -73,9 +73,9 @@ private:
     int   openTicks = 0;
 
     PrismaProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1064×580 (rack: 1000 de frente + as orelhas), e é ampliado junto
     SpectrumView spectrum;
     std::unique_ptr<BandStatus> status[prisma::numBands];
     std::unique_ptr<Knob> thrK[prisma::numBands], ratioK[prisma::numBands], attK[prisma::numBands],
@@ -86,7 +86,7 @@ private:
     BypassButton bypass;
     IconButton prevBtn { IconButton::Icon::prev }, nextBtn { IconButton::Icon::next }, saveBtn { IconButton::Icon::save };
     PresetName presetName;
-    LedMeter meterIn { "IN" }, meterOut { "OUT" };
+    VuMeter meterIn { "IN" }, meterOut { "OUT" };
     std::vector<std::unique_ptr<APVTS::ButtonAttachment>> buttonAtts;
     float levelIn = 0.0f, levelOut = 0.0f;
     float grShown[prisma::numBands] = {};

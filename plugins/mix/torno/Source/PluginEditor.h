@@ -64,9 +64,9 @@ private:
     int   openTicks = 0;
 
     TornoProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1064×580 (rack: 1000 de frente + as orelhas), e é ampliado junto
     HistoryView history;
     CurveView curve;
     GrReadout readout;
@@ -76,7 +76,7 @@ private:
     BypassButton bypass;
     IconButton prevBtn { IconButton::Icon::prev }, nextBtn { IconButton::Icon::next }, saveBtn { IconButton::Icon::save };
     PresetName presetName;
-    LedMeter meterIn { "IN" }, meterOut { "OUT" };
+    VuMeter meterIn { "IN" }, meterOut { "OUT" };
     std::unique_ptr<APVTS::ButtonAttachment> listenAtt, autoRelAtt, autoMakeupAtt, bypassAtt;
     float levelIn = 0.0f, levelOut = 0.0f, detShown = -120.0f;
     double lastTick = 0.0;

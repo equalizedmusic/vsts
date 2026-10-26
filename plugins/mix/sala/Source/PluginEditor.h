@@ -52,9 +52,9 @@ private:
     int   openTicks = 0;
 
     SalaProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1064×580 (rack: 1000 de frente + as orelhas), e é ampliado junto
     ResponseView response;
     TailEqView eqView;
     Knob sizeMacro, decay, predelay, preSync, diffusion, early, lowCut, highCut, damp, width, duck, output;
@@ -63,7 +63,7 @@ private:
     BypassButton bypass;
     IconButton prevBtn { IconButton::Icon::prev }, nextBtn { IconButton::Icon::next }, saveBtn { IconButton::Icon::save };
     PresetName presetName;
-    LedMeter meterIn { "IN" }, meterOut { "OUT" };
+    VuMeter meterIn { "IN" }, meterOut { "OUT" };
     std::unique_ptr<APVTS::ButtonAttachment> soloAtt, bypassAtt;
     float levelIn = 0.0f, levelOut = 0.0f;
     float lastBpm = 0.0f, lastPreMs = -1.0f;

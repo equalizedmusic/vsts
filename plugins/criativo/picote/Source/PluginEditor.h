@@ -56,9 +56,9 @@ private:
     int   openTicks = 0;
 
     PicoteProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1048×620 (pedal: 1000×580 de chapa + a moldura), e é ampliado junto
     StepGrid grid;
     SliceView slice;
     Knob depthMacro, division, length, swing, offset, widthMacro, attack, release, filtType, reso, output;

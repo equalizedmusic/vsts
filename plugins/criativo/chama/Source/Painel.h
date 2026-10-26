@@ -173,8 +173,8 @@ inline void pedal (juce::Graphics& g, float W, float H, float lado, float topo, 
     real::screw (g, { W - lado - 11.0f, H - topo - 11.0f }, 3.6f, 0.8f);
 }
 
-// chapa preta parafusada (a faixa de controles da SÉRIE KNOB)
-inline void chapaPreta (juce::Graphics& g, RF r)
+// chapa preta parafusada (a faixa de controles da SÉRIE KNOB). sem parafusos onde o título fica no canto
+inline void chapaPreta (juce::Graphics& g, RF r, bool parafusos = true)
 {
     for (int i = 4; i >= 1; --i)
     {
@@ -190,6 +190,7 @@ inline void chapaPreta (juce::Graphics& g, RF r)
     bisel.addColour (0.1, real::white (0.02f));
     g.setGradientFill (bisel);
     g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+    if (! parafusos) return;
     const float m = 8.0f;
     for (const auto& c : { PF (r.getX() + m, r.getY() + m), PF (r.getRight() - m, r.getY() + m),
                            PF (r.getX() + m, r.getBottom() - m), PF (r.getRight() - m, r.getBottom() - m) })

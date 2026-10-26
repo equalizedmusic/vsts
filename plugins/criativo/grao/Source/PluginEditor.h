@@ -58,9 +58,9 @@ private:
     int   openTicks = 0;
 
     GraoProcessor& proc;
-    GraoLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1048×620 (pedal: 1000×580 de chapa + a moldura), e é ampliado junto
     TapeView tape;
     XYPad pad;
     Knob grainMacro, spaceMacro, size, density, spray, pitch, spread, feedback, decay, tone, output;
