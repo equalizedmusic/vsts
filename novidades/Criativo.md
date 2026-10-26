@@ -5,6 +5,12 @@ MIRAGEM, PICOTE). A versão é o primeiro título `## x.y.z` deste arquivo: ela 
 release `criativo-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 1.1.0 — 2026-10-26
+- Visual novo, com cara de pedal boutique (parente da SÉRIE KNOB): moldura de madeira, chapa esmaltada numa cor
+  para cada plugin, controles em chapa preta, os knobs renderizados da SÉRIE KNOB e alavancas de metal no lugar das
+  chaves. O CHAMA ganhou o knob grandão do FOLE com as lâmpadas de 0 a 10 em volta.
+- As funções, o som e os presets não mudaram.
+
 ## 1.0.1 — 2026-10-25
 - Desinstalador: no Windows, atalho "Desinstalar" no menu Iniciar (além de Aplicativos instalados); no Mac,
   "Desinstalar InsideStudioSP Criativo.command" dentro do .dmg. Os presets do usuário ficam.

@@ -53,18 +53,18 @@ float drawBrand (juce::Graphics& g, const juce::String& name, const juce::String
     g.setColour (theme::cream);
     g.setFont (nameFont);
     g.drawText (name, juce::Rectangle<float> (56.0f, 12.0f, 260.0f, 44.0f), juce::Justification::centredLeft);
-    g.setColour (theme::line);
+    g.setColour (serigrafia.withAlpha (0.35f));
     g.fillRect (tagX - 10.0f, 24.0f, 1.0f, 22.0f);
     const auto tagFont = theme::sans (9.5f, false, 0.2f);
-    g.setColour (theme::dim);
+    g.setColour (serigrafia.withAlpha (0.7f));
     g.setFont (tagFont);
     g.drawText (tag1, juce::Rectangle<float> (tagX, 22.0f, 200.0f, 12.0f), juce::Justification::centredLeft);
     g.drawText (tag2, juce::Rectangle<float> (tagX, 35.0f, 200.0f, 12.0f), juce::Justification::centredLeft);
 
     const float brandX = tagX + juce::jmax (textWidth (tagFont, tag1), textWidth (tagFont, tag2)) + 20.0f;
-    g.setColour (theme::line);
+    g.setColour (serigrafia.withAlpha (0.35f));
     g.fillRect (brandX - 10.0f, 24.0f, 1.0f, 22.0f);
-    g.setColour (theme::dim);
+    g.setColour (serigrafia.withAlpha (0.7f));
     g.setFont (tagFont);
     g.drawText ("BY", juce::Rectangle<float> (brandX, 22.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
     g.setColour (theme::amber);
@@ -80,12 +80,12 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
 {
     const auto f = theme::mono (11.5f);
     const juce::String state = syn ? "SYNC" : wait ? "AGUARDANDO PLAY" : "LIVRE";
-    const juce::Colour stateColour = syn ? theme::cream : theme::dim;
+    const juce::Colour stateColour = syn ? theme::cream : serigrafia.withAlpha (0.7f);
     const float right = 604.0f;
 
     juce::AttributedString s;
     s.append (juce::String (bpm, 1), f, theme::cream);
-    s.append (juce::String::fromUTF8 (" BPM · "), f, theme::dim);
+    s.append (juce::String::fromUTF8 (" BPM · "), f, serigrafia.withAlpha (0.7f));
     s.append (state, f, stateColour);
     juce::TextLayout tl;
     tl.createLayout (s, 400.0f);
@@ -95,7 +95,7 @@ void drawSync (juce::Graphics& g, float bpm, bool syn, bool wait, float brandEnd
     {
         juce::AttributedString a, b;
         a.append (juce::String (bpm, 1), f, theme::cream);
-        a.append (" BPM", f, theme::dim);
+        a.append (" BPM", f, serigrafia.withAlpha (0.7f));
         b.append (state, f, stateColour);
         juce::TextLayout ta, tb;
         ta.createLayout (a, 400.0f);
