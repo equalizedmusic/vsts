@@ -145,8 +145,10 @@ jobs:
 
       # sem release "latest-build": em Releases fica só a última versão de cada pacote. O instalador de um build
       # sem versão nova fica nos artefatos do run (report-mac / report-win), na aba Actions.
+      # RELEASE_TOKEN (PAT só deste repo, Contents + Workflows): o token automático do Actions toma 403 ao criar o
+      # release quando o commit mexe em .github/workflows; sem o secret, cai no token automático
       - name: Releases das versões (criativo-v…, mix-v…, knob-v…)
         if: hashFiles('pacotes/*') != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: bash src/.github/scripts/release-versoes.sh pacotes report src Criativo Mix Knob
