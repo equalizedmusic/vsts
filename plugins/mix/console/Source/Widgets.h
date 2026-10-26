@@ -355,7 +355,7 @@ private:
     float level = 0.0f;
 };
 
-// ---------------- VU de ponteiro (balística de VU: ~300 ms; 0 VU = −18 dBFS) ----------------
+// ---------------- VU de ponteiro (balística de VU: ~300 ms; 0 VU = −10 dBFS de pico: o pico fica ~10 dB acima da média) ----------------
 class VuMeter : public juce::Component
 {
 public:
@@ -363,7 +363,7 @@ public:
 
     void setLevel (float gain)
     {
-        const float alvo = painel::vuPos (juce::Decibels::gainToDecibels (gain, -60.0f) + 18.0f);
+        const float alvo = painel::vuPos (juce::Decibels::gainToDecibels (gain, -60.0f) + 10.0f);
         const float novo = agulha + (alvo - agulha) * 0.22f;
         if (std::abs (novo - agulha) > 0.001f) { agulha = novo; repaint(); }
     }

@@ -402,12 +402,12 @@ inline void vu (juce::Graphics& g, RF r, float agulha, const juce::String& nome)
 
     juce::Graphics::ScopedSaveState save (g);
     g.reduceClipRegion (face.toNearestInt());
-    const PF piv (face.getCentreX(), face.getBottom() + face.getHeight() * 0.42f);
-    const float R = face.getHeight() * 1.12f, abre = 0.82f;          // arco de ±47°
+    const PF piv (face.getCentreX(), face.getBottom() + face.getHeight() * 0.15f);
+    const float R = face.getHeight() * 0.95f, abre = 0.82f;          // arco de ±47°
     auto angDe = [abre] (float p) { return -abre + 2.0f * abre * p; };
     auto pt = [piv] (float rr, float an) { return PF (piv.x + rr * std::sin (an), piv.y - rr * std::cos (an)); };
 
-    const float r0 = R * 0.80f;
+    const float r0 = R * 0.78f;
     juce::Path arco, vermelho;
     arco.addCentredArc (piv.x, piv.y, r0, r0, 0.0f, angDe (0.0f), angDe (vuPos (0.0f)), true);
     vermelho.addCentredArc (piv.x, piv.y, r0 + 1.2f, r0 + 1.2f, 0.0f, angDe (vuPos (0.0f)), angDe (1.0f), true);
@@ -436,16 +436,16 @@ inline void vu (juce::Graphics& g, RF r, float agulha, const juce::String& nome)
     }
     g.setColour (juce::Colour (0xff2a241c));
     g.setFont (theme::sans (8.0f, true, 0.1f));
-    g.drawText ("VU", RF (face.getCentreX() - 15.0f, face.getBottom() - 19.0f, 30.0f, 10.0f), juce::Justification::centred, false);
+    g.drawText ("VU", RF (face.getCentreX() - 15.0f, face.getBottom() - 18.0f, 30.0f, 10.0f), juce::Justification::centred, false);
     g.setFont (theme::sans (6.0f, true, 0.15f));
-    g.drawText (nome, RF (face.getX() + 4.0f, face.getBottom() - 10.0f, 30.0f, 8.0f), juce::Justification::centredLeft, false);
+    g.drawText (nome, RF (face.getX() + 4.0f, face.getY() + 2.0f, 30.0f, 8.0f), juce::Justification::centredLeft, false);
 
     // agulha (com sombra no mostrador) e a tampa preta do eixo embaixo
     const float an = angDe (juce::jlimit (-0.02f, 1.03f, agulha));
     g.setColour (real::black (0.18f));
-    g.drawLine ({ pt (R * 0.45f, an).translated (1.5f, 1.5f), pt (R * 0.97f, an).translated (1.5f, 1.5f) }, 1.2f);
+    g.drawLine ({ pt (R * 0.1f, an).translated (1.5f, 1.5f), pt (R * 0.95f, an).translated (1.5f, 1.5f) }, 1.2f);
     g.setColour (juce::Colour (0xff141210));
-    g.drawLine ({ pt (R * 0.45f, an), pt (R * 0.97f, an) }, 1.1f);
+    g.drawLine ({ pt (R * 0.1f, an), pt (R * 0.95f, an) }, 1.1f);
     g.setGradientFill (real::vertical (juce::Colour (0xff2c2925), face.getBottom() - 6.0f, juce::Colour (0xff0c0b0a), face.getBottom()));
     g.fillRect (face.withTop (face.getBottom() - 6.0f));
 
