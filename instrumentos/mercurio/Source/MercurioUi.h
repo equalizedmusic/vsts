@@ -204,9 +204,9 @@ inline void drawKnob (juce::Graphics& g, const juce::Image& img, RF box, float p
         g.strokePath (t, juce::PathStrokeType (major ? 1.2f : 0.9f));
     }
 
-    // knob de alumínio usinado renderizado no Blender (instrumentos/_hardware): saia no raio da escala,
-    // marca gravada no alumínio e ponteiro aceso na tampa preta
-    hw::knob (g, { cx, cy }, R * 0.82f, pos, pointer, hw::Knob::alu);
+    // knob Moog renderizado no Blender (instrumentos/_hardware), o mesmo do LIMÃO: baquelite preto canelado com
+    // tampa de alumínio e risco pintado — lê bem no painel claro (o de alumínio sumia no alumínio escovado)
+    hw::knob (g, { cx, cy }, R * 0.82f, pos, pointer, hw::Knob::preto);
 }
 class MercurioLookAndFeel : public BrandLookAndFeel
 {

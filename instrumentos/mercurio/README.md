@@ -7,8 +7,8 @@ e ganho rodam por amostra, com os níveis e coeficientes interpolados dentro do 
 no pior caso (4 operadores + realimentação + fold + ring + COMB nos dois filtros + saturação + efeitos) ≈ 14% de um
 núcleo; o Init com 16 vozes ≈ 6%.
 Visual de aparelho metálico: chapa de alumínio escovado entre laterais de alumínio fresado (aletas de dissipador),
-faixas de alumínio anodizado preto em cima (presets, VOICE) e embaixo (EFFECTS) com filete iridescente, knobs de alumínio
-usinado com tampa preta e ponteiro aceso, LEDs magenta e visores OLED ciano. Cada operador tem a sua cor (ponteiro do
+faixas de alumínio anodizado preto em cima (presets, VOICE) e embaixo (EFFECTS) com filete iridescente, knobs Moog (os
+mesmos do LIMÃO: baquelite preto canelado, tampa de alumínio e risco pintado), LEDs magenta e visores OLED ciano. Cada operador tem a sua cor (ponteiro do
 LEVEL, onda no visor, caixa no desenho do algoritmo e plaqueta no canto da seção). A chapa, os knobs, as teclas e os
 parafusos são **imagens renderizadas** (`tools/gerar-texturas.py`: relevo iluminado pixel a pixel, com sombra). Tudo à vista numa tela só (sem páginas). Instalador próprio
 (`InsideStudioSP-Mercurio-win.exe` / `-mac.dmg`).

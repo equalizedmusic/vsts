@@ -7,6 +7,9 @@
 - assets/knob_00..15.png      knob grandão; rate_/mix_ os pequenos; alav_* a alavanca (recortados, com alfa)
 - assets/nome_<pedal>.png     plaquinha do nome, com a borda esfumada para casar com o fundo
 - Source/Mapa.h               as posições em pixels (espaço da imagem 1000 x 1284) para a interface desenhar por cima
+
+Depois: python instrumentos/_hardware/tools/sombra.py <pasta _comum>/assets — a sombra do Blender, mesmo esfumada
+aqui, deixava um canto quadrado embaixo/à direita do knob; o sombra.py troca por uma sombra redonda.
 """
 import json
 import os

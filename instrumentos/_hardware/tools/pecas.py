@@ -14,6 +14,7 @@
 #                 tecla_luz.png: só o topo translúcido aceso (tingido pela interface)
 #   madeira    -> madeira_esq.png / madeira_dir.png: lateral de nogueira envernizada
 # Grava pecas.json (proporções que a interface precisa) na pasta de saída.
+# Depois do render: python sombra.py <pasta> (troca a sombra longa do Blender por uma redonda que não bate na borda).
 import bpy, bmesh, math, sys, json, os
 from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
