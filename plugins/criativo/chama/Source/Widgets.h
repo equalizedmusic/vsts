@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Theme.h"
+#include "Painel.h"
 
 using APVTS = juce::AudioProcessorValueTreeState;
 
@@ -46,6 +47,13 @@ public:
     void setClean (bool clean)
     {
         slider.getProperties().set ("clean", clean);
+        slider.repaint();
+    }
+
+    // knob do pedal: os quadros renderizados da SÉRIE KNOB no lugar do knob Moog
+    void setPedal (bool pedal)
+    {
+        slider.getProperties().set ("pedal", pedal);
         slider.repaint();
     }
 
@@ -106,7 +114,7 @@ private:
     std::unique_ptr<APVTS::SliderAttachment> attachment;
 };
 
-// ---------------- chave liga/desliga (REVERSO, CONGELAR): basculante creme + lâmpada piloto na cor do controle ----------------
+// ---------------- chave liga/desliga (REVERSO, CONGELAR): alavanca de metal + lâmpada piloto na cor do controle ----------------
 class KeyButton : public juce::Button
 {
 public:
@@ -124,20 +132,20 @@ public:
 
         if (r.getWidth() >= 120.0f)
         {
-            // larga: chave em pé | nome | lâmpada
-            const float rh = juce::jmin (28.0f, r.getHeight() - 6.0f), rw = 17.0f;
-            real::rocker (g, { r.getX() + 6.0f, r.getCentreY() - rh * 0.5f, rw, rh }, on);
-            real::engraved (g, getButtonText(), { r.getX() + rw + 16.0f, r.getY(), r.getWidth() - rw - 34.0f, r.getHeight() },
+            // larga: alavanca | nome | lâmpada
+            const float rn = juce::jmin (6.5f, r.getHeight() * 0.2f);
+            painel::alavanca (g, { r.getX() + 14.0f, r.getCentreY() + (on ? 3.0f : -3.0f) }, rn, on);
+            real::engraved (g, getButtonText(), { r.getX() + 34.0f, r.getY(), r.getWidth() - 52.0f, r.getHeight() },
                             col, juce::Justification::centredLeft);
-            real::jewel (g, { r.getRight() - 12.0f, r.getCentreY() }, 4.6f, ledColour, on);
+            hw::lamp (g, { r.getRight() - 12.0f, r.getCentreY() }, 4.6f, ledColour, on);
         }
         else
         {
-            // estreita: chave deitada e lâmpada em cima, nome embaixo
+            // estreita: alavanca deitada e lâmpada em cima, nome embaixo
             const float rw = 26.0f, rh = 12.0f, lr = 3.4f, gap = 7.0f;
             const float x0 = r.getCentreX() - (rw + gap + lr * 2.0f) * 0.5f, cy = r.getY() + 3.0f + rh * 0.5f;
-            real::rocker (g, { x0, cy - rh * 0.5f, rw, rh }, on);
-            real::jewel (g, { x0 + rw + gap + lr, cy }, lr, ledColour, on);
+            painel::alavanca (g, { x0 + rw * 0.5f + (on ? 4.0f : -4.0f), cy }, 4.2f, on, true);
+            hw::lamp (g, { x0 + rw + gap + lr, cy }, lr, ledColour, on);
             const auto txt = r.withTrimmedTop (rh + 5.0f);
             g.setColour (real::black (0.6f));
             g.drawFittedText (getButtonText(), txt.translated (0.0f, 1.0f).toNearestInt(), juce::Justification::centred, 2, 0.8f);
@@ -174,7 +182,7 @@ public:
         g.setGradientFill (real::vertical (real::white (0.25f), c.y - rc, real::black (0.6f), c.y + rc));
         g.drawEllipse (real::circle (c, rc - 0.5f), 1.0f);
 
-        real::led (g, c, 4.2f, theme::amber, getToggleState() ? 0.0f : 1.0f);
+        hw::led (g, c, 4.2f, theme::amber, getToggleState() ? 0.0f : 1.0f);
     }
 };
 
@@ -188,7 +196,7 @@ public:
     void paintButton (juce::Graphics& g, bool over, bool down) override
     {
         auto r = getLocalBounds().toFloat().reduced (1.0f);
-        real::keycap (g, r, 3.0f, down);
+        hw::keycap (g, r, 3.0f, down);
 
         g.setColour (down || over ? theme::amber : theme::dim);
         const auto c = r.getCentre().translated (0.0f, down ? 0.5f : 0.0f);
@@ -345,4 +353,65 @@ public:
 private:
     juce::String text;
     float level = 0.0f;
+};
+
+// ---------------- VU de ponteiro (balística de VU: ~300 ms; 0 VU = −18 dBFS) ----------------
+class VuMeter : public juce::Component
+{
+public:
+    explicit VuMeter (juce::String t) : text (std::move (t)) {}
+
+    void setLevel (float gain)
+    {
+        const float alvo = painel::vuPos (juce::Decibels::gainToDecibels (gain, -60.0f) + 18.0f);
+        const float novo = agulha + (alvo - agulha) * 0.22f;
+        if (std::abs (novo - agulha) > 0.001f) { agulha = novo; repaint(); }
+    }
+
+    void paint (juce::Graphics& g) override { painel::vu (g, getLocalBounds().toFloat().reduced (1.0f), agulha, text); }
+
+private:
+    juce::String text;
+    float agulha = 0.0f;
+};
+
+// ---------------- knobs: Moog renderizado com a escala serigrafada; no pedal, os quadros da SÉRIE KNOB ----------------
+class PainelLookAndFeel : public BrandLookAndFeel
+{
+public:
+    std::vector<std::vector<juce::Point<float>>> emblema;   // desenho em relevo na tampa do knob grandão do pedal
+    juce::Colour tinta { theme::txt };                       // cor da serigrafia da escala
+
+    void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height, float pos,
+                           float, float, juce::Slider& slider) override
+    {
+        const bool big   = (bool) slider.getProperties()["big"];
+        const bool clean = (bool) slider.getProperties()["clean"];
+        const auto box   = juce::Rectangle<int> (x, y, width, height).toFloat();
+        const auto on    = slider.findColour (juce::Slider::rotarySliderFillColourId);
+
+        if ((bool) slider.getProperties()["pedal"])
+        {
+            if (big)   // a base do knob fica no centro de cima da caixa: o quadro tem a sombra para baixo
+            {
+                const float s = juce::jmin (box.getWidth() / 500.0f, box.getHeight() / 508.0f);
+                painel::knobGrande (g, { box.getCentreX(), box.getY() + 224.7f * s }, s, pos, emblema);
+            }
+            else
+                painel::knobMini (g, box.getCentre().translated (0.0f, -4.0f), juce::jmin (box.getWidth(), box.getHeight()) / 160.0f, pos);
+            return;
+        }
+
+        const float k = juce::jmin (box.getWidth(), box.getHeight()) / (big ? 92.0f : 64.0f);
+        const auto  c = box.getCentre().translated (0.0f, big ? -3.0f * k : 0.0f);
+        if (! clean) painel::escala (g, c, k, big, tinta);
+        hw::knob (g, c, (big ? 25.0f : 19.5f) * k, pos, on);
+        if (big && ! clean)
+        {
+            g.setColour (theme::txt);
+            g.setFont (theme::mono (11.0f * k));
+            g.drawText (juce::String (juce::roundToInt (slider.getValue())), juce::Rectangle<float> (box.getX(), box.getBottom() - 12.0f * k, box.getWidth(), 12.0f * k),
+                        juce::Justification::centred, false);
+        }
+    }
 };

@@ -93,9 +93,9 @@ private:
     int   openTicks = 0;
 
     ConsoleProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
-    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
+    ScaledCanvas canvas;   // tudo fica aqui dentro, em 1064×580 (rack: 1000 de frente + as orelhas), e é ampliado junto
     ColorStrip strip;
     CurveView curve;
     HarmonicsView harmonics;
@@ -105,7 +105,7 @@ private:
     BypassButton bypass;
     IconButton prevBtn { IconButton::Icon::prev }, nextBtn { IconButton::Icon::next }, saveBtn { IconButton::Icon::save };
     PresetName presetName;
-    LedMeter meterIn { "IN" }, meterOut { "OUT" };
+    VuMeter meterIn { "IN" }, meterOut { "OUT" };
     ReadoutLine readout;
     std::unique_ptr<APVTS::ButtonAttachment> compareAtt, autoAtt, osAtt, bypassAtt;
     float levelIn = 0.0f, levelOut = 0.0f, holdIn = 0.0f, holdOut = 0.0f;

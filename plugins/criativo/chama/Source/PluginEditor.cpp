@@ -7,6 +7,17 @@ namespace
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
+// pedal: chapa esmaltada na moldura de madeira (laterais de 24, travessas de 20)
+constexpr float lado = 24.0f, topo = 20.0f;
+const juce::Colour esmalte (0xff7c2216);              // vermelho-tijolo do CHAMA
+const juce::Point<float> knobBase (250.0f, 372.0f);   // centro da base do knob grandão
+
+// posição das 11 lâmpadas em volta da base do knob, em pixels do render do FOLE (Mapa.h da SÉRIE KNOB); aqui a 50%
+constexpr float lampPos[11][2] = { { -168.86f, 162.15f }, { -225.96f, 68.93f }, { -233.29f, -38.87f }, { -190.05f, -137.65f },
+                                   { -106.24f, -206.45f }, { 0.0f, -231.05f }, { 106.24f, -206.45f }, { 190.05f, -137.65f },
+                                   { 233.29f, -38.87f }, { 225.96f, 68.93f }, { 168.86f, 162.15f } };
+constexpr float lampEscala = 0.5f;
+
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
     juce::AttributedString s;
@@ -15,11 +26,6 @@ void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix,
     s.append (accent, f, theme::amber);
     s.setJustification (juce::Justification::centredLeft);
     s.draw (g, { x, y, 600.0f, 13.0f });
-}
-
-void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
-{
-    real::card (g, r);
 }
 
 // contador do compasso embaixo do FOGUINHO em LEDs de hardware: mesma posição e cores do drawBeatDots
@@ -34,7 +40,7 @@ void drawBeatLeds (juce::Graphics& g, float cx, float y, const chama::DanceState
         const float x = cx + ((float) k - 1.5f) * 16.0f;
         const bool lit = on && k == beat;
         const auto c = k == 0 ? theme::coral : theme::amber;
-        real::led (g, { x, y }, 3.8f, c, lit ? 1.0f - 0.45f * b : 0.0f);
+        hw::led (g, { x, y }, 3.8f, c, lit ? 1.0f - 0.45f * b : 0.0f);
     }
 }
 
@@ -75,12 +81,13 @@ void HeatStrip::set (const FlameState& s)
 
 void HeatStrip::paint (juce::Graphics& g)
 {
-    const auto r = getLocalBounds().toFloat();
-    real::card (g, r.reduced (1.0f));
+    // janela embutida na chapa: o fogo aparece por trás do vidro
+    const auto r = getLocalBounds().toFloat().reduced (1.5f);
+    real::screen (g, r, 4.0f);
     {
         juce::Graphics::ScopedSaveState save (g);
         juce::Path clip;
-        clip.addRoundedRectangle (r.reduced (1.0f), 4.0f);
+        clip.addRoundedRectangle (r, 4.0f);
         g.reduceClipRegion (clip);
         const auto area = r.withTrimmedTop (60.0f);
         const auto fp = fireParams();
@@ -108,9 +115,10 @@ void HeatStrip::paint (juce::Graphics& g)
     const juce::String names[] = { "LOW CUT", "RESONANCE", "WIDTH", "NOISE", u8 ("ESPAÇO"), "GATE SYNC" };
     const juce::Colour tint[] = { theme::amber, theme::amber, theme::cream, theme::ice, theme::violet, theme::coral };
 
+    const float chipW = (r.getWidth() - 24.0f - 5.0f * 10.0f) / 6.0f;
     for (int k = 0; k < 6; ++k)
     {
-        const juce::Rectangle<float> chip (12.0f + (float) k * 160.0f, 24.0f, 150.0f, 38.0f);
+        const juce::Rectangle<float> chip (12.0f + (float) k * (chipW + 10.0f), 24.0f, chipW, 38.0f);
         real::screen (g, chip, 3.0f);
         g.setColour (tint[k]);
         g.fillRect (chip.getX(), chip.getY() + 6.0f, 2.0f, chip.getHeight() - 12.0f);
@@ -121,6 +129,31 @@ void HeatStrip::paint (juce::Graphics& g)
         g.setFont (theme::mono (13.0f));
         g.drawText (vals[k], chip.reduced (10.0f, 4.0f).removeFromBottom (16.0f), juce::Justification::centredLeft);
         real::glass (g, chip, 3.0f);
+    }
+    real::glass (g, r, 4.0f);
+}
+
+// =====================================================================
+// LÂMPADAS em volta do knob: a tensão de agora, de 0 a 10, respirando no tempo
+// =====================================================================
+void LampRing::paint (juce::Graphics& g)
+{
+    const float v = drop ? 0.0f : heat * 10.0f;
+    const juce::Colour creme (0xffede3cc);
+    g.setFont (theme::sans (10.5f, true, 0.05f));
+    for (int i = 0; i < 11; ++i)
+    {
+        const juce::Point<float> d (lampPos[i][0] * lampEscala, lampPos[i][1] * lampEscala);
+        const auto c = centre + d;
+        const float b = juce::jlimit (0.0f, 1.0f, v - (float) i + 1.0f);
+        const auto cor = theme::amber.interpolatedWith (theme::coral, (float) i / 10.0f);
+        hw::lamp (g, c, 6.2f, cor, b * (0.78f + 0.22f * pulse));
+
+        const auto n = centre + d * 1.2f;   // número serigrafado do lado de fora
+        g.setColour (real::black (0.35f));
+        g.drawText (juce::String (i), juce::Rectangle<float> (n.x - 11.0f, n.y - 6.0f, 22.0f, 13.0f), juce::Justification::centred, false);
+        g.setColour (creme);
+        g.drawText (juce::String (i), juce::Rectangle<float> (n.x - 11.0f, n.y - 7.0f, 22.0f, 13.0f), juce::Justification::centred, false);
     }
 }
 
@@ -135,32 +168,20 @@ void FlameStage::set (const FlameState& s)
 
 void FlameStage::paint (juce::Graphics& g)
 {
+    // o FOGUINHO dança ao lado do knob, no tempo do projeto; embaixo, o compasso 1-2-3-4 em LEDs na chapa
     const auto r = getLocalBounds().toFloat();
-    const auto scr = r.reduced (1.5f);   // tela embutida: o rebaixo desenha 1 px fora
-    real::screen (g, scr, 4.0f);
+    const float cx = r.getCentreX(), floorY = r.getBottom() - 56.0f;
+    drawDancer (g, cx, floorY, st.dance);
+    g.setColour (real::black (0.55f));
+    g.fillRoundedRectangle (juce::Rectangle<float> (cx - 40.0f, floorY + 15.0f, 80.0f, 18.0f), 9.0f);
+    drawBeatLeds (g, cx, floorY + 24.0f, st.dance);
+
+    if (st.drop)
     {
-        juce::Graphics::ScopedSaveState save (g);
-        juce::Path clip;
-        clip.addRoundedRectangle (scr, 4.0f);
-        g.reduceClipRegion (clip);
-
-        // o FOGUINHO dança à direita do knob, no tempo do projeto; embaixo, o compasso 1-2-3-4
-        const float cx = r.getX() + r.getWidth() * 0.855f, floorY = r.getBottom() - 44.0f;
-        drawDancer (g, cx, floorY, st.dance);
-        g.setColour (theme::dark.withAlpha (0.7f));
-        g.fillRoundedRectangle (juce::Rectangle<float> (cx - 40.0f, floorY + 15.0f, 80.0f, 18.0f), 9.0f);
-        drawBeatLeds (g, cx, floorY + 24.0f, st.dance);
+        g.setColour (theme::ice);
+        g.setFont (theme::sans (12.0f, true, 0.3f));
+        g.drawText ("DROP", juce::Rectangle<float> (0.0f, floorY + 36.0f, r.getWidth(), 16.0f), juce::Justification::centred);
     }
-
-    // fundo escuro atrás do nome: com o fogo no talo, o texto não some
-    g.setColour (theme::dark.withAlpha (0.7f));
-    g.fillRoundedRectangle (juce::Rectangle<float> (r.getCentreX() - 46.0f, r.getBottom() - 36.0f, 92.0f, 22.0f), 11.0f);
-    g.setColour (st.drop ? theme::ice : theme::amber);
-    g.setFont (theme::sans (14.0f, true, 0.3f));
-    g.drawText (st.drop ? "DROP" : "CHAMA", juce::Rectangle<float> (0.0f, r.getBottom() - 34.0f, r.getWidth(), 18.0f),
-                juce::Justification::centred);
-
-    real::glass (g, scr, 4.0f);
 }
 
 // =====================================================================
@@ -175,15 +196,21 @@ ChamaEditor::ChamaEditor (ChamaProcessor& p)
       output    (p.apvts, id::output, "GAIN",         false, theme::cream),
       dropKey   ("DROP", theme::ice)
 {
+    // emblema em relevo na tampa do knob grandão: a chama do logo (unidades da tampa, y para cima)
+    lnf.emblema = { { { 0.0f, 1.0f }, { 0.3f, 0.5f }, { 0.5f, 0.05f }, { 0.45f, -0.4f }, { 0.2f, -0.7f }, { -0.2f, -0.7f },
+                      { -0.45f, -0.4f }, { -0.5f, 0.05f }, { -0.3f, 0.5f }, { 0.0f, 1.0f } },
+                    { { 0.0f, 0.25f }, { 0.15f, -0.05f }, { 0.18f, -0.3f }, { 0.0f, -0.45f }, { -0.18f, -0.3f }, { -0.15f, -0.05f }, { 0.0f, 0.25f } } };
     setLookAndFeel (&lnf);
-    chamaKnob.setClean (true);   // o FOGUINHO já mostra o quanto de CHAMA tem
+    chamaKnob.setClean (true);   // as lâmpadas em volta já mostram o quanto de CHAMA tem
+    for (auto* k : { &chamaKnob, &noise, &space, &output })
+        k->setPedal (true);
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
     canvas.setBounds (0, 0, ui::baseW, ui::baseH);
     addAndMakeVisible (canvas);
 
     for (auto* c : std::initializer_list<juce::Component*> {
-             &strip, &stage, &chamaKnob, &noise, &space, &output, &dropKey,
+             &strip, &ring, &stage, &chamaKnob, &noise, &space, &output, &dropKey,
              &bypass, &prevBtn, &nextBtn, &saveBtn, &presetName, &meterIn, &meterOut })
         canvas.addAndMakeVisible (c);
 
@@ -340,6 +367,7 @@ void ChamaEditor::timerCallback()
 
     strip.set (anim);
     stage.set (anim);
+    ring.set (anim.heat, anim.pulse, anim.drop);
 
     levelIn  = juce::jmax (proc.meterIn.exchange (0.0f),  levelIn * 0.85f);
     levelOut = juce::jmax (proc.meterOut.exchange (0.0f), levelOut * 0.85f);
@@ -356,7 +384,7 @@ void ChamaEditor::timerCallback()
         lastBpm = bpm;
         lastSync = syn;
         lastWaiting = wt;
-        canvas.repaint (380, 18, 236, 32);
+        canvas.repaint (340, 32, 250, 36);
     }
 }
 
@@ -381,10 +409,14 @@ void ChamaEditor::paint (juce::Graphics& g)
 
 void ChamaEditor::drawCanvas (juce::Graphics& g)
 {
-    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
+    const float W = (float) ui::baseW, H = (float) ui::baseH;
+    const juce::Colour creme (0xffede3cc);
+    painel::pedal (g, W, H, lado, topo, esmalte);
 
     // ---- logo: chama ----
     {
+        juce::Graphics::ScopedSaveState save (g);
+        g.addTransform (juce::AffineTransform::translation (22.0f, 17.0f));
         juce::Path f;
         f.startNewSubPath (31.0f, 47.0f);
         f.quadraticTo (19.0f, 44.0f, 22.0f, 33.0f);
@@ -394,86 +426,82 @@ void ChamaEditor::drawCanvas (juce::Graphics& g)
         f.quadraticTo (44.0f, 32.0f, 41.0f, 41.0f);
         f.quadraticTo (38.0f, 47.0f, 31.0f, 47.0f);
         f.closeSubPath();
-        g.setGradientFill (juce::ColourGradient (theme::amber, 31.0f, 47.0f, theme::coral, 31.0f, 19.0f, false));
+        g.setGradientFill (juce::ColourGradient (theme::amber, 31.0f, 47.0f, juce::Colour (0xffffd27a), 31.0f, 19.0f, false));
         g.fillPath (f);
-        g.setColour (theme::cream);
+        g.setColour (creme);
         g.fillEllipse (28.5f, 37.0f, 5.0f, 7.0f);
     }
 
-    const auto nameFont = theme::sans (27.0f, true, 0.12f);
-    const juce::String name ("CHAMA");
-    const float tagX = 56.0f + textWidth (nameFont, name) + 20.0f;
-
-    g.setColour (theme::cream);
-    g.setFont (nameFont);
-    g.drawText (name, juce::Rectangle<float> (56.0f, 12.0f, 200.0f, 44.0f), juce::Justification::centredLeft);
-    g.setColour (theme::line);
-    g.fillRect (tagX - 10.0f, 24.0f, 1.0f, 22.0f);
-    const auto tagFont = theme::sans (9.5f, false, 0.2f);
-    const juce::String tag1 ("BUILD-UP"), tag2 (u8 ("UM KNOB · TENSÃO"));
-    g.setColour (theme::dim);
-    g.setFont (tagFont);
-    g.drawText (tag1, juce::Rectangle<float> (tagX, 22.0f, 160.0f, 12.0f), juce::Justification::centredLeft);
-    g.drawText (tag2, juce::Rectangle<float> (tagX, 35.0f, 160.0f, 12.0f), juce::Justification::centredLeft);
-
-    // ---- marca ----
-    {
-        const float brandX = tagX + juce::jmax (textWidth (tagFont, tag1), textWidth (tagFont, tag2)) + 20.0f;
-        g.setColour (theme::line);
-        g.fillRect (brandX - 10.0f, 24.0f, 1.0f, 22.0f);
-        g.setColour (theme::dim);
-        g.setFont (tagFont);
-        g.drawText ("BY", juce::Rectangle<float> (brandX, 22.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
-        g.setColour (theme::amber);
-        g.setFont (theme::sans (10.5f, true, 0.06f));
-        g.drawText ("InsideStudioSP", juce::Rectangle<float> (brandX, 34.0f, 140.0f, 13.0f), juce::Justification::centredLeft);
-    }
+    // ---- série e marca, serigrafadas na chapa ----
+    const auto serieFont = theme::sans (17.0f, true, 0.02f);
+    const juce::String serie (u8 ("série criativo"));
+    g.setColour (creme);
+    g.setFont (serieFont);
+    g.drawText (serie, juce::Rectangle<float> (74.0f, 34.0f, 200.0f, 32.0f), juce::Justification::centredLeft);
+    const float brandX = 74.0f + textWidth (serieFont, serie) + 20.0f;
+    g.setColour (creme.withAlpha (0.35f));
+    g.fillRect (brandX - 10.0f, 39.0f, 1.0f, 22.0f);
+    g.setColour (creme.withAlpha (0.7f));
+    g.setFont (theme::sans (9.5f, false, 0.2f));
+    g.drawText ("BY", juce::Rectangle<float> (brandX, 37.0f, 140.0f, 12.0f), juce::Justification::centredLeft);
+    g.setColour (theme::amber.brighter (0.3f));
+    g.setFont (theme::sans (10.5f, true, 0.06f));
+    g.drawText ("InsideStudioSP", juce::Rectangle<float> (brandX, 49.0f, 140.0f, 13.0f), juce::Justification::centredLeft);
 
     // ---- BPM (o gate segue o grid): SYNC tocando; host parado = espera o play; sem régua = LIVRE ----
     {
         const bool syn = proc.synced.load();
         juce::AttributedString s;
-        s.append (juce::String (proc.shownBpm.load(), 1), theme::mono (11.5f), theme::cream);
-        s.append (u8 (" BPM · "), theme::mono (11.5f), theme::dim);
+        s.append (juce::String (proc.shownBpm.load(), 1), theme::mono (11.5f), creme);
+        s.append (u8 (" BPM · "), theme::mono (11.5f), creme.withAlpha (0.6f));
         s.append (syn ? "SYNC" : proc.waiting.load() ? "AGUARDANDO PLAY" : "LIVRE", theme::mono (11.5f),
-                  syn ? theme::cream : theme::dim);
+                  syn ? creme : creme.withAlpha (0.6f));
         juce::TextLayout tl;
         tl.createLayout (s, 400.0f);
-        const float w = tl.getWidth(), right = 604.0f;
-        tl.draw (g, { right - w, 34.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
-
-        const juce::Rectangle<float> led (right - w - 13.0f, 30.5f, 7.0f, 7.0f);
-        real::led (g, led.getCentre(), 3.5f, theme::amber, syn ? 1.0f : 0.0f);
+        const float w = tl.getWidth(), right = 580.0f;
+        tl.draw (g, { right - w, 50.0f - tl.getHeight() * 0.5f, w + 1.0f, tl.getHeight() });
+        hw::led (g, { right - w - 12.0f, 50.0f }, 3.4f, theme::amber, syn ? 1.0f : 0.0f);
     }
 
-    // ---- cards ----
-    drawCard (g, { 12.0f, 216.0f, 676.0f, 352.0f });
-    drawCard (g, { 698.0f, 216.0f, 290.0f, 352.0f });
-    drawTitle (g, 22.0f,  226.0f, "CHAMA ", u8 ("· UM KNOB PARA A SUBIDA INTEIRA"));
-    drawTitle (g, 708.0f, 226.0f, "AJUSTES ", u8 ("· ATÉ ONDE VAI"));
+    // ---- nome embaixo do knob, como na SÉRIE KNOB ----
+    g.setColour (real::black (0.3f));
+    g.setFont (theme::sans (30.0f, true, 0.35f));
+    g.drawText ("CHAMA", juce::Rectangle<float> (knobBase.x - 150.0f, 479.0f, 300.0f, 34.0f), juce::Justification::centred);
+    g.setColour (creme);
+    g.drawText ("CHAMA", juce::Rectangle<float> (knobBase.x - 150.0f, 478.0f, 300.0f, 34.0f), juce::Justification::centred);
+    g.setColour (creme.withAlpha (0.75f));
+    g.setFont (theme::sans (9.5f, true, 0.3f));
+    g.drawText (u8 ("BUILD-UP · UM KNOB · TENSÃO"), juce::Rectangle<float> (knobBase.x - 150.0f, 512.0f, 300.0f, 14.0f), juce::Justification::centred);
 
+    // ---- faixa de controles em chapa preta ----
+    painel::chapaPreta (g, { 580.0f, 232.0f, 380.0f, 316.0f });
+    drawTitle (g, 598.0f, 244.0f, "AJUSTES ", u8 ("· ATÉ ONDE VAI"));
     g.setColour (theme::dim);
     g.setFont (theme::sans (10.5f));
     g.drawFittedText (u8 ("DROP apaga a chama na hora (20 ms) para a virada; desligue para ela voltar."),
-                      juce::Rectangle<int> (708, 292, 270, 30), juce::Justification::topLeft, 2);
+                      juce::Rectangle<int> (598, 304, 340, 30), juce::Justification::topLeft, 2);
 }
 
 void ChamaEditor::layoutCanvas()
 {
-    prevBtn.setBounds (618, 18, 30, 32);
-    presetName.setBounds (648, 18, 230, 32);
-    nextBtn.setBounds (878, 18, 30, 32);
-    saveBtn.setBounds (908, 18, 30, 32);
-    bypass.setBounds (952, 18, 32, 32);
+    prevBtn.setBounds (596, 34, 30, 32);
+    presetName.setBounds (626, 34, 230, 32);
+    nextBtn.setBounds (856, 34, 30, 32);
+    saveBtn.setBounds (886, 34, 30, 32);
+    bypass.setBounds (924, 34, 32, 32);
 
-    strip.setBounds (12, 66, 976, 140);
-    stage.setBounds (22, 246, 656, 312);
-    chamaKnob.setBounds (225, 262, 250, 250);
+    strip.setBounds (40, 80, 920, 136);
 
-    dropKey.setBounds (708, 246, 270, 40);
-    noise.setBounds (716, 330, 119, 92);
-    space.setBounds (845, 330, 119, 92);
-    output.setBounds (716, 440, 119, 92);
-    meterIn.setBounds  (880, 440, 24, 112);
-    meterOut.setBounds (908, 440, 24, 112);
+    // knob grandão: a base fica em knobBase; a caixa tem folga à direita para a sombra do render
+    chamaKnob.setBounds ((int) knobBase.x - 145, (int) knobBase.y - 112, 290, 254);
+    ring.setBounds ((int) knobBase.x - 160, (int) knobBase.y - 150, 320, 256);
+    ring.setCentre ({ 160.0f, 150.0f });
+    stage.setBounds (390, 260, 180, 280);
+
+    dropKey.setBounds (594, 262, 352, 38);
+    noise.setBounds (598, 340, 119, 92);
+    space.setBounds (728, 340, 119, 92);
+    output.setBounds (598, 444, 119, 92);
+    meterIn.setBounds  (872, 424, 24, 116);
+    meterOut.setBounds (902, 424, 24, 116);
 }

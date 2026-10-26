@@ -8,6 +8,10 @@ namespace
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
 
+// rack de 19": a frente tem o layout de 1000 × 580 e as orelhas ficam dos lados
+constexpr int ear = 32, rackW = ui::baseW + 2 * ear;
+const juce::Colour tinta (0xff3b4a57);   // cor da frente do CONSOLE
+
 void drawTitle (juce::Graphics& g, float x, float y, const juce::String& prefix, const juce::String& accent)
 {
     juce::AttributedString s;
@@ -30,7 +34,7 @@ void drawDesc (juce::Graphics& g, juce::Rectangle<float> area, const juce::Strin
 
 void drawCard (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    real::card (g, r);
+    painel::secao (g, r);
 }
 
 float textWidth (const juce::Font& f, const juce::String& s)
@@ -92,7 +96,7 @@ void ColorStrip::paint (juce::Graphics& g)
     const auto  r = getLocalBounds().toFloat();
     const float W = r.getWidth(), H = r.getHeight();
 
-    real::card (g, r.reduced (1.0f));
+    painel::secao (g, r.reduced (1.0f));
     drawTitle (g, 12.0f, 7.0f, "MESA ", u8 ("· AO VIVO"));
     {
         juce::AttributedString s;
@@ -435,7 +439,7 @@ ConsoleEditor::ConsoleEditor (ConsoleProcessor& p)
     setLookAndFeel (&lnf);
 
     canvas.onPaint = [this] (juce::Graphics& g) { drawCanvas (g); };
-    canvas.setBounds (0, 0, ui::baseW, ui::baseH);
+    canvas.setBounds (0, 0, rackW, ui::baseH);
     addAndMakeVisible (canvas);
 
     for (auto* c : std::initializer_list<juce::Component*> {
@@ -462,9 +466,9 @@ ConsoleEditor::ConsoleEditor (ConsoleProcessor& p)
     // e o resized() gravaria 75% por cima do que o usuário escolheu
     openScale = proc.uiScale.load();
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt (ui::baseW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
-                     juce::roundToInt (ui::baseW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
-    getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
+    setResizeLimits (juce::roundToInt (rackW * ui::minScale), juce::roundToInt (ui::baseH * ui::minScale),
+                     juce::roundToInt (rackW * ui::maxScale), juce::roundToInt (ui::baseH * ui::maxScale));
+    getConstrainer()->setFixedAspectRatio ((double) rackW / (double) ui::baseH);
     setScale (openScale);
     startTimerHz (30);
 }
@@ -557,7 +561,7 @@ void ConsoleEditor::timerCallback()
     // o host pode reabrir a janela no tamanho da primeira vez: passado o meio segundo de abertura,
     // volta para o tamanho salvo e daí em diante qualquer mudança é gravada
     if (openTicks < openSettle && ++openTicks == openSettle
-        && std::abs ((float) getWidth() / (float) ui::baseW - openScale) > 0.005f)
+        && std::abs ((float) getWidth() / (float) rackW - openScale) > 0.005f)
         setScale (openScale);
 
     const double now = juce::Time::getMillisecondCounterHiRes();
@@ -601,12 +605,12 @@ void ConsoleEditor::timerCallback()
 void ConsoleEditor::setScale (float scale)
 {
     scale = juce::jlimit (ui::minScale, ui::maxScale, scale);
-    setSize (juce::roundToInt ((float) ui::baseW * scale), juce::roundToInt ((float) ui::baseH * scale));
+    setSize (juce::roundToInt ((float) rackW * scale), juce::roundToInt ((float) ui::baseH * scale));
 }
 
 void ConsoleEditor::resized()
 {
-    const float scale = (float) getWidth() / (float) ui::baseW;
+    const float scale = (float) getWidth() / (float) rackW;
     canvas.setTransform (juce::AffineTransform::scale (scale));
     if (openTicks >= openSettle)   // enquanto a janela abre, o tamanho não é escolha do usuário
         proc.uiScale = scale;
@@ -619,7 +623,8 @@ void ConsoleEditor::paint (juce::Graphics& g)
 
 void ConsoleEditor::drawCanvas (juce::Graphics& g)
 {
-    real::chassis (g, (float) ui::baseW, (float) ui::baseH);
+    painel::rack (g, (float) rackW, (float) ui::baseH, (float) ear, tinta);
+    g.addTransform (juce::AffineTransform::translation ((float) ear, 0.0f));   // daqui em diante, o layout da frente
 
     // ---- logo: três faders de mesa ----
     {
@@ -715,6 +720,9 @@ void ConsoleEditor::layoutCanvas()
     mix.setBounds        (830, 334, 44, 224);
     output.setBounds     (884, 334, 94, 92);
     readout.setBounds    (884, 428, 94, 14);
-    meterIn.setBounds    (904, 446, 24, 112);
-    meterOut.setBounds   (932, 446, 24, 112);
+    meterIn.setBounds    (884, 446, 94, 55);
+    meterOut.setBounds   (884, 503, 94, 55);
+
+    for (auto* c : canvas.getChildren())   // a frente começa depois da orelha esquerda
+        c->setTopLeftPosition (c->getX() + ear, c->getY());
 }

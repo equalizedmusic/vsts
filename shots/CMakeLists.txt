@@ -45,6 +45,9 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
             else()
                 target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2400 SHOT_H=1480)
             endif()
+        elseif(name STREQUAL "console")
+            # rack de 19": 1000 de frente + 32 de cada orelha (1064×580)
+            target_compile_definitions(${t} PRIVATE SHOT_W=2128 SHOT_H=1160)
         endif()
         target_link_libraries(${t}
             PRIVATE

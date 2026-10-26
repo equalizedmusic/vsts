@@ -30,7 +30,7 @@ private:
     chama::FireRenderer fire;
 };
 
-// ---------------- palco: tela limpa atrás do knob e o FOGUINHO dançando no tempo ----------------
+// ---------------- palco: o FOGUINHO dançando no tempo, ao lado do knob, direto na chapa ----------------
 class FlameStage : public juce::Component
 {
 public:
@@ -40,6 +40,26 @@ public:
 
 private:
     FlameState st;
+};
+
+// ---------------- lâmpadas em volta do knob grandão (como no FOLE): acendem com a tensão de agora ----------------
+class LampRing : public juce::Component
+{
+public:
+    LampRing() { setInterceptsMouseClicks (false, false); }
+    void setCentre (juce::Point<float> c) { centre = c; }
+    void set (float heatNow, float pulseNow, bool dropNow)
+    {
+        if (std::abs (heatNow - heat) < 0.002f && std::abs (pulseNow - pulse) < 0.01f && dropNow == drop) return;
+        heat = heatNow; pulse = pulseNow; drop = dropNow;
+        repaint();
+    }
+    void paint (juce::Graphics& g) override;
+
+private:
+    juce::Point<float> centre;
+    float heat = 0.0f, pulse = 0.0f;
+    bool drop = false;
 };
 
 class ChamaEditor : public juce::AudioProcessorEditor, private juce::Timer
@@ -65,10 +85,11 @@ private:
     int   openTicks = 0;
 
     ChamaProcessor& proc;
-    BrandLookAndFeel lnf;
+    PainelLookAndFeel lnf;
 
     ScaledCanvas canvas;   // tudo fica aqui dentro, em 1000×580, e é ampliado junto
     HeatStrip strip;
+    LampRing ring;
     FlameStage stage;
     Knob chamaKnob, noise, space, output;
     KeyButton dropKey;
