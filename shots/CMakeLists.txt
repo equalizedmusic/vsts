@@ -49,7 +49,7 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
             # rack de 19": 1000 de frente + 32 de cada orelha (1064×580)
             target_compile_definitions(${t} PRIVATE SHOT_W=2128 SHOT_H=1160)
         elseif(dir MATCHES "/plugins/criativo/" AND NOT name STREQUAL "chama")
-            # pedal: chapa de 1000×580 + a moldura de madeira (1048×620)
+            # pedal: chapa de 1000×580 + a moldura de madeira (1048×620); o CHAMA ficou no layout próprio de 1000×580
             target_compile_definitions(${t} PRIVATE SHOT_W=2096 SHOT_H=1240)
         endif()
         target_link_libraries(${t}
