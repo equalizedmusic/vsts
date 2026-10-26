@@ -4,6 +4,11 @@ Pacote do instalador: `InsideStudioSP-Mercurio`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `mercurio-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.1 — 2026-10-26
+- Knobs Moog, os mesmos do LIMÃO (baquelite preto com tampa de alumínio e risco pintado): os de alumínio
+  sumiam no painel escovado.
+- Sombra dos knobs redonda e macia: sumiu o canto quadrado embaixo/à direita de cada knob.
+
 ## 0.5.0 — 2026-10-25
 - Visual de hardware: knobs de alumínio usinado, teclas que acendem em magenta, LEDs em domo e laterais de
   nogueira.

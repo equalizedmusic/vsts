@@ -4,6 +4,9 @@ Pacote do instalador: `InsideStudioSP-Instrumentos`. A versão é o primeiro tí
 ela entra no plugin, no instalador e no release `quimera-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.1 — 2026-10-26
+- Sombra dos knobs, LEDs e lâmpadas redonda e macia: sumiu o canto quadrado embaixo/à direita de cada knob.
+
 ## 0.4.0 — 2026-10-25
 - Visual de hardware: knobs Moog renderizados, LEDs, lâmpadas piloto e teclas de verdade.
 - Desinstalador: no Windows, atalho "Desinstalar" no menu Iniciar (além de Aplicativos instalados); no Mac,

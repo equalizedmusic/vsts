@@ -5,6 +5,10 @@ MASTIGA). A versão é o primeiro título `## x.y.z` deste arquivo: ela entra no
 `knob-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.1 — 2026-10-26
+- Sombra do knob grandão, dos knobs RATE e MIX e da alavanca redonda e macia: sumiu o canto quadrado
+  embaixo/à direita.
+
 ## 0.2.0 — 2026-10-25
 - A janela mostra só o pedal: saiu o cinza do estúdio em volta da caixa.
 - Desinstalador: no Windows, atalho "Desinstalar" no menu Iniciar (além de Aplicativos instalados); no Mac,
