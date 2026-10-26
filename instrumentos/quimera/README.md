@@ -1,5 +1,7 @@
 # QUIMERA — sintetizador
 
+![QUIMERA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/QUIMERA.png)
+
 Sintetizador polifônico (VSTi / AU) que junta o lado metálico e digital das wavetables com o lado orgânico
 de um sintetizador analógico mono clássico: deriva de afinação por voz, filtro ladder que auto-oscila, glide e legato.
 Todas as tabelas são geradas por código (nada copiado de outro synth). Suporta **MPE**.

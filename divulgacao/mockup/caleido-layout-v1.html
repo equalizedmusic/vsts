@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>CALEIDO — Glitch Pattern FX (layout v1)</title>
+<style>
+  :root {
+    --bg: #14120e; --panel: #1d1a15; --panel2: #27231c; --line: #353027;
+    --txt: #ece3d2; --dim: #8b8273; --amber: #ffb347; --coral: #ff6b4a; --cream: #f4e9d4;
+    --ice: #6ec3ff; --violet: #c49bff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0a0907; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--txt); user-select: none; }
+  .plugin { width: 1000px; height: 580px; display: flex; flex-direction: column; gap: 10px; padding: 12px;
+    background: var(--bg); border-radius: 6px; border: 1px solid #2a261f; box-shadow: 0 30px 80px #000c; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  .ttl { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; color: var(--dim); }
+  .ttl b { color: var(--amber); font-weight: 700; }
+
+  header { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 4px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo .nm { font-size: 24px; font-weight: 800; letter-spacing: 3px; color: var(--cream); line-height: 1; }
+  .logo .tg { font-size: 9px; letter-spacing: 2px; color: var(--dim); border-left: 1px solid var(--line); padding-left: 10px; line-height: 1.4; }
+  .sync { margin-left: auto; display: flex; gap: 6px; align-items: center; font: 11px Consolas, monospace; color: var(--dim); }
+  .sync b { color: var(--cream); font-weight: 400; }
+  .sync .led { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .preset { display: flex; align-items: stretch; height: 32px; margin-left: 18px; }
+  .preset .btn { width: 30px; display: flex; align-items: center; justify-content: center; background: var(--panel2);
+    border: 1px solid var(--line); color: var(--dim); font-size: 11px; cursor: pointer; }
+  .preset .btn:hover { color: var(--amber); }
+  .preset .btn:first-child { border-radius: 4px 0 0 4px; }
+  .preset .btn.last { border-radius: 0 4px 4px 0; }
+  .preset .name { width: 210px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+    background: #100e0b; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 12px Consolas, monospace; color: var(--cream); }
+  .preset .name small { color: var(--dim); font-size: 10px; }
+  .bypass { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .bypass i { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .bypass.off i { background: #4a443a; box-shadow: none; }
+
+  .strip { position: relative; height: 140px; flex-shrink: 0; overflow: hidden; }
+  .strip canvas { position: absolute; inset: 0; }
+  .strip .ttl { position: absolute; top: 9px; left: 12px; }
+  .legend { position: absolute; top: 7px; right: 10px; display: flex; gap: 10px; font-size: 8px; letter-spacing: 1.5px; font-weight: 700; color: var(--dim); }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend i { width: 8px; height: 8px; border-radius: 2px; }
+  .badge { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); font-size: 9px; letter-spacing: 2px; font-weight: 700;
+    padding: 3px 8px; border-radius: 3px; background: #c49bff22; color: #d7bcff; border: 1px solid #c49bff55; display: none; }
+  .badge.on { display: block; }
+
+  .deck { flex: 1; display: flex; gap: 10px; min-height: 0; }
+  .pad { width: 262px; position: relative; padding: 10px; display: flex; flex-direction: column; }
+  .pad .row { display: flex; justify-content: space-between; align-items: center; }
+  .dice { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; color: var(--dim); border: 1px solid var(--line); background: var(--panel2);
+    border-radius: 3px; padding: 3px 7px; cursor: pointer; }
+  .dice:hover { color: var(--amber); }
+  .pad canvas { margin-top: 8px; cursor: pointer; }
+  .pad .xy { display: flex; justify-content: space-between; font: 10px Consolas, monospace; color: var(--dim); margin-top: 6px; }
+  .pad .xy b { color: var(--cream); font-weight: 400; }
+
+  .mod { flex: 1; padding: 10px 10px 6px; display: flex; flex-direction: column; }
+  .mod .top { display: flex; align-items: center; gap: 12px; margin: 6px 0 4px; }
+  .mod .desc { font-size: 10px; line-height: 1.5; color: var(--dim); }
+  .mod .desc b { display: block; color: var(--cream); font-size: 11px; letter-spacing: 1px; margin-bottom: 2px; }
+  .mod .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; margin-top: auto; }
+
+  .knob { display: flex; flex-direction: column; align-items: center; cursor: ns-resize; }
+  .knob svg { display: block; }
+  .knob .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--txt); margin-top: -2px; }
+  .knob .val { font: 10px Consolas, monospace; color: var(--dim); height: 13px; }
+
+  .out { width: 168px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .sw { display: flex; gap: 6px; }
+  .key { flex: 1; height: 40px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer;
+    font-size: 8px; font-weight: 700; letter-spacing: 1.5px; color: var(--dim); }
+  .key i { width: 18px; height: 3px; border-radius: 2px; background: #4a443a; }
+  .key.on { color: var(--cream); }
+  .key.on i { background: var(--coral); box-shadow: 0 0 6px var(--coral); }
+  .key.on.vi i { background: var(--violet); box-shadow: 0 0 6px var(--violet); }
+  .outrow { flex: 1; display: flex; gap: 10px; align-items: stretch; min-height: 0; }
+  .fader { width: 44px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .fader .rail { position: relative; flex: 1; width: 30px; background: #100e0b; border: 1px solid var(--line); border-radius: 3px; cursor: ns-resize; overflow: hidden; }
+  .fader .fill { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #ff6b4a33, #ffb34766); }
+  .fader .cap { position: absolute; left: 2px; right: 2px; height: 6px; margin-bottom: -3px; background: var(--cream); border-radius: 2px; }
+  .fader .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; }
+  .fader .val { font: 10px Consolas, monospace; color: var(--dim); }
+  .rcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+  .meters { display: flex; gap: 6px; align-items: flex-end; }
+  .meter { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+  .meter .leds { display: flex; flex-direction: column-reverse; gap: 2px; }
+  .meter .leds span { width: 12px; height: 4px; border-radius: 1px; background: #2c2821; }
+</style>
+</head>
+<body>
+<div class="plugin">
+
+  <header>
+    <div class="logo">
+      <svg width="30" height="30" viewBox="0 0 30 30">
+        <circle cx="15" cy="15" r="13" fill="none" stroke="#ffb347" stroke-width="2"/>
+        <g transform="translate(15 15)">
+          <path d="M0 -9 L3 -3 L0 0 L-3 -3 Z" fill="#ffb347"/>
+          <path d="M0 -9 L3 -3 L0 0 L-3 -3 Z" fill="#ff6b4a" transform="rotate(120)"/>
+          <path d="M0 -9 L3 -3 L0 0 L-3 -3 Z" fill="#c49bff" transform="rotate(240)"/>
+          <circle r="1.6" fill="#f4e9d4"/>
+        </g>
+      </svg>
+      <div class="nm">CALEIDO</div>
+      <div class="tg">GLITCH<br>PATTERN FX</div>
+    </div>
+    <div class="sync"><span class="led"></span><b id="bpm">145.0</b> BPM · <b>SYNC</b></div>
+    <div class="preset">
+      <div class="btn" id="prev">◀</div>
+      <div class="name"><span id="pname">Init · Mandala</span><small id="pnum">01/06</small></div>
+      <div class="btn" id="next">▶</div>
+      <div class="btn last" title="Salvar preset">✚</div>
+    </div>
+    <div class="bypass" id="bypass"><i></i></div>
+  </header>
+
+  <!-- PADRÃO: o compasso capturado, fatiado em passos, com o efeito de cada passo -->
+  <div class="card strip" id="stripbox">
+    <canvas id="strip"></canvas>
+    <div class="ttl">PADRÃO <b>· 1 COMPASSO · 1/16</b></div>
+    <div class="badge" id="holdbadge">◉ SEGURANDO</div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="deck">
+    <!-- MANDALA: sequenciador circular, um anel por efeito -->
+    <div class="card pad">
+      <div class="row"><div class="ttl">MANDALA <b>· 16</b></div><div class="dice" id="dice">⟳ GERAR</div></div>
+      <canvas id="mandala" width="240" height="240"></canvas>
+      <div class="xy"><span>PASSO <b id="stepv">01</b>/16</span><span>SEMENTE <b id="seedv">0417</b></span></div>
+    </div>
+
+    <div class="card mod">
+      <div class="ttl">01 · <b>CORTE</b></div>
+      <div class="top">
+        <div class="knob big" data-p="chaos"></div>
+        <div class="desc"><b>MACRO CAOS</b>Chance de cada passo ser cortado, repetido, invertido ou trocado de lugar.</div>
+      </div>
+      <div class="grid">
+        <div class="knob" data-p="division"></div><div class="knob" data-p="ratchet"></div>
+        <div class="knob" data-p="shuffle"></div><div class="knob" data-p="reverse"></div>
+      </div>
+    </div>
+
+    <div class="card mod">
+      <div class="ttl">02 · <b>VIAGEM</b></div>
+      <div class="top">
+        <div class="knob big" data-p="trip"></div>
+        <div class="desc"><b>MACRO VIAGEM</b>Quanto cada corte é colorido: afinação de fita, filtro, crush e giro no estéreo.</div>
+      </div>
+      <div class="grid">
+        <div class="knob" data-p="tape"></div><div class="knob" data-p="filter"></div>
+        <div class="knob" data-p="crush"></div><div class="knob" data-p="spin"></div>
+      </div>
+    </div>
+
+    <div class="card out">
+      <div class="ttl">03 · <b>SAÍDA</b></div>
+      <div class="sw">
+        <div class="key on" data-t="mutate"><i></i>MUTAR</div>
+        <div class="key vi" data-t="hold"><i></i>SEGURAR</div>
+      </div>
+      <div class="outrow">
+        <div class="fader"><div class="rail" id="mix"><div class="fill"></div><div class="cap"></div></div>
+          <div class="lbl">MIX</div><div class="val" id="mixv"></div></div>
+        <div class="rcol">
+          <div class="knob" data-p="output"></div>
+          <div class="meters">
+            <div class="meter"><div class="leds" id="mi"></div>IN</div>
+            <div class="meter"><div class="leds" id="mo"></div>OUT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- parâmetros ----------
+const DIVS = ["1/8", "1/16", "1/32"];
+const P = {
+  chaos:   { v: .62, lbl: "CAOS",       fmt: v => Math.round(v*100) + "%" },
+  trip:    { v: .48, lbl: "VIAGEM",     fmt: v => Math.round(v*100) + "%" },
+  division:{ v: .50, lbl: "DIVISÃO",    fmt: v => DIVS[Math.min(2, Math.floor(v*3))] },
+  ratchet: { v: .45, lbl: "REPETIÇÃO",  fmt: v => "até " + [2,3,4,6,8,12,16][Math.min(6, Math.floor(v*7))] + "×" },
+  shuffle: { v: .30, lbl: "EMBARALHAR", fmt: v => Math.round(v*100) + "%" },
+  reverse: { v: .35, lbl: "REVERSO",    fmt: v => Math.round(v*100) + "%" },
+  tape:    { v: .40, lbl: "FITA",       fmt: v => "±" + Math.round(v*24) + " st" },
+  filter:  { v: .55, lbl: "FILTRO",     fmt: v => Math.round(v*100) + "%" },
+  crush:   { v: .25, lbl: "CRUSH",      fmt: v => (16 - Math.round(v*14)) + " bit" },
+  spin:    { v: .50, lbl: "GIRO",       fmt: v => ["1/4","1/8","1/16","1/32"][Math.min(3, Math.floor(v*4))] },
+  output:  { v: .75, lbl: "GANHO",      fmt: v => ((v-.75)*48).toFixed(1) + " dB" },
+  mix:     { v: .70 }
+};
+const T = { mutate: true, hold: false };
+const DEF = Object.fromEntries(Object.entries(P).map(([k, o]) => [k, o.v]));
+
+// ---------- trilhas da mandala (anel de fora para dentro) ----------
+const LANES = [
+  { id: "stut",  nm: "REPETE",  c: "#ffb347" },
+  { id: "rev",   nm: "REVERSO", c: "#ff6b4a" },
+  { id: "tape",  nm: "FITA",    c: "#f4e9d4" },
+  { id: "filt",  nm: "FILTRO",  c: "#6ec3ff" },
+  { id: "crush", nm: "CRUSH",   c: "#c49bff" },
+];
+const STEPS = 16;
+let grid = [], seed = 417;
+function rnd() { seed = (seed*16807) % 2147483647; return (seed - 1)/2147483646; }
+function generate() {
+  const ch = P.chaos.v, tr = P.trip.v;
+  const prob = [ch*.55, ch*P.reverse.v*.9, tr*.45, tr*.5, tr*P.crush.v*1.2];
+  grid = LANES.map((_, l) => Array.from({ length: STEPS }, (_, s) => rnd() < prob[l] * (s % 4 === 0 ? .55 : 1.1)));
+  document.getElementById("seedv").textContent = String(seed % 10000).padStart(4, "0");
+}
+document.getElementById("legend").innerHTML = LANES.map(l => `<span><i style="background:${l.c}"></i>${l.nm}</span>`).join("");
+
+// ---------- knob ----------
+function drawKnob(el) {
+  const id = el.dataset.p, k = P[id], big = el.classList.contains("big");
+  const S = big ? 92 : 64, c = S/2, n = big ? 31 : 21, r1 = big ? 34 : 23, r2 = big ? 42 : 29, rb = big ? 26 : 17;
+  const A0 = Math.PI*0.75, A1 = Math.PI*2.25, a = A0 + (A1-A0)*k.v;
+  const on = big ? (id === "chaos" ? "#ffb347" : "#ff6b4a") : "#f4e9d4";
+  let seg = "";
+  for (let i = 0; i < n; i++) {
+    const t = A0 + (A1-A0)*i/(n-1), lit = i/(n-1) <= k.v + 1e-6;
+    seg += `<line x1="${c+r1*Math.cos(t)}" y1="${c+r1*Math.sin(t)}" x2="${c+r2*Math.cos(t)}" y2="${c+r2*Math.sin(t)}"
+      stroke="${lit ? on : "#3a342b"}" stroke-width="${big ? 2.6 : 2.2}" stroke-linecap="round"/>`;
+  }
+  const inner = big ? `<text x="${c}" y="${c+4}" text-anchor="middle" font-family="Consolas,monospace" font-size="13" fill="#ece3d2">${Math.round(k.v*100)}</text>` : "";
+  el.innerHTML = `<svg width="${S}" height="${S}">${seg}
+    <circle cx="${c}" cy="${c}" r="${rb}" fill="#2a261f" stroke="#100e0b" stroke-width="2"/>
+    <circle cx="${c+(rb-5)*Math.cos(a)}" cy="${c+(rb-5)*Math.sin(a)}" r="${big?3:2.2}" fill="${on}"/>${inner}</svg>
+    ${big ? "" : `<div class="lbl">${k.lbl}</div><div class="val">${k.fmt(k.v)}</div>`}`;
+}
+const knobs = [...document.querySelectorAll(".knob")];
+knobs.forEach(el => {
+  el.addEventListener("pointerdown", e => { el.setPointerCapture(e.pointerId); let y = e.clientY;
+    el.onpointermove = ev => { const k = P[el.dataset.p]; k.v = Math.min(1, Math.max(0, k.v + (y - ev.clientY)/180)); y = ev.clientY; refresh(); }; });
+  el.addEventListener("pointerup", () => { el.onpointermove = null; if (["chaos","trip","reverse","crush"].includes(el.dataset.p)) generate(); });
+  el.addEventListener("dblclick", () => { P[el.dataset.p].v = DEF[el.dataset.p]; refresh(); });
+});
+document.querySelectorAll(".key").forEach(b => b.onclick = () => {
+  T[b.dataset.t] = !T[b.dataset.t]; b.classList.toggle("on", T[b.dataset.t]);
+  document.getElementById("holdbadge").classList.toggle("on", T.hold);
+});
+document.getElementById("bypass").onclick = e => e.currentTarget.classList.toggle("off");
+document.getElementById("dice").onclick = generate;
+const mixEl = document.getElementById("mix");
+function setMix(e) { const r = mixEl.getBoundingClientRect(); P.mix.v = Math.min(1, Math.max(0, 1 - (e.clientY - r.top)/r.height)); refresh(); }
+mixEl.addEventListener("pointerdown", e => { mixEl.setPointerCapture(e.pointerId); setMix(e); mixEl.onpointermove = setMix; });
+mixEl.addEventListener("pointerup", () => mixEl.onpointermove = null);
+
+const presets = ["Init · Mandala", "Cogumelo Azul", "Fractal 145", "Chuva de Bits", "Portal Reverso", "Sopro do Xamã"];
+let pi = 0;
+function showPreset() { document.getElementById("pname").textContent = presets[pi];
+  document.getElementById("pnum").textContent = String(pi+1).padStart(2, "0") + "/" + String(presets.length).padStart(2, "0"); }
+document.getElementById("prev").onclick = () => { pi = (pi + presets.length - 1) % presets.length; showPreset(); generate(); };
+document.getElementById("next").onclick = () => { pi = (pi + 1) % presets.length; showPreset(); generate(); };
+
+["mi", "mo"].forEach(id => document.getElementById(id).innerHTML = "<span></span>".repeat(16));
+function setMeter(id, lv) {
+  [...document.getElementById(id).children].forEach((s, i) => { const f = i/15, lit = f <= lv;
+    s.style.background = !lit ? "#2c2821" : f > .85 ? "#ff6b4a" : f > .65 ? "#ffb347" : "#f4e9d4"; });
+}
+function refresh() {
+  knobs.forEach(drawKnob);
+  mixEl.querySelector(".fill").style.height = P.mix.v*100 + "%";
+  mixEl.querySelector(".cap").style.bottom = P.mix.v*100 + "%";
+  document.getElementById("mixv").textContent = Math.round(P.mix.v*100) + "%";
+}
+
+// ---------- MANDALA ----------
+const md = document.getElementById("mandala"), mg = md.getContext("2d"), MS = md.width, MC = MS/2;
+const R0 = 34, RW = 13, RG = 3;              // raio interno, largura do anel, folga
+const segA = Math.PI*2/STEPS;
+function ringOf(r) { const k = Math.floor((r - R0)/(RW + RG)); return k >= 0 && k < LANES.length ? LANES.length - 1 - k : -1; }
+md.addEventListener("pointerdown", e => {
+  const b = md.getBoundingClientRect(), x = e.clientX - b.left - MC, y = e.clientY - b.top - MC;
+  const lane = ringOf(Math.hypot(x, y)); if (lane < 0) return;
+  let a = Math.atan2(y, x) + Math.PI/2; if (a < 0) a += Math.PI*2;
+  const s = Math.floor(a/segA) % STEPS; grid[lane][s] = !grid[lane][s];
+});
+function drawMandala(step, frac, t) {
+  mg.clearRect(0, 0, MS, MS);
+  mg.fillStyle = "#100e0b"; mg.beginPath(); mg.arc(MC, MC, MC - 1, 0, Math.PI*2); mg.fill();
+  for (let l = 0; l < LANES.length; l++) {
+    const ri = R0 + (LANES.length - 1 - l)*(RW + RG), ro = ri + RW;
+    for (let s = 0; s < STEPS; s++) {
+      const a0 = -Math.PI/2 + s*segA + .035, a1 = a0 + segA - .07;
+      const on = grid[l][s], cur = s === step;
+      mg.beginPath(); mg.arc(MC, MC, ro, a0, a1); mg.arc(MC, MC, ri, a1, a0, true); mg.closePath();
+      if (on) { mg.globalAlpha = cur ? 1 : .55; mg.fillStyle = LANES[l].c; mg.fill(); mg.globalAlpha = 1;
+        if (cur) { mg.shadowColor = LANES[l].c; mg.shadowBlur = 12; mg.fill(); mg.shadowBlur = 0; } }
+      else { mg.fillStyle = cur ? "#3a342b" : "#25211b"; mg.fill(); }
+    }
+  }
+  // ponteiro
+  const pa = -Math.PI/2 + (step + frac)*segA;
+  mg.strokeStyle = "#f4e9d4aa"; mg.lineWidth = 1.2; mg.beginPath();
+  mg.moveTo(MC + Math.cos(pa)*(R0 - 4), MC + Math.sin(pa)*(R0 - 4));
+  mg.lineTo(MC + Math.cos(pa)*(R0 + LANES.length*(RW+RG) + 2), MC + Math.sin(pa)*(R0 + LANES.length*(RW+RG) + 2)); mg.stroke();
+  // miolo caleidoscópico: o que está tocando, espelhado em 8
+  const act = LANES.filter((_, l) => grid[l][step]);
+  mg.save(); mg.beginPath(); mg.arc(MC, MC, R0 - 6, 0, Math.PI*2); mg.clip();
+  mg.fillStyle = "#14120e"; mg.fill();
+  mg.translate(MC, MC); mg.rotate(t/90);
+  for (let k = 0; k < 8; k++) {
+    mg.save(); mg.rotate(k*Math.PI/4); if (k % 2) mg.scale(1, -1);
+    act.forEach((ln, i) => {
+      mg.fillStyle = ln.c; mg.globalAlpha = .75;
+      const d = 9 + i*6 + Math.sin(t/12 + i)*4, w = 4 + P.trip.v*6;
+      mg.beginPath(); mg.moveTo(d, 0); mg.lineTo(d + w, w*.5); mg.lineTo(d + w*.4, w*1.2); mg.closePath(); mg.fill();
+    });
+    mg.restore();
+  }
+  mg.globalAlpha = 1; mg.restore();
+  mg.fillStyle = "#f4e9d4"; mg.beginPath(); mg.arc(MC, MC, 2.5, 0, Math.PI*2); mg.fill();
+}
+
+// ---------- PADRÃO (faixa de cima) ----------
+const sbox = document.getElementById("stripbox"), sc = document.getElementById("strip"), sg = sc.getContext("2d");
+const SW = sc.width = sbox.clientWidth, SH = sc.height = sbox.clientHeight, TOP = 30, BOT = SH - 20, MID = (TOP + BOT)/2;
+const COLS = 384, src = [];
+let env = .6;
+for (let i = 0; i < COLS; i++) {           // um compasso de kick + baixo rolante de psytrance
+  const beat = (i % 96)/96, sub = (i % 24)/24;
+  const kick = Math.exp(-beat*9), bass = (beat > .25 ? .55 : .1) * Math.exp(-sub*3.5);
+  src.push(Math.min(1, kick*.95 + bass + Math.random()*.06));
+}
+function drawStrip(step, frac) {
+  sg.clearRect(0, 0, SW, SH);
+  const sw = SW/STEPS, per = COLS/STEPS, cw = SW/COLS;
+  for (let s = 0; s < STEPS; s++) {
+    const x0 = s*sw, on = LANES.map((_, l) => grid[l][s]);
+    // fundo do passo com a cor dos efeitos ativos
+    const cols = LANES.filter((_, l) => on[l]).map(l => l.c);
+    cols.forEach((c, i) => { sg.fillStyle = c + "22"; sg.fillRect(x0 + 1, TOP - 6 + i*0, sw - 2, BOT - TOP + 12); });
+    if (s === step) { sg.fillStyle = "#f4e9d40d"; sg.fillRect(x0, 22, sw, SH - 22); }
+    // forma de onda do passo, transformada
+    const rat = on[0] ? 2 + Math.floor(P.ratchet.v*3) : 1, rev = on[1], crush = on[4];
+    const pitch = on[2] ? (s % 2 ? .6 : 1.6) : 1, filt = on[3] ? .45 : 1;
+    for (let j = 0; j < per; j++) {
+      let u = (j/per*rat) % 1; if (rev) u = 1 - u;
+      let idx = Math.floor(s*per + Math.min(per - 1, u*per*pitch) % per);
+      let v = src[idx] * filt; if (crush) v = Math.round(v*4)/4;
+      const h = v*(BOT - TOP)/2;
+      sg.fillStyle = cols.length ? cols[0] : "#4a443a";
+      sg.globalAlpha = cols.length ? .85 : 1;
+      sg.fillRect(x0 + j*cw, MID - h, Math.max(1, cw - .6), h*2);
+    }
+    sg.globalAlpha = 1;
+    // marcas dos efeitos embaixo
+    cols.forEach((c, i) => { sg.fillStyle = c; sg.fillRect(x0 + 4 + i*7, BOT + 6, 5, 3); });
+    // divisória e número
+    sg.fillStyle = s % 4 === 0 ? "#3a342b" : "#25211b"; sg.fillRect(x0, 22, 1, SH - 22);
+    sg.font = "9px Consolas"; sg.fillStyle = s % 4 === 0 ? "#8b8273" : "#5c5548";
+    if (s % 4 === 0) sg.fillText(String(s/4 + 1), x0 + 4, 32);
+  }
+  // cabeçote
+  const px = (step + frac)*sw;
+  sg.fillStyle = "#ff6b4a"; sg.fillRect(px - 1, 22, 2, SH - 22);
+}
+
+// ---------- relógio a 145 BPM ----------
+const BPM = 145, stepMs = 60000/BPM/4;
+let t0 = performance.now(), last = -1, bar = 0, t = 0;
+function frame(now) {
+  t++;
+  const pos = (now - t0)/stepMs, step = Math.floor(pos) % STEPS, frac = pos % 1;
+  if (step === 0 && last === STEPS - 1) { bar++; if (T.mutate && !T.hold && bar % 2 === 0) generate(); }
+  last = step;
+  document.getElementById("stepv").textContent = String(step + 1).padStart(2, "0");
+  drawStrip(step, frac); drawMandala(step, frac, t);
+  const lv = .55 + Math.sin(t/7)*.2 + Math.random()*.1;
+  setMeter("mi", lv); setMeter("mo", Math.min(1, lv*(.8 + P.mix.v*.25)));
+  requestAnimationFrame(frame);
+}
+refresh(); showPreset(); generate(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

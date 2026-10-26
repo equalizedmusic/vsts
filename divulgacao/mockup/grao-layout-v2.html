@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>GRÃO — Granular FX (layout v2)</title>
+<style>
+  :root {
+    --bg: #14120e; --panel: #1d1a15; --panel2: #27231c; --line: #353027;
+    --txt: #ece3d2; --dim: #8b8273; --amber: #ffb347; --coral: #ff6b4a; --cream: #f4e9d4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0a0907; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--txt);
+    user-select: none;
+  }
+  .plugin { width: 1000px; height: 580px; display: flex; flex-direction: column; gap: 10px; padding: 12px;
+    background: var(--bg); border-radius: 6px; border: 1px solid #2a261f; box-shadow: 0 30px 80px #000c; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  .ttl { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; color: var(--dim); }
+  .ttl b { color: var(--amber); font-weight: 700; }
+
+  /* ---------- cabeçalho ---------- */
+  header { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 4px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo svg { display: block; }
+  .logo .nm { font-size: 24px; font-weight: 800; letter-spacing: 3px; color: var(--cream); line-height: 1; }
+  .logo .tg { font-size: 9px; letter-spacing: 2px; color: var(--dim); border-left: 1px solid var(--line); padding-left: 10px; line-height: 1.4; }
+  .preset { margin-left: auto; display: flex; align-items: stretch; height: 32px; }
+  .preset .btn { width: 30px; display: flex; align-items: center; justify-content: center; background: var(--panel2);
+    border: 1px solid var(--line); color: var(--dim); font-size: 11px; cursor: pointer; }
+  .preset .btn:hover { color: var(--amber); }
+  .preset .btn:first-child { border-radius: 4px 0 0 4px; }
+  .preset .btn.last { border-radius: 0 4px 4px 0; }
+  .preset .name { width: 230px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+    background: #100e0b; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    font: 12px Consolas, monospace; color: var(--cream); }
+  .preset .name small { color: var(--dim); font-size: 10px; }
+  .bypass { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .bypass i { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .bypass.off i { background: #4a443a; box-shadow: none; }
+
+  /* ---------- fita / buffer ---------- */
+  .buffer { position: relative; height: 140px; flex-shrink: 0; overflow: hidden; }
+  .buffer canvas { position: absolute; inset: 0; }
+  .buffer .ttl { position: absolute; top: 9px; left: 12px; }
+  .badge { position: absolute; top: 7px; right: 10px; font-size: 9px; letter-spacing: 2px; font-weight: 700;
+    padding: 3px 8px; border-radius: 3px; background: #6ec3ff22; color: #8fd0ff; border: 1px solid #6ec3ff55; display: none; }
+  .badge.on { display: block; }
+
+  /* ---------- deck ---------- */
+  .deck { flex: 1; display: flex; gap: 10px; min-height: 0; }
+  .pad { width: 262px; position: relative; padding: 10px; display: flex; flex-direction: column; }
+  .pad canvas { margin-top: 8px; border-radius: 3px; cursor: crosshair; background: #100e0b; border: 1px solid var(--line); }
+  .pad .xy { display: flex; justify-content: space-between; font: 10px Consolas, monospace; color: var(--dim); margin-top: 6px; }
+  .pad .xy b { color: var(--cream); font-weight: 400; }
+
+  .mod { flex: 1; padding: 10px 10px 6px; display: flex; flex-direction: column; }
+  .mod .top { display: flex; align-items: center; gap: 12px; margin: 6px 0 4px; }
+  .mod .desc { font-size: 10px; line-height: 1.5; color: var(--dim); }
+  .mod .desc b { display: block; color: var(--cream); font-size: 11px; letter-spacing: 1px; margin-bottom: 2px; }
+  .mod .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; margin-top: auto; }
+
+  .knob { display: flex; flex-direction: column; align-items: center; cursor: ns-resize; }
+  .knob svg { display: block; }
+  .knob .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--txt); margin-top: -2px; }
+  .knob .val { font: 10px Consolas, monospace; color: var(--dim); height: 13px; }
+
+  .out { width: 168px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .sw { display: flex; gap: 6px; }
+  .key { flex: 1; height: 40px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer;
+    font-size: 8px; font-weight: 700; letter-spacing: 1.5px; color: var(--dim); }
+  .key i { width: 18px; height: 3px; border-radius: 2px; background: #4a443a; }
+  .key.on { color: var(--cream); }
+  .key.on i { background: var(--coral); box-shadow: 0 0 6px var(--coral); }
+  .key.on.frz i { background: #6ec3ff; box-shadow: 0 0 6px #6ec3ff; }
+  .outrow { flex: 1; display: flex; gap: 10px; align-items: stretch; min-height: 0; }
+  .fader { width: 44px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .fader .rail { position: relative; flex: 1; width: 30px; background: #100e0b; border: 1px solid var(--line); border-radius: 3px; cursor: ns-resize; overflow: hidden; }
+  .fader .fill { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #ff6b4a33, #ffb34766); }
+  .fader .cap { position: absolute; left: 2px; right: 2px; height: 6px; margin-bottom: -3px; background: var(--cream); border-radius: 2px; }
+  .fader .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; }
+  .fader .val { font: 10px Consolas, monospace; color: var(--dim); }
+  .rcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+  .meters { display: flex; gap: 6px; align-items: flex-end; }
+  .meter { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+  .meter .leds { display: flex; flex-direction: column-reverse; gap: 2px; }
+  .meter .leds span { width: 12px; height: 4px; border-radius: 1px; background: #2c2821; }
+</style>
+</head>
+<body>
+<div class="plugin">
+
+  <header>
+    <div class="logo">
+      <svg width="30" height="30" viewBox="0 0 30 30">
+        <circle cx="15" cy="15" r="13" fill="none" stroke="#ffb347" stroke-width="2"/>
+        <circle cx="10" cy="12" r="2.4" fill="#ffb347"/><circle cx="18" cy="9" r="1.6" fill="#f4e9d4"/>
+        <circle cx="19" cy="18" r="2.8" fill="#ff6b4a"/><circle cx="11" cy="20" r="1.3" fill="#f4e9d4"/>
+      </svg>
+      <div class="nm">GRÃO</div>
+      <div class="tg">GRANULAR<br>TEXTURE FX</div>
+    </div>
+    <div class="preset">
+      <div class="btn" id="prev">◀</div>
+      <div class="name"><span id="pname">Init · Areia</span><small id="pnum">01/06</small></div>
+      <div class="btn" id="next">▶</div>
+      <div class="btn last" title="Salvar preset">✚</div>
+    </div>
+    <div class="bypass" id="bypass" title="Liga/desliga"><i></i></div>
+  </header>
+
+  <!-- FITA: o buffer gravado e os grãos lidos dele -->
+  <div class="card buffer" id="bufbox">
+    <canvas id="buf"></canvas>
+    <div class="ttl">FITA <b>· 4 s</b></div>
+    <div class="badge" id="frzbadge">❄ CONGELADA</div>
+  </div>
+
+  <div class="deck">
+    <!-- XY -->
+    <div class="card pad">
+      <div class="ttl">CAMPO <b>XY</b></div>
+      <canvas id="pad" width="240" height="240"></canvas>
+      <div class="xy"><span>X ESPAÇO <b id="xv">40</b></span><span>Y GRÃO <b id="yv">55</b></span></div>
+    </div>
+
+    <!-- módulo grão -->
+    <div class="card mod">
+      <div class="ttl">01 · <b>GRÃO</b></div>
+      <div class="top">
+        <div class="knob big" data-p="grain"></div>
+        <div class="desc"><b>MACRO GRÃO</b>Quanto o som é picado: tamanho, densidade e variação de afinação.</div>
+      </div>
+      <div class="grid">
+        <div class="knob" data-p="size"></div><div class="knob" data-p="density"></div>
+        <div class="knob" data-p="spray"></div><div class="knob" data-p="pitch"></div>
+      </div>
+    </div>
+
+    <!-- módulo espaço -->
+    <div class="card mod">
+      <div class="ttl">02 · <b>ESPAÇO</b></div>
+      <div class="top">
+        <div class="knob big" data-p="space"></div>
+        <div class="desc"><b>MACRO ESPAÇO</b>Abertura estéreo, repetição dos grãos e cauda do ambiente.</div>
+      </div>
+      <div class="grid">
+        <div class="knob" data-p="spread"></div><div class="knob" data-p="feedback"></div>
+        <div class="knob" data-p="decay"></div><div class="knob" data-p="tone"></div>
+      </div>
+    </div>
+
+    <!-- saída -->
+    <div class="card out">
+      <div class="ttl">03 · <b>SAÍDA</b></div>
+      <div class="sw">
+        <div class="key" data-t="reverse"><i></i>REVERSO</div>
+        <div class="key frz" data-t="freeze"><i></i>CONGELAR</div>
+      </div>
+      <div class="outrow">
+        <div class="fader"><div class="rail" id="mix"><div class="fill"></div><div class="cap"></div></div>
+          <div class="lbl">MIX</div><div class="val" id="mixv"></div></div>
+        <div class="rcol">
+          <div class="knob" data-p="output"></div>
+          <div class="meters">
+            <div class="meter"><div class="leds" id="mi"></div>IN</div>
+            <div class="meter"><div class="leds" id="mo"></div>OUT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- parâmetros (ids iguais aos que irão para o APVTS no JUCE) ----------
+const P = {
+  grain:   { v: .55, lbl: "GRÃO",       fmt: v => Math.round(v*100) + "%" },
+  space:   { v: .40, lbl: "ESPAÇO",     fmt: v => Math.round(v*100) + "%" },
+  size:    { v: .35, lbl: "TAMANHO",    fmt: v => Math.round(10 + v*490) + " ms" },
+  density: { v: .55, lbl: "DENSIDADE",  fmt: v => Math.round(1 + v*99) + " /s" },
+  pitch:   { v: .50, lbl: "AFINAÇÃO",   fmt: v => { const s = Math.round((v-.5)*48); return (s>0?"+":"") + s + " st"; } },
+  spray:   { v: .30, lbl: "DISPERSÃO",  fmt: v => Math.round(v*1000) + " ms" },
+  spread:  { v: .70, lbl: "ESTÉREO",    fmt: v => Math.round(v*100) + "%" },
+  feedback:{ v: .25, lbl: "FEEDBACK",   fmt: v => Math.round(v*95) + "%" },
+  tone:    { v: .60, lbl: "TOM",        fmt: v => v < .5 ? "LP " + Math.round(500 + v*2*19500) : "HP " + Math.round(20 + (v-.5)*2*1980) },
+  decay:   { v: .45, lbl: "DECAIMENTO", fmt: v => (0.2 + v*9.8).toFixed(1) + " s" },
+  output:  { v: .75, lbl: "GANHO",      fmt: v => ((v-.75)*48).toFixed(1) + " dB" },
+  mix:     { v: .60 }
+};
+const T = { reverse: false, freeze: false };
+const DEF = Object.fromEntries(Object.entries(P).map(([k, o]) => [k, o.v]));
+
+// ---------- knob: anel de segmentos ----------
+function drawKnob(el) {
+  const id = el.dataset.p, k = P[id], big = el.classList.contains("big");
+  const S = big ? 92 : 64, c = S/2, n = big ? 31 : 21, r1 = big ? 34 : 23, r2 = big ? 42 : 29, rb = big ? 26 : 17;
+  const A0 = Math.PI*0.75, A1 = Math.PI*2.25, a = A0 + (A1-A0)*k.v;
+  const on = big ? (id === "grain" ? "#ffb347" : "#ff6b4a") : "#f4e9d4";
+  let seg = "";
+  for (let i = 0; i < n; i++) {
+    const t = A0 + (A1-A0)*i/(n-1), lit = i/(n-1) <= k.v + 1e-6;
+    seg += `<line x1="${c+r1*Math.cos(t)}" y1="${c+r1*Math.sin(t)}" x2="${c+r2*Math.cos(t)}" y2="${c+r2*Math.sin(t)}"
+      stroke="${lit ? on : "#3a342b"}" stroke-width="${big ? 2.6 : 2.2}" stroke-linecap="round"/>`;
+  }
+  const inner = big ? `<text x="${c}" y="${c+4}" text-anchor="middle" font-family="Consolas,monospace" font-size="13" fill="#ece3d2">${Math.round(k.v*100)}</text>` : "";
+  el.innerHTML = `<svg width="${S}" height="${S}">${seg}
+    <circle cx="${c}" cy="${c}" r="${rb}" fill="#2a261f" stroke="#100e0b" stroke-width="2"/>
+    <circle cx="${c+(rb-5)*Math.cos(a)}" cy="${c+(rb-5)*Math.sin(a)}" r="${big?3:2.2}" fill="${on}"/>${inner}</svg>
+    ${big ? "" : `<div class="lbl">${k.lbl}</div><div class="val">${k.fmt(k.v)}</div>`}`;
+}
+const knobs = [...document.querySelectorAll(".knob")];
+knobs.forEach(el => {
+  el.addEventListener("pointerdown", e => {
+    el.setPointerCapture(e.pointerId);
+    let y = e.clientY;
+    el.onpointermove = ev => { const k = P[el.dataset.p]; k.v = Math.min(1, Math.max(0, k.v + (y - ev.clientY)/180)); y = ev.clientY; refresh(); };
+  });
+  el.addEventListener("pointerup", () => el.onpointermove = null);
+  el.addEventListener("dblclick", () => { P[el.dataset.p].v = DEF[el.dataset.p]; refresh(); });
+});
+
+// ---------- botões / fader / presets ----------
+document.querySelectorAll(".key").forEach(b => b.onclick = () => {
+  T[b.dataset.t] = !T[b.dataset.t]; b.classList.toggle("on", T[b.dataset.t]);
+  document.getElementById("frzbadge").classList.toggle("on", T.freeze);
+});
+document.getElementById("bypass").onclick = e => e.currentTarget.classList.toggle("off");
+const mixEl = document.getElementById("mix");
+function setMix(e) { const r = mixEl.getBoundingClientRect(); P.mix.v = Math.min(1, Math.max(0, 1 - (e.clientY - r.top)/r.height)); refresh(); }
+mixEl.addEventListener("pointerdown", e => { mixEl.setPointerCapture(e.pointerId); setMix(e); mixEl.onpointermove = setMix; });
+mixEl.addEventListener("pointerup", () => mixEl.onpointermove = null);
+
+const presets = ["Init · Areia", "Poeira Dourada", "Enxame Reverso", "Coral Congelado", "Fita Rasgada", "Garoa"];
+let pi = 0;
+function showPreset() { document.getElementById("pname").textContent = presets[pi];
+  document.getElementById("pnum").textContent = String(pi+1).padStart(2, "0") + "/" + String(presets.length).padStart(2, "0"); }
+document.getElementById("prev").onclick = () => { pi = (pi + presets.length - 1) % presets.length; showPreset(); };
+document.getElementById("next").onclick = () => { pi = (pi + 1) % presets.length; showPreset(); };
+
+// medidores em LED
+["mi", "mo"].forEach(id => document.getElementById(id).innerHTML = "<span></span>".repeat(16));
+function setMeter(id, lv) {
+  [...document.getElementById(id).children].forEach((s, i) => {
+    const f = i/15, lit = f <= lv;
+    s.style.background = !lit ? "#2c2821" : f > .85 ? "#ff6b4a" : f > .65 ? "#ffb347" : "#f4e9d4";
+  });
+}
+
+function refresh() {
+  knobs.forEach(drawKnob);
+  mixEl.querySelector(".fill").style.height = P.mix.v*100 + "%";
+  mixEl.querySelector(".cap").style.bottom = P.mix.v*100 + "%";
+  document.getElementById("mixv").textContent = Math.round(P.mix.v*100) + "%";
+  document.getElementById("xv").textContent = Math.round(P.space.v*100);
+  document.getElementById("yv").textContent = Math.round(P.grain.v*100);
+}
+
+// ---------- campo XY ----------
+const pad = document.getElementById("pad"), pg = pad.getContext("2d"), PS = pad.width;
+function setXY(e) {
+  const r = pad.getBoundingClientRect();
+  P.space.v = Math.min(1, Math.max(0, (e.clientX - r.left)/r.width));
+  P.grain.v = Math.min(1, Math.max(0, 1 - (e.clientY - r.top)/r.height));
+  refresh();
+}
+pad.addEventListener("pointerdown", e => { pad.setPointerCapture(e.pointerId); setXY(e); pad.onpointermove = setXY; });
+pad.addEventListener("pointerup", () => pad.onpointermove = null);
+const trail = [];
+function drawPad(t) {
+  const px = P.space.v*PS, py = (1 - P.grain.v)*PS;
+  trail.push([px, py]); if (trail.length > 40) trail.shift();
+  pg.clearRect(0, 0, PS, PS);
+  // campo de pontos: acende perto do cursor
+  const N = 16, st = PS/N;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const x = st*(i+.5), y = st*(j+.5), d = Math.hypot(x - px, y - py)/PS;
+    const w = Math.max(0, 1 - d*2.6) * (0.75 + 0.25*Math.sin(t/14 - d*18));
+    pg.fillStyle = w > .02 ? `rgba(255,${Math.round(107 + 72*(1-w))},${Math.round(74*(1-w))},${.15 + w*.85})` : "#2c2821";
+    pg.beginPath(); pg.arc(x, y, 1.2 + w*2.6, 0, Math.PI*2); pg.fill();
+  }
+  // mira
+  pg.setLineDash([3, 4]); pg.strokeStyle = "#f4e9d433"; pg.lineWidth = 1;
+  pg.beginPath(); pg.moveTo(px, 0); pg.lineTo(px, PS); pg.moveTo(0, py); pg.lineTo(PS, py); pg.stroke(); pg.setLineDash([]);
+  // rastro
+  pg.strokeStyle = "#ffb34755"; pg.beginPath(); trail.forEach(([x, y], i) => i ? pg.lineTo(x, y) : pg.moveTo(x, y)); pg.stroke();
+  // cursor quadrado
+  pg.save(); pg.translate(px, py); pg.rotate(Math.PI/4);
+  pg.strokeStyle = "#f4e9d4"; pg.lineWidth = 1.5; pg.strokeRect(-8, -8, 16, 16);
+  pg.fillStyle = "#ffb347"; pg.fillRect(-3.5, -3.5, 7, 7); pg.restore();
+  // eixos
+  pg.font = "bold 8px Segoe UI"; pg.fillStyle = "#8b8273";
+  pg.fillText("ESPAÇO →", PS - 52, PS - 6);
+  pg.save(); pg.translate(10, 54); pg.rotate(-Math.PI/2); pg.fillText("GRÃO →", 0, 0); pg.restore();
+}
+
+// ---------- fita: forma de onda gravada + grãos ----------
+const bbox = document.getElementById("bufbox"), bc = document.getElementById("buf"), bg = bc.getContext("2d");
+const BW = bc.width = bbox.clientWidth, BH = bc.height = bbox.clientHeight, MID = BH/2 + 8, COL = 3;
+const wave = []; let env = .5, ph = 0;
+function sample() { ph += .07; env += (Math.random() - .5)*.12; env = Math.min(.95, Math.max(.15, env));
+  return env*(.55 + .45*Math.abs(Math.sin(ph))) * (.7 + Math.random()*.3); }
+for (let i = 0; i < BW/COL; i++) wave.push(sample());
+const grains = [];
+function spawnGrain() {
+  const len = (10 + P.size.v*490)/4000*BW;
+  const age = Math.min(.97, .02 + Math.random()*(.05 + P.spray.v*.9));     // distância do cabeçote (fração da fita)
+  const jit = (Math.random() - .5)*P.grain.v*24;                         // variação de afinação em st
+  const st = (P.pitch.v - .5)*48 + jit;
+  grains.push({ x: BW - age*BW - len, len, st, life: 0, max: 30 + Math.random()*40, rev: T.reverse && Math.random() < .5,
+    side: (Math.random() - .5)*P.spread.v });
+}
+function drawBuf(t) {
+  if (!T.freeze && t % 2 === 0) { wave.shift(); wave.push(sample()); }
+  bg.clearRect(0, 0, BW, BH);
+  // régua de tempo
+  bg.font = "9px Consolas"; bg.fillStyle = "#5c5548"; bg.strokeStyle = "#2a261f";
+  for (let s = 0; s <= 4; s++) { const x = BW - s/4*BW; bg.beginPath(); bg.moveTo(x, 26); bg.lineTo(x, BH); bg.stroke();
+    if (s) bg.fillText("-" + s + "s", x + 4, BH - 6); }
+  // forma de onda
+  const frz = T.freeze;
+  for (let i = 0; i < wave.length; i++) {
+    const h = wave[i]*(BH - 50)/2, x = i*COL;
+    bg.fillStyle = frz ? "#6ec3ff44" : "#4a443a"; bg.fillRect(x, MID - h, COL - 1, h*2);
+  }
+  // grãos
+  const rate = (P.density.v*.7 + P.grain.v*.5)*2.2;
+  if (Math.random() < rate % 1) spawnGrain(); for (let i = 0; i < Math.floor(rate); i++) spawnGrain();
+  for (let i = grains.length - 1; i >= 0; i--) {
+    const g = grains[i]; g.life++;
+    if (g.life > g.max) { grains.splice(i, 1); continue; }
+    const al = Math.sin(Math.PI*g.life/g.max), y = MID - g.st/24*(BH - 60)/2 + g.side*30, h = 10;
+    // cauda de espaço (feedback + decaimento)
+    const tail = g.len*(P.space.v*2 + P.feedback.v*3)*(1 + P.decay.v);
+    const gr = bg.createLinearGradient(g.x + g.len, 0, g.x + g.len + tail, 0);
+    gr.addColorStop(0, `rgba(255,107,74,${al*.35})`); gr.addColorStop(1, "rgba(255,107,74,0)");
+    bg.fillStyle = gr; bg.fillRect(g.x + g.len, y - h/2 + 2, tail, h - 4);
+    bg.fillStyle = `rgba(255,179,71,${al*.85})`; bg.fillRect(g.x, y - h/2, Math.max(2, g.len), h);
+    if (g.rev && g.len > 8) { bg.fillStyle = `rgba(20,18,14,${al})`;
+      bg.beginPath(); bg.moveTo(g.x + 3, y); bg.lineTo(g.x + 9, y - 3.5); bg.lineTo(g.x + 9, y + 3.5); bg.fill(); }
+  }
+  // cabeçote de gravação
+  if (!frz) { bg.fillStyle = "#ff6b4a"; bg.fillRect(BW - 2, 22, 2, BH - 22);
+    bg.font = "bold 8px Segoe UI"; bg.fillText("REC", BW - 26, 33); }
+}
+
+let t = 0;
+function frame() {
+  t++;
+  drawBuf(t); drawPad(t);
+  const lv = .5 + Math.sin(t/9)*.2 + Math.random()*.1;
+  setMeter("mi", lv); setMeter("mo", Math.min(1, lv*(.75 + P.mix.v*.3)));
+  requestAnimationFrame(frame);
+}
+refresh(); showPreset();
+for (let i = 0; i < 60; i++) { spawnGrain(); grains[grains.length-1].life = Math.random()*30; }
+frame();
+</script>
+</body>
+</html>

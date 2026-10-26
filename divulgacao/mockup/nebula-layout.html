@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>NEBULA — Granular FX (layout v1)</title>
+<style>
+  :root {
+    --bg: #0d0f12; --panel: #1b1e23; --panel2: #24282e; --line: #2f343c;
+    --txt: #c9ced6; --dim: #6b727d; --cyan: #3ee6e0; --violet: #a77bff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 20% 20%, #1b2a3a, #07080a 70%);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--txt);
+    user-select: none;
+  }
+  .plugin { width: 1000px; height: 560px; display: flex; gap: 6px; padding: 6px;
+    background: #050607; border-radius: 14px; box-shadow: 0 30px 80px #000c; }
+
+  /* ---------- palco (esquerda) ---------- */
+  .stage { position: relative; flex: 1; border-radius: 10px; overflow: hidden;
+    background: radial-gradient(circle at 50% 50%, #12161b 0%, var(--bg) 65%); }
+  .stage::before { content: ""; position: absolute; inset: 0; opacity: .35;
+    background-image: radial-gradient(#ffffff22 1px, transparent 1px); background-size: 14px 14px; }
+  .logo { position: absolute; top: 26px; left: 30px; font-size: 22px; font-weight: 700;
+    letter-spacing: 8px; color: #fff; }
+  .logo span { background: linear-gradient(90deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { position: absolute; top: 56px; left: 31px; font-size: 9px; letter-spacing: 3px; color: var(--dim); }
+  canvas { position: absolute; inset: 0; }
+  .axis { position: absolute; font-size: 10px; letter-spacing: 3px; font-weight: 600; }
+  .axis.x { bottom: 22px; left: 50%; transform: translateX(-50%); color: var(--cyan); }
+  .axis.y { left: 14px; top: 50%; transform: translate(-50%, -50%) rotate(-90deg) translateY(10px);
+    color: var(--violet); transform-origin: center; }
+  .readout { position: absolute; right: 22px; bottom: 20px; font: 11px Consolas, monospace; color: var(--dim); text-align: right; }
+
+  /* ---------- painel (direita) ---------- */
+  .side { width: 300px; display: flex; flex-direction: column; gap: 6px; }
+  .card { background: var(--panel); border-radius: 10px; border: 1px solid var(--line); }
+  .preset { flex-shrink: 0; display: flex; align-items: center; height: 38px; padding: 0 6px 0 14px; gap: 4px; }
+  .preset .name { flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 2px; }
+  .btn { width: 26px; height: 26px; border-radius: 6px; background: var(--panel2); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--txt); cursor: pointer; }
+  .btn:hover { border-color: var(--cyan); }
+  .tabs { display: flex; padding: 4px; gap: 4px; }
+  .tab { flex: 1; text-align: center; font-size: 10px; letter-spacing: 2px; padding: 6px 0; border-radius: 6px;
+    color: var(--dim); cursor: pointer; }
+  .tab.on { background: var(--panel2); color: #fff; }
+  .main { flex: 1; padding: 14px 14px 10px; display: flex; flex-direction: column; align-items: center; }
+  .view { width: 100%; display: none; flex-direction: column; align-items: center; flex: 1; }
+  .view.on { display: flex; }
+
+  .knob { display: flex; flex-direction: column; align-items: center; cursor: ns-resize; }
+  .knob svg { display: block; }
+  .knob .lbl { font-size: 10px; font-weight: 700; letter-spacing: 3px; margin-top: 2px; }
+  .knob .val { font: 10px Consolas, monospace; color: var(--dim); margin-top: 2px; height: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 4px; width: 100%; margin-top: 4px; }
+  .grid .lbl { font-size: 9px; letter-spacing: 1.5px; color: var(--txt); font-weight: 600; }
+
+  .row { display: flex; gap: 10px; margin: 8px 0 4px; }
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: 2px; color: var(--dim);
+    cursor: pointer; padding: 5px 9px; border: 1px solid var(--line); border-radius: 14px; }
+  .toggle i { width: 22px; height: 12px; border-radius: 6px; background: #3a3f47; position: relative; transition: .15s; }
+  .toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%;
+    background: #aab; transition: .15s; }
+  .toggle.on { color: #fff; border-color: var(--violet); }
+  .toggle.on i { background: linear-gradient(90deg, var(--cyan), var(--violet)); }
+  .toggle.on i::after { left: 12px; background: #fff; }
+
+  .mix { width: 100%; margin-top: auto; display: flex; align-items: center; gap: 8px; font-size: 9px; letter-spacing: 2px; color: var(--dim); }
+  .track { position: relative; flex: 1; height: 34px; border-radius: 6px; background: #0b0d10; border: 1px solid var(--line);
+    overflow: hidden; cursor: ew-resize; }
+  .track .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #3ee6e022, #a77bff55); }
+  .track .cap { position: absolute; top: 2px; bottom: 2px; width: 10px; margin-left: -5px; border-radius: 3px; background: #e8ecf2; }
+  .track .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font: 11px Consolas, monospace; color: #fff; }
+
+  .bottom { flex-shrink: 0; height: 86px; display: flex; padding: 10px 12px; gap: 12px; }
+  .bottom .info { flex: 1; font-size: 9px; letter-spacing: 2px; color: var(--dim); display: flex; flex-direction: column; justify-content: space-between; }
+  .bottom .info b { font: 18px Consolas, monospace; color: var(--txt); letter-spacing: 0; font-weight: 400; }
+  .meters { display: flex; gap: 10px; align-items: flex-end; }
+  .meter { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+  .meter .bar { width: 8px; height: 46px; background: #0b0d10; border-radius: 2px; position: relative; overflow: hidden; }
+  .meter .bar div { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, var(--cyan), var(--violet)); }
+</style>
+</head>
+<body>
+<div class="plugin">
+  <!-- PALCO: visualizador + XY pad -->
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="logo">NEB<span>U</span>LA</div>
+    <div class="sub">GRANULAR FX</div>
+    <div class="axis y">GRAIN</div>
+    <div class="axis x">SPACE</div>
+    <div class="readout" id="readout"></div>
+  </div>
+
+  <!-- PAINEL LATERAL -->
+  <div class="side">
+    <div class="card preset">
+      <div class="name" id="pname">INIT — CLOUD</div>
+      <div class="btn" id="prev">◀</div><div class="btn" id="next">▶</div><div class="btn" title="Salvar">💾</div>
+    </div>
+
+    <div class="card main">
+      <div class="tabs" style="width:100%;margin:-8px 0 8px">
+        <div class="tab on" data-v="macro">MACRO</div><div class="tab" data-v="adv">AVANÇADO</div>
+      </div>
+
+      <div class="view on" id="v-macro">
+        <div class="knob big" data-p="grain"></div>
+        <div class="knob big" data-p="space" style="margin-top:6px"></div>
+        <div class="row">
+          <div class="toggle" data-t="reverse"><i></i>REVERSE</div>
+          <div class="toggle" data-t="freeze"><i></i>FREEZE</div>
+        </div>
+      </div>
+
+      <div class="view" id="v-adv">
+        <div class="grid">
+          <div class="knob sm" data-p="size"></div><div class="knob sm" data-p="density"></div><div class="knob sm" data-p="pitch"></div>
+          <div class="knob sm" data-p="spray"></div><div class="knob sm" data-p="spread"></div><div class="knob sm" data-p="feedback"></div>
+          <div class="knob sm" data-p="tone"></div><div class="knob sm" data-p="decay"></div><div class="knob sm" data-p="output"></div>
+        </div>
+      </div>
+
+      <div class="mix">DRY
+        <div class="track" id="mix"><div class="fill"></div><div class="cap"></div><div class="pct"></div></div>WET
+      </div>
+    </div>
+
+    <div class="card bottom">
+      <div class="info">XY CONTROL<div><b id="xv">50</b>&nbsp;&nbsp;<b id="yv">50</b></div><span>X SPACE · Y GRAIN</span></div>
+      <div class="meters">
+        <div class="meter"><div class="bar"><div id="mi"></div></div>IN</div>
+        <div class="meter"><div class="bar"><div id="mo"></div></div>OUT</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- parâmetros (mesmos nomes que irão para o APVTS no JUCE) ----------
+const P = {
+  grain:   { v: .55, lbl: "GRAIN",    fmt: v => Math.round(v*100) + "%" },
+  space:   { v: .40, lbl: "SPACE",    fmt: v => Math.round(v*100) + "%" },
+  size:    { v: .35, lbl: "SIZE",     fmt: v => Math.round(10 + v*490) + " ms" },
+  density: { v: .55, lbl: "DENSITY",  fmt: v => Math.round(1 + v*99) + " /s" },
+  pitch:   { v: .50, lbl: "PITCH",    fmt: v => { const s = Math.round((v-.5)*48); return (s>0?"+":"") + s + " st"; } },
+  spray:   { v: .30, lbl: "SPRAY",    fmt: v => Math.round(v*1000) + " ms" },
+  spread:  { v: .70, lbl: "SPREAD",   fmt: v => Math.round(v*100) + "%" },
+  feedback:{ v: .25, lbl: "FEEDBACK", fmt: v => Math.round(v*95) + "%" },
+  tone:    { v: .60, lbl: "TONE",     fmt: v => v < .5 ? "LP " + Math.round(500 + v*2*19500) : "HP " + Math.round(20 + (v-.5)*2*1980) },
+  decay:   { v: .45, lbl: "DECAY",    fmt: v => (0.2 + v*9.8).toFixed(1) + " s" },
+  output:  { v: .75, lbl: "OUTPUT",   fmt: v => ((v-.75)*48).toFixed(1) + " dB" },
+  mix:     { v: .60 }
+};
+const T = { reverse: false, freeze: false };
+
+// ---------- knobs SVG ----------
+function arc(cx, cy, r, a0, a1) {
+  const p = a => [cx + r*Math.cos(a), cy + r*Math.sin(a)];
+  const [x0,y0] = p(a0), [x1,y1] = p(a1);
+  return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0 > Math.PI ? 1 : 0} 1 ${x1} ${y1}`;
+}
+const A0 = Math.PI*0.75, A1 = Math.PI*2.25;
+function drawKnob(el) {
+  const k = P[el.dataset.p], big = el.classList.contains("big");
+  const S = big ? 104 : 62, c = S/2, r = big ? 41 : 24, w = big ? 5 : 3.5, rb = big ? 28 : 16;
+  const a = A0 + (A1-A0)*k.v, id = "g" + el.dataset.p;
+  let ticks = "";
+  if (big) for (let i=0;i<=10;i++){ const t=A0+(A1-A0)*i/10; ticks += `<circle cx="${c+(r+9)*Math.cos(t)}" cy="${c+(r+9)*Math.sin(t)}" r="1.3" fill="${i/10<=k.v?'#a77bff':'#444a53'}"/>`; }
+  el.innerHTML = `
+  <svg width="${S}" height="${S}">
+    <defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="#3ee6e0"/><stop offset="1" stop-color="#a77bff"/></linearGradient>
+      <radialGradient id="${id}b" cx=".4" cy=".35"><stop offset="0" stop-color="#5a606a"/><stop offset="1" stop-color="#1c1f24"/></radialGradient></defs>
+    ${ticks}
+    <path d="${arc(c,c,r,A0,A1)}" stroke="#2c3138" stroke-width="${w}" fill="none" stroke-linecap="round"/>
+    <path d="${arc(c,c,r,A0,Math.max(a,A0+.001))}" stroke="url(#${id})" stroke-width="${w}" fill="none" stroke-linecap="round"/>
+    <circle cx="${c}" cy="${c}" r="${rb}" fill="url(#${id}b)" stroke="#0a0b0d" stroke-width="2"/>
+    <line x1="${c+rb*.35*Math.cos(a)}" y1="${c+rb*.35*Math.sin(a)}" x2="${c+rb*.85*Math.cos(a)}" y2="${c+rb*.85*Math.sin(a)}" stroke="#fff" stroke-width="${big?2.5:1.8}" stroke-linecap="round"/>
+  </svg>
+  <div class="lbl" style="${big ? 'color:' + (el.dataset.p==='grain'?'#a77bff':'#3ee6e0') : ''}">${k.lbl}</div>
+  <div class="val">${k.fmt(k.v)}</div>`;
+}
+const knobs = [...document.querySelectorAll(".knob")];
+knobs.forEach(el => {
+  drawKnob(el);
+  el.addEventListener("pointerdown", e => {
+    el.setPointerCapture(e.pointerId);
+    let y = e.clientY;
+    const mv = ev => { P[el.dataset.p].v = Math.min(1, Math.max(0, P[el.dataset.p].v + (y - ev.clientY)/180)); y = ev.clientY; refresh(); };
+    const up = () => { el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); };
+    el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up);
+  });
+  el.addEventListener("dblclick", () => { P[el.dataset.p].v = el.dataset.p === "pitch" ? .5 : P[el.dataset.p].v; refresh(); });
+});
+
+// ---------- toggles / abas / mix ----------
+document.querySelectorAll(".toggle").forEach(t => t.onclick = () => { T[t.dataset.t] = !T[t.dataset.t]; t.classList.toggle("on", T[t.dataset.t]); });
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + t.dataset.v));
+});
+const mixEl = document.getElementById("mix");
+function setMix(e) { const r = mixEl.getBoundingClientRect(); P.mix.v = Math.min(1, Math.max(0, (e.clientX - r.left)/r.width)); refresh(); }
+mixEl.addEventListener("pointerdown", e => { mixEl.setPointerCapture(e.pointerId); setMix(e); mixEl.onpointermove = setMix; });
+mixEl.addEventListener("pointerup", () => mixEl.onpointermove = null);
+
+const presets = ["INIT — CLOUD", "SHIMMER DUST", "REVERSE SWARM", "FROZEN CHOIR", "BROKEN TAPE"];
+let pi = 0;
+document.getElementById("prev").onclick = () => { pi = (pi + presets.length - 1) % presets.length; document.getElementById("pname").textContent = presets[pi]; };
+document.getElementById("next").onclick = () => { pi = (pi + 1) % presets.length; document.getElementById("pname").textContent = presets[pi]; };
+
+function refresh() {
+  knobs.forEach(drawKnob);
+  mixEl.querySelector(".fill").style.width = P.mix.v*100 + "%";
+  mixEl.querySelector(".cap").style.left = P.mix.v*100 + "%";
+  mixEl.querySelector(".pct").textContent = Math.round(P.mix.v*100) + "%";
+  document.getElementById("xv").textContent = Math.round(P.space.v*100);
+  document.getElementById("yv").textContent = Math.round(P.grain.v*100);
+  document.getElementById("readout").innerHTML = `${P.size.fmt(P.size.v)} · ${P.density.fmt(P.density.v)}<br>${P.pitch.fmt(P.pitch.v)} · fb ${P.feedback.fmt(P.feedback.v)}`;
+}
+
+// ---------- palco: partículas + XY ----------
+const stage = document.getElementById("stage"), cv = document.getElementById("cv"), g = cv.getContext("2d");
+let W, H, CX, CY, R;
+function size() { W = cv.width = stage.clientWidth; H = cv.height = stage.clientHeight; CX = W/2; CY = H/2 + 10; R = Math.min(W, H)*0.40; }
+size();
+
+// XY: posição do ponto dentro do círculo → X = SPACE, Y = GRAIN
+function xyFromParams() { return [CX + (P.space.v - .5)*2*R*.72, CY - (P.grain.v - .5)*2*R*.72]; }
+let dragging = false;
+function setXY(e) {
+  const r = stage.getBoundingClientRect();
+  let x = e.clientX - r.left - CX, y = e.clientY - r.top - CY;
+  const m = Math.hypot(x, y), lim = R*.72*1.41;
+  if (m > lim) { x *= lim/m; y *= lim/m; }
+  P.space.v = Math.min(1, Math.max(0, x/(2*R*.72) + .5));
+  P.grain.v = Math.min(1, Math.max(0, -y/(2*R*.72) + .5));
+  refresh();
+}
+stage.addEventListener("pointerdown", e => { dragging = true; stage.setPointerCapture(e.pointerId); setXY(e); });
+stage.addEventListener("pointermove", e => dragging && setXY(e));
+stage.addEventListener("pointerup", () => dragging = false);
+
+const parts = [];
+function spawn() {
+  const [ox, oy] = xyFromParams();
+  const a = Math.random()*Math.PI*2, sp = .4 + Math.random()*(1.2 + P.space.v*2.5);
+  parts.push({ x: ox, y: oy, a, sp, life: 0, max: 60 + Math.random()*(80 + P.decay.v*160), len: 4 + P.size.v*40*Math.random(),
+    hue: Math.random(), rev: T.reverse && Math.random() < .5 });
+}
+let t = 0;
+function frame() {
+  t++;
+  g.clearRect(0, 0, W, H);
+  // anel
+  const grad = g.createLinearGradient(CX - R, CY - R, CX + R, CY + R);
+  grad.addColorStop(0, "#a77bff"); grad.addColorStop(1, "#3ee6e0");
+  g.lineWidth = 2; g.strokeStyle = grad; g.beginPath(); g.arc(CX, CY, R, 0, Math.PI*2); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = "#ffffff10"; g.beginPath(); g.arc(CX, CY, R*.72*1.41 > R ? R*.98 : R*.72*1.41, 0, Math.PI*2); g.stroke();
+  // nascimento de grãos
+  if (!T.freeze) { const n = (P.density.v*0.6 + P.grain.v*0.6)*3; for (let i = 0; i < n; i++) if (Math.random() < n/(i+1)/3) spawn(); }
+  // partículas
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (!T.freeze) { p.life++; const d = p.rev ? -1 : 1; p.x += Math.cos(p.a)*p.sp*d; p.y += Math.sin(p.a)*p.sp*d; }
+    const dx = p.x - CX, dy = p.y - CY;
+    if (p.life > p.max || Math.hypot(dx, dy) > R - 3) { parts.splice(i, 1); continue; }
+    const al = Math.sin(Math.PI*p.life/p.max);
+    const col = p.hue < .5 ? `rgba(62,230,224,${al})` : `rgba(167,123,255,${al})`;
+    g.strokeStyle = p.hue < .5 ? `rgba(62,230,224,${al*.35})` : `rgba(167,123,255,${al*.35})`;
+    g.lineWidth = 1; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - Math.cos(p.a)*p.len*(p.rev?-1:1), p.y - Math.sin(p.a)*p.len*(p.rev?-1:1)); g.stroke();
+    g.fillStyle = col; g.beginPath(); g.arc(p.x, p.y, 1.2 + P.size.v*1.8, 0, Math.PI*2); g.fill();
+  }
+  // ponto XY
+  const [ox, oy] = xyFromParams(), pul = 1 + Math.sin(t/12)*.15;
+  g.strokeStyle = "#ffffff"; g.lineWidth = 1.5; g.beginPath(); g.arc(ox, oy, 9*pul, 0, Math.PI*2); g.stroke();
+  g.fillStyle = "#3ee6e0"; g.beginPath(); g.arc(ox, oy, 4, 0, Math.PI*2); g.fill();
+  // medidores fake
+  const lv = .45 + Math.sin(t/9)*.2 + Math.random()*.1;
+  document.getElementById("mi").style.height = lv*100 + "%";
+  document.getElementById("mo").style.height = Math.min(1, lv*(.8 + P.mix.v*.3))*100 + "%";
+  requestAnimationFrame(frame);
+}
+refresh();
+for (let i = 0; i < 400; i++) { spawn(); parts[parts.length-1].life = Math.random()*60; const p = parts[parts.length-1]; p.x += Math.cos(p.a)*p.sp*p.life; p.y += Math.sin(p.a)*p.sp*p.life; }
+frame();
+</script>
+</body>
+</html>

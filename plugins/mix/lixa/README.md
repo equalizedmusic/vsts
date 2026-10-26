@@ -1,5 +1,7 @@
 # LIXA — de-esser
 
+![LIXA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/LIXA.png)
+
 De-esser de faixa ajustável que **mostra o que está tirando**: no alto, o espectro ao vivo da
 entrada (cinza) e da saída (creme), com o que a lixa tirou em coral, e a faixa de detecção em âmbar,
 com alças nas bordas para arrastar. O painel de análise diz quanto está reduzindo agora, o nível da

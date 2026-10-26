@@ -1,5 +1,7 @@
 # CALEIDO — glitch pattern FX
 
+![CALEIDO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CALEIDO.png)
+
 Efeito de glitch sincronizado ao BPM do projeto, pensado para psytrance. O compasso é
 fatiado em **16 passos** e cada passo pode ser repetido, invertido, transposto, filtrado,
 esmagado (crush) e girar no estéreo. Quem decide o que acontece em cada passo é a

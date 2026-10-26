@@ -1,5 +1,7 @@
 # MONITOR — medidor de loudness
 
+![MONITOR](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONITOR.png)
+
 Medidor para entrega: **não altera o som** (a saída é a entrada, bit a bit, enquanto as checagens
 estão desligadas) e não tem latência. Mede LUFS momentâneo, curto e integrado (BS.1770-4, filtro K,
 portões −70 LUFS e −10 LU), LRA (EBU Tech 3342), true peak com oversampling de 4× e máximo segurado,

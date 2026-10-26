@@ -1,5 +1,7 @@
 # PRISMA — dinâmica + saturação multibanda
 
+![PRISMA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PRISMA.png)
+
 Divide o som em **4 bandas** (crossovers Linkwitz-Riley de 4ª ordem, soma plana) e em cada uma
 tem um compressor e um DRIVE (saturação tanh com compensação de nível). No alto, o **espectro da
 saída ao vivo** com as 4 bandas coloridas: as linhas entre elas são os crossovers e **se arrastam com o

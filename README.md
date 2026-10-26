@@ -5,51 +5,51 @@ separados por linha: `plugins/criativo/<plugin>`, `plugins/mix/<plugin>` e `plug
 
 ## Linha criativa
 
-| Plugin | O que é |
-|---|---|
-| [GRÃO](plugins/criativo/grao/README.md) | Efeito granular de textura (fita de 4 s, grãos, feedback, cauda, XY) |
-| [CALEIDO](plugins/criativo/caleido/README.md) | Glitch rítmico (mandala de 16 passos, sync com o BPM) |
-| [ESPIRAL](plugins/criativo/espiral/README.md) | Phaser/flanger infinito "barber pole" (sobe sem fim, sync com o BPM) |
-| [FITA](plugins/criativo/fita/README.md) | Gravador de fita: saturation, wow/flutter, hiss, rolos girando e TAPE STOP no BPM |
-| [CHAMA](plugins/criativo/chama/README.md) | Build-up de um knob só: passa-alta, estéreo, ruído, reverb e gate no tempo, com fogo na tela |
-| [F1](plugins/criativo/f1/README.md) | Filtro ladder de 4 degraus (low-pass 12/24 dB) com envelope, LFO no grid e FUMAÇA |
-| [RINGER](plugins/criativo/ringer/README.md) | Ring modulator: carrier de tremolo a sino metálico, LFO no grid e osciloscópio |
-| [REPETECO](plugins/criativo/repeteco/README.md) | Delay analógico tipo BBD: escurece a cada volta, auto-oscila, INFINITO e MATAR |
-| [MIRAGEM](plugins/criativo/miragem/README.md) | Reverb atmosférico com shimmer (oitava/quinta), CONGELAR, REVERSO e duck |
-| [PICOTE](plugins/criativo/picote/README.md) | Gate rítmico de 16 passos com volume, pan e filter por passo, EMBARALHAR e PRENDER |
+| Prévia | Plugin | O que é |
+|---|---|---|
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GRAO.png" width="240" alt="GRÃO">](plugins/criativo/grao/README.md) | [GRÃO](plugins/criativo/grao/README.md) | Efeito granular de textura (fita de 4 s, grãos, feedback, cauda, XY) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CALEIDO.png" width="240" alt="CALEIDO">](plugins/criativo/caleido/README.md) | [CALEIDO](plugins/criativo/caleido/README.md) | Glitch rítmico (mandala de 16 passos, sync com o BPM) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ESPIRAL.png" width="240" alt="ESPIRAL">](plugins/criativo/espiral/README.md) | [ESPIRAL](plugins/criativo/espiral/README.md) | Phaser/flanger infinito "barber pole" (sobe sem fim, sync com o BPM) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FITA.png" width="240" alt="FITA">](plugins/criativo/fita/README.md) | [FITA](plugins/criativo/fita/README.md) | Gravador de fita: saturation, wow/flutter, hiss, rolos girando e TAPE STOP no BPM |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHAMA.png" width="240" alt="CHAMA">](plugins/criativo/chama/README.md) | [CHAMA](plugins/criativo/chama/README.md) | Build-up de um knob só: passa-alta, estéreo, ruído, reverb e gate no tempo, com fogo na tela |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/F1.png" width="240" alt="F1">](plugins/criativo/f1/README.md) | [F1](plugins/criativo/f1/README.md) | Filtro ladder de 4 degraus (low-pass 12/24 dB) com envelope, LFO no grid e FUMAÇA |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RINGER.png" width="240" alt="RINGER">](plugins/criativo/ringer/README.md) | [RINGER](plugins/criativo/ringer/README.md) | Ring modulator: carrier de tremolo a sino metálico, LFO no grid e osciloscópio |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/REPETECO.png" width="240" alt="REPETECO">](plugins/criativo/repeteco/README.md) | [REPETECO](plugins/criativo/repeteco/README.md) | Delay analógico tipo BBD: escurece a cada volta, auto-oscila, INFINITO e MATAR |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MIRAGEM.png" width="240" alt="MIRAGEM">](plugins/criativo/miragem/README.md) | [MIRAGEM](plugins/criativo/miragem/README.md) | Reverb atmosférico com shimmer (oitava/quinta), CONGELAR, REVERSO e duck |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PICOTE.png" width="240" alt="PICOTE">](plugins/criativo/picote/README.md) | [PICOTE](plugins/criativo/picote/README.md) | Gate rítmico de 16 passos com volume, pan e filter por passo, EMBARALHAR e PRENDER |
 
 ## Linha de mix
 
-| Plugin | O que é |
-|---|---|
-| [PRISMA](plugins/mix/prisma/README.md) | Multibanda: 4 bandas com compressor e saturação cada, crossovers arrastáveis no espectro |
-| [TORNO](plugins/mix/torno/README.md) | Compressor que mostra o que está apertando: histórico de input e gain reduction, curva com knee |
-| [BARRAGEM](plugins/mix/barragem/README.md) | Limiter de master com true peak e LUFS, com alvos de entrega (Spotify, Apple Music…) |
-| [CONSOLE](plugins/mix/console/README.md) | Cor de canal de mesa analógica, com 3 modelos: Cristal, Ferro e Brasa |
-| [SOCO](plugins/mix/soco/README.md) | Modelador de transiente: attack e sustain de cada golpe, com o antes e o depois na tela |
-| [LIXA](plugins/mix/lixa/README.md) | De-esser de faixa ajustável que mostra no espectro o que está tirando |
-| [HORIZONTE](plugins/mix/horizonte/README.md) | Imagem estéreo em M/S, sem latência: width de graves e agudos, mono bass, vetorscópio |
-| [SALA](plugins/mix/sala/README.md) | Reverb limpo e transparente para colocar tudo num mesmo espaço |
-| [MONITOR](plugins/mix/monitor/README.md) | Medidor de entrega: LUFS, LRA, true peak, espectro e correlação, sem mexer no som |
-| [NAVALHA](plugins/mix/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
+| Prévia | Plugin | O que é |
+|---|---|---|
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PRISMA.png" width="240" alt="PRISMA">](plugins/mix/prisma/README.md) | [PRISMA](plugins/mix/prisma/README.md) | Multibanda: 4 bandas com compressor e saturação cada, crossovers arrastáveis no espectro |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/TORNO.png" width="240" alt="TORNO">](plugins/mix/torno/README.md) | [TORNO](plugins/mix/torno/README.md) | Compressor que mostra o que está apertando: histórico de input e gain reduction, curva com knee |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BARRAGEM.png" width="240" alt="BARRAGEM">](plugins/mix/barragem/README.md) | [BARRAGEM](plugins/mix/barragem/README.md) | Limiter de master com true peak e LUFS, com alvos de entrega (Spotify, Apple Music…) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CONSOLE.png" width="240" alt="CONSOLE">](plugins/mix/console/README.md) | [CONSOLE](plugins/mix/console/README.md) | Cor de canal de mesa analógica, com 3 modelos: Cristal, Ferro e Brasa |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/SOCO.png" width="240" alt="SOCO">](plugins/mix/soco/README.md) | [SOCO](plugins/mix/soco/README.md) | Modelador de transiente: attack e sustain de cada golpe, com o antes e o depois na tela |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/LIXA.png" width="240" alt="LIXA">](plugins/mix/lixa/README.md) | [LIXA](plugins/mix/lixa/README.md) | De-esser de faixa ajustável que mostra no espectro o que está tirando |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/HORIZONTE.png" width="240" alt="HORIZONTE">](plugins/mix/horizonte/README.md) | [HORIZONTE](plugins/mix/horizonte/README.md) | Imagem estéreo em M/S, sem latência: width de graves e agudos, mono bass, vetorscópio |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/SALA.png" width="240" alt="SALA">](plugins/mix/sala/README.md) | [SALA](plugins/mix/sala/README.md) | Reverb limpo e transparente para colocar tudo num mesmo espaço |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONITOR.png" width="240" alt="MONITOR">](plugins/mix/monitor/README.md) | [MONITOR](plugins/mix/monitor/README.md) | Medidor de entrega: LUFS, LRA, true peak, espectro e correlação, sem mexer no som |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/NAVALHA.png" width="240" alt="NAVALHA">](plugins/mix/navalha/README.md) | [NAVALHA](plugins/mix/navalha/README.md) | Clipper 4× que mostra na forma de onda, ao vivo, o que está sendo cortado |
 
 ## SÉRIE KNOB
 
 Dez pedais de um knob grandão, todos no tempo do DAW, com TRIGGER por MIDI ou por ataque no sidechain
 ([detalhes](plugins/knob/README.md)). A base é comum (`plugins/knob/_comum`); cada pedal só traz o motor de som.
 
-| Pedal | O que faz o knob |
-|---|---|
-| FOLE | Sidechain sincronizado: profundidade do "bombeado" (6 formas) |
-| PICADOR | Trance gate de 16 passos: corte e, no fim do curso, gate mais curto |
-| MARÉ | Filtro passa-baixa que abre e fecha no tempo: quanto desce e a ressonância |
-| VAIVÉM | Auto-pan no tempo: a abertura do passeio |
-| REPIQUE | Stutter / beat repeat: quanto do compasso vira repetição (ROLL, REPETE, DECAI, TRAVA) |
-| ECO | Delay de fita no tempo: a realimentação (SIMPLES, PING-PONG, FITA, DUB, ESPALHADO) |
-| AVESSO | Reverso no tempo: quantas fatias do compasso tocam ao contrário |
-| FREIO | Tape stop / tape start: quanto do ciclo a freada ocupa |
-| ESCADA | Sequenciador de pitch: o tamanho dos saltos, sempre dentro da escala |
-| MASTIGA | Bitcrush ritmado: o quanto morde no pico da forma |
+| Prévia | Pedal | O que faz o knob |
+|---|---|---|
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FOLE.png" width="110" alt="FOLE">](plugins/knob/README.md) | FOLE | Sidechain sincronizado: profundidade do "bombeado" (6 formas) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PICADOR.png" width="110" alt="PICADOR">](plugins/knob/README.md) | PICADOR | Trance gate de 16 passos: corte e, no fim do curso, gate mais curto |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MARE.png" width="110" alt="MARÉ">](plugins/knob/README.md) | MARÉ | Filtro passa-baixa que abre e fecha no tempo: quanto desce e a ressonância |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/VAIVEM.png" width="110" alt="VAIVÉM">](plugins/knob/README.md) | VAIVÉM | Auto-pan no tempo: a abertura do passeio |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/REPIQUE.png" width="110" alt="REPIQUE">](plugins/knob/README.md) | REPIQUE | Stutter / beat repeat: quanto do compasso vira repetição (ROLL, REPETE, DECAI, TRAVA) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ECO.png" width="110" alt="ECO">](plugins/knob/README.md) | ECO | Delay de fita no tempo: a realimentação (SIMPLES, PING-PONG, FITA, DUB, ESPALHADO) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/AVESSO.png" width="110" alt="AVESSO">](plugins/knob/README.md) | AVESSO | Reverso no tempo: quantas fatias do compasso tocam ao contrário |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FREIO.png" width="110" alt="FREIO">](plugins/knob/README.md) | FREIO | Tape stop / tape start: quanto do ciclo a freada ocupa |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ESCADA.png" width="110" alt="ESCADA">](plugins/knob/README.md) | ESCADA | Sequenciador de pitch: o tamanho dos saltos, sempre dentro da escala |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MASTIGA.png" width="110" alt="MASTIGA">](plugins/knob/README.md) | MASTIGA | Bitcrush ritmado: o quanto morde no pico da forma |
 
 ## Instrumentos
 
@@ -58,11 +58,11 @@ Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/bui
 Cada instrumento tem o seu instalador e o seu release (os logs ficam no branch `builds-instrumentos`): `InsideStudioSP-Quimera-win.exe` / `-mac.dmg`
 com a QUIMERA (no build ele ainda se chama pacote `Instrumentos`), `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
 
-| Instrumento | O que é |
-|---|---|
-| [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador de 16 passos com SCALE/ROOT, 400 presets (40 por categoria, com ARP) e bancos avulsos `.qmrbank` |
-| [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing, SCALE/ROOT e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
-| [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, polifônico de 16 vozes, puxado para o plástico, o metal e o psicodélico (era o VACINA): 8 algoritmos com o desenho na tela, 8 formas de onda por operador, RATIO × FINE para razões inarmônicas, realimentação, RING MOD e FOLD, dois filtros (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) em série ou paralelo, 3 LFOs (um na razão dos moduladores, outro no índice), matriz de 6 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.mrcbank`; painel de alumínio escovado com faixas anodizadas, knobs de alumínio usinado e visores OLED |
+| Prévia | Instrumento | O que é |
+|---|---|---|
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/QUIMERA.png" width="240" alt="QUIMERA">](instrumentos/quimera/README.md) | [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador de 16 passos com SCALE/ROOT, 400 presets (40 por categoria, com ARP) e bancos avulsos `.qmrbank` |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/LIMAO.png" width="240" alt="LIMÃO">](instrumentos/limao/README.md) | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing, SCALE/ROOT e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MERCURIO.png" width="240" alt="MERCÚRIO">](instrumentos/mercurio/README.md) | [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, polifônico de 16 vozes, puxado para o plástico, o metal e o psicodélico (era o VACINA): 8 algoritmos com o desenho na tela, 8 formas de onda por operador, RATIO × FINE para razões inarmônicas, realimentação, RING MOD e FOLD, dois filtros (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) em série ou paralelo, 3 LFOs (um na razão dos moduladores, outro no índice), matriz de 6 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.mrcbank`; painel de alumínio escovado com faixas anodizadas, knobs de alumínio usinado e visores OLED |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
@@ -136,6 +136,12 @@ Os instaladores ainda não são assinados. No Windows, o SmartScreen pede *Mais 
 mesmo*; no Mac, libere em *Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim*.
 
 No Ableton: *Settings → Plug-Ins*, ligue *Use VST3 Plug-In System Folders* e clique em *Rescan*.
+
+## Divulgação e prévias
+
+As fotos das interfaces (as prévias deste README) saem do workflow `shots` e ficam na branch `shots`. Os scripts de
+vídeo, carrossel e mockup estão em [`divulgacao/`](divulgacao/README.md), e a prévia 3D dos pedais da SÉRIE KNOB
+(Blender) em [`plugins/knob/_comum/tools/`](plugins/knob/_comum/tools/README.md). Nenhum dos dois dispara build.
 
 ## Plugin novo
 

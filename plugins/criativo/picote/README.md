@@ -1,5 +1,7 @@
 # PICOTE — gate rítmico de 16 passos
 
+![PICOTE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PICOTE.png)
+
 Fatia o som no grid do host. Cada um dos 16 passos tem o seu **volume**, **pan** e **filtro**,
 desenhados com o mouse na grade do topo. EMBARALHAR sorteia um padrão novo para a faixa que está
 na tela, e PRENDER grava o próximo passo inteiro e repete até soltar. É o "trance gate" clássico,

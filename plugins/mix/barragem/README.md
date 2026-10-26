@@ -1,5 +1,7 @@
 # BARRAGEM — limiter de master (true peak + LUFS)
 
+![BARRAGEM](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BARRAGEM.png)
+
 Limiter de master com detecção em **true peak** (oversampling de 4× só no caminho de detecção) e
 medidor de **loudness** (BS.1770 / EBU R128). No alto, a forma de onda dos últimos ~4 s: o que sai
 em creme, o que a barragem segurou em coral, a redução de ganho em azul pendurada do alto e a linha

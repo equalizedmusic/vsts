@@ -1,5 +1,7 @@
 # SOCO — modelador de transiente
 
+![SOCO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/SOCO.png)
+
 Mexe no **attack** e no **sustain** de cada golpe sem depender do volume: o detector compara um
 envelope rápido com um lento (a diferença é o golpe) e dois envelopes com solturas diferentes (a
 diferença é a cauda). Serve para bumbo, caixa, violão, baixo, loop… No alto, a forma de onda dos

@@ -4,7 +4,7 @@ name: shots
 on:
   push:
     branches: [main, 'visual-*']   # visual-*: prévia de visual antes de ir para o main (não gera instalador)
-    paths: ['shots/**', 'instrumentos/**', 'plugins/knob/_comum/**', '.github/workflows/shots.yml']
+    paths: ['shots/**', 'instrumentos/**', 'plugins/knob/_comum/**', '!plugins/knob/_comum/tools/**', '.github/workflows/shots.yml']
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>InsideStudioSP · carrossel</title>
+<style>
+  :root {
+    --bg: #14120e; --panel: #1d1a15; --line: #353027; --txt: #ece3d2; --dim: #8b8273;
+    --amber: #ffb347; --coral: #ff6b4a; --cream: #f4e9d4; --ice: #6ec3ff; --violet: #c49bff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1350px; background: var(--bg); overflow: hidden; }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--txt); }
+  .mono { font-family: Consolas, "SF Mono", Menlo, monospace; }
+  .slide { position: relative; width: 1080px; height: 1350px; padding: 64px 40px 56px;
+           background: radial-gradient(1200px 700px at 50% 38%, #221d16 0%, var(--bg) 70%); }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 0 16px; }
+  .brand { font-size: 26px; font-weight: 700; letter-spacing: .04em; color: var(--amber); }
+  .brand small { display: block; font-size: 14px; font-weight: 600; letter-spacing: .3em; color: var(--dim); margin-top: 2px; }
+  .idx { font-size: 26px; color: var(--dim); }
+  .idx b { color: var(--cream); font-weight: 400; }
+
+  /* slide de plugin */
+  .shot { margin: 52px auto 0; width: 1000px; border-radius: 14px; overflow: hidden; position: relative;
+          box-shadow: 0 0 0 1px var(--line), 0 30px 80px rgba(0,0,0,.6), 0 0 120px var(--glow, rgba(255,179,71,.18)); }
+  .shot img { display: block; width: 1000px; height: 580px; }
+  .name { margin: 58px 16px 0; font-size: 112px; font-weight: 800; letter-spacing: .06em; line-height: 1; color: var(--cream); }
+  .tag { margin: 18px 18px 0; font-size: 26px; font-weight: 700; letter-spacing: .32em; color: var(--accent, var(--amber)); text-transform: uppercase; }
+  .desc { margin: 28px 18px 0; font-size: 31px; line-height: 1.42; color: var(--txt); max-width: 980px; }
+  .chips { margin: 34px 18px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .chip { font-size: 20px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--cream);
+          padding: 12px 18px 12px 16px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line);
+          border-left: 4px solid var(--accent, var(--amber)); }
+  .foot { position: absolute; left: 56px; right: 56px; bottom: 48px; display: flex; justify-content: space-between;
+          font-size: 18px; letter-spacing: .28em; color: var(--dim); font-weight: 600; }
+
+  /* capa */
+  .cover .title { margin: 56px 16px 0; font-size: 136px; font-weight: 900; line-height: .92; letter-spacing: .02em; color: var(--cream); }
+  .cover .title span { color: var(--amber); }
+  .cover .sub { margin: 26px 18px 0; font-size: 30px; letter-spacing: .3em; font-weight: 700; color: var(--coral); }
+  .grid { margin: 52px 16px 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px 16px; }
+  .tile { border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 0 0 1px var(--line), 0 18px 40px rgba(0,0,0,.5); }
+  .tile img { display: block; width: 100%; aspect-ratio: 1000 / 580; }
+  .tile b { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 12px 10px; font-size: 21px; letter-spacing: .12em;
+            background: linear-gradient(transparent, rgba(16,14,11,.92)); color: var(--cream); }
+  .tile b i { display: block; font-style: normal; font-size: 12px; letter-spacing: .16em; color: var(--accent, var(--amber)); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const plugins = [
+  { file: "GRAO",    name: "GRÃO",    tag: "Granular de textura", accent: "#ffb347",
+    desc: "Transforma qualquer som em nuvem: grãos, feedback, cauda e congelar. Pads, ambiências e transições que respiram.",
+    chips: ["Grãos + feedback", "Congelar e reverso", "Pad XY"] },
+  { file: "CALEIDO", name: "CALEIDO", tag: "Glitch rítmico", accent: "#c49bff",
+    desc: "Uma mandala de 16 passos decide o que cada pedaço do compasso vira: repetição, reverso, fita, filtro e crush. Sempre no grid.",
+    chips: ["Sync no BPM", "Gerar e transmutar", "5 efeitos por passo"] },
+  { file: "ESPIRAL", name: "ESPIRAL", tag: "Phaser · flanger infinito", accent: "#6ec3ff",
+    desc: "O efeito barber pole: o som parece subir (ou descer) sem fim, travado no tempo do projeto.",
+    chips: ["Sobe sem fim", "Phaser e flanger", "1 tempo a 16 compassos"] },
+  { file: "FITA",    name: "FITA",    tag: "Gravador de fita", accent: "#ff6b4a",
+    desc: "Saturação, wow, flutter, chiado e TAPE STOP no tempo. Na tela, os rolos giram e freiam junto com o som.",
+    chips: ["Rolo · 2\" · cassete", "Tape stop no BPM", "VU de ponteiro"] },
+  { file: "CHAMA",   name: "CHAMA",   tag: "Build-up de um knob", accent: "#ffb347",
+    desc: "Um knob para a subida inteira: tira o grave, abre o estéreo, sobe ruído e reverb e acelera o gate até o drop.",
+    chips: ["Um knob só", "Gate no grid", "Drop na virada"] },
+  { file: "NAVALHA", name: "NAVALHA", tag: "Clipper que mostra o corte", short: "Clipper ao vivo", accent: "#ff6b4a",
+    desc: "Clipper com oversampling 4× que desenha, ao vivo, o que passa e o que é cortado. Volume na cara, com o controle à vista.",
+    chips: ["Oversampling 4×", "Corte ao vivo na onda", "Só o corte"] },
+];
+// série analógica (?s=analog): fotos reais em ../shots-img/ (branch shots)
+const analog = [
+  { file: "f1",       name: "F1",       tag: "Filtro ladder 4 polos", accent: "#8fd16a",
+    desc: "Primeiro trago: o passa-baixa analógico de 24 dB/oit com envelope que abre o filtro na força do som. Ressonância cremosa e wah automático.",
+    chips: ["Envelope + LFO no BPM", "Ressonância que canta", "Botão FUMAÇA"] },
+  { file: "ringer",   name: "RINGER",   tag: "Ring modulator", accent: "#ff6b4a",
+    desc: "Multiplica o seu som por uma portadora. Grave vira tremolo; agudo vira sino, metal e robô. Com o LFO, sirene, borbulha e laser.",
+    chips: ["Faixa grave e aguda", "LFO sincronizado", "Osciloscópio ao vivo"] },
+  { file: "repeteco", name: "REPETECO", tag: "Delay analógico BBD", accent: "#ffb347",
+    desc: "O eco escurece e suja a cada volta, como nos delays de balde. Passa de 100% e entra em auto-oscilação controlada.",
+    chips: ["Tempo no grid", "INFINITO e MATAR", "Ping-pong"] },
+];
+// capa e carrossel completo = os 9; ?s=analog = só a série analógica
+plugins.forEach(p => p.serie = "SÉRIE CRIATIVA · VOL. 1");
+analog.forEach(p => p.serie = "SÉRIE ANALÓGICA · VOL. 2");
+const isAnalog = new URLSearchParams(location.search).get("s") === "analog";
+plugins.splice(0, plugins.length, ...(isAnalog ? analog : plugins.concat(analog)));
+const n = plugins.length;
+const slide = parseInt(location.hash.replace("#", "") || "0", 10);
+const img = f => `../shots-img/${f}.png`;
+const topo = (i) => `<div class="top"><div class="brand">InsideStudioSP<small>${i ? plugins[i - 1].serie : "COLEÇÃO DE PLUGINS"}</small></div>
+  <div class="idx mono">${i ? `<b>${String(i).padStart(2, "0")}</b>/${String(n).padStart(2, "0")}` : ""}</div></div>`;
+const foot = `<div class="foot"><span>VST3 · AU</span><span>MAC · WINDOWS</span></div>`;
+
+let html;
+if (slide === 0) {
+  html = `<div class="slide cover">${topo(0)}
+    <div class="title">INSIDE<br>STUDIO <span>SP</span></div>
+    <div class="sub">${n} PLUGINS · VST3 E AU</div>
+    <div class="grid">${plugins.map(p => `<div class="tile" style="--accent:${p.accent}"><img src="${img(p.file)}"><b>${p.name}<i>${(p.short || p.tag).toUpperCase()}</i></b></div>`).join("")}</div>
+    ${foot}</div>`;
+} else {
+  const p = plugins[slide - 1];
+  html = `<div class="slide" style="--accent:${p.accent};--glow:${p.accent}33">${topo(slide)}
+    <div class="shot"><img src="${img(p.file)}"></div>
+    <div class="name">${p.name}</div>
+    <div class="tag">${p.tag}</div>
+    <div class="desc">${p.desc}</div>
+    <div class="chips">${p.chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>
+    ${foot}</div>`;
+}
+document.getElementById("root").innerHTML = html;
+</script>
+</body>
+</html>

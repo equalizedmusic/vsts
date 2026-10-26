@@ -1,0 +1,8 @@
+{
+  "name": "divulgacao",
+  "private": true,
+  "description": "Vídeos, carrossel e mockups de divulgação",
+  "dependencies": {
+    "puppeteer": "^24.0.0"
+  }
+}

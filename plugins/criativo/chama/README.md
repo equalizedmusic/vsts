@@ -1,5 +1,7 @@
 # CHAMA — build-up de um knob só
 
+![CHAMA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHAMA.png)
+
 Um knob para a subida inteira: de 0 a 100%, a CHAMA vai tirando o grave com um passa-alta
 ressonante, abre o estéreo, sobe um ruído filtrado junto, cresce um reverb e, nos últimos 40%,
 entra um gate no tempo que acelera (1/8 → 1/16 → 1/32). Automatize a CHAMA no Ableton ao longo

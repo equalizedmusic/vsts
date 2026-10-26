@@ -3,6 +3,10 @@
 Dez pedais de efeito de **um knob grandão**, todos no tempo do DAW. O knob vai de 0 (nada) a 10 (tudo) e as
 lâmpadas em volta dele acendem até o valor e respiram junto com o efeito.
 
+<p align="center">
+<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FOLE.png" width="150" alt="FOLE"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PICADOR.png" width="150" alt="PICADOR"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MARE.png" width="150" alt="MARÉ"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/VAIVEM.png" width="150" alt="VAIVÉM"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/REPIQUE.png" width="150" alt="REPIQUE"><br><img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ECO.png" width="150" alt="ECO"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/AVESSO.png" width="150" alt="AVESSO"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FREIO.png" width="150" alt="FREIO"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ESCADA.png" width="150" alt="ESCADA"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MASTIGA.png" width="150" alt="MASTIGA">
+</p>
+
 ## Controles (iguais nos 10)
 
 | Controle | O que faz |

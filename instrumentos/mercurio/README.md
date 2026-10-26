@@ -1,5 +1,7 @@
 # MERCÚRIO — FM de 4 operadores, polifônico
 
+![MERCÚRIO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MERCURIO.png)
+
 Sintetizador (VSTi / AU) FM de 4 operadores e 16 vozes, no espírito das FM de mesa dos anos 80 (TX81Z, DX), puxado para
 o **plástico, o metal e o psicodélico**: razões inarmônicas, realimentação, ring e dobra de onda. Leve no processador:
 a modulação (envelopes, LFOs, matriz, glide, corte) roda em blocos de controle de 32 amostras e só operadores, filtros

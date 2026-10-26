@@ -1,5 +1,7 @@
 # FITA — tape machine
 
+![FITA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FITA.png)
+
 Simulador de gravador de fita: satura e dá cor ao som, com wow/flutter, chiado, reforço de grave
 (head bump), desgaste e um **TAPE STOP** sincronizado ao BPM. Na tela, os rolos (ou o cassete)
 giram na velocidade da fita: o wow aparece no giro, o rolo cheio gira devagar e o vazio rápido,

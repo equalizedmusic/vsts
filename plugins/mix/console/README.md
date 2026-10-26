@@ -1,5 +1,7 @@
 # CONSOLE — cor de canal / soma de mesa
 
+![CONSOLE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CONSOLE.png)
+
 Cor de canal de mesa analógica com oversampling de 2× ou 4× (FIR de fase linear) na saturação.
 Três modelos de mesa, cada um com a sua curva, o seu equilíbrio de harmônicos pares/ímpares, uma
 cor fixa de EQ e o seu ruído de fundo. No alto, o sinal que entra no canal e a **cor que ele

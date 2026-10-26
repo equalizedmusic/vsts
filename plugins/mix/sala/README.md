@@ -1,5 +1,7 @@
 # SALA — reverb de mix
 
+![SALA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/SALA.png)
+
 Reverb **limpo e transparente** para colocar instrumentos e vozes num mesmo espaço (o oposto da
 MIRAGEM, que é shimmer). Rede de 8 linhas misturadas por Hadamard, com difusores passa-tudo na
 entrada, 16 reflexões iniciais por lado e um balanço lento e sutil nas linhas (tira o som metálico

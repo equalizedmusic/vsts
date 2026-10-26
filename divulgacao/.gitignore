@@ -1,0 +1,9 @@
+node_modules/
+package-lock.json
+video/img/
+video/mudo60/
+video/saida60/
+video/*.wav
+video/*.mp4
+shots-img/
+*.png

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Série analógica — ESCADA · ANEL · BALDE (layout v1)</title>
+<style>
+  :root {
+    --bg: #14120e; --panel: #1d1a15; --panel2: #27231c; --line: #353027;
+    --txt: #ece3d2; --dim: #8b8273; --amber: #ffb347; --coral: #ff6b4a; --cream: #f4e9d4;
+    --ice: #6ec3ff; --violet: #c49bff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0a0907; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--txt); }
+  .plugin { width: 1000px; height: 580px; display: flex; flex-direction: column; gap: 10px; padding: 12px;
+    background: var(--bg); border-radius: 6px; border: 1px solid #2a261f; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  .ttl { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; color: var(--dim); }
+  .ttl b { color: var(--amber); font-weight: 700; }
+
+  header { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 4px; }
+  .nm { font-size: 24px; font-weight: 800; letter-spacing: 3px; color: var(--cream); line-height: 1; }
+  .tg { font-size: 8px; letter-spacing: 2px; color: var(--dim); border-left: 1px solid var(--line); padding-left: 10px; line-height: 1.6; }
+  .by b { color: var(--amber); font-size: 9px; letter-spacing: .5px; display: block; }
+  .sync { margin-left: auto; display: flex; gap: 6px; align-items: center; font: 11px Consolas, monospace; color: var(--dim); }
+  .sync b { color: var(--cream); font-weight: 400; }
+  .sync .led { width: 9px; height: 9px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .preset { display: flex; align-items: stretch; height: 32px; margin-left: 10px; }
+  .preset .btn { width: 30px; display: flex; align-items: center; justify-content: center; background: var(--panel2);
+    border: 1px solid var(--line); color: var(--dim); font-size: 11px; }
+  .preset .name { width: 230px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+    background: #100e0b; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 12px Consolas, monospace; color: var(--cream); }
+  .preset .name small { color: var(--dim); font-size: 10px; }
+  .bypass { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2);
+    display: flex; align-items: center; justify-content: center; margin-left: 6px; }
+  .bypass i { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+
+  .strip { position: relative; height: 140px; flex-shrink: 0; overflow: hidden; }
+  .strip canvas { position: absolute; inset: 0; }
+  .strip .ttl { position: absolute; top: 12px; left: 12px; }
+  .strip .info { position: absolute; top: 10px; right: 12px; font: 9px Consolas, monospace; color: var(--dim); letter-spacing: .5px; }
+
+  .deck { flex: 1; display: flex; gap: 10px; min-height: 0; }
+  .pad { width: 262px; padding: 10px; display: flex; flex-direction: column; }
+  .pad canvas { margin-top: 8px; }
+  .pad .xy { display: flex; justify-content: space-between; font: 10px Consolas, monospace; color: var(--dim); margin-top: auto; }
+  .pad .xy b { color: var(--cream); font-weight: 400; }
+
+  .mod { flex: 1; padding: 10px 10px 6px; display: flex; flex-direction: column; }
+  .mod .top { display: flex; align-items: flex-start; gap: 12px; margin: 10px 0 4px; }
+  .mod .desc { font-size: 10px; line-height: 1.5; color: var(--dim); padding-top: 4px; }
+  .mod .desc b { display: block; color: var(--cream); font-size: 11px; letter-spacing: 1px; margin-bottom: 2px; }
+  .mod .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; margin-top: auto; }
+
+  .knob { display: flex; flex-direction: column; align-items: center; }
+  .knob svg { display: block; }
+  .knob .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--txt); margin-top: -2px; }
+  .knob .val { font: 10px Consolas, monospace; color: var(--dim); height: 13px; }
+
+  .out { width: 168px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .sw { display: flex; gap: 6px; }
+  .key { flex: 1; height: 40px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-size: 8px; font-weight: 700; letter-spacing: 1.5px; color: var(--dim); }
+  .key i { width: 18px; height: 3px; border-radius: 2px; background: #4a443a; }
+  .outrow { flex: 1; display: flex; gap: 10px; align-items: stretch; min-height: 0; }
+  .fader { width: 44px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .fader .rail { position: relative; flex: 1; width: 30px; background: #100e0b; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .fader .fill { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #ff6b4a33, #ffb34766); }
+  .fader .cap { position: absolute; left: 2px; right: 2px; height: 6px; margin-bottom: -3px; background: var(--cream); border-radius: 2px; }
+  .fader .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; }
+  .fader .val { font: 10px Consolas, monospace; color: var(--dim); }
+  .rcol { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+  .meters { display: flex; gap: 10px; align-items: flex-end; }
+  .meter { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+  .meter .leds { display: flex; flex-direction: column-reverse; gap: 2px; }
+  .meter .leds span { width: 12px; height: 4px; border-radius: 1px; background: #2c2821; }
+</style>
+</head>
+<body>
+<div class="plugin" id="root"></div>
+
+<script>
+const C = { leaf: "#8fd16a", amber: "#ffb347", coral: "#ff6b4a", cream: "#f4e9d4", ice: "#6ec3ff", violet: "#c49bff", dim: "#8b8273" };
+const which = (location.hash || "#f1").slice(1);
+
+// ---------- definição dos três ----------
+const DEF = {
+  f1: {
+    nome: "F1", tag: ["LADDER FILTER 101", "PASSA-BAIXA · ENVELOPE"], preset: "Init · Primeiro Trago",
+    logo: [0,-38,38,-76,76,-110,110].map((r,i) => `<ellipse cx="15" cy="${i<5?9.5:11}" rx="${i?1.7:2.1}" ry="${[7,6,6,4.6,4.6,3.2,3.2][i]}" fill="${i?"#8fd16a":"#a8e07f"}" transform="rotate(${r} 15 17)"/>`).join("") + `<line x1="15" y1="17" x2="15" y2="25" stroke="#8fd16a" stroke-width="1.4"/>`,
+    strip: `RESPOSTA <b>· 4 POLOS · 24 dB/OIT</b>`, info: "CORTE 820 Hz → 2.4 kHz (ENVELOPE)",
+    pad: `ESCADA <b>· 4 DEGRAUS</b>`, xy: [`ENVELOPE <b>+62%</b>`, `CORTE <b>1.4 kHz</b>`],
+    m1: { t: "FILTRO", big: { lbl: "MACRO CORTE", v: .55, c: C.amber, desc: "Onde o filtro fecha. Gira devagar e o som abre como o pedal original." },
+          knobs: [["RESSONÂNCIA", .62, "62%", C.coral], ["POLOS", .99, "4 · 24 dB", C.cream], ["DRIVE", .40, "+8 dB", C.cream], ["FAIXA", .5, "Larga", C.cream]] },
+    m2: { t: "ENVELOPE", big: { lbl: "MACRO QUANTIDADE", v: .81, c: C.leaf, desc: "Quanto a força do sinal abre (+) ou fecha (−) o filtro. É o \"wah\" automático do pedal clássico." },
+          knobs: [["SUAVIZAÇÃO", .2, "Rápido", C.leaf], ["LFO", .5, "1/8 · seno", C.violet], ["LFO QUANT.", .35, "35%", C.violet], ["SENSIBIL.", .55, "−18 dB", C.leaf]] },
+    keys: ["ABRIR", "FUMAÇA"], mix: 1
+  },
+  ringer: {
+    nome: "RINGER", tag: ["RING MODULATOR", "PORTADORA · LFO"], preset: "Init · Ringer",
+    logo: `<circle cx="12" cy="15" r="6.5" fill="none" stroke="#ffb347" stroke-width="2"/><circle cx="18" cy="15" r="6.5" fill="none" stroke="#ff6b4a" stroke-width="2"/>`,
+    strip: `OSCILOSCÓPIO <b>· ENTRADA × PORTADORA</b>`, info: "PORTADORA 440 Hz · LFO 1/4 ±30%",
+    pad: `ANEL <b>· LISSAJOUS</b>`, xy: [`PORTADORA <b>440 Hz</b>`, `FAIXA <b>ALTA</b>`],
+    m1: { t: "PORTADORA", big: { lbl: "MACRO FREQUÊNCIA", v: .58, c: C.coral, desc: "A nota que multiplica o sinal. Baixa = tremolo; alta = metálico, sino, robô." },
+          knobs: [["FAIXA", 1, "Alta", C.coral], ["AFINAR", .5, "Livre", C.coral], ["DRIVE", .3, "+6 dB", C.cream], ["ESTÉREO", .25, "25%", C.cream]] },
+    m2: { t: "LFO", big: { lbl: "MACRO QUANTIDADE", v: .3, c: C.violet, desc: "Quanto o LFO balança a portadora. É daí que vêm sirene, borbulha e laser." },
+          knobs: [["TAXA", .45, "1/4", C.violet], ["FORMA", 0, "Seno", C.violet], ["SYNC", 1, "Grid", C.violet], ["FASE", .5, "0°", C.violet]] },
+    keys: ["DOBRAR"], mix: .7
+  },
+  repeteco: {
+    nome: "REPETECO", tag: ["ANALOG DELAY", "BBD · ECO ESCURO"], preset: "Init · Repeteco",
+    logo: `<path d="M8 10 L22 10 L20 23 L10 23 Z" fill="none" stroke="#ffb347" stroke-width="2"/><path d="M10.5 17 L19.5 17 L19 21.5 L11 21.5 Z" fill="#ff6b4a"/>`,
+    strip: `REPETIÇÕES <b>· 3/16 · 72%</b>`, info: "310 ms · ESCURECE A CADA VOLTA",
+    pad: `BALDES <b>· 1024 ESTÁGIOS</b>`, xy: [`TEMPO <b>3/16</b>`, `RELÓGIO <b>33 kHz</b>`],
+    m1: { t: "TEMPO", big: { lbl: "MACRO TEMPO", v: .45, c: C.amber, desc: "Distância entre as repetições, no grid do host. Mexer com som passando dá a esticada de fita do BBD." },
+          knobs: [["FAIXA", 0, "Curto", C.amber], ["SYNC", 1, "Grid", C.amber], ["DRIVE", .35, "+7 dB", C.cream], ["PING-PONG", .6, "60%", C.cream]] },
+    m2: { t: "REALIMENTAÇÃO", big: { lbl: "MACRO REALIMENTAÇÃO", v: .6, c: C.coral, desc: "Quantas vezes o eco volta. Passa de 100% e entra em auto-oscilação, como nos delays analógicos." },
+          knobs: [["LFO TAXA", .3, "1/2", C.violet], ["LFO QUANT.", .2, "20%", C.violet], ["FORMA", 0, "Seno", C.violet], ["ESCURO", .55, "55%", C.ice]] },
+    keys: ["INFINITO", "MATAR"], mix: .35
+  }
+};
+const D = DEF[which];
+
+// ---------- knob igual ao dos plugins ----------
+function knob(v, big, on, inner) {
+  const S = big ? 92 : 64, c = S/2, n = big ? 31 : 21, r1 = big ? 34 : 23, r2 = big ? 42 : 29, rb = big ? 26 : 17;
+  const A0 = Math.PI*0.75, A1 = Math.PI*2.25, a = A0 + (A1-A0)*v;
+  let seg = "";
+  for (let i = 0; i < n; i++) {
+    const t = A0 + (A1-A0)*i/(n-1), lit = i/(n-1) <= v + 1e-6;
+    seg += `<line x1="${c+r1*Math.cos(t)}" y1="${c+r1*Math.sin(t)}" x2="${c+r2*Math.cos(t)}" y2="${c+r2*Math.sin(t)}"
+      stroke="${lit ? on : "#3a342b"}" stroke-width="${big ? 2.6 : 2.2}" stroke-linecap="round"/>`;
+  }
+  return `<svg width="${S}" height="${S}">${seg}<circle cx="${c}" cy="${c}" r="${rb}" fill="#2a261f" stroke="#100e0b" stroke-width="2"/>
+    <circle cx="${c+(rb-5)*Math.cos(a)}" cy="${c+(rb-5)*Math.sin(a)}" r="${big?3:2.2}" fill="${on}"/>
+    ${big ? `<text x="${c}" y="${c+4}" text-anchor="middle" font-family="Consolas,monospace" font-size="13" fill="#ece3d2">${inner}</text>` : ""}</svg>`;
+}
+function mod(n, m) {
+  return `<div class="card mod"><div class="ttl">0${n} · <b>${m.t}</b></div>
+    <div class="top"><div class="knob">${knob(m.big.v, true, m.big.c, Math.round(m.big.v*100))}</div>
+      <div class="desc"><b>${m.big.lbl}</b>${m.big.desc}</div></div>
+    <div class="grid">${m.knobs.map(([l, v, s, c]) => `<div class="knob">${knob(v, false, c)}<div class="lbl">${l}</div><div class="val">${s}</div></div>`).join("")}</div></div>`;
+}
+document.getElementById("root").innerHTML = `
+  <header>
+    <svg width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="14" fill="none" stroke="#ffb347" stroke-width="1.4" opacity=".5"/>${D.logo}</svg>
+    <div class="nm">${D.nome}</div>
+    <div class="tg">${D.tag[0]}<br>${D.tag[1]}</div>
+    <div class="tg by">BY<b>InsideStudioSP</b></div>
+    <div class="sync"><span class="led"></span><b>145.0</b> BPM · <b>SYNC</b></div>
+    <div class="preset"><div class="btn">◀</div><div class="name"><span>${D.preset}</span><small>01/20</small></div><div class="btn">▶</div><div class="btn">+</div></div>
+    <div class="bypass"><i></i></div>
+  </header>
+  <div class="card strip" id="sbox"><canvas id="strip"></canvas><div class="ttl">${D.strip}</div><div class="info">${D.info}</div></div>
+  <div class="deck">
+    <div class="card pad"><div class="ttl">${D.pad}</div><canvas id="vis" width="240" height="240"></canvas>
+      <div class="xy"><span>${D.xy[0]}</span><span>${D.xy[1]}</span></div></div>
+    ${mod(1, D.m1)}${mod(2, D.m2)}
+    <div class="card out"><div class="ttl">03 · <b>SAÍDA</b></div>
+      <div class="sw">${D.keys.map(k => `<div class="key"><i></i>${k}</div>`).join("")}</div>
+      <div class="outrow">
+        <div class="fader"><div class="rail"><div class="fill" style="height:${D.mix*100}%"></div><div class="cap" style="bottom:${D.mix*100}%"></div></div>
+          <div class="lbl">MIX</div><div class="val">${Math.round(D.mix*100)}%</div></div>
+        <div class="rcol"><div class="knob">${knob(.75, false, C.cream)}<div class="lbl">GANHO</div><div class="val">0.0 dB</div></div>
+          <div class="meters"><div class="meter"><div class="leds" id="mi"></div>IN</div><div class="meter"><div class="leds" id="mo"></div>OUT</div></div></div>
+      </div></div>
+  </div>`;
+["mi", "mo"].forEach((id, k) => { const lv = k ? .5 : .6;
+  document.getElementById(id).innerHTML = Array.from({ length: 16 }, (_, i) => { const f = i/15;
+    return `<span style="background:${f > lv ? "#2c2821" : f > .85 ? C.coral : f > .65 ? C.amber : C.cream}"></span>`; }).join(""); });
+
+// ---------- faixa de cima ----------
+const sbox = document.getElementById("sbox"), sc = document.getElementById("strip"), sg = sc.getContext("2d");
+const SW = sc.width = sbox.clientWidth, SH = sc.height = sbox.clientHeight, TOP = 34, BOT = SH - 22;
+function freqAxis(x0, x1) {
+  sg.font = "9px Consolas"; sg.textAlign = "center";
+  [[100, "100"], [1000, "1k"], [10000, "10k"]].forEach(([f, s]) => {
+    const x = x0 + (Math.log10(f) - 1.3)/(4.3 - 1.3)*(x1 - x0);
+    sg.fillStyle = "#2c2821"; sg.fillRect(x, TOP, 1, BOT - TOP); sg.fillStyle = C.dim; sg.fillText(s, x, SH - 8); });
+  sg.textAlign = "left";
+}
+function curve(x0, x1, fn, stroke, fill, w = 1.6) {
+  sg.beginPath(); for (let x = x0; x <= x1; x++) { const y = fn((x - x0)/(x1 - x0)); x === x0 ? sg.moveTo(x, y) : sg.lineTo(x, y); }
+  if (fill) { sg.lineTo(x1, BOT); sg.lineTo(x0, BOT); sg.closePath();
+    const g = sg.createLinearGradient(0, TOP, 0, BOT); g.addColorStop(0, fill); g.addColorStop(1, "#1d1a1500"); sg.fillStyle = g; sg.fill(); }
+  sg.strokeStyle = stroke; sg.lineWidth = w; sg.stroke();
+}
+function ladderResp(u, fc, q, poles) {   // u: 0..1 log 20 Hz–20 kHz; fc em u
+  const r = Math.pow(10, (u - fc)*3);
+  const mag = 1/Math.pow(1 + Math.pow(r, 2), poles/4) * (1 + q*2.4*Math.exp(-Math.pow((u - fc)*14, 2)));
+  return mag;
+}
+const vis = document.getElementById("vis"), vg = vis.getContext("2d"), VS = 240, VC = 120;
+
+if (which === "f1") {
+  const x0 = 12, x1 = SW - 12, y = m => BOT - Math.min(1.25, m)*(BOT - TOP)*.62;
+  freqAxis(x0, x1);
+  // envelope: faixa que o corte percorre
+  const fa = .52, fb = .68;
+  const g = sg.createLinearGradient(x0 + fa*(x1-x0), 0, x0 + fb*(x1-x0), 0); g.addColorStop(0, "#8fd16a00"); g.addColorStop(1, "#8fd16a30");
+  sg.fillStyle = g; sg.fillRect(x0 + fa*(x1-x0), TOP, (fb-fa)*(x1-x0), BOT - TOP);
+  curve(x0, x1, u => y(ladderResp(u, fa, .62, 4)), "#8b827388", null, 1);            // posição do knob
+  curve(x0, x1, u => y(ladderResp(u, .62, .62, 4)), C.cream, "#ffb34740");            // com o envelope agora
+  const px = x0 + .62*(x1-x0);
+  sg.fillStyle = C.coral; sg.beginPath(); sg.arc(px, y(ladderResp(.62, .62, .62, 4)), 4, 0, 7); sg.fill();
+  sg.fillStyle = C.leaf; sg.fillRect(x0 + fa*(x1-x0), BOT - 3, (.62 - fa)*(x1-x0), 3);
+
+  // escada: 4 degraus, sinal descendo, laço de ressonância
+  vg.fillStyle = "#100e0b"; vg.fillRect(0, 0, VS, VS);
+  const L = 72, R = 168, ys = [46, 92, 138, 184];
+  vg.strokeStyle = "#4a443a"; vg.lineWidth = 3; vg.beginPath(); vg.moveTo(L, 24); vg.lineTo(L, 210); vg.moveTo(R, 24); vg.lineTo(R, 210); vg.stroke();
+  ys.forEach((yy, i) => {
+    const lit = 1 - i*.17;
+    vg.shadowColor = C.amber; vg.shadowBlur = 14*lit; vg.strokeStyle = C.amber; vg.globalAlpha = .35 + .65*lit; vg.lineWidth = 6;
+    vg.beginPath(); vg.moveTo(L, yy); vg.lineTo(R, yy); vg.stroke(); vg.shadowBlur = 0; vg.globalAlpha = 1;
+    vg.fillStyle = "#2a261f"; vg.strokeStyle = "#100e0b"; vg.lineWidth = 2;
+    [L, R].forEach(xx => { vg.beginPath(); vg.arc(xx, yy, 6, 0, 7); vg.fill(); vg.stroke(); });
+    vg.fillStyle = C.dim; vg.font = "9px Consolas"; vg.fillText((i+1) + "", R + 12, yy + 3);
+  });
+  // onda descendo e suavizando a cada degrau
+  for (let i = 0; i < 4; i++) {
+    vg.strokeStyle = C.cream; vg.globalAlpha = .9 - i*.15; vg.lineWidth = 1.4; vg.beginPath();
+    for (let x = 0; x <= 70; x++) { const ph = x/70*Math.PI*4, sq = Math.sign(Math.sin(ph)), sm = Math.sin(ph);
+      const v = sq*(1 - i*.3) + sm*(i*.3); const yy = ys[i] - 15 + v*6*(1 - i*.12); x ? vg.lineTo(85 + x, yy) : vg.moveTo(85 + x, yy); }
+    vg.stroke(); }
+  vg.globalAlpha = 1;
+  // laço de ressonância (saída volta para a entrada)
+  vg.strokeStyle = C.coral; vg.lineWidth = 2.4; vg.shadowColor = C.coral; vg.shadowBlur = 10; vg.setLineDash([5, 4]);
+  vg.beginPath(); vg.moveTo(R, 210); vg.lineTo(R + 34, 210); vg.lineTo(R + 34, 24); vg.lineTo(L, 24); vg.stroke();
+  vg.setLineDash([]); vg.shadowBlur = 0;
+  vg.fillStyle = C.coral; vg.font = "bold 8px Segoe UI"; vg.save(); vg.translate(R + 46, 140); vg.rotate(-Math.PI/2); vg.fillText("RESSONÂNCIA", 0, 0); vg.restore();
+  // fumaça saindo do topo da escada
+  for (let k = 0; k < 4; k++) { vg.strokeStyle = k % 2 ? "#8fd16a" : "#f4e9d4"; vg.globalAlpha = .18 + k*.05; vg.lineWidth = 6 - k;
+    vg.beginPath(); for (let yy = 22; yy >= 0; yy -= 1) { const x = 120 + (k - 1.5)*18 + Math.sin(yy*.35 + k*1.7)*7*(1 - yy/22);
+      yy === 22 ? vg.moveTo(x, yy) : vg.lineTo(x, yy); } vg.stroke(); }
+  vg.globalAlpha = 1;
+  // envelope (lado esquerdo)
+  vg.fillStyle = "#8fd16a22"; vg.fillRect(26, 24, 18, 186);
+  vg.fillStyle = C.leaf; vg.fillRect(26, 24 + 186*(1 - .62), 18, 186*.62);
+  vg.fillStyle = C.leaf; vg.font = "bold 8px Segoe UI"; vg.save(); vg.translate(18, 160); vg.rotate(-Math.PI/2); vg.fillText("ENVELOPE", 0, 0); vg.restore();
+}
+
+if (which === "ringer") {
+  const x0 = 12, x1 = SW - 12, mid = (TOP + BOT)/2, h = (BOT - TOP)/2 - 4;
+  sg.fillStyle = "#2c2821"; sg.fillRect(x0, mid, x1 - x0, 1);
+  for (let x = x0; x < x1; x += (x1 - x0)/16) sg.fillRect(x, TOP, 1, BOT - TOP);
+  const inp = u => Math.sin(u*Math.PI*2*4)*.7 + Math.sin(u*Math.PI*2*12)*.2;
+  const car = u => Math.sin(u*Math.PI*2*(38 + 8*Math.sin(u*Math.PI*2)));
+  curve(x0, x1, u => mid - inp(u)*h, "#8b827399", null, 1.2);
+  curve(x0, x1, u => mid - car(u)*h*.35, C.coral + "88", null, 1);
+  curve(x0, x1, u => mid - inp(u)*car(u)*h, C.amber, null, 1.6);
+  sg.font = "bold 8px Segoe UI"; sg.fillStyle = C.dim; sg.fillText("ENTRADA", x0 + 8, BOT + 14);
+  sg.fillStyle = C.coral; sg.fillText("PORTADORA", x0 + 62, BOT + 14); sg.fillStyle = C.amber; sg.fillText("SAÍDA", x0 + 132, BOT + 14);
+
+  vg.fillStyle = "#100e0b"; vg.beginPath(); vg.arc(VC, VC, VC - 1, 0, 7); vg.fill();
+  // anel externo = portadora girando, marcas = LFO
+  for (let i = 0; i < 48; i++) { const a = i/48*Math.PI*2, lit = (i % 6) < 3;
+    vg.strokeStyle = lit ? C.coral : "#3a342b"; vg.lineWidth = 3; vg.beginPath();
+    vg.moveTo(VC + Math.cos(a)*104, VC + Math.sin(a)*104); vg.lineTo(VC + Math.cos(a)*112, VC + Math.sin(a)*112); vg.stroke(); }
+  vg.strokeStyle = "#8b827355"; vg.lineWidth = 1; vg.beginPath(); vg.arc(VC, VC, 96, 0, 7); vg.stroke();
+  vg.strokeStyle = C.violet; vg.lineWidth = 3; vg.shadowColor = C.violet; vg.shadowBlur = 8;
+  vg.beginPath(); vg.arc(VC, VC, 96, -Math.PI/2, -Math.PI/2 + Math.PI*.6); vg.stroke(); vg.shadowBlur = 0;
+  // Lissajous entrada × portadora
+  vg.save(); vg.beginPath(); vg.arc(VC, VC, 88, 0, 7); vg.clip();
+  for (let k = 0; k < 3; k++) {
+    vg.strokeStyle = [C.amber, C.coral, C.cream][k]; vg.globalAlpha = [.9, .5, .25][k]; vg.lineWidth = 1.3; vg.beginPath();
+    for (let i = 0; i <= 900; i++) { const t = i/900*Math.PI*2;
+      const x = VC + Math.sin(3*t + k*.4)*70, y = VC + Math.sin(4*t)*Math.cos(t*.5 + k)*70; i ? vg.lineTo(x, y) : vg.moveTo(x, y); }
+    vg.stroke(); }
+  vg.restore(); vg.globalAlpha = 1;
+  vg.fillStyle = C.cream; vg.beginPath(); vg.arc(VC, VC, 2.5, 0, 7); vg.fill();
+}
+
+if (which === "repeteco") {
+  const x0 = 16, x1 = SW - 16, y = m => BOT - m*(BOT - TOP);
+  sg.fillStyle = "#2c2821"; sg.fillRect(x0, BOT, x1 - x0, 1);
+  const step = (x1 - x0)/14;
+  for (let i = 0; i < 14; i++) {
+    const x = x0 + 10 + i*step, a = Math.pow(.72, i), blur = 2 + i*1.6;
+    const g = sg.createLinearGradient(x - blur*2, 0, x + blur*2 + 6, 0);
+    const col = i === 0 ? C.cream : i < 4 ? C.amber : i < 8 ? C.coral : "#8a4a3a";
+    g.addColorStop(0, col + "00"); g.addColorStop(.5, col); g.addColorStop(1, col + "00");
+    sg.fillStyle = g; sg.globalAlpha = .25 + .75*a;
+    sg.fillRect(x - blur*2, y(i ? a*.9 : 1), blur*4 + 6, BOT - y(i ? a*.9 : 1));
+    sg.globalAlpha = 1; sg.font = "9px Consolas"; sg.fillStyle = C.dim; sg.textAlign = "center";
+    if (i) sg.fillText(i + "", x + 3, SH - 8);
+  }
+  sg.textAlign = "left";
+  curve(x0, x1, u => y(Math.pow(.72, u*13.3)*.9), "#ff6b4a99", null, 1);
+
+  // cadeia de baldes: carga passando de balde em balde
+  vg.fillStyle = "#100e0b"; vg.fillRect(0, 0, VS, VS);
+  const cols = 6, rows = 5, bw = 26, bh = 24, gx = 36, gy = 40, ox = 18, oy = 22;
+  let n = 0;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const cc = r % 2 ? cols - 1 - c : c, x = ox + cc*gx, yy = oy + r*gy, k = n++;
+    const lvl = Math.max(.08, (Math.sin(k*.9) *.5 + .5) * Math.pow(.93, k));
+    vg.strokeStyle = "#4a443a"; vg.lineWidth = 2; vg.beginPath();
+    vg.moveTo(x, yy); vg.lineTo(x + 3, yy + bh); vg.lineTo(x + bw - 3, yy + bh); vg.lineTo(x + bw, yy); vg.stroke();
+    const col = k < 8 ? C.amber : k < 18 ? C.coral : "#8a4a3a";
+    vg.fillStyle = col; vg.globalAlpha = .35 + .6*Math.pow(.95, k);
+    vg.fillRect(x + 4, yy + bh - bh*lvl*.9, bw - 8, bh*lvl*.9 - 1); vg.globalAlpha = 1;
+    if (k < rows*cols - 1) { vg.strokeStyle = "#3a342b"; vg.lineWidth = 1; vg.beginPath();
+      if ((c < cols - 1)) { const nx = r % 2 ? x - gx + bw : x + gx; vg.moveTo(r % 2 ? x : x + bw, yy + 6); vg.lineTo(r % 2 ? x - gx + bw : nx, yy + 6); }
+      else { vg.moveTo(x + bw/2, yy + bh + 2); vg.lineTo(x + bw/2, yy + gy - 2); }
+      vg.stroke(); }
+  }
+  // realimentação voltando ao primeiro balde
+  vg.strokeStyle = C.coral; vg.lineWidth = 2; vg.setLineDash([4, 4]); vg.shadowColor = C.coral; vg.shadowBlur = 8;
+  vg.beginPath(); vg.moveTo(ox + bw/2, oy + 4*gy + bh + 4); vg.lineTo(ox + bw/2, 232); vg.lineTo(6, 232); vg.lineTo(6, oy + 8); vg.lineTo(ox - 2, oy + 8); vg.stroke();
+  vg.setLineDash([]); vg.shadowBlur = 0;
+}
+</script>
+</body>
+</html>

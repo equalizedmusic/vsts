@@ -1,5 +1,7 @@
 # RINGER — ring modulator
 
+![RINGER](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RINGER.png)
+
 Multiplica o som por uma portadora senoidal. Na faixa baixa vira tremolo; na alta, sino,
 metal e robô. Um LFO no grid balança a portadora (sirene, laser, borbulha). Na tela, o
 osciloscópio mostra entrada, portadora e saída; o anel gira com a portadora e desenha o Lissajous

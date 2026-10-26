@@ -3,7 +3,8 @@ name: build
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'shots/**', '.github/workflows/shots.yml', 'instrumentos/**', '.github/workflows/build-instrumentos.yml', '.github/workflows/limpar-releases.yml']
+    paths-ignore: ['**.md', 'shots/**', '.github/workflows/shots.yml', 'instrumentos/**', '.github/workflows/build-instrumentos.yml', '.github/workflows/limpar-releases.yml',
+                   'divulgacao/**', 'plugins/knob/_comum/tools/**']
   workflow_dispatch:
 
 permissions:

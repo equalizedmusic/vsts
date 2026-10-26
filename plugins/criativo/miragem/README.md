@@ -1,5 +1,7 @@
 # MIRAGEM — reverb atmosférico com shimmer
 
+![MIRAGEM](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MIRAGEM.png)
+
 Reverb de 8 linhas (FDN) com difusão na entrada e shimmer: a cauda sobe de tom (oitava, quinta,
 as duas, ou oitava abaixo) e volta para a sala, então cada volta fica mais alta e mais brilhante.
 CONGELAR segura a cauda para sempre (dá para tocar por cima), REVERSO faz a cauda vir antes do

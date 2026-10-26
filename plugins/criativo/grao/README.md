@@ -1,5 +1,7 @@
 # GRÃO — granular texture FX
 
+![GRÃO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GRAO.png)
+
 O som que entra é gravado numa **fita** de 4 s. Dela saem **grãos** curtos, cada um com o
 próprio tamanho, posição, afinação e lado do estéreo. Os grãos passam por feedback (voltam
 para a fita), filtro (TONE) e uma cauda de ambiente (DECAY).

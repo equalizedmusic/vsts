@@ -1,5 +1,7 @@
 # ESPIRAL — infinite phaser / flanger
 
+![ESPIRAL](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ESPIRAL.png)
+
 Phaser e flanger "barber pole" sincronizados ao BPM do projeto, pensados para psytrance. O
 som parece **subir (ou descer) sem fim**: quatro vozes percorrem a mesma faixa defasadas de
 1/4 de volta; cada uma nasce em silêncio no grave, acende no meio e some no agudo, enquanto

@@ -1,5 +1,7 @@
 # HORIZONTE — imagem estéreo
 
+![HORIZONTE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/HORIZONTE.png)
+
 Imagem estéreo em M/S com **latência zero**: abre ou fecha o estéreo, com larguras separadas para
 graves e agudos, deixa o grave em mono abaixo de uma frequência e gira/equilibra a imagem. O
 vetorscópio mostra o som que sai, com rastro que esmaece; o medidor de correlação avisa quando

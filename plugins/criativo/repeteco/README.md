@@ -1,5 +1,7 @@
 # REPETECO — delay analógico (BBD)
 
+![REPETECO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/REPETECO.png)
+
 Delay no estilo dos pedais de "balde" (BBD): cada repetição volta mais escura e mais suja,
 a realimentação passa de 100% e entra em auto-oscilação controlada, e mexer no TIME com som
 passando estica o eco. Na tela, as repetições ficando turvas e a cadeia de baldes com a carga

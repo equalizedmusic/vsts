@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<!-- Vídeo de story 1080×1920 (9:16) por pacote. ?p=mix|criativo|synth. Animação determinística: window.render(t) desenha o instante t (s). -->
+<style>
+  :root { --bg:#14120e; --panel:#1d1a15; --line:#353027; --txt:#ece3d2; --dim:#8b8273;
+          --amber:#ffb347; --coral:#ff6b4a; --cream:#f4e9d4; --ice:#6ec3ff; --violet:#c49bff; --leaf:#8fd16a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:1080px; height:1920px; overflow:hidden; background:var(--bg); }
+  body { font-family:"Segoe UI", Arial, sans-serif; color:var(--txt); }
+  .mono { font-family:Consolas, monospace; }
+  .abs { position:absolute; }
+  #stage { position:absolute; inset:0; overflow:hidden; }
+  #glow { position:absolute; inset:-200px; }
+  #grain { position:absolute; inset:0; opacity:.06; mix-blend-mode:overlay; }
+  #wave { position:absolute; left:0; top:1560px; width:1080px; height:360px; }
+  .brand { font-weight:700; color:var(--amber); font-size:44px; letter-spacing:.01em; }
+  .kicker { color:var(--dim); font-size:24px; letter-spacing:.32em; font-weight:600; }
+  .huge { font-family:"Segoe UI Black","Segoe UI",sans-serif; font-weight:900; color:var(--cream); line-height:.95; white-space:nowrap; }
+  .spaced { letter-spacing:.24em; font-weight:700; text-transform:uppercase; }
+  .card { position:absolute; border-radius:22px; overflow:hidden; border:2px solid var(--line); background:#0d0c0a;
+          box-shadow:0 40px 90px rgba(0,0,0,.65); }
+  .card img { position:absolute; left:0; top:0; transform-origin:0 0; }
+  .mask { overflow:hidden; display:block; }
+  .tile b { position:absolute; left:16px; bottom:12px; font-size:30px; font-weight:900; letter-spacing:.06em; color:var(--cream);
+            text-shadow:0 2px 12px #000; }
+  .tile i { display:block; font-style:normal; font-size:15px; letter-spacing:.2em; font-weight:700; color:var(--accent); }
+  .tile:after { content:""; position:absolute; inset:0; background:linear-gradient(transparent 35%, rgba(10,9,7,.92)); }
+  .tile b { z-index:2; }
+  .seg { position:absolute; top:0; height:6px; border-radius:3px; background:#2a261f; overflow:hidden; }
+  .seg div { height:100%; width:0; }
+  .chip { text-transform:uppercase; display:inline-block; padding:10px 22px; border:2px solid var(--line); border-radius:40px; font-size:24px; letter-spacing:.18em;
+          font-weight:700; color:var(--txt); margin:0 8px 12px 0; background:rgba(29,26,21,.8); }
+</style></head>
+<body><script src="tours-a.js"></script><script src="tours-b.js"></script><script src="tours-c.js"></script><script src="tours-d.js"></script><div id="stage">
+  <div id="glow"></div>
+  <canvas id="wave" width="1080" height="360"></canvas>
+  <canvas id="grain" width="540" height="960" style="width:1080px;height:1920px"></canvas>
+</div>
+<script>
+const W = 1080, H = 1920, FPS = 30; let DUR = 30;
+const BPM = 128, BEAT = 60 / BPM;            // tudo no grid: a trilha (audio.py) usa os mesmos tempos
+const P = new URLSearchParams(location.search).get('p') || 'mix';
+
+const C = { amber:'#ffb347', coral:'#ff6b4a', ice:'#6ec3ff', violet:'#c49bff', leaf:'#8fd16a', cream:'#f4e9d4' };
+const PACKS = {
+  criativo: { linha:['LINHA', 'CRIATIVA'], cor: C.coral, plugins: [
+    ['GRAO','GRÃO','Granular de textura',C.amber], ['CALEIDO','CALEIDO','Glitch rítmico',C.violet],
+    ['ESPIRAL','ESPIRAL','Phaser · flanger infinito',C.ice], ['FITA','FITA','Gravador de fita',C.coral],
+    ['CHAMA','CHAMA','Build-up de um knob',C.amber], ['F1','F1','Filtro ladder 4 polos',C.leaf],
+    ['RINGER','RINGER','Ring modulator',C.coral], ['REPETECO','REPETECO','Delay analógico BBD',C.amber],
+    ['MIRAGEM','MIRAGEM','Reverb shimmer',C.ice], ['PICOTE','PICOTE','Gate de 16 passos',C.violet] ] },
+  mix: { linha:['LINHA', 'DE MIX'], cor: C.amber, plugins: [
+    ['PRISMA','PRISMA','Multibanda · 4 bandas',C.violet], ['TORNO','TORNO','Compressor',C.amber],
+    ['BARRAGEM','BARRAGEM','Limiter true peak · LUFS',C.ice], ['CONSOLE','CONSOLE','Cristal · Ferro · Brasa',C.coral],
+    ['SOCO','SOCO','Modelador de transiente',C.coral], ['LIXA','LIXA','De-esser',C.amber],
+    ['HORIZONTE','HORIZONTE','Imagem estéreo',C.ice], ['SALA','SALA','Reverb limpo',C.violet],
+    ['MONITOR','MONITOR','Medidor de pico e LUFS',C.leaf], ['NAVALHA','NAVALHA','Clipper ao vivo',C.coral] ] },
+};
+
+// ---------- utilidades ----------
+const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lin = (t, a, b) => cl((t - a) / (b - a));
+const eo = x => 1 - Math.pow(1 - x, 3);                 // ease out
+const ei = x => x * x * x;                              // ease in
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eback = x => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const mix = (a, b, x) => a + (b - a) * x;
+const el = (html, parent = stage) => { const d = document.createElement('div'); d.innerHTML = html.trim(); const n = d.firstChild; parent.appendChild(n); return n; };
+const S = (n, o) => { for (const k in o) n.style[k] = o[k]; };
+const hexA = (h, a) => h + Math.round(cl(a) * 255).toString(16).padStart(2, '0');
+const stage = document.getElementById('stage');
+const IMG = f => `img/${f}.png`;
+
+// ---------- fundo: brilho na cor, grão, onda ----------
+const glow = document.getElementById('glow');
+const wave = document.getElementById('wave').getContext('2d');
+const grain = document.getElementById('grain').getContext('2d');
+let seed = 1; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function bg(t, cor, energia) {
+  const y1 = 30 + 6 * Math.sin(t * .7), y2 = 75 + 5 * Math.cos(t * .5);
+  glow.style.background = `radial-gradient(900px 700px at 20% ${y1}%, ${hexA(cor, .20)}, transparent 70%),
+    radial-gradient(800px 800px at 85% ${y2}%, ${hexA(cor, .10)}, transparent 70%), var(--bg)`;
+  // onda de osciloscópio: pulsa no tempo (kick a cada batida)
+  wave.clearRect(0, 0, W, 360);
+  const fase = (t / BEAT) % 1, bump = Math.exp(-fase * 6) * energia;
+  for (let k = 0; k < 3; k++) {
+    wave.beginPath();
+    for (let x = 0; x <= W; x += 6) {
+      const u = x / W, env = Math.sin(Math.PI * u);
+      const y = 170 + env * (38 + 70 * bump) * (Math.sin(u * 14 + t * 3 + k) * .6 + Math.sin(u * 37 - t * 5 + k * 2) * .3 + Math.sin(u * 5 + t) * .4) * (1 - k * .25);
+      x ? wave.lineTo(x, y) : wave.moveTo(x, y);
+    }
+    wave.strokeStyle = hexA(cor, [.55, .25, .12][k] * (.5 + .5 * energia)); wave.lineWidth = [3, 2, 1.5][k]; wave.stroke();
+  }
+  // grão de filme (sorteio por quadro, determinístico)
+  seed = 1 + Math.floor(t * FPS) * 7919;
+  const id = grain.createImageData(540, 960);
+  for (let i = 0; i < id.data.length; i += 4) { const v = rnd() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+  grain.putImageData(id, 0, 0);
+}
+
+// ================= PACOTES (mix / criativo) =================
+function montaPacote(pk) {
+  const N = pk.plugins.length;
+  // 30 s: slot de 4 tempos (1,875 s) · 60 s (?d=60): slot de 10 tempos (4,69 s), final no tempo 108
+  const LONGO = DUR === 60;
+  const T_IN = 8 * BEAT, SLOT = (LONGO ? 10 : 4) * BEAT, T_OUT = T_IN + N * SLOT;
+  // intro
+  const intro = el(`<div class="abs" style="inset:0"></div>`);
+  const strip = [0, 1].map(r => el(`<div class="abs" style="left:-400px;top:${1060 + r * 280}px;white-space:nowrap;transform:rotate(-7deg)">${
+      pk.plugins.concat(pk.plugins).map(p => `<div class="card" style="position:relative;display:inline-block;width:420px;height:244px;margin-right:24px"><img src="${IMG(p[0])}" style="width:420px"></div>`).join('')}</div>`, intro));
+  const iBrand = el(`<div class="abs" style="left:70px;top:300px"><div class="brand">InsideStudioSP</div><div class="kicker" style="margin-top:6px">COLEÇÃO DE PLUGINS</div></div>`, intro);
+  const iL1 = el(`<div class="abs mask" style="left:62px;top:470px"><div class="huge" style="font-size:190px">${pk.linha[0]}</div></div>`, intro);
+  const iL2 = el(`<div class="abs mask" style="left:62px;top:660px"><div class="huge" style="font-size:190px;color:${pk.cor}">${pk.linha[1]}</div></div>`, intro);
+  const iSub = el(`<div class="abs spaced" style="left:70px;top:900px;font-size:40px;color:var(--coral)">${N} plugins · VST3 e AU</div>`, intro);
+  // encaixa a linha 2 na largura
+  const fit = n => { if (n._fit) return; n._fit = 1; const h = n.firstChild; let fs = 190; while (h.scrollWidth > 960 && fs > 80) { fs -= 4; h.style.fontSize = fs + 'px'; } return fs; };
+  fit(iL1); fit(iL2);
+
+  // slots dos plugins
+  const top = el(`<div class="abs" style="left:70px;right:70px;top:282px;display:flex;justify-content:space-between;align-items:baseline">
+      <div class="kicker" style="font-size:22px"><span style="color:var(--amber);letter-spacing:.02em;font-weight:700;font-size:28px">InsideStudioSP</span> &nbsp;·&nbsp; ${pk.linha.join(' ')}</div>
+      <div class="mono" style="font-size:30px;color:var(--dim)"><b id="idx" style="color:var(--cream)">01</b> / ${String(N).padStart(2, '0')}</div></div>`);
+  const segs = el(`<div class="abs" style="left:70px;right:70px;top:1510px;height:6px"></div>`);
+  const segW = (940 - (N - 1) * 8) / N;
+  const segEls = pk.plugins.map((p, i) => el(`<div class="seg" style="left:${i * (segW + 8)}px;width:${segW}px"><div style="background:${p[3]}"></div></div>`, segs).firstChild);
+  const slots = pk.plugins.map(p => {
+    const s = el(`<div class="abs" style="inset:0;display:none"></div>`);
+    s.nome = el(`<div class="abs mask" style="left:62px;top:340px;padding-bottom:10px"><div class="huge" style="font-size:180px">${p[1]}</div></div>`, s);
+    s.tag = el(`<div class="abs spaced" style="left:70px;top:560px;font-size:34px;color:${p[3]}"></div>`, s);
+    s.card = el(`<div class="card" style="left:40px;top:650px;width:1000px;height:580px"><img src="${IMG(p[0])}" style="width:1000px"></div>`, s);
+    s.det = el(`<div class="card" style="left:40px;top:1280px;width:1000px;height:200px;border-color:${hexA(p[3], .6)}"><img src="${IMG(p[0])}"></div>`, s);
+    s.p = p; return s;
+  });
+  // final
+  const out = el(`<div class="abs" style="inset:0;display:none"></div>`);
+  const oT = el(`<div class="abs mask" style="left:62px;top:300px"><div class="huge" style="font-size:120px">${pk.linha[0]} <span style="color:${pk.cor}">${pk.linha[1]}</span></div></div>`, out);
+  const oSub = el(`<div class="abs spaced" style="left:70px;top:440px;font-size:32px;color:var(--coral)">${N} plugins · um só instalador</div>`, out);
+  const tiles = pk.plugins.map((p, i) => el(`<div class="card tile" style="--accent:${p[3]};left:${40 + (i % 2) * 510}px;top:${520 + Math.floor(i / 2) * 176}px;width:490px;height:160px">
+      <img src="${IMG(p[0])}" style="width:490px;top:-6px"><b>${p[1]}<i>${p[2]}</i></b></div>`, out));
+  const oFoot = el(`<div class="abs" style="left:70px;right:70px;top:1420px;display:flex;justify-content:space-between" ><span class="kicker" style="font-size:30px;color:var(--txt)">VST3 · AU</span><span class="kicker" style="font-size:30px;color:var(--txt)">MAC · WINDOWS</span></div>`, out);
+  const oBrand = el(`<div class="abs" style="left:0;right:0;top:860px;text-align:center"><div class="huge" style="font-size:110px;color:var(--amber)">InsideStudioSP</div><div class="kicker" style="margin-top:22px;font-size:28px;color:var(--txt)">COLEÇÃO DE PLUGINS</div></div>`, out);
+
+  return function render(t) {
+    // intro
+    const inOn = t < T_IN + .05;
+    intro.style.display = inOn ? '' : 'none';
+    if (inOn) {
+      const sai = ei(lin(t, T_IN - .45, T_IN));
+      S(iBrand, { opacity: lin(t, .1, .6) * (1 - sai), transform: `translateY(${(1 - eo(lin(t, .1, .7))) * 30 - sai * 80}px)` });
+      [iL1, iL2].forEach((n, k) => { const x = eo(lin(t, .4 + k * BEAT, .4 + k * BEAT + .55)); n.firstChild.style.transform = `translateY(${(1 - x) * 105 - sai * 120}%)`; });
+      const xs = lin(t, 4 * BEAT, 4 * BEAT + .9);
+      S(iSub, { opacity: xs * (1 - sai), letterSpacing: mix(.8, .24, eo(xs)) + 'em' });
+      strip.forEach((s, r) => S(s, { opacity: .5 * lin(t, .2, 1.2) * (1 - sai), transform: `rotate(-7deg) translateX(${(r ? -1 : 1) * (t * 140) - (r ? 900 : 300)}px)` }));
+    }
+    // plugins
+    const k = Math.floor((t - T_IN) / SLOT), u = t - T_IN - k * SLOT;
+    slots.forEach((s, i) => s.style.display = i === k && t >= T_IN && t < T_OUT ? '' : 'none');
+    const showPl = t >= T_IN && t < T_OUT;
+    top.style.display = showPl ? 'flex' : 'none'; segs.style.display = showPl ? '' : 'none';
+    if (showPl) {
+      const s = slots[k], p = s.p; fit(s.nome);
+      document.getElementById('idx').textContent = String(k + 1).padStart(2, '0');
+      S(top, { opacity: k === 0 ? lin(u, 0, .3) : 1 });
+      segEls.forEach((d, i) => d.style.width = (i < k ? 100 : i > k ? 0 : lin(u, 0, SLOT) * 100) + '%');
+      const ent = eo(lin(u, 0, .32)), sai = ei(lin(u, SLOT - .22, SLOT));
+      s.nome.firstChild.style.transform = `translateY(${(1 - eo(lin(u, .02, .36))) * 105}%) translateX(${-sai * 200}px)`;
+      s.nome.style.opacity = 1 - sai;
+      const nTyped = Math.round(p[2].length * lin(u, .18, .7));
+      s.tag.textContent = p[2].slice(0, nTyped) + (u < .8 && Math.floor(u * 8) % 2 ? '▍' : '');
+      s.tag.style.opacity = 1 - sai;
+      const ry = mix(28, -3, ent), z = .97 + lin(u, 0, SLOT) * .03;
+      S(s.card, { transform: `perspective(1600px) translateX(${(1 - ent) * 900 - sai * 1100}px) rotateY(${ry}deg) scale(${z})`, opacity: lin(u, 0, .12) });
+      // detalhe: faixa da tela de cima, em zoom, correndo da esquerda para a direita
+      const dImg = s.det.firstChild, wImg = 2000 * 200 / (.25 * 1160);
+      let cx = mix(.34, .66, eio(lin(u, .3, SLOT))), cy = .115;
+      if (LONGO) {   // 3 faixas (topo, meio, base), indo e voltando: a interface inteira passa em zoom
+        const FX = [.115, .43, .73], q = lin(u, .3, SLOT - .25) * 3, f = Math.min(2, Math.floor(q)), w = q - f;
+        const ida = eio(lin(w, 0, .82)), troca = eio(lin(w, .82, 1));
+        cx = f % 2 ? mix(.66, .34, ida) : mix(.34, .66, ida);
+        cy = f < 2 ? mix(FX[f], FX[f + 1], troca) : FX[2];
+      }
+      S(dImg, { width: wImg + 'px', transform: `translate(${500 - cx * wImg}px, ${100 - (cy + .125) * wImg * 1160 / 2000}px)` });
+      const dr = eo(lin(u, .3, .65));
+      S(s.det, { clipPath: `inset(0 ${(1 - dr) * 100}% 0 0 round 22px)`, transform: `translateX(${-sai * 1100}px)` });
+    }
+    // final
+    const oOn = t >= T_OUT; out.style.display = oOn ? '' : 'none';
+    if (oOn) {
+      const v = t - T_OUT; fit(oT);
+      oT.firstChild.style.transform = `translateY(${(1 - eo(lin(v, 0, .5))) * 105}%)`;
+      S(oSub, { opacity: lin(v, .3, .7) });
+      // 1ª metade: grade; 2ª metade (último compasso e meio): grade sobe e entra a marca
+      const fim = eio(lin(v, 10 * BEAT, 10 * BEAT + .7));
+      tiles.forEach((tl, i) => { const x = eback(lin(v, .35 + i * BEAT / 4, .35 + i * BEAT / 4 + .45));
+        S(tl, { opacity: lin(v, .35 + i * BEAT / 4, .5 + i * BEAT / 4) * (1 - fim * .88), transform: `scale(${mix(.6, 1, x) * (1 - fim * .08)}) translateY(${-fim * 90}px)`, filter: `blur(${fim * 3}px)` }); });
+      S(oFoot, { opacity: lin(v, 2.4, 2.9) });
+      oBrand.style.display = fim > 0 ? '' : 'none';
+      S(oBrand, { opacity: fim, transform: `scale(${mix(1.25, 1, eo(fim))})`, letterSpacing: mix(.2, 0, eo(fim)) + 'em' });
+      S(oT, { opacity: 1 - fim * .0 });
+    }
+    // cor do fundo segue o plugin da vez
+    const cor = showPl ? slots[k].p[3] : pk.cor;
+    const energia = t < T_IN ? lin(t, 0, T_IN) * .4 : t > DUR - 2 ? lin(DUR - t, 0, 2) : 1;
+    bg(t, cor, energia);
+    stage.style.opacity = Math.min(lin(t, 0, .25), lin(DUR - t, 0, .35));
+  };
+}
+
+// ================= SYNTH (QUIMERA) =================
+function montaSynth() {
+  const W0 = 2400, H0 = 1480, cor = C.amber;
+  const T_IN = 8 * BEAT, T_FULL = T_IN + 4 * BEAT, SEG = 6 * BEAT, T_OUT = T_FULL + 6 * SEG;  // 3,75 · 5,63 · 22,5
+  // câmera: centro (fração da foto), largura visível (fração) — percorre a tela
+  const TOUR = [
+    { a: [.13, .30, .27], b: [.61, .30, .27], t1: '3 osciladores', t2: 'Wavetable · modelado · FM', c: C.amber },
+    { a: [.86, .26, .26], b: [.86, .34, .26], t1: 'Sub · ruído · voz', t2: 'Poli 8 vozes · glide · deriva', c: C.cream },
+    { a: [.20, .565, .30], b: [.60, .565, .30], t1: '2 filtros', t2: 'Ladder · em paralelo ou série', c: C.coral },
+    { a: [.18, .74, .30], b: [.84, .74, .30], t1: '3 envelopes · 2 LFOs', t2: 'LFO com sync no tempo', c: C.leaf },
+    { a: [.905, .565, .19], b: [.905, .58, .17], t1: '4 macros', t2: 'Ligue a qualquer destino', c: C.ice },
+    { a: [.22, .905, .34], b: [.76, .905, .34], t1: 'Teclado MPE', t2: 'Expressão por nota', c: C.violet },
+  ];
+  const BX = { l: 40, t: 640, w: 1000, h: 800 };
+  const intro = el(`<div class="abs" style="inset:0"></div>`);
+  const iBrand = el(`<div class="abs" style="left:70px;top:300px"><div class="brand">InsideStudioSP</div><div class="kicker" style="margin-top:6px">INSTRUMENTO VIRTUAL · VST3 · AU</div></div>`, intro);
+  const letras = 'QUIMERA'.split('').map((ch, i) => `<span style="display:inline-block">${ch}</span>`).join('');
+  const iNome = el(`<div class="abs mask" style="left:50px;top:560px;padding:10px 0"><div class="huge" style="font-size:200px">${letras}</div></div>`, intro);
+  const iL1 = el(`<div class="abs spaced" style="left:70px;top:830px;font-size:38px;color:var(--amber)">Sintetizador wavetable</div>`, intro);
+  const iL2 = el(`<div class="abs spaced" style="left:70px;top:890px;font-size:30px;color:var(--dim)">Orgânico + metálico · MPE</div>`, intro);
+  const logo = el(`<div class="card" style="left:740px;top:1060px;width:280px;height:280px;border-radius:50%;border-color:${hexA(cor, .5)}"><img src="${IMG('QUIMERA')}"></div>`, intro);
+  // foto inteira + câmera
+  const cam = el(`<div class="card" style="left:${BX.l}px;top:${BX.t}px;width:${BX.w}px;height:${BX.h}px;display:none"><img src="${IMG('QUIMERA')}"></div>`);
+  const camImg = cam.firstChild;
+  const cTop = el(`<div class="abs" style="left:70px;right:70px;top:282px;display:none;justify-content:space-between;align-items:baseline">
+      <div class="kicker" style="font-size:22px"><span style="color:var(--amber);letter-spacing:.02em;font-weight:700;font-size:28px">InsideStudioSP</span> &nbsp;·&nbsp; QUIMERA</div>
+      <div class="mono" style="font-size:30px;color:var(--dim)"><b id="sidx" style="color:var(--cream)">01</b> / 06</div></div>`);
+  const cap1 = el(`<div class="abs mask" style="left:62px;top:350px;padding-bottom:8px"><div class="huge" style="font-size:110px"></div></div>`);
+  const cap2 = el(`<div class="abs spaced" style="left:70px;top:500px;font-size:34px"></div>`);
+  const full = el(`<div class="abs" style="left:70px;top:350px;display:none"><div class="huge" style="font-size:110px">QUIMERA</div><div class="spaced" style="font-size:34px;color:var(--amber);margin-top:14px">3 osc · 2 filtros · FX</div></div>`);
+  const chips = el(`<div class="abs" style="left:62px;right:40px;top:1470px;display:none">${['181 presets', '9 categorias', '8 vozes', 'MPE'].map(c => `<span class="chip">${c}</span>`).join('')}</div>`);
+  const out = el(`<div class="abs" style="inset:0;display:none"></div>`);
+  const oNome = el(`<div class="abs" style="left:0;right:0;top:300px;text-align:center"><div class="huge" style="font-size:190px">QUIMERA</div>
+      <div class="spaced" style="font-size:34px;color:var(--amber);margin-top:20px">Sintetizador wavetable · MPE</div></div>`, out);
+  const oCard = el(`<div class="card" style="left:90px;top:700px;width:900px;height:555px"><img src="${IMG('QUIMERA')}" style="width:900px"></div>`, out);
+  const oFoot = el(`<div class="abs" style="left:90px;right:90px;top:1300px;display:flex;justify-content:space-between"><span class="kicker" style="font-size:30px;color:var(--txt)">VST3 · AU</span><span class="kicker" style="font-size:30px;color:var(--txt)">MAC · WINDOWS</span></div>`, out);
+  const oBrand = el(`<div class="abs" style="left:0;right:0;top:1390px;text-align:center"><div class="huge" style="font-size:84px;color:var(--amber)">InsideStudioSP</div></div>`, out);
+
+  function camera(img, box, cx, cy, wf) {
+    const s = box.w / (wf * W0);
+    S(img, { width: W0 * s + 'px', transform: `translate(${box.w / 2 - cx * W0 * s}px, ${box.h / 2 - cy * H0 * s}px)` });
+  }
+  // logo: recorte do cabeçalho (fração aproximada do círculo do logo)
+  camera(logo.firstChild, { w: 280, h: 280 }, .026, .045, .05);
+
+  return function render(t) {
+    const inOn = t < T_IN + .05; intro.style.display = inOn ? '' : 'none';
+    if (inOn) {
+      const sai = ei(lin(t, T_IN - .4, T_IN));
+      S(iBrand, { opacity: lin(t, .1, .6) * (1 - sai) });
+      [...iNome.firstChild.children].forEach((sp, i) => { const x = eback(lin(t, .5 + i * BEAT / 2, .5 + i * BEAT / 2 + .45)); sp.style.transform = `translateY(${(1 - x) * 110 - sai * 120}%)`; });
+      S(iL1, { opacity: lin(t, 4 * BEAT, 4 * BEAT + .4) * (1 - sai), letterSpacing: mix(.6, .24, eo(lin(t, 4 * BEAT, 4 * BEAT + .9))) + 'em' });
+      S(iL2, { opacity: lin(t, 5 * BEAT, 5 * BEAT + .4) * (1 - sai) });
+      const lg = eback(lin(t, 6 * BEAT, 6 * BEAT + .5));
+      S(logo, { opacity: lin(t, 6 * BEAT, 6 * BEAT + .2) * (1 - sai), transform: `scale(${lg}) rotate(${(1 - lg) * -40}deg)` });
+    }
+    const camOn = t >= T_IN && t < T_OUT;
+    cam.style.display = camOn ? '' : 'none'; cTop.style.display = camOn && t >= T_FULL ? 'flex' : 'none';
+    cap1.style.display = cap2.style.display = camOn && t >= T_FULL ? '' : 'none';
+    full.style.display = camOn && t < T_FULL ? '' : 'none'; chips.style.display = camOn ? '' : 'none';
+    let corAgora = cor;
+    if (camOn) {
+      if (t < T_FULL) {   // foto inteira entra
+        const x = eo(lin(t, T_IN, T_IN + .8));
+        S(cam, { transform: `perspective(1800px) rotateX(${(1 - x) * 25}deg) translateY(${(1 - x) * 300}px)`, opacity: lin(t, T_IN, T_IN + .2) });
+        full.firstChild.style.transform = `translateY(${(1 - eo(lin(t, T_IN, T_IN + .5))) * 60}px)`; full.style.opacity = lin(t, T_IN, T_IN + .4) * (1 - lin(t, T_FULL - .2, T_FULL));
+        // zoom antes do 1º trecho
+        const z = eio(lin(t, T_FULL - .7, T_FULL));
+        const a = TOUR[0].a; camera(camImg, BX, mix(.5, a[0], z), mix(.5, a[1], z), mix(1.0, a[2], z));
+      } else {
+        const i = Math.min(5, Math.floor((t - T_FULL) / SEG)), u = t - T_FULL - i * SEG, sg = TOUR[i], nx = TOUR[i + 1];
+        const MV = .6;   // último trecho do segmento: câmera viaja para o próximo
+        let c;
+        if (u < SEG - MV || !nx) { const x = eio(lin(u, 0, nx ? SEG - MV : SEG)); c = sg.a.map((v, j) => mix(v, sg.b[j], x)); }
+        else { const x = eio(lin(u, SEG - MV, SEG)); c = sg.b.map((v, j) => mix(v, nx.a[j], x)); }
+        camera(camImg, BX, c[0], c[1], c[2]);
+        S(cam, { transform: 'none', opacity: 1, borderColor: hexA(sg.c, .55) });
+        document.getElementById('sidx').textContent = '0' + (i + 1);
+        cap1.firstChild.textContent = sg.t1.toUpperCase();
+        const sai = nx ? ei(lin(u, SEG - .25, SEG)) : 0;
+        cap1.firstChild.style.transform = `translateY(${(1 - eo(lin(u, 0, .35))) * 105 + sai * -105}%)`;
+        cap2.textContent = sg.t2.slice(0, Math.round(sg.t2.length * lin(u, .2, .8)));
+        S(cap2, { color: sg.c, opacity: 1 - sai });
+        corAgora = sg.c === C.cream ? cor : sg.c;
+      }
+      [...chips.children].forEach((ch, i) => { const x = eback(lin(t, T_FULL + i * BEAT, T_FULL + i * BEAT + .4)); S(ch, { opacity: lin(t, T_FULL + i * BEAT, T_FULL + i * BEAT + .15), transform: `scale(${x})` }); });
+    }
+    const oOn = t >= T_OUT; out.style.display = oOn ? '' : 'none';
+    if (oOn) {
+      const v = t - T_OUT;
+      const x = eo(lin(v, 0, .7));
+      S(oCard, { transform: `perspective(1800px) rotateX(${(1 - x) * -20}deg) scale(${mix(1.25, 1, x) + lin(v, 0, 7.5) * .04})`, opacity: lin(v, 0, .2) });
+      oNome.firstChild.style.letterSpacing = mix(.4, .02, eo(lin(v, .2, 1.2))) + 'em'; S(oNome, { opacity: lin(v, .2, .6) });
+      S(oFoot, { opacity: lin(v, 1.2, 1.7) });
+      const b = eo(lin(v, 8 * BEAT, 8 * BEAT + .7));
+      S(oBrand, { opacity: b, transform: `scale(${mix(1.2, 1, b)})` });
+    }
+    const energia = t < T_IN ? lin(t, 0, T_IN) * .4 : t > DUR - 2 ? lin(DUR - t, 0, 2) : 1;
+    bg(t, corAgora, energia);
+    stage.style.opacity = Math.min(lin(t, 0, .25), lin(DUR - t, 0, .35));
+  };
+}
+
+// ================= STORY DE 1 PLUGIN (60 s) =================
+// ?p=plugin&n=TORNO — roteiro em tours.js (window.TOURS). Tempos em batidas de 128 BPM:
+// intro 0-8 · foto inteira 8-16 · passeio 5×16 (16-96) · foto inteira 96-112 · final 112-128 (marca no 120)
+function montaPlugin(N) {
+  const R = window.TOURS[N], LINHAS = { mix: ['LINHA', 'DE MIX'], criativo: ['LINHA', 'CRIATIVA'], synth: ['INSTRUMENTO', 'VIRTUAL'] };
+  const ln = LINHAS[R.linha], cor = R.cor, W0 = R.w || 2000, H0 = R.h || 1160;
+  const T_IN = 8 * BEAT, T_FULL = 16 * BEAT, SEG = 16 * BEAT, T_TOUR = T_FULL + 5 * SEG, T_OUT = 112 * BEAT, T_MARCA = 120 * BEAT;
+  const BX = { l: 40, t: 640, w: 1000, h: 800 };
+  // intro
+  const intro = el(`<div class="abs" style="inset:0"></div>`);
+  const iBrand = el(`<div class="abs" style="left:70px;top:300px"><div class="brand">InsideStudioSP</div><div class="kicker" style="margin-top:6px">${ln.join(' ')} · VST3 · AU</div></div>`, intro);
+  const iNome = el(`<div class="abs mask" style="left:50px;top:560px;padding:10px 0"><div class="huge" style="font-size:200px">${R.nome.split('').map(ch => `<span style="display:inline-block">${ch}</span>`).join('')}</div></div>`, intro);
+  const iL1 = el(`<div class="abs spaced" style="left:70px;top:830px;font-size:38px;color:${cor}">${R.tag}</div>`, intro);
+  const iL2 = el(`<div class="abs spaced" style="left:70px;top:890px;font-size:30px;color:var(--dim)">${R.sub || ''}</div>`, intro);
+  const iCard = el(`<div class="card" style="left:240px;top:1060px;width:800px;height:464px;border-color:${hexA(cor, .5)}"><img src="${IMG(N)}" style="width:800px"></div>`, intro);
+  const fit = n => { if (n._fit) return; n._fit = 1; const h = n.firstChild; let fs = parseFloat(h.style.fontSize); while (h.scrollWidth > 960 && fs > 70) { fs -= 4; h.style.fontSize = fs + 'px'; } };
+  // foto + câmera
+  const cam = el(`<div class="card" style="left:${BX.l}px;top:${BX.t}px;width:${BX.w}px;height:${BX.h}px;display:none"><img src="${IMG(N)}"></div>`);
+  const camImg = cam.firstChild;
+  const cTop = el(`<div class="abs" style="left:70px;right:70px;top:282px;display:none;justify-content:space-between;align-items:baseline">
+      <div class="kicker" style="font-size:22px"><span style="color:var(--amber);letter-spacing:.02em;font-weight:700;font-size:28px">InsideStudioSP</span> &nbsp;·&nbsp; ${R.nome}</div>
+      <div class="mono" style="font-size:30px;color:var(--dim)"><b id="pidx" style="color:var(--cream)">01</b> / 05</div></div>`);
+  const cap1 = el(`<div class="abs mask" style="left:62px;top:350px;padding-bottom:8px"><div class="huge" style="font-size:110px"></div></div>`);
+  const cap2 = el(`<div class="abs spaced" style="left:70px;top:500px;font-size:34px;white-space:nowrap"></div>`);
+  const full = el(`<div class="abs" style="left:70px;top:350px;display:none"><div class="huge" style="font-size:110px">${R.nome}</div><div class="spaced" style="font-size:34px;color:${cor};margin-top:14px">${R.tag}</div></div>`);
+  const chips = el(`<div class="abs" style="left:62px;right:40px;top:1470px;display:none">${R.chips.map(c => `<span class="chip">${c}</span>`).join('')}</div>`);
+  // final
+  const out = el(`<div class="abs" style="inset:0;display:none"></div>`);
+  const oNome = el(`<div class="abs" style="left:0;right:0;top:300px;text-align:center"><div class="huge" style="font-size:190px">${R.nome}</div>
+      <div class="spaced" style="font-size:34px;color:${cor};margin-top:20px">${R.tag}</div></div>`, out);
+  const oCard = el(`<div class="card" style="left:90px;top:700px;width:900px;height:${Math.round(900 * H0 / W0)}px"><img src="${IMG(N)}" style="width:900px"></div>`, out);
+  const oFoot = el(`<div class="abs" style="left:90px;right:90px;top:${720 + Math.round(900 * H0 / W0)}px;display:flex;justify-content:space-between"><span class="kicker" style="font-size:30px;color:var(--txt)">VST3 · AU</span><span class="kicker" style="font-size:30px;color:var(--txt)">MAC · WINDOWS</span></div>`, out);
+  const oBrand = el(`<div class="abs" style="left:0;right:0;top:1390px;text-align:center"><div class="huge" style="font-size:84px;color:var(--amber)">InsideStudioSP</div><div class="kicker" style="margin-top:16px;font-size:26px;color:var(--txt)">${ln.join(' ')}</div></div>`, out);
+
+  // câmera: centro (fração da foto) e largura visível (fração); não deixa sair da foto
+  function camera(img, box, cx, cy, wf) {
+    const s = box.w / (wf * W0), hw = box.w / 2 / s, hh = box.h / 2 / s;
+    cx = W0 * cx; cy = H0 * cy;
+    cx = hw * 2 >= W0 ? W0 / 2 : cl(cx, hw, W0 - hw); cy = hh * 2 >= H0 ? H0 / 2 : cl(cy, hh, H0 - hh);
+    S(img, { width: W0 * s + 'px', transform: `translate(${box.w / 2 - cx * s}px, ${box.h / 2 - cy * s}px)` });
+  }
+  const INTEIRA = [.5, .5, 1.0];
+
+  return function render(t) {
+    const inOn = t < T_IN + .05; intro.style.display = inOn ? '' : 'none';
+    if (inOn) {
+      fit(iNome);
+      const sai = ei(lin(t, T_IN - .4, T_IN));
+      S(iBrand, { opacity: lin(t, .1, .6) * (1 - sai) });
+      [...iNome.firstChild.children].forEach((sp, i) => { const x = eback(lin(t, .5 + i * BEAT / 2, .5 + i * BEAT / 2 + .45)); sp.style.transform = `translateY(${(1 - x) * 110 - sai * 120}%)`; });
+      S(iL1, { opacity: lin(t, 4 * BEAT, 4 * BEAT + .4) * (1 - sai), letterSpacing: mix(.6, .24, eo(lin(t, 4 * BEAT, 4 * BEAT + .9))) + 'em' });
+      S(iL2, { opacity: lin(t, 5 * BEAT, 5 * BEAT + .4) * (1 - sai) });
+      const c = eo(lin(t, 6 * BEAT, 6 * BEAT + .6));
+      S(iCard, { opacity: lin(t, 6 * BEAT, 6 * BEAT + .2) * (1 - sai), transform: `perspective(1600px) translateX(${(1 - c) * 700}px) rotateY(${mix(28, -4, c)}deg)` });
+    }
+    const camOn = t >= T_IN && t < T_OUT;
+    const inTour = t >= T_FULL && t < T_TOUR;
+    cam.style.display = camOn ? '' : 'none'; cTop.style.display = camOn && inTour ? 'flex' : 'none';
+    cap1.style.display = cap2.style.display = camOn && inTour ? '' : 'none';
+    full.style.display = camOn && !inTour ? '' : 'none'; chips.style.display = camOn ? '' : 'none';
+    let corAgora = cor;
+    if (camOn) {
+      if (t < T_FULL) {          // foto inteira entra e, no fim, zoom para o 1º trecho
+        const x = eo(lin(t, T_IN, T_IN + .8));
+        S(cam, { transform: `perspective(1800px) rotateX(${(1 - x) * 25}deg) translateY(${(1 - x) * 300}px)`, opacity: lin(t, T_IN, T_IN + .2), borderColor: hexA(cor, .5) });
+        full.firstChild.style.transform = `translateY(${(1 - eo(lin(t, T_IN, T_IN + .5))) * 60}px)`;
+        full.style.opacity = lin(t, T_IN, T_IN + .4) * (1 - lin(t, T_FULL - .2, T_FULL));
+        const z = eio(lin(t, T_FULL - .8, T_FULL)), a = R.tour[0].a;
+        camera(camImg, BX, mix(.5, a[0], z), mix(.5, a[1], z), mix(1.0, a[2], z));
+      } else if (inTour) {
+        const i = Math.min(4, Math.floor((t - T_FULL) / SEG)), u = t - T_FULL - i * SEG, sg = R.tour[i], nx = R.tour[i + 1];
+        const MV = .8;           // fim do trecho: câmera viaja para o próximo (no último, volta à foto inteira)
+        const alvo = nx ? nx.a : INTEIRA;
+        let c;
+        if (u < SEG - MV) { const x = eio(lin(u, 0, SEG - MV)); c = sg.a.map((v, j) => mix(v, sg.b[j], x)); }
+        else { const x = eio(lin(u, SEG - MV, SEG)); c = sg.b.map((v, j) => mix(v, alvo[j], x)); }
+        camera(camImg, BX, c[0], c[1], c[2]);
+        S(cam, { transform: 'none', opacity: 1, borderColor: hexA(sg.c, .55) });
+        document.getElementById('pidx').textContent = '0' + (i + 1);
+        cap1.firstChild.textContent = sg.t1.toUpperCase(); fit(cap1); cap1._fit = 0;
+        const sai = ei(lin(u, SEG - .3, SEG));
+        cap1.firstChild.style.transform = `translateY(${(1 - eo(lin(u, 0, .4))) * 105 + sai * -105}%)`;
+        cap2.textContent = sg.t2.slice(0, Math.round(sg.t2.length * lin(u, .25, 1.1)));
+        S(cap2, { color: sg.c, opacity: 1 - sai });
+        corAgora = sg.c === C.cream ? cor : sg.c;
+      } else {                   // foto inteira de novo, aproximando devagar
+        const v = t - T_TOUR;
+        camera(camImg, BX, .5, .5, mix(1.0, .9, eio(lin(v, .5, T_OUT - T_TOUR))));
+        S(cam, { transform: 'none', opacity: 1 - lin(t, T_OUT - .25, T_OUT), borderColor: hexA(cor, .5) });
+        full.firstChild.style.transform = `translateY(${(1 - eo(lin(v, 0, .5))) * 60}px)`;
+        full.style.opacity = lin(v, 0, .4) * (1 - lin(t, T_OUT - .3, T_OUT));
+      }
+      [...chips.children].forEach((ch, i) => { const t0 = T_FULL + i * BEAT; const x = eback(lin(t, t0, t0 + .4)); S(ch, { opacity: lin(t, t0, t0 + .15) * (1 - lin(t, T_OUT - .3, T_OUT)), transform: `scale(${x})` }); });
+    }
+    const oOn = t >= T_OUT; out.style.display = oOn ? '' : 'none';
+    if (oOn) {
+      const v = t - T_OUT, x = eo(lin(v, 0, .7));
+      fit(oNome);
+      S(oCard, { transform: `perspective(1800px) rotateX(${(1 - x) * -20}deg) scale(${mix(1.25, 1, x) + lin(v, 0, 7.5) * .04})`, opacity: lin(v, 0, .2) });
+      oNome.firstChild.style.letterSpacing = mix(.4, .02, eo(lin(v, .2, 1.2))) + 'em'; S(oNome, { opacity: lin(v, .2, .6) });
+      S(oFoot, { opacity: lin(v, 1.2, 1.7) });
+      const b = eo(lin(t, T_MARCA, T_MARCA + .7));
+      S(oBrand, { opacity: b, transform: `scale(${mix(1.2, 1, b)})` });
+    }
+    const energia = t < T_IN ? lin(t, 0, T_IN) * .4 : t > DUR - 2 ? lin(DUR - t, 0, 2) : 1;
+    bg(t, corAgora, energia);
+    stage.style.opacity = Math.min(lin(t, 0, .25), lin(DUR - t, 0, .35));
+  };
+}
+
+if (P === 'plugin' || new URLSearchParams(location.search).get('d') === '60') DUR = 60;
+window.render = P === 'plugin' ? montaPlugin(new URLSearchParams(location.search).get('n')) : P === 'synth' ? montaSynth() : montaPacote(PACKS[P]);
+window.DUR = DUR; window.FPS = FPS;
+window.render(+(location.hash.slice(1) || 0));
+</script></body></html>

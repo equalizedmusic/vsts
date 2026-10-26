@@ -1,5 +1,7 @@
 # NAVALHA — clipper
 
+![NAVALHA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/NAVALHA.png)
+
 Clipper com oversampling de 4× (FIR de fase linear) que **mostra o que está cortando**: no alto,
 a forma de onda dos últimos ~4 s, com o que passa em creme e o que a navalha cortou em coral,
 mais a linha do CEILING. A curva de entrada × saída mostra o ponto do pico de agora, e o painel de

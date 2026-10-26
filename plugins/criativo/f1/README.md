@@ -1,5 +1,7 @@
 # F1 — filtro ladder
 
+![F1](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/F1.png)
+
 Filtro passa-baixa de 4 degraus no estilo dos pedais analógicos clássicos ("101"): ressonância
 que chega a auto-oscilar, drive na entrada, envelope que abre ou fecha o filtro com a força do som
 e LFO no grid. O botão **FUMAÇA** "embaça" o som num reverb curto e escuro.

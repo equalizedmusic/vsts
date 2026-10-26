@@ -1,5 +1,7 @@
 # LIMÃO — bassline ácido
 
+![LIMÃO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/LIMAO.png)
+
 Sintetizador monofônico (VSTi / AU) com a alma do TB-303, mas moderno: uma voz, filtro ladder de 18 dB/oit
 que grita na ressonância, ACCENT que acumula em accents seguidos, SLIDE entre notas ligadas, efeitos na saída e
 um sequenciador de até 32 passos que anda no tempo do projeto. Visual: painel branco com faixa verde-limão,

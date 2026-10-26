@@ -1,5 +1,7 @@
 # TORNO — compressor
 
+![TORNO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/TORNO.png)
+
 Compressor de mix que **mostra o que está apertando**: no alto, o histórico dos últimos ~4 s, com o
 nível de entrada em creme subindo de baixo e a redução de ganho em coral descendo de cima, mais a
 linha do THRESHOLD. A curva de entrada × saída mostra o joelho, a compensação e o ponto de agora.
