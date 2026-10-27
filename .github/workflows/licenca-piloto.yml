@@ -1,16 +1,16 @@
-name: licenca-piloto
+name: licenca-teste
 
-# Piloto da ativação por licença: compila SÓ o TORNO (Mac + Windows) com a tela de ativação e entrega o instalador
-# como artifact do run. Não publica release nem mexe nas branches builds/shots. Roda só na branch licenca.
-# O piloto finge ser a versão 1.0.0 (ISP_LICENCA_VERSAO_TESTE) para o aviso de versão nova aparecer no teste.
+# Teste da ativação por licença em TODOS os plugins (efeitos + instrumentos, Mac + Windows), antes do merge no main.
+# Entrega os instaladores como artifact do run. Não publica release nem mexe nas branches builds/shots. Roda só na
+# branch licenca. Os instaladores saem com "-licenca-teste" no nome para não confundir com os dos Releases.
 on:
   push:
     branches: [licenca]
-    paths: ['licenca/cliente/**', 'plugins/mix/torno/**', 'CMakeLists.txt', '.github/workflows/licenca-piloto.yml']
+    paths: ['licenca/cliente/**', 'plugins/**', 'instrumentos/**', 'CMakeLists.txt', '.github/workflows/licenca-piloto.yml']
   workflow_dispatch:
 
 concurrency:
-  group: licenca-piloto
+  group: licenca-teste
   cancel-in-progress: true
 
 jobs:
@@ -19,8 +19,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-latest,   name: mac }
-          - { os: windows-latest, name: win }
+          - { os: macos-latest,   name: mac, projeto: efeitos }
+          - { os: windows-latest, name: win, projeto: efeitos }
+          - { os: macos-latest,   name: mac, projeto: instrumentos }
+          - { os: windows-latest, name: win, projeto: instrumentos }
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -28,46 +30,62 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Compilar (só o TORNO)
+      - name: Compilar
         id: build
         run: |
           set -o pipefail
+          if [ "${{ matrix.projeto }}" = efeitos ]; then SRC=.; else SRC=instrumentos; fi
           if [ "${{ matrix.name }}" = mac ]; then
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DISP_LICENCA_VERSAO_TESTE=1.0.0 2>&1 | tee build.log
-            cmake --build build --config Release -j 4 --target Torno_VST3 Torno_AU 2>&1 | tee -a build.log
+            cmake -S $SRC -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake --build build --config Release -j 4 2>&1 | tee -a build.log
           else
-            cmake -S . -B build -A x64 -DISP_LICENCA_VERSAO_TESTE=1.0.0 2>&1 | tee build.log
-            cmake --build build --config Release --parallel --target Torno_VST3 2>&1 | tee -a build.log
+            cmake -S $SRC -B build -A x64 2>&1 | tee build.log
+            cmake --build build --config Release --parallel 2>&1 | tee -a build.log
           fi
 
       - name: Empacotar
         id: pack
         run: |
           set -e
-          art=$(find build -type d -name 'Torno_artefacts' | head -1)
-          mkdir -p linha/mix
-          for fmt in VST3 AU; do
-            [ -d "$art/Release/$fmt" ] && cp -R "$art/Release/$fmt" "linha/mix/"
+          # pasta por pacote: linha/<criativo|mix|knob> (efeitos) ou linha/<instrumentos|limao|mercurio>
+          for art in $(find build -type d -name '*_artefacts'); do
+            if [ "${{ matrix.projeto }}" = efeitos ]; then
+              p=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*#\1#p')
+            else
+              p=$(echo "$art" | sed -n 's#^build/\([^/]*\)/.*#\1#p')
+              [ "$p" = quimera ] && p=instrumentos
+            fi
+            [ -n "$p" ] || continue
+            for fmt in VST3 AU; do
+              if [ -d "$art/Release/$fmt" ]; then
+                mkdir -p "linha/$p/$fmt"
+                cp -R "$art/Release/$fmt/." "linha/$p/$fmt/"
+              fi
+            done
           done
           find linha \( -name '*.exp' -o -name '*.lib' \) -delete
           if [ "${{ matrix.name }}" = mac ]; then
-            for b in linha/mix/*/*; do codesign --force --deep --sign - "$b"; done
+            for b in linha/*/*/*; do codesign --force --deep --sign - "$b"; done
             PY=python3
           else
             [ -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ] || choco install innosetup -y --no-progress > /dev/null
             PY=python
           fi
           export PYTHONIOENCODING=utf-8
-          v=$($PY instalador/versao.py Mix | tr -d '\r')
-          $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Mix --origem linha/mix --versao "$v" --saida .
+          versao() { $PY instalador/versao.py "$1" | tr -d '\r'; }   # o python do Windows termina a linha com \r
+          for d in linha/*; do
+            l=$(basename "$d")
+            P="$(echo "${l:0:1}" | tr a-z A-Z)${l:1}"
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote "$P" --origem "$d" --versao "$(versao "$P")" --saida .
+          done
           mkdir -p report
-          for f in InsideStudioSP-Mix-${{ matrix.name }}.*; do mv "$f" "report/TORNO-licenca-teste-${f#InsideStudioSP-Mix-}"; done
-          ls -l report | tee pack.log
+          for f in InsideStudioSP-*-${{ matrix.name }}.*; do mv "$f" "report/${f%-${{ matrix.name }}.*}-licenca-teste-${f##*-}"; done
+          { find linha -maxdepth 3; ls -l report; } | tee pack.log
 
       - name: pluginval
         id: pluginval
         continue-on-error: true
-        timeout-minutes: 25
+        timeout-minutes: 40
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
@@ -79,17 +97,19 @@ jobs:
             7z x -y pv.zip > /dev/null
             PV=./pluginval.exe
           fi
-          "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 linha/mix/VST3/*.vst3 2>&1 | tee pluginval.log
+          for p in linha/*/VST3/*.vst3; do
+            "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log
+          done
 
       - name: Relatório
         if: always()
         run: |
           mkdir -p report
           cp build.log pack.log pluginval.log report/ 2>/dev/null || true
-          echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.name }}.txt"
+          echo "${{ matrix.projeto }} ${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.projeto }}-${{ matrix.name }}.txt"
 
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: torno-licenca-${{ matrix.name }}
+          name: licenca-${{ matrix.projeto }}-${{ matrix.name }}
           path: report/

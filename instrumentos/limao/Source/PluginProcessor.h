@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Engine.h"
 #include "Params.h"
+#include "IspLicenca.h"
 #include "Presets.h"
 
 class LimaoProcessor : public juce::AudioProcessor
@@ -164,6 +165,8 @@ private:
     std::atomic<float>* pScale = nullptr;
     std::atomic<float>* pRoot = nullptr;
     juce::SmoothedValue<float> volSm;
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o instrumento fica mudo
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LimaoProcessor)
 };

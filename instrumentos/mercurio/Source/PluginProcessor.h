@@ -4,6 +4,7 @@
 #include <map>
 #include "Engine.h"
 #include "Params.h"
+#include "IspLicenca.h"
 #include "Presets.h"
 
 class MercurioProcessor : public juce::AudioProcessor, private juce::AudioProcessorParameter::Listener
@@ -131,6 +132,8 @@ private:
     int   geti (const juce::String& pid) const { return juce::roundToInt (raw.at (pid)->load()); }
     juce::SmoothedValue<float> volSm;
     float dcL = 0, dcR = 0, dcYL = 0, dcYR = 0;
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o instrumento fica mudo
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MercurioProcessor)
 };

@@ -4,6 +4,7 @@
 #include <array>
 #include "GateEngine.h"
 #include "Params.h"
+#include "IspLicenca.h"
 
 class PicoteProcessor : public juce::AudioProcessor
 {
@@ -91,6 +92,8 @@ private:
     juce::Array<juce::File> userFiles;
     int presetIndex = 0;
     juce::String presetName;
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto, sem efeito
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PicoteProcessor)
 };

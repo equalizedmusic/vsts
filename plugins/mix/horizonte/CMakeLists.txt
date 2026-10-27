@@ -23,6 +23,8 @@ target_sources(Horizonte PRIVATE
 file(GLOB horizonte_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(HorizonteImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${horizonte_img})
 
+isp_licenca(Horizonte mix)
+
 target_compile_definitions(Horizonte PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

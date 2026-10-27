@@ -192,6 +192,7 @@ void MercurioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     const int n = buffer.getNumSamples();
     buffer.clear();
     if (n == 0 || buffer.getNumChannels() < 2) return;
+    if (! licenca->liberada()) return;   // sem ativação: mudo (o buffer já foi zerado)
 
     // ---- relógio do host ----
     double bpm = 120.0, ppq0 = 0.0;

@@ -75,6 +75,7 @@ void KnobProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     juce::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
     if (n == 0) return;
+    if (! licenca->liberada()) return;   // sem ativação: o som passa direto
     if (n > seco.getNumSamples())
     {
         seco.setSize (2, n, false, false, true);

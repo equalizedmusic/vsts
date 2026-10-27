@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- PADRÃO: o compasso processado, fatiado nos 16 passos ----------------
 class PatternStrip : public juce::Component
@@ -78,6 +79,7 @@ private:
     bool lastSync = false, lastWaiting = false;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CaleidoEditor)
 };

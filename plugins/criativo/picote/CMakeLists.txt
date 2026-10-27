@@ -23,6 +23,8 @@ target_sources(Picote PRIVATE
 file(GLOB picote_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(PicoteImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${picote_img})
 
+isp_licenca(Picote criativo)
+
 target_compile_definitions(Picote PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

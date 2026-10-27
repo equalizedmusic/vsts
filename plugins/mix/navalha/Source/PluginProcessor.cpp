@@ -68,6 +68,7 @@ void NavalhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     juce::ScopedNoDenormals noDenormals;
     const int n = buffer.getNumSamples();
     if (n == 0) return;
+    if (! licenca->liberada()) return;   // sem ativação: o som passa direto
 
     if (n > dry.getNumSamples())
     {

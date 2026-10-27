@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
     paths: ['instrumentos/**', 'instalador/**', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md',
-            '.github/workflows/build-instrumentos.yml']
+            'licenca/cliente/**', '.github/workflows/build-instrumentos.yml']
   workflow_dispatch:
 
 permissions:
@@ -158,8 +158,9 @@ jobs:
 
       # sem release "latest-instrumentos": em Releases fica só a última versão de cada pacote. O instalador de um
       # build sem versão nova fica nos artefatos do run (report-mac / report-win), na aba Actions.
+      # RELEASE_TOKEN: o token automático toma 403 ao criar o release quando o commit mexe em .github/workflows
       - name: Releases das versões (quimera-v…, limao-v…, mercurio-v…)
         if: hashFiles('pacotes/*') != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: bash src/.github/scripts/release-versoes.sh pacotes report src Instrumentos Limao Mercurio

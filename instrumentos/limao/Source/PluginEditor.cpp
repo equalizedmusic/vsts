@@ -76,7 +76,7 @@ juce::String hzText (float hz)
 
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuNoUser = 20005,
-              menuImport = 20006, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
+              menuImport = 20006, menuLicenca = 20007, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
 } // namespace
 
 // =====================================================================
@@ -389,6 +389,7 @@ LimaoEditor::LimaoEditor (LimaoProcessor& p) : AudioProcessorEditor (&p), proc (
     getConstrainer()->setFixedAspectRatio ((double) lim::baseW / (double) lim::baseH);
     setScale (openScale);
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 LimaoEditor::~LimaoEditor()
@@ -487,6 +488,7 @@ void LimaoEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+    menu.addItem (menuLicenca, u8 ("Licença…"));
    #ifdef JucePlugin_VersionString   // (a foto do workflow shots compila a tela fora do plugin)
     menu.addSeparator();
     menu.addItem (sizeMenuBase - 1, juce::String::fromUTF8 ("LIMÃO ") + JucePlugin_VersionString, false, false);
@@ -556,6 +558,9 @@ void LimaoEditor::presetMenuChosen (int result)
     {
         case menuSaveAs:
             askNewPreset();
+            break;
+        case menuLicenca:
+            ativacao.mostrarInfo();
             break;
         case menuOverwrite:
             proc.overwriteUserPreset();

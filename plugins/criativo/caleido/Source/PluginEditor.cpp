@@ -5,7 +5,7 @@ using namespace caleido;
 namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
-constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuLicenca = 20005;
 
 // pedal: chapa esmaltada de 1000 × 580 (o layout) na moldura de madeira (laterais de 24, travessas de 20)
 constexpr int lado = 24, topo = 20, pedalW = ui::baseW + 2 * lado, pedalH = ui::baseH + 2 * topo;
@@ -367,6 +367,7 @@ CaleidoEditor::CaleidoEditor (CaleidoProcessor& p)
     getConstrainer()->setFixedAspectRatio ((double) pedalW / (double) pedalH);
     setScale (openScale);
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 CaleidoEditor::~CaleidoEditor()
@@ -399,6 +400,7 @@ void CaleidoEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+    menu.addItem (menuLicenca, u8 ("Licença…"));
 
     juce::Component::SafePointer<CaleidoEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
@@ -430,6 +432,9 @@ void CaleidoEditor::presetMenuChosen (int result)
     {
         case menuSaveAs:
             askNewPreset();
+            break;
+        case menuLicenca:
+            ativacao.mostrarInfo();
             break;
         case menuOverwrite:
             proc.overwriteUserPreset();

@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- OSCILOSCÓPIO: entrada, portadora e o que sai multiplicado ----------------
 class ScopeStrip : public juce::Component
@@ -69,6 +70,7 @@ private:
     bool  lastSync = false, lastWaiting = false;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RingerEditor)
 };

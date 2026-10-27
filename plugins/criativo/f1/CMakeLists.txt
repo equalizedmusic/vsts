@@ -23,6 +23,8 @@ target_sources(F1 PRIVATE
 file(GLOB f1_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(F1Img HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${f1_img})
 
+isp_licenca(F1 criativo)
+
 target_compile_definitions(F1 PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

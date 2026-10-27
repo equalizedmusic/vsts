@@ -23,6 +23,8 @@ target_sources(Navalha PRIVATE
 file(GLOB navalha_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(NavalhaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${navalha_img})
 
+isp_licenca(Navalha mix)
+
 target_compile_definitions(Navalha PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

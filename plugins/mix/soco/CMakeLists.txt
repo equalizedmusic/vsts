@@ -23,6 +23,8 @@ target_sources(Soco PRIVATE
 file(GLOB soco_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(SocoImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${soco_img})
 
+isp_licenca(Soco mix)
+
 target_compile_definitions(Soco PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

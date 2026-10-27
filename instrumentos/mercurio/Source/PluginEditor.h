@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 #include "MercurioUi.h"
 
 // ---------------- o visor do preset (OLED): banco e categoria, o nome grande e o último parâmetro mexido ----------------
@@ -95,6 +96,8 @@ private:
     int   lastMidi = 0, midiGlow = 0, lastTouch = -1, touchTimer = 0;
     bool  midiLit = false, lastSync = false;
     float lastBpm = 0.0f;
+
+    isp::TelaAtivacao ativacao;   // por último: por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MercurioEditor)
 };

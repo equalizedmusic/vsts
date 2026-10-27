@@ -8,7 +8,7 @@ namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
 constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuNoUser = 20005,
-              menuImport = 20006, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
+              menuImport = 20006, menuLicenca = 20007, menuRemoveBank = 30000;   // menuRemoveBank + n = remove o banco importado n
 
 // posições fixas desenhadas no painel (o timer repinta só elas)
 const juce::Point<float> midiLedPos { 66.0f, 88.0f };
@@ -295,6 +295,7 @@ MercurioEditor::MercurioEditor (MercurioProcessor& p) : AudioProcessorEditor (&p
     getConstrainer()->setFixedAspectRatio ((double) mrc::baseW / (double) mrc::baseH);
     setScale (openScale);
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 MercurioEditor::~MercurioEditor()
@@ -638,6 +639,7 @@ void MercurioEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+    menu.addItem (menuLicenca, u8 ("Licença…"));
    #ifdef JucePlugin_VersionString   // (a foto do workflow shots compila a tela fora do plugin)
     menu.addSeparator();
     menu.addItem (sizeMenuBase - 1, u8 ("MERCÚRIO ") + JucePlugin_VersionString, false, false);
@@ -707,6 +709,9 @@ void MercurioEditor::presetMenuChosen (int result)
     {
         case menuSaveAs:
             askNewPreset();
+            break;
+        case menuLicenca:
+            ativacao.mostrarInfo();
             break;
         case menuOverwrite:
             proc.overwriteUserPreset();

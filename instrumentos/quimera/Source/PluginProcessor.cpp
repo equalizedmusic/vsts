@@ -41,6 +41,7 @@ void QuimeraProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     const int n = buffer.getNumSamples();
     buffer.clear();
     if (n == 0) return;
+    if (! licenca->liberada()) return;   // sem ativação: mudo (o buffer já foi zerado)
 
     // teclas clicadas na tela entram no MIDI; as do host acendem no teclado da tela
     keyboard.processNextMidiBuffer (midi, 0, n, true);

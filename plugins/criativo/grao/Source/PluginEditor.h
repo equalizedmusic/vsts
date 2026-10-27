@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- FITA: forma de onda gravada + grãos ----------------
 class TapeView : public juce::Component
@@ -74,6 +75,7 @@ private:
     float levelIn = 0.0f, levelOut = 0.0f;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GraoEditor)
 };

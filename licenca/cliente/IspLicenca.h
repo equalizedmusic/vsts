@@ -16,8 +16,20 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "IspEd25519.h"
 
+// ISP_LICENCA_FOTO: só o workflow shots, que compila a tela como programa comum (sem JucePlugin_*, sem isp_licenca())
+#ifdef ISP_LICENCA_FOTO
+ #define ISP_NOME_PLUGIN   "foto"
+ #define ISP_VERSAO_PLUGIN "0.0.0"
+ #define ISP_PACOTE        "foto"
+ #define ISP_LICENCA_URL   ""
+ #define ISP_LICENCA_CHAVE ""
+#else
+ #define ISP_NOME_PLUGIN   JucePlugin_Name
+ #define ISP_VERSAO_PLUGIN JucePlugin_VersionString
+#endif
+
 #ifndef ISP_VERSAO_ATUAL
- #define ISP_VERSAO_ATUAL JucePlugin_VersionString
+ #define ISP_VERSAO_ATUAL ISP_VERSAO_PLUGIN
 #endif
 
 #ifndef ISP_PACOTE
@@ -49,8 +61,12 @@ public:
 
     Licenca()
     {
+       #ifdef ISP_LICENCA_FOTO   // só o workflow shots (foto da tela fora do plugin): liberado, sem arquivo nem internet
+        ok = true;
+       #else
         carregar();
         startTimer (3000);
+       #endif
     }
 
     ~Licenca() override
@@ -223,7 +239,7 @@ private:
         corpo->setProperty ("token", token);
         corpo->setProperty ("maquina", maquina());
         corpo->setProperty ("nome_maquina", juce::SystemStats::getComputerName());
-        corpo->setProperty ("versao", juce::String (JucePlugin_Name) + " " + JucePlugin_VersionString);
+        corpo->setProperty ("versao", juce::String (ISP_NOME_PLUGIN) + " " + ISP_VERSAO_PLUGIN);
         const auto json = juce::JSON::toString (juce::var (corpo), true);
         const juce::String url = juce::String (ISP_LICENCA_URL) + "/v1/" + acao;
 

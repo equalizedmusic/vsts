@@ -5,7 +5,7 @@ using namespace chama;
 namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
-constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuLicenca = 20005;
 
 // pedal: chapa esmaltada na moldura de madeira (laterais de 24, travessas de 20)
 constexpr float lado = 24.0f, topo = 20.0f;
@@ -234,6 +234,7 @@ ChamaEditor::ChamaEditor (ChamaProcessor& p)
     getConstrainer()->setFixedAspectRatio ((double) ui::baseW / (double) ui::baseH);
     setScale (openScale);
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 ChamaEditor::~ChamaEditor()
@@ -266,6 +267,7 @@ void ChamaEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+    menu.addItem (menuLicenca, u8 ("Licença…"));
 
     juce::Component::SafePointer<ChamaEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
@@ -297,6 +299,9 @@ void ChamaEditor::presetMenuChosen (int result)
     {
         case menuSaveAs:
             askNewPreset();
+            break;
+        case menuLicenca:
+            ativacao.mostrarInfo();
             break;
         case menuOverwrite:
             proc.overwriteUserPreset();

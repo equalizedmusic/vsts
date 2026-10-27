@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- RESPOSTA: curva do filtro agora, onde o knob deixou e até onde o envelope leva ----------------
 class ResponseStrip : public juce::Component
@@ -68,6 +69,7 @@ private:
     bool  lastSync = false, lastWaiting = false;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (F1Editor)
 };

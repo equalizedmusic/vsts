@@ -15,6 +15,9 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(JUCE)
 
+# código da licença (licenca/cliente): na foto vai com ISP_LICENCA_FOTO = liberado, sem tela de ativação e sem internet
+set(isp_licenca_dir "${CMAKE_CURRENT_SOURCE_DIR}/../licenca/cliente")
+
 # efeitos (plugins/<linha>/<nome>) e instrumentos (instrumentos/<nome>, tocados por MIDI na foto)
 file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/../plugins/*/*")
 file(GLOB inst_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/../instrumentos/*")
@@ -26,7 +29,7 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
         juce_add_console_app(${t} PRODUCT_NAME "${t}")
         file(GLOB srcs "${dir}/Source/*.cpp")
         target_sources(${t} PRIVATE ${srcs} ShotMain.cpp)
-        target_include_directories(${t} PRIVATE "${dir}/Source")
+        target_include_directories(${t} PRIVATE "${dir}/Source" "${isp_licenca_dir}")
         # imagens embutidas (Source/img → PluginImg.h), quando o plugin tem
         file(GLOB imgs "${dir}/Source/img/*")
         if(imgs)
@@ -37,6 +40,7 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
             JUCE_WEB_BROWSER=0
             JUCE_USE_CURL=0
             JUCE_MODAL_LOOPS_PERMITTED=1
+            ISP_LICENCA_FOTO=1
             SHOT_PLUGIN="${upper}")
         if(dir IN_LIST inst_dirs)
             # synth: sem entrada, toca acordes por MIDI; foto a 200% da tela base (MERCURIO 1440×960, os outros 1200×740)
@@ -75,11 +79,12 @@ foreach(dir ${plugin_dirs})
         juce_add_console_app(${t} PRODUCT_NAME "${t}")
         target_sources(${t} PRIVATE "${knob_comum}/Source/KnobProcessor.cpp" "${knob_comum}/Source/KnobEditor.cpp"
                                     "${dir}/Source/Pedal.cpp" ShotMain.cpp)
-        target_include_directories(${t} PRIVATE "${knob_comum}/Source" "${dir}/Source")
+        target_include_directories(${t} PRIVATE "${knob_comum}/Source" "${dir}/Source" "${isp_licenca_dir}")
         target_compile_definitions(${t} PRIVATE
             JUCE_WEB_BROWSER=0
             JUCE_USE_CURL=0
             JUCE_MODAL_LOOPS_PERMITTED=1
+            ISP_LICENCA_FOTO=1
             SHOT_PLUGIN="${upper}" SHOT_W=848 SHOT_H=1092)
         target_link_libraries(${t}
             PRIVATE

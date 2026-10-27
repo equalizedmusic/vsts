@@ -4,6 +4,7 @@
 #include <vector>
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- VETORSCÓPIO: Lissajous L/R girado 45° (mono = linha em pé), com rastro que esmaece ----------------
 class GonioView : public juce::Component
@@ -88,6 +89,7 @@ private:
     double lastTick = 0.0;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HorizonteEditor)
 };

@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- MESA: o sinal que entra no canal (creme) e a cor que o canal acrescenta (coral), ao vivo ----------------
 class ColorStrip : public juce::Component
@@ -113,6 +114,7 @@ private:
     bool lastOs4 = true;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ConsoleEditor)
 };

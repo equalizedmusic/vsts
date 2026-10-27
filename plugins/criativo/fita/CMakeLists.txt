@@ -23,6 +23,8 @@ target_sources(Fita PRIVATE
 file(GLOB fita_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(FitaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${fita_img})
 
+isp_licenca(Fita criativo)
+
 target_compile_definitions(Fita PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

@@ -125,6 +125,9 @@ public:
 
     void anexar (juce::Component& editor)
     {
+       #ifdef ISP_LICENCA_FOTO   // foto da tela (workflow shots): sem tela de ativação nem aviso por cima
+        juce::ignoreUnused (editor);
+       #else
         dono = &editor;
         editor.addChildComponent (this);
         editor.addChildComponent (aviso);
@@ -133,6 +136,7 @@ public:
         setBounds (editor.getLocalBounds());
         posicionarAviso();
         atualizar();
+       #endif
     }
 
     void mostrarInfo()

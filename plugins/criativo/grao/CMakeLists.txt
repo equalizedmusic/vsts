@@ -23,6 +23,8 @@ target_sources(Grao PRIVATE
 file(GLOB grao_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(GraoImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${grao_img})
 
+isp_licenca(Grao criativo)
+
 target_compile_definitions(Grao PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

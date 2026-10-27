@@ -23,6 +23,8 @@ target_sources(Prisma PRIVATE
 file(GLOB prisma_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(PrismaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${prisma_img})
 
+isp_licenca(Prisma mix)
+
 target_compile_definitions(Prisma PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 #include "Widgets.h"
 #include "SynthWidgets.h"
 
@@ -251,6 +252,8 @@ private:
 
     std::unique_ptr<juce::FileChooser> chooser;   // "Importar banco de presets…"
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+
+    isp::TelaAtivacao ativacao;   // por último: por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (QuimeraEditor)
 };

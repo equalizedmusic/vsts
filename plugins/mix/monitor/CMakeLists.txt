@@ -23,6 +23,8 @@ target_sources(Monitor PRIVATE
 file(GLOB monitor_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(MonitorImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${monitor_img})
 
+isp_licenca(Monitor mix)
+
 target_compile_definitions(Monitor PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

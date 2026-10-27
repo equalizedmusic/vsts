@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- FORMA DE ONDA: o que sai (creme), o que a barragem segura (coral) e a redução (azul) ----------------
 class WaveStrip : public juce::Component
@@ -96,6 +97,7 @@ private:
     int resetFlash = 0;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BarragemEditor)
 };

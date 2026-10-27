@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "KnobProcessor.h"
+#include "IspTelaAtivacao.h"
 
 // interface comum da SÉRIE KNOB: o pedal renderizado no Blender (fundo, knobs em quadros, alavanca, plaquinha do
 // nome) e, por cima, o que muda ao vivo — lâmpadas, linha e emblema do knob, visor do SHAPE e os textos da faixa.
@@ -31,6 +32,7 @@ private:
     void definir (const juce::String& pid, float valorReal);
     void menuForma();
     void menuRate();
+    void menuPedal();
 
     void desenharLampadas (juce::Graphics&, float valor, float pulso);
     void desenharKnobGrande (juce::Graphics&, float valor);
@@ -55,6 +57,7 @@ private:
 
     juce::ComponentBoundsConstrainer limites;
     std::unique_ptr<juce::ResizableCornerComponent> canto;
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KnobEditor)
 };

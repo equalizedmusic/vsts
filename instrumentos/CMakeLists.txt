@@ -23,6 +23,9 @@ FetchContent_MakeAvailable(JUCE)
 
 set(VSTS_FORMATS VST3 AU)
 
+# ativação por licença (a mesma dos efeitos): isp_licenca(<alvo> <pacote>) no CMakeLists de cada instrumento
+include(${CMAKE_CURRENT_SOURCE_DIR}/../licenca/cliente/licenca.cmake)
+
 # versão de cada instrumento = o primeiro "## x.y.z" de novidades/<Arquivo>.md (o mesmo que o instalador e o
 # release usam; ver instalador/versao.py). Ex.: vsts_versao(Limao.md LIMAO_VERSAO)
 function(vsts_versao arquivo saida)

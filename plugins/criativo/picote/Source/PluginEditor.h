@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- PASSOS: 16 colunas editáveis (VOLUME, PAN ou FILTRO), com o passo tocando aceso ----------------
 class StepGrid : public juce::Component
@@ -75,6 +76,7 @@ private:
     int   shuffleFlash = 0;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PicoteEditor)
 };

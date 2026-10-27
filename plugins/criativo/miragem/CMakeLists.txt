@@ -23,6 +23,8 @@ target_sources(Miragem PRIVATE
 file(GLOB miragem_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(MiragemImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${miragem_img})
 
+isp_licenca(Miragem criativo)
+
 target_compile_definitions(Miragem PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

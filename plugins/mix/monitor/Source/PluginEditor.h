@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 #include "Analyzer.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // leituras que a interface mostra (copiadas do motor a cada quadro; CONGELAR para de copiar)
 struct Readings
@@ -138,6 +139,7 @@ private:
     int resetFlash = 0;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MonitorEditor)
 };

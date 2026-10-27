@@ -23,6 +23,8 @@ target_sources(Chama PRIVATE
 file(GLOB chama_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(ChamaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${chama_img})
 
+isp_licenca(Chama criativo)
+
 target_compile_definitions(Chama PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

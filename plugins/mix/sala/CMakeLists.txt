@@ -23,6 +23,8 @@ target_sources(Sala PRIVATE
 file(GLOB sala_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(SalaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${sala_img})
 
+isp_licenca(Sala mix)
+
 target_compile_definitions(Sala PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

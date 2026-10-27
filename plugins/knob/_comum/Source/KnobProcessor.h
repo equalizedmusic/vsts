@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Motor.h"
+#include "IspLicenca.h"
 
 namespace sk::id
 {
@@ -80,6 +81,8 @@ private:
     float envRapido = 0.0f, envLento = 0.0f;
     bool armado = true;
     int desdeDisparo = 1 << 30;
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto, sem efeito
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KnobProcessor)
 };

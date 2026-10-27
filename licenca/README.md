@@ -56,3 +56,13 @@ isp::TelaAtivacao ativacao;
 ativacao.anexar (*this);
 // menu: item "Licença…" → ativacao.mostrarInfo();
 ```
+
+Onde já está: os 33 plugins. Criativo e Mix pelo `CMakeLists` de cada plugin (menu de presets → **Licença…**);
+SÉRIE KNOB uma vez só em `plugins/knob/_comum` (`serie_knob_pedal()`; sem menu de presets: **botão direito fora dos
+controles** → Licença…); instrumentos pelo `instrumentos/CMakeLists.txt` + `isp_licenca()` de cada um.
+
+Fotos (workflow `shots`): a tela é compilada como programa comum, sem `isp_licenca()`. O `shots/CMakeLists.txt` passa
+`ISP_LICENCA_FOTO=1`: licença liberada, sem tela de ativação, sem arquivo e sem internet. Nunca usar isso no plugin.
+
+Teste antes do merge: workflow `licenca-piloto.yml` (nome `licenca-teste`) compila todos os efeitos e instrumentos na
+branch `licenca` e entrega os instaladores `*-licenca-teste-*` como artifact, sem release.

@@ -76,6 +76,7 @@ KnobEditor::KnobEditor (KnobProcessor& p)
     setSize (juce::roundToInt (baseLargura * k), juce::roundToInt (baseLargura * k * CH / CW));
     disparosVistos = proc.disparos.load();
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 KnobEditor::~KnobEditor() { stopTimer(); }
@@ -398,6 +399,7 @@ void KnobEditor::mouseDown (const juce::MouseEvent& e)
         return;
     }
     if (a == alvoRate && e.mods.isPopupMenu()) { menuRate(); return; }
+    if (a == nenhum && e.mods.isPopupMenu()) { menuPedal(); return; }   // botão direito fora dos controles
     if (a == alvoKnob || a == alvoRate || a == alvoMix)
     {
         arrastando = a;
@@ -471,4 +473,13 @@ void KnobEditor::menuRate()
         m.addItem (i + 1, juce::String::fromUTF8 (info().rateNomes[(size_t) i]), true, i == atual);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
                      [this] (int r) { if (r > 0) definir (id::rate, (float) (r - 1)); });
+}
+
+void KnobEditor::menuPedal()
+{
+    juce::PopupMenu m;
+    m.addItem (1, juce::String::fromUTF8 ("Licença…"));
+    juce::Component::SafePointer<KnobEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
+                     [safe] (int r) { if (r == 1 && safe != nullptr) safe->ativacao.mostrarInfo(); });
 }

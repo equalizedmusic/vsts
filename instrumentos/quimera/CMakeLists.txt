@@ -30,6 +30,8 @@ target_sources(Quimera PRIVATE
 file(GLOB quimera_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(QuimeraImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${quimera_img})
 
+isp_licenca(Quimera quimera)
+
 target_compile_definitions(Quimera PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

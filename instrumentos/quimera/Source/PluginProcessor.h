@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Fx.h"
 #include "Params.h"
+#include "IspLicenca.h"
 
 class QuimeraProcessor : public juce::AudioProcessor
 {
@@ -117,6 +118,8 @@ private:
     std::vector<PresetEntry> entries;                    // a lista que o menu mostra, na ordem do índice global
     int presetIndex = 0;
     juce::String presetName, presetBank;                 // presetBank = nome do banco (vazio = FACTORY 1, "USER")
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o instrumento fica mudo
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (QuimeraProcessor)
 };

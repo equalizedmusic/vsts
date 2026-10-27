@@ -26,6 +26,8 @@ target_sources(Limao PRIVATE
 file(GLOB limao_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(LimaoImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${limao_img})
 
+isp_licenca(Limao limao)
+
 target_compile_definitions(Limao PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

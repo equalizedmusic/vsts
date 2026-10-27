@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 #include "LimaoUi.h"
 
 // ---------------- um passo do sequenciador: LED, visor da nota, tecla NOTA/PAUSA/LIGA, ACC e SLD ----------------
@@ -105,6 +106,8 @@ private:
     float level = 0.0f, shownLevel = -1.0f;
     float lastBpm = 0.0f;
     bool  lastSync = false;
+
+    isp::TelaAtivacao ativacao;   // por último: por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LimaoEditor)
 };

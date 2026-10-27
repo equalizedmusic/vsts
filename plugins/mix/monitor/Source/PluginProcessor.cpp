@@ -53,6 +53,7 @@ void MonitorProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     auto* outR = buffer.getWritePointer (1);
     if (! stereo)
         for (int i = 0; i < n; ++i) outR[i] = outL[i];
+    if (! licenca->liberada()) return;   // sem ativação: o som passa direto
 
     // ---- medição: sempre da entrada, antes de qualquer checagem ----
     engine.process (outL, outR, n, stereo);
