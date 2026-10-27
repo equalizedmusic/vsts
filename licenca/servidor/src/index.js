@@ -194,8 +194,8 @@ function compararVersao(a, b) {
 
 // lista guardada na memória do Worker (o Cache API não funciona no workers.dev): 30 min, ou 5 min se o GitHub falhou
 let releasesMem = null;   // { ate, lista }
-async function releases(env) {
-    if (releasesMem && agora() < releasesMem.ate) return releasesMem.lista;
+async function releases(env, forcar = false) {
+    if (releasesMem && agora() < releasesMem.ate && !(forcar && agora() - releasesMem.de > 60)) return releasesMem.lista;
     const h = { 'user-agent': 'isp-licencas', accept: 'application/vnd.github+json' };
     if (env.GITHUB_TOKEN) h.authorization = 'Bearer ' + env.GITHUB_TOKEN;
     let lista = null;
@@ -208,7 +208,7 @@ async function releases(env) {
         }));
         else console.error('github releases', g.status);
     } catch (e) { console.error('github releases', e); }
-    releasesMem = { ate: agora() + (lista ? CACHE_RELEASES : 300), lista: lista || releasesMem?.lista || [] };
+    releasesMem = { de: agora(), ate: agora() + (lista ? CACHE_RELEASES : 300), lista: lista || releasesMem?.lista || [] };
     return releasesMem.lista;
 }
 
@@ -254,13 +254,18 @@ async function rotaBaixar(caminho, env) {
     const [, , pacote, sistema] = caminho.split('/');
     if (!PACOTES.includes(pacote) || !['win', 'mac'].includes(sistema))
         return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
-    const lista = await releases(env);
-    const rel = lista.find((r) => r.tag === 'licenca-teste') || releaseDoPacote(lista, pacote);
     const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
-    const i = rel ? rel.arquivos.findIndex((a) => {
-        const nome = decodeURIComponent(a.split('/').pop());
-        return INSTALADOR[pacote].some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
-    }) : -1;
+    const achar = (lista) => {
+        const rel = lista.find((r) => r.tag === 'licenca-teste') || releaseDoPacote(lista, pacote);
+        const i = rel ? rel.arquivos.findIndex((a) => {
+            const nome = decodeURIComponent(a.split('/').pop());
+            return INSTALADOR[pacote].some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
+        }) : -1;
+        return { rel, i };
+    };
+    let { rel, i } = achar(await releases(env));
+    // a lista guardada pode ser de antes do release novo (ou de um release ainda subindo os arquivos)
+    if (i < 0) ({ rel, i } = achar(await releases(env, true)));
     if (i < 0) return paginaSimples('Download indisponível',
         'Este instalador não está disponível agora. Tente de novo mais tarde ou responda o e-mail da licença.', 404);
     if (!env.GITHUB_TOKEN) return Response.redirect(rel.arquivos[i], 302);
