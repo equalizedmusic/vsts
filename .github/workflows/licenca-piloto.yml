@@ -1,0 +1,94 @@
+name: licenca-piloto
+
+# Piloto da ativação por licença: compila SÓ o TORNO (Mac + Windows) com a tela de ativação e entrega o instalador
+# como artifact do run. Não publica release nem mexe nas branches builds/shots. Roda só na branch licenca.
+on:
+  push:
+    branches: [licenca]
+    paths: ['licenca/cliente/**', 'plugins/mix/torno/**', 'CMakeLists.txt', '.github/workflows/licenca-piloto.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: licenca-piloto
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest,   name: mac }
+          - { os: windows-latest, name: win }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compilar (só o TORNO)
+        id: build
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.name }}" = mac ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake --build build --config Release -j 4 --target Torno_VST3 Torno_AU 2>&1 | tee -a build.log
+          else
+            cmake -S . -B build -A x64 2>&1 | tee build.log
+            cmake --build build --config Release --parallel --target Torno_VST3 2>&1 | tee -a build.log
+          fi
+
+      - name: Empacotar
+        id: pack
+        run: |
+          set -e
+          art=$(find build -type d -name 'Torno_artefacts' | head -1)
+          mkdir -p linha/mix
+          for fmt in VST3 AU; do
+            [ -d "$art/Release/$fmt" ] && cp -R "$art/Release/$fmt" "linha/mix/"
+          done
+          find linha \( -name '*.exp' -o -name '*.lib' \) -delete
+          if [ "${{ matrix.name }}" = mac ]; then
+            for b in linha/mix/*/*; do codesign --force --deep --sign - "$b"; done
+            PY=python3
+          else
+            [ -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ] || choco install innosetup -y --no-progress > /dev/null
+            PY=python
+          fi
+          export PYTHONIOENCODING=utf-8
+          v=$($PY instalador/versao.py Mix | tr -d '\r')
+          $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Mix --origem linha/mix --versao "$v" --saida .
+          mkdir -p report
+          for f in InsideStudioSP-Mix-${{ matrix.name }}.*; do mv "$f" "report/TORNO-licenca-teste-${f#InsideStudioSP-Mix-}"; done
+          ls -l report | tee pack.log
+
+      - name: pluginval
+        id: pluginval
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.name }}" = mac ]; then
+            curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+            unzip -q pv.zip
+            PV=pluginval.app/Contents/MacOS/pluginval
+          else
+            curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip
+            7z x -y pv.zip > /dev/null
+            PV=./pluginval.exe
+          fi
+          "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 linha/mix/VST3/*.vst3 2>&1 | tee pluginval.log
+
+      - name: Relatório
+        if: always()
+        run: |
+          mkdir -p report
+          cp build.log pack.log pluginval.log report/ 2>/dev/null || true
+          echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.name }}.txt"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: torno-licenca-${{ matrix.name }}
+          path: report/
