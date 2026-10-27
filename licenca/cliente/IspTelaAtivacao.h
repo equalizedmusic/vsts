@@ -5,11 +5,78 @@
 //     ... no fim do construtor:  ativacao.anexar (*this);
 //     ... item "Licença…" de algum menu:  ativacao.mostrarInfo();
 // Sem licença válida ela cobre tudo e pede e-mail + token; com licença ela some e só aparece no mostrarInfo().
+// Com licença e versão nova do pacote publicada, mostra uma faixa no pé da janela (AvisoVersao) com BAIXAR.
 
 #include "IspLicenca.h"
 
 namespace isp
 {
+// faixa "versão nova" no pé da janela do plugin; a TelaAtivacao cuida de pôr e tirar
+class AvisoVersao : public juce::Component
+{
+public:
+    AvisoVersao()
+    {
+        for (auto* b : { &baixar, &depois })
+        {
+            addAndMakeVisible (b);
+            b->setColour (juce::TextButton::textColourOffId, texto);
+        }
+        baixar.setColour (juce::TextButton::buttonColourId, destaque.darker (0.35f));
+        depois.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2a2d33));
+        baixar.setButtonText (utf8 ("BAIXAR"));
+        depois.setButtonText (utf8 ("Agora não"));
+        baixar.onClick = [this]
+        {
+            if (juce::URL (licenca->linkVersaoNova()).launchInDefaultBrowser())
+            {
+                baixou = true;
+                baixar.setVisible (false);
+                depois.setButtonText (utf8 ("Fechar"));
+                repaint();
+            }
+        };
+        depois.onClick = [this] { licenca->dispensarAviso(); };
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        const auto c = getLocalBounds().toFloat().reduced (0.5f);
+        g.setColour (juce::Colour (0xf21b1d22));
+        g.fillRoundedRectangle (c, 8.0f);
+        g.setColour (destaque);
+        g.drawRoundedRectangle (c, 8.0f, 1.0f);
+
+        auto r = getLocalBounds().reduced (14, 0).withRight (depois.getX() - 10);
+        if (baixar.isVisible()) r.setRight (baixar.getX() - 10);
+        juce::String t;
+        if (baixou)
+            t << utf8 ("Baixando pelo navegador. Feche o DAW antes de rodar o instalador.");
+        else
+            t << utf8 ("Versão nova do pacote ") << Licenca::nomePacote() << ": " << licenca->versaoNova()
+              << utf8 (" (você tem ") << Licenca::versaoAtual() << ")";
+        g.setColour (texto);
+        g.setFont (juce::FontOptions (14.5f));
+        g.drawFittedText (t, r, juce::Justification::centredLeft, 2, 0.85f);
+    }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (8);
+        depois.setBounds (r.removeFromRight (100));
+        r.removeFromRight (8);
+        baixar.setBounds (r.removeFromRight (96));
+    }
+
+private:
+    juce::SharedResourcePointer<Licenca> licenca;
+    juce::TextButton baixar, depois;
+    bool baixou = false;
+    const juce::Colour texto { 0xffe9e4da }, destaque { 0xffe8a33d };
+
+    JUCE_DECLARE_NON_COPYABLE (AvisoVersao)
+};
+
 class TelaAtivacao : public juce::Component, private juce::ChangeListener, private juce::ComponentListener
 {
 public:
@@ -52,6 +119,7 @@ public:
     {
         licenca->removeChangeListener (this);
         if (dono != nullptr) dono->removeComponentListener (this);
+        aviso.setLookAndFeel (nullptr);
         setLookAndFeel (nullptr);
     }
 
@@ -59,8 +127,11 @@ public:
     {
         dono = &editor;
         editor.addChildComponent (this);
+        editor.addChildComponent (aviso);
+        aviso.setLookAndFeel (&lf);
         editor.addComponentListener (this);
         setBounds (editor.getLocalBounds());
+        posicionarAviso();
         atualizar();
     }
 
@@ -151,9 +222,19 @@ private:
 
     int secundarioLargura() const { return modoInfo && licenca->liberada() ? 130 : 0; }
 
+    void posicionarAviso()
+    {
+        if (dono == nullptr) return;
+        const auto r = dono->getLocalBounds();
+        const int w = juce::jmin (620, r.getWidth() - 24), h = 46;
+        aviso.setBounds (r.getCentreX() - w / 2, r.getBottom() - h - 14, w, h);
+    }
+
     void atualizar()
     {
         const bool ativa = licenca->liberada();
+        aviso.setVisible (ativa && ! modoInfo && licenca->versaoNova().isNotEmpty());
+        if (aviso.isVisible()) aviso.toFront (false);
         if (! ativa) modoInfo = false;
         const bool mostrar = ! ativa || modoInfo;
         setVisible (mostrar);
@@ -210,16 +291,22 @@ private:
 
     void componentMovedOrResized (juce::Component& c, bool, bool wasResized) override
     {
-        if (wasResized) setBounds (c.getLocalBounds());
+        if (wasResized)
+        {
+            setBounds (c.getLocalBounds());
+            posicionarAviso();
+        }
     }
 
     void componentChildrenChanged (juce::Component&) override
     {
         if (isVisible()) toFront (false);
+        else if (aviso.isVisible()) aviso.toFront (false);
     }
 
     juce::SharedResourcePointer<Licenca> licenca;
     juce::LookAndFeel_V4 lf;
+    AvisoVersao aviso;
     juce::Component* dono = nullptr;
     juce::TextEditor emailEd, tokenEd;
     juce::TextButton principal, secundario;

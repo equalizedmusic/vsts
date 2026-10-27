@@ -10,9 +10,15 @@
 // Arquivo: Windows %APPDATA%\InsideStudioSP\Licencas\<pacote>.lic · Mac ~/Library/Application Support/InsideStudioSP/Licencas
 //   { email, token, dados, assinatura }  — dados/assinatura vêm do servidor (ver licenca/servidor/src/index.js)
 // A licença assinada vale 45 dias; com mais de 3 dias o plugin confirma de novo pela internet, em segundo plano.
+// Com a licença valendo, ao carregar ele pergunta uma vez ao servidor se há versão nova do pacote (GET /v1/versao);
+// a TelaAtivacao mostra o aviso. ISP_VERSAO_ATUAL (opcional) finge outra versão, só para testar o aviso.
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "IspEd25519.h"
+
+#ifndef ISP_VERSAO_ATUAL
+ #define ISP_VERSAO_ATUAL JucePlugin_VersionString
+#endif
 
 #ifndef ISP_PACOTE
  #error "ISP_PACOTE não definido: use isp_licenca() no CMakeLists do plugin"
@@ -62,6 +68,26 @@ public:
     juce::String email() const { return emailAtual; }
     juce::String token() const { return tokenAtual; }
     juce::Time validaAte() const { return juce::Time ((juce::int64) validaAteSeg * 1000); }
+
+    // versão nova do pacote (vazia = está em dia, ou ainda não perguntou, ou a pessoa dispensou o aviso)
+    static juce::String versaoAtual() { return ISP_VERSAO_ATUAL; }
+    juce::String versaoNova() const { return novaVersao != dispensada ? novaVersao : juce::String(); }
+    juce::String linkVersaoNova() const { return urlNova; }
+    // "Agora não": some em todos os plugins do pacote abertos; volta na próxima vez que o DAW carregar o plugin
+    void dispensarAviso() { dispensada = novaVersao; sendChangeMessage(); }
+
+    // "1.10.0" > "1.9.2"
+    static int compararVersao (const juce::String& a, const juce::String& b)
+    {
+        auto x = juce::StringArray::fromTokens (a.trim(), ".", {});
+        auto y = juce::StringArray::fromTokens (b.trim(), ".", {});
+        for (int i = 0; i < 3; ++i)
+        {
+            const int p = x[i].getIntValue(), q = y[i].getIntValue();
+            if (p != q) return p < q ? -1 : 1;
+        }
+        return 0;
+    }
 
     void ativar (const juce::String& email, const juce::String& token)
     {
@@ -116,6 +142,11 @@ private:
         if (valida)
         {
             msg = {};
+            if (! versaoPerguntada)
+            {
+                versaoPerguntada = true;
+                perguntarVersao();
+            }
             const auto agora = juce::Time::currentTimeMillis() / 1000;
             if (! jaConfirmou && agora - emitidaSeg > 3 * 86400)
             {
@@ -217,6 +248,43 @@ private:
         });
     }
 
+    // tem versão nova do pacote? (sem internet ou servidor fora: não avisa nada)
+    void perguntarVersao()
+    {
+       #if JUCE_MAC
+        const juce::String sistema ("mac");
+       #else
+        const juce::String sistema ("win");
+       #endif
+        const auto url = juce::URL (juce::String (ISP_LICENCA_URL) + "/v1/versao")
+                             .withParameter ("pacote", pacote)
+                             .withParameter ("versao", versaoAtual())
+                             .withParameter ("sistema", sistema);
+
+        juce::WeakReference<Licenca> eu (this);
+        pool.addJob ([eu, url]
+        {
+            juce::String texto;
+            auto opcoes = juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)
+                              .withConnectionTimeoutMs (12000);
+            if (auto in = url.createInputStream (opcoes))
+                texto = in->readEntireStreamAsString();
+            const auto resp = juce::JSON::parse (texto);
+
+            juce::MessageManager::callAsync ([eu, resp]
+            {
+                auto* l = eu.get();
+                const auto nova = resp["atualizacao"];
+                if (l == nullptr || ! (bool) resp["ok"] || ! nova.isObject()) return;
+                const auto v = nova["versao"].toString(), link = nova["url"].toString();
+                if (compararVersao (v, versaoAtual()) <= 0 || ! link.startsWithIgnoreCase ("https://")) return;
+                l->novaVersao = v;
+                l->urlNova = link;
+                l->sendChangeMessage();
+            });
+        });
+    }
+
     void resposta (const juce::String& acao, const juce::String& email, const juce::String& token,
                    const juce::var& resp, bool mostrarErro)
     {
@@ -283,8 +351,8 @@ private:
     }
 
     std::atomic<bool> ok { false };
-    bool emAndamento = false, jaConfirmou = false;
-    juce::String msg, emailAtual, tokenAtual;
+    bool emAndamento = false, jaConfirmou = false, versaoPerguntada = false;
+    juce::String msg, emailAtual, tokenAtual, novaVersao, urlNova, dispensada;
     juce::int64 emitidaSeg = 0, validaAteSeg = 0;
     juce::Time ultimaData;
     juce::ThreadPool pool { 1 };

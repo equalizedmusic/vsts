@@ -2,6 +2,7 @@ name: licenca-piloto
 
 # Piloto da ativação por licença: compila SÓ o TORNO (Mac + Windows) com a tela de ativação e entrega o instalador
 # como artifact do run. Não publica release nem mexe nas branches builds/shots. Roda só na branch licenca.
+# O piloto finge ser a versão 1.0.0 (ISP_LICENCA_VERSAO_TESTE) para o aviso de versão nova aparecer no teste.
 on:
   push:
     branches: [licenca]
@@ -32,10 +33,10 @@ jobs:
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" -DISP_LICENCA_VERSAO_TESTE=1.0.0 2>&1 | tee build.log
             cmake --build build --config Release -j 4 --target Torno_VST3 Torno_AU 2>&1 | tee -a build.log
           else
-            cmake -S . -B build -A x64 2>&1 | tee build.log
+            cmake -S . -B build -A x64 -DISP_LICENCA_VERSAO_TESTE=1.0.0 2>&1 | tee build.log
             cmake --build build --config Release --parallel --target Torno_VST3 2>&1 | tee -a build.log
           fi
 

@@ -4,6 +4,8 @@
 //   POST /v1/ativar     { pacote, email, token, maquina, nome_maquina, versao }
 //   POST /v1/validar    { pacote, email, token, maquina, versao }      (o plugin chama de tempos em tempos)
 //   POST /v1/desativar  { pacote, email, token, maquina }
+//   GET  /v1/versao?pacote=mix&versao=1.0.0&sistema=win|mac   (o plugin já ativado pergunta ao abrir)
+//        -> { ok: true, atualizacao: null | { versao, url, notas } }   url = instalador do sistema (ou a página do release)
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -16,12 +18,16 @@
 //   POST /admin/liberar-maquina   { id, maquina }
 //   POST /admin/novo-token        { id }   gera outro token para a mesma licença (o antigo para de valer)
 //
-// Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY.
+// Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura).
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
 const TENTATIVAS_POR_IP = 20;      // recusas em 15 min antes de bloquear o IP
 const JANELA_TENTATIVAS = 15 * 60;
+// versão mais nova de cada pacote = o release <pacote>-vX.Y.Z mais alto do GitHub (repo precisa estar público,
+// ou o segredo GITHUB_TOKEN com leitura do repo). Se o GitHub não responder, ninguém recebe aviso e nada quebra.
+const RELEASES_URL = 'https://api.github.com/repos/equalizedmusic/vsts/releases?per_page=100';
+const CACHE_RELEASES = 30 * 60;    // segundos
 
 const MENSAGENS = {
     pedido_invalido: 'Pedido inválido.',
@@ -163,6 +169,53 @@ async function rotaPlugin(acao, req, env) {
     return resposta({ ok: true, licenca: await emitir(env, lic, maquina) });
 }
 
+// ---------------- aviso de versão nova ----------------
+
+const partesVersao = (v) => (String(v || '').match(/(\d+)\.(\d+)\.(\d+)/) || []).slice(1).map(Number);
+function compararVersao(a, b) {
+    const x = partesVersao(a), y = partesVersao(b);
+    if (x.length !== 3 || y.length !== 3) return 0;
+    for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
+    return 0;
+}
+
+// lista guardada na memória do Worker (o Cache API não funciona no workers.dev): 30 min, ou 5 min se o GitHub falhou
+let releasesMem = null;   // { ate, lista }
+async function releases(env) {
+    if (releasesMem && agora() < releasesMem.ate) return releasesMem.lista;
+    const h = { 'user-agent': 'isp-licencas', accept: 'application/vnd.github+json' };
+    if (env.GITHUB_TOKEN) h.authorization = 'Bearer ' + env.GITHUB_TOKEN;
+    let lista = null;
+    try {
+        const g = await fetch(RELEASES_URL, { headers: h });
+        if (g.ok) lista = (await g.json()).filter((x) => !x.draft && !x.prerelease).map((x) => ({
+            tag: x.tag_name, pagina: x.html_url, notas: String(x.body || '').slice(0, 800),
+            arquivos: (x.assets || []).map((a) => a.browser_download_url),
+        }));
+        else console.error('github releases', g.status);
+    } catch (e) { console.error('github releases', e); }
+    releasesMem = { ate: agora() + (lista ? CACHE_RELEASES : 300), lista: lista || releasesMem?.lista || [] };
+    return releasesMem.lista;
+}
+
+async function rotaVersao(url, env) {
+    const pacote = String(url.searchParams.get('pacote') || '');
+    const versao = String(url.searchParams.get('versao') || '');
+    const sistema = url.searchParams.get('sistema') === 'mac' ? 'mac' : 'win';
+    if (!PACOTES.includes(pacote)) return falha('pacote_invalido');
+    if (partesVersao(versao).length !== 3) return falha('pedido_invalido');
+
+    let maior = null;
+    for (const rel of await releases(env)) {
+        const m = rel.tag.match(new RegExp(`^${pacote}-v(\\d+\\.\\d+\\.\\d+)$`));
+        if (m && (!maior || compararVersao(m[1], maior.versao) > 0)) maior = { ...rel, versao: m[1] };
+    }
+    if (!maior || compararVersao(maior.versao, versao) <= 0) return resposta({ ok: true, atualizacao: null });
+    const ext = sistema === 'mac' ? '.dmg' : '.exe';
+    const instalador = maior.arquivos.find((a) => a.toLowerCase().endsWith(ext));
+    return resposta({ ok: true, atualizacao: { versao: maior.versao, url: instalador || maior.pagina, notas: maior.notas } });
+}
+
 // ---------------- administração ----------------
 
 function iguais(a, b) {
@@ -245,6 +298,7 @@ export default {
             if (req.method === 'POST' && caminho === '/v1/ativar') return await rotaPlugin('ativar', req, env);
             if (req.method === 'POST' && caminho === '/v1/validar') return await rotaPlugin('validar', req, env);
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
+            if (req.method === 'GET' && caminho === '/v1/versao') return await rotaVersao(url, env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
             if (caminho === '' || caminho === '/v1') return resposta({ ok: true, servico: 'licencas InsideStudioSP' });
             return falha('pedido_invalido', 404);

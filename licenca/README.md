@@ -15,6 +15,13 @@ Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
 4. A licença assinada vale 45 dias sem internet. Com mais de 3 dias, o plugin confirma de novo em segundo plano; se a
    licença foi cancelada no servidor, o plugin trava de novo.
 5. Menu de presets → **Licença…** mostra a licença e tem **Desativar este computador** (libera a vaga).
+6. **Aviso de versão nova:** com a licença valendo, ao carregar o plugin ele pergunta uma vez ao servidor
+   (`GET /v1/versao?pacote=&versao=&sistema=`). O servidor olha o release `<pacote>-vX.Y.Z` mais alto do GitHub (lista
+   guardada 30 min) e, se for maior que a versão do plugin, aparece uma faixa no pé da janela com **BAIXAR** (abre o
+   instalador do sistema no navegador) e **Agora não** (some em todos os plugins do pacote até o DAW carregar de novo).
+   Repo privado ou GitHub fora = nenhum aviso, nada quebra (com repo privado dá para pôr um token só leitura no
+   segredo `GITHUB_TOKEN` do Worker). Para testar, `-DISP_LICENCA_VERSAO_TESTE=1.0.0` faz o plugin fingir ser 1.0.0
+   (o workflow do piloto usa isso).
 
 Isso segura o repasse casual de instalador + token; não segura quem quiser craquear o binário.
 
