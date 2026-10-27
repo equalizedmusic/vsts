@@ -33,7 +33,14 @@ Isso segura o repasse casual de instalador + token; não segura quem quiser craq
 - `cliente/` — o que vai no plugin: `IspLicenca.h` (estado, arquivo, conversa com o servidor), `IspTelaAtivacao.h`
   (tela), `IspEd25519.h` (conferência da assinatura, trecho do TweetNaCl), `licenca.cmake` (`isp_licenca(<alvo>
   <pacote>)`).
-- `admin/isp-licenca.mjs` — criar token, listar, revogar, liberar máquina, gerar token novo.
+- `admin/isp-licenca.mjs` — criar token, listar, revogar, liberar máquina, gerar token novo, `senha-painel <usuário>`.
+- **Painel web**: `https://isp-licencas.insidestudiosp.workers.dev/painel` (usuário e senha; código em
+  `servidor/src/painel.js`). Gera licença (e-mail + pacotes), monta a mensagem para o cliente (copiar ou abrir no
+  e-mail), lista clientes, cancela/reativa, libera computador, gera token novo, troca a senha.
+
+**Um token por e-mail**: a 1ª licença de um e-mail gera o token; as seguintes (outros pacotes) usam o mesmo, e "token
+novo" troca o do e-mail inteiro. Cada pacote ativa em até 2 computadores. Mudança aplicada em 27/10/2026 com
+`servidor/migracao-2026-10-27-token-por-email.sql` (banco novo: só o `schema.sql`).
 
 ## Segredos (fora do repositório)
 

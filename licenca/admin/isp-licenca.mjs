@@ -6,13 +6,15 @@
 //   node isp-licenca.mjs revogar <id> [--nota "..."]
 //   node isp-licenca.mjs reativar <id>
 //   node isp-licenca.mjs liberar <id> <maquina|id da ativação>
-//   node isp-licenca.mjs novo-token <id>
+//   node isp-licenca.mjs novo-token <id>          (troca o token do e-mail inteiro: todos os pacotes dele)
+//   node isp-licenca.mjs senha-painel <usuario>   (cria/troca o login do painel /painel; gera e mostra a senha)
 //
 // Configuração (fora do repositório): ISP_LICENCA_CONFIG ou ../../../segredos/licenca-admin.json
 //   { "url": "https://isp-licencas.<conta>.workers.dev", "admin_key": "..." }
 // Pacotes: criativo, mix, knob, quimera, limao, mercurio
 
 import { readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -50,7 +52,9 @@ switch (cmd) {
             email, pacote, origem: opc('venda') ? 'venda' : 'cortesia',
             pedido: opc('pedido'), nota: opc('nota'), max_maquinas: Number(opc('maquinas')) || undefined,
         });
-        console.log(`licença ${j.id}: ${j.email} · ${j.pacote}\ntoken: ${j.token}\n(o token só aparece agora; o servidor guarda só o hash)`);
+        console.log(j.token
+            ? `licença ${j.id}: ${j.email} · ${j.pacote}\ntoken: ${j.token}\n(o token só aparece agora; o servidor guarda só o hash)`
+            : `licença ${j.id}: ${j.email} · ${j.pacote}\nmesmo token que este e-mail já tem (um token por e-mail)`);
         break;
     }
     case 'listar': {
@@ -74,9 +78,16 @@ switch (cmd) {
         break;
     case 'novo-token': {
         const j = await chamar('POST', '/admin/novo-token', { id: Number(pos[0]) });
-        console.log(`licença ${j.id}: ${j.email} · ${j.pacote}\ntoken novo: ${j.token}`);
+        console.log(`e-mail ${j.email} (todos os pacotes)\ntoken novo: ${j.token}`);
+        break;
+    }
+    case 'senha-painel': {
+        const AB = '23456789abcdefghjkmnpqrstvwxyzABCDEFGHJKMNPQRSTVWXYZ';
+        const senha = [...randomBytes(16)].map((b) => AB[b % AB.length]).join('');
+        const j = await chamar('POST', '/admin/painel-senha', { usuario: pos[0], senha });
+        console.log(`painel: ${config.url.replace(/\/$/, '')}/painel\nusuário: ${j.usuario}\nsenha: ${senha}`);
         break;
     }
     default:
-        console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 17).join('\n'));
+        console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 18).join('\n'));
 }

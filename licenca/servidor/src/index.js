@@ -18,7 +18,14 @@
 //   POST /admin/liberar-maquina   { id, maquina }
 //   POST /admin/novo-token        { id }   gera outro token para a mesma licença (o antigo para de valer)
 //
+//   POST /admin/painel-senha      { usuario, senha }   (só com a ADMIN_KEY) cria/troca o login do painel
+//
+// Painel web (/painel, usuário e senha): ver src/painel.js. Um token por e-mail: a 2ª licença do mesmo e-mail usa
+// o mesmo token, e "novo token" troca o do e-mail inteiro.
+//
 // Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura).
+
+import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -33,6 +40,7 @@ const MENSAGENS = {
     pedido_invalido: 'Pedido inválido.',
     pacote_invalido: 'Pacote desconhecido.',
     nao_encontrada: 'E-mail ou token não conferem. Confira os dois como vieram no e-mail da compra.',
+    pacote_nao_incluido: 'Este e-mail não tem licença deste pacote. Os pacotes ativados com este token são os da sua compra.',
     revogada: 'Esta licença foi cancelada. Fale com o suporte da InsideStudioSP.',
     limite_maquinas: 'Esta licença já está ativa no número máximo de computadores. Desative em um deles (menu da licença no plugin) e tente de novo.',
     maquina_nao_ativada: 'Este computador não está ativado nesta licença. Ative de novo com o e-mail e o token.',
@@ -133,7 +141,11 @@ async function rotaPlugin(acao, req, env) {
     const hash = await sha256Hex('ISP' + token);   // o token guardado já normalizado (sem "-")
     const lic = await env.DB.prepare('SELECT * FROM licencas WHERE token_hash = ? AND email = ? AND pacote = ?')
         .bind(hash, email, pacote).first();
-    if (!lic) return recusa('nao_encontrada', null);
+    if (!lic) {
+        // e-mail e token certos, mas sem licença deste pacote: diz isso em vez de "não conferem"
+        const outro = await env.DB.prepare('SELECT id FROM licencas WHERE token_hash = ? AND email = ? LIMIT 1').bind(hash, email).first();
+        return recusa(outro ? 'pacote_nao_incluido' : 'nao_encontrada', outro?.id ?? null);
+    }
     if (lic.status !== 'ativa') return recusa('revogada', lic.id);
 
     const atual = await env.DB.prepare('SELECT * FROM ativacoes WHERE licenca_id = ? AND maquina = ?')
@@ -227,7 +239,11 @@ function iguais(a, b) {
 
 async function rotaAdmin(caminho, req, env, url) {
     const auth = req.headers.get('authorization') || '';
-    if (!env.ADMIN_KEY || !iguais(auth, 'Bearer ' + env.ADMIN_KEY)) return falha('nao_autorizado', 401);
+    const porChave = !!env.ADMIN_KEY && iguais(auth, 'Bearer ' + env.ADMIN_KEY);
+    // o painel entra com a sessão (cookie) + cabeçalho x-painel (outro site não consegue mandar esse cabeçalho)
+    const porPainel = !porChave && req.headers.get('x-painel') === '1' && !!(await sessaoPainel(req, env));
+    if (!porChave && !porPainel) return falha('nao_autorizado', 401);
+    if (caminho === '/admin/painel-senha' && !porChave) return falha('nao_autorizado', 401);
 
     if (caminho === '/admin/licencas' && req.method === 'GET') {
         const email = normEmail(url.searchParams.get('email'));
@@ -246,6 +262,13 @@ async function rotaAdmin(caminho, req, env, url) {
     let corpo;
     try { corpo = await req.json(); } catch { return falha('pedido_invalido'); }
 
+    if (caminho === '/admin/painel-senha') {   // só com a ADMIN_KEY: cria/troca o usuário do painel
+        const usuario = String(corpo.usuario || '').trim().toLowerCase();
+        if (!/^[a-z0-9._-]{3,40}$/.test(usuario) || String(corpo.senha || '').length < 10) return falha('pedido_invalido');
+        await gravarSenhaPainel(env, usuario, String(corpo.senha));
+        return resposta({ ok: true, usuario });
+    }
+
     if (caminho === '/admin/licencas' && req.method === 'POST') {
         const email = normEmail(corpo.email);
         const pacote = String(corpo.pacote || '');
@@ -253,15 +276,19 @@ async function rotaAdmin(caminho, req, env, url) {
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return falha('pedido_invalido');
         const existe = await env.DB.prepare('SELECT id FROM licencas WHERE email = ? AND pacote = ?').bind(email, pacote).first();
         if (existe) return falha('ja_existe', 409);
-        const token = novoToken();
+        // um token por e-mail: se o e-mail já tem licença de outro pacote, a nova usa o mesmo token (que não está
+        // guardado, então volta token null e o cliente segue com o que já recebeu)
+        const doEmail = await env.DB.prepare('SELECT token_hash FROM licencas WHERE email = ? LIMIT 1').bind(email).first();
+        const token = doEmail ? null : novoToken();
         const r = await env.DB.prepare(
             'INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-            .bind(email, pacote, await sha256Hex('ISP' + normToken(token)), Number(corpo.max_maquinas) || 2,
-                corpo.origem === 'venda' ? 'venda' : 'cortesia', corpo.pedido ?? null, corpo.nota ?? null, agora())
+            .bind(email, pacote, doEmail ? doEmail.token_hash : await sha256Hex('ISP' + normToken(token)),
+                Number(corpo.max_maquinas) || 2, corpo.origem === 'venda' ? 'venda' : 'cortesia',
+                corpo.pedido || null, corpo.nota || null, agora())
             .run();
         const id = r.meta.last_row_id;
         await evento(env, id, 'criou', corpo.origem || 'cortesia', null);
-        return resposta({ ok: true, id, email, pacote, token });
+        return resposta({ ok: true, id, email, pacote, token, mesmo_token: !!doEmail });
     }
 
     const id = Number(corpo.id);
@@ -282,9 +309,11 @@ async function rotaAdmin(caminho, req, env, url) {
         return resposta({ ok: true });
     }
     if (caminho === '/admin/novo-token') {
+        // troca o token do e-mail inteiro (todos os pacotes dele)
         const token = novoToken();
-        await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE id = ?').bind(await sha256Hex('ISP' + normToken(token)), id).run();
-        await evento(env, id, 'novo_token', null, null);
+        await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?')
+            .bind(await sha256Hex('ISP' + normToken(token)), lic.email).run();
+        await evento(env, id, 'novo_token', lic.email, null);
         return resposta({ ok: true, id, email: lic.email, pacote: lic.pacote, token });
     }
     return falha('pedido_invalido', 404);
@@ -300,6 +329,7 @@ export default {
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
             if (req.method === 'GET' && caminho === '/v1/versao') return await rotaVersao(url, env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
+            if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
             if (caminho === '' || caminho === '/v1') return resposta({ ok: true, servico: 'licencas InsideStudioSP' });
             return falha('pedido_invalido', 404);
         } catch (e) {
