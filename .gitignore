@@ -5,3 +5,5 @@ report/
 .DS_Store
 .vs/
 .vscode/
+__pycache__/
+*.pyc
