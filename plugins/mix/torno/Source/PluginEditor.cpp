@@ -104,7 +104,12 @@ void HistoryView::paint (juce::Graphics& g)
     const juce::Rectangle<float> screenR (x0, top, x1 - x0, bot - top);
     real::screen (g, screenR, 3.0f);
 
-    // grade do nível (dBFS), com a escala na direita
+    // escala da redução FIXA (0 no topo, −30 dB embaixo): com escala automática a faixa coral mudava
+    // de tamanho sozinha quando um pico entrava ou saía da tela. 30 dB casa com a grade do nível
+    // (cada linha = 12 dB de nível = 6 dB de redução)
+    constexpr float grRange = 30.0f;
+
+    // grade do nível (dBFS), com a escala na direita; a da redução (coral) na esquerda
     g.setFont (theme::mono (9.0f));
     for (int k = 0; k <= 4; ++k)
     {
@@ -123,13 +128,6 @@ void HistoryView::paint (juce::Graphics& g)
     // colunas: mais antiga à esquerda, agora à direita
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
     const float cw   = (x1 - x0) / (float) historyCols;
-
-    // escala da redução antes de desenhar (degraus fixos, para os números não ficarem pulando);
-    // calculada depois, a primeira pintura usava a escala velha e a redução enchia a altura toda
-    float maxGr = 0.0f;
-    for (int k = 0; k < historyCols; ++k)
-        maxGr = juce::jmax (maxGr, proc.engine.colGr[(size_t) k].load (std::memory_order_relaxed));
-    grRange = maxGr < 5.0f ? 6.0f : maxGr < 10.0f ? 12.0f : maxGr < 20.0f ? 24.0f : 48.0f;
 
     for (int k = 0; k < historyCols; ++k)
     {
@@ -153,10 +151,24 @@ void HistoryView::paint (juce::Graphics& g)
         }
     }
 
+    g.setColour (theme::bg.withAlpha (0.75f));
+    g.fillRoundedRectangle (x0 + 3.0f, top + 2.0f, 82.0f, 13.0f, 2.0f);
     g.setColour (theme::coral);
     g.setFont (theme::mono (9.0f));
     g.drawText (u8 ("GR 0 a −") + juce::String (juce::roundToInt (grRange)) + " dB",
                 juce::Rectangle<float> (x0 + 6.0f, top + 3.0f, 200.0f, 11.0f), juce::Justification::centredLeft);
+
+    // escala da redução na esquerda, por cima das colunas (linha k da grade = 6·k dB de redução)
+    for (int k = 1; k <= 4; ++k)
+    {
+        const float y = yLvl (-12.0f * (float) k);
+        g.setColour (theme::bg.withAlpha (0.75f));   // fundo escuro: o número fica legível em cima da faixa coral
+        g.fillRoundedRectangle (x0 + 6.0f, y - 6.0f, 26.0f, 12.0f, 2.0f);
+        g.setColour (theme::coral);
+        g.fillRect (x0, y - 0.5f, 6.0f, 1.0f);
+        g.drawText (u8 ("−") + juce::String (juce::roundToInt (grRange / 5.0f * (float) k)),
+                    juce::Rectangle<float> (x0 + 8.0f, y - 6.0f, 40.0f, 12.0f), juce::Justification::centredLeft);
+    }
 
     // limiar (já com o APERTO)
     if (c.threshold > lvlLo)

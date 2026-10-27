@@ -13,7 +13,6 @@ public:
 
 private:
     TornoProcessor& proc;
-    float grRange = 12.0f;   // escala da redução (dB); acompanha o máximo da tela
 };
 
 // ---------------- CURVA: entrada × saída em dB, com o joelho, a compensação e o ponto de agora ----------------
