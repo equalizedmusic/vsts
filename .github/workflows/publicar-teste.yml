@@ -1,0 +1,40 @@
+name: publicar-teste
+
+# Publica os instaladores de um run do licenca-teste como o pré-release "licenca-teste" (troca o anterior), para o
+# servidor de licenças dar os links de download (/baixar/<pacote>/<win|mac>) a quem recebe licença de teste.
+# Não compila nada: só copia os artifacts do run escolhido em RUN_ID. Para publicar outro run, troque o RUN_ID.
+# Some no merge: quando os releases <pacote>-vX.Y.Z já tiverem a ativação, apague o pré-release licenca-teste.
+on:
+  push:
+    branches: [licenca]
+    paths: ['.github/workflows/publicar-teste.yml']
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  RUN_ID: '40585085533'
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar os instaladores do run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -D art
+          mkdir dist
+          find art \( -name '*.exe' -o -name '*.dmg' \) -exec cp {} dist/ \;
+          ls -la dist
+          [ "$(ls dist | wc -l)" -ge 12 ]
+
+      - name: Pré-release licenca-teste
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          gh release delete licenca-teste -R "$GITHUB_REPOSITORY" --cleanup-tag -y || true
+          gh release create licenca-teste dist/* -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Teste com ativação por licença" \
+            --notes "Instaladores de TESTE com ativação por e-mail e token (run $RUN_ID). Pedem licença para tocar."

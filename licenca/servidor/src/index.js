@@ -6,6 +6,7 @@
 //   POST /v1/desativar  { pacote, email, token, maquina }
 //   GET  /v1/versao?pacote=mix&versao=1.0.0&sistema=win|mac   (o plugin já ativado pergunta ao abrir)
 //        -> { ok: true, atualizacao: null | { versao, url, notas } }   url = instalador do sistema (ou a página do release)
+//   GET  /baixar/<pacote>/<win|mac>   redireciona para o instalador (links da mensagem do painel)
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -200,9 +201,10 @@ async function releases(env) {
     let lista = null;
     try {
         const g = await fetch(RELEASES_URL, { headers: h });
-        if (g.ok) lista = (await g.json()).filter((x) => !x.draft && !x.prerelease).map((x) => ({
-            tag: x.tag_name, pagina: x.html_url, notas: String(x.body || '').slice(0, 800),
+        if (g.ok) lista = (await g.json()).filter((x) => !x.draft).map((x) => ({
+            tag: x.tag_name, pre: !!x.prerelease, pagina: x.html_url, notas: String(x.body || '').slice(0, 800),
             arquivos: (x.assets || []).map((a) => a.browser_download_url),
+            api: (x.assets || []).map((a) => a.url),
         }));
         else console.error('github releases', g.status);
     } catch (e) { console.error('github releases', e); }
@@ -217,15 +219,59 @@ async function rotaVersao(url, env) {
     if (!PACOTES.includes(pacote)) return falha('pacote_invalido');
     if (partesVersao(versao).length !== 3) return falha('pedido_invalido');
 
-    let maior = null;
-    for (const rel of await releases(env)) {
-        const m = rel.tag.match(new RegExp(`^${pacote}-v(\\d+\\.\\d+\\.\\d+)$`));
-        if (m && (!maior || compararVersao(m[1], maior.versao) > 0)) maior = { ...rel, versao: m[1] };
-    }
+    const maior = releaseDoPacote(await releases(env), pacote);
     if (!maior || compararVersao(maior.versao, versao) <= 0) return resposta({ ok: true, atualizacao: null });
     const ext = sistema === 'mac' ? '.dmg' : '.exe';
     const instalador = maior.arquivos.find((a) => a.toLowerCase().endsWith(ext));
     return resposta({ ok: true, atualizacao: { versao: maior.versao, url: instalador || maior.pagina, notas: maior.notas } });
+}
+
+function releaseDoPacote(lista, pacote) {
+    let maior = null;
+    for (const rel of lista) {
+        const m = !rel.pre && rel.tag.match(new RegExp(`^${pacote}-v(\\d+\\.\\d+\\.\\d+)$`));
+        if (m && (!maior || compararVersao(m[1], maior.versao) > 0)) maior = { ...rel, versao: m[1] };
+    }
+    return maior;
+}
+
+// ---------------- download dos instaladores ----------------
+// GET /baixar/<pacote>/<win|mac> -> redireciona para o instalador. Link aberto: sem licença o plugin não toca.
+// Enquanto existir o pré-release "licenca-teste" (instaladores com ativação), ele vale para todos os pacotes; depois
+// do merge, apagar o pré-release e o link passa a dar o release <pacote>-vX.Y.Z mais novo.
+// a QUIMERA sai como "Quimera" nos releases e como "Instrumentos" no build de teste
+const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'] };
+
+function paginaSimples(titulo, texto, status) {
+    const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>InsideStudioSP</title><body style="font:16px system-ui;background:#16161a;color:#eee;padding:40px;max-width:560px;margin:auto">
+<h2>${esc(titulo)}</h2><p>${esc(texto)}</p></body>`,
+        { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+}
+
+async function rotaBaixar(caminho, env) {
+    const [, , pacote, sistema] = caminho.split('/');
+    if (!PACOTES.includes(pacote) || !['win', 'mac'].includes(sistema))
+        return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
+    const lista = await releases(env);
+    const rel = lista.find((r) => r.tag === 'licenca-teste') || releaseDoPacote(lista, pacote);
+    const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
+    const i = rel ? rel.arquivos.findIndex((a) => {
+        const nome = decodeURIComponent(a.split('/').pop());
+        return INSTALADOR[pacote].some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
+    }) : -1;
+    if (i < 0) return paginaSimples('Download indisponível',
+        'Este instalador não está disponível agora. Tente de novo mais tarde ou responda o e-mail da licença.', 404);
+    if (!env.GITHUB_TOKEN) return Response.redirect(rel.arquivos[i], 302);
+    // repo privado: o GitHub devolve um link temporário assinado do arquivo; o download não passa pelo Worker
+    const g = await fetch(rel.api[i], {
+        redirect: 'manual',
+        headers: { 'user-agent': 'isp-licencas', accept: 'application/octet-stream', authorization: 'Bearer ' + env.GITHUB_TOKEN },
+    });
+    const destino = g.headers.get('location');
+    if (!destino) return Response.redirect(rel.arquivos[i], 302);
+    return Response.redirect(destino, 302);
 }
 
 // ---------------- administração ----------------
@@ -328,6 +374,7 @@ export default {
             if (req.method === 'POST' && caminho === '/v1/validar') return await rotaPlugin('validar', req, env);
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
             if (req.method === 'GET' && caminho === '/v1/versao') return await rotaVersao(url, env);
+            if (req.method === 'GET' && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho, env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
             if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
             if (caminho === '' || caminho === '/v1') return resposta({ ok: true, servico: 'licencas InsideStudioSP' });

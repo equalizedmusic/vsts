@@ -351,9 +351,14 @@ function mensagemCliente(email, pacotes, token) {
   ];
   if (token) linhas.push('Token: ' + token);
   else linhas.push('Token: o mesmo que você já recebeu da InsideStudioSP (ele vale para todos os seus pacotes).');
+  linhas.push('', 'Downloads:');
+  pacotes.forEach(function (p) {
+    var base = location.origin + '/baixar/' + p + '/';
+    linhas.push(NOME[p] + ' para Windows: ' + base + 'win', NOME[p] + ' para Mac: ' + base + 'mac');
+  });
   linhas.push('',
     'Como ativar:',
-    '1. Instale o pacote e abra qualquer plugin dele no seu DAW.',
+    '1. Baixe e instale o pacote do seu sistema e abra qualquer plugin dele no seu DAW.',
     '2. Na tela de ativação, digite o e-mail e o token acima e clique em ATIVAR.',
     '',
     'O token vale para 2 computadores. Para trocar de computador, abra o menu do plugin, entre em "Licença…" e clique em "Desativar este computador"; depois é só ativar no computador novo.',
