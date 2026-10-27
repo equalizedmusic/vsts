@@ -172,7 +172,10 @@ void WaveStrip::paint (juce::Graphics& g)
     const int   wpos = proc.engine.colWrite.load (std::memory_order_acquire);
     const float cw   = (x1 - x0) / (float) historyCols;
     const float grTop = top + 2.0f, grSpan = (bot - top) * 0.5f;   // a redução pendura do alto, até o meio
-    float maxIn = 0.0f, maxGr = 0.0f;
+    // escala da redução FIXA (0 a −12 dB, régua a cada 3 dB): alternando sozinha entre 12 e 24 dB a
+    // linha azul mudava de altura sem a redução mudar. Acima de 12 dB a linha encosta no meio
+    constexpr float grRange = 12.0f;
+    float maxIn = 0.0f;
     juce::Path grLine, grFill;
     grFill.startNewSubPath (x0, grTop);
     for (int k = 0; k < historyCols; ++k)
@@ -182,7 +185,6 @@ void WaveStrip::paint (juce::Graphics& g)
         const float b  = proc.engine.colOut[idx].load (std::memory_order_relaxed);
         const float gr = proc.engine.colGr[idx].load (std::memory_order_relaxed);
         maxIn = juce::jmax (maxIn, a);
-        maxGr = juce::jmax (maxGr, gr);
         const float ha = juce::jmin (1.0f, a / range) * half, hb = juce::jmin (1.0f, b / range) * half;
         const float x  = x0 + (float) k * cw;
         if (ha > hb + 0.5f)
@@ -218,10 +220,10 @@ void WaveStrip::paint (juce::Graphics& g)
     g.setColour (theme::ice);
     g.strokePath (grLine, juce::PathStrokeType (1.5f));
     g.setFont (theme::mono (8.5f));
-    for (int step = 1; step <= 2; ++step)
+    for (int step = 1; step <= 4; ++step)
     {
-        const float db = grRange * 0.5f * (float) step;
-        const float y  = grTop + grSpan * 0.5f * (float) step;
+        const float db = grRange * 0.25f * (float) step;
+        const float y  = grTop + grSpan * 0.25f * (float) step;
         g.setColour (theme::ice.withAlpha (0.25f));
         g.fillRect (x1 - 40.0f, y, 36.0f, 1.0f);
         g.setColour (theme::ice.withAlpha (0.7f));
@@ -229,11 +231,9 @@ void WaveStrip::paint (juce::Graphics& g)
                     juce::Rectangle<float> (x1 - 44.0f, y - 11.0f, 40.0f, 10.0f), juce::Justification::centredRight);
     }
 
-    // escalas acompanham devagar (sem pular a cada frame)
+    // escala da onda acompanha devagar (sem pular a cada frame)
     const float target = juce::jlimit (ceilG * 1.25f, ceilG * 8.0f, maxIn * 1.1f);
     range += (target - range) * 0.08f;
-    if (maxGr > 11.0f)     grRange = 24.0f;
-    else if (maxGr < 9.0f) grRange = 12.0f;
 
     real::glass (g, scr, 3.0f);
 }

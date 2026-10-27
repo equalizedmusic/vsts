@@ -14,7 +14,6 @@ public:
 private:
     BarragemProcessor& proc;
     float range = 1.25f;     // escala vertical; acompanha os picos (devagar)
-    float grRange = 12.0f;   // escala da redução (dB); abre para 24 quando passa de 12
 };
 
 // ---------------- LOUDNESS: LUFS momentâneo, curto e integrado, barra com o ALVO e o seletor do alvo ----------------
