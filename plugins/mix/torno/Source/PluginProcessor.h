@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "CompEngine.h"
 #include "Params.h"
+#include "IspLicenca.h"
 
 class TornoProcessor : public juce::AudioProcessor
 {
@@ -79,6 +80,7 @@ private:
     std::atomic<float>* pListen = nullptr;
     std::atomic<float>* pBypass = nullptr;
     juce::AudioProcessorParameter* bypassParam = nullptr;
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto, sem efeito
 
     juce::AudioBuffer<float> wet;
     juce::SmoothedValue<float> mixSm, gainSm, bypassSm;

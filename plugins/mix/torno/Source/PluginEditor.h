@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "Widgets.h"
+#include "IspTelaAtivacao.h"
 
 // ---------------- HISTÓRICO: nível de entrada (creme, de baixo) e redução de ganho (coral, de cima), ~4 s ----------------
 class HistoryView : public juce::Component
@@ -82,6 +83,7 @@ private:
     double lastTick = 0.0;
 
     PresetDialog dialog;   // por último: fecha a caixa aberta antes do resto sumir
+    isp::TelaAtivacao ativacao;   // por cima de tudo enquanto o pacote não está ativado
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TornoEditor)
 };

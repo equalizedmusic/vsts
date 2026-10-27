@@ -5,7 +5,7 @@ using namespace torno;
 namespace
 {
 constexpr int sizeMenuBase = 10000;   // ids do submenu "Tamanho da janela"
-constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004;
+constexpr int menuSaveAs = 20001, menuOverwrite = 20002, menuRename = 20003, menuDelete = 20004, menuLicenca = 20005;
 
 // rack de 19": a frente tem o layout de 1000 × 580 e as orelhas ficam dos lados
 constexpr int ear = 32, rackW = ui::baseW + 2 * ear;
@@ -399,6 +399,7 @@ TornoEditor::TornoEditor (TornoProcessor& p)
     getConstrainer()->setFixedAspectRatio ((double) rackW / (double) ui::baseH);
     setScale (openScale);
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 TornoEditor::~TornoEditor()
@@ -431,6 +432,7 @@ void TornoEditor::showPresetMenu()
         sizes.addItem (sizeMenuBase + pct, juce::String (pct) + "%", true, std::abs (current * 100.0f - (float) pct) < 1.0f);
     menu.addSeparator();
     menu.addSubMenu ("Tamanho da janela", sizes);
+    menu.addItem (menuLicenca, u8 ("Licença…"));
 
     juce::Component::SafePointer<TornoEditor> safe (this);
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetName),
@@ -462,6 +464,9 @@ void TornoEditor::presetMenuChosen (int result)
     {
         case menuSaveAs:
             askNewPreset();
+            break;
+        case menuLicenca:
+            ativacao.mostrarInfo();
             break;
         case menuOverwrite:
             proc.overwriteUserPreset();

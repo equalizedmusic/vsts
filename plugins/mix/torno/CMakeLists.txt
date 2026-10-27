@@ -23,6 +23,8 @@ target_sources(Torno PRIVATE
 file(GLOB torno_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(TornoImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${torno_img})
 
+isp_licenca(Torno mix)
+
 target_compile_definitions(Torno PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

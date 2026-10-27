@@ -18,6 +18,9 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(JUCE)
 
+# ativação por licença: isp_licenca(<alvo> <pacote>) no CMakeLists de cada plugin
+include(licenca/cliente/licenca.cmake)
+
 # Formatos gerados por todos os plugins. AU só existe no Mac (o JUCE ignora no Windows).
 set(VSTS_FORMATS VST3 AU)
 
