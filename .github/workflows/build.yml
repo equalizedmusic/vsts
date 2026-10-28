@@ -84,11 +84,11 @@ jobs:
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
-            curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+            curl -sSL --retry 5 --retry-all-errors --retry-delay 15 -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
             unzip -q pv.zip
             PV=pluginval.app/Contents/MacOS/pluginval
           else
-            curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip
+            curl -sSL --retry 5 --retry-all-errors --retry-delay 15 -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip
             7z x -y pv.zip > /dev/null
             PV=./pluginval.exe
           fi
