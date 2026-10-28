@@ -18,6 +18,8 @@
 //   POST /admin/reativar          { id }
 //   POST /admin/liberar-maquina   { id, maquina }
 //   POST /admin/novo-token        { id }   gera outro token para a mesma licença (o antigo para de valer)
+//   POST /admin/revogar-cliente   { email }   cancela todas as licenças do e-mail
+//   POST /admin/excluir-cliente   { email }   apaga licenças e computadores do e-mail (só com tudo cancelado)
 //
 //   POST /admin/painel-senha      { usuario, senha }   (só com a ADMIN_KEY) cria/troca o login do painel
 //
@@ -306,7 +308,7 @@ async function rotaAdmin(caminho, req, env, url) {
         const email = normEmail(url.searchParams.get('email'));
         const lics = email
             ? await env.DB.prepare('SELECT * FROM licencas WHERE email = ? ORDER BY id').bind(email).all()
-            : await env.DB.prepare('SELECT * FROM licencas ORDER BY id DESC LIMIT 500').all();
+            : await env.DB.prepare('SELECT * FROM licencas ORDER BY id DESC LIMIT 5000').all();
         const ativ = await env.DB.prepare('SELECT * FROM ativacoes ORDER BY id').all();
         const porLic = {};
         for (const a of ativ.results) (porLic[a.licenca_id] ||= []).push(a);
@@ -346,6 +348,28 @@ async function rotaAdmin(caminho, req, env, url) {
         const id = r.meta.last_row_id;
         await evento(env, id, 'criou', corpo.origem || 'cortesia', null);
         return resposta({ ok: true, id, email, pacote, token, mesmo_token: !!doEmail });
+    }
+
+    // ações sobre o cliente inteiro (todas as licenças do e-mail)
+    if (caminho === '/admin/revogar-cliente' || caminho === '/admin/excluir-cliente') {
+        const email = normEmail(corpo.email);
+        const r = await env.DB.prepare("SELECT COUNT(*) AS n, SUM(status = 'ativa') AS ativas FROM licencas WHERE email = ?")
+            .bind(email).first();
+        if (!email || !r?.n) return falha('nao_encontrada', 404);
+        if (caminho === '/admin/revogar-cliente') {
+            await env.DB.prepare("UPDATE licencas SET status = 'revogada', revogada_em = ? WHERE email = ? AND status = 'ativa'")
+                .bind(agora(), email).run();
+            await evento(env, null, 'revogou_cliente', email, null);
+            return resposta({ ok: true, revogadas: r.ativas || 0 });
+        }
+        // excluir só depois de cancelar tudo: assim um clique errado não apaga cliente com licença valendo
+        if (r.ativas) return falha('Cancele as licenças deste cliente antes de excluir.', 409);
+        await env.DB.batch([
+            env.DB.prepare('DELETE FROM ativacoes WHERE licenca_id IN (SELECT id FROM licencas WHERE email = ?)').bind(email),
+            env.DB.prepare('DELETE FROM licencas WHERE email = ?').bind(email),
+        ]);
+        await evento(env, null, 'excluiu_cliente', email, null);   // o histórico (eventos) fica
+        return resposta({ ok: true, excluidas: r.n });
     }
 
     const id = Number(corpo.id);

@@ -36,7 +36,10 @@ Isso segura o repasse casual de instalador + token; não segura quem quiser craq
 - `admin/isp-licenca.mjs` — criar token, listar, revogar, liberar máquina, gerar token novo, `senha-painel <usuário>`.
 - **Painel web**: `https://isp-licencas.insidestudiosp.workers.dev/painel` (usuário e senha; código em
   `servidor/src/painel.js`). Gera licença (e-mail + pacotes), monta a mensagem para o cliente (copiar ou abrir no
-  e-mail), lista clientes, cancela/reativa, libera computador, gera token novo, troca a senha.
+  e-mail; links só de Windows, só de Mac ou dos dois), lista os clientes numa tabela (uma linha por e-mail, filtro
+  na hora) e abre cada um num modal: cancela/reativa pacote, cancela todas, exclui o cliente (só com tudo
+  cancelado; apaga licenças e computadores, o histórico fica), libera computador, gera token novo, adiciona pacote.
+  Troca a senha.
 
 **Um token por e-mail**: a 1ª licença de um e-mail gera o token; as seguintes (outros pacotes) usam o mesmo, e "token
 novo" troca o do e-mail inteiro. Cada pacote ativa em até 2 computadores. Mudança aplicada em 27/10/2026 com

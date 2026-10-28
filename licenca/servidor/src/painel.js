@@ -204,6 +204,10 @@ const HTML = `<!doctype html>
       <h2>Nova licença</h2>
       <label>E-mail do cliente <input name="email" type="email" required autocomplete="off"></label>
       <fieldset><legend>Pacotes</legend><div id="pacotes" class="pacotes"></div></fieldset>
+      <fieldset><legend>Sistema do cliente (links de download na mensagem)</legend><div class="pacotes">
+        <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
+        <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
+      </div></fieldset>
       <div class="linha">
         <label>Origem
           <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (teste grátis)</option></select>
@@ -228,12 +232,29 @@ const HTML = `<!doctype html>
 
     <div class="cartao">
       <div class="linha topo">
-        <h2>Clientes</h2>
-        <form id="fBusca" class="busca"><input name="q" placeholder="Buscar por e-mail" autocomplete="off"><button type="submit" class="discreto">Buscar</button></form>
+        <h2>Clientes <span id="contagem" class="det"></span></h2>
+        <form id="fBusca" class="busca"><input name="q" type="search" placeholder="Filtrar por e-mail ou pacote" autocomplete="off"></form>
       </div>
       <div id="lista"></div>
     </div>
   </section>
+
+  <dialog id="dCliente" class="largo">
+    <div class="linha topo">
+      <h2 id="cliEmail" class="email"></h2>
+      <button type="button" id="btClienteFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+    </div>
+    <p id="cliResumo" class="det"></p>
+    <div id="cliLicencas"></div>
+    <div class="linha rodape">
+      <button type="button" id="btCliPacote" class="discreto">Adicionar pacote</button>
+      <button type="button" id="btCliToken" class="discreto">Gerar token novo</button>
+      <span class="espaco"></span>
+      <button type="button" id="btCliRevogar" class="perigo">Cancelar todas</button>
+      <button type="button" id="btCliExcluir" class="perigo">Excluir cliente</button>
+    </div>
+    <p class="msg" id="msgCliente"></p>
+  </dialog>
 
   <dialog id="dSenha">
     <form id="fSenha" method="dialog" class="estreito">
@@ -282,16 +303,25 @@ button:disabled { opacity:.5; cursor:default; }
 .busca { display:flex; gap:8px; } .busca input { width:260px; }
 .msg { min-height:1.2em; margin:10px 0 0; color:var(--ruim); } .msg.ok { color:var(--ok); }
 pre { background:#111214; border:1px solid var(--borda); border-radius:6px; padding:12px; white-space:pre-wrap; font:13px/1.5 ui-monospace, Consolas, monospace; }
-.cliente { border-top:1px solid var(--borda); padding:14px 0; } .cliente:first-child { border-top:0; }
-.cliente-topo { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-.email { font-weight:600; font-size:16px; word-break:break-all; }
-.lic { display:grid; grid-template-columns:120px 1fr auto; gap:6px 14px; align-items:start; padding:8px 0 0 12px; }
+.email { font-weight:600; font-size:16px; word-break:break-all; margin:0; }
+.tabela { width:100%; border-collapse:collapse; }
+.tabela th { text-align:left; color:var(--fraco); font-size:12px; font-weight:500; padding:6px 8px; border-bottom:1px solid var(--borda); }
+.tabela td { padding:9px 8px; border-bottom:1px solid var(--borda); vertical-align:middle; }
+.tabela tbody tr { cursor:pointer; } .tabela tbody tr:hover, .tabela tbody tr:focus { background:#26272c; outline:none; }
+.tabela td.num { white-space:nowrap; color:var(--fraco); font-size:13px; }
+.chip { display:inline-block; font-size:12px; padding:1px 8px; margin:1px 3px 1px 0; border-radius:10px; border:1px solid var(--ok); color:var(--ok); }
+.chip.revogada { border-color:var(--borda); color:var(--fraco); text-decoration:line-through; }
+.cli-email { font-weight:600; word-break:break-all; }
+dialog.largo { width:min(760px, 94vw); padding:16px 22px; }
+.rodape { margin-top:16px; padding-top:14px; border-top:1px solid var(--borda); } .espaco { flex:1; }
+.lic { display:grid; grid-template-columns:120px 1fr auto; gap:6px 14px; align-items:start; padding:12px 0; border-top:1px solid var(--borda); }
+.lic:first-child { border-top:0; }
 .pac { font-weight:600; } .status-ativa { color:var(--ok); } .status-revogada { color:var(--ruim); }
 .det { color:var(--fraco); font-size:13px; } .maq { display:flex; gap:8px; align-items:center; margin-top:3px; color:var(--texto); }
 .vazio { color:var(--fraco); }
 dialog { background:var(--cartao); color:var(--texto); border:1px solid var(--borda); border-radius:10px; padding:4px 20px; }
 dialog::backdrop { background:rgba(0,0,0,.6); } dialog .estreito { margin:10px auto; }
-@media (max-width:640px) { .lic { grid-template-columns:1fr; } .busca input { width:100%; } }
+@media (max-width:640px) { .lic { grid-template-columns:1fr; } .busca input { width:100%; } .col-opc { display:none; } }
 `;
 
 // JS do navegador. Tudo que vem do banco (e-mail, nome da máquina, nota) entra por textContent, nunca por innerHTML.
@@ -339,7 +369,9 @@ function mostrarPainel(usuario) {
   carregar('');
 }
 
-function mensagemCliente(email, pacotes, token) {
+// sistemas: ['win'], ['mac'] ou os dois; só entram na mensagem os links dos sistemas marcados
+function mensagemCliente(email, pacotes, token, sistemas) {
+  sistemas = sistemas && sistemas.length ? sistemas : ['win', 'mac'];
   var nomes = pacotes.map(function (p) { return NOME[p]; }).join(', ');
   var linhas = [
     'Olá!',
@@ -354,11 +386,12 @@ function mensagemCliente(email, pacotes, token) {
   linhas.push('', 'Downloads:');
   pacotes.forEach(function (p) {
     var base = location.origin + '/baixar/' + p + '/';
-    linhas.push(NOME[p] + ' para Windows: ' + base + 'win', NOME[p] + ' para Mac: ' + base + 'mac');
+    if (sistemas.indexOf('win') >= 0) linhas.push(NOME[p] + ' para Windows: ' + base + 'win');
+    if (sistemas.indexOf('mac') >= 0) linhas.push(NOME[p] + ' para Mac: ' + base + 'mac');
   });
   linhas.push('',
     'Como ativar:',
-    '1. Baixe e instale o pacote do seu sistema e abra qualquer plugin dele no seu DAW.',
+    '1. Baixe e instale o' + (pacotes.length > 1 ? 's pacotes' : ' pacote') + (sistemas.length > 1 ? ' do seu sistema' : '') + ' e abra qualquer plugin no seu DAW.',
     '2. Na tela de ativação, digite o e-mail e o token acima e clique em ATIVAR.',
     '',
     'O token vale para 2 computadores. Para trocar de computador, abra o menu do plugin, entre em "Licença…" e clique em "Desativar este computador"; depois é só ativar no computador novo.',
@@ -369,8 +402,8 @@ function mensagemCliente(email, pacotes, token) {
   return linhas.join('\\n');
 }
 
-function mostrarResultado(email, pacotes, token, extra) {
-  var texto = mensagemCliente(email, pacotes, token);
+function mostrarResultado(email, pacotes, token, extra, sistemas) {
+  var texto = mensagemCliente(email, pacotes, token, sistemas);
   $('resResumo').textContent = email + ' · ' + pacotes.map(function (p) { return NOME[p]; }).join(', ') +
     (token ? ' · token novo: ' + token : ' · mesmo token que este e-mail já tem') + (extra ? ' · ' + extra : '');
   $('resMensagem').textContent = texto;
@@ -385,7 +418,9 @@ function criar(ev) {
   var f = ev.target;
   var pacotes = Array.prototype.slice.call(f.querySelectorAll('input[name=pacote]:checked')).map(function (c) { return c.value; });
   var email = f.email.value.trim().toLowerCase();
+  var sistemas = Array.prototype.slice.call(f.querySelectorAll('input[name=sistema]:checked')).map(function (c) { return c.value; });
   if (!pacotes.length) { msg('msgNova', 'Marque pelo menos um pacote.'); return; }
+  if (!sistemas.length) { msg('msgNova', 'Marque Windows, Mac ou os dois.'); return; }
   var bt = f.querySelector('button[type=submit]'); bt.disabled = true; msg('msgNova', 'Gerando…', true);
   var token = null, feitos = [], erros = [];
   var seq = Promise.resolve();
@@ -404,70 +439,117 @@ function criar(ev) {
     bt.disabled = false;
     msg('msgNova', erros.join(' · '), false);
     if (feitos.length) {
-      mostrarResultado(email, feitos, token, '');
+      mostrarResultado(email, feitos, token, '', sistemas);
       f.reset(); f.maquinas.value = 2;
-      carregar(email);
+      carregar();
     }
   });
 }
 
-function acao(caminho, corpo, pergunta) {
+// ação sobre o cliente aberto no modal: refaz a lista e o modal com o resultado
+function acao(caminho, corpo, pergunta, depois) {
   if (pergunta && !confirm(pergunta)) return;
+  msg('msgCliente', '');
   api('POST', caminho, corpo).then(function (j) {
-    if (!j.ok) { alert(j.mensagem || 'Erro.'); return; }
+    if (!j.ok) { msg('msgCliente', j.mensagem || 'Erro.'); return; }
     if (j.token) {
       var pacs = (ultimaLista[j.email] || []).filter(function (l) { return l.status === 'ativa'; }).map(function (l) { return l.pacote; });
+      $('dCliente').close();
       mostrarResultado(j.email, pacs.length ? pacs : [j.pacote], j.token, 'o token antigo parou de valer');
     }
-    carregar($('fBusca').q.value.trim());
+    carregar().then(function () {
+      if (depois) depois();
+      else if ($('dCliente').open && clienteAberto) abrirCliente(clienteAberto);
+    });
   });
 }
 
-var ultimaLista = {};
-function carregar(q) {
-  api('GET', '/admin/licencas' + (q ? '?email=' + encodeURIComponent(q.toLowerCase()) : '')).then(function (j) {
-    var lista = $('lista'); lista.textContent = '';
-    if (!j.ok) { lista.appendChild(el('p', { classe: 'vazio', texto: j.mensagem || 'Erro ao carregar.' })); return; }
+var ultimaLista = {}, ordemClientes = [], clienteAberto = null, seqCarga = 0;
+function carregar() {
+  var seq = ++seqCarga;
+  return api('GET', '/admin/licencas').then(function (j) {
+    if (seq !== seqCarga) return;   // chegou depois de uma carga mais nova
+    if (!j.ok) { var lista = $('lista'); lista.textContent = ''; lista.appendChild(el('p', { classe: 'vazio', texto: j.mensagem || 'Erro ao carregar.' })); return; }
     var porEmail = {}, ordem = [];
     j.licencas.forEach(function (l) { if (!porEmail[l.email]) { porEmail[l.email] = []; ordem.push(l.email); } porEmail[l.email].push(l); });
-    ultimaLista = porEmail;
-    if (!ordem.length) { lista.appendChild(el('p', { classe: 'vazio', texto: q ? 'Nenhuma licença para este e-mail.' : 'Nenhuma licença ainda.' })); return; }
-    ordem.forEach(function (email) {
-      var lics = porEmail[email];
-      var bloco = el('div', { classe: 'cliente' }, [
-        el('div', { classe: 'cliente-topo' }, [
-          el('span', { classe: 'email', texto: email }),
-          el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Gerar token novo',
-            onclick: function () { acao('/admin/novo-token', { id: lics[0].id },
-              'Gerar um token novo para ' + email + '?\\n\\nO token atual para de valer em todos os pacotes deste e-mail. Os computadores já ativados continuam até a próxima conferência com o servidor (em até 3 dias) e aí pedem o token novo.'); } })
-        ])
-      ]);
-      lics.forEach(function (l) {
-        var maquinas = el('div', { classe: 'det' }, [ l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
-        l.maquinas.forEach(function (m) {
-          maquinas.appendChild(el('div', { classe: 'maq' }, [
-            el('span', { texto: (m.nome_maquina || '(sem nome)') + ' · ativado ' + data(m.criada_em) + ' · visto ' + data(m.visto_em) }),
-            el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Liberar',
-              onclick: function () { acao('/admin/liberar-maquina', { id: l.id, maquina: String(m.id) },
-                'Liberar o computador "' + (m.nome_maquina || '') + '" desta licença? Ele para de funcionar na próxima conferência e a vaga fica livre.'); } })
-          ]));
-        });
-        var info = [ l.origem === 'venda' ? 'venda' : 'cortesia', 'criada ' + data(l.criada_em) ];
-        if (l.pedido) info.push('pedido ' + l.pedido);
-        if (l.nota) info.push(l.nota);
-        bloco.appendChild(el('div', { classe: 'lic' }, [
-          el('div', {}, [ el('div', { classe: 'pac', texto: NOME[l.pacote] || l.pacote }),
-                          el('div', { classe: 'status-' + l.status, texto: l.status }) ]),
-          el('div', {}, [ el('div', { classe: 'det', texto: info.join(' · ') }), maquinas ]),
-          l.status === 'ativa'
-            ? el('button', { type: 'button', classe: 'perigo pequeno', texto: 'Cancelar',
-                onclick: function () { acao('/admin/revogar', { id: l.id }, 'Cancelar a licença ' + (NOME[l.pacote] || l.pacote) + ' de ' + email + '? Os plugins desse pacote travam na próxima conferência.'); } })
-            : el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Reativar',
-                onclick: function () { acao('/admin/reativar', { id: l.id }); } })
-        ]));
-      });
-      lista.appendChild(bloco);
+    ultimaLista = porEmail; ordemClientes = ordem;
+    desenharLista();
+  });
+}
+
+// lista compacta: uma linha por cliente; clicar abre o modal com as licenças
+function desenharLista() {
+  var q = $('fBusca').q.value.trim().toLowerCase();
+  var lista = $('lista'); lista.textContent = '';
+  var mostrar = ordemClientes.filter(function (email) {
+    return !q || email.indexOf(q) >= 0 || ultimaLista[email].some(function (l) {
+      return (NOME[l.pacote] || l.pacote).toLowerCase().indexOf(q) >= 0 || (l.pedido || '').toLowerCase().indexOf(q) >= 0 ||
+             (l.nota || '').toLowerCase().indexOf(q) >= 0;
     });
+  });
+  $('contagem').textContent = ordemClientes.length ? '· ' + (q ? mostrar.length + ' de ' : '') + ordemClientes.length : '';
+  if (!mostrar.length) { lista.appendChild(el('p', { classe: 'vazio', texto: q ? 'Nenhum cliente encontrado.' : 'Nenhuma licença ainda.' })); return; }
+  var corpo = el('tbody');
+  mostrar.forEach(function (email) {
+    var lics = ultimaLista[email];
+    var maq = 0, visto = 0, desde = Infinity;
+    lics.forEach(function (l) {
+      maq += l.maquinas.length; desde = Math.min(desde, l.criada_em);
+      l.maquinas.forEach(function (m) { visto = Math.max(visto, m.visto_em || 0); });
+    });
+    var abrir = function () { abrirCliente(email); };
+    corpo.appendChild(el('tr', { tabindex: '0', onclick: abrir, onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } }, [
+      el('td', { classe: 'cli-email', texto: email }),
+      el('td', {}, lics.map(function (l) { return el('span', { classe: 'chip' + (l.status === 'ativa' ? '' : ' revogada'), texto: NOME[l.pacote] || l.pacote }); })),
+      el('td', { classe: 'num', texto: String(maq) }),
+      el('td', { classe: 'num col-opc', texto: visto ? data(visto) : '-' }),
+      el('td', { classe: 'num col-opc', texto: data(desde) })
+    ]));
+  });
+  lista.appendChild(el('table', { classe: 'tabela' }, [
+    el('thead', {}, [ el('tr', {}, [ el('th', { texto: 'E-mail' }), el('th', { texto: 'Pacotes' }), el('th', { texto: 'PCs' }),
+      el('th', { classe: 'col-opc', texto: 'Último uso' }), el('th', { classe: 'col-opc', texto: 'Cliente desde' }) ]) ]),
+    corpo
+  ]));
+}
+
+function abrirCliente(email) {
+  var lics = ultimaLista[email];
+  if (!lics) { clienteAberto = null; if ($('dCliente').open) $('dCliente').close(); return; }
+  clienteAberto = email;
+  var ativas = lics.filter(function (l) { return l.status === 'ativa'; }).length;
+  $('cliEmail').textContent = email;
+  $('cliResumo').textContent = lics.length + (lics.length > 1 ? ' licenças' : ' licença') + ' · ' + ativas +
+    (ativas === 1 ? ' ativa' : ' ativas') + (ativas < lics.length ? ' · ' + (lics.length - ativas) + ' cancelada' + (lics.length - ativas > 1 ? 's' : '') : '');
+  var caixa = $('cliLicencas'); caixa.textContent = '';
+  $('btCliRevogar').disabled = !ativas;
+  $('btCliExcluir').disabled = !!ativas;
+  $('btCliExcluir').title = ativas ? 'Cancele todas as licenças antes de excluir o cliente.' : '';
+  $('btCliToken').disabled = !ativas;
+  if (!$('dCliente').open) { msg('msgCliente', ''); $('dCliente').showModal(); }
+  lics.forEach(function (l) {
+    var maquinas = el('div', { classe: 'det' }, [ l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
+    l.maquinas.forEach(function (m) {
+      maquinas.appendChild(el('div', { classe: 'maq' }, [
+        el('span', { texto: (m.nome_maquina || '(sem nome)') + ' · ativado ' + data(m.criada_em) + ' · visto ' + data(m.visto_em) }),
+        el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Liberar',
+          onclick: function () { acao('/admin/liberar-maquina', { id: l.id, maquina: String(m.id) },
+            'Liberar o computador "' + (m.nome_maquina || '') + '" desta licença? Ele para de funcionar na próxima conferência e a vaga fica livre.'); } })
+      ]));
+    });
+    var info = [ l.origem === 'venda' ? 'venda' : 'cortesia', 'criada ' + data(l.criada_em) ];
+    if (l.pedido) info.push('pedido ' + l.pedido);
+    if (l.nota) info.push(l.nota);
+    caixa.appendChild(el('div', { classe: 'lic' }, [
+      el('div', {}, [ el('div', { classe: 'pac', texto: NOME[l.pacote] || l.pacote }),
+                      el('div', { classe: 'status-' + l.status, texto: l.status === 'ativa' ? 'ativa' : 'cancelada' }) ]),
+      el('div', {}, [ el('div', { classe: 'det', texto: info.join(' · ') }), maquinas ]),
+      l.status === 'ativa'
+        ? el('button', { type: 'button', classe: 'perigo pequeno', texto: 'Cancelar',
+            onclick: function () { acao('/admin/revogar', { id: l.id }, 'Cancelar a licença ' + (NOME[l.pacote] || l.pacote) + ' de ' + email + '? Os plugins desse pacote travam na próxima conferência.'); } })
+        : el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Reativar',
+            onclick: function () { acao('/admin/reativar', { id: l.id }); } })
+    ]));
   });
 }
 
@@ -485,7 +567,34 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
   $('fNova').addEventListener('submit', criar);
-  $('fBusca').addEventListener('submit', function (ev) { ev.preventDefault(); carregar(ev.target.q.value.trim()); });
+  $('fBusca').addEventListener('submit', function (ev) { ev.preventDefault(); });
+  $('fBusca').q.addEventListener('input', desenharLista);
+
+  // modal do cliente: fecha só no ✕ (ou Esc)
+  $('btClienteFechar').addEventListener('click', function () { $('dCliente').close(); });
+  $('dCliente').addEventListener('close', function () { clienteAberto = null; });
+  $('btCliPacote').addEventListener('click', function () {
+    var email = clienteAberto; $('dCliente').close();
+    $('fNova').email.value = email;
+    $('fNova').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var c = $('fNova').querySelector('input[name=pacote]'); if (c) c.focus();
+  });
+  $('btCliToken').addEventListener('click', function () {
+    var email = clienteAberto, lics = ultimaLista[email] || [];
+    if (lics.length) acao('/admin/novo-token', { id: lics[0].id },
+      'Gerar um token novo para ' + email + '?\\n\\nO token atual para de valer em todos os pacotes deste e-mail. Os computadores já ativados continuam até a próxima conferência com o servidor (em até 3 dias) e aí pedem o token novo.');
+  });
+  $('btCliRevogar').addEventListener('click', function () {
+    var email = clienteAberto;
+    acao('/admin/revogar-cliente', { email: email },
+      'Cancelar TODAS as licenças de ' + email + '?\\n\\nOs plugins de todos os pacotes dele travam na próxima conferência com o servidor (em até 3 dias). Dá para reativar depois, pacote por pacote.');
+  });
+  $('btCliExcluir').addEventListener('click', function () {
+    var email = clienteAberto;
+    acao('/admin/excluir-cliente', { email: email },
+      'Excluir o cliente ' + email + '?\\n\\nApaga as licenças e os computadores dele. Não dá para desfazer: para voltar, é preciso gerar uma licença nova (com token novo).',
+      function () { $('dCliente').close(); });
+  });
   $('btCopiar').addEventListener('click', function () {
     navigator.clipboard.writeText($('resMensagem').textContent).then(function () { $('btCopiar').textContent = 'Copiado!';
       setTimeout(function () { $('btCopiar').textContent = 'Copiar mensagem'; }, 1500); });
