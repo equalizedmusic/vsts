@@ -153,3 +153,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: bash src/.github/scripts/release-versoes.sh pacotes report src Criativo Mix Knob
+
+      # o pré-release "licenca-teste" (instaladores do teste da ativação) sai quando as versões oficiais dos três
+      # pacotes estão publicadas: até lá os links /baixar do servidor de licenças continuam entregando ele
+      - name: Apagar o pré-release licenca-teste
+        if: hashFiles('pacotes/*') != ''
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          for p in Criativo Mix Knob; do
+            tag=$(python3 src/instalador/versao.py $p --tag)
+            gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || { echo "$tag não publicado: licenca-teste fica"; exit 0; }
+          done
+          if gh release view licenca-teste -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release delete licenca-teste --yes --cleanup-tag -R "$GITHUB_REPOSITORY"
+            echo "pré-release licenca-teste apagado"
+          fi

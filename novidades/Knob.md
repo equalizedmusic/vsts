@@ -5,6 +5,12 @@ MASTIGA). A versão é o primeiro título `## x.y.z` deste arquivo: ela entra no
 `knob-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.0 — 2026-10-27
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até
+  2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o plugin passa o som direto,
+  sem processar.
+- Com a licença ativa, aparece no pé da janela o aviso de versão nova do pacote (BAIXAR / Agora não).
+
 ## 0.2.1 — 2026-10-26
 - Sombra do knob grandão, dos knobs RATE e MIX e da alavanca redonda e macia: sumiu o canto quadrado
   embaixo/à direita.

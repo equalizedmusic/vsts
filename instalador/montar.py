@@ -57,6 +57,11 @@ def rotulo(nome):
 ANTIGOS = {"MERCURIO": ["VACINA"]}
 
 
+# pacote que já saiu com outro nome: no Windows o AppId e a pasta do desinstalador continuam os antigos, para a versão
+# nova substituir a instalada (e não aparecer duas vezes em Aplicativos instalados); o atalho antigo é apagado
+PACOTE_ANTIGO = {"Quimera": "Instrumentos"}
+
+
 def com_antigos(plugins):
     return plugins + [a for p in plugins for a in ANTIGOS.get(p, [])]
 
@@ -81,9 +86,10 @@ def achar_iscc():
 
 def iss(pacote, versao, origem, plugins, saida, nome_arquivo):
     origem = os.path.abspath(origem)
+    antigo = PACOTE_ANTIGO.get(pacote)
     L = [
         "[Setup]",
-        f"AppId={MARCA}.{pacote}",
+        f"AppId={MARCA}.{antigo or pacote}",
         f"AppName={MARCA} {pacote}",
         f"AppVersion={versao}",
         f"AppVerName={MARCA} {pacote} {versao}",
@@ -95,7 +101,7 @@ def iss(pacote, versao, origem, plugins, saida, nome_arquivo):
         "DisableProgramGroupPage=yes",
         "DisableReadyPage=no",
         # o desinstalador fica fora da pasta VST3, para o DAW não ver arquivo estranho lá
-        rf"UninstallFilesDir={{commonpf64}}\{MARCA}\{pacote}",
+        rf"UninstallFilesDir={{commonpf64}}\{MARCA}\{antigo or pacote}",
         f"UninstallDisplayName={MARCA} {pacote}",
         "PrivilegesRequired=admin",
         "ArchitecturesAllowed=x64compatible",
@@ -124,9 +130,11 @@ def iss(pacote, versao, origem, plugins, saida, nome_arquivo):
         texto = f"{titulo} — {desc}" if desc else titulo
         L.append(f'Name: "{ident(p)}"; Description: "{texto}"; Types: todos escolher')
     antigos = [a for p in plugins for a in ANTIGOS.get(p, [])]
-    if antigos:
+    if antigos or antigo:
         L += ["", "[InstallDelete]"]
         L += [rf'Type: filesandordirs; Name: "{{app}}\{a}.vst3"' for a in antigos]
+        if antigo:
+            L.append(rf'Type: files; Name: "{{autoprograms}}\{MARCA}\Desinstalar {MARCA} {antigo}.lnk"')
     L += ["", "[Icons]", rf'Name: "{{autoprograms}}\{MARCA}\Desinstalar {MARCA} {pacote}"; Filename: "{{uninstallexe}}"']
     L += ["", "[Files]"]
     for p in plugins:
@@ -284,7 +292,7 @@ def montar_mac(a, plugins):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sistema", choices=["mac", "win"], required=True)
-    ap.add_argument("--pacote", required=True, help="Criativo, Mix, Instrumentos…")
+    ap.add_argument("--pacote", required=True, help="Criativo, Mix, Quimera…")
     ap.add_argument("--origem", required=True)
     ap.add_argument("--versao", required=True)
     ap.add_argument("--saida", default=".")

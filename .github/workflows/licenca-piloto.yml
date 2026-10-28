@@ -53,8 +53,7 @@ jobs:
               p=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*#\1#p')
             else
               p=$(echo "$art" | sed -n 's#^build/\([^/]*\)/.*#\1#p')
-              [ "$p" = quimera ] && p=instrumentos
-            fi
+                          fi
             [ -n "$p" ] || continue
             for fmt in VST3 AU; do
               if [ -d "$art/Release/$fmt" ]; then

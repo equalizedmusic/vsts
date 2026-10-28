@@ -1,8 +1,15 @@
 # QUIMERA — novidades
 
-Pacote do instalador: `InsideStudioSP-Instrumentos`. A versão é o primeiro título `## x.y.z` deste arquivo:
+Pacote do instalador: `InsideStudioSP-Quimera`. A versão é o primeiro título `## x.y.z` deste arquivo:
 ela entra no plugin, no instalador e no release `quimera-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
+
+## 0.5.0 — 2026-10-27
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até
+  2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o instrumento fica mudo.
+- Com a licença ativa, aparece no pé da janela o aviso de versão nova do pacote (BAIXAR / Agora não).
+- O instalador agora se chama `InsideStudioSP-Quimera` (era `InsideStudioSP-Instrumentos`). No Windows ele
+  substitui o "InsideStudioSP Instrumentos" já instalado.
 
 ## 0.4.1 — 2026-10-26
 - Sombra dos knobs, LEDs e lâmpadas redonda e macia: sumiu o canto quadrado embaixo/à direita de cada knob.

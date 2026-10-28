@@ -5,6 +5,16 @@ NAVALHA). A versão é o primeiro título `## x.y.z` deste arquivo: ela entra no
 `mix-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 1.2.0 — 2026-10-27
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até
+  2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o plugin passa o som direto,
+  sem processar.
+- Com a licença ativa, aparece no pé da janela o aviso de versão nova do pacote (BAIXAR / Agora não).
+- VU de ponteiro calibrado em dBFS de pico nos 10: +3 = 0 dBFS. Antes ele encostava no +3 com sinal normal.
+- TORNO: o histórico mostra a redução numa escala fixa de 0 a −30 dB, com os números à esquerda (antes a escala
+  mudava sozinha e a faixa laranja trocava de tamanho).
+- BARRAGEM: a redução fica numa escala fixa de 0 a −12 dB, com marcas a cada 3 dB.
+
 ## 1.1.0 — 2026-10-26
 - Visual novo, com cara de equipamento de estúdio em rack de 19": orelhas parafusadas, frente pintada numa cor para
   cada plugin, knobs no padrão Moog com a escala serigrafada, VU de ponteiro no lugar das barras de LED de entrada e saída e alavancas de

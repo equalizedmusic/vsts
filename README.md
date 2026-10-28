@@ -56,7 +56,7 @@ Dez pedais de um knob grandão, todos no tempo do DAW, com TRIGGER por MIDI ou p
 Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
 Cada instrumento tem o seu instalador e o seu release (os logs ficam no branch `builds-instrumentos`): `InsideStudioSP-Quimera-win.exe` / `-mac.dmg`
-com a QUIMERA (no build ele ainda se chama pacote `Instrumentos`), `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
+com a QUIMERA, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
 
 | Prévia | Instrumento | O que é |
 |---|---|---|
@@ -99,7 +99,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Criativo` | `novidades/Criativo.md` | `criativo-vX.Y.Z` |
 | `InsideStudioSP-Mix` | `novidades/Mix.md` | `mix-vX.Y.Z` |
 | `InsideStudioSP-Knob` (SÉRIE KNOB) | `novidades/Knob.md` | `knob-vX.Y.Z` |
-| `InsideStudioSP-Quimera` (pacote `Instrumentos` no build) | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
+| `InsideStudioSP-Quimera` | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
 | `InsideStudioSP-Limao` | `novidades/Limao.md` | `limao-vX.Y.Z` |
 | `InsideStudioSP-Mercurio` | `novidades/Mercurio.md` | `mercurio-vX.Y.Z` |
 

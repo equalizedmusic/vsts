@@ -5,6 +5,12 @@ MIRAGEM, PICOTE). A versão é o primeiro título `## x.y.z` deste arquivo: ela 
 release `criativo-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 1.2.0 — 2026-10-27
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até
+  2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o plugin passa o som direto,
+  sem processar.
+- Com a licença ativa, aparece no pé da janela o aviso de versão nova do pacote (BAIXAR / Agora não).
+
 ## 1.1.0 — 2026-10-26
 - Visual novo, com cara de pedal boutique (parente da SÉRIE KNOB): moldura de madeira, chapa esmaltada numa cor
   para cada plugin, controles em chapa preta, os knobs renderizados da SÉRIE KNOB e alavancas de metal no lugar das

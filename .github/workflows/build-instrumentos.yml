@@ -75,11 +75,11 @@ jobs:
           if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
             choco install innosetup -y --no-progress > /dev/null
           fi
-          # um instalador com todos os instrumentos: InsideStudioSP-Instrumentos-mac.dmg / -win.exe
+          # QUIMERA: InsideStudioSP-Quimera-mac.dmg / -win.exe (até a 0.4.1 o pacote se chamava Instrumentos)
           if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
           export PYTHONIOENCODING=utf-8
           versao() { $PY instalador/versao.py "$1" | tr -d '\r'; }   # o python do Windows termina a linha com \r
-          $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Instrumentos --origem dist --versao "$(versao Instrumentos)" --saida .
+          $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Quimera --origem dist --versao "$(versao Quimera)" --saida .
           # LIMÃO: InsideStudioSP-Limao-mac.dmg / -win.exe
           if [ -d dist-limao/VST3 ]; then
             $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Limao --origem dist-limao --versao "$(versao Limao)" --saida .
@@ -148,7 +148,7 @@ jobs:
           mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null
-            for p in Instrumentos Limao Mercurio; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
+            for p in Quimera Limao Mercurio; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
           cat status.txt
           git init -q
           git checkout -q -b builds-instrumentos
@@ -163,4 +163,4 @@ jobs:
         if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
-        run: bash src/.github/scripts/release-versoes.sh pacotes report src Instrumentos Limao Mercurio
+        run: bash src/.github/scripts/release-versoes.sh pacotes report src Quimera Limao Mercurio

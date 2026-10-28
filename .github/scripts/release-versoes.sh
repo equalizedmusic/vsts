@@ -27,7 +27,7 @@ for pac in "$@"; do
     echo "$tag já existe: mantido como está"
     continue
   fi
-  # nome publicado (o pacote Instrumentos sai como Quimera)
+  # nome publicado (instalador/versao.py --arquivo; hoje é o próprio pacote)
   arq=$(python3 "$src/instalador/versao.py" "$pac" --arquivo)
   pub=$(mktemp -d)
   cp "$mac" "$pub/InsideStudioSP-$arq-mac.dmg"
