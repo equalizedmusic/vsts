@@ -276,6 +276,7 @@ const CSS = `
 :root { --fundo:#141416; --cartao:#1e1f23; --borda:#2f3036; --texto:#e8e6e1; --fraco:#9a988f; --acento:#e8a33d;
         --ok:#7cc576; --ruim:#e0685b; }
 * { box-sizing:border-box; }
+[hidden] { display:none !important; }
 body { margin:0; background:var(--fundo); color:var(--texto); font:15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 header { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-bottom:1px solid var(--borda); }
 .marca { font-weight:700; letter-spacing:.12em; } .marca span { color:var(--acento); letter-spacing:0; font-weight:500; }
