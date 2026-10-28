@@ -388,6 +388,9 @@ export default {
             if (req.method === 'GET' && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho, env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
             if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
+            // navegador em endereço desconhecido (/Painel, /painel. colado com pontuação, raiz) ⇒ manda p/ o painel
+            if (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'))
+                return Response.redirect(url.origin + '/painel', 302);
             if (caminho === '' || caminho === '/v1') return resposta({ ok: true, servico: 'licencas InsideStudioSP' });
             return falha('pedido_invalido', 404);
         } catch (e) {
