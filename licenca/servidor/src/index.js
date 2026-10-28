@@ -239,7 +239,7 @@ function releaseDoPacote(lista, pacote) {
 // GET /baixar/<pacote>/<win|mac> -> redireciona para o instalador. Link aberto: sem licença o plugin não toca.
 // Enquanto existir o pré-release "licenca-teste" (instaladores com ativação), ele vale para todos os pacotes; depois
 // do merge, apagar o pré-release e o link passa a dar o release <pacote>-vX.Y.Z mais novo.
-// a QUIMERA sai como "Quimera" nos releases e como "Instrumentos" no build de teste
+// a QUIMERA sai como "Quimera" (até o build de teste da ativação o pacote se chamava "Instrumentos")
 const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'] };
 
 function paginaSimples(titulo, texto, status) {
@@ -263,20 +263,26 @@ async function rotaBaixar(caminho, env) {
         }) : -1;
         return { rel, i };
     };
+    const indisponivel = () => paginaSimples('Download indisponível',
+        'Este instalador não está disponível agora. Tente de novo mais tarde ou responda o e-mail da licença.', 404);
     let { rel, i } = achar(await releases(env));
     // a lista guardada pode ser de antes do release novo (ou de um release ainda subindo os arquivos)
     if (i < 0) ({ rel, i } = achar(await releases(env, true)));
-    if (i < 0) return paginaSimples('Download indisponível',
-        'Este instalador não está disponível agora. Tente de novo mais tarde ou responda o e-mail da licença.', 404);
+    if (i < 0) return indisponivel();
     if (!env.GITHUB_TOKEN) return Response.redirect(rel.arquivos[i], 302);
     // repo privado: o GitHub devolve um link temporário assinado do arquivo; o download não passa pelo Worker
-    const g = await fetch(rel.api[i], {
+    const assinado = async () => (await fetch(rel.api[i], {
         redirect: 'manual',
         headers: { 'user-agent': 'isp-licencas', accept: 'application/octet-stream', authorization: 'Bearer ' + env.GITHUB_TOKEN },
-    });
-    const destino = g.headers.get('location');
-    if (!destino) return Response.redirect(rel.arquivos[i], 302);
-    return Response.redirect(destino, 302);
+    })).headers.get('location');
+    let destino = await assinado();
+    // sem link: o release da lista guardada foi apagado (ex.: o pré-release licenca-teste) ⇒ lista nova e outra tentativa
+    if (!destino) {
+        ({ rel, i } = achar(await releases(env, true)));
+        if (i < 0) return indisponivel();
+        destino = await assinado();
+    }
+    return Response.redirect(destino || rel.arquivos[i], 302);
 }
 
 // ---------------- administração ----------------
