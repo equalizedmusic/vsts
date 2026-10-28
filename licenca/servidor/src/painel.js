@@ -371,7 +371,8 @@ function mostrarPainel(usuario) {
 }
 
 // sistemas: ['win'], ['mac'] ou os dois; só entram na mensagem os links dos sistemas marcados
-function mensagemCliente(email, pacotes, token, sistemas) {
+function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
+  maquinas = maquinas || 2;
   sistemas = sistemas && sistemas.length ? sistemas : ['win', 'mac'];
   var nomes = pacotes.map(function (p) { return NOME[p]; }).join(', ');
   var linhas = [
@@ -395,7 +396,7 @@ function mensagemCliente(email, pacotes, token, sistemas) {
     '1. Baixe e instale o' + (pacotes.length > 1 ? 's pacotes' : ' pacote') + (sistemas.length > 1 ? ' do seu sistema' : '') + ' e abra qualquer plugin no seu DAW.',
     '2. Na tela de ativação, digite o e-mail e o token acima e clique em ATIVAR.',
     '',
-    'O token vale para 2 computadores. Para trocar de computador, abra o menu do plugin, entre em "Licença…" e clique em "Desativar este computador"; depois é só ativar no computador novo.',
+    'O token vale para ' + maquinas + (maquinas > 1 ? ' computadores' : ' computador') + '. Para trocar de computador, abra o menu do plugin, entre em "Licença…" e clique em "Desativar este computador"; depois é só ativar no computador novo.',
     '',
     'Qualquer dúvida, é só responder este e-mail.',
     '',
@@ -403,8 +404,8 @@ function mensagemCliente(email, pacotes, token, sistemas) {
   return linhas.join('\\n');
 }
 
-function mostrarResultado(email, pacotes, token, extra, sistemas) {
-  var texto = mensagemCliente(email, pacotes, token, sistemas);
+function mostrarResultado(email, pacotes, token, extra, sistemas, maquinas) {
+  var texto = mensagemCliente(email, pacotes, token, sistemas, maquinas);
   $('resResumo').textContent = email + ' · ' + pacotes.map(function (p) { return NOME[p]; }).join(', ') +
     (token ? ' · token novo: ' + token : ' · mesmo token que este e-mail já tem') + (extra ? ' · ' + extra : '');
   $('resMensagem').textContent = texto;
@@ -440,7 +441,7 @@ function criar(ev) {
     bt.disabled = false;
     msg('msgNova', erros.join(' · '), false);
     if (feitos.length) {
-      mostrarResultado(email, feitos, token, '', sistemas);
+      mostrarResultado(email, feitos, token, '', sistemas, Number(f.maquinas.value) || 2);
       f.reset(); f.maquinas.value = 2;
       carregar();
     }
@@ -454,9 +455,11 @@ function acao(caminho, corpo, pergunta, depois) {
   api('POST', caminho, corpo).then(function (j) {
     if (!j.ok) { msg('msgCliente', j.mensagem || 'Erro.'); return; }
     if (j.token) {
-      var pacs = (ultimaLista[j.email] || []).filter(function (l) { return l.status === 'ativa'; }).map(function (l) { return l.pacote; });
+      var ativasCli = (ultimaLista[j.email] || []).filter(function (l) { return l.status === 'ativa'; });
+      var pacs = ativasCli.map(function (l) { return l.pacote; });
+      var maqs = ativasCli.reduce(function (n, l) { return Math.max(n, l.max_maquinas); }, 0);
       $('dCliente').close();
-      mostrarResultado(j.email, pacs.length ? pacs : [j.pacote], j.token, 'o token antigo parou de valer');
+      mostrarResultado(j.email, pacs.length ? pacs : [j.pacote], j.token, 'o token antigo parou de valer', null, maqs);
     }
     carregar().then(function () {
       if (depois) depois();
@@ -493,16 +496,19 @@ function desenharLista() {
   var corpo = el('tbody');
   mostrar.forEach(function (email) {
     var lics = ultimaLista[email];
-    var maq = 0, visto = 0, desde = Infinity;
+    // o mesmo computador aparece uma vez por pacote; o id da máquina é igual em todos os plugins, então conta distinto
+    var pcs = {}, limite = 0, visto = 0, desde = Infinity;
     lics.forEach(function (l) {
-      maq += l.maquinas.length; desde = Math.min(desde, l.criada_em);
-      l.maquinas.forEach(function (m) { visto = Math.max(visto, m.visto_em || 0); });
+      desde = Math.min(desde, l.criada_em);
+      if (l.status === 'ativa') limite = Math.max(limite, l.max_maquinas);
+      l.maquinas.forEach(function (m) { pcs[m.maquina] = 1; visto = Math.max(visto, m.visto_em || 0); });
     });
+    var maq = Object.keys(pcs).length;
     var abrir = function () { abrirCliente(email); };
     corpo.appendChild(el('tr', { tabindex: '0', onclick: abrir, onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } }, [
       el('td', { classe: 'cli-email', texto: email }),
       el('td', {}, lics.map(function (l) { return el('span', { classe: 'chip' + (l.status === 'ativa' ? '' : ' revogada'), texto: NOME[l.pacote] || l.pacote }); })),
-      el('td', { classe: 'num', texto: String(maq) }),
+      el('td', { classe: 'num', texto: limite ? maq + ' de ' + limite : String(maq) }),
       el('td', { classe: 'num col-opc', texto: visto ? data(visto) : '-' }),
       el('td', { classe: 'num col-opc', texto: data(desde) })
     ]));
