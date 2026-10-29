@@ -4,6 +4,11 @@ Pacote do instalador: `InsideStudioSP-MontaMonta`. A versão é o primeiro títu
 ela entra no plugin, no instalador e no release `montamonta-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-10-29
+- O encaixe entre as peças (pino e recorte) saiu do meio da peça, onde ficava em cima do ATTACK, do CUTOFF, do OSC 2 e
+  do alto-falante: agora fica na faixa livre logo abaixo do nome. O encaixe de baixo saiu de cima das tomadas CUT e IN 2
+  do modo CABOS. A seta da PONTE acompanha o encaixe.
+
 ## 0.1.0 — 2026-10-29
 - Primeira versão: synth didático com instalador próprio.
 - As peças de um Minimoog de 2 osciladores (VCO, VCO 2, MIXER, VCF, ENV AMP, ENV MOD e SAÍDA) ficam numa bandeja e são

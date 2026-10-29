@@ -21,13 +21,14 @@ ResenhaProcessor::ResenhaProcessor()
     pDlOn = raw (id::dlOn);         pDlDiv = raw (id::dlDiv);       pDlFb = raw (id::dlFb);
     pDlMix = raw (id::dlMix);       pRvOn = raw (id::rvOn);         pRvSize = raw (id::rvSize);
     pRvMix = raw (id::rvMix);       pVol = raw (id::volume);
+    pContour = raw (id::contour);   pDuck = raw (id::duck);
 
     factory = factoryPresetData();
     refreshBanks();
     refreshUserPresets();
 
-    // abre no "Papo de Goa" (o Init é só uma escadinha na tônica)
-    const int start = findPreset ("Papo de Goa", {});
+    // abre no "Última Palavra" (CONVERSA FM: escada que fecha a fala num mergulho; o Init é só uma escadinha na tônica)
+    const int start = findPreset (u8 ("Última Palavra"), {});
     loadPreset (start >= 0 ? start : 0);
     history.clear();
 }
@@ -56,6 +57,7 @@ void ResenhaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     numHeld = 0;
     transpose = 0;
     playStep = -1;
+    duckGain = 1.0f;
 }
 
 void ResenhaProcessor::readSettings()
@@ -76,6 +78,7 @@ void ResenhaProcessor::readSettings()
         t.glideMs = p[9]->load();
         t.pEnv    = p[10]->load();
         t.fEnv    = p[11]->load() * 0.01f;
+        t.bend    = p[12]->load();
     }
     s.drvType = choice (pDrvType);
     s.drive   = pDrive->load() * 0.01f;
@@ -235,9 +238,12 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             {
                 const auto& pn = phrase.notes[(size_t) ni];
                 const auto& tb = s.t[(size_t) pn.voice];
-                engine.noteOn (pn.voice, pn.note + transpose, pn.accent, tb.glideMs);
+                const double lenBeats = sb * ((double) (pn.len - 1) + (double) pn.gate);
+                const float  bendSt = pn.last ? tb.bend : 0.0f;    // o mergulho só na nota que fecha a fala
+                const int    bendLen = (int) (lenBeats * 60.0 / bpm * currentRate);
+                engine.noteOn (pn.voice, pn.note + transpose, pn.accent, tb.glideMs, bendSt, bendLen);
                 const double start = pair * 2.0 * sb + (second ? sb + sw : 0.0);
-                gateOffPpq[(size_t) pn.voice] = start + sb * ((double) (pn.len - 1) + (double) pn.gate);
+                gateOffPpq[(size_t) pn.voice] = start + lenBeats;
             }
             lastAbsStep = absStep;
             playStep    = idx;
@@ -257,15 +263,26 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     freePpq = freeBase + pps * (double) n;
     waitingKey.store (hostRun && ! always && numHeld == 0);
 
-    // efeitos e volume
+    // efeitos e volume; DUCK = o lead abaixa a cada tempo e volta em meio tempo (o "sidechain" do bumbo do psy)
     fx.process (bufL.data(), bufR.data(), n, s);
     auto* l = buffer.getWritePointer (0);
     auto* r = buffer.getWritePointer (1);
     volSm.setTargetValue (juce::Decibels::decibelsToGain (pVol->load()));
+    const float duck = pDuck->load() * 0.01f;
+    const float duckK = 1.0f - std::exp (-1.0f / (0.0015f * (float) currentRate));
     float peak = 0.0f;
     for (int i = 0; i < n; ++i)
     {
-        const float g = volSm.getNextValue();
+        float target = 1.0f;
+        if (duck > 0.0f)
+        {
+            const double p = hostRun ? ppq0 + pps * (double) i : freePpq - pps * (double) (n - i);
+            const float ph = (float) (p - std::floor (p));
+            const float shape = ph < 0.012f ? ph / 0.012f : juce::square (juce::jmax (0.0f, 1.0f - (ph - 0.012f) / 0.5f));
+            target = 1.0f - duck * 0.92f * shape;
+        }
+        duckGain += (target - duckGain) * duckK;
+        const float g = volSm.getNextValue() * duckGain;
         l[i] = juce::jlimit (-2.0f, 2.0f, bufL[(size_t) i] * g);
         r[i] = juce::jlimit (-2.0f, 2.0f, bufR[(size_t) i] * g);
         peak = juce::jmax (peak, std::abs (l[i]), std::abs (r[i]));
@@ -699,6 +716,8 @@ void ResenhaProcessor::randomizeTimbre (int v)
     set (id::glide, rnd.nextInt (2) == 0 ? 0.0f : logRange (20.0f, 140.0f));
     set (id::pEnv,  rnd.nextInt (5) < 2 ? 0.0f : (float) (pick ({ 12, 7, 5, 3, 24 }) * (rnd.nextInt (4) == 0 ? -1 : 1)));
     set (id::fEnv,  rnd.nextFloat() * 70.0f);
+    // mergulho no fim da fala: quase sempre para baixo (o lead "cai"), às vezes sobe
+    set (id::bend,  rnd.nextInt (5) < 2 ? 0.0f : (float) (pick ({ -12, -12, -7, -24, -5, 12, 7 })));
 }
 
 // GERAR CONVERSA também sorteia o jeito da conversa (a quantidade de vozes é escolha da pessoa e fica)
@@ -711,6 +730,7 @@ void ResenhaProcessor::randomizeConversation()
     setParam (id::response, (float) resp[rnd.nextInt (6)]);
     setParam (id::interval, (float) itv[rnd.nextInt (5)]);
     setParam (id::order,    (float) rnd.nextInt (3));
+    setParam (id::contour,  (float) rnd.nextInt (4));
 }
 
 void ResenhaProcessor::generate (int parts, bool respectLocks)
@@ -721,9 +741,14 @@ void ResenhaProcessor::generate (int parts, bool respectLocks)
         return respectLocks && apvts.getRawParameterValue (pid)->load() > 0.5f;
     };
 
+    // GERAR CONVERSA sorteia antes o jeito da conversa (o CONTORNO vale já para as notas desta vez)
+    if (parts == partAll)
+        randomizeConversation();
+
     // sorteia os 64 passos: aumentar os COMPASSOS depois mostra frase nova, não silêncio
     if ((parts & partNotes) != 0 && ! locked (id::lockNotes))
-        generateNotes (pattern, maxSteps, choice (pScale), juce::roundToInt (pOct->load()), rnd);
+        generateNotes (pattern, maxSteps, choice (pScale), juce::roundToInt (pOct->load()), rnd,
+                       (Contour) juce::jlimit (0, 3, choice (pContour)));
     if ((parts & partRhythm) != 0 && ! locked (id::lockRhythm))
         generateRhythm (pattern, maxSteps, pDens->load() * 0.01f, rnd);
     if ((parts & partGate) != 0 && ! locked (id::lockGate))
@@ -731,8 +756,6 @@ void ResenhaProcessor::generate (int parts, bool respectLocks)
     if ((parts & partTimbres) != 0)
         for (int v = 0; v < numVoices; ++v)
             if (! locked (id::lockVoice (v))) randomizeTimbre (v);
-    if (parts == partAll)
-        randomizeConversation();
     ++patternVersion;
 }
 

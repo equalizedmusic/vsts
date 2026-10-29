@@ -143,7 +143,7 @@ private:
     std::vector<Snapshot> history;
     juce::Random rnd;
 
-    std::array<std::array<std::atomic<float>*, 12>, resenha::numVoices> pv {};   // na ordem de id::voiceParams
+    std::array<std::array<std::atomic<float>*, 13>, resenha::numVoices> pv {};   // na ordem de id::voiceParams
     std::atomic<float>* pScale = nullptr;  std::atomic<float>* pRoot = nullptr;   std::atomic<float>* pBars = nullptr;
     std::atomic<float>* pRate = nullptr;   std::atomic<float>* pOct = nullptr;    std::atomic<float>* pDens = nullptr;
     std::atomic<float>* pGate = nullptr;   std::atomic<float>* pGateVar = nullptr; std::atomic<float>* pSwing = nullptr;
@@ -153,6 +153,8 @@ private:
     std::atomic<float>* pDlOn = nullptr;   std::atomic<float>* pDlDiv = nullptr;  std::atomic<float>* pDlFb = nullptr;
     std::atomic<float>* pDlMix = nullptr;  std::atomic<float>* pRvOn = nullptr;   std::atomic<float>* pRvSize = nullptr;
     std::atomic<float>* pRvMix = nullptr;  std::atomic<float>* pVol = nullptr;
+    std::atomic<float>* pContour = nullptr; std::atomic<float>* pDuck = nullptr;
+    float duckGain = 1.0f;
     juce::SmoothedValue<float> volSm;
     std::vector<float> bufL, bufR;
 

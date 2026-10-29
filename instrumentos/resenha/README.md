@@ -9,13 +9,16 @@ pergunta e o outro responde. Toca no tempo do DAW. Instalador próprio (`InsideS
 
 Cada timbre é um FM de 2 operadores (moduladora com realimentação → portadora com forma de onda) com filtro
 passa-baixas e panorâmica próprios. Controles por timbre: WAVE (SINE, TRI, SAW, SQUARE), RATIO (0.50 a 13.0), FM, FB,
-FM DEC, CUT, RES, DEC, PAN, GLIDE, P.ENV e F.ENV. Um envelope só (no tempo do FM DEC) move no ataque o índice de FM, o
-pitch e o filtro. Cada timbre é monofônico; as caudas de timbres diferentes se sobrepõem (8 vozes no total).
+FM DEC, CUT, RES, DEC, P.ENV, GLIDE, BEND, PAN e F.ENV. Um envelope só (no tempo do FM DEC) move no ataque o índice de
+FM, o pitch e o filtro. **BEND** (−24 a +24 semitons) é o mergulho do lead: a última nota de cada fala do timbre desliza
+durante a nota inteira, começando devagar e acelerando, e a tela desenha a cauda dela. Cada timbre é monofônico; as
+caudas de timbres diferentes se sobrepõem (8 vozes no total).
 
 ## Gerador de frase
 
 SCALE e ROOT, tamanho de 1, 2 ou 4 compassos, RATE (1/32 a 1/8, com tercinas), OITAVAS, DENSIDADE, GATE, VAR. GATE
-e SWING (no máximo 64 passos). Os dados NOTAS, RITMO, GATE e TIMBRES sorteiam só aquela parte; o cadeado faz o
+e SWING (no máximo 64 passos). CONTORNO DAS NOTAS: **MOTIVO** repete um desenho curto com variações; **CORRIDA** sobe em
+escada (de grau em grau ou em arpejo) e recomeça embaixo; **QUEDA** desce; **ONDA** sobe e volta. Os dados NOTAS, RITMO, GATE e TIMBRES sorteiam só aquela parte; o cadeado faz o
 GERAR CONVERSA pular a parte (TIMBRES respeita o cadeado do cartão de cada timbre).
 
 ## Conversa
@@ -33,12 +36,15 @@ toca com o play do DAW, e a nota só transpõe. ARRASTAR MIDI leva a frase para 
 
 ## Efeitos
 
-Drive (TAPE, TUBE, FOLD) com TONE, delay ping-pong no tempo (1/16 a 3/8) e reverb, e o volume de saída.
+Drive (TAPE, TUBE, FOLD) com TONE, delay ping-pong no tempo (1/16 a 3/8) e reverb, o volume de saída e o **DUCK**: o
+som abaixa a cada tempo e volta em meio tempo, como o sidechain do bumbo.
 
 ## Presets
 
-96 de fábrica (12 por categoria: PSY CLÁSSICO, FULL ON, DARK, GOA, PROG, HI-TECH, MINIMAL, FX), cada um com os 4
-timbres, o gerador, a troca de timbre, os efeitos e a frase. Presets do usuário e bancos avulsos `.rsnbank` para importar.
+108 de fábrica (12 por categoria: PSY CLÁSSICO, FULL ON, DARK, GOA, PROG, HI-TECH, MINIMAL, FX e CONVERSA FM), cada um com os 4
+timbres, o gerador, a troca de timbre, os efeitos e a frase. CONVERSA FM saiu de trechos de full on a 144 BPM: leads FM
+cheios de harmônico, escadas de 1/16 que fecham a fala num mergulho, resposta em outra oitava e DUCK. O plugin abre no
+"Última Palavra". Presets do usuário e bancos avulsos `.rsnbank` para importar.
 
 ## Código
 

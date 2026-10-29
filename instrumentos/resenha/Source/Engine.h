@@ -11,6 +11,7 @@
 // passa-baixas com ressonância por voz, panorâmica por timbre. Cada timbre é monofônico (nota nova do mesmo timbre
 // solta a anterior, ou desliza até a nova com GLIDE); as caudas de timbres diferentes se sobrepõem (pool de 8 vozes).
 // O ataque de cada nota tem um só envelope (tempo do FM DEC) que move o índice de FM, o pitch (P.ENV) e o filtro (F.ENV).
+// BEND: a nota que fecha a fala do timbre desliza até N semitons durante a duração dela (o "mergulho" do lead).
 // Depois vêm os efeitos: drive (com TONE), delay pingue-pongue no tempo e reverb.
 namespace resenha
 {
@@ -19,6 +20,7 @@ struct Timbre
     int   wave = 0;
     float ratio = 2.0f, fm = 0.5f, fb = 0.1f, fmDecMs = 180.0f, cut = 5000.0f, res = 0.2f, decMs = 300.0f, pan = 0.0f;
     float glideMs = 0.0f, pEnv = 0.0f, fEnv = 0.0f;     // pEnv em semitons; fEnv 0..1 (até +4 oitavas no corte)
+    float bend = 0.0f;                                   // semitons no fim da fala
 };
 
 struct Settings
@@ -52,9 +54,10 @@ public:
         lastPhi = 0.0f;
         timbre = -1;
         smReady = false;
+        setBend (0.0f, 0);
     }
 
-    void noteOn (int timbreIndex, int midiNote, bool accented)
+    void noteOn (int timbreIndex, int midiNote, bool accented, float bendSt = 0.0f, int bendSamples = 0)
     {
         if (stage == Stage::idle || timbreIndex != timbre)
         {
@@ -71,16 +74,19 @@ public:
         fmEnv = 1.0f;
         stage = Stage::attack;
         age = 0;
+        setBend (bendSt, bendSamples);
     }
 
     // GLIDE: a voz que ainda soa desliza até a nota nova (sem recomeçar a fase) e o ataque (FM, pitch, filtro) dispara de novo
-    void glideTo (int midiNote, bool accented)
+    void glideTo (int midiNote, bool accented, float bendSt = 0.0f, int bendSamples = 0)
     {
         note = midiNote;
         accent = accented;
         fmEnv = 1.0f;
         stage = Stage::attack;      // sobe de onde está (sem clique), sem zerar a fase
         age = 0;
+        pitch += bendNow;           // o mergulho anterior vira o ponto de partida do glide (sem salto)
+        setBend (bendSt, bendSamples);
     }
 
     void noteOff()             { if (stage != Stage::idle) stage = Stage::release; }
@@ -142,9 +148,15 @@ public:
             if (stage != Stage::attack && amp < 1.0e-4f) { stage = Stage::idle; amp = 0.0f; break; }
             fmEnv *= fDec;
 
-            // altura: glide + "zap" de pitch no ataque (cai junto com o envelope de FM)
+            // altura: glide + "zap" de pitch no ataque (cai junto com o envelope de FM) + mergulho do fim da fala
             pitch += ((float) note - pitch) * aGl;
-            const float hz = 440.0f * std::exp2 ((pitch + pEnvSt * fmEnv * fmEnv - 69.0f) / 12.0f);
+            if (bendLen > 0)
+            {
+                const float x = juce::jmin (1.0f, (float) bendPos / (float) bendLen);
+                bendNow = bendSt * x * std::sqrt (x);        // começa devagar e acelera, como a mão no pitch bend
+                if (bendPos < bendLen) ++bendPos;
+            }
+            const float hz = 440.0f * std::exp2 ((pitch + bendNow + pEnvSt * fmEnv * fmEnv - 69.0f) / 12.0f);
             const double inc = juce::jlimit (0.0, 0.45, (double) hz / fs);
             const double minc = juce::jlimit (0.0, 0.49, (double) (hz * t.ratio) / fs);
 
@@ -205,6 +217,14 @@ public:
 private:
     enum class Stage { idle, attack, decay, release, kill };
 
+    void setBend (float st, int samples)
+    {
+        bendSt = st;
+        bendLen = std::abs (st) >= 0.5f ? juce::jmax (1, samples) : 0;
+        bendPos = 0;
+        bendNow = 0.0f;
+    }
+
     static float blep (float t, float dt)
     {
         if (t < dt)        { t /= dt;             return t + t - t * t - 1.0f; }
@@ -213,7 +233,8 @@ private:
     }
 
     double fs = 44100.0, cph = 0.0, mph = 0.0;
-    float pitch = 60.0f;
+    float pitch = 60.0f, bendSt = 0.0f, bendNow = 0.0f;
+    int   bendLen = 0, bendPos = 0;
     float amp = 0.0f, fmEnv = 0.0f, m1 = 0.0f, m2 = 0.0f, ic1 = 0.0f, ic2 = 0.0f, lastPhi = 0.0f;
     float smFm = 0.0f, smFb = 0.0f, smCut = 10.0f, smRes = 0.0f;
     bool  smReady = false, accent = false;
@@ -239,7 +260,8 @@ public:
 
     // nota nova num timbre: a nota anterior DESSE timbre solta (cada timbre é monofônico).
     // Com GLIDE, a voz desse timbre que ainda soa desliza para a nota nova em vez de soltar.
-    void noteOn (int timbre, int midiNote, bool accent, float glideMs = 0.0f)
+    // bendSt/bendSamples: o mergulho (BEND) quando a nota fecha a fala do timbre
+    void noteOn (int timbre, int midiNote, bool accent, float glideMs = 0.0f, float bendSt = 0.0f, int bendSamples = 0)
     {
         if (glideMs >= 1.0f)
         {
@@ -250,7 +272,7 @@ public:
             {
                 for (auto& v : pool)
                     if (&v != cur && v.isActive() && v.getTimbre() == timbre && v.isHeld()) v.noteOff();
-                cur->glideTo (juce::jlimit (12, 115, midiNote), accent);
+                cur->glideTo (juce::jlimit (12, 115, midiNote), accent, bendSt, bendSamples);
                 return;
             }
         }
@@ -267,7 +289,7 @@ public:
             for (auto& v : pool)
                 if (v.getAge() > pick->getAge()) pick = &v;
         }
-        pick->noteOn (timbre, juce::jlimit (12, 115, midiNote), accent);
+        pick->noteOn (timbre, juce::jlimit (12, 115, midiNote), accent, bendSt, bendSamples);
     }
 
     void noteOff (int timbre)

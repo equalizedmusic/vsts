@@ -10,9 +10,9 @@
 // O que o preset não traz volta ao padrão; as travas e o modo de tocar (performance) não mudam.
 namespace resenha
 {
-inline constexpr int numCategories = 8;
+inline constexpr int numCategories = 9;
 inline const char* const categoryNames[numCategories] = { "PSY CLÁSSICO", "FULL ON", "DARK", "GOA", "PROG",
-                                                          "HI-TECH", "MINIMAL", "FX" };
+                                                          "HI-TECH", "MINIMAL", "FX", "CONVERSA FM" };
 
 struct FactoryPreset
 {

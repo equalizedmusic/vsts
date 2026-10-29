@@ -65,14 +65,13 @@ VoiceCard::VoiceCard (ResenhaProcessor& p, int voiceIndex) : proc (p), v (voiceI
     const K rows[3][4] = {
         { { &id::ratio, "RATIO", false }, { &id::fm, "FM", false }, { &id::fb, "FEEDBACK", false }, { &id::fmDec, "FM DEC", false } },
         { { &id::cut, "CUTOFF", false }, { &id::res, "RESO", false }, { &id::fEnv, "F.ENV", false }, { &id::dec, "DECAY", false } },
-        { { &id::pEnv, "P.ENV", true }, { &id::glide, "GLIDE", false }, { &id::pan, "PAN", true }, { nullptr, nullptr, false } },
+        { { &id::pEnv, "P.ENV", true }, { &id::glide, "GLIDE", false }, { &id::bend, "BEND", true }, { &id::pan, "PAN", true } },
     };
     const float cw = (float) (w - 6) / 4.0f;
     for (int r = 0; r < 3; ++r)
     {
-        const int n = r == 2 ? 3 : 4;
-        const float x0 = r == 2 ? ((float) w - cw * 3.0f) * 0.5f : 3.0f;
-        for (int c = 0; c < n; ++c)
+        const float x0 = 3.0f;
+        for (int c = 0; c < 4; ++c)
         {
             const auto& k = rows[r][c];
             auto knob = std::make_unique<rs::NeonKnob> (st, id::v (v, *k.pid), k.label, colour, 30.0f, k.bipolar);
@@ -277,6 +276,23 @@ void ConversationView::paint (juce::Graphics& g)
             g.setColour (juce::Colours::white.withAlpha (0.55f));
             g.drawRoundedRectangle (nr, 2.0f, 0.8f);
         }
+
+        // BEND: a nota que fecha a fala mergulha (ou sobe) — uma cauda curva até onde a altura chega
+        const float bend = proc.apvts.getRawParameterValue (id::v (pn.voice, id::bend))->load();
+        if (pn.last && std::abs (bend) >= 0.5f)
+        {
+            const float y0 = nr.getCentreY();
+            const float y1 = juce::jlimit (roll.getY() + 2.0f, roll.getBottom() - 2.0f, y0 - bend * rh);
+            const float x0 = nr.getX() + juce::jmin (4.0f, nr.getWidth() * 0.4f);
+            const float x1 = juce::jmin (roll.getRight() - 1.0f, nr.getRight() + juce::jmax (8.0f, cw * 0.6f));
+            juce::Path tail;
+            tail.startNewSubPath (x0, y0);
+            tail.cubicTo (x0 + (x1 - x0) * 0.55f, y0, x1 - (x1 - x0) * 0.15f, y0 + (y1 - y0) * 0.35f, x1, y1);
+            g.setColour (c.withAlpha (0.3f));
+            g.strokePath (tail, juce::PathStrokeType (4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.setColour (c.brighter (0.4f));
+            g.strokePath (tail, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        }
     }
 
     // cabeça de leitura
@@ -419,6 +435,7 @@ ResenhaEditor::ResenhaEditor (ResenhaProcessor& p) : AudioProcessorEditor (&p), 
     add<NeonKnob> ({ 452, 440, 50, 60 }, st, id::gate,    "GATE",      rs::magenta, 32.0f);
     add<NeonKnob> ({ 502, 440, 52, 60 }, st, id::gateVar, "VAR. GATE", rs::magenta, 32.0f);
     add<NeonKnob> ({ 554, 440, 50, 60 }, st, id::swing,   "SWING",     rs::violet,  32.0f);
+    add<rs::Segmented> ({ 22, 508, 322, 26 }, st, id::contour, rs::lime);
 
     // ---- troca de timbre ----
     add<rs::Segmented> ({ 618, 458, 140, 26 }, st, id::voices,   rs::magenta);
@@ -476,6 +493,7 @@ ResenhaEditor::ResenhaEditor (ResenhaProcessor& p) : AudioProcessorEditor (&p), 
     add<NeonKnob> ({ 736, 640, 62, 70 }, st, id::rvMix,  "MIX",  rs::violet, 40.0f);
 
     add<NeonKnob> ({ 900, 640, 70, 70 }, st, id::volume, "VOLUME", rs::ink, 40.0f, true);
+    add<NeonKnob> ({ 984, 640, 62, 70 }, st, id::duck,   "DUCK",   rs::magenta, 40.0f);
 
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
     openScale = proc.uiScale.load();
@@ -757,6 +775,7 @@ void ResenhaEditor::drawCanvas (juce::Graphics& g)
     rs::label (g, juce::String::fromUTF8 ("TÔNICA"), { 148.0f, 444.0f, 56.0f, 12.0f }, juce::Justification::centred);
     rs::label (g, "COMPASSOS", { 206.0f, 444.0f, 70.0f, 12.0f }, juce::Justification::centred);
     rs::label (g, "RATE",      { 278.0f, 444.0f, 66.0f, 12.0f }, juce::Justification::centred);
+    rs::label (g, "CONTORNO DAS NOTAS", { 22.0f, 494.0f, 322.0f, 12.0f });
 
     // ---- troca de timbre ----
     rs::sectionTitle (g, 618.0f, 418.0f, 564.0f, "TROCA DE TIMBRE");

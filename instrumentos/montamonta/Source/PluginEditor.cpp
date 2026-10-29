@@ -608,10 +608,11 @@ void MontaMontaEditor::drawRack (juce::Graphics& g)
             g.setColour (juce::Colour (0xff3a3e4c));
             g.strokePath (shape, juce::PathStrokeType (1.5f));
             const float cy = r.getCentreY();
+            const float ay = r.getY() + mu::rackSideY;      // a seta liga o pino da esquerda ao da direita, na altura do encaixe
             g.setColour (juce::Colour (0xff8d93a8));
-            g.drawLine (r.getX() + 8.0f, cy, r.getRight() - 12.0f, cy, 2.0f);
+            g.drawLine (r.getX() + 8.0f, ay, r.getRight() - 12.0f, ay, 2.0f);
             juce::Path ar;
-            ar.addTriangle (r.getRight() - 14.0f, cy - 5.0f, r.getRight() - 14.0f, cy + 5.0f, r.getRight() - 6.0f, cy);
+            ar.addTriangle (r.getRight() - 14.0f, ay - 5.0f, r.getRight() - 14.0f, ay + 5.0f, r.getRight() - 6.0f, ay);
             g.fillPath (ar);
             mu::text (g, l == 0 ? "PONTE" : "BRIDGE", { r.getX(), cy - 34.0f, r.getWidth(), 16.0f }, 12.0f, juce::Colour (0xffa9aec0), juce::Justification::centred);
             mu::fitText (g, l == 0 ? "o som passa direto" : "sound passes through", { r.getX() + 6.0f, cy + 10.0f, r.getWidth() - 12.0f, 12.0f }, 8.5f,

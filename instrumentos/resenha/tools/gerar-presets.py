@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera o banco FACTORY 1 do RESENHA: Source/presets/fabrica.inc (12 presets por categoria, 8 categorias).
+"""Gera o banco FACTORY 1 do RESENHA: Source/presets/fabrica.inc (12 presets por categoria, 9 categorias).
 
 Uso:
     python gerar-presets.py
@@ -12,7 +12,7 @@ import random
 import zlib
 from pathlib import Path
 
-CATEGORIAS = ["PSY CLÁSSICO", "FULL ON", "DARK", "GOA", "PROG", "HI-TECH", "MINIMAL", "FX"]
+CATEGORIAS = ["PSY CLÁSSICO", "FULL ON", "DARK", "GOA", "PROG", "HI-TECH", "MINIMAL", "FX", "CONVERSA FM"]
 
 NOMES = [
     ["Papo Reto", "Bate-Papo", "Resenha Clássica", "Pergunta e Resposta", "Trocando Ideia", "Conversa Fiada",
@@ -31,6 +31,8 @@ NOMES = [
      "Respiro", "Silêncio Bom", "Clique", "Toque", "Sopro", "Pausa"],
     ["Alienígena", "Rádio Perdido", "Golfinho", "Robô Falante", "Disco Voador", "Sirene",
      "Telefone Sem Fio", "Pássaro Metálico", "Vórtice", "Arma Laser", "Eco Cósmico", "Ruído Branco"],
+    ["Mergulho", "Escada e Queda", "Fala Rasgada", "Corrida no Morro", "Pergunta Afiada", "Resposta Grave",
+     "Dois Leads", "Voo Rasante", "Bate e Volta", "Ladeira Abaixo", "Papo de 144", "Última Palavra"],
 ]
 
 # índices das listas de Params.h / Scales.h
@@ -80,6 +82,14 @@ RECEITAS = [
          every=[0, 1, 2], resp=[3, 2, 0, 1], itv=[2, 3, 1], vozes=[1, 2, 3], ondas=[0, 1, 2, 3],
          ratios=[0.5, 1.5, 2.5, 3.5, 13, 11], fm=(50, 100), fb=(30, 90), fmdec=(200, 1200), cut=(800, 9000), res=(40, 85),
          dec=(150, 900), glide=(0.8, 80, 400), penv=(0.9, [24, -24, 12, -12, 19]), fenv=(40, 100), dl=(0.4, 0.6), rv=(0.25, 0.45)),
+    # CONVERSA FM — dos trechos que ele mandou (29/10, full on a 144): leads FM cheios de harmônico (serra/quadrada
+    # com feedback alto, razão baixa), notas de 1/16 em escada que fecham a fala num mergulho de 7 a 24 semitons, a
+    # resposta numa oitava diferente, e o lead "abaixando" a cada tempo (sidechain do bumbo).
+    dict(escalas=["PHRYGIAN", "HARM MINOR", "PHRYG DOM", "MINOR"], rates=[2], bars=[1, 1, 0], dens=(60, 85), gate=(45, 80),
+         every=[3, 3, 4], resp=[1, 2, 1, 3], itv=[3, 1, 3, 0], vozes=[1, 1, 2], ondas=[2, 3, 2],
+         ratios=[1, 1, 2, 0.5, 3, 1.5], fm=(50, 85), fb=(35, 75), fmdec=(120, 500), cut=(1500, 5000), res=(30, 65),
+         dec=(250, 700), glide=(0.6, 15, 70), penv=(0.35, [12, 7]), fenv=(35, 75), dl=(0.18, 0.32), rv=(0.08, 0.18),
+         bend=(0.85, 0.55, [-12, -12, -24, -7, -12, 12]), contorno=[1, 1, 3, 2, 0], duck=(45, 75)),
 ]
 
 CELULAS = ["n---", "n-~-", "n~~~", "n--n", "n-n-", "nn--", "n~-n", "-nn-", "n-nn", "nn-n",
@@ -87,8 +97,38 @@ CELULAS = ["n---", "n-~-", "n~~~", "n--n", "n-n-", "nn--", "n~-n", "-nn-", "n-nn
 PASSOS = 64
 
 
-def frase(rnd, per, oitavas, dens, gate, gatevar, cromatica):
-    """o mesmo jeito do gerador do plugin (Phrase.h): ritmo por células, motivo curto repetido com variações"""
+def corridas(rnd, per_g, top, contorno, guardado):
+    """CORRIDA/QUEDA/ONDA (generateRuns em Phrase.h): escadas de 4 a 8 passos, de grau em grau ou em arpejo"""
+    stride = 1 if rnd.randrange(3) == 0 else 2
+    top = min(top, per_g + 3)
+    span = max(per_g, top)
+    graus = []
+    while len(graus) < PASSOS:
+        tam = 4 + 2 * rnd.randrange(3)
+        if contorno == 2:
+            ini = span - rnd.randrange(3)
+        else:
+            ini = rnd.randrange(3) - 1 + (per_g // 2 if rnd.randrange(4) == 0 else 0)
+        for j in range(tam):
+            if len(graus) >= PASSOS:
+                break
+            if contorno == 1:
+                d = ini + j * stride
+            elif contorno == 2:
+                d = ini - j * stride
+            else:
+                d = ini + (j if j < tam // 2 else tam - 1 - j) * stride
+            while d > top + 1:
+                d -= per_g
+            while d < -2:
+                d += per_g
+            graus.append(max(-14, min(21, guardado(d))))
+    return graus
+
+
+def frase(rnd, per, oitavas, dens, gate, gatevar, cromatica, contorno=0):
+    """o mesmo jeito do gerador do plugin (Phrase.h): ritmo por células, motivo curto repetido com variações
+    (ou, com CONTORNO, escadas que sobem/descem)"""
     modo = []
     for g in range(0, PASSOS, 4):
         c = round(dens * 15 + (rnd.random() - 0.5) * 7)
@@ -106,6 +146,8 @@ def frase(rnd, per, oitavas, dens, gate, gatevar, cromatica):
             return d
         o = d // 7
         return o * 12 + menor[d - o * 7]
+
+    escada = corridas(rnd, per_g, top, contorno, guardado) if contorno else None
 
     tam = 4 + rnd.randrange(5)
     motivo, d = [], (per_g if rnd.randrange(3) == 0 else 0)
@@ -125,6 +167,8 @@ def frase(rnd, per, oitavas, dens, gate, gatevar, cromatica):
         if rnd.randrange(12) == 0:
             deg += rnd.choice([1, -1])
         deg = max(-14, min(21, guardado(max(-2, min(top, deg)))))
+        if escada:
+            deg = escada[i]
         g = gate + (rnd.random() * 2 - 1) * gatevar * 0.6
         gq = max(0, min(15, round(max(0.05, min(1.0, g)) * 16) - 1))
         acc = rnd.randrange(100) < (30 if i % 4 == 0 else 12)
@@ -160,6 +204,9 @@ def preset(nome, cat):
         pprob, opts = rc["penv"]
         v[p + "penv"] = rnd.choice(opts) if rnd.random() < pprob or (k == 0 and pprob >= 0.3) else 0
         v[p + "fenv"] = round(faixa(rnd, *rc["fenv"]))
+        if "bend" in rc:
+            pa, po, opts = rc["bend"]
+            v[p + "bend"] = rnd.choice(opts) if rnd.random() < (pa if k == 0 else po) else 0
 
     esc = rnd.choice(rc["escalas"])
     v["scale"] = ESCALAS[esc]
@@ -190,9 +237,14 @@ def preset(nome, cat):
     v["rvsize"] = round(faixa(rnd, 40, 75))
     v["rvmix"] = round(faixa(rnd, *rc["rv"]) * 100)
     v["volume"] = -6
+    contorno = rnd.choice(rc["contorno"]) if "contorno" in rc else 0
+    if "contorno" in rc:
+        v["contour"] = contorno
+    if "duck" in rc:
+        v["duck"] = round(faixa(rnd, *rc["duck"]))
 
     cromatica = esc == "CHROMATIC"
-    texto = frase(rnd, GRAUS_POR_OITAVA[ESCALAS[esc]], v["octaves"], dens / 100, gate / 100, gatevar / 100, cromatica)
+    texto = frase(rnd, GRAUS_POR_OITAVA[ESCALAS[esc]], v["octaves"], dens / 100, gate / 100, gatevar / 100, cromatica, contorno)
     return v, texto
 
 

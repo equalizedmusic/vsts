@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <vector>
 #include "Params.h"
 
@@ -11,6 +12,7 @@
 // timbre, na ORDEM escolhida. Turnos pares PERGUNTAM (tocam como está escrito) e os ímpares RESPONDEM: com ECO repetem
 // as notas da pergunta, com VARIA repetem mudando algumas, com INVERTE espelham (o que subia desce), com LIVRE tocam
 // o que está escrito. A resposta ainda sobe/desce pela ALTURA DA RESPOSTA. O ritmo é sempre o do passo.
+// A última nota de cada fala (antes de passar a vez) fica marcada: é nela que entra o BEND do timbre.
 namespace resenha
 {
 struct PhraseParams
@@ -26,6 +28,7 @@ struct PhraseNote
     int  step = 0, len = 1, note = 60, voice = 0;
     float gate = 0.5f;      // fração do último passo da nota
     bool accent = false, response = false;
+    bool last = false;      // fecha a fala (a próxima nota é de outro turno, ou a frase acabou)
 };
 
 struct Phrase
@@ -150,10 +153,12 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
         pn.gate = (float) (st.gate + 1) / 16.0f;
         pn.accent = st.accent;
         pn.response = answer;
+        pn.last = pos == every - 1;
         out.atStep[(size_t) i] = out.count;
         ++out.count;
         ++k;
     }
+    if (out.count > 0) out.notes[(size_t) out.count - 1].last = true;
 }
 
 // ======================================================================================
@@ -192,7 +197,38 @@ inline void generateRhythm (Pattern& pat, int steps, float density, juce::Random
 
 // NOTAS: um motivo curto (4 a 8 notas) andando pela escala, repetido com variações (sobe um grau, desce, volta à
 // tônica) — soa como frase e não como sorteio. OITAVAS = quantas oitavas o lead pode andar.
-inline void generateNotes (Pattern& pat, int steps, int scale, int octaves, juce::Random& rnd)
+// CONTORNO: MOTIVO é isso; CORRIDA/QUEDA/ONDA fazem escadas de 4 a 8 passos (de grau em grau ou em arpejo, pulando
+// um grau) que sobem, descem ou sobem e voltam — o desenho dos leads de full on que terminam num mergulho.
+inline void generateRuns (Pattern& pat, int steps, int per, int top, Contour contour, const std::function<int (int)>& toStored,
+                          juce::Random& rnd)
+{
+    const int stride = rnd.nextInt (3) == 0 ? 1 : 2;           // de grau em grau ou em arpejo (terças)
+    top = juce::jmin (top, per + 3);                            // escada de no máximo oitava e meia (lead, não harpa)
+    const int span = juce::jmax (per, top);
+    int i = 0;
+    while (i < steps)
+    {
+        const int len = 4 + 2 * rnd.nextInt (3);                // 4, 6 ou 8 passos
+        int start;
+        if (contour == Contour::fall) start = span - rnd.nextInt (3);
+        else                          start = rnd.nextInt (3) - 1 + (rnd.nextInt (4) == 0 ? per / 2 : 0);
+        for (int j = 0; j < len && i < steps; ++j, ++i)
+        {
+            int d;
+            if (contour == Contour::run)       d = start + j * stride;
+            else if (contour == Contour::fall) d = start - j * stride;
+            else                               d = start + (j < len / 2 ? j : len - 1 - j) * stride;   // ONDA
+            while (d > top + 1) d -= per;
+            while (d < -2) d += per;
+            auto s = pat.get (i);
+            s.deg = juce::jlimit (-14, 21, toStored (d));
+            s.var = rnd.nextInt (16);
+            pat.set (i, s);
+        }
+    }
+}
+
+inline void generateNotes (Pattern& pat, int steps, int scale, int octaves, juce::Random& rnd, Contour contour = Contour::motif)
 {
     const int n = ScaleMap (scale, 0).n;
     const bool chromatic = n == 12;
@@ -206,6 +242,11 @@ inline void generateNotes (Pattern& pat, int steps, int scale, int octaves, juce
         const int oct = d >= 0 ? d / 7 : -((-d + 6) / 7);
         return oct * 12 + minorSemis[d - oct * 7];
     };
+    if (contour != Contour::motif)
+    {
+        generateRuns (pat, steps, per, top, contour, toStored, rnd);
+        return;
+    }
 
     const int motifLen = 4 + rnd.nextInt (5);
     std::vector<int> motif;

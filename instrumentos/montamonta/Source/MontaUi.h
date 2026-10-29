@@ -76,18 +76,29 @@ inline float para (juce::Graphics* g, const juce::String& s, RF r, float size, j
 
 // ---------------- peça de quebra-cabeça ----------------
 // esquerda: recorte (recebe a peça anterior); direita: pino; topo: pino para cima (peças de baixo); base: recorte.
-struct Shape { bool leftNotch = false, rightTab = false, topTab = false, bottomNotch = false; };
+// sideY/vertX: onde ficam o encaixe lateral (altura a partir do topo) e o de baixo/cima (x a partir da esquerda);
+// negativo = no meio da borda. tabR > 0 troca o tamanho do pino.
+struct Shape
+{
+    bool leftNotch = false, rightTab = false, topTab = false, bottomNotch = false;
+    float sideY = -1.0f, vertX = -1.0f, tabR = 0.0f;
+};
+
+// no rack o encaixe lateral fica na faixa livre logo abaixo do nome da peça (y 45) e o de baixo fica à direita do meio
+// (x 75), entre as tomadas do modo CABOS: no meio da altura ele caía em cima do ATTACK, do CUTOFF, do OSC 2 e do
+// alto-falante, e embaixo no meio caía na tomada CUT / IN 2
+inline constexpr float rackSideY = 45.0f, rackVertX = 75.0f, rackTabR = 8.0f;
 
 inline Shape moduleShape (int m)
 {
     switch (m)
     {
-        case mm::vco1:   return { false, true, false, false };
-        case mm::mixer:  return { true, true, false, true };
-        case mm::vcf:    return { true, true, false, true };
-        case mm::envAmp: return { true, true, false, false };
-        case mm::output: return { true, false, false, false };
-        default:         return { false, false, true, false };   // VCO 2 e ENV MOD sobem para encaixar
+        case mm::vco1:   return { false, true, false, false, rackSideY, rackVertX, rackTabR };
+        case mm::mixer:  return { true, true, false, true, rackSideY, rackVertX, rackTabR };
+        case mm::vcf:    return { true, true, false, true, rackSideY, rackVertX, rackTabR };
+        case mm::envAmp: return { true, true, false, false, rackSideY, rackVertX, rackTabR };
+        case mm::output: return { true, false, false, false, rackSideY, rackVertX, rackTabR };
+        default:         return { false, false, true, false, rackSideY, rackVertX, rackTabR };   // VCO 2 e ENV MOD sobem para encaixar
     }
 }
 
@@ -119,16 +130,19 @@ inline void addTab (juce::Path& p, juce::Point<float> mid, juce::Point<float> di
 inline juce::Path piecePath (RF b, Shape s, float r = 10.0f)
 {
     const float x = b.getX(), y = b.getY(), w = b.getWidth(), h = b.getHeight();
+    if (s.tabR > 0.0f) r = s.tabR;
+    const float sy = y + (s.sideY >= 0.0f ? s.sideY : h * 0.5f);
+    const float vx = x + (s.vertX >= 0.0f ? s.vertX : w * 0.5f);
     using P = juce::Point<float>;
     juce::Path p;
     p.startNewSubPath (x, y);
-    if (s.topTab) addTab (p, { x + w * 0.5f, y }, P (1.0f, 0.0f), P (0.0f, -1.0f), r, 1.0f);
+    if (s.topTab) addTab (p, { vx, y }, P (1.0f, 0.0f), P (0.0f, -1.0f), r, 1.0f);
     p.lineTo (x + w, y);
-    if (s.rightTab) addTab (p, { x + w, y + h * 0.5f }, P (0.0f, 1.0f), P (1.0f, 0.0f), r, 1.0f);
+    if (s.rightTab) addTab (p, { x + w, sy }, P (0.0f, 1.0f), P (1.0f, 0.0f), r, 1.0f);
     p.lineTo (x + w, y + h);
-    if (s.bottomNotch) addTab (p, { x + w * 0.5f, y + h }, P (-1.0f, 0.0f), P (0.0f, 1.0f), r, -1.0f);
+    if (s.bottomNotch) addTab (p, { vx, y + h }, P (-1.0f, 0.0f), P (0.0f, 1.0f), r, -1.0f);
     p.lineTo (x, y + h);
-    if (s.leftNotch) addTab (p, { x, y + h * 0.5f }, P (0.0f, -1.0f), P (-1.0f, 0.0f), r, -1.0f);
+    if (s.leftNotch) addTab (p, { x, sy }, P (0.0f, -1.0f), P (-1.0f, 0.0f), r, -1.0f);
     p.closeSubPath();
     return p;
 }
