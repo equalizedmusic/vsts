@@ -58,6 +58,7 @@ public:
         if (p == "mercurio") return utf8 ("MERCÚRIO");
         if (p == "resenha")  return "RESENHA";
         if (p == "montamonta") return "MONTA-MONTA";
+        if (p == "groovador") return "GROOVADOR";
         return p.toUpperCase();
     }
 

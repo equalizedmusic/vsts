@@ -11,7 +11,7 @@
 //
 // Configuração (fora do repositório): ISP_LICENCA_CONFIG ou ../../../segredos/licenca-admin.json
 //   { "url": "https://isp-licencas.<conta>.workers.dev", "admin_key": "..." }
-// Pacotes: criativo, mix, knob, quimera, limao, mercurio, resenha, montamonta
+// Pacotes: criativo, mix, knob, quimera, limao, mercurio, resenha, montamonta, groovador
 
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';

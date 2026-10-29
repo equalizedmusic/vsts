@@ -57,7 +57,8 @@ Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/bui
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
 Cada instrumento tem o seu instalador e o seu release (os logs ficam no branch `builds-instrumentos`): `InsideStudioSP-Quimera-win.exe` / `-mac.dmg`
 com a QUIMERA, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO, `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO,
-`InsideStudioSP-Resenha-win.exe` / `-mac.dmg` com o RESENHA e `InsideStudioSP-MontaMonta-win.exe` / `-mac.dmg` com o MONTA-MONTA.
+`InsideStudioSP-Resenha-win.exe` / `-mac.dmg` com o RESENHA, `InsideStudioSP-MontaMonta-win.exe` / `-mac.dmg` com o MONTA-MONTA
+e `InsideStudioSP-Groovador-win.exe` / `-mac.dmg` com o GROOVADOR.
 
 | Prévia | Instrumento | O que é |
 |---|---|---|
@@ -66,6 +67,7 @@ com a QUIMERA, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO, `Inside
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MERCURIO.png" width="240" alt="MERCÚRIO">](instrumentos/mercurio/README.md) | [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, polifônico de 16 vozes, puxado para o plástico, o metal e o psicodélico (era o VACINA): 8 algoritmos com o desenho na tela, 8 formas de onda por operador, RATIO × FINE para razões inarmônicas, realimentação, RING MOD e FOLD, dois filtros (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) em série ou paralelo, 3 LFOs (um na razão dos moduladores, outro no índice), matriz de 6 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.mrcbank`; painel de alumínio escovado com faixas anodizadas, knobs de alumínio usinado e visores OLED |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png" width="240" alt="RESENHA">](instrumentos/resenha/README.md) | [RESENHA](instrumentos/resenha/README.md) | Call & response FM: 4 timbres FM (A, B, C, D) que conversam e se revezam na frase; gerador de frase na escala (notas, ritmo, gate) com travas e GERAR CONVERSA; troca de timbre a cada N notas com ordem e tipo de resposta (LIVRE, ECO, VARIA, INVERTE); toca COM NOTA (frase transposta pela nota segurada) ou SEMPRE (com o play); ARRASTAR MIDI para o DAW; drive, delay ping-pong e reverb; presets de fábrica, do usuário e bancos avulsos `.rsnbank` |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONTAMONTA.png" width="240" alt="MONTA-MONTA">](instrumentos/montamonta/README.md) | [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático: as peças de um Minimoog de 2 osciladores (VCO, VCO 2, MIXER, VCF, ENV AMP, ENV MOD, SAÍDA) são arrastadas da bandeja para o rack e só encaixam no lugar certo, como num quebra-cabeça; 6 lições que liberam as peças aos poucos, cartão de cada peça com explicação, desafio e exemplo sonoro, faixa CAMINHO DO SOM e osciloscópio; modo CABOS para ligar as peças por fios em qualquer ordem; textos em português e inglês |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png" width="240" alt="GROOVADOR">](instrumentos/groovador/README.md) | [GROOVADOR](instrumentos/groovador/README.md) | Percussão sintetizada sem bumbo com cara de bateria eletrônica: 8 instrumentos (rim, snare, clap, hats, shaker, 2 percussões) com 5 modelos (analógico, 808, FM, metal, ruído) e 10 knobs; grade de até 4 compassos com força, ghost, roll e "talvez"; gerador de groove por estilo (psy full, psy prog, techno, house, tribal, break) com travas e GERAR GROOVE; variação de timbre A/B a cada N compassos (A ↔ B, conversa, deriva) e fills; COM PLAY ou PADS por MIDI; ARRASTAR MIDI; drive, delay ping-pong e reverb; 72 presets |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
@@ -107,6 +109,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Mercurio` | `novidades/Mercurio.md` | `mercurio-vX.Y.Z` |
 | `InsideStudioSP-Resenha` | `novidades/Resenha.md` | `resenha-vX.Y.Z` |
 | `InsideStudioSP-MontaMonta` | `novidades/MontaMonta.md` | `montamonta-vX.Y.Z` |
+| `InsideStudioSP-Groovador` | `novidades/Groovador.md` | `groovador-vX.Y.Z` |
 
 O primeiro título `## X.Y.Z — data` do arquivo é a **versão atual**. Ela vai para:
 - os plugins, pelo `VERSION` do CMake (o host mostra; nos instrumentos ela também aparece no fim do menu de presets);
