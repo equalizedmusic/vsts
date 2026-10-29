@@ -1,7 +1,10 @@
 # MONTA-MONTA
 
+![MONTA-MONTA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONTAMONTA.png)
+
 Synth didático: as peças de um Minimoog de 2 osciladores ficam numa bandeja e o usuário monta o caminho do som no
-rack, como um quebra-cabeça. Cada peça ensina o que faz. Textos em português e inglês (botão PT/EN).
+rack, como um quebra-cabeça. Cada peça ensina o que faz. Textos em português e inglês (botão PT/EN). Instalador próprio
+(`InsideStudioSP-MontaMonta-win.exe` / `-mac.dmg`).
 
 ## Peças
 

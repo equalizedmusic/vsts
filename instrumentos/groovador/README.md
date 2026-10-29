@@ -1,7 +1,10 @@
 # GROOVADOR
 
+![GROOVADOR](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png)
+
 Percussão sintetizada (sem bumbo) com gerador de groove e variação de timbre, com cara de bateria eletrônica.
-Toca no tempo do DAW (COM PLAY) ou pelas notas MIDI (PADS).
+Toca no tempo do DAW (COM PLAY) ou pelas notas MIDI (PADS). Instalador próprio
+(`InsideStudioSP-Groovador-win.exe` / `-mac.dmg`).
 
 ## Instrumentos
 
