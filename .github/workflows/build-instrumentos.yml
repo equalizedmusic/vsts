@@ -8,7 +8,7 @@ name: build-instrumentos
 on:
   push:
     branches: [main]
-    paths: ['instrumentos/**', 'instalador/**', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md',
+    paths: ['instrumentos/**', 'instalador/**', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md', 'novidades/Resenha.md',
             'licenca/cliente/**', '.github/workflows/build-instrumentos.yml']
   workflow_dispatch:
 
@@ -60,7 +60,7 @@ jobs:
             done
           done
           find dist \( -name '*.exp' -o -name '*.lib' \) -delete
-          # LIMÃO e MERCÚRIO têm instalador próprio (não vão no pacote da QUIMERA)
+          # LIMÃO, MERCÚRIO e RESENHA têm instalador próprio (não vão no pacote da QUIMERA)
           for fmt in VST3 AU; do
             for b in dist/$fmt/LIMAO.*; do
               if [ -e "$b" ]; then mkdir -p "dist-limao/$fmt"; mv "$b" "dist-limao/$fmt/"; fi
@@ -68,9 +68,12 @@ jobs:
             for b in dist/$fmt/MERCURIO.*; do
               if [ -e "$b" ]; then mkdir -p "dist-mercurio/$fmt"; mv "$b" "dist-mercurio/$fmt/"; fi
             done
+            for b in dist/$fmt/RESENHA.*; do
+              if [ -e "$b" ]; then mkdir -p "dist-resenha/$fmt"; mv "$b" "dist-resenha/$fmt/"; fi
+            done
           done
           if [ "${{ matrix.name }}" = mac ]; then
-            for b in dist/*/* dist-limao/*/* dist-mercurio/*/*; do if [ -e "$b" ]; then codesign --force --deep --sign - "$b"; fi; done
+            for b in dist/*/* dist-limao/*/* dist-mercurio/*/* dist-resenha/*/*; do if [ -e "$b" ]; then codesign --force --deep --sign - "$b"; fi; done
           fi
           if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
             choco install innosetup -y --no-progress > /dev/null
@@ -88,7 +91,11 @@ jobs:
           if [ -d dist-mercurio/VST3 ]; then
             $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Mercurio --origem dist-mercurio --versao "$(versao Mercurio)" --saida .
           fi
-          { find dist -maxdepth 2; find dist-limao dist-mercurio -maxdepth 2 2>/dev/null; ls -l InsideStudioSP-*; } | tee pack.log
+          # RESENHA: InsideStudioSP-Resenha-mac.dmg / -win.exe
+          if [ -d dist-resenha/VST3 ]; then
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Resenha --origem dist-resenha --versao "$(versao Resenha)" --saida .
+          fi
+          { find dist -maxdepth 2; find dist-limao dist-mercurio dist-resenha -maxdepth 2 2>/dev/null; ls -l InsideStudioSP-*; } | tee pack.log
 
       - name: pluginval
         id: pluginval
@@ -105,7 +112,7 @@ jobs:
             7z x -y pv.zip > /dev/null
             PV=./pluginval.exe
           fi
-          for p in dist/VST3/*.vst3 dist-limao/VST3/*.vst3 dist-mercurio/VST3/*.vst3; do
+          for p in dist/VST3/*.vst3 dist-limao/VST3/*.vst3 dist-mercurio/VST3/*.vst3 dist-resenha/VST3/*.vst3; do
             [ -e "$p" ] || continue
             "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log
           done
@@ -148,7 +155,7 @@ jobs:
           mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null
-            for p in Quimera Limao Mercurio; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
+            for p in Quimera Limao Mercurio Resenha; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
           cat status.txt
           git init -q
           git checkout -q -b builds-instrumentos
@@ -159,8 +166,8 @@ jobs:
       # sem release "latest-instrumentos": em Releases fica só a última versão de cada pacote. O instalador de um
       # build sem versão nova fica nos artefatos do run (report-mac / report-win), na aba Actions.
       # RELEASE_TOKEN: o token automático toma 403 ao criar o release quando o commit mexe em .github/workflows
-      - name: Releases das versões (quimera-v…, limao-v…, mercurio-v…)
+      - name: Releases das versões (quimera-v…, limao-v…, mercurio-v…, resenha-v…)
         if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
-        run: bash src/.github/scripts/release-versoes.sh pacotes report src Quimera Limao Mercurio
+        run: bash src/.github/scripts/release-versoes.sh pacotes report src Quimera Limao Mercurio Resenha

@@ -47,7 +47,7 @@ jobs:
         id: pack
         run: |
           set -e
-          # pasta por pacote: linha/<criativo|mix|knob> (efeitos) ou linha/<instrumentos|limao|mercurio>
+          # pasta por pacote: linha/<criativo|mix|knob> (efeitos) ou linha/<instrumentos|limao|mercurio|resenha>
           for art in $(find build -type d -name '*_artefacts'); do
             if [ "${{ matrix.projeto }}" = efeitos ]; then
               p=$(echo "$art" | sed -n 's#.*plugins/\([^/]*\)/[^/]*/.*#\1#p')

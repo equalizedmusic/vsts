@@ -32,5 +32,6 @@
   "MASTIGA":   ["MASTIGA",   "bitcrush ritmado"],
   "QUIMERA":   ["QUIMERA",   "sintetizador: 3 osciladores wavetable, MPE, arpejador"],
   "LIMAO":     ["LIMÃO",     "bassline ácido mono com sequenciador de 32 passos"],
-  "MERCURIO":  ["MERCÚRIO",  "FM de 4 operadores, polifônico de 16 vozes"]
+  "MERCURIO":  ["MERCÚRIO",  "FM de 4 operadores, polifônico de 16 vozes"],
+  "RESENHA":   ["RESENHA",   "call & response FM: 4 timbres que conversam, gerador de frases"]
 }

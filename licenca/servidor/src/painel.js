@@ -328,7 +328,7 @@ dialog::backdrop { background:rgba(0,0,0,.6); } dialog .estreito { margin:10px a
 // JS do navegador. Tudo que vem do banco (e-mail, nome da máquina, nota) entra por textContent, nunca por innerHTML.
 const JS = `
 'use strict';
-var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio']];
+var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha']];
 var NOME = {}; PACOTES.forEach(function (p) { NOME[p[0]] = p[1]; });
 var $ = function (id) { return document.getElementById(id); };
 

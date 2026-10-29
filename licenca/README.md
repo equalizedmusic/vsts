@@ -1,6 +1,6 @@
 # Licenças (ativação dos pacotes)
 
-Um **token por e-mail e por pacote** (criativo, mix, knob, quimera, limao, mercurio), válido em **até 2 computadores**.
+Um **token por e-mail e por pacote** (criativo, mix, knob, quimera, limao, mercurio, resenha), válido em **até 2 computadores**.
 Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
 
 ## Como funciona

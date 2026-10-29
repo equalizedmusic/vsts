@@ -56,13 +56,15 @@ Dez pedais de um knob grandão, todos no tempo do DAW, com TRIGGER por MIDI ou p
 Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/build-instrumentos.yml`): só roda quando
 `instrumentos/` muda, e um push só nos instrumentos não refaz o build dos efeitos (e vice-versa).
 Cada instrumento tem o seu instalador e o seu release (os logs ficam no branch `builds-instrumentos`): `InsideStudioSP-Quimera-win.exe` / `-mac.dmg`
-com a QUIMERA, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO e `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO.
+com a QUIMERA, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO, `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO
+e `InsideStudioSP-Resenha-win.exe` / `-mac.dmg` com o RESENHA.
 
 | Prévia | Instrumento | O que é |
 |---|---|---|
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/QUIMERA.png" width="240" alt="QUIMERA">](instrumentos/quimera/README.md) | [QUIMERA](instrumentos/quimera/README.md) | Sintetizador de 3 osciladores wavetable (analógico, modelado e wavetable), filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador de 16 passos com SCALE/ROOT, 400 presets (40 por categoria, com ARP) e bancos avulsos `.qmrbank` |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/LIMAO.png" width="240" alt="LIMÃO">](instrumentos/limao/README.md) | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido monofônico com alma de 303: SAW/SQUARE, filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive (Tube, Pedal, Bitcrush), delay e reverb, sequenciador de até 32 passos com swing, SCALE/ROOT e ALEATORIZAR; painel branco e verde-limão com osciloscópio |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MERCURIO.png" width="240" alt="MERCÚRIO">](instrumentos/mercurio/README.md) | [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, polifônico de 16 vozes, puxado para o plástico, o metal e o psicodélico (era o VACINA): 8 algoritmos com o desenho na tela, 8 formas de onda por operador, RATIO × FINE para razões inarmônicas, realimentação, RING MOD e FOLD, dois filtros (LP 24 ladder, LP 12, HP, BP, BS, COMB, VOWEL) em série ou paralelo, 3 LFOs (um na razão dos moduladores, outro no índice), matriz de 6 slots, unison, arpejador e 7 efeitos; 360 presets (40 por categoria) e bancos avulsos `.mrcbank`; painel de alumínio escovado com faixas anodizadas, knobs de alumínio usinado e visores OLED |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png" width="240" alt="RESENHA">](instrumentos/resenha/README.md) | [RESENHA](instrumentos/resenha/README.md) | Call & response FM: 4 timbres FM (A, B, C, D) que conversam e se revezam na frase; gerador de frase na escala (notas, ritmo, gate) com travas e GERAR CONVERSA; troca de timbre a cada N notas com ordem e tipo de resposta (LIVRE, ECO, VARIA, INVERTE); toca COM NOTA (frase transposta pela nota segurada) ou SEMPRE (com o play); ARRASTAR MIDI para o DAW; drive, delay ping-pong e reverb; presets de fábrica, do usuário e bancos avulsos `.rsnbank` |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
@@ -102,6 +104,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Quimera` | `novidades/Quimera.md` | `quimera-vX.Y.Z` |
 | `InsideStudioSP-Limao` | `novidades/Limao.md` | `limao-vX.Y.Z` |
 | `InsideStudioSP-Mercurio` | `novidades/Mercurio.md` | `mercurio-vX.Y.Z` |
+| `InsideStudioSP-Resenha` | `novidades/Resenha.md` | `resenha-vX.Y.Z` |
 
 O primeiro título `## X.Y.Z — data` do arquivo é a **versão atual**. Ela vai para:
 - os plugins, pelo `VERSION` do CMake (o host mostra; nos instrumentos ela também aparece no fim do menu de presets);
