@@ -57,6 +57,7 @@ public:
         if (p == "limao")    return utf8 ("LIMÃO");
         if (p == "mercurio") return utf8 ("MERCÚRIO");
         if (p == "resenha")  return "RESENHA";
+        if (p == "montamonta") return "MONTA-MONTA";
         return p.toUpperCase();
     }
 

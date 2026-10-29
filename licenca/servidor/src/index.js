@@ -30,7 +30,7 @@
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 
-const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha'];
+const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
 const TENTATIVAS_POR_IP = 20;      // recusas em 15 min antes de bloquear o IP
 const JANELA_TENTATIVAS = 15 * 60;
@@ -242,7 +242,7 @@ function releaseDoPacote(lista, pacote) {
 // Enquanto existir o pré-release "licenca-teste" (instaladores com ativação), ele vale para todos os pacotes; depois
 // do merge, apagar o pré-release e o link passa a dar o release <pacote>-vX.Y.Z mais novo.
 // a QUIMERA sai como "Quimera" (até o build de teste da ativação o pacote se chamava "Instrumentos")
-const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'], resenha: ['Resenha'] };
+const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'], resenha: ['Resenha'], montamonta: ['MontaMonta'] };
 
 function paginaSimples(titulo, texto, status) {
     const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
