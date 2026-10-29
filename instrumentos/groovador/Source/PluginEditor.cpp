@@ -87,7 +87,7 @@ void LaneRow::paint (juce::Graphics& g)
     g.drawText (u8 (instNames[k]), RF (r.getX() + 14.0f, r.getY() + 1.0f, 100.0f, 13.0f), juce::Justification::centredLeft, false);
     g.setFont (gv::sans (8.0f, true, 0.06f));
     g.setColour (gv::dim);
-    g.drawText (u8 (modelLong[juce::jlimit (0, 4, juce::roundToInt (param (proc, id::i (k, id::model))))]),RF (r.getX() + 14.0f, r.getY() + 13.0f, 80.0f, 11.0f),
+    g.drawText (u8 (modelLong[juce::jlimit (0, 4, juce::roundToInt (param (proc, id::i (k, id::model))))]),RF (r.getX() + 14.0f, r.getY() + 13.0f, 70.0f, 11.0f),
                 juce::Justification::centredLeft, false);
 
     // A/B: em qual timbre o instrumento está agora (só quem varia)
@@ -95,10 +95,11 @@ void LaneRow::paint (juce::Graphics& g)
     {
         const float v = proc.varNow[(size_t) k].load();
         const bool b = std::abs (v) > 0.05f;
-        const RF tag (r.getX() + 86.0f, r.getY() + 6.0f, 16.0f, 13.0f);
+        // na linha de baixo, ao lado do modelo: na de cima encostava em "HAT ABERTO"
+        const RF tag (r.getX() + 88.0f, r.getY() + 13.0f, 14.0f, 11.0f);
         g.setColour (b ? gv::led.withAlpha (0.25f) : juce::Colour (0xff2a2a2d));
         g.fillRoundedRectangle (tag, 2.0f);
-        g.setFont (gv::mono (10.0f));
+        g.setFont (gv::mono (9.0f));
         g.setColour (b ? gv::led : gv::dim);
         g.drawText (b ? "B" : "A", tag, juce::Justification::centred, false);
     }
@@ -325,11 +326,15 @@ void GrooveView::paint (juce::Graphics& g)
         }
         else
         {
-            juce::StringArray inB;
+            // CONVERSA divide os instrumentos: mostra quem está em A e quem está em B
+            juce::StringArray inA, inB;
             for (int k = 0; k < numInst; ++k)
-                if (param (proc, id::who (k)) > 0.5f && proc.varFactorFor (k, seg) > 0.5f) inB.add (u8 (instShort[k]));
-            heat = inB.isEmpty() ? 0.0f : 1.0f;
-            txt = inB.isEmpty() ? juce::String ("TIMBRE A") : "TIMBRE B  " + inB.joinIntoString (" + ");
+                if (param (proc, id::who (k)) > 0.5f)
+                    (proc.varFactorFor (k, seg) > 0.5f ? inB : inA).add (u8 (instShort[k]));
+            heat = inB.isEmpty() ? 0.0f : (inA.isEmpty() ? 1.0f : 0.6f);
+            if (inB.isEmpty())      txt = "TIMBRE A";
+            else if (inA.isEmpty()) txt = "TIMBRE B";
+            else                    txt = "A " + inA.joinIntoString ("+") + u8 ("  ·  B ") + inB.joinIntoString ("+");
         }
         if (segLen >= spb) txt = "COMP. " + juce::String (start / spb + 1) + u8 (" · ") + txt;
 
@@ -872,7 +877,9 @@ void GroovadorEditor::drawCanvas (juce::Graphics& g)
     gv::section (g, 22.0f, 614.0f, 270.0f, "DRIVE");
     gv::caption (g, "TIPO", { 22.0f, 638.0f, 80.0f, 12.0f });
     gv::section (g, 316.0f, 614.0f, 330.0f, "DELAY PING-PONG");
+    gv::caption (g, "ON", { 318.0f, 632.0f, 50.0f, 12.0f });
     gv::section (g, 670.0f, 614.0f, 300.0f, "REVERB");
+    gv::caption (g, "ON", { 672.0f, 632.0f, 50.0f, 12.0f });
     gv::section (g, 1004.0f, 614.0f, 176.0f, u8 ("SAÍDA"));
 }
 
