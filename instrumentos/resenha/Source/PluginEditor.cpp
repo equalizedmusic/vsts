@@ -59,31 +59,32 @@ VoiceCard::VoiceCard (ResenhaProcessor& p, int voiceIndex) : proc (p), v (voiceI
 
     wave = std::make_unique<rs::ChoiceBox> (st, id::v (v, id::wave), colour, " + FM");
     addAndMakeVisible (*wave);
-    wave->setBounds (8, 82, w - 16, 20);
+    wave->setBounds (8, 72, w - 16, 18);
 
     struct K { const juce::String* pid; const char* label; bool bipolar; };
-    const K rows[3][4] = {
+    const K rows[4][4] = {
         { { &id::ratio, "RATIO", false }, { &id::fm, "FM", false }, { &id::fb, "FEEDBACK", false }, { &id::fmDec, "FM DEC", false } },
-        { { &id::cut, "CUTOFF", false }, { &id::res, "RESO", false }, { &id::fEnv, "F.ENV", false }, { &id::dec, "DECAY", false } },
+        { { &id::filt, "FILTER", false }, { &id::cut, "CUTOFF", false }, { &id::res, "RESO", false }, { &id::fEnv, "F.ENV", false } },
+        { { &id::uni, "UNISON", false }, { &id::move, "MOVE", false }, { &id::mRate, "RATE", false }, { &id::dec, "DECAY", false } },
         { { &id::pEnv, "P.ENV", true }, { &id::glide, "GLIDE", false }, { &id::bend, "BEND", true }, { &id::pan, "PAN", true } },
     };
     const float cw = (float) (w - 6) / 4.0f;
-    for (int r = 0; r < 3; ++r)
+    for (int r = 0; r < 4; ++r)
     {
         const float x0 = 3.0f;
         for (int c = 0; c < 4; ++c)
         {
             const auto& k = rows[r][c];
-            auto knob = std::make_unique<rs::NeonKnob> (st, id::v (v, *k.pid), k.label, colour, 30.0f, k.bipolar);
+            auto knob = std::make_unique<rs::NeonKnob> (st, id::v (v, *k.pid), k.label, colour, 25.0f, k.bipolar);
             addAndMakeVisible (*knob);
-            knob->setBounds (juce::roundToInt (x0 + cw * (float) c), 108 + r * 63, juce::roundToInt (cw), 56);
+            knob->setBounds (juce::roundToInt (x0 + cw * (float) c), 95 + r * 50, juce::roundToInt (cw), 48);
             knobs.push_back (std::move (knob));
         }
     }
 
-    for (const auto* pid : { &id::wave, &id::ratio, &id::fm, &id::fb })
+    for (const auto* pid : { &id::wave, &id::ratio, &id::fm, &id::fb, &id::uni })
         if (auto* prm = st.getParameter (id::v (v, *pid)))
-            watch.push_back (std::make_unique<juce::ParameterAttachment> (*prm, [this] (float) { repaint (8, 38, getWidth() - 16, 42); }));
+            watch.push_back (std::make_unique<juce::ParameterAttachment> (*prm, [this] (float) { repaint (8, 36, getWidth() - 16, 34); }));
 }
 
 void VoiceCard::setTalk (float level)
@@ -174,7 +175,7 @@ void VoiceCard::paint (juce::Graphics& g)
                juce::Justification::centredLeft, 9.0f, silent ? rs::faint : rs::ink);
     rs::label (g, role, { 42.0f, 21.0f, 90.0f, 12.0f }, juce::Justification::centredLeft, 8.5f, c);
 
-    const RF disp (8.0f, 38.0f, (float) getWidth() - 16.0f, 40.0f);
+    const RF disp (8.0f, 37.0f, (float) getWidth() - 16.0f, 32.0f);
     rs::screen (g, disp, 4.0f);
     drawWave (g, disp);
 }
@@ -338,8 +339,10 @@ void ConversationView::paint (juce::Graphics& g)
         desc = juce::String::fromUTF8 ("Só o A fala (monólogo) · suba VOZES NA CONVERSA para ter resposta");
     else
     {
-        desc << who.substring (0, 1) << juce::String::fromUTF8 (" pergunta ") << pp.every
-             << (pp.every == 1 ? " nota" : " notas") << juce::String::fromUTF8 (" · ");
+        desc << who.substring (0, 1) << juce::String::fromUTF8 (" pergunta ");
+        if (pp.every < 0) desc << (pp.every == -2 ? juce::String::fromUTF8 ("meio compasso") : juce::String ("1 compasso"));
+        else desc << pp.every << (pp.every == 1 ? " nota" : " notas");
+        desc << juce::String::fromUTF8 (" · ");
         if (pp.response == Response::free) desc << juce::String::fromUTF8 ("a resposta toca o que está escrito");
         else desc << juce::String::fromUTF8 ("a resposta faz ") << respName;
         desc << " (" << choiceText (id::interval) << ")" << juce::String::fromUTF8 (" · ordem ") << choiceText (id::order);
@@ -780,7 +783,7 @@ void ResenhaEditor::drawCanvas (juce::Graphics& g)
     // ---- troca de timbre ----
     rs::sectionTitle (g, 618.0f, 418.0f, 564.0f, "TROCA DE TIMBRE");
     rs::label (g, "VOZES NA CONVERSA",  { 618.0f, 444.0f, 140.0f, 12.0f });
-    rs::label (g, "TROCA A CADA (NOTAS)", { 768.0f, 444.0f, 196.0f, 12.0f });
+    rs::label (g, "TROCA A CADA (NOTAS / COMPASSO)", { 768.0f, 444.0f, 196.0f, 12.0f });
     rs::label (g, "RESPOSTA",           { 974.0f, 444.0f, 208.0f, 12.0f });
     rs::label (g, "ORDEM",              { 618.0f, 494.0f, 230.0f, 12.0f });
     rs::label (g, "ALTURA DA RESPOSTA", { 858.0f, 494.0f, 324.0f, 12.0f });

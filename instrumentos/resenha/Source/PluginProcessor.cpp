@@ -27,8 +27,8 @@ ResenhaProcessor::ResenhaProcessor()
     refreshBanks();
     refreshUserPresets();
 
-    // abre no "Última Palavra" (CONVERSA FM: escada que fecha a fala num mergulho; o Init é só uma escadinha na tônica)
-    const int start = findPreset (u8 ("Última Palavra"), {});
+    // abre no "Boca Aberta" (LEAD FALANTE: VOWEL, uníssono e conversa por compasso; o Init é só uma escadinha na tônica)
+    const int start = findPreset (u8 ("Boca Aberta"), {});
     loadPreset (start >= 0 ? start : 0);
     history.clear();
 }
@@ -79,6 +79,10 @@ void ResenhaProcessor::readSettings()
         t.pEnv    = p[10]->load();
         t.fEnv    = p[11]->load() * 0.01f;
         t.bend    = p[12]->load();
+        t.uni     = p[13]->load() * 0.01f;
+        t.filt    = juce::jlimit (0, 2, choice (p[14]));
+        t.move    = p[15]->load() * 0.01f;
+        t.moveBeats = moveRateBeats[juce::jlimit (0, 5, choice (p[16]))];
     }
     s.drvType = choice (pDrvType);
     s.drive   = pDrive->load() * 0.01f;
@@ -99,7 +103,8 @@ PhraseParams ResenhaProcessor::phraseParams() const
     p.scale    = choice (pScale);
     p.root     = choice (pRoot);
     p.voices   = choice (pVoices) + 1;
-    p.every    = everyCounts[juce::jlimit (0, 5, choice (pEvery))];
+    p.every    = everyCounts[juce::jlimit (0, numEvery - 1, choice (pEvery))];
+    p.stepsPerBeat = 1.0 / rateBeats[juce::jlimit (0, 4, choice (pRate))];
     p.order    = (Order) juce::jlimit (0, 2, choice (pOrder));
     p.response = (Response) juce::jlimit (0, 3, choice (pResp));
     p.interval = choice (pInterval);
@@ -184,6 +189,8 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     {
         if (upTo > rendered)
         {
+            s.ppq = (hostRun ? ppq0 : freeBase) + pps * (double) rendered;     // fase do MOVE
+            s.ppqPerSample = pps;
             engine.render (bufL.data() + rendered, bufR.data() + rendered, upTo - rendered, s);
             rendered = upTo;
         }
@@ -718,19 +725,24 @@ void ResenhaProcessor::randomizeTimbre (int v)
     set (id::fEnv,  rnd.nextFloat() * 70.0f);
     // mergulho no fim da fala: quase sempre para baixo (o lead "cai"), às vezes sobe
     set (id::bend,  rnd.nextInt (5) < 2 ? 0.0f : (float) (pick ({ -12, -12, -7, -24, -5, 12, 7 })));
+    // corpo do lead: uníssono quase sempre, filtro VOWEL em ~1/3 (o lead que fala), MOVE no tempo
+    set (id::uni,   rnd.nextInt (5) == 0 ? 0.0f : 15.0f + rnd.nextFloat() * 50.0f);
+    set (id::filt,  (float) pick ({ 0, 0, 0, 1, 2, 2 }));
+    set (id::move,  rnd.nextInt (4) == 0 ? 0.0f : 10.0f + rnd.nextFloat() * 45.0f);
+    set (id::mRate, (float) pick ({ 1, 2, 3, 3, 4, 5 }));
 }
 
 // GERAR CONVERSA também sorteia o jeito da conversa (a quantidade de vozes é escolha da pessoa e fica)
 void ResenhaProcessor::randomizeConversation()
 {
-    static const int everyIdx[] = { 1, 2, 3, 3, 4, 5 };
+    static const int everyIdx[] = { 1, 2, 3, 3, 4, 6, 6, 7 };
     static const int resp[] = { 1, 1, 2, 2, 3, 0 };
     static const int itv[] = { 0, 1, 1, 2, 3 };
-    setParam (id::every,    (float) everyIdx[rnd.nextInt (6)]);
+    setParam (id::every,    (float) everyIdx[rnd.nextInt (8)]);
     setParam (id::response, (float) resp[rnd.nextInt (6)]);
     setParam (id::interval, (float) itv[rnd.nextInt (5)]);
     setParam (id::order,    (float) rnd.nextInt (3));
-    setParam (id::contour,  (float) rnd.nextInt (4));
+    setParam (id::contour,  (float) rnd.nextInt (numContours));
 }
 
 void ResenhaProcessor::generate (int parts, bool respectLocks)
@@ -748,7 +760,7 @@ void ResenhaProcessor::generate (int parts, bool respectLocks)
     // sorteia os 64 passos: aumentar os COMPASSOS depois mostra frase nova, não silêncio
     if ((parts & partNotes) != 0 && ! locked (id::lockNotes))
         generateNotes (pattern, maxSteps, choice (pScale), juce::roundToInt (pOct->load()), rnd,
-                       (Contour) juce::jlimit (0, 3, choice (pContour)));
+                       (Contour) juce::jlimit (0, numContours - 1, choice (pContour)));
     if ((parts & partRhythm) != 0 && ! locked (id::lockRhythm))
         generateRhythm (pattern, maxSteps, pDens->load() * 0.01f, rnd);
     if ((parts & partGate) != 0 && ! locked (id::lockGate))

@@ -12,7 +12,7 @@ import random
 import zlib
 from pathlib import Path
 
-CATEGORIAS = ["PSY CLÁSSICO", "FULL ON", "DARK", "GOA", "PROG", "HI-TECH", "MINIMAL", "FX", "CONVERSA FM"]
+CATEGORIAS = ["PSY CLÁSSICO", "FULL ON", "DARK", "GOA", "PROG", "HI-TECH", "MINIMAL", "FX", "CONVERSA FM", "LEAD FALANTE"]
 
 NOMES = [
     ["Papo Reto", "Bate-Papo", "Resenha Clássica", "Pergunta e Resposta", "Trocando Ideia", "Conversa Fiada",
@@ -33,6 +33,8 @@ NOMES = [
      "Telefone Sem Fio", "Pássaro Metálico", "Vórtice", "Arma Laser", "Eco Cósmico", "Ruído Branco"],
     ["Mergulho", "Escada e Queda", "Fala Rasgada", "Corrida no Morro", "Pergunta Afiada", "Resposta Grave",
      "Dois Leads", "Voo Rasante", "Bate e Volta", "Ladeira Abaixo", "Papo de 144", "Última Palavra"],
+    ["Boca Aberta", "Vogal Ácida", "Wow Wow", "Fala Mansa", "Uivo", "Tagarela",
+     "Coral de Robôs", "Iaiá", "Aieou", "Língua Solta", "Grito de Guerra", "Fala Que Eu Te Escuto"],
 ]
 
 # índices das listas de Params.h / Scales.h
@@ -55,7 +57,7 @@ RECEITAS = [
          ratios=[2, 3, 4, 1], fm=(35, 70), fb=(10, 40), fmdec=(80, 300), cut=(1800, 6000), res=(15, 50),
          dec=(180, 420), glide=(0.4, 20, 90), penv=(0.3, [12, 7]), fenv=(15, 60), dl=(0.3, 0.5), rv=(0.12, 0.25)),
     dict(escalas=["PHRYGIAN", "HARM MINOR", "PHRYG DOM"], rates=[2], bars=[1, 2], dens=(65, 90), gate=(30, 55),
-         every=[2, 3, 3, 4], resp=[1, 2, 1], itv=[1, 1, 2], vozes=[1, 2, 3], ondas=[2, 2, 0, 3],
+         every=[3, 4, 6, 7], resp=[1, 2, 1], itv=[1, 1, 2], vozes=[1, 2, 3], ondas=[2, 2, 0, 3], contorno=[0, 1, 4, 4],
          ratios=[2, 3, 4, 6, 8], fm=(45, 80), fb=(15, 45), fmdec=(60, 220), cut=(2500, 8000), res=(20, 55),
          dec=(150, 380), glide=(0.5, 30, 110), penv=(0.6, [12, 12, 7, 24]), fenv=(30, 70), dl=(0.35, 0.5), rv=(0.12, 0.22)),
     dict(escalas=["PHRYGIAN", "LOCRIAN", "CHROMATIC"], rates=[2, 1], bars=[1, 2], dens=(50, 85), gate=(20, 45),
@@ -63,7 +65,7 @@ RECEITAS = [
          ratios=[6, 7, 11, 13, 3.5, 9], fm=(50, 90), fb=(35, 75), fmdec=(40, 180), cut=(900, 3500), res=(30, 70),
          dec=(120, 320), glide=(0.3, 10, 60), penv=(0.4, [-12, -7, 12]), fenv=(25, 65), dl=(0.25, 0.45), rv=(0.18, 0.32)),
     dict(escalas=["PHRYG DOM", "HARM MINOR", "PHRYGIAN"], rates=[2, 3], bars=[1, 2], dens=(55, 80), gate=(40, 75),
-         every=[3, 3, 4], resp=[1, 2, 1, 3], itv=[1, 2, 1], vozes=[1, 2, 3], ondas=[2, 0, 2, 1],
+         every=[3, 4, 6], resp=[1, 2, 1, 3], itv=[1, 2, 1], vozes=[1, 2, 3], ondas=[2, 0, 2, 1], contorno=[0, 0, 4, 3],
          ratios=[1, 3, 2, 5], fm=(30, 65), fb=(10, 40), fmdec=(120, 450), cut=(1500, 5000), res=(35, 70),
          dec=(250, 600), glide=(0.6, 40, 140), penv=(0.3, [12, 5]), fenv=(20, 55), dl=(0.4, 0.6), rv=(0.2, 0.35)),
     dict(escalas=["MINOR", "DORIAN", "PENTA MIN"], rates=[2, 4], bars=[2, 2, 1], dens=(40, 70), gate=(25, 50),
@@ -86,15 +88,83 @@ RECEITAS = [
     # com feedback alto, razão baixa), notas de 1/16 em escada que fecham a fala num mergulho de 7 a 24 semitons, a
     # resposta numa oitava diferente, e o lead "abaixando" a cada tempo (sidechain do bumbo).
     dict(escalas=["PHRYGIAN", "HARM MINOR", "PHRYG DOM", "MINOR"], rates=[2], bars=[1, 1, 0], dens=(60, 85), gate=(45, 80),
-         every=[3, 3, 4], resp=[1, 2, 1, 3], itv=[3, 1, 3, 0], vozes=[1, 1, 2], ondas=[2, 3, 2],
+         every=[3, 4, 6, 6, 7], resp=[1, 2, 1, 3], itv=[3, 1, 3, 0], vozes=[1, 1, 2], ondas=[2, 3, 2],
          ratios=[1, 1, 2, 0.5, 3, 1.5], fm=(50, 85), fb=(35, 75), fmdec=(120, 500), cut=(1500, 5000), res=(30, 65),
          dec=(250, 700), glide=(0.6, 15, 70), penv=(0.35, [12, 7]), fenv=(35, 75), dl=(0.18, 0.32), rv=(0.08, 0.18),
-         bend=(0.85, 0.55, [-12, -12, -24, -7, -12, 12]), contorno=[1, 1, 3, 2, 0], duck=(45, 75)),
+         bend=(0.85, 0.55, [-12, -12, -24, -7, -12, 12]), contorno=[1, 1, 3, 4, 4, 0], duck=(45, 75),
+         uni=(30, 70), filt=[0, 0, 2, 1], move=(0.8, 15, 45), mrate=[2, 3, 3, 4]),
+    # LEAD FALANTE — o filtro VOWEL na frente: cada timbre "fala" uma vogal, abre a boca no ataque (F.ENV) e a vogal
+    # anda no tempo (MOVE); uníssono largo, conversa por compasso, resposta que fecha na tônica e mergulha
+    dict(escalas=["PHRYGIAN", "HARM MINOR", "PHRYG DOM", "MINOR"], rates=[2], bars=[1, 1, 2], dens=(60, 85), gate=(45, 85),
+         every=[6, 6, 7, 3, 4], resp=[1, 2, 1, 3], itv=[3, 1, 0], vozes=[1, 1, 2], ondas=[2, 3, 2, 2],
+         ratios=[1, 1, 0.5, 2, 1.5], fm=(45, 80), fb=(30, 70), fmdec=(150, 600), cut=(300, 2500), res=(40, 80),
+         dec=(300, 800), glide=(0.6, 20, 90), penv=(0.3, [12, 7]), fenv=(30, 80), dl=(0.18, 0.32), rv=(0.1, 0.2),
+         bend=(0.8, 0.5, [-12, -12, -7, -24, 12]), contorno=[4, 1, 0, 3, 4], duck=(40, 70),
+         uni=(35, 75), filt=[2, 2, 2, 0], move=(0.95, 25, 65), mrate=[1, 2, 3, 3, 4]),
 ]
+
+# o que a receita não diz (UNISON, FILTER, MOVE, BEND): o corpo de lead que vale para todas as categorias
+PADRAO = dict(uni=(15, 50), filt=[0, 0, 0, 1, 2], move=(0.6, 10, 40), mrate=[2, 3, 3, 4],
+              bend=(0.35, 0.2, [-12, -7, -12, 12]))
 
 CELULAS = ["n---", "n-~-", "n~~~", "n--n", "n-n-", "nn--", "n~-n", "-nn-", "n-nn", "nn-n",
            "nn~n", "n~nn", "nnn-", "-nnn", "nnnn", "nnnn"]
 PASSOS = 64
+
+
+TRES = ["nn-", "n-n", "n~n", "nnn", "-nn", "n~-"]
+
+
+def ritmo(rnd, dens):
+    """o mesmo jeito do generateRhythm (Phrase.h): um riff que se repete — células de 4 (A A A B ou A B A B) ou
+    "rolando" (3+3+3+3+4) — com virada no último tempo de cada 2 compassos"""
+    def celula(espalha):
+        return max(0, min(15, round(dens * 15 + (rnd.random() - 0.5) * espalha)))
+
+    if rnd.randrange(100) < 35:
+        tres = TRES[(3 if rnd.random() < 0.5 else 0) if dens > 0.75 else round((1 - dens) * 3 + rnd.randrange(3)) % 6]
+        cauda = CELULAS[celula(3)]
+        modo = [tres[(i % 16) % 3] if i % 16 < 12 else cauda[i % 16 - 12] for i in range(PASSOS)]
+    else:
+        a, b = celula(5), celula(6)
+        abab = rnd.random() < 0.5
+        modo = []
+        for i in range(PASSOS):
+            g = (i % 16) // 4
+            c = (a if g % 2 == 0 else b) if abab else (a if g < 3 else b)
+            modo.append(CELULAS[c][i % 4])
+    for b2 in range(0, PASSOS, 32):
+        em = b2 + 28
+        if em + 3 >= PASSOS:
+            break
+        vira = CELULAS[max(8, min(15, celula(2) + 3))]
+        modo[em:em + 4] = list(vira)
+    for i in range(PASSOS):
+        if modo[i] == "-":
+            continue
+        if modo[i] == "~":
+            modo[i] = "n"
+        break
+    modo[0] = "n"
+    return modo
+
+
+def pedal(rnd, per_g, top, guardado):
+    """PEDAL (Phrase.h): passo sim, passo não a nota fixa; nos outros uma linha de 4 notas que muda a cada compasso"""
+    ped = per_g if rnd.randrange(4) == 0 else 0
+    linha, d = [], 2 + rnd.randrange(3)
+    for _ in range(4):
+        linha.append(d)
+        d = max(1, min(max(2, top), d + (rnd.randrange(3) - 1) * (1 + rnd.randrange(2))))
+    if ped == per_g:
+        linha = [max(x, per_g + 1) for x in linha]
+    graus, desl = [], 0
+    for i in range(PASSOS):
+        if i % 16 == 0 and i > 0:
+            desl = (desl + (1 if rnd.random() < 0.5 else -1)) % 3
+        dd = ped if i % 2 == 0 else linha[(i // 2) % 4] + desl
+        graus.append(max(-14, min(21, guardado(max(-2, min(top + 1, dd))))))
+    return graus
 
 
 def corridas(rnd, per_g, top, contorno, guardado):
@@ -129,13 +199,7 @@ def corridas(rnd, per_g, top, contorno, guardado):
 def frase(rnd, per, oitavas, dens, gate, gatevar, cromatica, contorno=0):
     """o mesmo jeito do gerador do plugin (Phrase.h): ritmo por células, motivo curto repetido com variações
     (ou, com CONTORNO, escadas que sobem/descem)"""
-    modo = []
-    for g in range(0, PASSOS, 4):
-        c = round(dens * 15 + (rnd.random() - 0.5) * 7)
-        if rnd.randrange(8) == 0:
-            c = rnd.randrange(16)
-        modo += list(CELULAS[max(0, min(15, c))])
-    modo[0] = "n"
+    modo = ritmo(rnd, dens)
 
     menor = [0, 2, 3, 5, 7, 8, 10]
     per_g = 7 if cromatica else per
@@ -147,7 +211,7 @@ def frase(rnd, per, oitavas, dens, gate, gatevar, cromatica, contorno=0):
         o = d // 7
         return o * 12 + menor[d - o * 7]
 
-    escada = corridas(rnd, per_g, top, contorno, guardado) if contorno else None
+    escada = pedal(rnd, per_g, top, guardado) if contorno == 4 else corridas(rnd, per_g, top, contorno, guardado) if contorno else None
 
     tam = 4 + rnd.randrange(5)
     motivo, d = [], (per_g if rnd.randrange(3) == 0 else 0)
@@ -204,9 +268,16 @@ def preset(nome, cat):
         pprob, opts = rc["penv"]
         v[p + "penv"] = rnd.choice(opts) if rnd.random() < pprob or (k == 0 and pprob >= 0.3) else 0
         v[p + "fenv"] = round(faixa(rnd, *rc["fenv"]))
-        if "bend" in rc:
-            pa, po, opts = rc["bend"]
-            v[p + "bend"] = rnd.choice(opts) if rnd.random() < (pa if k == 0 else po) else 0
+        pa, po, opts = rc.get("bend", PADRAO["bend"])
+        v[p + "bend"] = rnd.choice(opts) if rnd.random() < (pa if k == 0 else po) else 0
+        v[p + "uni"] = round(faixa(rnd, *rc.get("uni", PADRAO["uni"])))
+        v[p + "filt"] = rnd.choice(rc.get("filt", PADRAO["filt"]))
+        mp, m0, m1 = rc.get("move", PADRAO["move"])
+        v[p + "move"] = round(faixa(rnd, m0, m1)) if rnd.random() < mp else 0
+        v[p + "mrate"] = rnd.choice(rc.get("mrate", PADRAO["mrate"]))
+        if v[p + "filt"] == 2:
+            # VOWEL: o CUTOFF é a vogal (abaixo de ~1 kHz = u/o/a, a boca abre no ataque com o F.ENV)
+            v[p + "cut"] = round(faixa(rnd, 250, 1800, log=True))
 
     esc = rnd.choice(rc["escalas"])
     v["scale"] = ESCALAS[esc]
@@ -237,9 +308,9 @@ def preset(nome, cat):
     v["rvsize"] = round(faixa(rnd, 40, 75))
     v["rvmix"] = round(faixa(rnd, *rc["rv"]) * 100)
     v["volume"] = -6
+    v["contour"] = 0
     contorno = rnd.choice(rc["contorno"]) if "contorno" in rc else 0
-    if "contorno" in rc:
-        v["contour"] = contorno
+    v["contour"] = contorno
     if "duck" in rc:
         v["duck"] = round(faixa(rnd, *rc["duck"]))
 
@@ -252,7 +323,7 @@ def main():
     raiz = Path(__file__).resolve().parent.parent
     saida = raiz / "Source" / "presets" / "fabrica.inc"
     linhas = ["// GERADO por tools/gerar-presets.py — não editar à mão (mude o script e rode de novo).",
-              "// RESENHA — banco FACTORY 1: 12 presets por categoria, na ordem de categoryNames.",
+              "// RESENHA — banco FACTORY 1: 12 presets por categoria (10 categorias), na ordem de categoryNames.",
               "// { nome, categoria, { valores REAIS }, frase }", ""]
     total = 0
     for cat, nomes in enumerate(NOMES):

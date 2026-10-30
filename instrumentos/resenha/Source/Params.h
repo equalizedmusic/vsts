@@ -25,8 +25,11 @@ inline constexpr int barCounts[] = { 1, 2, 4 };
 inline const juce::StringArray rateNames  { "1/32", "1/16T", "1/16", "1/8T", "1/8" };
 inline constexpr double rateBeats[] = { 0.125, 1.0 / 6.0, 0.25, 1.0 / 3.0, 0.5 };
 inline const juce::StringArray voicesNames { "1", "2", "3", "4" };
-inline const juce::StringArray everyNames { "1", "2", "3", "4", "6", "8" };
-inline constexpr int everyCounts[] = { 1, 2, 3, 4, 6, 8 };
+// TROCA A CADA: 1 a 8 notas, ou por TEMPO (½ compasso, 1 compasso — a conversa casa com o compasso, como no full on).
+// Valor negativo = tempos (−2 = 2 tempos, −4 = 4 tempos)
+inline const juce::StringArray everyNames { "1", "2", "3", "4", "6", "8", juce::String::fromUTF8 ("½C"), "1C" };
+inline constexpr int everyCounts[] = { 1, 2, 3, 4, 6, 8, -2, -4 };
+inline constexpr int numEvery = 8;
 inline const juce::StringArray orderNames { juce::String::fromUTF8 ("A→B→C"), "PING-PONG", "SORTEIO" };
 enum class Order { sequence = 0, pingPong = 1, random = 2 };
 inline const juce::StringArray responseNames { "LIVRE", "ECO", "VARIA", "INVERTE" };
@@ -34,9 +37,17 @@ enum class Response { free = 0, echo = 1, vary = 2, invert = 3 };
 inline const juce::StringArray intervalNames { "MESMA", "+OITAVA", juce::String::fromUTF8 ("+5ª"), juce::String::fromUTF8 ("−OITAVA") };
 inline const juce::StringArray playNames  { "COM NOTA", "SEMPRE" };
 // CONTORNO do gerador de notas: MOTIVO repete um desenho curto; CORRIDA sobe em escada (arpejo de psy) e
-// recomeça embaixo; QUEDA desce; ONDA sobe e desce
-inline const juce::StringArray contourNames { "MOTIVO", "CORRIDA", "QUEDA", "ONDA" };
-enum class Contour { motif = 0, run = 1, fall = 2, wave = 3 };
+// recomeça embaixo; QUEDA desce; ONDA sobe e desce; PEDAL alterna uma nota fixa (a tônica) com uma linha que anda
+// (o "0 5 0 6 0 7" do full on)
+inline const juce::StringArray contourNames { "MOTIVO", "CORRIDA", "QUEDA", "ONDA", "PEDAL" };
+enum class Contour { motif = 0, run = 1, fall = 2, wave = 3, pedal = 4 };
+inline constexpr int numContours = 5;
+// FILTRO de cada timbre: LP (passa-baixas), BP (passa-banda, mais nasal) e VOWEL (dois formantes: o lead "fala"
+// a-e-i-o-u; o CUTOFF escolhe a vogal, o F.ENV abre a boca no ataque e o MOVE faz a vogal andar)
+inline const juce::StringArray filterNames { "LP", "BP", "VOWEL" };
+// MOVE: LFO no tempo do DAW que mexe no FM e no filtro (ou na vogal); RATE = o período
+inline const juce::StringArray moveRateNames { "1/16", "1/8", "1/4", "1/2", "1 BAR", "2 BARS" };
+inline constexpr double moveRateBeats[] = { 0.25, 0.5, 1.0, 2.0, 4.0, 8.0 };
 inline const juce::StringArray driveNames { "TAPE", "TUBE", "FOLD" };
 inline const juce::StringArray delayNames { "1/16", "1/8T", "1/8", "3/16", "1/4", "3/8" };
 inline constexpr double delayBeats[] = { 0.25, 1.0 / 3.0, 0.5, 0.75, 1.0, 1.5 };
@@ -54,8 +65,10 @@ namespace id
 // timbre de cada voz: prefixo a/b/c/d + nome (ex.: "afm", "bcut")
 inline const juce::String wave = "wave", ratio = "ratio", fm = "fm", fb = "fb", fmDec = "fmdec",
                           cut = "cut", res = "res", dec = "dec", pan = "pan",
-                          glide = "glide", pEnv = "penv", fEnv = "fenv", bend = "bend";
-inline const juce::StringArray voiceParams { wave, ratio, fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend };
+                          glide = "glide", pEnv = "penv", fEnv = "fenv", bend = "bend",
+                          uni = "uni", filt = "filt", move = "move", mRate = "mrate";
+inline const juce::StringArray voiceParams { wave, ratio, fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend,
+                                             uni, filt, move, mRate };
 inline juce::String v (int voice, const juce::String& name) { return juce::String::charToString ((juce::juce_wchar) ('a' + voice)) + name; }
 
 // gerador e troca de timbre
@@ -84,13 +97,14 @@ inline bool isPerformanceParam (const juce::String& pid)
 // GLIDE = ms deslizando da nota anterior DO MESMO TIMBRE; P.ENV = semitons no ataque (cai no tempo do FM DEC);
 // F.ENV = quanto o filtro abre no ataque (também no tempo do FM DEC).
 // BEND = semitons que a ÚLTIMA nota de cada fala do timbre desliza durante a nota (o mergulho no fim da frase,
-// como nos leads de full on); 0 = reta. Padrão 0: os presets antigos tocam igual.
-struct VoiceDefaults { int wave, ratio; float fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend; };
+// como nos leads de full on); 0 = reta.
+// UNISON = 3 cópias desafinadas abertas no estéreo (o lead gordo); FILTER/MOVE/RATE: ver filterNames/moveRateNames.
+struct VoiceDefaults { int wave, ratio; float fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend, uni; int filt; float move; int mRate; };
 inline constexpr VoiceDefaults voiceDefaults[numVoices] = {
-    { 0, 3, 55.0f, 15.0f, 180.0f, 6000.0f, 20.0f, 260.0f, -30.0f,  0.0f, 12.0f, 20.0f, 0.0f },
-    { 2, 6, 65.0f, 35.0f,  90.0f, 3200.0f, 40.0f, 320.0f,  30.0f, 60.0f,  0.0f, 55.0f, 0.0f },
-    { 3, 1, 45.0f, 50.0f, 260.0f, 2400.0f, 25.0f, 400.0f, -10.0f,  0.0f, -7.0f, 35.0f, 0.0f },
-    { 1, 10, 35.0f, 20.0f, 150.0f, 5000.0f, 35.0f, 300.0f, 10.0f, 30.0f,  5.0f, 10.0f, 0.0f },
+    { 2, 1, 60.0f, 45.0f, 260.0f, 3600.0f, 35.0f, 420.0f, -30.0f, 25.0f, 12.0f, 45.0f, -12.0f, 40.0f, 0, 20.0f, 3 },
+    { 3, 0, 65.0f, 50.0f, 200.0f, 1400.0f, 55.0f, 480.0f,  30.0f, 50.0f,  0.0f, 60.0f, -12.0f, 35.0f, 2, 35.0f, 2 },
+    { 2, 3, 50.0f, 50.0f, 260.0f, 2400.0f, 30.0f, 400.0f, -10.0f,  0.0f, -7.0f, 35.0f,   0.0f, 25.0f, 1, 25.0f, 4 },
+    { 1, 10, 35.0f, 20.0f, 150.0f, 5000.0f, 35.0f, 300.0f, 10.0f, 30.0f,  5.0f, 10.0f,  0.0f, 20.0f, 0, 15.0f, 3 },
 };
 
 inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
@@ -145,6 +159,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         add (new AudioParameterFloat ({ id::v (v, id::bend), 1 }, n + "End Bend", NormalisableRange<float> (-24.0f, 24.0f, 1.0f), d.bend,
                                       AudioParameterFloatAttributes().withStringFromValueFunction ([] (float x, int)
                                       { const int i = roundToInt (x); return (i > 0 ? "+" : "") + String (i) + " st"; })));
+        add (new AudioParameterFloat ({ id::v (v, id::uni), 1 }, n + "Unison", NormalisableRange<float> (0.0f, 100.0f), d.uni,
+                                      AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
+        add (new AudioParameterChoice ({ id::v (v, id::filt), 1 }, n + "Filter Type", filterNames, d.filt));
+        add (new AudioParameterFloat ({ id::v (v, id::move), 1 }, n + "Move", NormalisableRange<float> (0.0f, 100.0f), d.move,
+                                      AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
+        add (new AudioParameterChoice ({ id::v (v, id::mRate), 1 }, n + "Move Rate", moveRateNames, d.mRate));
     }
 
     // ---- gerador de frase ----
