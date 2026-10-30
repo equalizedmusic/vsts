@@ -177,6 +177,7 @@ inline void knob (Graphics& g, float cx, float cy, float r, Colour tampa, float 
     }
     {
         Graphics::ScopedSaveState ss (g);
+        g.setOpacity (1.0f);   // drawImage herda a transparência da última cor (ex.: segmento apagado do LED)
         g.drawImageTransformed (it->second, juce::AffineTransform::scale (1.0f / esc).translated (cx - meia, cy - meia));
     }
     // ponteiro

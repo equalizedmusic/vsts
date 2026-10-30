@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.1 — 2026-10-30
+- Correções:
+  - O knob GANHO da entrada aparecia quase transparente.
+  - A legenda GATE/MIX encostava na linha do EQ.
+- A console abre com o primeiro canal selecionado.
+
 ## 0.3.0 — 2026-10-30
 - Agora são dois plugins no mesmo instalador:
   - **MESA**, a console. Vai no master do DAW e mostra o mixer inteiro: todos os canais lado a lado, os grupos, o

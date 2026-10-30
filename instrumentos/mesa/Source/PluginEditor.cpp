@@ -81,6 +81,7 @@ void MesaTela::paint (juce::Graphics& g)
         pintaFixa (gi);
         fixaSuja = false;
     }
+    g.setOpacity (1.0f);
     g.drawImage (fixaImg, getLocalBounds().toFloat());
     juce::Graphics::ScopedSaveState ss (g);
     g.addTransform (base());
@@ -346,10 +347,10 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         const juce::String vis = grupo ? juce::String (juce::roundToInt (c.valor ("cmix"))) + "% MIX"
                                        : (thr >= 9.9f ? juce::String ("COMP OFF") : juce::String (c.valor ("rat"), 1) + ":1");
         txt (g, vis, x + SW / 2, yy + 21.5f, 6.6f, hex (0x7dff6a), Al::meio, true, true);
-        K (kl, yy + 44, clara ? tampaBranca : tampaPreta, "thr", "LIMIAR");
-        K (kl, yy + 88, clara ? tampaBranca : tampaPreta, "rat", u8 ("RAZ\xc3\x83O"));
-        if (grupo) K (kl, yy + 129, tampaLaranja, "cmix", "MIX");
-        else       K (kl, yy + 129, tampaVerde, "gate", "GATE");
+        K (kl, yy + 42, clara ? tampaBranca : tampaPreta, "thr", "LIMIAR");
+        K (kl, yy + 83, clara ? tampaBranca : tampaPreta, "rat", u8 ("RAZ\xc3\x83O"));
+        if (grupo) K (kl, yy + 123, tampaLaranja, "cmix", "MIX");
+        else       K (kl, yy + 123, tampaVerde, "gate", "GATE");
         txt (g, "GR", kr, yy + 34, 6.0f, ink2);
         const int grs[] = { 1, 3, 6, 10, 15, 20 };
         for (int i = 0; i < 6; ++i) txt (g, juce::String (grs[i]), kr + 5, yy + 42 + (float) i * 13, 5.6f, ink2);
@@ -493,7 +494,8 @@ void ConsoleEditor::listaCanais()
         return a->numero() < b->numero();
     });
     versaoLista = ver;
-    primeiro = juce::jlimit (0, juce::jmax (0, (int) canais.size() - cabem()), primeiro);
+    if (selNum < 0 && ! canais.empty()) selNum = canais.front()->numero();   // abre com o primeiro canal selecionado
+    primeiro =juce::jlimit (0, juce::jmax (0, (int) canais.size() - cabem()), primeiro);
     for (auto it = meds.begin(); it != meds.end();)
         it = std::find (canais.begin(), canais.end(), it->first) == canais.end() ? meds.erase (it) : std::next (it);
 }
