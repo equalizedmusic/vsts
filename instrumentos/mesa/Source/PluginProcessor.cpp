@@ -3,13 +3,20 @@
 
 using namespace mesa;
 
-MesaProcessor::MesaProcessor()
+std::atomic<float>* MesaProcessor::raw (const juce::String& pid)
+{
+    if (apvts.getParameter (pid) == nullptr) return semParam;
+    apvts.addParameterListener (pid, this);
+    return apvts.getRawParameterValue (pid);
+}
+
+MesaProcessor::MesaProcessor (bool console)
     : AudioProcessor (BusesProperties()
                           .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "MESA", createLayout())
+      isConsole (console),
+      apvts (*this, nullptr, "MESA", createLayout (console))
 {
-    auto raw = [this] (const juce::String& pid) { apvts.addParameterListener (pid, this); return apvts.getRawParameterValue (pid); };
     pMode = raw (id::mode);  pGrp = raw (id::grp);   pPre = raw (id::pre);   pGain = raw (id::gain);
     pDrive = raw (id::drive); pPad = raw (id::pad);  pHpf = raw (id::hpf);   pEqOn = raw (id::eqOn);
     pEqm = raw (id::eqm);    pThr = raw (id::thr);   pRat = raw (id::rat);   pGate = raw (id::gate);
@@ -18,13 +25,23 @@ MesaProcessor::MesaProcessor()
     pMmkp = raw (id::mmkp);  pMrat = raw (id::mrat); pMmix = raw (id::mmix); pMin = raw (id::min);
     pMhpf = raw (id::mhpf);  pHq = raw (id::hq);   pDynPre = raw (id::dynPre);
     for (int b = 0; b < 4; ++b) { pEqG[b] = raw (id::eqG[b]); pEqF[b] = raw (id::eqF[b]); }
-    seqNo = registry->add (this);
+    if (isConsole) ++mesa::Ponte::get().consoles;
+    else
+    {
+        seqNo = registry->add (this);
+        mesa::Ponte::get().entra (this);
+    }
 }
 
 MesaProcessor::~MesaProcessor()
 {
-    if (soloWas) --registry->soloCount;
-    registry->remove (this);
+    if (isConsole) --mesa::Ponte::get().consoles;
+    else
+    {
+        if (soloWas) --registry->soloCount;
+        mesa::Ponte::get().sai (this);
+        registry->remove (this);
+    }
 }
 
 bool MesaProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -60,12 +77,25 @@ void MesaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 void MesaProcessor::parameterChanged (const juce::String& pid, float)
 {
     dirty = true;
-    if (pid == id::mode || pid == id::grp) registry->changed();
+    if (pid == id::mode || pid == id::grp) { registry->changed(); ++mesa::Ponte::get().versao; }
 }
 
 void MesaProcessor::updateSettings()
 {
     dirty = false;
+    if (isConsole)   // a CONSOLE só tem o COLA BUS e o fader do master
+    {
+        bus.thr = pMthr->load(); bus.ratio = busRatios[juce::jlimit (0, 3, juce::roundToInt (pMrat->load()))];
+        bus.atkMs = atkMs[juce::jlimit (0, 5, juce::roundToInt (pMatk->load()))];
+        bus.relS = relS[juce::jlimit (0, 4, juce::roundToInt (pMrel->load()))];
+        bus.makeup = pMmkp->load(); bus.mix = pMmix->load() / 100.0f; bus.scHpf = pMhpf->load() > 0.5f;
+        bus.update();
+        const float fd = pFader->load();
+        const float g = fd <= faderMin + 0.01f ? 0.0f : dbToGain (fd);
+        gainL.setTargetValue (g);
+        gainR.setTargetValue (g);
+        return;
+    }
     const bool hq = pHq->load() > 0.5f;
     const int preModel = juce::roundToInt (pPre->load());
     const int key = preModel * 2 + (hq ? 1 : 0);
@@ -117,6 +147,11 @@ void MesaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     const int n = buffer.getNumSamples();
     const int nch = juce::jmin (2, getTotalNumInputChannels(), buffer.getNumChannels());
     if (n == 0 || nch == 0) return;
+    {
+        float m = 0;
+        for (int c = 0; c < nch; ++c) m = std::max (m, buffer.getMagnitude (c, 0, n));
+        inPeak = gainToDb (m);
+    }
 
     const bool solo = pSolo->load() > 0.5f && mode() == modeChannel;
     if (solo != soloWas) { registry->soloCount += solo ? 1 : -1; soloWas = solo; }
@@ -128,7 +163,17 @@ void MesaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
         else                      processChannel (buffer, n, nch);
     }
 
-    // medidores
+    // medidores (a CONSOLE guarda também as últimas amostras para o goniômetro)
+    if (isConsole)
+    {
+        int w = gonioPos.load (std::memory_order_relaxed);
+        for (int i = 0; i < n; ++i, w = (w + 1) % gonioN)
+        {
+            gonioL[w] = buffer.getSample (0, i);
+            gonioR[w] = buffer.getSample (nch > 1 ? 1 : 0, i);
+        }
+        gonioPos.store (w, std::memory_order_release);
+    }
     float pk[2] {}, rm[2] {};
     for (int c = 0; c < nch; ++c)
     {
@@ -247,15 +292,11 @@ juce::String MesaProcessor::displayName() const
     return {};
 }
 juce::String MesaProcessor::userName() const { const juce::ScopedLock sl (nameLock); return nameOverride; }
-void MesaProcessor::setUserName (const juce::String& n)
+void MesaProcessor::renomeia (const char* utf8)
 {
-    { const juce::ScopedLock sl (nameLock); nameOverride = n.trim().substring (0, 24); }
+    { const juce::ScopedLock sl (nameLock); nameOverride = juce::String::fromUTF8 (utf8 != nullptr ? utf8 : "").trim().substring (0, 24); }
     registry->changed();
-}
-juce::Colour MesaProcessor::trackColour() const
-{
-    const juce::ScopedLock sl (nameLock);
-    return hostColour;
+    ++mesa::Ponte::get().versao;
 }
 
 void MesaProcessor::updateTrackProperties (const TrackProperties& p)
@@ -266,6 +307,7 @@ void MesaProcessor::updateTrackProperties (const TrackProperties& p)
         if (p.colourARGB) hostColour = juce::Colour (*p.colourARGB).withAlpha (1.0f);
     }
     registry->changed();
+    ++mesa::Ponte::get().versao;
 }
 
 void MesaProcessor::getStateInformation (juce::MemoryBlock& destData)
@@ -294,10 +336,63 @@ void MesaProcessor::setStateInformation (const void* data, int sizeInBytes)
             apvts.replaceState (vt);
             dirty = true;
             registry->changed();
+            ++mesa::Ponte::get().versao;
         }
 }
 
+// ---- mesa::Canal ----
+float MesaProcessor::valor (const char* pid) const
+{
+    if (auto* p = apvts.getParameter (pid)) return p->convertFrom0to1 (p->getValue());
+    return 0.0f;
+}
+float MesaProcessor::norm (const char* pid) const
+{
+    if (auto* p = apvts.getParameter (pid)) return p->getValue();
+    return 0.0f;
+}
+float MesaProcessor::normPadrao (const char* pid) const
+{
+    if (auto* p = apvts.getParameter (pid)) return p->getDefaultValue();
+    return 0.0f;
+}
+void MesaProcessor::mexe (const char* pid, float v)
+{
+    if (auto* p = apvts.getParameter (pid)) p->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, v));
+}
+void MesaProcessor::gesto (const char* pid, bool inicio)
+{
+    if (auto* p = apvts.getParameter (pid)) { if (inicio) p->beginChangeGesture(); else p->endChangeGesture(); }
+}
+static int copiaUtf8 (const juce::String& s, char* out, int n)
+{
+    if (out == nullptr || n <= 0) return 0;
+    const auto bytes = (int) s.copyToUTF8 (out, (size_t) n);
+    return juce::jmax (0, bytes - 1);
+}
+int MesaProcessor::texto (const char* pid, char* out, int n) const
+{
+    if (auto* p = apvts.getParameter (pid)) return copiaUtf8 (p->getCurrentValueAsText(), out, n);
+    return copiaUtf8 ({}, out, n);
+}
+int MesaProcessor::nome (char* out, int n) const { return copiaUtf8 (displayName(), out, n); }
+std::uint32_t MesaProcessor::cor() const
+{
+    const juce::ScopedLock sl (nameLock);
+    return hostColour.getARGB();
+}
+void MesaProcessor::medidores (float* o) const
+{
+    o[0] = peakL; o[1] = peakR; o[2] = rmsL; o[3] = rmsR; o[4] = grDb; o[5] = inPeak;
+}
+
+#ifndef MESA_CONSOLE
+ #define MESA_CONSOLE 1
+#endif
+
+juce::AudioProcessor* mesaCriaCanal() { return new MesaProcessor (false); }
+
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new MesaProcessor();
+    return new MesaProcessor (MESA_CONSOLE != 0);
 }

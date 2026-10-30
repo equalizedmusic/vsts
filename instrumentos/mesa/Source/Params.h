@@ -1,6 +1,6 @@
 #pragma once
-// MESA — parâmetros. Cada cópia do plugin é um canal (ou um grupo, ou o MASTER); todos têm os mesmos parâmetros e a
-// tela mostra só os do modo.
+// MESA — parâmetros. Dois plugins do mesmo código: a CONSOLE (no master do DAW: COLA BUS + fader do master) e o
+// CANAL (no fim de cada faixa, tipo CANAL ou GRUPO: pré, dinâmica, EQ, pan, fader). Cada um só tem os próprios.
 #include <juce_audio_processors/juce_audio_processors.h>
 
 namespace mesa::id
@@ -19,8 +19,8 @@ inline const juce::String eqF[4] = { "hff", "hmff", "lmff", "lff" };
 
 namespace mesa
 {
-enum Mode { modeChannel = 0, modeGroup = 1, modeMaster = 2 };
-inline const juce::StringArray modeNames { "CANAL", "GRUPO", "MASTER" };
+enum Mode { modeChannel = 0, modeGroup = 1, modeMaster = 2 };   // modeMaster = a CONSOLE
+inline const juce::StringArray modeNames { "CANAL", "GRUPO" };
 inline const juce::StringArray preNames { "LIMPO", "API 312", "BRIT 73" };
 inline const juce::StringArray eqNames { "E-4K", "BRIT 81" };
 inline const float atkMs[] = { 0.1f, 0.3f, 1.0f, 3.0f, 10.0f, 30.0f };
@@ -39,7 +39,7 @@ inline juce::String dbText (float v, int dec = 1)
     return (v > 0.0f ? "+" : "") + juce::String (v, dec) + " dB";
 }
 
-inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
+inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout (bool console)
 {
     using namespace juce;
     std::vector<std::unique_ptr<RangedAudioParameter>> p;
@@ -54,8 +54,23 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto bo = [&] (const String& pid, const String& name, bool def)
     { p.push_back (std::make_unique<AudioParameterBool> (ParameterID { pid, 1 }, name, def)); };
     auto db1 = [] (float v) { return dbText (v); };
+    auto faderTxt = [] (float v) { return v <= faderMin + 0.01f ? String (CharPointer_UTF8 ("-\xe2\x88\x9e dB")) : dbText (v); };
 
-    ch (id::mode, "Modo", modeNames, 0);
+    if (console)
+    {
+        fl (id::fader, "Fader master", NormalisableRange<float> (faderMin, 10.0f, 0.0f, 2.2f), 0.0f, faderTxt);
+        fl (id::mthr, "Cola threshold", { -30.0f, 6.0f, 0.1f }, 0.0f, db1);
+        ch (id::matk, "Cola attack", { "0.1 ms", "0.3 ms", "1 ms", "3 ms", "10 ms", "30 ms" }, 4);
+        ch (id::mrel, "Cola release", { "0.1 s", "0.3 s", "0.6 s", "1.2 s", "AUTO" }, 4);
+        fl (id::mmkp, "Cola makeup", { 0.0f, 20.0f, 0.1f }, 0.0f, db1);
+        ch (id::mrat, "Cola ratio", { "1.5:1", "2:1", "4:1", "10:1" }, 2);
+        fl (id::mmix, "Cola mix", { 0.0f, 100.0f, 1.0f }, 100.0f, [] (float v) { return String (roundToInt (v)) + "%"; });
+        bo (id::min, "Cola ligado", true);
+        bo (id::mhpf, "Cola sidechain HPF", false);
+        return { p.begin(), p.end() };
+    }
+
+    ch (id::mode, "Tipo", modeNames, 0);
     ch (id::grp, "Grupo", { "-", "G1", "G2", "G3" }, 0);
 
     ch (id::pre, "Pré", preNames, 0);
@@ -88,17 +103,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         { const int n = roundToInt (std::abs (v) * 100.0f); return n == 0 ? String ("C") : (v < 0 ? "L" : "R") + String (n); });
     bo (id::mute, "Mute", false);
     bo (id::solo, "Solo", false);
-    fl (id::fader, "Fader", NormalisableRange<float> (faderMin, 10.0f, 0.0f, 2.2f), 0.0f,
-        [] (float v) { return v <= faderMin + 0.01f ? String (CharPointer_UTF8 ("-\xe2\x88\x9e dB")) : dbText (v); });
-
-    fl (id::mthr, "Cola threshold", { -30.0f, 6.0f, 0.1f }, 0.0f, db1);
-    ch (id::matk, "Cola attack", { "0.1 ms", "0.3 ms", "1 ms", "3 ms", "10 ms", "30 ms" }, 4);
-    ch (id::mrel, "Cola release", { "0.1 s", "0.3 s", "0.6 s", "1.2 s", "AUTO" }, 4);
-    fl (id::mmkp, "Cola makeup", { 0.0f, 20.0f, 0.1f }, 0.0f, db1);
-    ch (id::mrat, "Cola ratio", { "1.5:1", "2:1", "4:1", "10:1" }, 2);
-    fl (id::mmix, "Cola mix master", { 0.0f, 100.0f, 1.0f }, 100.0f, [] (float v) { return String (roundToInt (v)) + "%"; });
-    bo (id::min, "Cola ligado", true);
-    bo (id::mhpf, "Cola sidechain HPF", false);
+    fl (id::fader, "Fader", NormalisableRange<float> (faderMin, 10.0f, 0.0f, 2.2f), 0.0f, faderTxt);
 
     bo (id::hq, "HQ (sobreamostragem 4x)", true);
     return { p.begin(), p.end() };

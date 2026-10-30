@@ -13,8 +13,11 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_MESA
  #define SHOT_MESA 0
 #endif
-// MESA: a foto mostra a console cheia, com outras cópias do plugin (canais, um grupo e o MASTER) tocando o mesmo loop
+// MESA: a foto mostra a CONSOLE cheia, com MESA CANAL (canais e grupos) tocando o mesmo loop; e a janela de um canal
 static std::vector<std::unique_ptr<juce::AudioProcessor>> extras;
+#if SHOT_MESA
+juce::AudioProcessor* mesaCriaCanal();
+#endif
 
 namespace
 {
@@ -193,22 +196,24 @@ int main (int argc, char** argv)
     applyLook (*proc);
    #if SHOT_MESA
     {
+        // o plugin principal é a CONSOLE (master); os canais e grupos são MESA CANAL abertos no mesmo programa
         struct Ch { const char* name; juce::uint32 col; int mode, grp; float pre, eq, gain, drive, hpf, fader, pan, thr; };
         const Ch chs[] = {
-            { "KICK", 0xffe8473c, 0, 1, 1, 0, 3, 3, 30, -2.4f, 0, -16 },   { "SNARE", 0xffff8a3d, 0, 1, 1, 0, 2, 2, 90, -1.5f, 0.1f, -14 },
-            { "HATS", 0xfff2d24b, 0, 1, 0, 0, 0, 0, 300, -6, 0.3f, 10 },  { "BASS DI", 0xff3d8bff, 0, 2, 2, 1, 4, 4, 35, -0.6f, 0, -18 },
-            { "GTR L", 0xff3fbf6a, 0, 2, 2, 1, 2, 3, 110, -2.7f, -0.7f, 10 }, { "GTR R", 0xff3fbf6a, 0, 2, 2, 1, 2, 3, 110, -2.7f, 0.7f, 10 },
-            { "RHODES", 0xff22d8ff, 0, 2, 0, 0, 0, 0, 60, -4.2f, -0.2f, 10 }, { "PAD", 0xff5fd3b3, 0, 2, 0, 1, 0, 0, 150, -6.6f, 0.2f, 10 },
-            { "808", 0xffe8473c, 0, 1, 1, 1, 3, 5, 20, -1.8f, 0, -12 },    { "FX", 0xff9aa0a8, 0, 0, 0, 0, 0, 0, 200, -8.4f, 0.4f, 10 },
-            { "BATERIA", 0xffe8473c, 1, 1, 0, 0, 0, 0, 20, -0.6f, 0, -14 }, { "MIX BUS", 0xffd0d0d0, 2, 0, 0, 0, 0, 0, 20, 0, 0, 10 } };
+            { "KICK", 0xffe8473c, 0, 1, 2, 0, 3, 3, 30, -2.4f, 0, -16 },   { "CAIXA", 0xffff8a3d, 0, 1, 2, 0, 2, 2, 90, -1.5f, 0.1f, -14 },
+            { "HIHAT", 0xfff2d24b, 0, 1, 0, 0, 0, 0, 300, -6, 0.3f, 10 },  { "OH L", 0xfff2a33a, 0, 1, 1, 0, 1, 1, 120, -4.5f, -0.7f, -20 },
+            { "OH R", 0xfff2a33a, 0, 1, 1, 0, 1, 1, 120, -4.5f, 0.7f, -20 }, { "BAIXO", 0xff3d8bff, 0, 2, 2, 1, 4, 4, 35, -0.6f, 0, -18 },
+            { "GTR L", 0xff3fbf6a, 0, 2, 2, 1, 2, 3, 110, -2.7f, -0.75f, -22 }, { "GTR R", 0xff3fbf6a, 0, 2, 2, 1, 2, 3, 110, -2.7f, 0.75f, -22 },
+            { "TECLA", 0xff22d8ff, 0, 2, 0, 1, 0, 0, 60, -4.2f, -0.2f, 10 }, { "VOZ", 0xffc49bff, 0, 3, 1, 0, 3, 3, 90, 0.8f, 0, -24 },
+            { "CORO", 0xffc49bff, 0, 3, 1, 0, 1, 1, 140, -5.5f, 0.2f, -20 }, { "FX", 0xff9aa0a8, 0, 0, 0, 0, 0, 0, 200, -9.0f, 0.4f, 10 },
+            { "BATERIA", 0xffe8473c, 1, 1, 0, 0, 0, 0, 20, -1.2f, 0, -14 }, { "BASE", 0xff3d8bff, 1, 2, 0, 0, 0, 0, 20, -2.0f, 0, -12 },
+            { "VOZES", 0xffc49bff, 1, 3, 0, 0, 0, 0, 20, -0.5f, 0, -16 } };
         juce::AudioProcessor::TrackProperties tp;
-        tp.name = juce::String ("VOX LEAD"); tp.colourARGB = 0xffc49bffu;
+        tp.name = juce::String ("Master"); tp.colourARGB = 0xffd0d0d0u;
         proc->updateTrackProperties (tp);
-        setParam (*proc, "pre", 2); setParam (*proc, "gain", 4); setParam (*proc, "drive", 3); setParam (*proc, "thr", -20);
-        setParam (*proc, "grp", 3); setParam (*proc, "fader", -1.0f); setParam (*proc, "hmfg", 3); setParam (*proc, "hfg", 4);
+        setParam (*proc, "mthr", -12); setParam (*proc, "mmkp", 3);
         for (auto& c : chs)
         {
-            std::unique_ptr<juce::AudioProcessor> q (createPluginFilter());
+            std::unique_ptr<juce::AudioProcessor> q (mesaCriaCanal());
             q->setPlayHead (&head);
             q->setPlayConfigDetails (2, 2, fs, block);
             q->prepareToPlay (fs, block);
@@ -219,7 +224,7 @@ int main (int argc, char** argv)
             setParam (*q, "eqm", c.eq); setParam (*q, "gain", c.gain); setParam (*q, "drive", c.drive); setParam (*q, "hpf", c.hpf);
             setParam (*q, "fader", c.fader); setParam (*q, "pan", c.pan); setParam (*q, "thr", c.thr);
             setParam (*q, "hfg", (float) ((int) c.col % 7 - 3)); setParam (*q, "lmfg", (float) ((int) (c.col >> 8) % 9 - 4));
-            if (c.mode == 2) { setParam (*q, "mthr", -12); setParam (*q, "mmkp", 3); }
+            if (c.mode == 1) { setParam (*q, "rat", 4); setParam (*q, "cmix", 70); }
             extras.push_back (std::move (q));
         }
     }
@@ -235,6 +240,22 @@ int main (int argc, char** argv)
     editor->setSize (SHOT_W, SHOT_H);
     juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
     const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+   #if SHOT_MESA
+    // a janela do MESA CANAL (o canal VOZ), a 200%
+    {
+        std::unique_ptr<juce::AudioProcessorEditor> ed2 (extras[9]->createEditorAndMakeActive());
+        ed2->setSize (800, 2000);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (1200);
+        ed2->setSize (800, 2000);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
+        const auto img2 = ed2->createComponentSnapshot (ed2->getLocalBounds(), true, 1.0f);
+        const auto f2 = outDir.getChildFile ("MESA-CANAL.png");
+        f2.deleteFile();
+        juce::FileOutputStream os2 (f2);
+        juce::PNGImageFormat png2;
+        std::printf ("MESA-CANAL: %s\n", os2.openedOk() && png2.writeImageToStream (img2, os2) ? "ok" : "falhou");
+    }
+   #endif
     audio.stopThread (3000);
 
     const auto file = outDir.getChildFile (juce::String (SHOT_PLUGIN) + ".png");

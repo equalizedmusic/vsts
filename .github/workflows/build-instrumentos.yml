@@ -77,7 +77,7 @@ jobs:
             for b in dist/$fmt/GROOVADOR.*; do
               if [ -e "$b" ]; then mkdir -p "dist-groovador/$fmt"; mv "$b" "dist-groovador/$fmt/"; fi
             done
-            for b in dist/$fmt/MESA.*; do
+            for b in dist/$fmt/MESA.* dist/$fmt/MESA-CANAL.*; do   # MESA (console) e MESA CANAL
               if [ -e "$b" ]; then mkdir -p "dist-mesa/$fmt"; mv "$b" "dist-mesa/$fmt/"; fi
             done
           done

@@ -5,12 +5,20 @@
 #include "Dsp.h"
 #include "Params.h"
 #include "Registry.h"
+#include "Ponte.h"
 #include "IspLicenca.h"
 
-class MesaProcessor : public juce::AudioProcessor, private juce::AudioProcessorValueTreeState::Listener
+// Os dois plugins da MESA saem desta classe (MESA_CONSOLE no CMake escolhe qual o binário cria):
+//  - CONSOLE: vai no master do DAW. Tem o COLA BUS e o fader do master; a janela é a console inteira, com todos os
+//    CANAIS abertos (lidos pela Ponte).
+//  - CANAL: vai no fim de cada faixa (tipo CANAL) ou do canal de grupo (tipo GRUPO). Processa o som da própria faixa
+//    — o áudio segue o caminho do DAW, então sends, returns e grupos continuam valendo — e se mostra na console.
+class MesaProcessor : public juce::AudioProcessor,
+                      public mesa::Canal,
+                      private juce::AudioProcessorValueTreeState::Listener
 {
 public:
-    MesaProcessor();
+    explicit MesaProcessor (bool console);
     ~MesaProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -22,7 +30,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "MESA"; }
+    const juce::String getName() const override { return isConsole ? "MESA" : "MESA CANAL"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -38,30 +46,47 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     void updateTrackProperties (const TrackProperties& properties) override;
 
-    // ---- para a console (thread da interface) ----
-    int  mode() const     { return juce::roundToInt (pMode->load()); }
-    int  group() const    { return juce::roundToInt (pGrp->load()); }
-    int  seq() const      { return seqNo; }
+    // ---- mesa::Canal (a console lê e mexe por aqui; também a própria janela) ----
+    int   abi() const override { return mesa::Ponte::abiVersao; }
+    int   tipo() const override { return isConsole ? 2 : juce::jlimit (0, 1, juce::roundToInt (pMode->load())); }
+    int   numero() const override { return seqNo; }
+    bool  tem (const char* pid) const override { return apvts.getParameter (pid) != nullptr; }
+    float valor (const char* pid) const override;
+    float norm (const char* pid) const override;
+    float normPadrao (const char* pid) const override;
+    void  mexe (const char* pid, float v) override;
+    void  gesto (const char* pid, bool inicio) override;
+    int   texto (const char* pid, char* out, int n) const override;
+    int   nome (char* out, int n) const override;
+    void  renomeia (const char* utf8) override;
+    std::uint32_t cor() const override;
+    void  medidores (float* out6) const override;
+
+    // ---- para a janela ----
+    const bool isConsole;
+    int  mode() const     { return isConsole ? mesa::modeMaster : tipo(); }
     juce::String displayName() const;                 // nome escrito na fita (o do usuário, senão o da faixa do DAW)
     juce::String userName() const;
-    void setUserName (const juce::String& n);
-    juce::Colour trackColour() const;
-    juce::RangedAudioParameter* param (const juce::String& pid) const { return apvts.getParameter (pid); }
-    float value (const juce::String& pid) const { return apvts.getRawParameterValue (pid)->load(); }
 
     juce::AudioProcessorValueTreeState apvts;
-    juce::SharedResourcePointer<mesa::Registry> registry;
+    juce::SharedResourcePointer<mesa::Registry> registry;   // os CANAIS deste binário (SOLO)
 
-    // medidores (dBFS): pico e RMS do bloco, redução de ganho
-    std::atomic<float> peakL { -120.0f }, peakR { -120.0f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f };
+    // medidores (dBFS): pico e RMS do bloco, redução de ganho, pico na entrada
+    std::atomic<float> peakL { -120.0f }, peakR { -120.0f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f }, inPeak { -120.0f };
     std::atomic<int> uiW { 0 }, uiH { 0 };  // tamanho da janela (0 = ainda não abriu: a tela escolhe)
-    std::atomic<bool> uiGeral { false };     // vista GERAL (a console toda) em vez de PERTO
+    std::atomic<bool> uiGeral { false };     // CONSOLE: vista GERAL (todos os canais na largura)
+
+    // CONSOLE: últimas amostras do master para o goniômetro (escritas no áudio, lidas pela tela)
+    static constexpr int gonioN = 2048;
+    float gonioL[gonioN] {}, gonioR[gonioN] {};
+    std::atomic<int> gonioPos { 0 };
 
 private:
     void parameterChanged (const juce::String& pid, float) override;
     void updateSettings();
     void processChannel (juce::AudioBuffer<float>& buf, int n, int nch);
     void processMaster (juce::AudioBuffer<float>& buf, int n, int nch);
+    std::atomic<float>* raw (const juce::String& pid);
 
     double fs = 48000.0;
     int maxBlock = 512;
@@ -86,8 +111,8 @@ private:
     juce::CriticalSection nameLock;
     juce::String hostName, nameOverride;
     juce::Colour hostColour { 0xff9aa0a8 };
-    bool hasHostColour = false;
 
+    std::atomic<float> semParam[1] { { 0.0f } };   // parâmetro que este plugin não tem (CONSOLE x CANAL) lê zero
     std::atomic<float>* pMode; std::atomic<float>* pGrp; std::atomic<float>* pPre; std::atomic<float>* pGain;
     std::atomic<float>* pDrive; std::atomic<float>* pPad; std::atomic<float>* pHpf; std::atomic<float>* pEqOn;
     std::atomic<float>* pEqm; std::atomic<float>* pThr; std::atomic<float>* pRat; std::atomic<float>* pGate;
@@ -101,3 +126,6 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MesaProcessor)
 };
+
+// o CANAL criado direto (a foto da CONSOLE abre CANAIS no mesmo programa)
+juce::AudioProcessor* mesaCriaCanal();

@@ -4,6 +4,27 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.0 — 2026-10-30
+- Agora são dois plugins no mesmo instalador:
+  - **MESA**, a console. Vai no master do DAW e mostra o mixer inteiro: todos os canais lado a lado, os grupos, o
+    medidor geral com goniômetro, os VUs de redução de ganho, o COLA BUS do master e os faders dos grupos e do master.
+  - **MESA CANAL**. Vai no fim de cada faixa (tipo CANAL) ou no canal de grupo (tipo GRUPO, com G1, G2 ou G3). Cada
+    um processa o som da própria faixa e aparece sozinho na console.
+- O áudio segue o caminho do DAW, então sends, returns e grupos continuam valendo. Mexer na console é mexer no plugin
+  daquela faixa, e a automação do DAW grava.
+- Visual novo no padrão dos mixers de plugin de console. Cada canal tem, de cima para baixo:
+  - a cabeça com modelo, ordem do processamento, medidores e o número em LED;
+  - ENTRADA, DINÂMICA (com LEDs de redução de ganho), EQ de 4 bandas e o grupo;
+  - a fita com a cor e o nome da faixa;
+  - PAN, SOLO e CUT;
+  - o fader comprido com medidor de LED.
+- A chapa é escura no EQ E-4K e cinza no BRIT 81.
+- Na console, a roda do mouse passa os canais e GERAL encolhe tudo para caber na janela. Os botões ◀ ▶ trocam o canal
+  selecionado e o visor mostra número, nome e grupo dele. LIMPA SOLO, VU/PPM e ECO/HQ valem para todos os canais.
+- A janela do MESA CANAL mostra o canal inteiro e, ao lado, a ligação com a console, o número, o nome, o grupo, três VUs
+  (entrada, redução e saída) e os modelos de PRÉ e EQ.
+- O som não mudou.
+
 ## 0.2.0 — 2026-10-30
 - Visual de equipamento real: todas as peças renderizadas de novo com o acabamento aprovado na amostra — plástico
   fosco de console (sem verniz), poeira nas frestas, micro-riscos, serigrafia gasta, madeira a óleo e luz de estúdio.
