@@ -4,6 +4,10 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-10-30
+- Correção: o VU de um grupo, o de um grupo vazio e o painel do MASTER apareciam apagados (meio transparentes)
+  quando havia vaga vazia na console.
+
 ## 0.1.0 — 2026-10-30
 - Primeira versão (Fase 1): console analógica em plugin, com instalador próprio.
 - Uma MESA no fim de cada canal do DAW: cada cópia vira uma fileira da console, e a janela de qualquer uma mostra a

@@ -252,6 +252,7 @@ juce::Image& MesaEditor::sprite (const juce::String& name)
 void MesaEditor::drawPiece (juce::Graphics& g, bool chapa, const juce::String& name, juce::Rectangle<float> cm)
 {
     auto& img = sprite (chapa ? "#" + name : name);
+    g.setOpacity (1.0f);   // o drawImage herda a transparência da última cor (o número apagado da vaga vazia apagava a peça seguinte)
     if (img.isValid()) g.drawImage (img, cm, juce::RectanglePlacement::stretchToFit);
 }
 
