@@ -15,7 +15,9 @@ struct Canal
 {
     virtual int   abi() const = 0;                                     // mesma versão da ponte nos dois lados
     virtual int   tipo() const = 0;                                    // 0 = canal, 1 = grupo, 2 = console
-    virtual int   numero() const = 0;                                  // ordem de criação (o número no LED)
+    virtual int   numero() const = 0;                                  // ordem de criação (identidade dentro da sessão)
+    virtual int   posicao() const = 0;                                 // número da faixa no DAW (0 = não se sabe)
+    virtual void  posiciona (int n) = 0;                               // número escolhido à mão (0 = automático)
     virtual bool  tem (const char* pid) const = 0;
     virtual float valor (const char* pid) const = 0;                   // valor real (dB, Hz, índice da escolha…)
     virtual float norm (const char* pid) const = 0;                    // 0..1
@@ -26,7 +28,8 @@ struct Canal
     virtual int   nome (char* out, int n) const = 0;                   // nome da fita (UTF-8)
     virtual void  renomeia (const char* utf8) = 0;
     virtual std::uint32_t cor() const = 0;                             // ARGB da faixa no DAW
-    virtual void  medidores (float* out6) const = 0;                   // pico L, pico R, RMS L, RMS R, GR (dB), entrada (dB)
+    virtual void  medidores (float* out8) const = 0;                   // dB: pico L, pico R (com queda), VU L, VU R (balística
+                                                                       // de VU, 0 VU = -18), GR, VU da entrada, pico entrada, PPM
 protected:
     ~Canal() = default;
 };
@@ -34,7 +37,7 @@ protected:
 struct Ponte
 {
     static constexpr std::uint32_t marca = 0x4d455341u;   // "MESA"
-    static constexpr int abiVersao = 1, vagas = 256;
+    static constexpr int abiVersao = 2, vagas = 256;
 
     // o bloco nasce zerado (memória nova do sistema): zero é um estado válido para tudo aqui
     std::atomic<std::uint32_t> assinatura;

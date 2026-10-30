@@ -7,7 +7,7 @@ using namespace mesa::des;
 
 namespace
 {
-constexpr int menuLicenca = 20007, menuRenomear = 20008, menuSobre = 20009;
+constexpr int menuLicenca = 20007, menuRenomear = 20008, menuSobre = 20009, menuPosicao = 20010;
 
 // tela base (px): canal e linhas — as mesmas medidas do protótipo mockup/mesa-v4
 constexpr float SW = 84;
@@ -15,7 +15,9 @@ constexpr float rHead = 74, rInp = 110, rDyn = 150, rEq = 262, rOut = 30, rCor =
 constexpr float NAV = 132, TOP = 44, LBL = 52, CEN = 404, BASE_H = 1000;
 
 // ações (botões que não são parâmetro)
-enum Acao { aAutoSel = 1, aCores, aPadrao, aGeral, aVu, aPpm, aEco, aHq, aAnt = 10, aProx, aZerar, aBarra = 20, aLimpaSolo = 30, aRolagem = 40 };
+enum Acao { aAutoSel = 1, aCores, aPadrao, aGeral, aVu, aPpm, aEco, aHq, aAnt = 10, aProx, aZerar, aBarra = 20, aLimpaSolo = 30, aRolagem = 40,
+            aZoomMenos = 50, aZoomMais, aZoom100 };
+const float zooms[] = { 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.4f, 1.6f, 1.8f, 2.0f };
 
 const char* const pidsCanal[] = { "mode", "grp", "pre", "gain", "drive", "pad", "hpf", "eqon", "eqm", "dynpre", "hfg", "hmfg", "lmfg", "lfg",
                                   "hff", "hmff", "lmff", "lff", "thr", "rat", "gate", "cmix", "pan", "mute", "solo", "fader", "hq" };
@@ -34,6 +36,8 @@ juce::String textoDe (const Canal& c, const std::string& pid)
     return juce::String::fromUTF8 (b);
 }
 int inteiro (const Canal& c, const char* pid) { return juce::roundToInt (c.valor (pid)); }
+// número no LED: a posição da faixa no DAW (se não se sabe, a ordem em que o canal foi aberto)
+int noLed (const Canal& c) { const int p = c.posicao(); return p > 0 ? p : c.numero(); }
 juce::String tres (int n) { return juce::String (juce::jlimit (0, 999, n)).paddedLeft ('0', 3); }
 juce::String db1 (float v) { return v < -99.0f ? juce::String ("--") : (v > 0 ? "+" : "") + juce::String (v, 1); }
 juce::String u8 (const char* s) { return juce::String::fromUTF8 (s); }
@@ -105,18 +109,16 @@ const MesaTela::Alvo* MesaTela::acha (juce::Point<float> p) const
 
 void MesaTela::atualizaMed (Canal* c, Med& m, bool ppm)
 {
-    float o[6];
+    // a balística (pico com queda, VU de 300 ms, PPM) já vem pronta do áudio; aqui só a inércia da agulha
+    float o[8];
     c->medidores (o);
-    const float out = juce::jmax (o[0], o[1]);
-    m.out = out > m.out ? out : juce::jmax (out, m.out - 1.3f);
-    m.outL = o[0] > m.outL ? o[0] : juce::jmax (o[0], m.outL - 1.3f);
-    m.outR = o[1] > m.outR ? o[1] : juce::jmax (o[1], m.outR - 1.3f);
-    m.in = o[5] > m.in ? o[5] : juce::jmax (o[5], m.in - 1.3f);
-    m.gr = o[4] > m.gr ? o[4] : m.gr * 0.85f;
-    const float k = ppm ? 0.6f : 0.22f;                               // VU: ~300 ms; PPM: rápido
-    m.vuOut += (juce::jmax (o[2], o[3]) + 18.0f - m.vuOut) * k;       // 0 VU = -18 dBFS RMS
-    m.vuIn += (o[5] + 18.0f - 3.0f - m.vuIn) * k;
-    m.vuGr += (o[4] - m.vuGr) * (o[4] > m.vuGr ? 0.5f : 0.15f);
+    m.outL = o[0]; m.outR = o[1]; m.out = juce::jmax (o[0], o[1]);
+    m.in = o[6];
+    m.gr = o[4] > m.gr ? o[4] : juce::jmax (o[4], m.gr - 0.6f);
+    const float alvoOut = (ppm ? o[7] : juce::jmax (o[2], o[3])) + 18.0f;    // 0 VU = -18 dBFS
+    m.vuOut += (alvoOut - m.vuOut) * 0.6f;
+    m.vuIn += (o[5] + 18.0f - m.vuIn) * 0.6f;
+    m.vuGr += (o[4] - m.vuGr) * (o[4] > m.vuGr ? 0.6f : 0.3f);
 }
 
 // ---------------------------------------------------------------------------------------------------------- mouse
@@ -162,7 +164,7 @@ void MesaTela::mouseDown (const juce::MouseEvent& e)
             c->gesto (pid, true); c->mexe (pid, (float) i / (float) (n - 1)); c->gesto (pid, false);
             break;
         }
-        case Alvo::nome: case Alvo::seleciona: case Alvo::acao: break;
+        case Alvo::nome: case Alvo::seleciona: case Alvo::acao: case Alvo::posicao: break;
     }
     mudou();
 }
@@ -200,6 +202,7 @@ void MesaTela::mouseDoubleClick (const juce::MouseEvent& e)
         mudou();
     }
     else if (a->tipo == Alvo::nome) renomeia (a->c);
+    else if (a->tipo == Alvo::posicao) posiciona (a->c);
 }
 
 void MesaTela::mouseMove (const juce::MouseEvent& e)
@@ -233,11 +236,33 @@ void MesaTela::renomeia (Canal* c)
     }), true);
 }
 
+void MesaTela::posiciona (Canal* c)
+{
+    if (c == nullptr || c->tipo() == 2) return;
+    auto* w = new juce::AlertWindow (u8 ("Posição na console"),
+                                     u8 ("Número da faixa no DAW (define a ordem na console). Vazio ou 0 = automático: o número que o "
+                                         "DAW informa ou o do começo do nome da faixa (\"3-Audio\")."),
+                                     juce::MessageBoxIconType::NoIcon, this);
+    const int atual = c->posicao();
+    w->addTextEditor ("pos", atual > 0 ? juce::String (atual) : juce::String());
+    w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    w->addButton (u8 ("Automático"), 2);
+    w->addButton ("Cancelar", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    juce::Component::SafePointer<MesaTela> safe (this);
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([safe, w, c] (int r)
+    {
+        if (safe == nullptr || r == 0 || ! safe->existe (c)) return;
+        c->posiciona (r == 2 ? 0 : w->getTextEditorContents ("pos").getIntValue());
+        safe->mudou();
+    }), true);
+}
+
 void MesaTela::menu()
 {
     juce::PopupMenu m;
     m.addSectionHeader (proc.isConsole ? "MESA" : "MESA CANAL");
     if (! proc.isConsole) m.addItem (menuRenomear, u8 ("Renomear este canal…"));
+    if (! proc.isConsole) m.addItem (menuPosicao, u8 ("Posição na console…"));
     m.addItem (menuSobre, "Como funciona");
     m.addSeparator();
     m.addItem (menuLicenca, u8 ("Licença…"));
@@ -249,6 +274,7 @@ void MesaTela::menu()
                          if (safe == nullptr) return;
                          if (r == menuLicenca) safe->ativacao.mostrarInfo();
                          if (r == menuRenomear) safe->renomeia (&safe->proc);
+                         if (r == menuPosicao) safe->posiciona (&safe->proc);
                          if (r == menuSobre)
                              juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "MESA", u8 (
                                  "Dois plugins:\n"
@@ -259,8 +285,10 @@ void MesaTela::menu()
                                  "O áudio segue o caminho do DAW: sends, returns e grupos continuam valendo. Deixe o fader do DAW "
                                  "em 0 dB e use o da MESA.\n\n"
                                  "Clique no nome do PRÉ ou do EQ para trocar o modelo. Duplo clique: o knob volta ao padrão; no "
-                                 "nome, renomeia. Shift: ajuste fino. Na console, a roda do mouse passa os canais e GERAL mostra "
-                                 "todos de uma vez.\n\n"
+                                 "nome, renomeia. Shift: ajuste fino. Na console, a roda do mouse passa os canais, Ctrl + roda (ou "
+                                 "- e +) muda o zoom e GERAL mostra todos de uma vez.\n\n"
+                                 "A ordem dos canais na console é a das faixas do DAW: o número que o DAW informa ou o do "
+                                 "começo do nome da faixa (\"3-Audio\"). Duplo clique no número vermelho escolhe à mão.\n\n"
                                  "Os plugins se enxergam quando o DAW os carrega no mesmo processo (o padrão do Ableton, Logic, "
                                  "Reaper, FL e Studio One)."), "OK", safe.getComponent());
                      });
@@ -314,7 +342,8 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         }
         txt (g, u8 ("\xe2\x96\xbc"), x + SW / 2, yy + 54, 5.0f, acVerdeAgua);
         g.setColour (hex (0x120606)); g.fillRect (x + 1, yy + rHead - 16, SW - 2, 16.0f);
-        led7 (g, x + SW / 2 - 15, yy + rHead - 13, 10, tres (c.numero()), grupo ? hex (0x38c8ff) : hex (0xff3326));
+        led7 (g, x + SW / 2 - 15, yy + rHead - 13, 10, tres (noLed (c)), grupo ? hex (0x38c8ff) : hex (0xff3326));
+        alvo (Alvo::posicao, { x + 1, yy + rHead - 16, SW - 2, 16 }, nullptr);   // duplo clique: muda a posição
     }
     else
     {
@@ -406,7 +435,7 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         vgrad (g, { x + 1, yy, SW - 2, rCor }, claro (faixa, 0.25f), faixa);
         g.setColour (hex (0x1c1d20)); g.fillRect (x + 1, yy + rCor, SW - 2, rNome);
         auto nm = nomeDe (c);
-        if (nm.isEmpty()) nm = (grupo ? "GRUPO " : "CANAL ") + juce::String (c.numero());
+        if (nm.isEmpty()) nm = (grupo ? "GRUPO " : "CANAL ") + juce::String (noLed (c));
         txt (g, nm.toUpperCase(), x + SW / 2, yy + rCor + rNome / 2 + 0.5f, 9.0f, sel ? hex (0x7fd0ff) : hex (0xeceef0));
         alvo (Alvo::nome, { x, yy + rCor, SW, rNome }, nullptr);
     }
@@ -466,17 +495,34 @@ void ConsoleEditor::resized()
 {
     proc.uiW = getWidth(); proc.uiH = getHeight();
     primeiro = juce::jlimit (0, juce::jmax (0, (int) canais.size() - cabem()), primeiro);
+    rolaY = juce::jlimit (0.0f, rolaMax(), rolaY);
     mudou();
 }
 
+// PADRÃO: a altura da janela é 100% e o zoom aumenta/diminui a partir dela (com zoom grande, a console rola na vertical;
+// com zoom pequeno, cabem mais canais e o fader fica mais comprido). GERAL: tudo na janela, todos os canais à vista.
 float ConsoleEditor::escala() const
 {
     float s = (float) getHeight() / BASE_H;
     if (proc.uiGeral.load())
         s = juce::jmin (s, (float) getWidth() / (NAV + LBL + CEN + (float) juce::jmax (1, (int) canais.size()) * SW));
-    return juce::jmax (0.25f, s);
+    else
+        s *= juce::jlimit (0.5f, 2.0f, proc.uiZoom.load());
+    return juce::jmax (0.2f, s);
 }
-juce::AffineTransform ConsoleEditor::base() const { return juce::AffineTransform::scale (escala()); }
+juce::AffineTransform ConsoleEditor::base() const { return juce::AffineTransform::scale (escala()).translated (0.0f, -rolaY); }
+
+void ConsoleEditor::zoom (int passos)
+{
+    const float z = proc.uiZoom.load();
+    int i = 0;
+    for (int k = 0; k < (int) std::size (zooms); ++k) if (std::abs (zooms[k] - z) < std::abs (zooms[i] - z)) i = k;
+    i = passos == 0 ? 5 : juce::jlimit (0, (int) std::size (zooms) - 1, i + passos);
+    proc.uiZoom = zooms[i];
+    proc.uiGeral = false;
+    primeiro = juce::jlimit (0, juce::jmax (0, (int) canais.size() - cabem()), primeiro);
+    rolaY = juce::jlimit (0.0f, rolaMax(), rolaY);
+}
 int ConsoleEditor::cabem() const { return juce::jmax (1, (int) ((larguraBase() - NAV - LBL - CEN) / SW)); }
 
 void ConsoleEditor::listaCanais()
@@ -491,6 +537,10 @@ void ConsoleEditor::listaCanais()
         const int ta = a->tipo(), tb = b->tipo();
         if (ta != tb) return ta < tb;                                   // canais primeiro, grupos depois
         if (ta == 1 && inteiro (*a, "grp") != inteiro (*b, "grp")) return inteiro (*a, "grp") < inteiro (*b, "grp");
+        // a ordem das faixas no DAW; quem não tem número vai para o fim, na ordem em que abriu
+        const int pa = a->posicao(), pb = b->posicao();
+        if ((pa > 0) != (pb > 0)) return pa > 0;
+        if (pa != pb) return pa < pb;
         return a->numero() < b->numero();
     });
     versaoLista = ver;
@@ -538,6 +588,7 @@ void ConsoleEditor::assinatura (std::vector<float>& s)
     s.push_back ((float) primeiro); s.push_back ((float) selNum); s.push_back ((float) barra);
     s.push_back (autoSel ? 1.0f : 0.0f); s.push_back (cores ? 1.0f : 0.0f); s.push_back (ppm ? 1.0f : 0.0f);
     s.push_back (proc.uiGeral.load() ? 1.0f : 0.0f);
+    s.push_back (proc.uiZoom.load()); s.push_back (rolaY);
     for (auto* pid : pidsConsole) s.push_back (proc.norm (pid));
     for (auto* c : canais)
     {
@@ -558,10 +609,20 @@ void ConsoleEditor::mede()
     rmsMax = juce::jmax (rmsMax, rmsAgora);
 }
 
-void ConsoleEditor::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& w)
+// roda: passa os canais (ou rola na vertical, se o zoom não couber na altura); Shift ou roda lateral: canais;
+// Ctrl/Cmd + roda: zoom
+void ConsoleEditor::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
 {
-    const float d = std::abs (w.deltaX) > std::abs (w.deltaY) ? -w.deltaX : w.deltaY;
+    const bool lateral = std::abs (w.deltaX) > std::abs (w.deltaY);
+    const float d = lateral ? -w.deltaX : w.deltaY;
     if (d == 0.0f) return;
+    if (e.mods.isCommandDown() || e.mods.isCtrlDown()) { zoom (d > 0 ? 1 : -1); mudou(); return; }
+    if (! lateral && ! e.mods.isShiftDown() && rolaMax() > 0.5f)
+    {
+        rolaY = juce::jlimit (0.0f, rolaMax(), rolaY - d * 240.0f);
+        mudou();
+        return;
+    }
     primeiro = juce::jlimit (0, juce::jmax (0, (int) canais.size() - cabem()), primeiro + (d > 0 ? -1 : 1));
     mudou();
 }
@@ -572,8 +633,11 @@ void ConsoleEditor::acao (int a, const juce::MouseEvent& e)
     {
         case aAutoSel: autoSel = ! autoSel; break;
         case aCores:   cores = ! cores; break;
-        case aPadrao:  proc.uiGeral = false; break;
-        case aGeral:   proc.uiGeral = true; primeiro = 0; break;
+        case aPadrao:  proc.uiGeral = false; rolaY = juce::jlimit (0.0f, rolaMax(), rolaY); break;
+        case aGeral:   proc.uiGeral = true; primeiro = 0; rolaY = 0; break;
+        case aZoomMenos: zoom (-1); break;
+        case aZoomMais:  zoom (1); break;
+        case aZoom100:   zoom (0); break;
         case aVu:      ppm = false; break;
         case aPpm:     ppm = true; break;
         case aEco: case aHq:
@@ -631,8 +695,18 @@ void ConsoleEditor::pintaLateral (juce::Graphics& g, float h)
     auto bt = [&] (juce::Rectangle<float> r, const char* s, bool on, int a) { tecla (g, r, u8 (s), on, hex (0x8a9097)); acaoEm (r, a); };
     const float hw = (w - 32) / 2;
     sec ("ZOOM", 118);
-    bt ({ x + 14, 140, w - 28, 18 }, "PADR\xc3\x83O", ! proc.uiGeral.load(), aPadrao);
-    bt ({ x + 14, 164, w - 28, 18 }, "GERAL", proc.uiGeral.load(), aGeral);
+    {
+        const bool geral = proc.uiGeral.load();
+        bt ({ x + 14, 140, 24, 18 }, "-", false, aZoomMenos);
+        bt ({ x + w - 38, 140, 24, 18 }, "+", false, aZoomMais);
+        const auto rz = juce::Rectangle<float> (x + 42, 140, w - 84, 18);
+        g.setColour (hex (0x0b0c0d)); g.fillRoundedRectangle (rz, 2.0f);
+        txt (g, geral ? juce::String ("GERAL") : juce::String (juce::roundToInt (proc.uiZoom.load() * 100.0f)) + "%",
+             rz.getCentreX(), rz.getCentreY(), 9.0f, hex (0x7fd0ff), Al::meio, true, true);
+        acaoEm (rz, aZoom100);   // clique no número: volta a 100%
+        bt ({ x + 14, 164, hw, 18 }, "PADR\xc3\x83O", ! geral, aPadrao);
+        bt ({ x + 18 + hw, 164, hw, 18 }, "GERAL", geral, aGeral);
+    }
     sec ("MEDIDOR", 196);
     bt ({ x + 14, 218, hw, 18 }, "VU", ! ppm, aVu);
     bt ({ x + 18 + hw, 218, hw, 18 }, "PPM", ppm, aPpm);
@@ -666,9 +740,9 @@ void ConsoleEditor::pintaTopo (juce::Graphics& g, float x, float w)
     for (auto* c : canais) if (c->numero() == selNum) sel = c;
     if (sel != nullptr)
     {
-        led7 (g, lx + 12, 13, TOP - 26, tres (sel->numero()), hex (0x6dff5a));
+        led7 (g, lx + 12, 13, TOP - 26, tres (noLed (*sel)), hex (0x6dff5a));
         auto nm = nomeDe (*sel).toUpperCase();
-        if (nm.isEmpty()) nm = "CANAL " + juce::String (sel->numero());
+        if (nm.isEmpty()) nm = "CANAL " + juce::String (noLed (*sel));
         txt (g, nm, lx + 76, TOP / 2 - 1, 13, hex (0x8dff7c), Al::esq, true, true);
         const int gr = inteiro (*sel, "grp");
         if (gr > 0)
@@ -889,7 +963,7 @@ void ConsoleEditor::pintaCentral (juce::Graphics& g, float x, float w, bool fixa
 
 void ConsoleEditor::pintaFixa (juce::Graphics& g)
 {
-    const float W = larguraBase(), H = (float) getHeight() / escala();
+    const float W = larguraBase(), H = alturaBase();
     g.fillAll (hex (0x111111));
     pintaLateral (g, H);
     pintaTopo (g, NAV, W - NAV);
@@ -917,7 +991,7 @@ void ConsoleEditor::pintaFixa (juce::Graphics& g)
 
 void ConsoleEditor::pintaViva (juce::Graphics& g)
 {
-    const float W = larguraBase(), H = (float) getHeight() / escala();
+    const float W = larguraBase(), H = alturaBase();
     const float sy = TOP, sh = H - TOP - 10;
     for (int i = 0; i < cabem(); ++i)
     {
@@ -999,7 +1073,8 @@ void CanalEditor::pintaFixa (juce::Graphics& g)
     // número, nome e grupo
     yy = cartao (96, grupo ? "GRUPO" : "POSI\xc3\x87\xc3\x83O NA CONSOLE");
     g.setColour (hex (0x120606)); g.fillRect (px + 10, yy + 22, 62.0f, 30.0f);
-    led7 (g, px + 16, yy + 28, 18, tres (proc.numero()), grupo ? hex (0x38c8ff) : hex (0xff3326));
+    led7 (g, px + 16, yy + 28, 18, tres (noLed (proc)), grupo ? hex (0x38c8ff) : hex (0xff3326));
+    { Alvo a; a.tipo = Alvo::posicao; a.r = { px + 10, yy + 22, 62, 30 }; a.c = &proc; alvos.push_back (a); }
     g.setColour (hex (0x0b0c0d)); g.fillRoundedRectangle (px + 80, yy + 22, pw - 90, 30, 2.0f);
     g.setColour (hex (0x3a3d41)); g.drawRoundedRectangle (px + 80, yy + 22, pw - 90, 30, 2.0f, 1.0f);
     g.setColour (juce::Colour (proc.cor())); g.fillRect (px + 81, yy + 46, pw - 92, 5.0f);

@@ -31,7 +31,7 @@ public:
     // um controle na tela (coordenadas da tela base)
     struct Alvo
     {
-        enum Tipo { knob, liga, ciclo, escolhe, fader, nome, acao, seleciona };
+        enum Tipo { knob, liga, ciclo, escolhe, fader, nome, acao, seleciona, posicao };
         Tipo tipo = knob;
         juce::Rectangle<float> r;
         mesa::Canal* c = nullptr;
@@ -59,6 +59,7 @@ protected:
     const Alvo* acha (juce::Point<float> pBase) const;
     void atualizaMed (mesa::Canal* c, Med& m, bool ppm);
     void renomeia (mesa::Canal* c);
+    void posiciona (mesa::Canal* c);
     void menu();
 
     // canal inteiro (x, y, altura) — fixa = a parte que não mexe; senão só medidores
@@ -102,6 +103,9 @@ private:
     void listaCanais();
     float escala() const;
     float larguraBase() const { return (float) getWidth() / escala(); }
+    float alturaBase() const { return juce::jmax (1000.0f, (float) getHeight() / escala()); }   // nunca espreme o canal
+    float rolaMax() const { return juce::jmax (0.0f, alturaBase() * escala() - (float) getHeight()); }
+    void zoom (int passos);
     int cabem() const;
     void mostra (int indice);
     mesa::Canal* grupo (int g) const;       // G1..G3 (0..2)
@@ -113,6 +117,7 @@ private:
     std::vector<mesa::Canal*> canais;      // canais em ordem, depois os grupos
     int versaoLista = -1;
     int primeiro = 0;                       // primeiro canal à vista
+    float rolaY = 0;                        // rolagem vertical (px da janela) quando o zoom não cabe na altura
     int selNum = -1;                        // número do canal selecionado
     int barra = 3;                          // seção central: 0..2 = G1..G3, 3 = master
     bool autoSel = true, cores = true, ppm = false;

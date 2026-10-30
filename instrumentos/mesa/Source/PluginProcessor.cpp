@@ -67,6 +67,9 @@ void MesaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     comp.prepare (fs); gate.prepare (fs); bus.prepare (fs);
     for (auto* s : { &gainSm, &driveSm, &gainL, &gainR }) s->reset (fs, 0.02);
     lastPre = -1; lastEq = -1;
+    eqPula = true;
+    for (int i = 0; i < 3; ++i) { vuEst[i] = 0.0f; pkEst[i] = 1e-6f; }
+    ppmEst = 1e-6f;
     dirty = true;
     updateSettings();
     gainSm.setCurrentAndTargetValue (gainSm.getTargetValue());
@@ -107,12 +110,12 @@ void MesaProcessor::updateSettings()
         lastPre = key;
     }
     gainSm.setTargetValue (dbToGain (pGain->load()) * (pPad->load() > 0.5f ? 0.1f : 1.0f));
-    sat.drive = dbToGain (pDrive->load() * 2.4f);          // DRIVE 10 = +24 dB para dentro da curva
+    sat.setDrive (pDrive->load());                          // DRIVE 10 = +20 dB para dentro do circuito
     hpf.set (fs, pHpf->load());
 
-    EqSettings s;
-    for (int b = 0; b < 4; ++b) { s.g[b] = pEqG[b]->load(); s.f[b] = pEqF[b]->load(); }
-    eq.set (fs, (EqModel) juce::roundToInt (pEqm->load()), s);
+    for (int b = 0; b < 4; ++b) { eqAlvo.g[b] = pEqG[b]->load(); eqAlvo.f[b] = pEqF[b]->load(); }
+    const int em = juce::roundToInt (pEqm->load());
+    if (em != eqModelo) { eqModelo = em; eqPula = true; }
 
     comp.thr = pThr->load(); comp.ratio = pRat->load();
     gate.thr = pGate->load();
@@ -147,16 +150,13 @@ void MesaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     const int n = buffer.getNumSamples();
     const int nch = juce::jmin (2, getTotalNumInputChannels(), buffer.getNumChannels());
     if (n == 0 || nch == 0) return;
-    {
-        float m = 0;
-        for (int c = 0; c < nch; ++c) m = std::max (m, buffer.getMagnitude (c, 0, n));
-        inPeak = gainToDb (m);
-    }
+    const bool ativo = licenca->liberada();
+    if (! ativo || mode() == modeMaster) medeEntrada (buffer.getArrayOfReadPointers(), nch, n);   // no CANAL: depois do ganho
 
     const bool solo = pSolo->load() > 0.5f && mode() == modeChannel;
     if (solo != soloWas) { registry->soloCount += solo ? 1 : -1; soloWas = solo; }
 
-    if (licenca->liberada())   // sem ativação: o som passa direto
+    if (ativo)   // sem ativação: o som passa direto
     {
         if (dirty) updateSettings();
         if (mode() == modeMaster) processMaster (buffer, n, nch);
@@ -174,22 +174,48 @@ void MesaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
         }
         gonioPos.store (w, std::memory_order_release);
     }
-    float pk[2] {}, rm[2] {};
-    for (int c = 0; c < nch; ++c)
-    {
-        const float* d = buffer.getReadPointer (c);
-        double e = 0; float m = 0;
-        for (int i = 0; i < n; ++i) { m = std::max (m, std::abs (d[i])); e += (double) d[i] * d[i]; }
-        pk[c] = gainToDb (m); rm[c] = gainToDb ((float) std::sqrt (e / n));
-    }
-    if (nch == 1) { pk[1] = pk[0]; rm[1] = rm[0]; }
-    peakL = pk[0]; peakR = pk[1]; rmsL = rm[0]; rmsR = rm[1];
+    medeSaida (buffer.getArrayOfReadPointers(), nch, n);
     for (int c = nch; c < buffer.getNumChannels(); ++c) buffer.clear (c, 0, n);
+}
+
+// VU de verdade: média do sinal retificado com o tempo de integração do instrumento (300 ms até 99% => constante de
+// 65 ms), multiplicada por 1,11 para a senoide ler o próprio RMS. 0 VU = -18 dBFS RMS (a tela soma 18).
+namespace { constexpr float formaSeno = 1.1107f; }
+
+void MesaProcessor::medeSaida (const float* const* d, int nch, int n)
+{
+    const float kv = 1.0f - std::exp (-1.0f / (float) (fs * 0.065));
+    float m[2] {};
+    for (int c = 0; c < 2; ++c)
+    {
+        const float* x = d[juce::jmin (c, nch - 1)];
+        float v = vuEst[c];
+        for (int i = 0; i < n; ++i) { const float a = std::abs (x[i]); v += (a - v) * kv; m[c] = std::max (m[c], a); }
+        vuEst[c] = v + 1e-20f;
+        pkEst[c] = std::max (m[c], pkEst[c] * std::pow (10.0f, -26.0f / 20.0f * (float) n / (float) fs));
+    }
+    ppmEst = std::max (std::max (m[0], m[1]), ppmEst * std::pow (10.0f, -12.0f / 20.0f * (float) n / (float) fs));
+    peakL = gainToDb (pkEst[0]); peakR = gainToDb (pkEst[1]);
+    rmsL = gainToDb (vuEst[0] * formaSeno); rmsR = gainToDb (vuEst[1] * formaSeno);
+    ppm = gainToDb (ppmEst);
+}
+
+void MesaProcessor::medeEntrada (const float* const* d, int nch, int n)
+{
+    const float kv = 1.0f - std::exp (-1.0f / (float) (fs * 0.065));
+    const float* l = d[0];
+    const float* r = d[juce::jmin (1, nch - 1)];
+    float v = vuEst[2], m = 0.0f;
+    for (int i = 0; i < n; ++i) { const float a = std::max (std::abs (l[i]), std::abs (r[i])); v += (a - v) * kv; m = std::max (m, a); }
+    vuEst[2] = v + 1e-20f;
+    pkEst[2] = std::max (m, pkEst[2] * std::pow (10.0f, -26.0f / 20.0f * (float) n / (float) fs));
+    inVu = gainToDb (vuEst[2] * formaSeno);
+    inPeak = gainToDb (pkEst[2]);
 }
 
 void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nch)
 {
-    const bool hq = pHq->load() > 0.5f && sat.model != PreModel::limpo;
+    const bool hq = pHq->load() > 0.5f;
     float* ch[2] = { buf.getWritePointer (0), buf.getWritePointer (nch > 1 ? 1 : 0) };
 
     // ganho de entrada + HPF
@@ -198,6 +224,7 @@ void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nc
         const float g = gainSm.getNextValue();
         for (int c = 0; c < nch; ++c) ch[c][i] = hpf.process (c, ch[c][i] * g);
     }
+    medeEntrada (ch, nch, n);   // ENTRADA = o que chega no pré (depois do GANHO, do PAD e do HPF)
 
     // PRÉ: a saturação roda a 4× no HQ; no ECO (ou LIMPO) roda a 1× e um atraso iguala a latência
     juce::dsp::AudioBlock<float> block (buf.getArrayOfWritePointers(), (size_t) nch, (size_t) n);
@@ -251,8 +278,26 @@ void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nc
             grMax = std::max (grMax, bus.grDb);
         }
     };
+    // o EQ anda até o alvo em pedaços de 32 amostras (girar o knob não faz degrau nem estalo)
+    const float kEq = 1.0f - std::exp (-32.0f / (float) (fs * 0.025));
     for (int i = 0; i < n; ++i)
     {
+        if ((i & 31) == 0)
+        {
+            bool mexeu = eqPula;
+            for (int b = 0; b < 4; ++b)
+            {
+                const float g0 = eqAgora.g[b], f0 = eqAgora.f[b];
+                if (eqPula) { eqAgora.g[b] = eqAlvo.g[b]; eqAgora.f[b] = eqAlvo.f[b]; continue; }
+                eqAgora.g[b] += (eqAlvo.g[b] - eqAgora.g[b]) * kEq;
+                eqAgora.f[b] *= std::pow (eqAlvo.f[b] / eqAgora.f[b], kEq);   // frequência anda em oitavas
+                if (std::abs (eqAgora.g[b] - eqAlvo.g[b]) < 0.005f) eqAgora.g[b] = eqAlvo.g[b];
+                if (std::abs (eqAgora.f[b] / eqAlvo.f[b] - 1.0f) < 0.0005f) eqAgora.f[b] = eqAlvo.f[b];
+                mexeu = mexeu || eqAgora.g[b] != g0 || eqAgora.f[b] != f0;
+            }
+            if (mexeu) eq.set (fs, (EqModel) eqModelo, eqAgora);
+            eqPula = false;
+        }
         float l = colour.process (0, ch[0][i]);
         float r = nch > 1 ? colour.process (1, ch[1][i]) : l;
         if (dynFirst) { doDyn (l, r); doEq (l, r); }
@@ -288,8 +333,13 @@ juce::String MesaProcessor::displayName() const
 {
     const juce::ScopedLock sl (nameLock);
     if (nameOverride.isNotEmpty()) return nameOverride;
-    if (hostName.isNotEmpty()) return hostName;
-    return {};
+    // "3-Audio" / "12 Baixo": o número vira a posição (LED); na fita vai só o nome
+    int k = 0;
+    const auto t = hostName.trimStart();
+    while (k < t.length() && k < 4 && juce::CharacterFunctions::isDigit (t[k])) ++k;
+    if (k > 0 && k < t.length() && (t[k] == '-' || t[k] == ' ' || t[k] == '.' || t[k] == '_'))
+        if (const auto resto = t.substring (k + 1).trim(); resto.isNotEmpty()) return resto;
+    return hostName;
 }
 juce::String MesaProcessor::userName() const { const juce::ScopedLock sl (nameLock); return nameOverride; }
 void MesaProcessor::renomeia (const char* utf8)
@@ -314,6 +364,8 @@ void MesaProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("nome", userName(), nullptr);
+    state.setProperty ("pos", posManual.load(), nullptr);
+    state.setProperty ("uizoom", (double) uiZoom.load(), nullptr);
     state.setProperty ("uiw", uiW.load(), nullptr);
     state.setProperty ("uih", uiH.load(), nullptr);
     state.setProperty ("uigeral", uiGeral.load(), nullptr);
@@ -332,7 +384,9 @@ void MesaProcessor::setStateInformation (const void* data, int sizeInBytes)
             }
             if ((int) vt.getProperty ("uiw", 0) > 0) { uiW = (int) vt.getProperty ("uiw"); uiH = (int) vt.getProperty ("uih"); }
             uiGeral = (bool) vt.getProperty ("uigeral", false);
-            for (auto k : { "ui", "uiw", "uih", "uigeral" }) vt.removeProperty (k, nullptr);
+            posManual = juce::jlimit (0, 999, (int) vt.getProperty ("pos", 0));
+            uiZoom = juce::jlimit (0.5f, 2.0f, (float) (double) vt.getProperty ("uizoom", 1.0));
+            for (auto k : { "ui", "uiw", "uih", "uigeral", "pos", "uizoom" }) vt.removeProperty (k, nullptr);
             apvts.replaceState (vt);
             dirty = true;
             registry->changed();
@@ -383,7 +437,41 @@ std::uint32_t MesaProcessor::cor() const
 }
 void MesaProcessor::medidores (float* o) const
 {
-    o[0] = peakL; o[1] = peakR; o[2] = rmsL; o[3] = rmsR; o[4] = grDb; o[5] = inPeak;
+    o[0] = peakL; o[1] = peakR; o[2] = rmsL; o[3] = rmsR; o[4] = grDb; o[5] = inVu; o[6] = inPeak; o[7] = ppm;
+}
+
+// Posição na console = o número da faixa no DAW. Ordem de preferência: o que o usuário escolheu na console; o índice
+// que o DAW manda (VST3: "channel index"); o número no começo do nome da faixa ("3-Audio", "12 Baixo"); 0 = não se sabe
+// (vai para o fim, na ordem em que foi aberto).
+int MesaProcessor::posicao() const
+{
+    if (const int m = posManual.load(); m > 0) return m;
+    if (const int h = faixaHost.load(); h > 0) return h;
+    const juce::ScopedLock sl (nameLock);
+    const auto t = hostName.trimStart();
+    int n = 0, k = 0;
+    while (k < t.length() && k < 4 && juce::CharacterFunctions::isDigit (t[k])) n = n * 10 + (t[k++] - '0');
+    return k > 0 ? n : 0;
+}
+
+void MesaProcessor::posiciona (int n)
+{
+    posManual = juce::jlimit (0, 999, n);
+    registry->changed();
+    ++mesa::Ponte::get().versao;
+}
+
+// chamado pelo invólucro VST3 do JUCE (remendo no CMakeLists da raiz, só nos alvos da MESA) quando o DAW informa o
+// índice da faixa. Pode vir fora da thread da interface: só mexe em atômicos.
+namespace juce
+{
+void ispIndiceDaFaixa (AudioProcessor* p, int indice)
+{
+    if (auto* m = dynamic_cast<MesaProcessor*> (p))
+    {
+        if (m->faixaHost.exchange (juce::jmax (0, indice)) != indice) ++mesa::Ponte::get().versao;
+    }
+}
 }
 
 #ifndef MESA_CONSOLE

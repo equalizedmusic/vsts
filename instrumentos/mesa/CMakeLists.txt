@@ -29,6 +29,7 @@ function(mesa_plugin alvo nome produto codigo bundle console)
     isp_licenca(${alvo} mesa)
     target_compile_definitions(${alvo} PUBLIC
         MESA_CONSOLE=${console}
+        ISP_INDICE_FAIXA=1
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)

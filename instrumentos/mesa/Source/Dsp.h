@@ -66,6 +66,54 @@ struct Biquad
         const double w = 2 * pi * f / fs, al = std::sin (w) / (2 * q), c = std::cos (w);
         set ((1 + c) / 2, -(1 + c), (1 + c) / 2, 1 + al, -2 * c, 1 - al);
     }
+
+    // ---- versão "casada" (magnitude igual à do circuito analógico até perto de Nyquist; método de Vicanek):
+    // polos por invariância ao impulso; zeros escolhidos para a resposta bater com a analógica em 0 Hz, em Nyquist e na
+    // frequência do filtro. A transformada bilinear (RBJ) esmaga o agudo: um shelf em 16 kHz a 48 kHz sai pela metade.
+    // protótipo analógico normalizado: H(s) = (n2 s² + n1 s + n0) / (d2 s² + d1 s + d0), s = jΩ/ω0
+    void matched (double fs, double f0, double n2, double n1, double n0, double d2, double d1, double d0)
+    {
+        const double W = 2 * pi * f0 / fs;
+        auto mag2 = [&] (double w)   // |H|² analógico na frequência digital w
+        {
+            const double o = w / W;
+            const double nr = n0 - n2 * o * o, ni = n1 * o, dr = d0 - d2 * o * o, di = d1 * o;
+            return (nr * nr + ni * ni) / (dr * dr + di * di);
+        };
+        const double wnT = W * std::sqrt (d0 / d2), zeta = (d1 / d2) / (2 * std::sqrt (d0 / d2));
+        const double e = std::exp (-zeta * wnT);
+        const double ca1 = zeta <= 1 ? -2 * e * std::cos (wnT * std::sqrt (1 - zeta * zeta))
+                                     : -2 * e * std::cosh (wnT * std::sqrt (zeta * zeta - 1));
+        const double ca2 = e * e;
+        const double A0 = (1 + ca1 + ca2) * (1 + ca1 + ca2), A1 = (1 - ca1 + ca2) * (1 - ca1 + ca2), A2 = -4 * ca2;
+        const double wm = std::min (W, 0.5 * pi);                 // terceiro ponto: a frequência do filtro (até fs/4)
+        const double p1 = std::sin (wm / 2) * std::sin (wm / 2), p0 = 1 - p1, p2 = 4 * p0 * p1;
+        const double B0 = A0 * mag2 (0.0), B1 = A1 * mag2 (pi);
+        const double B2 = (mag2 (wm) * (A0 * p0 + A1 * p1 + A2 * p2) - B0 * p0 - B1 * p1) / p2;
+        const double W0 = std::sqrt (std::max (0.0, B0)), W1 = std::sqrt (std::max (0.0, B1));
+        const double S = (W0 + W1) / 2;
+        const double nb0 = (S + std::sqrt (std::max (0.0, S * S + B2))) / 2;
+        b0 = nb0; b1 = (W0 - W1) / 2; b2 = S - nb0; a1 = ca1; a2 = ca2;
+    }
+    // sino (RBJ analógico: A = ganho^½; o Q dos polos encolhe no corte, como no circuito)
+    void peakM (double fs, double f, double q, double db)
+    {
+        if (std::abs (db) < 0.01) { flat(); return; }
+        const double A = std::pow (10.0, db / 40.0);
+        matched (fs, std::min (f, fs * 0.49), 1, A / q, 1, 1, 1 / (A * q), 1);
+    }
+    void lowShelfM (double fs, double f, double q, double db)
+    {
+        if (std::abs (db) < 0.01) { flat(); return; }
+        const double A = std::pow (10.0, db / 40.0), sA = std::sqrt (A);
+        matched (fs, f, A, A * sA / q, A * A, A, sA / q, 1);
+    }
+    void highShelfM (double fs, double f, double q, double db)
+    {
+        if (std::abs (db) < 0.01) { flat(); return; }
+        const double A = std::pow (10.0, db / 40.0), sA = std::sqrt (A);
+        matched (fs, std::min (f, fs * 0.49), A * A, A * sA / q, A, 1, sA / q, A);
+    }
 };
 
 struct OnePole   // passa-alta/baixa de 1ª ordem
@@ -80,44 +128,89 @@ struct OnePole   // passa-alta/baixa de 1ª ordem
 // ------------------------------------------------------------------------------------------------ PRÉ
 enum class PreModel { limpo = 0, api = 1, brit = 2 };
 
-// saturação: roda na taxa sobreamostrada (o processador sobe 4× no HQ). ganho de pequeno sinal = 1 em todos os modelos.
+// Saturação do pré: roda na taxa sobreamostrada (o processador sobe 4× no HQ).
+// DRIVE = quanto o sinal entra quente no circuito (0..10 = +0..+30 dB); a saída devolve o ganho de pequeno sinal,
+// então o nível fica parecido e o que muda é o caráter: harmônicas, grave que encorpa, transiente que arredonda.
+// Régua: 0 VU = -18 dBFS; com DRIVE 0 o circuito tem ~20 dB de folga (limpo); DRIVE 5 já colore; DRIVE 10 rasga.
+//  LIMPO   (pré de console britânica, VCA/transistor): limpo até perto do topo, depois 3ª harmônica e clipe macio.
+//  API 312 (operacional discreto 2520 + transformador): joelho duro, 3ª forte com um pouco de 2ª, transiente
+//          "achatado" com punch; o transformador de saída engorda o grave baixo.
+//  BRIT 73 (classe A + transformadores Marinair): 2ª harmônica desde cedo (assimetria do classe A), o grave satura
+//          ANTES no núcleo do transformador (fica mais gordo, com harmônicas, sem sumir), agudo amacia com drive.
 struct PreSat
 {
     PreModel model = PreModel::limpo;
-    float drive = 1.0f;          // ganho para dentro da curva (o processador devolve 1/drive depois)
-    OnePole lowBand;             // BRIT 73: o grave satura antes (núcleo do transformador)
+    float drive = 1.0f;          // ganho para dentro do circuito (linear)
+    float hot = 1.0f;            // folga do circuito: quanto 0 VU fica perto do ponto de saturação
+    float makeup = 1.0f;         // o drive devolve um pouco de nível (o pré "abre" quando esquenta)
+    Biquad emph, deemph;         // transformador: o grave entra mais quente na curva e é devolvido depois (linear = plano)
+    OnePole soft;                // BRIT 73: agudo que amacia conforme o drive
     OnePole dc;
+    float softMix = 0.0f;
 
-    void prepare (double fsOver) { lowBand.lowPass (fsOver, 140.0); dc.lowPass (fsOver, 4.0); lowBand.reset(); dc.reset(); }
-
-    static float curve (float x, float k, float bias)
+    void prepare (double fsOver)
     {
-        // tanh assimétrica normalizada: inclinação 1 em zero, satura em ~1/k; o bias cria a 2ª harmônica
-        const float t0 = std::tanh (k * bias), d0 = k * (1.0f - t0 * t0);
-        return (std::tanh (k * (x + bias)) - t0) / d0;
+        dc.lowPass (fsOver, 5.0); dc.reset();
+        soft.lowPass (fsOver, 14000.0); soft.reset();
+        emph.reset(); deemph.reset();
+        if (model == PreModel::brit)     { emph.lowShelf (fsOver, 150.0, 0.6, 6.0);  deemph.lowShelf (fsOver, 150.0, 0.6, -6.0); }
+        else if (model == PreModel::api) { emph.lowShelf (fsOver, 90.0, 0.6, 3.0);   deemph.lowShelf (fsOver, 90.0, 0.6, -3.0); }
+        else                             { emph.flat(); deemph.flat(); }
+        hot = model == PreModel::brit ? 0.42f : model == PreModel::api ? 0.8f : 1.0f;
     }
+    void setDrive (float knob)   // 0..10 = +0..+20 dB para dentro do circuito
+    {
+        knob = std::max (0.0f, std::min (10.0f, knob));
+        drive = dbToGain (knob * 2.0f);
+        makeup = dbToGain (knob * 0.3f);
+        softMix = model == PreModel::brit ? knob / 10.0f * 0.5f : 0.0f;
+    }
+
+    // tanh com bias (assimetria => 2ª harmônica), inclinação 1 em zero
+    static float asym (float x, float bias)
+    {
+        const float t0 = std::tanh (bias), d0 = 1.0f - t0 * t0;
+        return (std::tanh (x + bias) - t0) / d0;
+    }
+    // clipe de joelho ajustável: p alto = mais duro (inclinação 1 em zero, teto 1)
+    static float knee (float x, float p) { return x / std::pow (1.0f + std::pow (std::abs (x), p), 1.0f / p); }
 
     float process (int ch, float x)
     {
-        if (model == PreModel::limpo)
-            return x;
-        x *= drive;
+        const float k = drive * hot;
+        float u = x * k;
         float y;
-        if (model == PreModel::api)
+        switch (model)
         {
-            // operacional discreto: joelho mais duro (3ª), pouca assimetria
-            y = curve (x, 0.6f, 0.05f);
-        }
-        else
-        {
-            // classe A: assimetria forte (2ª); o grave entra mais quente no transformador
-            const float lo = lowBand.lp (ch, x);
-            const float e = 0.45f * lo;
-            y = curve (x + e, 0.5f, 0.14f) - e;
+            case PreModel::limpo:
+                // folga grande; só o pico encosta no trilho
+                y = knee (u * 0.85f, 3.2f) / 0.85f;
+                break;
+            case PreModel::api:
+            {
+                u = (float) emph.process (ch, u);
+                // 2520: um pouco de 2ª, joelho duro de operacional
+                y = knee (u * 1.1f + 0.05f * u * u, 2.4f) / 1.1f;
+                y = (float) deemph.process (ch, y);
+                break;
+            }
+            default:
+            {
+                // transformador de entrada: o grave encosta antes
+                u = (float) emph.process (ch, u);
+                const float t = knee (u * 0.9f, 2.0f) / 0.9f;
+                // classe A: assimetria que dá 2ª harmônica já em nível moderado
+                y = asym (t * 1.3f, 0.16f) / 1.3f;
+                y = (float) deemph.process (ch, y);
+                // agudo arredonda com o drive (o transformador de saída carregado)
+                if (softMix > 0.0f) y += softMix * (soft.lp (ch, y) - y);
+                break;
+            }
         }
         y = dc.hp (ch, y);
-        return y / drive;
+        return y * makeup / k;
     }
+    void reset() { emph.reset(); deemph.reset(); soft.reset(); dc.reset(); }
 };
 
 // cor fixa do circuito (fora da sobreamostragem): o "som de prateleira" de cada pré, sutil
@@ -126,8 +219,8 @@ struct PreColour
     Biquad a, b;
     void set (double fs, PreModel m)
     {
-        if (m == PreModel::api)       { a.lowShelf (fs, 70.0, 0.7, 0.6);  b.peak (fs, 2800.0, 0.6, 0.4); }
-        else if (m == PreModel::brit) { a.lowShelf (fs, 60.0, 0.8, 0.9);  b.highShelf (fs, 13000.0, 0.6, 0.7); }
+        if (m == PreModel::api)       { a.lowShelfM (fs, 60.0, 0.9, 0.8);  b.peakM (fs, 3000.0, 0.5, 0.6); }    // grave firme, presença
+        else if (m == PreModel::brit) { a.peakM (fs, 110.0, 0.7, 0.9);     b.highShelfM (fs, 18000.0, 0.7, -0.8); }   // corpo, topo macio
         else                          { a.flat(); b.flat(); }
     }
     float process (int ch, float x) { return b.process (ch, a.process (ch, x)); }
@@ -179,22 +272,23 @@ struct Eq
     void set (double fs, EqModel m, const EqSettings& s)
     {
         model = m;
+        // filtros "casados" (Biquad::matched): a curva é a do circuito até o fim do agudo, sem o esmagamento da bilinear
         if (m == EqModel::e4k)
         {
-            // Q proporcional: pouco ganho = largo, muito ganho = estreito
-            auto qOf = [] (float g) { return 0.55 + std::abs (g) / 15.0 * 1.6; };
-            band[0].highShelf (fs, s.f[0], 0.707, s.g[0]);
-            band[1].peak (fs, s.f[1], qOf (s.g[1]), s.g[1]);
-            band[2].peak (fs, s.f[2], qOf (s.g[2]), s.g[2]);
-            band[3].lowShelf (fs, s.f[3], 0.707, s.g[3]);
+            // Q proporcional (como no EQ preto da console britânica): pouco ganho = largo e musical, muito = cirúrgico
+            auto qOf = [] (float g) { return 0.6 + std::pow (std::abs (g) / 15.0, 1.3) * 2.2; };
+            band[0].highShelfM (fs, s.f[0], 0.8, s.g[0]);   // shelf com o leve afundado antes da subida
+            band[1].peakM (fs, s.f[1], qOf (s.g[1]), s.g[1]);
+            band[2].peakM (fs, s.f[2], qOf (s.g[2]), s.g[2]);
+            band[3].lowShelfM (fs, s.f[3], 0.8, s.g[3]);
             drive = 0.0f;
         }
         else
         {
-            band[0].highShelf (fs, brit81Snap (0, s.f[0]), 0.6, s.g[0]);
-            band[1].peak (fs, brit81Snap (1, s.f[1]), 0.8, s.g[1]);
-            band[2].peak (fs, brit81Snap (2, s.f[2]), 0.8, s.g[2]);
-            band[3].lowShelf (fs, brit81Snap (3, s.f[3]), 1.15, s.g[3]);   // calombo/afundado do indutor
+            band[0].highShelfM (fs, brit81Snap (0, s.f[0]), 0.6, s.g[0]);
+            band[1].peakM (fs, brit81Snap (1, s.f[1]), 0.7, s.g[1]);
+            band[2].peakM (fs, brit81Snap (2, s.f[2]), 0.7, s.g[2]);
+            band[3].lowShelfM (fs, brit81Snap (3, s.f[3]), 1.2, s.g[3]);   // calombo/afundado do indutor
             float boost = 0.0f;
             for (float g : s.g) boost += std::max (0.0f, g);
             drive = std::min (1.0f, boost / 30.0f);
@@ -205,7 +299,7 @@ struct Eq
         for (auto& b : band) x = b.process (ch, x);
         if (drive > 0.0f)
         {
-            const float k = 0.15f + 0.35f * drive;           // saturação leve do indutor em nível alto
+            const float k = 0.1f + 0.2f * drive;             // saturação leve do indutor em nível alto
             x = std::tanh (k * x) / k;
         }
         return x;

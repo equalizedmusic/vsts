@@ -218,7 +218,8 @@ int main (int argc, char** argv)
             q->setPlayConfigDetails (2, 2, fs, block);
             q->prepareToPlay (fs, block);
             juce::AudioProcessor::TrackProperties t;
-            t.name = juce::String (c.name); t.colourARGB = c.col;
+            // como no Ableton: "N-Nome" (o número vira a posição na console)
+            t.name = juce::String ((int) extras.size() + 1) + "-" + juce::String (c.name); t.colourARGB = c.col;
             q->updateTrackProperties (t);
             setParam (*q, "mode", (float) c.mode); setParam (*q, "grp", (float) c.grp); setParam (*q, "pre", c.pre);
             setParam (*q, "eqm", c.eq); setParam (*q, "gain", c.gain); setParam (*q, "drive", c.drive); setParam (*q, "hpf", c.hpf);

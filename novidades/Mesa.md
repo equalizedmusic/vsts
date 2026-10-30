@@ -4,6 +4,26 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.0 — 2026-10-30
+- O DRIVE do pré agora satura de verdade, e cada modelo do seu jeito (o volume fica parecido, muda o caráter):
+  - LIMPO: limpo até perto do topo, depois 3ª harmônica e clipe macio, como pré de console britânica.
+  - API 312: joelho duro de operacional discreto, 3ª forte com um pouco de 2ª, transiente achatado com punch.
+  - BRIT 73: 2ª harmônica desde cedo (classe A); o grave satura primeiro no transformador e fica mais gordo, com
+    harmônicas, em vez de sumir; o agudo amacia conforme o drive.
+  - Com uma senoide em 0 VU, o DRIVE no máximo dá cerca de 13% de distorção no LIMPO, 14% no API 312 e 10% no BRIT 73
+    (28% no grave).
+- EQ com a curva do circuito analógico até o fim do agudo: um shelf em 16 kHz agora sobe inteiro, sem o achatamento
+  dos filtros digitais comuns. Girar um knob do EQ não faz mais degrau nem estalo: ele anda até o valor em ~25 ms.
+  O Q proporcional do E-4K ficou mais largo com pouco ganho e mais estreito no máximo, como no original.
+- Medidores calibrados: o VU tem a balística de VU de verdade (300 ms) e a escala real (0 VU a 70% do arco), com
+  0 VU = -18 dBFS; o PPM e os picos não perdem mais os transientes entre um quadro da tela e outro. O VU de ENTRADA
+  mede o que chega no pré, depois do GANHO.
+- A console segue a ordem das faixas do DAW: usa o número que o DAW informa (VST3) ou o do começo do nome da faixa
+  ("3-Audio"). O LED vermelho mostra esse número. Duplo clique nele (ou "Posição na console…" no menu do MESA CANAL)
+  escolhe à mão.
+- Zoom de verdade na console: - e + na barra lateral (50% a 200%), Ctrl + roda do mouse, clique no número para voltar
+  a 100%. Com zoom grande a console rola na vertical; GERAL continua mostrando todos os canais.
+
 ## 0.3.1 — 2026-10-30
 - Correções:
   - O knob GANHO da entrada aparecia quase transparente.

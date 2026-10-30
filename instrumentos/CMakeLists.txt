@@ -21,6 +21,31 @@ FetchContent_Declare(JUCE
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(JUCE)
 
+# MESA: o JUCE não repassa o índice da faixa que o DAW manda no VST3 (ChannelContext "channel index"), só nome e cor.
+# Remendo no invólucro VST3: lê o índice e chama juce::ispIndiceDaFaixa(), que o plugin define. Só vale nos alvos que
+# definem ISP_INDICE_FAIXA (a MESA); os outros compilam o arquivo igual ao original. Se o JUCE mudar e o trecho não for
+# achado, segue sem o remendo (a MESA usa o número do nome da faixa).
+set(_isp_vst3 "${juce_SOURCE_DIR}/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp")
+file(READ "${_isp_vst3}" _isp_txt)
+string(FIND "${_isp_txt}" "ispIndiceDaFaixa" _isp_ja)
+set(_isp_ancora "AudioProcessor::TrackProperties trackProperties;")
+string(FIND "${_isp_txt}" "${_isp_ancora}" _isp_pos)
+if(_isp_ja EQUAL -1 AND NOT _isp_pos EQUAL -1)
+    string(REPLACE "${_isp_ancora}" "${_isp_ancora}
+               #if defined (ISP_INDICE_FAIXA)
+                {
+                    void ispIndiceDaFaixa (AudioProcessor*, int);
+                    Steinberg::int64 indiceFaixa = 0;
+                    if (list->getInt (Vst::ChannelContext::kChannelIndexKey, indiceFaixa) == kResultTrue)
+                        ispIndiceDaFaixa (instance, (int) indiceFaixa);
+                }
+               #endif" _isp_txt "${_isp_txt}")
+    file(WRITE "${_isp_vst3}" "${_isp_txt}")
+    message(STATUS "MESA: invólucro VST3 lendo o índice da faixa")
+elseif(_isp_pos EQUAL -1)
+    message(WARNING "MESA: trecho do invólucro VST3 não achado; posição da faixa só pelo nome")
+endif()
+
 set(VSTS_FORMATS VST3 AU)
 
 # ativação por licença (a mesma dos efeitos): isp_licenca(<alvo> <pacote>) no CMakeLists de cada instrumento

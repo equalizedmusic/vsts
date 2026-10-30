@@ -5,7 +5,8 @@ Console analógica em plugin (efeito, VST3/AU), em dois plugins do mesmo código
 - **MESA**, a console. Vai no **master** do DAW. A janela é o mixer inteiro:
   - à esquerda, a barra lateral;
   - em cima, o visor do canal selecionado;
-  - no meio, todos os canais lado a lado (a roda do mouse passa; GERAL encolhe para caber todos);
+  - no meio, todos os canais lado a lado, na ordem das faixas do DAW (a roda do mouse passa; zoom de 50% a 200% com
+    - e + ou Ctrl + roda; GERAL encolhe para caber todos);
   - à direita, a seção central: medidor geral com goniômetro, VUs de redução de ganho, COLA BUS do master e os faders
     dos grupos e do master.
 - **MESA CANAL**. Vai no **fim de cada faixa** (tipo CANAL) ou no **canal de grupo** (tipo GRUPO, com G1/G2/G3). Processa
@@ -23,13 +24,18 @@ Console analógica em plugin (efeito, VST3/AU), em dois plugins do mesmo código
   numa variável de ambiente do processo. Pela ponte só passam tipos simples, por uma interface virtual (`mesa::Canal`).
   Funciona quando o DAW carrega os plugins no mesmo processo, que é o padrão do Ableton, Logic, Reaper, FL e Studio One.
 - SOLO: o canal em solo cala os outros CANAIS (não os grupos), pelo `Registry` do binário MESA CANAL.
+- ORDEM na console = `posicao()`: o número escolhido à mão (duplo clique no LED), senão o índice da faixa que o DAW
+  manda no VST3 (o JUCE não repassa: o `instrumentos/CMakeLists.txt` remenda o invólucro VST3 para chamar
+  `juce::ispIndiceDaFaixa`, só nos alvos com `ISP_INDICE_FAIXA`), senão o número no começo do nome da faixa.
+- Medidores: a balística é feita no áudio (`medeSaida`/`medeEntrada`): pico com queda de 26 dB/s, VU de 300 ms
+  calibrado para a senoide ler o RMS (0 VU = -18 dBFS), PPM com queda de 12 dB/s. A tela só desenha.
 
 ## Módulos
 | Módulo | Modelos | Controles |
 |---|---|---|
-| PRÉ | LIMPO, API 312 (operacional discreto: 3ª harmônica), BRIT 73 (classe A: 2ª harmônica, grave satura antes) | GANHO ±20 dB, DRIVE, PAD -20 dB, HPF 18 dB/oit |
+| PRÉ | LIMPO (clipe macio, 3ª), API 312 (operacional discreto: joelho duro, 3ª + 2ª), BRIT 73 (classe A: 2ª; o grave satura antes no transformador) | GANHO ±20 dB, DRIVE (+0 a +20 dB para dentro do circuito, nível compensado), PAD -20 dB, HPF 18 dB/oit |
 | DINÂMICA | VCA (canal), COLA (grupo) | LIMIAR, RAZÃO, GATE (canal) / MIX (grupo), PRÉ (dinâmica antes do EQ) + LEDs de redução |
-| EQ | E-4K (Q proporcional ao ganho; chapa escura), BRIT 81 (frequências em degraus, indutor; chapa cinza) | HF, HMF, LMF, LF (ganho e frequência), IN |
+| EQ | E-4K (Q proporcional ao ganho; chapa escura), BRIT 81 (frequências em degraus, indutor; chapa cinza). Filtros "casados" (Vicanek): curva do analógico até Nyquist; knobs suavizados | HF, HMF, LMF, LF (ganho e frequência), IN |
 | SAÍDA | — | G1–G3, PAN, SOLO, CUT, fader (+10 a -∞) e medidor de LED |
 | MASTER (console) | COLA BUS | LIMIAR, GANHO, MIX, ATAQUE, SOLTURA (AUTO), RAZÃO, IN, SC HPF, fader do master |
 

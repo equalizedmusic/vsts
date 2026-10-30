@@ -16,34 +16,59 @@ int main()
 {
     const double fs = 192000;   // o PRÉ roda sobreamostrado
     const char* nomes[] = { "LIMPO", "API 312", "BRIT 73" };
+    // senoide em 0 VU (-18 dBFS RMS = pico -15) e +6 VU; DRIVE 0, 3, 5, 7, 10
     for (int m = 0; m < 3; ++m)
-        for (float lvl : { -18.0f, -6.0f, 0.0f })
-            for (float drv : { 0.0f, 12.0f })
+        for (float lvl : { -15.0f, -9.0f })
+            for (float drv : { 0.0f, 3.0f, 5.0f, 7.0f, 10.0f })
             {
-                PreSat s; s.model = (PreModel) m; s.prepare (fs); s.drive = dbToGain (drv);
-                for (double f0 : { 100.0, 1000.0 })
+                PreSat s; s.model = (PreModel) m; s.prepare (fs); s.setDrive (drv);
+                for (double f0 : { 80.0, 1000.0 })
                 {
+                    s.reset();
                     std::vector<float> y; const double a = dbToGain (lvl);
                     for (int i = 0; i < (int) fs; ++i) { float v = s.process (0, (float) (a * std::sin (2 * pi * f0 * i / fs))); if (i >= fs / 2) y.push_back (v); }
-                    const double h1 = amp (y, fs, f0), h2 = amp (y, fs, 2 * f0), h3 = amp (y, fs, 3 * f0);
-                    std::printf ("%-8s in %+5.0f dBFS drive %+3.0f  %5.0f Hz: ganho %+5.2f dB  H2 %6.1f dB  H3 %6.1f dB\n", nomes[m], lvl, drv, f0,
-                                 20 * std::log10 (h1 / a), 20 * std::log10 (h2 / h1 + 1e-12), 20 * std::log10 (h3 / h1 + 1e-12));
+                    const double h1 = amp (y, fs, f0);
+                    double thd = 0; for (int k = 2; k <= 7; ++k) { const double hk = amp (y, fs, k * f0); thd += hk * hk; }
+                    std::printf ("%-8s pico %+4.0f drive %4.1f %5.0f Hz: ganho %+5.2f dB  H2 %6.1f  H3 %6.1f  THD %6.2f%%\n", nomes[m], lvl, drv, f0,
+                                 20 * std::log10 (h1 / a), 20 * std::log10 (amp (y, fs, 2 * f0) / h1 + 1e-12),
+                                 20 * std::log10 (amp (y, fs, 3 * f0) / h1 + 1e-12), 100 * std::sqrt (thd) / h1);
                 }
             }
 
+    // EQ: digital (casado) x circuito analógico, a 48 kHz
     const double fe = 48000;
-    for (int m = 0; m < 2; ++m)
+    auto analog = [] (double f, double f0, double n2, double n1, double n0, double d2, double d1, double d0)
     {
-        Eq e; EqSettings s; s.g[0] = 6; s.f[0] = 10000; s.g[1] = -6; s.f[1] = 3000; s.g[2] = 4; s.f[2] = 400; s.g[3] = 5; s.f[3] = 60;
-        e.set (fe, (EqModel) m, s);
-        std::printf ("EQ %s:", m ? "BRIT 81" : "E-4K");
-        for (double f0 : { 30.0, 60.0, 150.0, 400.0, 1000.0, 3000.0, 10000.0, 16000.0 })
+        const double o = f / f0, nr = n0 - n2 * o * o, ni = n1 * o, dr = d0 - d2 * o * o, di = d1 * o;
+        return 10 * std::log10 ((nr * nr + ni * ni) / (dr * dr + di * di));
+    };
+    auto resp = [&] (Biquad& b, double f)
+    {
+        const double w = 2 * pi * f / fe;
+        const double cr = std::cos (w), ci = -std::sin (w), c2r = std::cos (2 * w), c2i = -std::sin (2 * w);
+        const double nr = b.b0 + b.b1 * cr + b.b2 * c2r, ni = b.b1 * ci + b.b2 * c2i;
+        const double dr = 1 + b.a1 * cr + b.a2 * c2r, di = b.a1 * ci + b.a2 * c2i;
+        return 10 * std::log10 ((nr * nr + ni * ni) / (dr * dr + di * di));
+    };
+    struct T { const char* n; int tipo; double f0, q, db; };
+    for (T t : { T { "sino 1k Q1 +12", 0, 1000, 1, 12 }, T { "sino 7k Q2 +12", 0, 7000, 2, 12 }, T { "sino 7k Q1 -12", 0, 7000, 1, -12 },
+                 T { "shelf alto 16k +10", 2, 16000, 0.8, 10 }, T { "shelf alto 8k -8", 2, 8000, 0.8, -8 }, T { "shelf baixo 60 +10", 1, 60, 0.8, 10 } })
+    {
+        Biquad b; const double A = std::pow (10.0, t.db / 40.0), sA = std::sqrt (A);
+        double n2, n1, n0, d2, d1, d0;
+        if (t.tipo == 0)      { b.peakM (fe, t.f0, t.q, t.db);      n2 = 1; n1 = A / t.q; n0 = 1; d2 = 1; d1 = 1 / (A * t.q); d0 = 1; }
+        else if (t.tipo == 1) { b.lowShelfM (fe, t.f0, t.q, t.db);  n2 = A; n1 = A * sA / t.q; n0 = A * A; d2 = A; d1 = sA / t.q; d0 = 1; }
+        else                  { b.highShelfM (fe, t.f0, t.q, t.db); n2 = A * A; n1 = A * sA / t.q; n0 = A; d2 = 1; d1 = sA / t.q; d0 = A; }
+        Biquad r; if (t.tipo == 0) r.peak (fe, t.f0, t.q, t.db); else if (t.tipo == 1) r.lowShelf (fe, t.f0, t.q, t.db); else r.highShelf (fe, t.f0, t.q, t.db);
+        std::printf ("%-20s", t.n);
+        double em = 0, er = 0;
+        for (double f = 20; f < 23900; f *= 1.05)
         {
-            e.reset(); std::vector<float> y; const double a = 0.05;
-            for (int i = 0; i < (int) fe; ++i) { float v = e.process (0, (float) (a * std::sin (2 * pi * f0 * i / fe))); if (i >= fe / 2) y.push_back (v); }
-            std::printf ("  %g Hz %+5.1f", f0, 20 * std::log10 (amp (y, fe, f0) / a));
+            const double a = analog (f, t.f0, n2, n1, n0, d2, d1, d0);
+            em = std::max (em, std::abs (resp (b, f) - a)); er = std::max (er, std::abs (resp (r, f) - a));
         }
-        std::printf ("\n");
+        std::printf (" erro max casado %5.2f dB | bilinear %5.2f dB   @16k: analog %+5.1f casado %+5.1f bilinear %+5.1f\n", em, er,
+                     analog (16000, t.f0, n2, n1, n0, d2, d1, d0), resp (b, 16000), resp (r, 16000));
     }
 
     ChannelComp c; c.prepare (fe); c.thr = -20; c.ratio = 4;

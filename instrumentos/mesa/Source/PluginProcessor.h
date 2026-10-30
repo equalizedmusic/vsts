@@ -50,6 +50,8 @@ public:
     int   abi() const override { return mesa::Ponte::abiVersao; }
     int   tipo() const override { return isConsole ? 2 : juce::jlimit (0, 1, juce::roundToInt (pMode->load())); }
     int   numero() const override { return seqNo; }
+    int   posicao() const override;
+    void  posiciona (int n) override;
     bool  tem (const char* pid) const override { return apvts.getParameter (pid) != nullptr; }
     float valor (const char* pid) const override;
     float norm (const char* pid) const override;
@@ -60,7 +62,7 @@ public:
     int   nome (char* out, int n) const override;
     void  renomeia (const char* utf8) override;
     std::uint32_t cor() const override;
-    void  medidores (float* out6) const override;
+    void  medidores (float* out8) const override;
 
     // ---- para a janela ----
     const bool isConsole;
@@ -71,10 +73,15 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     juce::SharedResourcePointer<mesa::Registry> registry;   // os CANAIS deste binário (SOLO)
 
-    // medidores (dBFS): pico e RMS do bloco, redução de ganho, pico na entrada
-    std::atomic<float> peakL { -120.0f }, peakR { -120.0f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f }, inPeak { -120.0f };
+    // medidores (dBFS), com a balística feita aqui no áudio (a tela lê a 30 Hz e perderia os blocos do meio):
+    // pico com queda de 26 dB/s, VU (média retificada, 300 ms, calibrada para a senoide ler o RMS), PPM (queda 12 dB/s)
+    std::atomic<float> peakL { -120.0f }, peakR { -120.0f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f }, inPeak { -120.0f },
+                       inVu { -120.0f }, ppm { -120.0f };
+    std::atomic<int> faixaHost { 0 };      // número da faixa que o DAW informou (VST3: channel index)
+    std::atomic<int> posManual { 0 };      // número escolhido à mão na console (0 = automático)
     std::atomic<int> uiW { 0 }, uiH { 0 };  // tamanho da janela (0 = ainda não abriu: a tela escolhe)
     std::atomic<bool> uiGeral { false };     // CONSOLE: vista GERAL (todos os canais na largura)
+    std::atomic<float> uiZoom { 1.0f };      // CONSOLE: zoom da vista PADRÃO
 
     // CONSOLE: últimas amostras do master para o goniômetro (escritas no áudio, lidas pela tela)
     static constexpr int gonioN = 2048;
@@ -104,6 +111,14 @@ private:
     int osLatency = 0;
 
     juce::SmoothedValue<float> gainSm, driveSm, gainL, gainR;
+    // EQ sem degrau: os knobs andam até o alvo em ~25 ms e os coeficientes são refeitos a cada 32 amostras
+    mesa::EqSettings eqAlvo, eqAgora;
+    int eqModelo = 0;
+    bool eqPula = true;
+    // balística dos medidores
+    float vuEst[3] {}, pkEst[3] { 1e-6f, 1e-6f, 1e-6f }, ppmEst = 1e-6f, grEst = 0.0f;
+    void medeSaida (const float* const* d, int nch, int n);
+    void medeEntrada (const float* const* d, int nch, int n);
     std::atomic<bool> dirty { true };
     int lastPre = -1, lastEq = -1;
     bool soloWas = false;

@@ -278,6 +278,8 @@ inline void barraLed (Graphics& g, float x, float y, float w, float h, float db,
 // ------------------------------------------------------------------ VU de agulha
 // v 0..1 (posição da agulha); creme = mostrador creme (canal) ou azulado (barramento)
 // gr = escala de redução de ganho (0 à direita, a agulha desce para a esquerda); senão escala de VU (-20 .. +3)
+// posição na escala de VU (0 = repouso, 1 = +3 VU): a agulha é proporcional à tensão; -20 VU fica a 7% do arco
+inline float vuPosEscala (float db) { return std::pow (10.0f, (db - 3.0f) / 20.0f) * 1.035f - 0.035f; }
 inline void vuCaixa (Graphics& g, juce::Rectangle<float> r, const juce::String& rot, bool sel, bool creme, bool gr = false)
 {
     g.setGradientFill (juce::ColourGradient (hex (0x2b2d31), 0, r.getY(), hex (0x141517), 0, r.getBottom(), false));
@@ -301,24 +303,25 @@ inline void vuCaixa (Graphics& g, juce::Rectangle<float> r, const juce::String& 
         if (! gr)
         {
             juce::Path verm;
-            verm.addCentredArc (px, py, R + 1.5f, R + 1.5f, 0, 0.62f * 0.8f, 0.62f, true);
+            verm.addCentredArc (px, py, R + 1.5f, R + 1.5f, 0, -0.62f + vuPosEscala (0.0f) * 1.24f, 0.62f, true);
             g.setColour (hex (0xc4271c));
             g.strokePath (verm, juce::PathStrokeType (2.2f));
         }
-        static const float pv[] = { 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 0.9f, 1.0f }, pg[] = { 0.0f, 0.35f, 0.6f, 0.8f, 1.0f };
-        static const char* nv[] = { "20", "10", "7", "5", "3", "0", "3" };
+        // escala de VU de verdade: a agulha anda em proporção à tensão (0 VU = 71% do arco, +3 no fim)
+        static const float dv[] = { -20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3 }, pg[] = { 0.0f, 0.35f, 0.6f, 0.8f, 1.0f };
+        static const char* nv[] = { "20", "10", "7", "5", "3", "", "", "0", "", "", "3" };
         static const char* ng[] = { "20", "10", "6", "3", "0" };
-        const int n = gr ? 5 : 7;
+        const int n = gr ? 5 : 11;
         for (int i = 0; i < n; ++i)
         {
-            const float pos = gr ? pg[i] : pv[i];
+            const float pos = gr ? pg[i] : vuPosEscala (dv[i]);
             const float a = -0.62f + pos * 1.24f;
-            const bool red = ! gr && pos > 0.85f;
+            const bool red = ! gr && dv[i] > -0.5f;
             const Colour c = red ? hex (0xc4271c) : Colour (0xe60f121cu);
             linha (g, px + std::sin (a) * R, py - std::cos (a) * R, px + std::sin (a) * (R + 7), py - std::cos (a) * (R + 7), c, 1.0f);
             txt (g, gr ? ng[i] : nv[i], px + std::sin (a) * (R + 14), py - std::cos (a) * (R + 14), 6.5f, c);
         }
-        for (int i = 0; i < 20; ++i)   // marcas pequenas
+        for (int i = 0; i < (gr ? 20 : 0); ++i)   // marcas pequenas (a de VU já tem uma por dB)
         {
             const float a = -0.62f + ((float) i + 0.5f) / 20.0f * 1.24f;
             linha (g, px + std::sin (a) * R, py - std::cos (a) * R, px + std::sin (a) * (R + 3.5f), py - std::cos (a) * (R + 3.5f), Colour (0xa60f121cu), 0.8f);
@@ -342,14 +345,7 @@ inline void vuAgulha (Graphics& g, juce::Rectangle<float> r, float v)
     g.fillRect (f.withHeight (f.getHeight() * 0.45f));
 }
 // dB -> posição da agulha (escala de VU: -20 .. +3)
-inline float vuPos (float db)
-{
-    static const float d[] = { -20, -10, -7, -5, -3, 0, 3 }, p[] = { 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 0.9f, 1.0f };
-    if (db <= d[0]) return juce::jmax (-0.05f, (db - d[0]) * 0.01f);
-    for (int i = 0; i < 6; ++i)
-        if (db <= d[i + 1]) return juce::jmap (db, d[i], d[i + 1], p[i], p[i + 1]);
-    return juce::jmin (1.05f, 1.0f + (db - 3.0f) * 0.02f);
-}
+inline float vuPos (float db) { return juce::jlimit (-0.03f, 1.05f, vuPosEscala (db)); }
 
 // ------------------------------------------------------------------ fader
 inline float faderPos (float db) { return std::pow (juce::jlimit (0.0f, 1.0f, (db + 80.0f) / 90.0f), 2.2f); }   // = skew do parâmetro
