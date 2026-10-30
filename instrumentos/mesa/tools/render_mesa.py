@@ -1,10 +1,10 @@
 # MESA — peças do plugin renderizadas no Blender (4.5, Cycles CPU), com a mesma modelagem do render aprovado.
-# Uso: blender -b --factory-startup --python render_mesa.py -- --part chapas|pecas --out <pasta> [--samples 64] [--so nome,nome]
-#   chapas: os módulos sem knob/botão (opacos), a madeira e o couro          -> chapas.png + chapas.json
-#   pecas : knobs (48 posições), botões e LEDs acesos/apagados, faders (alfa) -> pecas.png  + pecas.json
-# Vista de cima, câmera ortográfica: 1 cm = PPC pixels. Luz de sol (igual em todo lugar), para a chapa e a peça
-# casarem em qualquer posição da tela.
-# (render_mesa.py = este cabeçalho + a biblioteca de modelagem + render_tail.py; ver monta_script.py)
+# Uso: blender -b --factory-startup --python render_mesa.py -- --part chapas|pecas --out <pasta> [--nome x] [--ppc 64]
+#        [--samples 64] [--so prefixo,prefixo] [--sem prefixo] [--tilt 18]
+#   chapas: os módulos sem knob/botão (opacos), a madeira e o couro          -> <nome>.png + <nome>.json
+#   pecas : knobs (48 posições), teclas soltas/apertadas, LEDs acesos, faders (alfa + sombra) -> idem
+# Câmera ortográfica inclinada (ver "lista de peças"): 1 cm = PPC pixels; luz igual em todo lugar, para a chapa e
+# a peça casarem em qualquer posição da tela. O acabamento de equipamento real vem do realismo.py.
 import bpy, bmesh, math, sys, random, os, json
 from mathutils import Vector
 
@@ -283,28 +283,32 @@ def ledcol(x, y_bot, z, n, step, level, w=0.36, hh=None):
 # ================================================================ peças do plugin
 SURF = L.SURF
 
+VU_R, VU_ANG = 0.78, 38.0 / 47.0   # raio da escala (× h) e o arco encolhido para caber inteiro no mostrador
+
 def vu_face(cx, cy, z, w, h, label='VU'):
-    """VU sem agulha e sem vidro: a agulha é desenhada pelo plugin (ver Layout.h: pivô em cy - 0.62 h)."""
+    """VU sem agulha e sem vidro: a agulha é desenhada pelo plugin (ver Layout.h: pivô em cy - 0.62 h, raio VU_R h,
+    ângulos da tabela × VU_ANG). A escala e os números ficam dentro do mostrador, como num VU de verdade."""
     shared_box(('vub', w, h), cx, cy, z, w + 0.5, h + 0.5, 0.35, M['black'], 0.12)
     zf = z + 0.36
     shared_box(('vuf', w, h), cx, cy, z + 0.3, w, h, 0.06, M['vuface'], 0.0)
-    px, py = cx, cy - h * 0.62; R = h * 0.98
+    px, py = cx, cy - h * 0.62; R = h * VU_R
     pos = [(-20, -47), (-10, -30), (-7, -21), (-5, -13), (-3, -3), (-2, 3), (-1, 9.5), (0, 17), (1, 25), (2, 33), (3, 45)]
     for db, a in pos:
-        ar = math.radians(a); ln = 0.2 * h / 2.6 * (1.4 if db in (-20, -10, -5, 0, 3) else 1)
+        ar = math.radians(a * VU_ANG); ln = 0.2 * h / 2.6 * (1.4 if db in (-20, -10, -5, 0, 3) else 1)
         mm = M['vured'] if db > 0 else M['vuink']
         shared_box(('vutk', w, ln), px + math.sin(ar) * (R + ln / 2), py + math.cos(ar) * (R + ln / 2), zf, 0.035 * h / 2.6 * 1.3, ln, 0.004, mm, 0.0, rotz=-ar)
         if db in (-20, -10, -7, -5, -3, 0, 1, 2, 3):
             t = str(abs(db)) if db < 0 else ('+' + str(db) if db else '0')
-            text(t, px + math.sin(ar) * (R + ln + 0.2 * h / 2.6), py + math.cos(ar) * (R + ln + 0.2 * h / 2.6), zf, 0.2 * h / 2.6, mm, rotz=-ar * 0.6)
+            rl = R + 0.2 * h / 2.6 * 1.4 + 0.05 * h
+            text(t, px + math.sin(ar) * rl, py + math.cos(ar) * rl, zf, 0.18 * h / 2.6, mm, rotz=-ar * 0.6)
     for i in range(60):
-        a1 = -47 + i * (92 / 60); ar = math.radians(a1 + 92 / 120)
+        a1 = -47 + i * (92 / 60); ar = math.radians((a1 + 92 / 120) * VU_ANG)
         mm = M['vured'] if a1 >= 17 else M['vuink']
         th = (0.07 if a1 >= 17 else 0.03) * h / 2.6
-        shared_box(('vuarc', w, th), px + math.sin(ar) * R, py + math.cos(ar) * R, zf, R * math.radians(92 / 60) * 1.05, th, 0.004, mm, 0.0, rotz=-ar)
-    text(label, cx, cy - h * 0.12, zf, 0.42 * h / 2.6, M['vuink'], space=1.2)
-    text('−', px - w * 0.36, py + R * 0.5, zf, 0.3 * h / 2.6, M['vuink'])
-    text('+', px + w * 0.36, py + R * 0.5, zf, 0.3 * h / 2.6, M['vured'])
+        shared_box(('vuarc', w, th), px + math.sin(ar) * R, py + math.cos(ar) * R, zf, R * math.radians(92 / 60 * VU_ANG) * 1.05, th, 0.004, mm, 0.0, rotz=-ar)
+    text(label, cx, cy - h * 0.2, zf, 0.4 * h / 2.6, M['vuink'], space=1.2)
+    text('−', px - w * 0.36, py + R * 0.42, zf, 0.3 * h / 2.6, M['vuink'])
+    text('+', px + w * 0.36, py + R * 0.42, zf, 0.3 * h / 2.6, M['vured'])
     shared_box(('vush', w), cx, cy - h * 0.43, z + 0.3, w, h * 0.16, 0.12, M['blackm'], 0.02)
 
 def base(cx, cy, w, h):
@@ -457,112 +461,238 @@ def leather(ox, oy):
     box(ox, oy - L.ARM / 2, -1.6, w, L.ARM + 2, 0.6, M['base'], 0.0)
     box(ox, oy - 0.4 - 4.4 / 2, -1.0, w, 4.4, 3.0, M['leather'], 1.1)
 
-# ---------------------------------------------------------------- lista de peças: (nome, largura, y de cima, y de baixo, função)
-# a peça ocupa [centro - w/2, centro + w/2] × [y1, y0] no espaço do layout; a função recebe (centro x, deslocamento y)
-SEC = L.SEC
-CHAPAS = [('ch_bridge', L.SW, L.Y_BR_TOP, L.Y_BR_BOT, ch_bridge)]
-CHAPAS += [('pre_' + m, L.SW, SEC['pre'][0], SEC['pre'][1], pre(m)) for m in L.PRE_FAM]
-CHAPAS += [('eq_' + m, L.SW, SEC['eq'][0], SEC['eq'][1], eq(m)) for m in L.EQ_FAM]
-CHAPAS += [('dyn_VCA', L.SW, SEC['dyn'][0], SEC['dyn'][1], dyn('VCA', ('THR', 'RAT', 'GATE'))),
-           ('dyn_COLA 4K', L.SW, SEC['dyn'][0], SEC['dyn'][1], dyn('COLA 4K', ('THR', 'RAT', 'MIX'))),
-           ('out', L.SW, SEC['out'][0], SEC['out'][1], out),
-           ('fad', L.SW, SEC['fad'][0], SEC['fad'][1], fad),
-           ('blank', L.SW, SEC['pre'][0], SEC['fad'][1], blank),
-           ('m_bridge', L.MW, L.Y_BR_TOP, L.Y_BR_BOT, m_bridge),
-           ('m_logo', L.MW, L.MSEC['logo'][0], L.MSEC['logo'][1], m_logo),
-           ('m_cola', L.MW, L.MSEC['cola'][0], L.MSEC['cola'][1], m_cola),
-           ('m_out', L.MW, L.MSEC['out'][0], L.MSEC['out'][1], m_out),
-           ('wood', L.WOOD_W, 0.0, -L.TOTAL_H, wood_side),
-           ('top', L.TOTAL_W, 0.0, -L.TOP_FRAME, top_frame),
-           ('leather', L.TOTAL_W - 2 * L.WOOD_W, 0.0, -L.ARM, leather)]
+# ---------------------------------------------------------------- lista de peças (0.2: acabamento real + vista inclinada)
+# Câmera ORTOGRÁFICA inclinada TILT graus (o operador olha de frente e de cima): a projeção é a mesma em qualquer
+# ponto da cena, então cada peça renderizada sozinha casa com a chapa em qualquer posição da tela.
+#   tela (cm, para cima) = y·cos(T) + (z − za)·sin(T);  tela x = x
+# Cada célula tem uma âncora (x, y, za) do layout; o atlas guarda o retângulo e onde a âncora cai dentro dele.
+# Luz: sol principal (com sombra, macio) + rebatedor, contra e rasante sem sombra + HDRI fraco — tudo invariável
+# por translação. Peças (knobs, teclas, LEDs acesos, faders) com fundo transparente sobre um "shadow catcher":
+# a sombra de contato vem do 3D, não do 2D.
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'realismo.py'), encoding='utf-8').read(), 'realismo.py', 'exec'), globals())
+materiais_base()
 
+TILT = float(arg('--tilt', '18')); TR = math.radians(TILT); CT, ST = math.cos(TR), math.sin(TR)
+BR_Z = 1.4                       # altura da ponte de VUs
+FRAME_Z, FLOOR_Z = 3.2, -1.0     # topo da madeira / pé da frente do descanso de braço
+SEC = L.SEC
+
+def hidden(o):                   # só faz sombra (a peça vizinha que não está nesta célula)
+    o.visible_camera = False; o.visible_glossy = False; o.visible_diffuse = False
+    return o
+
+def caster_bridge(ox, oy):       # frente da ponte de VUs, para a sombra cair no topo do módulo PRÉ
+    hidden(box(ox, oy + L.Y_BR_BOT + 0.5, 0, L.SW + 0.2, 1.0, BR_Z, M['bridge'], 0.0))
+
+def caster_frame(ox, oy, w):     # frente da madeira de cima, para a sombra cair no topo da ponte
+    hidden(box(ox, oy + L.Y_BR_TOP + 0.5, 0, w + 0.2, 1.0, FRAME_Z, M['base'], 0.0))
+
+# --- chapas (opacas): função(ox, oy) monta com o centro em x = ox e o y do layout deslocado de oy
+def c_bridge(ox, oy):
+    box(ox, oy + (L.Y_BR_TOP + L.Y_BR_BOT) / 2, 0, L.SW, L.Y_BR_TOP - L.Y_BR_BOT, BR_Z, M['bridge'], 0.04)
+    box(ox, oy + (L.Y_BR_BOT + SEC['pre'][0]) / 2, -0.6, L.SW, L.Y_BR_BOT - SEC['pre'][0], 0.6, M['base'], 0.0)
+    v = L.VU_CH; vu_face(ox + v['x'], oy + v['y'], BR_Z, v['w'], v['h']); vu_lamp(ox + v['x'], oy + v['y'], BR_Z, v['h'])
+    for (x, y), c in ((L.SIG, '#36d16a'), (L.PEAK, '#ff3a2a')): led_dome(ox + x, oy + y, BR_Z, c, False)
+    caster_frame(ox, oy, L.SW)
+
+def c_mod(fn, with_bridge=False):
+    def f(ox, oy):
+        fn(ox, oy)
+        if with_bridge: caster_bridge(ox, oy)
+    return f
+
+def c_div(ox, oy, w=1.0):        # divisória lisa entre canais/grupos/MASTER (também a borda junto da madeira)
+    box(ox, oy + (L.Y_BR_TOP + L.Y_BR_BOT) / 2, 0, w, L.Y_BR_TOP - L.Y_BR_BOT, BR_Z, M['bridge'], 0.04)
+    y0, y1 = SEC['pre'][0], SEC['fad'][1]
+    box(ox, oy + (L.Y_BR_BOT + y0) / 2, -0.6, w, L.Y_BR_BOT - y0, 0.6, M['base'], 0.0)
+    base(ox, oy + (y0 + y1) / 2, w, y0 - y1)
+    shared_box(('div', w), ox, oy + (y0 + y1) / 2, 0, w - L.GAP, y0 - y1 - L.GAP, SURF, M['ssl'], 0.035)
+    caster_frame(ox, oy, w)
+
+def c_mbridge(ox, oy):
+    box(ox, oy + (L.Y_BR_TOP + L.Y_BR_BOT) / 2, 0, L.MW, L.Y_BR_TOP - L.Y_BR_BOT, BR_Z, M['bridge'], 0.04)
+    box(ox, oy + (L.Y_BR_BOT + SEC['pre'][0]) / 2, -0.6, L.MW, L.Y_BR_BOT - SEC['pre'][0], 0.6, M['base'], 0.0)
+    for (x, y, w, h), lb in zip(L.MVU, ('L  VU', 'R  VU')):
+        vu_face(ox + x, oy + y, BR_Z, w, h, lb); vu_lamp(ox + x, oy + y, BR_Z, h)
+    caster_frame(ox, oy, L.MW)
+
+def c_mcola(ox, oy):
+    m_cola(ox, oy)
+    x, y, w, h = L.COLA_VU; vu_lamp(ox + x, oy + y, SURF, h)
+
+def c_top(ox, oy):
+    box(ox, oy + L.Y_BR_TOP + L.TOP_FRAME / 2, -1.0, L.TOTAL_W, L.TOP_FRAME, FRAME_Z + 1.0, wood_mat('madeira_h', (0.015, 0.15, 0.15), 'Y'), 0.15)
+
+def c_wood(ox, oy):
+    yb = L.Y_BOT - 0.2
+    box(ox, oy + (L.Y_TOP + yb) / 2, -1.0, L.WOOD_W, L.Y_TOP - yb, FRAME_Z + 1.0, M['wood'], 0.3)
+
+def c_leather(ox, oy):
+    w = L.TOTAL_W - 2 * L.WOOD_W
+    y0 = SEC['fad'][1]; yb = L.Y_BOT - 0.2
+    box(ox, oy + y0 - 0.25, -1.0, w, 0.5, 0.7, M['base'], 0.0)                         # fresta entre o painel e o braço
+    box(ox, oy + (y0 + yb) / 2, -1.6, w, y0 - yb, 0.6, M['base'], 0.0)
+    box(ox, oy + (y0 - 0.4 + yb) / 2, FLOOR_Z, w, y0 - 0.4 - yb, 2.0 - FLOOR_Z, M['leather'], 1.1)
+
+# célula: (nome, x0, x1, yb, yt, zlo, zhi, za, função(ax, ay))
+#   [x0, x1] × [yb, yt] = pegada no chão em volta da âncora; zlo/zhi = altura da borda de baixo/de cima da célula
+#   (a borda de cima de uma célula de chapa casa com a borda de baixo da célula de trás)
+def chapa_mod(nome, w, y0, y1, fn, ztop=None):
+    return (nome, -w / 2, w / 2, y1 - y0, 0.0, SURF, ztop or SURF, SURF, lambda ax, ay: fn(ax, ay - y0))
+
+CHAPAS = [chapa_mod('ch_bridge', L.SW, L.Y_BR_TOP, SEC['pre'][0], c_bridge, BR_Z)]
+CHAPAS += [chapa_mod('pre_' + m, L.SW, *SEC['pre'], c_mod(pre(m), True)) for m in L.PRE_FAM]
+CHAPAS += [chapa_mod('eq_' + m, L.SW, *SEC['eq'], eq(m)) for m in L.EQ_FAM]
+CHAPAS += [chapa_mod('dyn_VCA', L.SW, *SEC['dyn'], dyn('VCA', ('THR', 'RAT', 'GATE'))),
+           chapa_mod('dyn_COLA 4K', L.SW, *SEC['dyn'], dyn('COLA 4K', ('THR', 'RAT', 'MIX'))),
+           chapa_mod('out', L.SW, *SEC['out'], out),
+           chapa_mod('fad', L.SW, *SEC['fad'], fad),
+           chapa_mod('blank', L.SW, SEC['pre'][0], SEC['fad'][1], c_mod(blank, True)),
+           chapa_mod('div', 1.0, L.Y_BR_TOP, SEC['fad'][1], c_div, BR_Z),
+           chapa_mod('m_bridge', L.MW, L.Y_BR_TOP, SEC['pre'][0], c_mbridge, BR_Z),
+           chapa_mod('m_logo', L.MW, *L.MSEC['logo'], c_mod(m_logo, True)),
+           chapa_mod('m_cola', L.MW, *L.MSEC['cola'], c_mcola),
+           chapa_mod('m_out', L.MW, *L.MSEC['out'], m_out),
+           ('top', -L.TOTAL_W / 2, L.TOTAL_W / 2, 0.0, L.TOP_FRAME, BR_Z, FRAME_Z, SURF, lambda ax, ay: c_top(ax, ay - L.Y_BR_TOP)),
+           ('wood', -L.WOOD_W / 2, L.WOOD_W / 2, L.Y_BOT - 0.2 - L.Y_TOP, 0.0, FLOOR_Z, FRAME_Z, SURF, lambda ax, ay: c_wood(ax, ay - L.Y_TOP)),
+           ('leather', -(L.TOTAL_W - 2 * L.WOOD_W) / 2, (L.TOTAL_W - 2 * L.WOOD_W) / 2, L.Y_BOT - 0.2 - SEC['fad'][1], 0.0, FLOOR_Z, SURF, SURF,
+            lambda ax, ay: c_leather(ax, ay - SEC['fad'][1]))]
+
+# --- peças (fundo transparente + sombra): âncora = centro da peça no pé (za)
 KCAPS = ['red', 'grn', 'blu', 'brn', 'gry', 'wht', 'blk', 'org']
-FRAMES = 48
+FRAMES = int(arg('--frames', '48'))
 KNOBS = [('k_ssl_' + c, (lambda c: lambda x, y, v: knob_ssl(x, y, SURF, v, c, 1.5))(c)) for c in KCAPS]
 KNOBS += [('k_api', lambda x, y, v: knob_api(x, y, SURF, v, 1.5)),
           ('k_mar', lambda x, y, v: knob_marconi(x, y, SURF, v, 1.5)),
           ('k_mar_gain', lambda x, y, v: knob_marconi(x, y, SURF, v, 1.5, red=True))]
 KNOBS += [('k_mar_' + c, (lambda c: lambda x, y, v: knob_marconi(x, y, SURF, v, 1.5, cap=c))(c)) for c in ('red', 'grn', 'blu', 'brn', 'org')]
 BCOLS = dict(amb='#ffb347', grn='#3fbf6a', red='#e8473c', yel='#f2d24b', blu='#3d8bff')
+# teclas: (nome, cor, legenda na lente, largura da tecla) — o plugin desenha na escala 1 (cm de verdade)
+KEYS = [('pad', 'amb', None, 0.46), ('eq', 'grn', 'EQ', 0.62), ('pre', 'amb', 'PRÉ', 0.62),
+        ('g1', 'grn', 'G1', 0.594), ('g2', 'grn', 'G2', 0.594), ('g3', 'grn', 'G3', 0.594),
+        ('m', 'red', 'M', 0.62), ('s', 'yel', 'S', 0.62), ('mode', 'amb', None, 0.75),
+        ('optb', 'blu', None, 0.62), ('optg', 'grn', None, 0.62), ('in', 'amb', 'IN', 0.66), ('hpf', 'blu', 'HPF', 0.66)]
 LCOLS = dict(g='#36d16a', y='#f2c12e', r='#ff3a2a', a='#ffb347')
+CH_STEP = (L.FAD_YT - L.FAD_YB) / (L.METER_N - 1)
+M_STEP = (L.MFAD_YT - L.MFAD_YB) / (L.MMETER_N - 1)
+LEDS = [('l_m_' + c, L.METER_W, CH_STEP * 0.62) for c in 'gyr'] + [('l_mm_' + c, L.MMETER_W, M_STEP * 0.62) for c in 'gyr'] \
+     + [('l_gr_' + c, L.GR_LED_W, L.GR_LED_H) for c in 'ar']
 
-def pack(items, maxw, margin):
-    """Prateleiras: devolve {nome: (x0, y0)} (canto de cima à esquerda, cm; y cresce para baixo) e o tamanho total."""
-    pos = {}; x = y = rowh = 0.0
-    for name, w, h in items:
-        if x > 0 and x + w > maxw: x = 0.0; y += rowh + margin; rowh = 0.0
-        pos[name] = (x, y); x += w + margin; rowh = max(rowh, h)
-    W = max(p[0] + w for (n, w, h), p in zip(items, pos.values()))
-    return pos, W, y + rowh
+def fcap(x, y):
+    shared_box('fstem', x, y, SURF, 0.16, 0.5, 0.4, M['chrome'], 0.0)
+    shared_box('fcap', x, y, SURF + 0.35, L.FAD_CAP_W, L.FAD_CAP_H, 0.85, M['black'], 0.22)
+    shared_box('fcapl', x, y, SURF + 1.199, 1.0, 0.09, 0.005, M['white'], 0.0)
+    for k in (-1, 1): shared_box('fcapr', x, y + k * 0.45, SURF + 1.199, 0.9, 0.05, 0.004, M['blackm'], 0.0)
+def mfcap(x, y):
+    shared_box('mfstem', x, y, SURF, 0.18, 0.6, 0.4, M['chrome'], 0.0)
+    shared_box('mfcap', x, y, SURF + 0.35, L.MFAD_CAP_W, L.MFAD_CAP_H, 0.95, M['red'], 0.25)
+    shared_box('mfcapl', x, y, SURF + 1.299, 1.3, 0.1, 0.005, M['white'], 0.0)
 
-def lights_and_render(W, H, name, transparent):
+GLOW = 0.3   # margem para o brilho que o recorta.py põe em volta do que está aceso
+PECAS = []
+for n, f in KNOBS:
+    big = n == 'k_mar_gain'
+    for i in range(FRAMES):
+        PECAS.append((f'{n}_{i:02d}', -1.25 if big else -1.1, 1.4 if big else 1.25, -1.75 if big else -1.6, 1.15 if big else 1.0,
+                      SURF, SURF + 1.25, SURF, (lambda f, i: lambda x, y: f(x, y, i / (FRAMES - 1)))(f, i)))
+for nm, c, lb, w in KEYS:
+    for on in (0, 1):
+        r = w / 2 + 0.08 + GLOW
+        PECAS.append((f'b_{nm}_{on}', -r, r + 0.15, -r - 0.2, r, SURF, SURF + 0.75, SURF,
+                      (lambda c, on, lb, w: lambda x, y: keycap(x, y, BCOLS[c], bool(on), lb, w))(c, on, lb, w)))
+for nm, w, h in LEDS:
+    PECAS.append((nm, -w / 2 - GLOW, w / 2 + GLOW, -h / 2 - GLOW, h / 2 + GLOW, SURF, SURF + 0.2, SURF,
+                  (lambda nm, w, h: lambda x, y: shared_box(('led', w, h), x, y, SURF, w, h, 0.07, led(LCOLS[nm[-1]], True), 0.02))(nm, w, h)))
+for c in 'gr':   # LED em domo da ponte (sinal/pico): fica no alto da ponte (za = BR_Z)
+    PECAS.append(('l_d_' + c, -0.2 - GLOW, 0.2 + GLOW, -0.2 - GLOW, 0.2 + GLOW, BR_Z, BR_Z + 0.25, BR_Z,
+                  (lambda c: lambda x, y: led_dome(x, y, BR_Z, LCOLS[c], True))(c)))
+PECAS += [('fcap', -1.0, 1.15, -1.75, 1.3, SURF, SURF + 1.25, SURF, fcap), ('mfcap', -1.2, 1.35, -1.95, 1.5, SURF, SURF + 1.35, SURF, mfcap)]
+
+def world_and_lights(dark_bg):
     w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; nt = w.node_tree
     env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(HDRI)
     mp = nt.nodes.new('ShaderNodeMapping'); tc = nt.nodes.new('ShaderNodeTexCoord'); mp.inputs['Rotation'].default_value = (0, 0, math.radians(120))
     nt.links.new(tc.outputs['Generated'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], env.inputs['Vector'])
-    nt.links.new(env.outputs['Color'], nt.nodes['Background'].inputs['Color']); nt.nodes['Background'].inputs['Strength'].default_value = 0.35
-    def sun(nm, d, strength, angle, color=(1, 0.96, 0.9)):
+    bg = nt.nodes['Background']; nt.links.new(env.outputs['Color'], bg.inputs['Color']); bg.inputs['Strength'].default_value = float(arg('--hdri', '0.4'))
+    if dark_bg:   # a câmera vê a sala escura; a luz do HDRI continua valendo para o resto
+        lp = nt.nodes.new('ShaderNodeLightPath'); dk = nt.nodes.new('ShaderNodeBackground'); dk.inputs['Color'].default_value = hexc('#0b0b0c')
+        mx = nt.nodes.new('ShaderNodeMixShader'); out_ = nt.nodes['World Output']
+        nt.links.new(lp.outputs['Is Camera Ray'], mx.inputs[0]); nt.links.new(bg.outputs[0], mx.inputs[1]); nt.links.new(dk.outputs[0], mx.inputs[2])
+        nt.links.new(mx.outputs[0], out_.inputs['Surface'])
+    def sun(nm, d, strength, angle, color=(1, 0.96, 0.9), shadow=True):
         ld = bpy.data.lights.new(nm, 'SUN'); ld.energy = strength; ld.angle = math.radians(angle); ld.color = color
+        for a_ in ('use_shadow',):
+            if hasattr(ld, a_): setattr(ld, a_, shadow)
+        try: ld.cycles.cast_shadow = shadow
+        except Exception: pass
         o = bpy.data.objects.new(nm, ld); col.objects.link(o)
         o.rotation_euler = (-Vector(d)).to_track_quat('-Z', 'Y').to_euler()
-    # as mesmas direções das luzes de área do render aprovado (chave de cima/atrás: sombra do knob para baixo)
-    sun('key', (-20, 70, 110), float(arg('--key', '4.2')), 30)
-    sun('fill', (60, -60, 70), float(arg('--fill', '0.8')), 40, (0.85, 0.9, 1.0))
-    sun('rim', (0, 120, 25), float(arg('--rim', '1.2')), 30)
+    # as direções das softboxes da amostra aprovada (real.png), como sóis macios
+    sun('key', (-35, 55, 95), float(arg('--key', '4.1')), 22)
+    sun('fill', (55, -70, 60), float(arg('--fill', '0.6')), 35, (0.86, 0.9, 1.0), False)
+    sun('rim', (10, 110, 22), float(arg('--rim', '1.0')), 15, (1, 0.96, 0.9), False)
+    sun('strip', (-70, -10, 25), float(arg('--strip', '0.8')), 20, (1.0, 0.92, 0.82), False)
+
+def catcher(x0, x1, y0, y1, z):
+    me = box_mesh(f'cat{len(bpy.data.meshes)}', x1 - x0, y1 - y0, 0.01, 0.0)
+    me.materials.append(M['ssl'])
+    o = bpy.data.objects.new('catcher', me); col.objects.link(o); o.location = ((x0 + x1) / 2, (y0 + y1) / 2, z - 0.01)
+    o.is_shadow_catcher = True
+    return o
+
+def render_cells(cells, name, transparent, ppc, gap, maxw):
+    # 1) retângulo de cada célula na tela (cm) e a distância da âncora até a borda de cima
+    rects = []
+    for (n, x0, x1, yb, yt, zlo, zhi, za, f) in cells:
+        top = yt * CT + (zhi - za) * ST; bot = yb * CT + (zlo - za) * ST
+        rects.append((n, x1 - x0, top - bot, top, x0, f, (x0, x1, yb, yt, za)))
+    # 2) prateleiras na tela, com folga (a sombra de uma não pode cair na outra)
+    pos = {}; x = y = rowh = 0.0
+    for n, w, h, top, x0, f, fp in rects:
+        if x > 0 and x + w > maxw: x = 0.0; y += rowh + gap; rowh = 0.0
+        pos[n] = (x, y); x += w + gap; rowh = max(rowh, h)
+    W = max(pos[r[0]][0] + r[1] for r in rects); H = y + rowh
+    RX, RY = math.ceil(W * ppc), math.ceil(H * ppc); W, H = RX / ppc, RY / ppc
+    mapa = {}
+    for n, w, h, top, x0, f, (fx0, fx1, fyb, fyt, za) in rects:
+        sx, sd = pos[n]
+        ax = sx - x0
+        ay = (-(sd + top) - (za - SURF) * ST) / CT      # y no mundo que põe a âncora (z = za) na altura certa da tela
+        f(ax, ay)
+        if transparent: catcher(ax + fx0, ax + fx1, ay + fyb, ay + fyt, za)
+        mapa[n] = [round(sx * ppc), round(sd * ppc), round(w * ppc), round(h * ppc), round(-x0 * ppc, 2), round(top * ppc, 2)]
+    materiais_uso()
+    world_and_lights(not transparent)
     cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'
     co = bpy.data.objects.new('cam', cam); col.objects.link(co); sc.camera = co
-    cam.ortho_scale = max(W, H); co.location = (W / 2, -H / 2, 60); cam.clip_end = 200
-    sc.render.resolution_x, sc.render.resolution_y = round(W * PPC), round(H * PPC)
+    cam.ortho_scale = max(W, H); cam.clip_end = 500
+    yc = (-H / 2) / CT                                    # ponto (W/2, yc, SURF) cai no centro da tela
+    co.location = (W / 2, yc - ST * 200, SURF + CT * 200); co.rotation_euler = (TR, 0, 0)
+    sc.render.resolution_x, sc.render.resolution_y = RX, RY
     sc.render.resolution_percentage = 100
     sc.render.engine = 'CYCLES'; cy = sc.cycles
     cy.device = 'CPU'; cy.samples = SAMPLES; cy.use_adaptive_sampling = True; cy.adaptive_threshold = 0.015
     cy.use_denoising = True; cy.denoiser = 'OPENIMAGEDENOISE'
-    cy.max_bounces = 6; cy.glossy_bounces = 4; cy.transmission_bounces = 2; cy.caustics_reflective = False; cy.caustics_refractive = False
-    sc.view_settings.view_transform = 'Khronos PBR Neutral'
+    cy.max_bounces = 8; cy.glossy_bounces = 4; cy.transmission_bounces = 4; cy.transparent_max_bounces = 8
+    cy.caustics_reflective = False; cy.caustics_refractive = False
+    sc.view_settings.view_transform = 'Khronos PBR Neutral'; sc.view_settings.look = 'None'
     sc.render.film_transparent = transparent
     sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_mode = 'RGBA' if transparent else 'RGB'
+    sc.render.image_settings.color_depth = '8'
     sc.render.filepath = os.path.join(OUTDIR, name + '.png')
-    print('OBJETOS', len(bpy.data.objects), 'RES', sc.render.resolution_x, sc.render.resolution_y)
+    print('OBJETOS', len(bpy.data.objects), 'RES', RX, RY, 'CELULAS', len(cells))
     bpy.ops.render.render(write_still=True)
     print('RENDER OK', sc.render.filepath)
+    return mapa
 
 os.makedirs(OUTDIR, exist_ok=True)
-mapa = {'ppc': PPC, 'pecas': {}}
+NOME = arg('--nome', PART)
 if PART == 'chapas':
     lst = [c for c in CHAPAS if not ONLY or c[0] in ONLY]
-    pos, W, H = pack([(n, w, y0 - y1) for n, w, y0, y1, f in lst], 82.0, 1.6)
-    for n, w, y0, y1, f in lst:
-        x0, yt = pos[n]
-        f(x0 + w / 2, -yt - y0)            # o y0 do layout cai no topo da vaga
-        mapa['pecas'][n] = [round(x0 * PPC), round(yt * PPC), round(w * PPC), round((y0 - y1) * PPC)]
-    box(W / 2, -H / 2, -3.0, W + 6, H + 6, 0.5, M['base'], 0.0)   # fundo
-    lights_and_render(W, H, 'chapas', False)
+    mapa = render_cells(lst, NOME, False, PPC, 3.0, 96.0)
 else:
-    items = []
-    CK, CB, CL = 2.4, 1.2, 0.6
-    for n, f in KNOBS:
-        if ONLY and n not in ONLY: continue
-        items += [(f'{n}_{i:02d}', CK, CK, (lambda f, i: lambda x, y: f(x, y, i / (FRAMES - 1)))(f, i)) for i in range(FRAMES)]
-    for c, hx in BCOLS.items():
-        for on in (False, True):
-            items.append((f'b_{c}_{int(on)}', CB, CB, (lambda hx, on: lambda x, y: button(x, y, SURF, hx, on, None, 0.66))(hx, on)))
-    for c, hx in LCOLS.items():
-        for on in (False, True):
-            items.append((f'l_{c}_{int(on)}', CL, CL, (lambda hx, on: lambda x, y: shared_box(('lsp', 0.3), x, y, SURF, 0.3, 0.3, 0.07, led(hx, on), 0.02))(hx, on)))
-    def fcap(x, y):
-        shared_box('fstem', x, y, SURF, 0.16, 0.5, 0.4, M['chrome'], 0.0)
-        shared_box('fcap', x, y, SURF + 0.35, L.FAD_CAP_W, L.FAD_CAP_H, 0.85, M['black'], 0.22)
-        shared_box('fcapl', x, y, SURF + 1.199, 1.0, 0.09, 0.005, M['white'], 0.0)
-        for k in (-1, 1): shared_box('fcapr', x, y + k * 0.45, SURF + 1.199, 0.9, 0.05, 0.004, M['blackm'], 0.0)
-    def mfcap(x, y):
-        shared_box('mfstem', x, y, SURF, 0.18, 0.6, 0.4, M['chrome'], 0.0)
-        shared_box('mfcap', x, y, SURF + 0.35, L.MFAD_CAP_W, L.MFAD_CAP_H, 0.95, M['red'], 0.25)
-        shared_box('mfcapl', x, y, SURF + 1.299, 1.3, 0.1, 0.005, M['white'], 0.0)
-    items += [('fcap', 2.0, 2.8, fcap), ('mfcap', 2.4, 3.2, mfcap)]
-    pos, W, H = pack([(n, w, h) for n, w, h, f in items], 40.0, 0.0)
-    for n, w, h, f in items:
-        x0, yt = pos[n]
-        f(x0 + w / 2, -yt - h / 2)
-        mapa['pecas'][n] = [round(x0 * PPC), round(yt * PPC), round(w * PPC), round(h * PPC)]
-    lights_and_render(W, H, 'pecas', True)
-json.dump(mapa, open(os.path.join(OUTDIR, PART if PART == 'chapas' else 'pecas') + '.json', 'w'), indent=0)
+    lst = [c for c in PECAS if not ONLY or any(c[0].startswith(o) for o in ONLY)]
+    if arg('--sem', ''):
+        sem = arg('--sem', '').split(','); lst = [c for c in lst if not any(c[0].startswith(o) for o in sem)]
+    mapa = render_cells(lst, NOME, True, PPC, 0.7, 40.0)
+json.dump({'ppc': PPC, 'tilt': TILT, 'img': NOME + '.png', 'pecas': mapa}, open(os.path.join(OUTDIR, NOME + '.json'), 'w'), indent=0)

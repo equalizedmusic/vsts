@@ -6,11 +6,11 @@ using namespace mesa;
 
 namespace
 {
-constexpr float basePpcm = 20.0f;   // 100% = 20 px por cm (as peças estão a 40 px/cm: nítidas até 200%)
 constexpr int menuLicenca = 20007, menuRenomear = 20008, menuSobre = 20009;
+constexpr float closeCm = lay::WOOD_W + lay::EDGE + 6.0f * lay::SW;   // PERTO: uns 6 canais na largura da janela
+constexpr float maxZoom = 140.0f;                                     // px por cm (as peças estão a 56–64 px/cm)
 
-const juce::Colour cBase (0xff0b0b0c), cBridge (0xff18191c), cLegend (0xffece8dc), cAmber (0xfff2c14e),
-                   cInk (0xff16182a), cLensText (0xff0c0c0d), cLensOff (0xff3a3a3a);
+const juce::Colour cBase (0xff0b0b0c), cLegend (0xffece8dc), cAmber (0xfff2c14e), cInk (0xff16182a);
 
 juce::Font uiFont (float h, bool bold = true)
 {
@@ -58,32 +58,148 @@ const float chThr[lay::METER_N] = { -60, -50, -42, -36, -30, -26, -22, -18, -15,
 const float mThr[lay::MMETER_N] = { -60, -54, -48, -42, -36, -32, -28, -24, -21, -18, -15, -12, -10, -8, -6, -5, -4, -3, -2, -1.5f, -1, -0.5f, -0.2f, 0 };
 const float grThr[5] = { 1, 3, 6, 10, 15 };
 
-juce::String ledColour (int i, int n) { const float f = (float) i / (float) (n - 1); return f < 0.68f ? "g" : (f < 0.86f ? "y" : "r"); }
+const char* ledColour (int i, int n) { const float f = (float) i / (float) (n - 1); return f < 0.68f ? "g" : (f < 0.86f ? "y" : "r"); }
+
+// a cor (JPEG) e a transparência (PNG cinza) das peças viram uma imagem ARGB (a cor já vem multiplicada pelo alfa)
+juce::Image juntaAlfa (const juce::Image& cor, const juce::Image& alfa)
+{
+    const int w = cor.getWidth(), h = cor.getHeight();
+    juce::Image out (juce::Image::ARGB, juce::jmax (1, w), juce::jmax (1, h), true);
+    if (w <= 0 || alfa.getWidth() != w || alfa.getHeight() != h) return out;
+    const juce::Image::BitmapData dc (cor, juce::Image::BitmapData::readOnly), da (alfa, juce::Image::BitmapData::readOnly);
+    juce::Image::BitmapData dout (out, juce::Image::BitmapData::writeOnly);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x)
+        {
+            const auto c = dc.getPixelColour (x, y);
+            const juce::uint8 a = da.pixelFormat == juce::Image::SingleChannel ? *da.getPixelPointer (x, y) : da.getPixelColour (x, y).getRed();
+            juce::PixelARGB px;
+            px.setARGB (a, juce::jmin (a, c.getRed()), juce::jmin (a, c.getGreen()), juce::jmin (a, c.getBlue()));
+            *reinterpret_cast<juce::PixelARGB*> (dout.getPixelPointer (x, y)) = px;
+        }
+    return out;
+}
 } // namespace
+
+// =====================================================================================================================
+// imagens: nível 0 = como vieram do Blender; 1 = metade; 2 = um quarto (para a visão GERAL não serrilhar)
+struct MesaEditor::Art
+{
+    juce::Image chapas[3], pecas[3];
+    Art()
+    {
+        chapas[0] = juce::ImageFileFormat::loadFrom (PluginImg::chapas_jpg, PluginImg::chapas_jpgSize);
+        pecas[0] = juntaAlfa (juce::ImageFileFormat::loadFrom (PluginImg::pecas_jpg, PluginImg::pecas_jpgSize),
+                              juce::ImageFileFormat::loadFrom (PluginImg::pecas_a_png, PluginImg::pecas_a_pngSize));
+    }
+    const juce::Image& level (bool chapa, int l)
+    {
+        auto* v = chapa ? chapas : pecas;
+        if (l > 0 && ! v[l].isValid())
+        {
+            const auto& s = level (chapa, l - 1);
+            if (s.isValid())
+                v[l] = s.rescaled (juce::jmax (1, s.getWidth() / 2), juce::jmax (1, s.getHeight() / 2), juce::Graphics::highResamplingQuality);
+        }
+        return v[l];
+    }
+};
+
+// ------------------------------------------------------------------------------------------------ vista
+float MesaEditor::sy (float layoutY, float za)
+{
+    constexpr float top = lay::Y_TOP * lay::TILT_COS + (lay::FRAME_Z - lay::SURF) * lay::TILT_SIN;
+    return top - (layoutY * lay::TILT_COS + (za - lay::SURF) * lay::TILT_SIN);
+}
+float MesaEditor::consoleH() { return sy (lay::Y_BOT - 0.2f, lay::FLOOR_Z); }
+float MesaEditor::fitZoom() const { return juce::jmax (1.0f, juce::jmin ((float) getWidth() / lay::TOTAL_W, (float) getHeight() / consoleH())); }
+float MesaEditor::closeZoom() const { return juce::jlimit (fitZoom(), maxZoom, (float) getWidth() / closeCm); }
+
+void MesaEditor::setView (float z, float vx, float vy)
+{
+    zoom = juce::jlimit (juce::jmin (fitZoom(), maxZoom), maxZoom, z);
+    const float vw = (float) getWidth() / zoom, vh = (float) getHeight() / zoom;
+    // console menor que a janela: centraliza; maior: não deixa passar da borda
+    viewX = vw >= lay::TOTAL_W ? (lay::TOTAL_W - vw) / 2 : juce::jlimit (0.0f, lay::TOTAL_W - vw, vx);
+    viewY = vh >= consoleH() ? (consoleH() - vh) / 2 : juce::jlimit (0.0f, consoleH() - vh, vy);
+    overview = zoom <= fitZoom() * 1.001f;
+    updateScrollBars();
+    cacheDirty = true;
+    repaint();
+}
+
+void MesaEditor::zoomAround (float newZoom, juce::Point<float> pos)
+{
+    const auto c = toCm (pos);
+    newZoom = juce::jlimit (fitZoom(), maxZoom, newZoom);
+    setView (newZoom, c.x - pos.x / newZoom, c.y - pos.y / newZoom);
+}
+
+void MesaEditor::focusOn (float cx)
+{
+    setView (zoom, cx - (float) getWidth() / zoom * 0.5f, viewY);
+}
+
+void MesaEditor::updateScrollBars()
+{
+    const float vw = (float) getWidth() / zoom, vh = (float) getHeight() / zoom;
+    hBar.setRangeLimits (0.0, lay::TOTAL_W);
+    hBar.setCurrentRange (viewX, vw, juce::dontSendNotification);
+    hBar.setVisible (vw < lay::TOTAL_W - 0.01f);
+    vBar.setRangeLimits (0.0, consoleH());
+    vBar.setCurrentRange (viewY, vh, juce::dontSendNotification);
+    vBar.setVisible (vh < consoleH() - 0.01f);
+    // a barra das vagas de canal fica no descanso de braço (anda com a vista)
+    const auto r = juce::Rectangle<float> (lay::X_CH0, sy (lay::SEC_FAD[1] - lay::ARM * 0.62f), lay::VIS * lay::SW, lay::ARM * 0.2f)
+                       .transformedBy (viewXf()).toNearestInt();
+    scrollBar.setBounds (r);
+}
+
+juce::Rectangle<float> MesaEditor::btnRect (Btn b) const
+{
+    const float s = 26.0f, gap = 4.0f, y = 8.0f, wGeral = 64.0f;
+    float x = (float) getWidth() - (vBar.isVisible() ? 14.0f : 0.0f) - 8.0f;
+    if (b == Btn::overview) return { x - wGeral, y, wGeral, s };
+    x -= wGeral + gap;
+    if (b == Btn::zoomIn) return { x - s, y, s, s };
+    x -= s + gap;
+    if (b == Btn::zoomOut) return { x - s, y, s, s };
+    return {};
+}
+
+MesaEditor::Btn MesaEditor::btnAt (juce::Point<float> p) const
+{
+    for (auto b : { Btn::zoomOut, Btn::zoomIn, Btn::overview })
+        if (btnRect (b).contains (p)) return b;
+    return Btn::none;
+}
 
 // =====================================================================================================================
 MesaEditor::MesaEditor (MesaProcessor& p) : AudioProcessorEditor (&p), proc (p)
 {
-    chapasImg = juce::ImageCache::getFromMemory (PluginImg::chapas_jpg, PluginImg::chapas_jpgSize);
-    pecasImg  = juce::ImageCache::getFromMemory (PluginImg::pecas_png, PluginImg::pecas_pngSize);
-    for (auto& a : atlas::chapas) chapaRect[a.nome] = { a.x, a.y, a.w, a.h };
-    for (auto& a : atlas::pecas)  pecaRect[a.nome]  = { a.x, a.y, a.w, a.h };
+    for (auto& a : atlas::chapas) chapaCell[a.nome] = { { a.x, a.y, a.w, a.h }, a.ax, a.ay };
+    for (auto& a : atlas::pecas)  pecaCell[a.nome]  = { { a.x, a.y, a.w, a.h }, a.ax, a.ay };
 
-    addChildComponent (scrollBar);
-    scrollBar.addListener (this);
-    scrollBar.setAutoHide (false);
-    scrollBar.setColour (juce::ScrollBar::thumbColourId, juce::Colour (0x66ece8dc));
+    for (auto* sb : { &scrollBar, &hBar, &vBar })
+    {
+        addChildComponent (sb);
+        sb->addListener (this);
+        sb->setAutoHide (false);
+        sb->setColour (juce::ScrollBar::thumbColourId, juce::Colour (0x88ece8dc));
+        sb->setColour (juce::ScrollBar::trackColourId, juce::Colour (0x40000000));
+    }
 
     proc.registry->listeners.add (this);
     rebuild();
 
-    const float W = lay::TOTAL_W * basePpcm, H = lay::TOTAL_H * basePpcm;
-    const float saved = proc.uiScale.load();
-    const float openScale = saved > 0.0f ? juce::jlimit (0.45f, 1.6f, saved) : 0.7f;
+    const int w0 = proc.uiW.load(), h0 = proc.uiH.load();
     setResizable (true, true);
-    getConstrainer()->setFixedAspectRatio ((double) W / (double) H);
-    setResizeLimits ((int) (W * 0.45f), (int) (H * 0.45f), (int) (W * 1.6f), (int) (H * 1.6f));
-    setSize ((int) (W * openScale), (int) (H * openScale));
+    setResizeLimits (480, 400, 4200, 2600);
+    setSize (w0 > 0 ? juce::jlimit (480, 4200, w0) : 1180, h0 > 0 ? juce::jlimit (400, 2600, h0) : 860);
+    setView (proc.uiGeral.load() ? 0.0f : closeZoom(), 0.0f, 0.0f);
+    for (auto& s : strips)
+        if (s.p == &proc) focusOn (s.cx);
+    if (proc.mode() == modeMaster) focusOn (lay::X_M0 + lay::MW * 0.5f);
     startTimerHz (30);
     ativacao.anexar (*this);
 }
@@ -158,8 +274,10 @@ void MesaEditor::rebuild()
     repaint();
 }
 
-void MesaEditor::scrollBarMoved (juce::ScrollBar*, double start)
+void MesaEditor::scrollBarMoved (juce::ScrollBar* sb, double start)
 {
+    if (sb == &hBar) { setView (zoom, (float) start, viewY); return; }
+    if (sb == &vBar) { setView (zoom, viewX, (float) start); return; }
     const int s = juce::roundToInt (start);
     if (s != scroll) { scroll = s; openSettle = juce::jmax (openSettle, 1); rebuild(); }
 }
@@ -170,14 +288,17 @@ void MesaEditor::buildCtls()
     for (auto& s : strips)
         if (s.p != nullptr) addStripCtls (s);
     addMasterCtls();
+    drawOrder.resize (ctls.size());
+    for (size_t i = 0; i < ctls.size(); ++i) drawOrder[i] = (int) i;
+    std::stable_sort (drawOrder.begin(), drawOrder.end(), [this] (int a, int b) { return ctls[(size_t) a].y < ctls[(size_t) b].y; });
 }
 
 void MesaEditor::addStripCtls (const Strip& s)
 {
     auto* p = s.p;
-    auto add = [&] (Kind k, const juce::String& pid, float x, float yLayout, float d, const juce::String& spr = {}, int v = 0, const juce::String& txt = {})
+    auto add = [&] (Kind k, const juce::String& pid, float x, float yLayout, float d, const juce::String& spr = {}, int v = 0)
     {
-        Ctl c; c.kind = k; c.p = p; c.pid = pid; c.x = s.cx + x; c.y = sy (yLayout); c.d = d; c.sprite = spr; c.value = v; c.text = txt;
+        Ctl c; c.kind = k; c.p = p; c.pid = pid; c.x = s.cx + x; c.ly = yLayout; c.y = sy (yLayout); c.d = d; c.sprite = spr; c.value = v;
         ctls.push_back (c);
     };
     const int pre = juce::roundToInt (p->value (id::pre));
@@ -187,7 +308,7 @@ void MesaEditor::addStripCtls (const Strip& s)
     add (Kind::knob, id::gain,  lay::PRE_GAIN[0],  lay::PRE_GAIN[1],  lay::PRE_GAIN[2],  preK ("k_ssl_gry", "k_mar_gain"));
     add (Kind::knob, id::drive, lay::PRE_DRIVE[0], lay::PRE_DRIVE[1], lay::PRE_DRIVE[2], preK ("k_ssl_org", "k_mar_org"));
     add (Kind::knob, id::hpf,   lay::PRE_HPF[0],   lay::PRE_HPF[1],   lay::PRE_HPF[2],   preK ("k_ssl_blk", "k_mar"));
-    add (Kind::toggle, id::pad, lay::PRE_PAD[0], lay::PRE_PAD[1], lay::PRE_PAD[2], "amb");
+    add (Kind::toggle, id::pad, lay::PRE_PAD[0], lay::PRE_PAD[1], lay::PRE_PAD[2], "pad");
 
     const bool brit = juce::roundToInt (p->value (id::eqm)) == 1;
     const char* caps[4] = { "red", "grn", "blu", "brn" };
@@ -198,68 +319,71 @@ void MesaEditor::addStripCtls (const Strip& s)
         add (Kind::knob, id::eqG[b], lay::EQ_GAIN_X, lay::EQ_ROW_Y[b], lay::EQ_GAIN_D, spr);
         add (Kind::knob, id::eqF[b], lay::EQ_FREQ_X, lay::EQ_ROW_Y[b], lay::EQ_FREQ_D, spr);
     }
-    add (Kind::toggle, id::eqOn, lay::EQ_BTN[0], lay::EQ_BTN[1], lay::EQ_BTN[2], "grn", 0, "EQ");
-    add (Kind::toggle, id::dynPre, lay::DYNPRE_BTN[0], lay::DYNPRE_BTN[1], lay::DYNPRE_BTN[2], "amb", 0, juce::String::fromUTF8 ("PRÉ"));
+    add (Kind::toggle, id::eqOn, lay::EQ_BTN[0], lay::EQ_BTN[1], lay::EQ_BTN[2], "eq");
+    add (Kind::toggle, id::dynPre, lay::DYNPRE_BTN[0], lay::DYNPRE_BTN[1], lay::DYNPRE_BTN[2], "pre");
 
     add (Kind::knob, id::thr, lay::DYN_X[0], lay::DYN_KNOBS_Y, lay::DYN_D, "k_ssl_gry");
     add (Kind::knob, id::rat, lay::DYN_X[1], lay::DYN_KNOBS_Y, lay::DYN_D, "k_ssl_gry");
     add (Kind::knob, s.group ? id::cmix : id::gate, lay::DYN_X[2], lay::DYN_KNOBS_Y, lay::DYN_D, "k_ssl_grn");
 
     for (int k = 0; k < 3; ++k)
-        add (Kind::radio, id::grp, lay::G_BTNS[k][0], lay::G_BTNS[k][1], lay::G_BTNS[k][2], "grn", k + 1, "G" + juce::String (k + 1));
+        add (Kind::radio, id::grp, lay::G_BTNS[k][0], lay::G_BTNS[k][1], lay::G_BTNS[k][2], "g" + juce::String (k + 1), k + 1);
     add (Kind::knob, id::pan, lay::PAN[0], lay::PAN[1], lay::PAN[2], "k_ssl_wht");
-    add (Kind::toggle, id::mute, lay::MUTE[0], lay::MUTE[1], lay::MUTE[2], "red", 0, "M");
-    if (! s.group) add (Kind::toggle, id::solo, lay::SOLO[0], lay::SOLO[1], lay::SOLO[2], "yel", 0, "S");
-    add (Kind::fader, id::fader, lay::FAD_X, lay::FAD_YT, lay::FAD_YT - lay::FAD_YB, "fcap");
+    add (Kind::toggle, id::mute, lay::MUTE[0], lay::MUTE[1], lay::MUTE[2], "m");
+    if (! s.group) add (Kind::toggle, id::solo, lay::SOLO[0], lay::SOLO[1], lay::SOLO[2], "s");
+    add (Kind::fader, id::fader, lay::FAD_X, lay::FAD_YT, (lay::FAD_YT - lay::FAD_YB) * lay::TILT_COS, "fcap");
     add (Kind::tape, {}, lay::TAPE[0], lay::TAPE[1], lay::TAPE[2]);
 }
 
 void MesaEditor::addMasterCtls()
 {
     const float mx = lay::X_M0 + lay::MW * 0.5f;
-    auto add = [&] (Kind k, MesaProcessor* p, const juce::String& pid, float x, float yLayout, float d, const juce::String& spr = {}, int v = 0, const juce::String& txt = {})
+    auto add = [&] (Kind k, MesaProcessor* p, const juce::String& pid, float x, float yLayout, float d, const juce::String& spr = {}, int v = 0)
     {
-        Ctl c; c.kind = k; c.p = p; c.pid = pid; c.x = mx + x; c.y = sy (yLayout); c.d = d; c.sprite = spr; c.value = v; c.text = txt;
+        Ctl c; c.kind = k; c.p = p; c.pid = pid; c.x = mx + x; c.ly = yLayout; c.y = sy (yLayout); c.d = d; c.sprite = spr; c.value = v;
         ctls.push_back (c);
     };
-    for (int k = 0; k < 3; ++k) add (Kind::modeBtn, &proc, id::mode, lay::MODE_BTNS[k][0], lay::MODE_BTNS[k][1], lay::MODE_BTNS[k][2], "amb", k);
-    for (int k = 0; k < 4; ++k) add (Kind::optBtn, &proc, {}, lay::OPT_BTNS[k][0], lay::OPT_BTNS[k][1], lay::OPT_BTNS[k][2], k < 2 ? "blu" : "grn", k);
+    for (int k = 0; k < 3; ++k) add (Kind::modeBtn, &proc, id::mode, lay::MODE_BTNS[k][0], lay::MODE_BTNS[k][1], lay::MODE_BTNS[k][2], "mode", k);
+    for (int k = 0; k < 4; ++k) add (Kind::optBtn, &proc, {}, lay::OPT_BTNS[k][0], lay::OPT_BTNS[k][1], lay::OPT_BTNS[k][2], k < 2 ? "optb" : "optg", k);
     if (master == nullptr) return;
     const juce::String pids[6] = { id::mthr, id::matk, id::mrel, id::mmkp, id::mrat, id::mmix };
     const char* caps[6] = { "gry", "blk", "blk", "org", "blk", "gry" };
     for (int k = 0; k < 6; ++k)
         add (Kind::knob, master, pids[k], lay::COLA_KNOBS[k][0], lay::COLA_KNOBS[k][1], lay::COLA_D, juce::String ("k_ssl_") + caps[k]);
-    add (Kind::toggle, master, id::min, lay::COLA_IN[0], lay::COLA_IN[1], lay::COLA_IN[2], "amb", 0, "IN");
-    add (Kind::toggle, master, id::mhpf, lay::COLA_HPF[0], lay::COLA_HPF[1], lay::COLA_HPF[2], "blu", 0, "HPF");
-    add (Kind::mfader, master, id::fader, lay::MFAD_X, lay::MFAD_YT, lay::MFAD_YT - lay::MFAD_YB, "mfcap");
+    add (Kind::toggle, master, id::min, lay::COLA_IN[0], lay::COLA_IN[1], lay::COLA_IN[2], "in");
+    add (Kind::toggle, master, id::mhpf, lay::COLA_HPF[0], lay::COLA_HPF[1], lay::COLA_HPF[2], "hpf");
+    add (Kind::mfader, master, id::fader, lay::MFAD_X, lay::MFAD_YT, (lay::MFAD_YT - lay::MFAD_YB) * lay::TILT_COS, "mfcap");
     add (Kind::tape, master, {}, lay::MTAPE[0], lay::MTAPE[1], lay::MTAPE[2]);
 }
 
 // ------------------------------------------------------------------------------------------------ peças
-juce::Image& MesaEditor::sprite (const juce::String& name)
+void MesaEditor::drawCell (juce::Graphics& g, bool chapa, const juce::String& name, float x, float layoutY, float za, float scale, float stretchW)
 {
-    auto it = clipped.find (name);
-    if (it != clipped.end()) return it->second;
-    const bool chapa = name.startsWith ("#");
-    const auto key = (chapa ? name.substring (1) : name).toStdString();
-    auto& rects = chapa ? chapaRect : pecaRect;
-    auto r = rects.find (key);
-    juce::Image img;
-    if (r != rects.end()) img = (chapa ? chapasImg : pecasImg).getClippedImage (r->second);
-    return clipped[name] = img;
-}
+    auto& cells = chapa ? chapaCell : pecaCell;
+    const auto it = cells.find (name.toStdString());
+    if (it == cells.end()) return;
+    const auto& c = it->second;
+    const float ppc = chapa ? atlas::ppcChapas : atlas::ppcPecas;
+    const float kx = stretchW > 0.0f ? stretchW / ((float) c.r.getWidth() / ppc) : scale;
+    const juce::Rectangle<float> dst (x - c.ax / ppc * kx, sy (layoutY, za) - c.ay / ppc * scale,
+                                      (float) c.r.getWidth() / ppc * kx, (float) c.r.getHeight() / ppc * scale);
+    if (! dst.intersects (drawVis)) return;
 
-void MesaEditor::drawPiece (juce::Graphics& g, bool chapa, const juce::String& name, juce::Rectangle<float> cm)
-{
-    auto& img = sprite (chapa ? "#" + name : name);
-    g.setOpacity (1.0f);   // o drawImage herda a transparência da última cor (o número apagado da vaga vazia apagava a peça seguinte)
-    if (img.isValid()) g.drawImage (img, cm, juce::RectanglePlacement::stretchToFit);
-}
-
-void MesaEditor::drawLed (juce::Graphics& g, const juce::String& col, bool on, float x, float y, float w, float h)
-{
-    // o sprite do LED é 0,3 × 0,3 cm numa célula de 0,6 cm
-    drawPiece (g, false, "l_" + col + (on ? "_1" : "_0"), { x - w, y - h, w * 2.0f, h * 2.0f });
+    // nível do atlas: o menor que ainda tem ~1,4 px da imagem por px da tela
+    int lvl = 0;
+    while (lvl < 2 && ppc / (float) (1 << (lvl + 1)) >= drawPx * scale * 1.4f) ++lvl;
+    auto& img = clipped[{ (chapa ? "#" : "") + name, lvl }];
+    if (! img.isValid())
+    {
+        const auto& src = art->level (chapa, lvl);
+        const int f = 1 << lvl;
+        if (src.isValid())
+            img = src.getClippedImage ({ c.r.getX() / f, c.r.getY() / f, juce::jmax (1, c.r.getWidth() / f), juce::jmax (1, c.r.getHeight() / f) });
+    }
+    if (! img.isValid()) return;
+    g.setOpacity (1.0f);   // o drawImage herda a transparência da última cor
+    g.drawImageTransformed (img, juce::AffineTransform::scale (dst.getWidth() / (float) img.getWidth(), dst.getHeight() / (float) img.getHeight())
+                                     .translated (dst.getX(), dst.getY()));
 }
 
 float MesaEditor::norm (const Ctl& c) const
@@ -287,8 +411,7 @@ void MesaEditor::drawCtl (juce::Graphics& g, const Ctl& c)
         case Kind::knob:
         {
             const int frame = juce::jlimit (0, atlas::framesKnob - 1, juce::roundToInt (norm (c) * (atlas::framesKnob - 1)));
-            const float s = 2.4f * c.d / 1.5f;
-            drawPiece (g, false, c.sprite + "_" + juce::String (frame).paddedLeft ('0', 2), { c.x - s / 2, c.y - s / 2, s, s });
+            drawCell (g, false, c.sprite + "_" + juce::String (frame).paddedLeft ('0', 2), c.x, c.ly, lay::SURF, c.d / 1.5f);
             break;
         }
         case Kind::toggle: case Kind::radio: case Kind::modeBtn: case Kind::optBtn:
@@ -302,23 +425,14 @@ void MesaEditor::drawCtl (juce::Graphics& g, const Ctl& c)
                 const bool hq = proc.value (id::hq) > 0.5f;
                 on = c.value == 0 ? proc.registry->meterMode == 0 : c.value == 1 ? proc.registry->meterMode == 1 : c.value == 2 ? ! hq : hq;
             }
-            const float s = 1.2f * c.d / 0.66f;
-            drawPiece (g, false, "b_" + c.sprite + (on ? "_1" : "_0"), { c.x - s / 2, c.y - s / 2, s, s });
-            if (c.text.isNotEmpty())
-            {
-                g.setColour (on ? cLensText : cLensOff);
-                g.setFont (uiFont (c.d * (c.text.length() > 2 ? 0.3f : 0.38f)));
-                g.drawText (c.text, juce::Rectangle<float> (c.x - c.d / 2, c.y - c.d / 2 - 0.05f, c.d, c.d), juce::Justification::centred, false);
-            }
+            drawCell (g, false, "b_" + c.sprite + (on ? "_1" : "_0"), c.x, c.ly);
             break;
         }
         case Kind::fader: case Kind::mfader:
         {
-            const float db = c.p->value (id::fader);
-            const float capY = c.y + faderFrac (db) * c.d;
-            const bool m = c.kind == Kind::mfader;
-            const float w = m ? 2.4f : 2.0f, h = m ? 3.2f : 2.8f;
-            drawPiece (g, false, c.sprite, { c.x - w / 2, capY - h / 2, w, h });
+            const float frac = faderFrac (c.p->value (id::fader));
+            const float yt = c.kind == Kind::mfader ? lay::MFAD_YT : lay::FAD_YT, yb = c.kind == Kind::mfader ? lay::MFAD_YB : lay::FAD_YB;
+            drawCell (g, false, c.sprite, c.x, yt - frac * (yt - yb));
             break;
         }
         default: break;
@@ -328,33 +442,31 @@ void MesaEditor::drawCtl (juce::Graphics& g, const Ctl& c)
 // ------------------------------------------------------------------------------------------------ fundo (cache)
 void MesaEditor::drawStripStatic (juce::Graphics& g, const Strip& s)
 {
-    const float left = s.cx - lay::SW / 2;
-    drawPiece (g, true, "ch_bridge", { left, sy (lay::Y_BR_TOP), lay::SW, lay::Y_BR_TOP - lay::Y_BR_BOT });
+    drawCell (g, true, "ch_bridge", s.cx, lay::Y_BR_TOP);
     g.setColour (s.p != nullptr ? cLegend : cLegend.withAlpha (0.35f));
     g.setFont (uiFont (0.42f));
-    g.drawText (s.number, juce::Rectangle<float> (s.cx - 1.0f, sy (lay::NUM_Y) - 0.3f, 2.0f, 0.6f), juce::Justification::centred, false);
+    g.drawText (s.number, juce::Rectangle<float> (s.cx - 1.0f, sy (lay::NUM_Y, lay::BR_Z) - 0.3f, 2.0f, 0.6f), juce::Justification::centred, false);
 
     if (s.p == nullptr)
     {
-        drawPiece (g, true, "blank", { left, sy (lay::SEC_PRE[0]), lay::SW, lay::SEC_PRE[0] - lay::SEC_FAD[1] });
+        drawCell (g, true, "blank", s.cx, lay::SEC_PRE[0]);
         if (s.group)
         {
             g.setColour (cLegend.withAlpha (0.4f));
             g.setFont (uiFont (0.26f));
             g.drawFittedText (juce::String::fromUTF8 ("GRUPO ") + juce::String (s.slot + 1) + juce::String::fromUTF8 ("\nLIVRE"),
-                              juce::Rectangle<float> (left, sy (-26.0f), lay::SW, 2.0f).toNearestInt(), juce::Justification::centred, 2);
+                              juce::Rectangle<float> (s.cx - lay::SW / 2, sy (-25.0f), lay::SW, 2.0f).toNearestInt(), juce::Justification::centred, 2);
         }
         return;
     }
     auto* p = s.p;
     const int pre = juce::jlimit (0, preNames.size() - 1, juce::roundToInt (p->value (id::pre)));
     const int eqm = juce::jlimit (0, eqNames.size() - 1, juce::roundToInt (p->value (id::eqm)));
-    auto sec = [&] (const juce::String& name, const float* y) { drawPiece (g, true, name, { left, sy (y[0]), lay::SW, y[0] - y[1] }); };
-    sec ("pre_" + preNames[pre], lay::SEC_PRE);
-    sec ("eq_" + eqNames[eqm], lay::SEC_EQ);
-    sec (s.group ? "dyn_COLA 4K" : "dyn_VCA", lay::SEC_DYN);
-    sec ("out", lay::SEC_OUT);
-    sec ("fad", lay::SEC_FAD);
+    drawCell (g, true, "pre_" + preNames[pre], s.cx, lay::SEC_PRE[0]);
+    drawCell (g, true, "eq_" + eqNames[eqm], s.cx, lay::SEC_EQ[0]);
+    drawCell (g, true, s.group ? "dyn_COLA 4K" : "dyn_VCA", s.cx, lay::SEC_DYN[0]);
+    drawCell (g, true, "out", s.cx, lay::SEC_OUT[0]);
+    drawCell (g, true, "fad", s.cx, lay::SEC_FAD[0]);
 
     // dB do fader embaixo do medidor
     const float db = p->value (id::fader);
@@ -366,16 +478,16 @@ void MesaEditor::drawStripStatic (juce::Graphics& g, const Strip& s)
     // fita crepe: bolinha na cor da faixa + nome à mão
     const float tx = s.cx + lay::TAPE[0], ty = sy (lay::TAPE[1]);
     g.setColour (p->trackColour());
-    g.fillRoundedRectangle (s.cx + lay::DOT[0] - lay::DOT[2] / 2, ty - lay::DOT[2] / 2, lay::DOT[2], lay::DOT[2], 0.05f);
+    g.fillEllipse (s.cx + lay::DOT[0] - lay::DOT[2] / 2, ty - lay::DOT[2] / 2 * lay::TILT_COS, lay::DOT[2], lay::DOT[2] * lay::TILT_COS);
     juce::String nm = p->displayName();
     if (nm.isEmpty()) nm = s.group ? "GRUPO " + juce::String (s.slot + 1) : "CANAL " + s.number;
-    g.setColour (cInk);
+    g.setColour (cInk.withAlpha (0.92f));
     g.setFont (handFont (nm.length() < 9 ? 0.46f : 0.38f));
     g.drawFittedText (nm, juce::Rectangle<float> (tx - 1.25f, ty - 0.45f, 2.95f, 0.9f).toNearestInt(), juce::Justification::centred, 1, 0.6f);
 
     if (p == &proc)   // esta cópia: barra âmbar acesa embaixo do número
     {
-        juce::Rectangle<float> bar (s.cx - 1.3f, sy (lay::SEL_Y) - 0.06f, 2.6f, 0.12f);
+        juce::Rectangle<float> bar (s.cx - 1.3f, sy (lay::SEL_Y, lay::BR_Z) - 0.06f, 2.6f, 0.12f);
         g.setColour (cAmber.withAlpha (0.25f));
         g.fillRoundedRectangle (bar.expanded (0.1f), 0.1f);
         g.setColour (juce::Colour (0xffffb347));
@@ -385,15 +497,14 @@ void MesaEditor::drawStripStatic (juce::Graphics& g, const Strip& s)
 
 void MesaEditor::drawMasterStatic (juce::Graphics& g)
 {
-    const float left = lay::X_M0;
-    drawPiece (g, true, "m_bridge", { left, sy (lay::Y_BR_TOP), lay::MW, lay::Y_BR_TOP - lay::Y_BR_BOT });
-    drawPiece (g, true, "m_logo", { left, sy (lay::MSEC_LOGO[0]), lay::MW, lay::MSEC_LOGO[0] - lay::MSEC_LOGO[1] });
-    drawPiece (g, true, "m_cola", { left, sy (lay::MSEC_COLA[0]), lay::MW, lay::MSEC_COLA[0] - lay::MSEC_COLA[1] });
-    drawPiece (g, true, "m_out", { left, sy (lay::MSEC_OUT[0]), lay::MW, lay::MSEC_OUT[0] - lay::MSEC_OUT[1] });
+    const float mx = lay::X_M0 + lay::MW / 2;
+    drawCell (g, true, "m_bridge", mx, lay::Y_BR_TOP);
+    drawCell (g, true, "m_logo", mx, lay::MSEC_LOGO[0]);
+    drawCell (g, true, "m_cola", mx, lay::MSEC_COLA[0]);
+    drawCell (g, true, "m_out", mx, lay::MSEC_OUT[0]);
 
-    const float mx = left + lay::MW / 2;
     const float ty = sy (lay::MTAPE[1]);
-    g.setColour (cInk);
+    g.setColour (cInk.withAlpha (0.92f));
     g.setFont (handFont (0.5f));
     juce::String nm = master != nullptr ? master->displayName() : juce::String();
     g.drawFittedText (nm.isEmpty() ? juce::String ("MIX BUS") : nm,
@@ -401,7 +512,7 @@ void MesaEditor::drawMasterStatic (juce::Graphics& g)
     if (master == nullptr)
     {
         // sem cópia em modo MASTER: o módulo fica apagado com a explicação
-        juce::Rectangle<float> r (left + 0.1f, sy (lay::MSEC_COLA[0]) + 0.1f, lay::MW - 0.2f, lay::MSEC_COLA[0] - lay::MSEC_OUT[1] - 0.2f);
+        juce::Rectangle<float> r (lay::X_M0 + 0.1f, sy (lay::MSEC_COLA[0]) + 0.1f, lay::MW - 0.2f, sy (lay::MSEC_OUT[1]) - sy (lay::MSEC_COLA[0]) - 0.2f);
         g.setColour (juce::Colours::black.withAlpha (0.62f));
         g.fillRect (r);
         g.setColour (cLegend);
@@ -421,36 +532,49 @@ void MesaEditor::drawCache()
     if (cache.getWidth() != w || cache.getHeight() != h) cache = juce::Image (juce::Image::RGB, w, h, false);
     cacheScale = k;
     juce::Graphics g (cache);
-    g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-    g.addTransform (juce::AffineTransform::scale (ppcm() * k));
-
     g.fillAll (cBase);
-    g.setColour (cBridge);
-    g.fillRect (juce::Rectangle<float> (lay::WOOD_W, sy (lay::Y_BR_TOP), lay::TOTAL_W - 2 * lay::WOOD_W, lay::Y_BR_TOP - lay::Y_BR_BOT));
-    drawPiece (g, true, "wood", { 0.0f, 0.0f, lay::WOOD_W, lay::TOTAL_H });
-    drawPiece (g, true, "wood", { lay::TOTAL_W - lay::WOOD_W, 0.0f, lay::WOOD_W, lay::TOTAL_H });
-    drawPiece (g, true, "top", { 0.0f, 0.0f, lay::TOTAL_W, lay::TOP_FRAME });
-    drawPiece (g, true, "leather", { lay::WOOD_W, sy (lay::SEC_FAD[1]), lay::TOTAL_W - 2 * lay::WOOD_W, lay::ARM });
+    g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+    g.addTransform (viewXf().scaled (k));
+    drawPx = zoom * k;
+    drawVis = visibleCm().expanded (0.5f);
 
+    // de trás para a frente: madeira de cima, divisórias, canais, MASTER, peças, descanso de braço, laterais
+    drawCell (g, true, "top", lay::TOTAL_W / 2, lay::Y_BR_TOP);
+    drawCell (g, true, "div", lay::WOOD_W + lay::EDGE / 2, lay::Y_BR_TOP, lay::SURF, 1.0f, lay::EDGE);
+    drawCell (g, true, "div", lay::X_GP0 - 0.5f, lay::Y_BR_TOP);
+    drawCell (g, true, "div", lay::X_M0 - 0.5f, lay::Y_BR_TOP);
+    drawCell (g, true, "div", lay::X_M0 + lay::MW + lay::EDGE / 2, lay::Y_BR_TOP, lay::SURF, 1.0f, lay::EDGE);
     for (auto& s : strips) drawStripStatic (g, s);
     drawMasterStatic (g);
-    for (auto& c : ctls) drawCtl (g, c);
+    for (int i : drawOrder) drawCtl (g, ctls[(size_t) i]);
+    drawCell (g, true, "leather", lay::TOTAL_W / 2, lay::SEC_FAD[1]);
+    // a lateral de madeira da esquerda faz sombra no 1º canal (a luz principal vem da esquerda)
+    {
+        const float x0 = lay::WOOD_W, top = sy (lay::Y_BR_TOP, lay::BR_Z), bot = sy (lay::SEC_FAD[1]);
+        juce::ColourGradient sh (juce::Colours::black.withAlpha (0.45f), x0, 0.0f, juce::Colours::transparentBlack, x0 + 1.1f, 0.0f, false);
+        g.setGradientFill (sh);
+        g.fillRect (juce::Rectangle<float> (x0, top, 1.1f, bot - top));
+    }
+    drawCell (g, true, "wood", lay::WOOD_W / 2, lay::Y_TOP);
+    drawCell (g, true, "wood", lay::TOTAL_W - lay::WOOD_W / 2, lay::Y_TOP);
     cacheDirty = false;
 }
 
 // ------------------------------------------------------------------------------------------------ o que mexe (30 vezes/s)
-void MesaEditor::drawNeedle (juce::Graphics& g, float cx, float cy, float w, float h, float vu)
+void MesaEditor::drawNeedle (juce::Graphics& g, float cx, float layoutY, float za, float w, float h, float vu)
 {
+    // a face do VU fica deitada na ponte: na tela ela é achatada pela inclinação da câmera
     juce::Graphics::ScopedSaveState ss (g);
-    const juce::Rectangle<float> face (cx - w / 2, cy - h / 2, w, h * 0.85f);
+    g.addTransform (juce::AffineTransform::scale (1.0f, lay::TILT_COS).translated (cx, sy (layoutY, za + lay::VU_FACE_DZ)));
+    const juce::Rectangle<float> face (-w / 2, -h / 2, w, h * 0.85f);
     juce::Path clip; clip.addRectangle (face);
     g.reduceClipRegion (clip);
-    const float a = juce::degreesToRadians (vuAngle (vu));
-    const juce::Point<float> pivot (cx, cy + h * 0.62f);
-    const float L = h * 0.98f * 1.06f;
+    const float a = juce::degreesToRadians (vuAngle (vu) * lay::VU_ANG);
+    const juce::Point<float> pivot (0.0f, h * 0.62f);
+    const float L = h * lay::VU_R * 1.12f;
     const juce::Point<float> tip (pivot.x + std::sin (a) * L, pivot.y - std::cos (a) * L);
-    g.setColour (juce::Colours::black.withAlpha (0.18f));
-    g.drawLine ({ pivot.translated (0.06f, 0.08f), tip.translated (0.06f, 0.08f) }, h * 0.02f);
+    g.setColour (juce::Colours::black.withAlpha (0.2f));
+    g.drawLine ({ pivot.translated (0.07f, 0.1f), tip.translated (0.07f, 0.1f) }, h * 0.022f);
     g.setColour (juce::Colour (0xff101010));
     g.drawLine ({ pivot, tip }, h * 0.018f);
     // reflexo do vidro
@@ -462,40 +586,40 @@ void MesaEditor::drawNeedle (juce::Graphics& g, float cx, float cy, float w, flo
 
 void MesaEditor::drawDynamic (juce::Graphics& g)
 {
-    g.setImageResamplingQuality (juce::Graphics::lowResamplingQuality);
+    g.setImageResamplingQuality (juce::Graphics::mediumResamplingQuality);
     for (auto& s : strips)
     {
         if (s.p == nullptr) continue;
         const auto& m = meters[s.p];
-        drawNeedle (g, s.cx + lay::VU_CH[0], sy (lay::VU_CH[1]), lay::VU_CH[2], lay::VU_CH[3], m.vu);
+        drawNeedle (g, s.cx + lay::VU_CH[0], lay::VU_CH[1], lay::BR_Z, lay::VU_CH[2], lay::VU_CH[3], m.vu);
         const float pk = juce::jmax (m.peakL, m.peakR);
-        if (pk > -50.0f) drawLed (g, "g", true, s.cx + lay::SIG[0], sy (lay::SIG[1]), 0.11f, 0.11f);
-        if (pk > -1.0f)  drawLed (g, "r", true, s.cx + lay::PEAK[0], sy (lay::PEAK[1]), 0.11f, 0.11f);
+        if (pk > -50.0f) drawCell (g, false, "l_d_g", s.cx + lay::SIG[0], lay::SIG[1], lay::BR_Z);
+        if (pk > -1.0f)  drawCell (g, false, "l_d_r", s.cx + lay::PEAK[0], lay::PEAK[1], lay::BR_Z);
 
-        const float step = (lay::FAD_YT - lay::FAD_YB) / (lay::METER_N - 1), hh = step * 0.62f;
+        const float step = (lay::FAD_YT - lay::FAD_YB) / (lay::METER_N - 1);
         for (int c = 0; c < 2; ++c)
         {
             const float lv = c == 0 ? m.peakL : m.peakR;
             for (int i = 0; i < lay::METER_N && lv >= chThr[i]; ++i)
-                drawLed (g, ledColour (i, lay::METER_N), true, s.cx + lay::METER_X[c], sy (lay::FAD_YB + (float) i * step), lay::METER_W / 2, hh / 2);
+                drawCell (g, false, juce::String ("l_m_") + ledColour (i, lay::METER_N), s.cx + lay::METER_X[c], lay::FAD_YB + (float) i * step);
         }
         for (int i = 0; i < 5 && m.gr >= grThr[i]; ++i)
-            drawLed (g, i < 4 ? "a" : "r", true, s.cx + lay::GR_LEDS[i][0], sy (lay::GR_LEDS[i][1]), lay::GR_LED_W / 2, lay::GR_LED_H / 2);
+            drawCell (g, false, i < 4 ? "l_gr_a" : "l_gr_r", s.cx + lay::GR_LEDS[i][0], lay::GR_LEDS[i][1]);
     }
 
     const float mx = lay::X_M0 + lay::MW / 2;
     const auto& m = masterMeter;
     if (master != nullptr)
     {
-        drawNeedle (g, mx + lay::MVU[0][0], sy (lay::MVU[0][1]), lay::MVU[0][2], lay::MVU[0][3], m.vuL);
-        drawNeedle (g, mx + lay::MVU[1][0], sy (lay::MVU[1][1]), lay::MVU[1][2], lay::MVU[1][3], m.vuR);
-        drawNeedle (g, mx + lay::COLA_VU[0], sy (lay::COLA_VU[1]), lay::COLA_VU[2], lay::COLA_VU[3], -m.gr);
-        const float step = (lay::MFAD_YT - lay::MFAD_YB) / (lay::MMETER_N - 1), hh = step * 0.62f;
+        drawNeedle (g, mx + lay::MVU[0][0], lay::MVU[0][1], lay::BR_Z, lay::MVU[0][2], lay::MVU[0][3], m.vuL);
+        drawNeedle (g, mx + lay::MVU[1][0], lay::MVU[1][1], lay::BR_Z, lay::MVU[1][2], lay::MVU[1][3], m.vuR);
+        drawNeedle (g, mx + lay::COLA_VU[0], lay::COLA_VU[1], lay::SURF, lay::COLA_VU[2], lay::COLA_VU[3], -m.gr);
+        const float step = (lay::MFAD_YT - lay::MFAD_YB) / (lay::MMETER_N - 1);
         for (int c = 0; c < 2; ++c)
         {
             const float lv = c == 0 ? m.peakL : m.peakR;
             for (int i = 0; i < lay::MMETER_N && lv >= mThr[i]; ++i)
-                drawLed (g, ledColour (i, lay::MMETER_N), true, mx + lay::MMETER_X[c], sy (lay::MFAD_YB + (float) i * step), lay::MMETER_W / 2, hh / 2);
+                drawCell (g, false, juce::String ("l_mm_") + ledColour (i, lay::MMETER_N), mx + lay::MMETER_X[c], lay::MFAD_YB + (float) i * step);
         }
         const float fd = master->value (id::fader);
         const juce::String vals[3] = { fd <= faderMin + 0.01f ? juce::String::fromUTF8 ("-∞") : juce::String (fd, 1) + " dB",
@@ -507,9 +631,35 @@ void MesaEditor::drawDynamic (juce::Graphics& g)
     }
     else
     {
-        drawNeedle (g, mx + lay::MVU[0][0], sy (lay::MVU[0][1]), lay::MVU[0][2], lay::MVU[0][3], -25.0f);
-        drawNeedle (g, mx + lay::MVU[1][0], sy (lay::MVU[1][1]), lay::MVU[1][2], lay::MVU[1][3], -25.0f);
+        drawNeedle (g, mx + lay::MVU[0][0], lay::MVU[0][1], lay::BR_Z, lay::MVU[0][2], lay::MVU[0][3], -25.0f);
+        drawNeedle (g, mx + lay::MVU[1][0], lay::MVU[1][1], lay::BR_Z, lay::MVU[1][2], lay::MVU[1][3], -25.0f);
     }
+}
+
+void MesaEditor::drawOverlay (juce::Graphics& g)
+{
+    // vinheta leve (a lente da foto) e os botões da vista
+    const auto b = getLocalBounds().toFloat();
+    juce::ColourGradient v (juce::Colours::transparentBlack, b.getCentreX(), b.getCentreY(),
+                            juce::Colours::black.withAlpha (0.28f), 0.0f, 0.0f, true);
+    v.addColour (0.55, juce::Colours::transparentBlack);
+    g.setGradientFill (v);
+    g.fillRect (b);
+
+    auto btn = [&] (Btn which, const juce::String& txt, bool lit)
+    {
+        const auto r = btnRect (which);
+        g.setColour (juce::Colour (btnHover == which ? 0xee202024 : 0xcc101012));
+        g.fillRoundedRectangle (r, 4.0f);
+        g.setColour (cAmber.withAlpha (lit ? 0.9f : 0.45f));
+        g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
+        g.setColour (lit ? cAmber : cLegend.withAlpha (0.85f));
+        g.setFont (uiFont (txt.length() > 1 ? 12.0f : 17.0f));
+        g.drawText (txt, r, juce::Justification::centred, false);
+    };
+    btn (Btn::zoomOut, juce::String::fromUTF8 ("−"), false);
+    btn (Btn::zoomIn, "+", false);
+    btn (Btn::overview, overview ? "PERTO" : "GERAL", overview);
 }
 
 void MesaEditor::drawBubble (juce::Graphics& g)
@@ -518,12 +668,12 @@ void MesaEditor::drawBubble (juce::Graphics& g)
     if (i < 0 || i >= (int) ctls.size()) return;
     const auto txt = describe (ctls[(size_t) i]);
     if (txt.isEmpty()) return;
-    const float k = ppcm();
     const auto& c = ctls[(size_t) i];
-    auto f = uiFont (juce::jmax (11.0f, 0.5f * k));
+    auto f = uiFont (juce::jlimit (12.0f, 18.0f, 0.5f * zoom));
     const float w = juce::GlyphArrangement::getStringWidth (f, txt) + 16.0f, h = f.getHeight() + 8.0f;
-    float x = c.x * k - w / 2, y = (c.y - c.d * 0.5f) * k - h - 6.0f;
-    if (c.kind == Kind::fader || c.kind == Kind::mfader) y = c.y * k - h - 4.0f;
+    const auto pos = juce::Point<float> (c.x, c.y).transformedBy (viewXf());
+    float x = pos.x - w / 2, y = pos.y - c.d * 0.6f * zoom - h - 6.0f;
+    if (c.kind == Kind::fader || c.kind == Kind::mfader) y = pos.y - h - 4.0f;
     x = juce::jlimit (2.0f, (float) getWidth() - w - 2.0f, x);
     y = juce::jmax (2.0f, y);
     juce::Rectangle<float> r (x, y, w, h);
@@ -545,19 +695,22 @@ void MesaEditor::paint (juce::Graphics& g)
     g.drawImage (cache, getLocalBounds().toFloat());
     {
         juce::Graphics::ScopedSaveState ss (g);
-        g.addTransform (juce::AffineTransform::scale (ppcm()));
+        g.addTransform (viewXf());
+        drawPx = zoom * k;
+        drawVis = visibleCm().expanded (0.5f);
         drawDynamic (g);
     }
+    drawOverlay (g);
     drawBubble (g);
 }
 
 void MesaEditor::resized()
 {
-    const float k = ppcm();
-    scrollBar.setBounds (juce::Rectangle<float> (lay::X_CH0, sy (lay::SEC_FAD[1]) + lay::ARM * 0.62f, lay::VIS * lay::SW, lay::ARM * 0.22f)
-                             .transformedBy (juce::AffineTransform::scale (k)).toNearestInt());
-    if (openSettle >= 15) proc.uiScale = (float) getWidth() / (lay::TOTAL_W * basePpcm);
-    cacheDirty = true;
+    hBar.setBounds (getLocalBounds().removeFromBottom (12).withTrimmedRight (12));
+    vBar.setBounds (getLocalBounds().removeFromRight (12).withTrimmedBottom (12));
+    if (overview) setView (fitZoom(), 0.0f, 0.0f);
+    else          setView (juce::jmax (zoom, fitZoom()), viewX, viewY);
+    if (openSettle >= 15) { proc.uiW = getWidth(); proc.uiH = getHeight(); }
 }
 
 // ------------------------------------------------------------------------------------------------ medidores e mudanças
@@ -566,11 +719,10 @@ void MesaEditor::timerCallback()
     if (proc.registry->version.load() != lastVersion) rebuild();
     if (openSettle < 15 && ++openSettle == 15)
     {
-        const float saved = proc.uiScale.load();
-        if (saved > 0.0f && std::abs ((float) getWidth() / (lay::TOTAL_W * basePpcm) - saved) > 0.01f)
-            setSize (juce::roundToInt (lay::TOTAL_W * basePpcm * saved), juce::roundToInt (lay::TOTAL_H * basePpcm * saved));
-        else if (saved <= 0.0f)
-            proc.uiScale = (float) getWidth() / (lay::TOTAL_W * basePpcm);
+        // o DAW pode ter aberto a janela com outro tamanho: volta ao salvo
+        const int w0 = proc.uiW.load(), h0 = proc.uiH.load();
+        if (w0 > 0 && (w0 != getWidth() || h0 != getHeight())) setSize (w0, h0);
+        proc.uiW = getWidth(); proc.uiH = getHeight();
     }
 
     const float dt = 1.0f / 30.0f;
@@ -615,19 +767,23 @@ std::vector<float> MesaEditor::snapshot() const
 // ------------------------------------------------------------------------------------------------ mouse
 const MesaEditor::Ctl* MesaEditor::hit (juce::Point<float> pos) const
 {
-    const float k = ppcm();
-    const float x = pos.x / k, y = pos.y / k;
+    const auto cm = toCm (pos);
     for (int i = (int) ctls.size() - 1; i >= 0; --i)
     {
         const auto& c = ctls[(size_t) i];
-        const float dx = x - c.x, dy = y - c.y;
+        const float dx = cm.x - c.x, dy = cm.y - c.y;
         switch (c.kind)
         {
-            case Kind::knob: if (dx * dx + dy * dy < c.d * c.d * 0.36f) return &c; break;
+            case Kind::knob:   // o topo do knob sobe um pouco na tela (câmera inclinada)
+            {
+                const float dk = dy + c.d * 0.12f;
+                if (dx * dx + dk * dk < c.d * c.d * 0.36f) return &c;
+                break;
+            }
             case Kind::toggle: case Kind::radio: case Kind::modeBtn: case Kind::optBtn:
-                if (std::abs (dx) < c.d * 0.6f && std::abs (dy) < c.d * 0.6f) return &c; break;
+                if (std::abs (dx) < c.d * 0.6f && std::abs (dy + 0.1f) < c.d * 0.6f) return &c; break;
             case Kind::fader: case Kind::mfader:
-                if (std::abs (dx) < 0.75f && dy > -1.4f && dy < c.d + 1.4f) return &c; break;
+                if (std::abs (dx) < 0.75f && dy > -1.6f && dy < c.d + 1.4f) return &c; break;
             case Kind::preModel: case Kind::eqModel:
                 if (std::abs (dx) < 1.45f && std::abs (dy) < 0.35f) return &c; break;
             case Kind::tape:
@@ -685,19 +841,42 @@ void MesaEditor::end()
 
 void MesaEditor::mouseMove (const juce::MouseEvent& e)
 {
-    const auto* c = hit (e.position);
+    const auto b = btnAt (e.position);
+    if (b != btnHover) { btnHover = b; repaint(); }
+    const auto* c = b == Btn::none ? hit (e.position) : nullptr;
     const int h = c != nullptr ? (int) (c - ctls.data()) : -1;
     if (h != hover) { hover = h; repaint(); }
-    setMouseCursor (c != nullptr && c->kind != Kind::tape ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+    setMouseCursor (b != Btn::none || (c != nullptr && c->kind != Kind::tape) ? juce::MouseCursor::PointingHandCursor
+                                                                             : juce::MouseCursor::NormalCursor);
 }
 
-void MesaEditor::mouseExit (const juce::MouseEvent&) { hover = -1; repaint(); }
+void MesaEditor::mouseExit (const juce::MouseEvent&) { hover = -1; btnHover = Btn::none; repaint(); }
 
 void MesaEditor::mouseDown (const juce::MouseEvent& e)
 {
     if (e.mods.isPopupMenu()) { showMainMenu(); return; }
+    if (const auto b = btnAt (e.position); b != Btn::none)
+    {
+        const juce::Point<float> mid ((float) getWidth() * 0.5f, (float) getHeight() * 0.5f);
+        if (b == Btn::zoomIn)  zoomAround (zoom * 1.25f, mid);
+        if (b == Btn::zoomOut) zoomAround (zoom / 1.25f, mid);
+        if (b == Btn::overview)
+        {
+            if (overview) zoomAround (closeZoom(), mid);
+            else          setView (fitZoom(), 0.0f, 0.0f);
+        }
+        proc.uiGeral = overview;
+        return;
+    }
     const auto* c = hit (e.position);
-    if (c == nullptr) return;
+    if (c == nullptr)
+    {
+        // arrastar a chapa (fora dos controles) passeia pela console
+        panning = true;
+        panStart = { viewX, viewY };
+        setMouseCursor (juce::MouseCursor::DraggingHandCursor);
+        return;
+    }
     active = (int) (c - ctls.data());
     if (c->kind == Kind::knob || c->kind == Kind::fader || c->kind == Kind::mfader)
     {
@@ -712,6 +891,11 @@ void MesaEditor::mouseDown (const juce::MouseEvent& e)
 
 void MesaEditor::mouseDrag (const juce::MouseEvent& e)
 {
+    if (panning)
+    {
+        setView (zoom, panStart.x - (float) e.getDistanceFromDragStartX() / zoom, panStart.y - (float) e.getDistanceFromDragStartY() / zoom);
+        return;
+    }
     if (active < 0 || active >= (int) ctls.size()) return;
     const auto& c = ctls[(size_t) active];
     const float fine = e.mods.isShiftDown() ? 0.2f : 1.0f;
@@ -723,7 +907,7 @@ void MesaEditor::mouseDrag (const juce::MouseEvent& e)
     }
     else if (c.kind == Kind::fader || c.kind == Kind::mfader)
     {
-        dragValue = juce::jlimit (0.0f, 1.0f, dragStart + dy * fine / (c.d * ppcm()));
+        dragValue = juce::jlimit (0.0f, 1.0f, dragStart + dy * fine / (c.d * zoom));
         if (auto* prm = c.p->param (id::fader)) setNorm (c, prm->convertTo0to1 (faderDb (dragValue)));
     }
     else return;
@@ -731,8 +915,9 @@ void MesaEditor::mouseDrag (const juce::MouseEvent& e)
     repaint();
 }
 
-void MesaEditor::mouseUp (const juce::MouseEvent&)
+void MesaEditor::mouseUp (const juce::MouseEvent& e)
 {
+    if (panning) { panning = false; mouseMove (e); return; }
     end();
     active = -1;
     repaint();
@@ -740,6 +925,7 @@ void MesaEditor::mouseUp (const juce::MouseEvent&)
 
 void MesaEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
+    if (btnAt (e.position) != Btn::none) return;
     const auto* c = hit (e.position);
     if (c == nullptr) return;
     if (c->kind == Kind::tape) { rename (c->p); return; }
@@ -754,25 +940,22 @@ void MesaEditor::mouseDoubleClick (const juce::MouseEvent& e)
 
 void MesaEditor::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
 {
-    const auto* c = hit (e.position);
-    if (c != nullptr && c->kind == Kind::knob)
+    // Ctrl/Cmd + roda: zoom onde está o mouse; roda: rola a console (Shift: para o lado)
+    if (e.mods.isCommandDown() || e.mods.isCtrlDown())
     {
-        setNorm (*c, norm (*c) + (w.deltaY != 0 ? w.deltaY : w.deltaX) * 0.06f);
-        cacheDirty = true;
+        zoomAround (zoom * std::pow (1.0015f, (w.deltaY != 0 ? w.deltaY : w.deltaX) * 256.0f), e.position);
         return;
     }
-    if (c != nullptr && (c->kind == Kind::fader || c->kind == Kind::mfader))
-    {
-        if (auto* prm = c->p->param (id::fader))
-            setNorm (*c, prm->convertTo0to1 (faderDb (faderFrac (c->p->value (id::fader)) - w.deltaY * 0.04f)));
-        cacheDirty = true;
-        return;
-    }
-    if (scrollBar.isVisible())
-    {
-        const float d = w.deltaX != 0 ? -w.deltaX : -w.deltaY;
-        scrollBar.setCurrentRangeStart (scrollBar.getCurrentRangeStart() + (d > 0 ? 1.0 : -1.0));
-    }
+    const float step = 520.0f / zoom;   // cm por "dente" da roda
+    float dx = -w.deltaX * step, dy = -w.deltaY * step;
+    if (e.mods.isShiftDown() && dx == 0.0f) std::swap (dx, dy);
+    if ((float) getHeight() / zoom >= consoleH() - 0.01f && dx == 0.0f) std::swap (dx, dy);   // nada a rolar na vertical
+    setView (zoom, viewX + dx, viewY + dy);
+}
+
+void MesaEditor::mouseMagnify (const juce::MouseEvent& e, float scaleFactor)
+{
+    zoomAround (zoom * scaleFactor, e.position);
 }
 
 void MesaEditor::click (const Ctl& c, const juce::MouseEvent&)
@@ -897,7 +1080,10 @@ void MesaEditor::showMainMenu()
                                  "O fader e o pan da MESA mexem no som que sai do plugin: deixe o fader do DAW em 0 dB.\n"
                                  "Botão PRÉ (no EQ): a dinâmica vem antes do EQ.\n"
                                  "Clique no nome do PRÉ ou do EQ para trocar o modelo. Duplo clique: knob volta ao padrão; "
-                                 "na fita, renomeia. Shift: ajuste fino."), "OK", safe.getComponent());
+                                 "na fita, renomeia. Shift: ajuste fino.\n\n"
+                                 "VISTA: a roda do mouse rola a console (Shift: para o lado); Ctrl/Cmd + roda ou os botões − e + "
+                                 "aproximam; GERAL mostra a console toda e PERTO volta para perto. Arrastar a chapa (fora dos "
+                                 "controles) também passeia."), "OK", safe.getComponent());
                      });
 }
 

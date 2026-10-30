@@ -5,6 +5,7 @@ namespace mesa::lay
 {
 constexpr float SW = 3.8f;
 constexpr float GAP = 0.05f;
+constexpr float SURF = 0.15f;
 constexpr float Y_BR_TOP = 1.8f;
 constexpr float Y_BR_BOT = -4.4f;
 constexpr float MW = 14.0f;
@@ -45,6 +46,15 @@ constexpr float MFAD_CAP_W = 1.6f;
 constexpr float MFAD_CAP_H = 2.3f;
 constexpr float MMETER_W = 0.55f;
 constexpr float COLA_D = 1.9f;
+// câmera inclinada: tela (cm, para cima) = y·TILT_COS + (z − SURF)·TILT_SIN
+constexpr float TILT_COS = 0.9510565162951535f;
+constexpr float TILT_SIN = 0.3090169943749474f;
+constexpr float BR_Z = 1.4f;
+constexpr float FRAME_Z = 3.2f;
+constexpr float FLOOR_Z = -1.0f;
+constexpr float VU_FACE_DZ = 0.36f;
+constexpr float VU_R = 0.78f;
+constexpr float VU_ANG = 0.8085106382978723f;
 constexpr int VIS = 12, METER_N = 20, MMETER_N = 24;
 constexpr float SEC_PRE[2] = { -4.8f, -11.4f };
 constexpr float SEC_EQ[2] = { -11.4f, -21.9f };

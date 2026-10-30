@@ -272,7 +272,9 @@ void MesaProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("nome", userName(), nullptr);
-    state.setProperty ("ui", (double) uiScale.load(), nullptr);
+    state.setProperty ("uiw", uiW.load(), nullptr);
+    state.setProperty ("uih", uiH.load(), nullptr);
+    state.setProperty ("uigeral", uiGeral.load(), nullptr);
     if (auto xml = state.createXml()) copyXmlToBinary (*xml, destData);
 }
 
@@ -286,8 +288,9 @@ void MesaProcessor::setStateInformation (const void* data, int sizeInBytes)
                 const juce::ScopedLock sl (nameLock);
                 nameOverride = vt.getProperty ("nome").toString();
             }
-            const float ui = (float) (double) vt.getProperty ("ui", 0.0);
-            if (ui > 0.0f) uiScale = ui;
+            if ((int) vt.getProperty ("uiw", 0) > 0) { uiW = (int) vt.getProperty ("uiw"); uiH = (int) vt.getProperty ("uih"); }
+            uiGeral = (bool) vt.getProperty ("uigeral", false);
+            for (auto k : { "ui", "uiw", "uih", "uigeral" }) vt.removeProperty (k, nullptr);
             apvts.replaceState (vt);
             dirty = true;
             registry->changed();

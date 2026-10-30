@@ -2,7 +2,8 @@
 
 Console analógica em plugin (efeito, VST3/AU). Uma MESA no fim de cada canal do DAW: cada cópia vira uma fileira da
 console, e a janela de qualquer uma mostra a console inteira — 12 canais à vista (mais que isso rola), os 3 grupos e o
-MASTER — e mexe em qualquer canal. O visual vem do modelo 3D da console renderizado no Blender.
+MASTER — e mexe em qualquer canal. O visual vem do modelo 3D da console renderizado no Blender, com acabamento de
+equipamento real (plástico fosco, poeira, serigrafia gasta, madeira a óleo) e câmera levemente inclinada.
 
 <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MESA.png" width="900" alt="MESA">
 
@@ -13,6 +14,8 @@ MASTER — e mexe em qualquer canal. O visual vem do modelo 3D da console render
 - **MASTER**: MESA no Master do DAW e aperte MASTER.
 - Clique no nome do PRÉ ou do EQ para trocar o modelo. Duplo clique: o knob volta ao padrão; na fita, renomeia o canal.
   Shift: ajuste fino. Botão direito: menu (renomear, como funciona, licença).
+- Vista: PERTO (uns 6 canais) ou GERAL (a console toda) no botão do canto; − e + ou Ctrl/Cmd + roda aproximam; a roda
+  rola (Shift: para o lado); arrastar a chapa fora dos controles passeia.
 - As cópias se enxergam quando o DAW carrega os plugins no mesmo processo (o padrão do Ableton, Logic, Reaper, FL,
   Studio One). Com plugin isolado em processo próprio, cada janela mostra só o próprio canal.
 
@@ -31,6 +34,11 @@ para todas as MESAs.
 ## Arquivos
 - `Source/Dsp.h`: processamento em C++ puro (medido fora do plugin por `tools/teste_dsp.cpp`).
 - `Source/Registry.h`: a lista das cópias abertas (a console). `Source/PluginEditor.*`: a janela.
-- `tools/layout.py`: as medidas da console em cm (fonte única). `tools/render_mesa.py` (Blender 4.5):
-  `--part chapas` e `--part pecas` renderizam as peças; `tools/recorta.py` grava `Source/img/*`, `Source/Atlas.h` e
-  `Source/Layout.h`.
+- `tools/layout.py`: as medidas da console em cm (fonte única). `tools/render_mesa.py` (Blender 4.5, Cycles):
+  `--part chapas` e `--part pecas` (em lotes: `--so`/`--sem` por prefixo, `--nome`) renderizam as células numa câmera
+  ortográfica inclinada 18° (`--tilt`) — a projeção é igual em toda a tela, então cada peça casa com a chapa em qualquer
+  lugar; peças com fundo transparente sobre um "shadow catcher" (a sombra vem do 3D). O acabamento real fica em
+  `tools/realismo.py`. `tools/recorta.py` junta os lotes, faz a revelação de foto e o brilho do que está aceso e grava
+  `Source/img/*` (chapas.jpg; pecas.jpg + pecas_a.png = cor + transparência), `Source/Atlas.h` (retângulo + âncora de
+  cada célula) e `Source/Layout.h`. `tools/compoe.py` monta um trecho da console com as células, como o plugin, para
+  conferir antes de compilar. `tools/amostra_canal.py` + `tools/pos_foto.py`: a amostra de canal em perspectiva.

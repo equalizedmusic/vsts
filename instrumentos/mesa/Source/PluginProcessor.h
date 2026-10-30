@@ -54,7 +54,8 @@ public:
 
     // medidores (dBFS): pico e RMS do bloco, redução de ganho
     std::atomic<float> peakL { -120.0f }, peakR { -120.0f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f };
-    std::atomic<float> uiScale { 0.0f };    // 0 = ainda não abriu (a tela escolhe o tamanho inicial)
+    std::atomic<int> uiW { 0 }, uiH { 0 };  // tamanho da janela (0 = ainda não abriu: a tela escolhe)
+    std::atomic<bool> uiGeral { false };     // vista GERAL (a console toda) em vez de PERTO
 
 private:
     void parameterChanged (const juce::String& pid, float) override;

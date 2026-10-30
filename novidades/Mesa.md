@@ -4,6 +4,18 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-10-30
+- Visual de equipamento real: todas as peças renderizadas de novo com o acabamento aprovado na amostra — plástico
+  fosco de console (sem verniz), poeira nas frestas, micro-riscos, serigrafia gasta, madeira a óleo e luz de estúdio.
+- Vista de frente e de cima, levemente inclinada, como quem está sentado na console: dá para ver a lateral dos knobs,
+  a altura das teclas e a sombra de verdade de cada peça na chapa (vem do 3D, não é desenhada).
+- Teclas com altura e legenda na lente (apertada fica mais baixa e acesa), LEDs em domo na ponte, LEDs acesos com
+  brilho em volta, VU iluminado por dentro.
+- Janela PERTO (uns 6 canais na largura, como numa foto da console) ou GERAL (a console toda): botões − + e GERAL no
+  canto, Ctrl/Cmd + roda aproxima, a roda rola (Shift: para o lado) e arrastar a chapa passeia. A janela abre perto do
+  próprio canal e guarda o tamanho.
+- O som não mudou.
+
 ## 0.1.1 — 2026-10-30
 - Correção: o VU de um grupo, o de um grupo vazio e o painel do MASTER apareciam apagados (meio transparentes)
   quando havia vaga vazia na console.
