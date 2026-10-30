@@ -58,7 +58,8 @@ Ficam em `instrumentos/<nome>` e têm **build próprio** (`.github/workflows/bui
 Cada instrumento tem o seu instalador e o seu release (os logs ficam no branch `builds-instrumentos`): `InsideStudioSP-Quimera-win.exe` / `-mac.dmg`
 com a QUIMERA, `InsideStudioSP-Limao-win.exe` / `-mac.dmg` com o LIMÃO, `InsideStudioSP-Mercurio-win.exe` / `-mac.dmg` com o MERCÚRIO,
 `InsideStudioSP-Resenha-win.exe` / `-mac.dmg` com o RESENHA, `InsideStudioSP-MontaMonta-win.exe` / `-mac.dmg` com o MONTA-MONTA
-e `InsideStudioSP-Groovador-win.exe` / `-mac.dmg` com o GROOVADOR.
+`InsideStudioSP-Groovador-win.exe` / `-mac.dmg` com o GROOVADOR e `InsideStudioSP-Mesa-win.exe` / `-mac.dmg` com a MESA
+(a MESA é efeito, mas fica aqui para ter build e instalador próprios).
 
 | Prévia | Instrumento | O que é |
 |---|---|---|
@@ -68,6 +69,7 @@ e `InsideStudioSP-Groovador-win.exe` / `-mac.dmg` com o GROOVADOR.
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png" width="240" alt="RESENHA">](instrumentos/resenha/README.md) | [RESENHA](instrumentos/resenha/README.md) | Call & response FM: 4 timbres FM (A, B, C, D) que conversam e se revezam na frase; gerador de frase na escala (notas, ritmo, gate) com travas e GERAR CONVERSA; troca de timbre a cada N notas com ordem e tipo de resposta (LIVRE, ECO, VARIA, INVERTE); UNISON, filtro LP/BP/VOWEL (o lead "fala") e MOVE no tempo por timbre; BEND (mergulho no fim da fala), contorno CORRIDA/QUEDA/ONDA/PEDAL, conversa por nota ou por compasso e DUCK; toca COM NOTA (frase transposta pela nota segurada) ou SEMPRE (com o play); ARRASTAR MIDI para o DAW; drive, delay ping-pong e reverb; presets de fábrica, do usuário e bancos avulsos `.rsnbank` |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONTAMONTA.png" width="240" alt="MONTA-MONTA">](instrumentos/montamonta/README.md) | [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático: as peças de um Minimoog de 2 osciladores (VCO, VCO 2, MIXER, VCF, ENV AMP, ENV MOD, SAÍDA) são arrastadas da bandeja para o rack e só encaixam no lugar certo, como num quebra-cabeça; 6 lições que liberam as peças aos poucos, cartão de cada peça com explicação, desafio e exemplo sonoro, faixa CAMINHO DO SOM e osciloscópio; modo CABOS para ligar as peças por fios em qualquer ordem; textos em português e inglês |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png" width="240" alt="GROOVADOR">](instrumentos/groovador/README.md) | [GROOVADOR](instrumentos/groovador/README.md) | Percussão sintetizada sem bumbo com cara de bateria eletrônica: 8 instrumentos (rim, snare, clap, hats, shaker, 2 percussões) com 5 modelos (analógico, 808, FM, metal, ruído) e 10 knobs; grade de até 4 compassos com força, ghost, roll e "talvez"; gerador de groove por estilo (psy full, psy prog, techno, house, tribal, break) com travas e GERAR GROOVE; variação de timbre A/B a cada N compassos (A ↔ B, conversa, deriva) e fills; COM PLAY ou PADS por MIDI; ARRASTAR MIDI; drive, delay ping-pong e reverb; 72 presets |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MESA.png" width="240" alt="MESA">](instrumentos/mesa/README.md) | [MESA](instrumentos/mesa/README.md) | Console analógica em plugin: uma MESA no fim de cada canal do DAW e a janela de qualquer uma mostra a console inteira (canais, 3 grupos e MASTER), com o visual renderizado do hardware; PRÉ (LIMPO, API 312, BRIT 73) com GAIN, DRIVE, PAD e HPF; EQ de 4 bandas (E-4K, BRIT 81); compressor VCA + gate no canal (antes ou depois do EQ) e COLA 4K nos grupos e no MASTER; pan, mute, solo, fader e medidores; ECO/HQ |
 
 Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arraste o canto inferior direito ou use
 *Tamanho da janela* no menu de presets (75% a 200%). O tamanho fica salvo no projeto.
@@ -110,6 +112,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Resenha` | `novidades/Resenha.md` | `resenha-vX.Y.Z` |
 | `InsideStudioSP-MontaMonta` | `novidades/MontaMonta.md` | `montamonta-vX.Y.Z` |
 | `InsideStudioSP-Groovador` | `novidades/Groovador.md` | `groovador-vX.Y.Z` |
+| `InsideStudioSP-Mesa` | `novidades/Mesa.md` | `mesa-vX.Y.Z` |
 
 O primeiro título `## X.Y.Z — data` do arquivo é a **versão atual**. Ela vai para:
 - os plugins, pelo `VERSION` do CMake (o host mostra; nos instrumentos ela também aparece no fim do menu de presets);

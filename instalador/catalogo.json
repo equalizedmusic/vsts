@@ -35,5 +35,6 @@
   "MERCURIO":  ["MERCÚRIO",  "FM de 4 operadores, polifônico de 16 vozes"],
   "RESENHA":   ["RESENHA",   "call & response FM: 4 timbres que conversam, gerador de frases"],
   "MONTA-MONTA": ["MONTA-MONTA", "synth didático: monte as peças do Minimoog e aprenda síntese"],
-  "GROOVADOR": ["GROOVADOR", "percussão sintetizada com gerador de groove e variação de timbre"]
+  "GROOVADOR": ["GROOVADOR", "percussão sintetizada com gerador de groove e variação de timbre"],
+  "MESA": ["MESA", "console analógica: cada canal do DAW vira uma fileira com pré, EQ, dinâmica e fader"]
 }

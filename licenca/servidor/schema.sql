@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS licencas (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     email        TEXT    NOT NULL,                    -- sempre minúsculo, sem espaços
-    pacote       TEXT    NOT NULL,                    -- criativo, mix, knob, quimera, limao, mercurio, resenha, montamonta, groovador
+    pacote       TEXT    NOT NULL,                    -- criativo, mix, knob, quimera, limao, mercurio, resenha, montamonta, groovador, mesa
     token_hash   TEXT    NOT NULL,
     max_maquinas INTEGER NOT NULL DEFAULT 2,
     status       TEXT    NOT NULL DEFAULT 'ativa',    -- ativa | revogada

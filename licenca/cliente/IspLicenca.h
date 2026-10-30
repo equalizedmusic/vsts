@@ -59,6 +59,7 @@ public:
         if (p == "resenha")  return "RESENHA";
         if (p == "montamonta") return "MONTA-MONTA";
         if (p == "groovador") return "GROOVADOR";
+        if (p == "mesa") return "MESA";
         return p.toUpperCase();
     }
 

@@ -10,6 +10,12 @@
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 
+#ifndef SHOT_MESA
+ #define SHOT_MESA 0
+#endif
+// MESA: a foto mostra a console cheia, com outras cópias do plugin (canais, um grupo e o MASTER) tocando o mesmo loop
+static std::vector<std::unique_ptr<juce::AudioProcessor>> extras;
+
 namespace
 {
 constexpr double fs = 48000.0, bpm = 145.0;
@@ -96,6 +102,14 @@ public:
                 midi.addEvent (juce::MidiMessage::controllerEvent (1, 1, juce::jmin (127, blocks / 2)), 0);
             ++blocks;
            #endif
+           #if SHOT_MESA
+            for (size_t k = 0; k < extras.size(); ++k)
+            {
+                juce::AudioBuffer<float> copy (buf);
+                copy.applyGain (0.35f + 0.08f * (float) (k % 7));
+                extras[k]->processBlock (copy, midi);
+            }
+           #endif
             proc.processBlock (buf, midi);
             juce::Thread::sleep (10);   // ~tempo real (512 amostras = 10,7 ms)
         }
@@ -177,6 +191,39 @@ int main (int argc, char** argv)
     proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : 2, 2, fs, block);
     proc->prepareToPlay (fs, block);
     applyLook (*proc);
+   #if SHOT_MESA
+    {
+        struct Ch { const char* name; juce::uint32 col; int mode, grp; float pre, eq, gain, drive, hpf, fader, pan, thr; };
+        const Ch chs[] = {
+            { "KICK", 0xffe8473c, 0, 1, 1, 0, 3, 3, 30, -2.4f, 0, -16 },   { "SNARE", 0xffff8a3d, 0, 1, 1, 0, 2, 2, 90, -1.5f, 0.1f, -14 },
+            { "HATS", 0xfff2d24b, 0, 1, 0, 0, 0, 0, 300, -6, 0.3f, 10 },  { "BASS DI", 0xff3d8bff, 0, 2, 2, 1, 4, 4, 35, -0.6f, 0, -18 },
+            { "GTR L", 0xff3fbf6a, 0, 2, 2, 1, 2, 3, 110, -2.7f, -0.7f, 10 }, { "GTR R", 0xff3fbf6a, 0, 2, 2, 1, 2, 3, 110, -2.7f, 0.7f, 10 },
+            { "RHODES", 0xff22d8ff, 0, 2, 0, 0, 0, 0, 60, -4.2f, -0.2f, 10 }, { "PAD", 0xff5fd3b3, 0, 2, 0, 1, 0, 0, 150, -6.6f, 0.2f, 10 },
+            { "808", 0xffe8473c, 0, 1, 1, 1, 3, 5, 20, -1.8f, 0, -12 },    { "FX", 0xff9aa0a8, 0, 0, 0, 0, 0, 0, 200, -8.4f, 0.4f, 10 },
+            { "BATERIA", 0xffe8473c, 1, 1, 0, 0, 0, 0, 20, -0.6f, 0, -14 }, { "MIX BUS", 0xffd0d0d0, 2, 0, 0, 0, 0, 0, 20, 0, 0, 10 } };
+        juce::AudioProcessor::TrackProperties tp;
+        tp.name = juce::String ("VOX LEAD"); tp.colourARGB = 0xffc49bffu;
+        proc->updateTrackProperties (tp);
+        setParam (*proc, "pre", 2); setParam (*proc, "gain", 4); setParam (*proc, "drive", 3); setParam (*proc, "thr", -20);
+        setParam (*proc, "grp", 3); setParam (*proc, "fader", -1.0f); setParam (*proc, "hmfg", 3); setParam (*proc, "hfg", 4);
+        for (auto& c : chs)
+        {
+            std::unique_ptr<juce::AudioProcessor> q (createPluginFilter());
+            q->setPlayHead (&head);
+            q->setPlayConfigDetails (2, 2, fs, block);
+            q->prepareToPlay (fs, block);
+            juce::AudioProcessor::TrackProperties t;
+            t.name = juce::String (c.name); t.colourARGB = c.col;
+            q->updateTrackProperties (t);
+            setParam (*q, "mode", (float) c.mode); setParam (*q, "grp", (float) c.grp); setParam (*q, "pre", c.pre);
+            setParam (*q, "eqm", c.eq); setParam (*q, "gain", c.gain); setParam (*q, "drive", c.drive); setParam (*q, "hpf", c.hpf);
+            setParam (*q, "fader", c.fader); setParam (*q, "pan", c.pan); setParam (*q, "thr", c.thr);
+            setParam (*q, "hfg", (float) ((int) c.col % 7 - 3)); setParam (*q, "lmfg", (float) ((int) (c.col >> 8) % 9 - 4));
+            if (c.mode == 2) { setParam (*q, "mthr", -12); setParam (*q, "mmkp", 3); }
+            extras.push_back (std::move (q));
+        }
+    }
+   #endif
 
     std::unique_ptr<juce::AudioProcessorEditor> editor (proc->createEditorAndMakeActive());
     editor->setSize (SHOT_W, SHOT_H);   // 200%
@@ -200,6 +247,7 @@ int main (int argc, char** argv)
     }
 
     editor.reset();
+    extras.clear();
     proc->releaseResources();
     proc.reset();
     std::printf ("%s: %s\n", SHOT_PLUGIN, ok ? "ok" : "falhou");
