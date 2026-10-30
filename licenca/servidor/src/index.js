@@ -7,6 +7,7 @@
 //   GET  /v1/versao?pacote=mix&versao=1.0.0&sistema=win|mac   (o plugin já ativado pergunta ao abrir)
 //        -> { ok: true, atualizacao: null | { versao, url, notas } }   url = instalador do sistema (ou a página do release)
 //   GET  /baixar/<pacote>/<win|mac>   redireciona para o instalador (links da mensagem do painel)
+//   GET/POST /gratis/montamonta   página grátis: e-mail -> token + download do MONTA-MONTA (ver src/gratis.js)
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -29,6 +30,7 @@
 // Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura).
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
+import { rotaGratis } from './gratis.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -337,8 +339,14 @@ async function rotaAdmin(caminho, req, env, url) {
         if (existe) return falha('ja_existe', 409);
         // um token por e-mail: se o e-mail já tem licença de outro pacote, a nova usa o mesmo token (que não está
         // guardado, então volta token null e o cliente segue com o que já recebeu)
-        const doEmail = await env.DB.prepare('SELECT token_hash FROM licencas WHERE email = ? LIMIT 1').bind(email).first();
+        let doEmail = await env.DB.prepare('SELECT token_hash FROM licencas WHERE email = ? LIMIT 1').bind(email).first();
+        // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
+        // ter cadastrado), então licença dada por aqui troca o token do e-mail inteiro e o novo vai para o cliente
+        const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem <> 'gratis' LIMIT 1").bind(email).first());
+        if (soGratis) doEmail = null;
         const token = doEmail ? null : novoToken();
+        if (soGratis)
+            await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await sha256Hex('ISP' + normToken(token)), email).run();
         const r = await env.DB.prepare(
             'INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
             .bind(email, pacote, doEmail ? doEmail.token_hash : await sha256Hex('ISP' + normToken(token)),
@@ -347,7 +355,8 @@ async function rotaAdmin(caminho, req, env, url) {
             .run();
         const id = r.meta.last_row_id;
         await evento(env, id, 'criou', corpo.origem || 'cortesia', null);
-        return resposta({ ok: true, id, email, pacote, token, mesmo_token: !!doEmail });
+        if (soGratis) await evento(env, id, 'novo_token', 'tinha só a licença grátis', null);
+        return resposta({ ok: true, id, email, pacote, token, mesmo_token: !!doEmail, token_trocado: !!soGratis });
     }
 
     // ações sobre o cliente inteiro (todas as licenças do e-mail)
@@ -411,6 +420,8 @@ export default {
             if (req.method === 'GET' && caminho === '/v1/versao') return await rotaVersao(url, env);
             if (req.method === 'GET' && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho, env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
+            if (caminho === '/gratis/montamonta' || caminho === '/gratis')
+                return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento });
             if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
             // navegador em endereço desconhecido (/Painel, /painel. colado com pontuação, raiz) ⇒ manda p/ o painel
             if (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'))

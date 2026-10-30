@@ -424,7 +424,7 @@ function criar(ev) {
   if (!pacotes.length) { msg('msgNova', 'Marque pelo menos um pacote.'); return; }
   if (!sistemas.length) { msg('msgNova', 'Marque Windows, Mac ou os dois.'); return; }
   var bt = f.querySelector('button[type=submit]'); bt.disabled = true; msg('msgNova', 'Gerando…', true);
-  var token = null, feitos = [], erros = [];
+  var token = null, feitos = [], erros = [], aviso = '';
   var seq = Promise.resolve();
   pacotes.forEach(function (p) {
     seq = seq.then(function () {
@@ -432,7 +432,7 @@ function criar(ev) {
         email: email, pacote: p, origem: f.origem.value, pedido: f.pedido.value.trim(), nota: f.nota.value.trim(),
         max_maquinas: Number(f.maquinas.value) || 2
       }).then(function (j) {
-        if (j.ok) { feitos.push(p); if (j.token) token = j.token; }
+        if (j.ok) { feitos.push(p); if (j.token) token = j.token; if (j.token_trocado) aviso = 'o token da página grátis foi trocado por este'; }
         else erros.push(NOME[p] + ': ' + (j.mensagem || 'erro'));
       });
     });
@@ -441,7 +441,7 @@ function criar(ev) {
     bt.disabled = false;
     msg('msgNova', erros.join(' · '), false);
     if (feitos.length) {
-      mostrarResultado(email, feitos, token, '', sistemas, Number(f.maquinas.value) || 2);
+      mostrarResultado(email, feitos, token, aviso, sistemas, Number(f.maquinas.value) || 2);
       f.reset(); f.maquinas.value = 2;
       carregar();
     }
@@ -544,7 +544,7 @@ function abrirCliente(email) {
             'Liberar o computador "' + (m.nome_maquina || '') + '" desta licença? Ele para de funcionar na próxima conferência e a vaga fica livre.'); } })
       ]));
     });
-    var info = [ l.origem === 'venda' ? 'venda' : 'cortesia', 'criada ' + data(l.criada_em) ];
+    var info = [ l.origem === 'venda' ? 'venda' : l.origem === 'gratis' ? 'página grátis' : 'cortesia', 'criada ' + data(l.criada_em) ];
     if (l.pedido) info.push('pedido ' + l.pedido);
     if (l.nota) info.push(l.nota);
     caixa.appendChild(el('div', { classe: 'lic' }, [

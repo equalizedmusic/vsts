@@ -14,6 +14,7 @@ As fotos não ficam versionadas aqui: baixe os `.png` da branch `shots` para `vi
 |---|---|---|
 | `video/` | Stories 1080×1920 por pacote (`?p=mix`, `criativo`, `synth`) e de 60 s por plugin (`?p=plugin&n=NOME`, roteiros em `tours-*.js`) | `node render.js <p> <saida.mp4>`; trilha com `python audio.py <p> <saida.wav>`; os 3 de 60 s com trilha: `grava60.sh` |
 | `carrossel/` | Slides 1080×1350 para o Instagram | `node render.js <pasta de saída> [analog]` |
+| `reels-montamonta/` | Reels de 60 s do MONTA-MONTA (passo a passo + chamada QUERO + catálogo), narração PT-BR e legenda em inglês | fotos da `shots` em `img/`; narração com edge-tts (`roteiro.json` → `voz/sNN.wav`, silêncio aparado); `python gen.py` (timeline.js + trilha.wav); `node render.js x mudo.mp4`; juntar com ffmpeg (`loudnorm=I=-14`) |
 | `mockup/` | Estudos de layout em HTML (anteriores ao visual de hardware) | `node shot.js` e afins |
 
 A prévia 3D dos pedais da SÉRIE KNOB (Blender) fica em `plugins/knob/_comum/tools/`.

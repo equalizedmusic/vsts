@@ -1,0 +1,62 @@
+[
+ {
+  "id": "s01",
+  "pt": "Quer entender como um sintetizador funciona? Monte um, peça por peça.",
+  "en": "Want to understand how a synth works? Build one, piece by piece."
+ },
+ {
+  "id": "s02",
+  "pt": "Esse é o Monta-Monta: um sintetizador que ensina, e é grátis.",
+  "en": "Meet MONTA-MONTA: a free synth that teaches you."
+ },
+ {
+  "id": "s03",
+  "pt": "Passo um: arraste o oscilador da bandeja para o rack. É onde o som nasce.",
+  "en": "Step 1: drag the oscillator (VCO) from the tray to the rack. That's where sound is born."
+ },
+ {
+  "id": "s04",
+  "pt": "Passo dois: o envelope de volume. Agora cada nota respira.",
+  "en": "Step 2: the amp envelope. Now every note breathes."
+ },
+ {
+  "id": "s05",
+  "pt": "Passo três: o filtro. Gire o cutoff e ouça o som escurecer e clarear.",
+  "en": "Step 3: the filter (VCF). Turn CUTOFF and hear the sound go dark and bright."
+ },
+ {
+  "id": "s06",
+  "pt": "Passo quatro: o envelope do filtro faz o timbre se mexer a cada nota.",
+  "en": "Step 4: the filter envelope makes the tone move on every note."
+ },
+ {
+  "id": "s07",
+  "pt": "Passo cinco: o segundo oscilador. Desafine um pouquinho e o som engorda.",
+  "en": "Step 5: a second oscillator. Detune it a little and the sound gets fat."
+ },
+ {
+  "id": "s08",
+  "pt": "Cada peça só encaixa no lugar certo, e explica o que faz.",
+  "en": "Each piece only fits in the right place, and explains what it does."
+ },
+ {
+  "id": "s09",
+  "pt": "No fim, o modo cabos: ligue tudo do seu jeito.",
+  "en": "Then CABLES mode: patch it your way."
+ },
+ {
+  "id": "s10",
+  "pt": "Quer o seu, de graça? Comenta QUERO aqui embaixo, que eu te mando o link no direct.",
+  "en": "Want yours for free? Comment \"QUERO\" below and I'll DM you the link."
+ },
+ {
+  "id": "s11",
+  "pt": "E conheça os sintetizadores e pacotes da Inside Studio S P: Quimera, Limão, Mercúrio, Resenha, Groovador, e três linhas de efeitos.",
+  "en": "And check out every InsideStudioSP synth and pack: QUIMERA, LIMÃO, MERCÚRIO, RESENHA, GROOVADOR, plus three effect lines."
+ },
+ {
+  "id": "s12",
+  "pt": "Comenta QUERO, e monte o seu!",
+  "en": "Comment \"QUERO\" and build yours!"
+ }
+]
