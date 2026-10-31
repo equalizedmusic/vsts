@@ -1,0 +1,133 @@
+== build/shot_montamonta_artefacts/Release/shot_montamonta
+MONTAMONTA: ok
+== build/shot_picador_artefacts/Release/shot_picador
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+PICADOR: ok
+== build/shot_mastiga_artefacts/Release/shot_mastiga
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+MASTIGA: ok
+== build/shot_soco_artefacts/Release/shot_soco
+SOCO: ok
+== build/shot_horizonte_artefacts/Release/shot_horizonte
+HORIZONTE: ok
+== build/shot_chama_artefacts/Release/shot_chama
+CHAMA: ok
+== build/shot_eco_artefacts/Release/shot_eco
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+ECO: ok
+== build/shot_escada_artefacts/Release/shot_escada
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+ESCADA: ok
+== build/shot_mercurio_artefacts/Release/shot_mercurio
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+MERCURIO: ok
+== build/shot_sala_artefacts/Release/shot_sala
+SALA: ok
+== build/shot_espiral_artefacts/Release/shot_espiral
+ESPIRAL: ok
+== build/shot_miragem_artefacts/Release/shot_miragem
+MIRAGEM: ok
+== build/shot_fita_artefacts/Release/shot_fita
+FITA: ok
+== build/shot_mesa_artefacts/Release/shot_mesa
+MESA-ZOOM: ok
+MESA-CANAL: ok
+MESA: ok
+== build/shot_avesso_artefacts/Release/shot_avesso
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+AVESSO: ok
+== build/shot_align_artefacts/Release/shot_align
+ALIGN: layout ok, entradas 4, sidechain ligado
+ALIGN-OFF: ok
+ALIGN: ok
+== build/shot_repeteco_artefacts/Release/shot_repeteco
+REPETECO: ok
+== build/shot_fole_artefacts/Release/shot_fole
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+FOLE: ok
+== build/shot_navalha_artefacts/Release/shot_navalha
+NAVALHA: ok
+== build/shot_prisma_artefacts/Release/shot_prisma
+PRISMA: ok
+== build/shot_monitor_artefacts/Release/shot_monitor
+MONITOR: ok
+== build/shot_barragem_artefacts/Release/shot_barragem
+BARRAGEM: ok
+== build/shot_resenha_artefacts/Release/shot_resenha
+RESENHA: ok
+== build/shot_lixa_artefacts/Release/shot_lixa
+LIXA: ok
+== build/shot_caleido_artefacts/Release/shot_caleido
+CALEIDO: ok
+== build/shot_repique_artefacts/Release/shot_repique
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+REPIQUE: ok
+== build/shot_ringer_artefacts/Release/shot_ringer
+RINGER: ok
+== build/shot_quimera_artefacts/Release/shot_quimera
+QUIMERA: ok
+== build/shot_picote_artefacts/Release/shot_picote
+PICOTE: ok
+== build/shot_limao_artefacts/Release/shot_limao
+LIMAO: ok
+== build/shot_mare_artefacts/Release/shot_mare
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+MARE: ok
+== build/shot_vaivem_artefacts/Release/shot_vaivem
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+VAIVEM: ok
+== build/shot_console_artefacts/Release/shot_console
+CONSOLE: ok
+== build/shot_grao_artefacts/Release/shot_grao
+GRAO: ok
+== build/shot_groovador_artefacts/Release/shot_groovador
+GROOVADOR: ok
+== build/shot_torno_artefacts/Release/shot_torno
+TORNO: ok
+== build/shot_freio_artefacts/Release/shot_freio
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+FREIO: ok
+== build/shot_f1_artefacts/Release/shot_f1
+F1: ok
+total 117584
+-rw-r--r--  1 runner  staff   389853 Oct 31 21:13 ALIGN-OFF.png
+-rw-r--r--  1 runner  staff   496874 Oct 31 21:13 ALIGN.png
+-rw-r--r--  1 runner  staff   549757 Oct 31 21:13 AVESSO.png
+-rw-r--r--  1 runner  staff  1619316 Oct 31 21:14 BARRAGEM.png
+-rw-r--r--  1 runner  staff  2288859 Oct 31 21:14 CALEIDO.png
+-rw-r--r--  1 runner  staff  2339590 Oct 31 21:12 CHAMA.png
+-rw-r--r--  1 runner  staff  1681596 Oct 31 21:15 CONSOLE.png
+-rw-r--r--  1 runner  staff   544797 Oct 31 21:12 ECO.png
+-rw-r--r--  1 runner  staff   550695 Oct 31 21:12 ESCADA.png
+-rw-r--r--  1 runner  staff  2248463 Oct 31 21:13 ESPIRAL.png
+-rw-r--r--  1 runner  staff  2129933 Oct 31 21:15 F1.png
+-rw-r--r--  1 runner  staff  2222036 Oct 31 21:13 FITA.png
+-rw-r--r--  1 runner  staff   556541 Oct 31 21:13 FOLE.png
+-rw-r--r--  1 runner  staff   534495 Oct 31 21:15 FREIO.png
+-rw-r--r--  1 runner  staff  1994307 Oct 31 21:15 GRAO.png
+-rw-r--r--  1 runner  staff   771081 Oct 31 21:15 GROOVADOR.png
+-rw-r--r--  1 runner  staff  1713690 Oct 31 21:12 HORIZONTE.png
+-rw-r--r--  1 runner  staff  2241302 Oct 31 21:14 LIMAO.png
+-rw-r--r--  1 runner  staff  1594567 Oct 31 21:14 LIXA.png
+-rw-r--r--  1 runner  staff   550306 Oct 31 21:15 MARE.png
+-rw-r--r--  1 runner  staff   558595 Oct 31 21:12 MASTIGA.png
+-rw-r--r--  1 runner  staff  2803053 Oct 31 21:12 MERCURIO.png
+-rw-r--r--  1 runner  staff   645750 Oct 31 21:13 MESA-CANAL.png
+-rw-r--r--  1 runner  staff  2661082 Oct 31 21:13 MESA-ZOOM.png
+-rw-r--r--  1 runner  staff  1847056 Oct 31 21:13 MESA.png
+-rw-r--r--  1 runner  staff  2081589 Oct 31 21:13 MIRAGEM.png
+-rw-r--r--  1 runner  staff  1674059 Oct 31 21:14 MONITOR.png
+-rw-r--r--  1 runner  staff   577492 Oct 31 21:12 MONTAMONTA.png
+-rw-r--r--  1 runner  staff  1607471 Oct 31 21:13 NAVALHA.png
+-rw-r--r--  1 runner  staff   553309 Oct 31 21:12 PICADOR.png
+-rw-r--r--  1 runner  staff  2070168 Oct 31 21:14 PICOTE.png
+-rw-r--r--  1 runner  staff  1863917 Oct 31 21:14 PRISMA.png
+-rw-r--r--  1 runner  staff  2743521 Oct 31 21:14 QUIMERA.png
+-rw-r--r--  1 runner  staff  2002612 Oct 31 21:13 REPETECO.png
+-rw-r--r--  1 runner  staff   545679 Oct 31 21:14 REPIQUE.png
+-rw-r--r--  1 runner  staff  1026349 Oct 31 21:14 RESENHA.png
+-rw-r--r--  1 runner  staff  2149244 Oct 31 21:14 RINGER.png
+-rw-r--r--  1 runner  staff  1775918 Oct 31 21:12 SALA.png
+-rw-r--r--  1 runner  staff  1669866 Oct 31 21:12 SOCO.png
+-rw-r--r--  1 runner  staff  1684749 Oct 31 21:15 TORNO.png
+-rw-r--r--  1 runner  staff   555468 Oct 31 21:15 VAIVEM.png
