@@ -596,7 +596,9 @@ void AlignEditor::menu()
     m.addItem (menuSobre, "Como funciona");
     m.addItem (menuLicenca, u8 ("Licença…"));
     m.addSeparator();
+   #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     m.addItem (-1, "ALIGN " + juce::String (JucePlugin_VersionString), false, false);
+   #endif
     juce::Component::SafePointer<AlignEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
                      [safe] (int r)
