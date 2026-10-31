@@ -78,6 +78,15 @@ Os efeitos têm 20 presets de fábrica e todos têm janela redimensionável: arr
 
 No menu de presets: *Salvar como novo*; com um preset do usuário aberto, também *Salvar alterações*, *Renomear* e *Apagar* (vai para a lixeira). O **+** pede o nome antes de salvar.
 
+## Max for Live
+
+Devices para o Ableton Live que mexem no set (clips, faixas), o que um VST não consegue. Ficam em `max4live/<nome>`,
+não entram em nenhum build nem instalador: cada um tem um `build-<nome>.js` que gera o `.amxd`.
+
+| Device | O que é |
+|---|---|
+| [VASSOURA](max4live/vassoura/README.md) | Acha (e, na próxima fase, corta ou muta) os trechos vazios dos clips de áudio de todas as faixas, com a tela numa janela flutuante; 0.1 é protótipo só de detecção |
+
 ## Formatos gerados
 
 | | Mac (Intel + Apple Silicon) | Windows 64 bits |
