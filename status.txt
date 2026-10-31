@@ -1,0 +1,7 @@
+commit=3ef4fe5a2d0c03d7796fe3d64e78f53e6ceaef15
+run=https://github.com/equalizedmusic/vsts/actions/runs/41230769037
+mac: build=success pacote=success pluginval=success
+win: build=success pacote=success pluginval=success
+versao Linha Criativa 1.2.0
+versao Linha de Mix 1.2.0
+versao SÉRIE KNOB 0.3.0
