@@ -1,0 +1,33 @@
+dist
+dist/VST3
+dist/VST3/QUIMERA.vst3
+dist-limao
+dist-limao/VST3
+dist-limao/VST3/LIMAO.vst3
+dist-mercurio
+dist-mercurio/VST3
+dist-mercurio/VST3/MERCURIO.vst3
+dist-resenha
+dist-resenha/VST3
+dist-resenha/VST3/RESENHA.vst3
+dist-montamonta
+dist-montamonta/VST3
+dist-montamonta/VST3/MONTA-MONTA.vst3
+dist-groovador
+dist-groovador/VST3
+dist-groovador/VST3/GROOVADOR.vst3
+dist-mesa
+dist-mesa/VST3
+dist-mesa/VST3/MESA-CANAL.vst3
+dist-mesa/VST3/MESA.vst3
+dist-align
+dist-align/VST3
+dist-align/VST3/ALIGN.vst3
+-rwxr-xr-x 1 runneradmin 197121 4568795 Oct 31 20:12 InsideStudioSP-Align-win.exe
+-rwxr-xr-x 1 runneradmin 197121 4630739 Oct 31 20:12 InsideStudioSP-Groovador-win.exe
+-rwxr-xr-x 1 runneradmin 197121 6280968 Oct 31 20:12 InsideStudioSP-Limao-win.exe
+-rwxr-xr-x 1 runneradmin 197121 6724932 Oct 31 20:12 InsideStudioSP-Mercurio-win.exe
+-rwxr-xr-x 1 runneradmin 197121 8214387 Oct 31 20:12 InsideStudioSP-Mesa-win.exe
+-rwxr-xr-x 1 runneradmin 197121 4625510 Oct 31 20:12 InsideStudioSP-MontaMonta-win.exe
+-rwxr-xr-x 1 runneradmin 197121 7025146 Oct 31 20:12 InsideStudioSP-Quimera-win.exe
+-rwxr-xr-x 1 runneradmin 197121 4730807 Oct 31 20:12 InsideStudioSP-Resenha-win.exe

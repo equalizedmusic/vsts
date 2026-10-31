@@ -1,0 +1,927 @@
+-- Building for: Visual Studio 18 2026
+-- The C compiler identification is MSVC 19.51.36260.0
+-- The CXX compiler identification is MSVC 19.51.36260.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- MESA: invólucro VST3 lendo o índice da faixa
+-- Configuring done (78.6s)
+-- Generating done (0.4s)
+-- Build files have been written to: D:/a/vsts/vsts/build
+MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+
+  Checking File Globs
+  1>Checking Build System
+  Generating Groovador_artefacts/JuceLibraryCode/Groovador_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/groovador/CMakeLists.txt
+  Generating Align_artefacts/JuceLibraryCode/Align_resources.rc
+  Building VST3 manifest helper for Align
+  Building VST3 manifest helper for Groovador
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/align/CMakeLists.txt
+  Groovador_rc_lib.vcxproj -> D:\a\vsts\vsts\build\groovador\Groovador_rc_lib.dir\Release\Groovador_rc_lib.lib
+  Align_rc_lib.vcxproj -> D:\a\vsts\vsts\build\align\Align_rc_lib.dir\Release\Align_rc_lib.lib
+  Generating Limao_artefacts/JuceLibraryCode/Limao_resources.rc
+  Building VST3 manifest helper for Limao
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/limao/CMakeLists.txt
+  Limao_rc_lib.vcxproj -> D:\a\vsts\vsts\build\limao\Limao_rc_lib.dir\Release\Limao_rc_lib.lib
+  Generating Mercurio_artefacts/JuceLibraryCode/Mercurio_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mercurio/CMakeLists.txt
+  Mercurio_rc_lib.vcxproj -> D:\a\vsts\vsts\build\mercurio\Mercurio_rc_lib.dir\Release\Mercurio_rc_lib.lib
+  Building VST3 manifest helper for Mercurio
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info - done
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.0s)
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Generating done (0.0s)
+  -- Detecting CXX compile features
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Groovador
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.0s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Align
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.1s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Limao
+    1>Checking Build System
+    1>Checking Build System
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    juce_VST3ManifestHelper.cpp
+    1>Checking Build System
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (1.9s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Mercurio
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    juce_VST3ManifestHelper.cpp
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Align\vst3_helper.exe
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Limao\vst3_helper.exe
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Groovador\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/limao/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/align/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/groovador/CMakeLists.txt
+  Generating MesaCanal_artefacts/JuceLibraryCode/MesaCanal_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/align/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/groovador/CMakeLists.txt
+  MesaCanal_rc_lib.vcxproj -> D:\a\vsts\vsts\build\mesa\MesaCanal_rc_lib.dir\Release\MesaCanal_rc_lib.lib
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Mercurio\vst3_helper.exe
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building VST3 manifest helper for Mesa
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mercurio/CMakeLists.txt
+  Generating juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_MercurioImg/JuceLibraryCode/PluginImg.h
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mercurio/CMakeLists.txt
+  juce_gui_basics_3.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_4.cpp
+  BinaryData1.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  BinaryData2.cpp
+  -- Detecting CXX compiler ABI info
+  BinaryData3.cpp
+  BinaryData4.cpp
+  BinaryData5.cpp
+  BinaryData6.cpp
+  BinaryData7.cpp
+  BinaryData8.cpp
+  BinaryData9.cpp
+  BinaryData10.cpp
+  BinaryData11.cpp
+  BinaryData12.cpp
+  BinaryData13.cpp
+  BinaryData14.cpp
+  BinaryData15.cpp
+  BinaryData16.cpp
+  BinaryData17.cpp
+  BinaryData18.cpp
+  BinaryData19.cpp
+  BinaryData20.cpp
+  juce_gui_basics_5.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  BinaryData22.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData25.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  BinaryData26.cpp
+  -- Detecting CXX compile features - done
+  BinaryData27.cpp
+  -- Configuring done (13.2s)
+  Generating Mesa_artefacts/JuceLibraryCode/Mesa_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  juce_gui_basics_5.cpp
+  BinaryData28.cpp
+  -- Generating done (0.0s)
+  BinaryData29.cpp
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Mesa
+  Generating Code...
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  Building VST3 manifest helper for MesaCanal
+  
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_graphics.cpp
+  MercurioImg.vcxproj -> D:\a\vsts\vsts\build\mercurio\Release\MercurioImg.lib
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mercurio/CMakeLists.txt
+    1>Checking Build System
+  juce_graphics_Harfbuzz.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_graphics.cpp
+  Mesa_rc_lib.vcxproj -> D:\a\vsts\vsts\build\mesa\Mesa_rc_lib.dir\Release\Mesa_rc_lib.lib
+  juce_events.cpp
+  juce_core.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (14.7s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/MesaCanal
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    juce_VST3ManifestHelper.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+    1>Checking Build System
+  juce_audio_processors_headless.cpp
+  juce_gui_basics.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_gui_basics_2.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Mesa\vst3_helper.exe
+  juce_audio_basics.cpp
+    juce_VST3ManifestHelper.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  juce_gui_basics_3.cpp
+  juce_audio_utils.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_audio_formats.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\MesaCanal\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  juce_dsp.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  Generating MontaMonta_artefacts/JuceLibraryCode/MontaMonta_resources.rc
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  Generating juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_LimaoImg/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/limao/CMakeLists.txt
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/montamonta/CMakeLists.txt
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_audio_processors_headless.cpp
+  BinaryData1.cpp
+  Building VST3 manifest helper for MontaMonta
+  BinaryData2.cpp
+  BinaryData3.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  BinaryData4.cpp
+  BinaryData5.cpp
+  BinaryData6.cpp
+  juce_audio_processors_headless_ara.cpp
+  BinaryData7.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  MontaMonta_rc_lib.vcxproj -> D:\a\vsts\vsts\build\montamonta\MontaMonta_rc_lib.dir\Release\MontaMonta_rc_lib.lib
+  juce_audio_basics.cpp
+  BinaryData8.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  Ponte.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  BinaryData9.cpp
+  juce_graphics_Sheenbidi.c
+  BinaryData10.cpp
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  BinaryData11.cpp
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  BinaryData12.cpp
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  BinaryData13.cpp
+  BinaryData14.cpp
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  BinaryData15.cpp
+  BinaryData16.cpp
+  BinaryData17.cpp
+  juce_audio_formats_opusfile.c
+  BinaryData18.cpp
+  BinaryData19.cpp
+  BinaryData20.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  BinaryData22.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData25.cpp
+  Generating Code...
+  Generating Quimera_artefacts/JuceLibraryCode/Quimera_resources.rc
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/quimera/CMakeLists.txt
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  juce_audio_devices.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  Ponte.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  Quimera_rc_lib.vcxproj -> D:\a\vsts\vsts\build\quimera\Quimera_rc_lib.dir\Release\Quimera_rc_lib.lib
+  juce_gui_basics_3.cpp
+  Align.vcxproj -> D:\a\vsts\vsts\build\align\Align_artefacts\Release\ALIGN_SharedCode.lib
+  juce_dsp.cpp
+  juce_gui_basics_4.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (16.3s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/MontaMonta
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  juce_gui_basics_5.cpp
+    1>Checking Build System
+  juce_graphics.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+    juce_VST3ManifestHelper.cpp
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  Building VST3 manifest helper for Quimera
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_graphics_Harfbuzz.cpp
+  LimaoImg.vcxproj -> D:\a\vsts\vsts\build\limao\Release\LimaoImg.lib
+  juce_graphics.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_graphics_Harfbuzz.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\MontaMonta\vst3_helper.exe
+  juce_events.cpp
+  juce_core.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  Mercurio.vcxproj -> D:\a\vsts\vsts\build\mercurio\Mercurio_artefacts\Release\MERCURIO_SharedCode.lib
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mercurio/CMakeLists.txt
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/montamonta/CMakeLists.txt
+  juce_audio_processors_headless.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_core_CompilationTime.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_processors_headless.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (15.7s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Quimera
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  juce_audio_basics.cpp
+  
+  juce_audio_utils.cpp
+    1>Checking Build System
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/limao/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_audio_utils.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Groovador.vcxproj -> D:\a\vsts\vsts\build\groovador\Groovador_artefacts\Release\GROOVADOR_SharedCode.lib
+  juce_dsp.cpp
+     Creating library D:/a/vsts/vsts/build/mercurio/Mercurio_artefacts/Release/VST3/MERCURIO.lib and object D:/a/vsts/vsts/build/mercurio/Mercurio_artefacts/Release/VST3/MERCURIO.exp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Quimera\vst3_helper.exe
+  Generating code
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/quimera/CMakeLists.txt
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/montamonta/CMakeLists.txt
+  Generating Resenha_artefacts/JuceLibraryCode/Resenha_resources.rc
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  juce_graphics.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  Panels.cpp
+  juce_audio_processors.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  Resenha_rc_lib.vcxproj -> D:\a\vsts\vsts\build\resenha\Resenha_rc_lib.dir\Release\Resenha_rc_lib.lib
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Building VST3 manifest helper for Resenha
+  juce_gui_extra.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  MesaCanal.vcxproj -> D:\a\vsts\vsts\build\mesa\MesaCanal_artefacts\Release\MESA-CANAL_SharedCode.lib
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_gui_basics_4.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_gui_basics_5.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (21.2s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Resenha
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_dsp.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_core.cpp
+    juce_VST3ManifestHelper.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Resenha\vst3_helper.exe
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  Limao.vcxproj -> D:\a\vsts\vsts\build\limao\Limao_artefacts\Release\LIMAO_SharedCode.lib
+     Creating library D:/a/vsts/vsts/build/mesa/MesaCanal_artefacts/Release/VST3/MESA-CANAL.lib and object D:/a/vsts/vsts/build/mesa/MesaCanal_artefacts/Release/VST3/MESA-CANAL.exp
+  Generating code
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Generating juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/align/CMakeLists.txt
+  BinaryData1.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  BinaryData5.cpp
+  BinaryData6.cpp
+  BinaryData7.cpp
+  BinaryData8.cpp
+  BinaryData9.cpp
+  BinaryData10.cpp
+  BinaryData11.cpp
+  BinaryData12.cpp
+  BinaryData13.cpp
+  BinaryData14.cpp
+  BinaryData15.cpp
+  BinaryData16.cpp
+  BinaryData17.cpp
+  BinaryData18.cpp
+  BinaryData19.cpp
+  BinaryData20.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  BinaryData22.cpp
+  BinaryData23.cpp
+  Generating Code...
+  MontaMonta.vcxproj -> D:\a\vsts\vsts\build\montamonta\MontaMonta_artefacts\Release\MONTA-MONTA_SharedCode.lib
+  ResenhaImg.vcxproj -> D:\a\vsts\vsts\build\resenha\Release\ResenhaImg.lib
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  Finished generating code
+  juce_gui_extra.cpp
+  Mercurio_VST3.vcxproj -> D:\a\vsts\vsts\build\mercurio\Mercurio_artefacts\Release\VST3\MERCURIO.vst3\Contents\x86_64-win\MERCURIO.vst3
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  removing moduleinfo.json
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  creating D:/a/vsts/vsts/build/mercurio/Mercurio_artefacts/Release/VST3/MERCURIO.vst3/Contents/Resources/moduleinfo.json
+  juce_gui_basics.cpp
+  Generating juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_QuimeraImg/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/quimera/CMakeLists.txt
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  Mesa.vcxproj -> D:\a\vsts\vsts\build\mesa\Mesa_artefacts\Release\MESA_SharedCode.lib
+  BinaryData1.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  BinaryData5.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/groovador/CMakeLists.txt
+  BinaryData6.cpp
+  BinaryData7.cpp
+  BinaryData8.cpp
+  BinaryData9.cpp
+  BinaryData10.cpp
+  BinaryData11.cpp
+  BinaryData12.cpp
+  BinaryData13.cpp
+  juce_graphics_Harfbuzz.cpp
+  BinaryData14.cpp
+  BinaryData15.cpp
+  juce_events.cpp
+  BinaryData16.cpp
+  BinaryData17.cpp
+  BinaryData18.cpp
+  BinaryData19.cpp
+  BinaryData20.cpp
+  juce_core.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  BinaryData22.cpp
+  BinaryData23.cpp
+  Generating Code...
+  QuimeraImg.vcxproj -> D:\a\vsts\vsts\build\quimera\Release\QuimeraImg.lib
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/montamonta/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/mesa/CMakeLists.txt
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+     Creating library D:/a/vsts/vsts/build/groovador/Groovador_artefacts/Release/VST3/GROOVADOR.lib and object D:/a/vsts/vsts/build/groovador/Groovador_artefacts/Release/VST3/GROOVADOR.exp
+  Generating code
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Resenha.vcxproj -> D:\a\vsts\vsts\build\resenha\Resenha_artefacts\Release\RESENHA_SharedCode.lib
+  Finished generating code
+  MesaCanal_VST3.vcxproj -> D:\a\vsts\vsts\build\mesa\MesaCanal_artefacts\Release\VST3\MESA-CANAL.vst3\Contents\x86_64-win\MESA-CANAL.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/mesa/MesaCanal_artefacts/Release/VST3/MESA-CANAL.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/limao/CMakeLists.txt
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/align/Align_artefacts/Release/VST3/ALIGN.lib and object D:/a/vsts/vsts/build/align/Align_artefacts/Release/VST3/ALIGN.exp
+     Creating library D:/a/vsts/vsts/build/limao/Limao_artefacts/Release/VST3/LIMAO.lib and object D:/a/vsts/vsts/build/limao/Limao_artefacts/Release/VST3/LIMAO.exp
+  Generating code
+  Generating code
+  Finished generating code
+  Groovador_VST3.vcxproj -> D:\a\vsts\vsts\build\groovador\Groovador_artefacts\Release\VST3\GROOVADOR.vst3\Contents\x86_64-win\GROOVADOR.vst3
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/quimera/CMakeLists.txt
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST3.cpp
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/groovador/Groovador_artefacts/Release/VST3/GROOVADOR.vst3/Contents/Resources/moduleinfo.json
+     Creating library D:/a/vsts/vsts/build/montamonta/MontaMonta_artefacts/Release/VST3/MONTA-MONTA.lib and object D:/a/vsts/vsts/build/montamonta/MontaMonta_artefacts/Release/VST3/MONTA-MONTA.exp
+  Generating code
+  Finished generating code
+  Align_VST3.vcxproj -> D:\a\vsts\vsts\build\align\Align_artefacts\Release\VST3\ALIGN.vst3\Contents\x86_64-win\ALIGN.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/align/Align_artefacts/Release/VST3/ALIGN.vst3/Contents/Resources/moduleinfo.json
+  Finished generating code
+  Limao_VST3.vcxproj -> D:\a\vsts\vsts\build\limao\Limao_artefacts\Release\VST3\LIMAO.vst3\Contents\x86_64-win\LIMAO.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/limao/Limao_artefacts/Release/VST3/LIMAO.vst3/Contents/Resources/moduleinfo.json
+  Finished generating code
+  MontaMonta_VST3.vcxproj -> D:\a\vsts\vsts\build\montamonta\MontaMonta_artefacts\Release\VST3\MONTA-MONTA.vst3\Contents\x86_64-win\MONTA-MONTA.vst3
+  removing moduleinfo.json
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  Engine.cpp
+  WaveBank.cpp
+  creating D:/a/vsts/vsts/build/montamonta/MontaMonta_artefacts/Release/VST3/MONTA-MONTA.vst3/Contents/Resources/moduleinfo.json
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  Fx.cpp
+  Presets.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+  juce_gui_basics.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\quimera\Quimera.vcxproj]
+  (compiling source file '../../instrumentos/quimera/Source/Presets.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\instrumentos\quimera\Source\Presets.cpp(97,40):
+          see reference to function template instantiation 'std::pair<juce::String,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept(false)' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\instrumentos\quimera\Source\Presets.cpp(96,17):
+              see the first reference to 'std::pair<juce::String,float>::pair' in 'quimera::factoryPresets'
+  
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+     Creating library D:/a/vsts/vsts/build/mesa/Mesa_artefacts/Release/VST3/MESA.lib and object D:/a/vsts/vsts/build/mesa/Mesa_artefacts/Release/VST3/MESA.exp
+  Generating code
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Quimera.vcxproj -> D:\a\vsts\vsts\build\quimera\Quimera_artefacts\Release\QUIMERA_SharedCode.lib
+  Finished generating code
+  Mesa_VST3.vcxproj -> D:\a\vsts\vsts\build\mesa\Mesa_artefacts\Release\VST3\MESA.vst3\Contents\x86_64-win\MESA.vst3
+     Creating library D:/a/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.lib and object D:/a/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.exp
+  Generating code
+  Finished generating code
+  Resenha_VST3.vcxproj -> D:\a\vsts\vsts\build\resenha\Resenha_artefacts\Release\VST3\RESENHA.vst3\Contents\x86_64-win\RESENHA.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.vst3/Contents/Resources/moduleinfo.json
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/mesa/Mesa_artefacts/Release/VST3/MESA.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/quimera/CMakeLists.txt
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/quimera/Quimera_artefacts/Release/VST3/QUIMERA.lib and object D:/a/vsts/vsts/build/quimera/Quimera_artefacts/Release/VST3/QUIMERA.exp
+  Generating code
+  Finished generating code
+  Quimera_VST3.vcxproj -> D:\a\vsts\vsts\build\quimera\Quimera_artefacts\Release\VST3\QUIMERA.vst3\Contents\x86_64-win\QUIMERA.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/quimera/Quimera_artefacts/Release/VST3/QUIMERA.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/CMakeLists.txt

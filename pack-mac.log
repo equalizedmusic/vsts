@@ -1,0 +1,50 @@
+dist
+dist/VST3
+dist/VST3/QUIMERA.vst3
+dist/AU
+dist/AU/QUIMERA.component
+dist-limao
+dist-limao/VST3
+dist-limao/VST3/LIMAO.vst3
+dist-limao/AU
+dist-limao/AU/LIMAO.component
+dist-mercurio
+dist-mercurio/VST3
+dist-mercurio/VST3/MERCURIO.vst3
+dist-mercurio/AU
+dist-mercurio/AU/MERCURIO.component
+dist-resenha
+dist-resenha/VST3
+dist-resenha/VST3/RESENHA.vst3
+dist-resenha/AU
+dist-resenha/AU/RESENHA.component
+dist-montamonta
+dist-montamonta/VST3
+dist-montamonta/VST3/MONTA-MONTA.vst3
+dist-montamonta/AU
+dist-montamonta/AU/MONTA-MONTA.component
+dist-groovador
+dist-groovador/VST3
+dist-groovador/VST3/GROOVADOR.vst3
+dist-groovador/AU
+dist-groovador/AU/GROOVADOR.component
+dist-mesa
+dist-mesa/VST3
+dist-mesa/VST3/MESA.vst3
+dist-mesa/VST3/MESA-CANAL.vst3
+dist-mesa/AU
+dist-mesa/AU/MESA.component
+dist-mesa/AU/MESA-CANAL.component
+dist-align
+dist-align/VST3
+dist-align/VST3/ALIGN.vst3
+dist-align/AU
+dist-align/AU/ALIGN.component
+-rw-r--r--@ 1 runner  staff   9307158 Oct 31 21:10 InsideStudioSP-Align-mac.dmg
+-rw-r--r--@ 1 runner  staff   9919044 Oct 31 21:09 InsideStudioSP-Groovador-mac.dmg
+-rw-r--r--@ 1 runner  staff  17148874 Oct 31 21:09 InsideStudioSP-Limao-mac.dmg
+-rw-r--r--@ 1 runner  staff  19213886 Oct 31 21:09 InsideStudioSP-Mercurio-mac.dmg
+-rw-r--r--@ 1 runner  staff  21983421 Oct 31 21:09 InsideStudioSP-Mesa-mac.dmg
+-rw-r--r--@ 1 runner  staff   9798176 Oct 31 21:09 InsideStudioSP-MontaMonta-mac.dmg
+-rw-r--r--@ 1 runner  staff  19767587 Oct 31 21:09 InsideStudioSP-Quimera-mac.dmg
+-rw-r--r--@ 1 runner  staff  10999986 Oct 31 21:09 InsideStudioSP-Resenha-mac.dmg
