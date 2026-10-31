@@ -4,6 +4,27 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.0 — 2026-10-31
+- Os circuitos que a MESA emula, agora com o timbre de cada um:
+  - PRÉ: E-4K (o pré da console britânica, limpo e firme; era o LIMPO), API 312 e BRIT 73. Em 0 VU, sem DRIVE, a
+    distorção fica em cerca de 0,05% no E-4K, 0,35% no API e 0,8% no BRIT, como a ordem dos originais. Cada cópia do
+    plugin tem uma pequena diferença entre L e R, como dois canais de hardware.
+  - COMPRESSOR, quatro modelos (clique no visor verde da DINÂMICA ou em CARÁTER, no MESA CANAL):
+    - VCA 4K: o compressor do canal da console britânica, limpo. SOLTURA no fim = AUTO.
+    - COLA 4K: o compressor de barramento da mesma console, com as teclas do original (razão 1,5/2/4/10, ataque de
+      0,1 a 30 ms, soltura de 0,1 a 1,2 s ou AUTO).
+    - FET 76: ataque de 20 a 800 µs, soltura de 50 ms a 1,1 s, razões 4/8/12/20 e ALL (todas as teclas). Suja mais
+      quanto mais comprime (0,7% a 1,4% de distorção com 7 a 15 dB de redução).
+    - OPTO 2A: nivelador ótico com válvula. Ataque de ~10 ms, joelho largo, solta metade rápido e o resto devagar, e
+      solta mais devagar depois de comprimir por mais tempo. RAZÃO baixa = COMP (~2,5:1), alta = LIMIT.
+  - EQ, três modelos: E-4K, BRIT 81 e o novo API 550 (frequências e ganho em degraus, Q que estreita com o ganho).
+- Controles novos no canal: Q nas bandas médias, BELL no HF e no LF (prateleira vira sino), LPF de 12 dB/oitava,
+  ATAQUE, SOLTURA e MIX no compressor do canal. O compressor dos grupos também ganhou ATAQUE, SOLTURA e o modelo.
+- Na cabeça de cada canal, a ordem do caminho já mostra o modelo de cada etapa (PRÉ 73, EQ 550, DIN 2A).
+- Ao passar o mouse, os knobs mostram o valor que o circuito usa de verdade: o degrau do BRIT 81 e do API 550, o tempo
+  de ataque e soltura de cada compressor e a razão das teclas.
+- Sessões antigas: o compressor de um GRUPO salvo antes da 0.5 continua no COLA 4K com ataque de 10 ms.
+
 ## 0.4.0 — 2026-10-30
 - O DRIVE do pré agora satura de verdade, e cada modelo do seu jeito (o volume fica parecido, muda o caráter):
   - LIMPO: limpo até perto do topo, depois 3ª harmônica e clipe macio, como pré de console britânica.

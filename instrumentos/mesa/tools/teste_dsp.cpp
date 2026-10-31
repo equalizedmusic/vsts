@@ -15,7 +15,7 @@ static double amp (const std::vector<float>& x, double fs, double f)   // amplit
 int main()
 {
     const double fs = 192000;   // o PRÉ roda sobreamostrado
-    const char* nomes[] = { "LIMPO", "API 312", "BRIT 73" };
+    const char* nomes[] = { "E-4K", "API 312", "BRIT 73" };
     // senoide em 0 VU (-18 dBFS RMS = pico -15) e +6 VU; DRIVE 0, 3, 5, 7, 10
     for (int m = 0; m < 3; ++m)
         for (float lvl : { -15.0f, -9.0f })
@@ -71,12 +71,36 @@ int main()
                      analog (16000, t.f0, n2, n1, n0, d2, d1, d0), resp (b, 16000), resp (r, 16000));
     }
 
-    ChannelComp c; c.prepare (fe); c.thr = -20; c.ratio = 4;
-    for (float lvl : { -30.0f, -20.0f, -10.0f, 0.0f })
-    {
-        float g = 1; for (int i = 0; i < (int) fe; ++i) g = c.gain (dbToGain (lvl));
-        std::printf ("VCA thr -20 4:1  pico %+4.0f dBFS -> GR %5.2f dB\n", lvl, -gainToDb (g));
-    }
+    // compressores do canal: curva estática (senoide 1 kHz, 2 s), THD com 10 dB de GR, soltura (tempo até sobrar 1 dB)
+    const char* dn[] = { "VCA 4K", "COLA 4K", "FET 76", "OPTO 2A" };
+    for (int m = 0; m < 4; ++m)
+        for (float rat : { 4.0f, 20.0f })
+        {
+            std::printf ("%-8s razao %4.0f:", dn[m], rat);
+            for (float lvl : { -30.0f, -20.0f, -10.0f, 0.0f })
+            {
+                Dyn d; d.model = (DynModel) m; d.thr = -20; d.ratio = dynRatio (d.model, rat);
+                d.atkMs = dynAtkMs (d.model, 6); d.relS = dynRelS (d.model, 5); d.prepare (fe);
+                std::vector<float> y; const double a = dbToGain (lvl);
+                for (int i = 0; i < (int) fe * 2; ++i)
+                {
+                    float l = (float) (a * std::sin (2 * pi * 1000 * i / fe)), r = l;
+                    d.process (l, r);
+                    if (i >= fe) y.push_back (l);
+                }
+                const double h1 = amp (y, fe, 1000);
+                double thd = 0; for (int k = 2; k <= 7; ++k) { const double hk = amp (y, fe, k * 1000); thd += hk * hk; }
+                std::printf ("  %+3.0f->%+6.1f dB (THD %5.2f%%)", lvl, 20 * std::log10 (h1 / a), 100 * std::sqrt (thd) / h1);
+            }
+            // soltura: 1 s em -0 dBFS, depois -40; quanto tempo até a redução cair abaixo de 1 dB
+            Dyn d; d.model = (DynModel) m; d.thr = -20; d.ratio = dynRatio (d.model, rat);
+            d.atkMs = dynAtkMs (d.model, 6); d.relS = dynRelS (d.model, 5); d.prepare (fe);
+            int i = 0; float l, r;
+            for (; i < (int) fe; ++i) { l = r = (float) (0.5 * std::sin (2 * pi * 1000 * i / fe)); d.process (l, r); }
+            const float gr0 = d.grDb; int k = 0;
+            for (; k < (int) fe * 10 && d.grDb > 1.0f; ++k) { l = r = 0.0001f; d.process (l, r); }
+            std::printf ("  | GR %4.1f solta em %5.0f ms\n", gr0, 1000.0 * k / fe);
+        }
     BusComp b; b.thr = -10; b.ratio = 4; b.prepare (fe);
     for (float lvl : { -20.0f, -10.0f, 0.0f })
     {

@@ -94,16 +94,18 @@ private:
     void processChannel (juce::AudioBuffer<float>& buf, int n, int nch);
     void processMaster (juce::AudioBuffer<float>& buf, int n, int nch);
     std::atomic<float>* raw (const juce::String& pid);
+    bool textoModelo (const juce::String& pid, juce::String& t) const;
 
     double fs = 48000.0;
     int maxBlock = 512;
     int seqNo = 0;
 
     mesa::Hpf18 hpf;
+    mesa::Lpf12 lpf;
     mesa::PreSat sat;
     mesa::PreColour colour;
     mesa::Eq eq;
-    mesa::ChannelComp comp;
+    mesa::Dyn dyn;          // compressor do canal/grupo (VCA 4K, COLA 4K, FET 76, OPTO 2A)
     mesa::Gate gate;
     mesa::BusComp bus;
     std::unique_ptr<juce::dsp::Oversampling<float>> os;
@@ -136,6 +138,9 @@ private:
     std::atomic<float>* pMmkp; std::atomic<float>* pMrat; std::atomic<float>* pMmix; std::atomic<float>* pMin;
     std::atomic<float>* pMhpf; std::atomic<float>* pHq; std::atomic<float>* pDynPre;
     std::atomic<float>* pEqG[4]; std::atomic<float>* pEqF[4];
+    std::atomic<float>* pLpf; std::atomic<float>* pDynm; std::atomic<float>* pAtk; std::atomic<float>* pRel;
+    std::atomic<float>* pQ[2]; std::atomic<float>* pBell[2];
+    int dynModelo = -1;
 
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 

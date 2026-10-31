@@ -25,6 +25,11 @@ MesaProcessor::MesaProcessor (bool console)
     pMmkp = raw (id::mmkp);  pMrat = raw (id::mrat); pMmix = raw (id::mmix); pMin = raw (id::min);
     pMhpf = raw (id::mhpf);  pHq = raw (id::hq);   pDynPre = raw (id::dynPre);
     for (int b = 0; b < 4; ++b) { pEqG[b] = raw (id::eqG[b]); pEqF[b] = raw (id::eqF[b]); }
+    pLpf = raw (id::lpf); pDynm = raw (id::dynm); pAtk = raw (id::atk); pRel = raw (id::rel);
+    pQ[0] = raw (id::eqQ[0]); pQ[1] = raw (id::eqQ[1]); pBell[0] = raw (id::hfBell); pBell[1] = raw (id::lfBell);
+    // tolerância dos componentes: cada cópia é um "canal de hardware" um pouco diferente, e L difere de R
+    juce::Random rnd ((juce::int64) (juce::pointer_sized_int) this ^ juce::Time::getHighResolutionTicks());
+    for (auto& t : sat.tol) t = 0.97f + 0.06f * rnd.nextFloat();
     if (isConsole) ++mesa::Ponte::get().consoles;
     else
     {
@@ -63,8 +68,9 @@ void MesaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     ecoDelay.setDelay ((float) osLatency);
     setLatencySamples (osLatency);
 
-    hpf.reset(); colour.reset(); eq.reset();
-    comp.prepare (fs); gate.prepare (fs); bus.prepare (fs);
+    hpf.reset(); lpf.reset(); colour.reset(); eq.reset();
+    dyn.prepare (fs); gate.prepare (fs); bus.prepare (fs);
+    dynModelo = -1;
     for (auto* s : { &gainSm, &driveSm, &gainL, &gainR }) s->reset (fs, 0.02);
     lastPre = -1; lastEq = -1;
     eqPula = true;
@@ -106,18 +112,21 @@ void MesaProcessor::updateSettings()
     {
         sat.model = (PreModel) preModel;
         sat.prepare (hq ? fs * 4.0 : fs);
-        colour.set (fs, sat.model);
+        colour.set (fs, sat.model, sat.tol);
         lastPre = key;
     }
     gainSm.setTargetValue (dbToGain (pGain->load()) * (pPad->load() > 0.5f ? 0.1f : 1.0f));
     sat.setDrive (pDrive->load());                          // DRIVE 10 = +20 dB para dentro do circuito
     hpf.set (fs, pHpf->load());
+    lpf.set (fs, pLpf->load());
 
     for (int b = 0; b < 4; ++b) { eqAlvo.g[b] = pEqG[b]->load(); eqAlvo.f[b] = pEqF[b]->load(); }
+    eqAlvo.q[1] = pQ[0]->load(); eqAlvo.q[2] = pQ[1]->load();
+    for (int b = 0; b < 2; ++b)
+        if (const bool bl = pBell[b]->load() > 0.5f; bl != eqAlvo.bell[b]) { eqAlvo.bell[b] = eqAgora.bell[b] = bl; eqPula = true; }
     const int em = juce::roundToInt (pEqm->load());
     if (em != eqModelo) { eqModelo = em; eqPula = true; }
 
-    comp.thr = pThr->load(); comp.ratio = pRat->load();
     gate.thr = pGate->load();
 
     if (mode() == modeMaster)
@@ -127,14 +136,17 @@ void MesaProcessor::updateSettings()
         bus.relS = relS[juce::jlimit (0, 4, juce::roundToInt (pMrel->load()))];
         bus.makeup = pMmkp->load(); bus.mix = pMmix->load() / 100.0f; bus.scHpf = pMhpf->load() > 0.5f;
     }
-    else
-    {
-        // COLA 4K do grupo: os 3 knobs do módulo; ataque 10 ms, relaxamento AUTO
-        bus.thr = pThr->load() >= 9.9f ? 30.0f : pThr->load();
-        bus.ratio = pRat->load(); bus.atkMs = 10.0f; bus.relS = -1.0f;
-        bus.makeup = 0.0f; bus.mix = pCmix->load() / 100.0f; bus.scHpf = false;
-    }
     bus.update();
+
+    // compressor do canal/grupo: o modelo escolhe o circuito e como ATAQUE/SOLTURA/RAZÃO viram tempo e razão
+    const int dm = juce::jlimit (0, 3, juce::roundToInt (pDynm->load()));
+    if (dm != dynModelo) { dyn.model = (DynModel) dm; dyn.env = dyn.slow = 0.0f; dyn.gPrev = 1.0f; dynModelo = dm; }
+    dyn.thr = pThr->load();
+    dyn.ratio = dynRatio (dyn.model, pRat->load());
+    dyn.atkMs = dynAtkMs (dyn.model, pAtk->load());
+    dyn.relS = dynRelS (dyn.model, pRel->load());
+    dyn.mix = pCmix->load() / 100.0f;
+    dyn.update();
 
     const float fd = pFader->load();
     float g = fd <= faderMin + 0.01f ? 0.0f : dbToGain (fd);
@@ -222,7 +234,7 @@ void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nc
     for (int i = 0; i < n; ++i)
     {
         const float g = gainSm.getNextValue();
-        for (int c = 0; c < nch; ++c) ch[c][i] = hpf.process (c, ch[c][i] * g);
+        for (int c = 0; c < nch; ++c) ch[c][i] = lpf.process (c, hpf.process (c, ch[c][i] * g));
     }
     medeEntrada (ch, nch, n);   // ENTRADA = o que chega no pré (depois do GANHO, do PAD e do HPF)
 
@@ -252,6 +264,7 @@ void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nc
     const bool eqOn = pEqOn->load() > 0.5f;
     const bool dynFirst = pDynPre->load() > 0.5f;   // botão PRÉ: dinâmica antes do EQ
     const bool channel = mode() == modeChannel;
+    const bool dynOn = dyn.active();
     const bool muted = pMute->load() > 0.5f || (channel && registry->soloCount.load() > 0 && pSolo->load() < 0.5f);
     float grMax = 0.0f;
     auto doEq = [&] (float& l, float& r)
@@ -262,20 +275,15 @@ void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nc
     };
     auto doDyn = [&] (float& l, float& r)
     {
-        if (channel)
+        if (channel && gate.active())
         {
-            const float det = std::max (std::abs (l), std::abs (r));
-            float g = 1.0f;
-            if (gate.active()) g *= gate.process (det);
-            if (comp.active()) g *= comp.gain (det);
-            else comp.grDb = 0.0f;
+            const float g = gate.process (std::max (std::abs (l), std::abs (r)));
             l *= g; r *= g;
-            grMax = std::max (grMax, comp.grDb);
         }
-        else if (bus.thr < 29.0f)
+        if (dynOn)
         {
-            bus.process (l, r);
-            grMax = std::max (grMax, bus.grDb);
+            dyn.process (l, r);
+            grMax = std::max (grMax, dyn.grDb);
         }
     };
     // o EQ anda até o alvo em pedaços de 32 amostras (girar o knob não faz degrau nem estalo)
@@ -288,12 +296,15 @@ void MesaProcessor::processChannel (juce::AudioBuffer<float>& buf, int n, int nc
             for (int b = 0; b < 4; ++b)
             {
                 const float g0 = eqAgora.g[b], f0 = eqAgora.f[b];
-                if (eqPula) { eqAgora.g[b] = eqAlvo.g[b]; eqAgora.f[b] = eqAlvo.f[b]; continue; }
+                const float q0 = eqAgora.q[b];
+                if (eqPula) { eqAgora.g[b] = eqAlvo.g[b]; eqAgora.f[b] = eqAlvo.f[b]; eqAgora.q[b] = eqAlvo.q[b]; continue; }
                 eqAgora.g[b] += (eqAlvo.g[b] - eqAgora.g[b]) * kEq;
-                eqAgora.f[b] *= std::pow (eqAlvo.f[b] / eqAgora.f[b], kEq);   // frequência anda em oitavas
+                eqAgora.f[b] *= std::pow (eqAlvo.f[b] / eqAgora.f[b], kEq);   // frequência e Q andam em oitavas
+                eqAgora.q[b] *= std::pow (eqAlvo.q[b] / eqAgora.q[b], kEq);
                 if (std::abs (eqAgora.g[b] - eqAlvo.g[b]) < 0.005f) eqAgora.g[b] = eqAlvo.g[b];
                 if (std::abs (eqAgora.f[b] / eqAlvo.f[b] - 1.0f) < 0.0005f) eqAgora.f[b] = eqAlvo.f[b];
-                mexeu = mexeu || eqAgora.g[b] != g0 || eqAgora.f[b] != f0;
+                if (std::abs (eqAgora.q[b] / eqAlvo.q[b] - 1.0f) < 0.0005f) eqAgora.q[b] = eqAlvo.q[b];
+                mexeu = mexeu || eqAgora.g[b] != g0 || eqAgora.f[b] != f0 || eqAgora.q[b] != q0;
             }
             if (mexeu) eq.set (fs, (EqModel) eqModelo, eqAgora);
             eqPula = false;
@@ -387,7 +398,14 @@ void MesaProcessor::setStateInformation (const void* data, int sizeInBytes)
             posManual = juce::jlimit (0, 999, (int) vt.getProperty ("pos", 0));
             uiZoom = juce::jlimit (0.5f, 2.0f, (float) (double) vt.getProperty ("uizoom", 1.0));
             for (auto k : { "ui", "uiw", "uih", "uigeral", "pos", "uizoom" }) vt.removeProperty (k, nullptr);
+            // sessão de antes da 0.5 (sem modelo de compressor): o GRUPO usava o COLA 4K com ataque de 10 ms
+            const bool antigo = ! isConsole && ! vt.getChildWithProperty ("id", id::dynm).isValid();
             apvts.replaceState (vt);
+            if (antigo && juce::roundToInt (pMode->load()) == modeGroup)
+            {
+                if (auto* p = apvts.getParameter (id::dynm)) p->setValueNotifyingHost (p->convertTo0to1 (1.0f));
+                if (auto* p = apvts.getParameter (id::atk))  p->setValueNotifyingHost (p->convertTo0to1 (8.0f));
+            }
             dirty = true;
             registry->changed();
             ++mesa::Ponte::get().versao;
@@ -424,8 +442,53 @@ static int copiaUtf8 (const juce::String& s, char* out, int n)
     const auto bytes = (int) s.copyToUTF8 (out, (size_t) n);
     return juce::jmax (0, bytes - 1);
 }
+// texto que depende do modelo (o DAW mostra o valor cru; a tela mostra o que o circuito faz de verdade)
+static juce::String msTexto (float ms)
+{
+    if (ms < 1.0f) return juce::String (juce::roundToInt (ms * 1000.0f)) + juce::String (juce::CharPointer_UTF8 (" \xc2\xb5s"));
+    if (ms < 1000.0f) return juce::String (ms, ms < 10.0f ? 1 : 0) + " ms";
+    return juce::String (ms / 1000.0f, 2) + " s";
+}
+bool MesaProcessor::textoModelo (const juce::String& pid, juce::String& t) const
+{
+    if (isConsole) return false;
+    const auto dm = (DynModel) juce::jlimit (0, 3, juce::roundToInt (pDynm->load()));
+    const auto em = (EqModel) juce::jlimit (0, 2, juce::roundToInt (pEqm->load()));
+    if (pid == id::atk) { t = msTexto (dynAtkMs (dm, pAtk->load())); return true; }
+    if (pid == id::rel)
+    {
+        const float r = dynRelS (dm, pRel->load());
+        t = r < 0 ? juce::String ("AUTO") : msTexto (r * 1000.0f);
+        if (dm == DynModel::opto) t = "2 tempos, " + t;
+        return true;
+    }
+    if (pid == id::rat)
+    {
+        const float r = dynRatio (dm, pRat->load());
+        if (r > 50.0f) t = "ALL";
+        else if (dm == DynModel::opto) t = (r < 8.0f ? "COMP ~" : "LIMIT ~") + juce::String (1.0f + 0.6f * (r - 1.0f), 1) + ":1";
+        else t = juce::String (r, r < 2.0f || r != std::floor (r) ? 1 : 0) + ":1";
+        return true;
+    }
+    for (int b = 0; b < 4; ++b)
+    {
+        if (pid == id::eqG[b]) { t = dbText (eqSnapG (em, pEqG[b]->load())); return true; }
+        if (pid == id::eqF[b]) { t = hzText (eqSnapF (em, b, pEqF[b]->load())); return true; }
+    }
+    for (int b = 0; b < 2; ++b)
+        if (pid == id::eqQ[b])
+        {
+            const float q = pQ[b]->load();
+            t = em == EqModel::brit81 ? (brit81Q (q) > 1.0f ? juce::String ("Q ALTO") : juce::String ("Q 0.7"))
+              : em == EqModel::api550 ? juce::String (juce::CharPointer_UTF8 ("Q proporcional \xc3\x97")) + juce::String (q, 2)
+              : "Q " + juce::String (q, 2);
+            return true;
+        }
+    return false;
+}
 int MesaProcessor::texto (const char* pid, char* out, int n) const
 {
+    if (juce::String t; textoModelo (pid, t)) return copiaUtf8 (t, out, n);
     if (auto* p = apvts.getParameter (pid)) return copiaUtf8 (p->getCurrentValueAsText(), out, n);
     return copiaUtf8 ({}, out, n);
 }

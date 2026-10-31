@@ -11,7 +11,7 @@ constexpr int menuLicenca = 20007, menuRenomear = 20008, menuSobre = 20009, menu
 
 // tela base (px): canal e linhas — as mesmas medidas do protótipo mockup/mesa-v4
 constexpr float SW = 84;
-constexpr float rHead = 74, rInp = 110, rDyn = 150, rEq = 262, rOut = 30, rCor = 6, rNome = 20;
+constexpr float rHead = 64, rInp = 112, rDyn = 168, rEq = 262, rOut = 30, rCor = 6, rNome = 20;
 constexpr float NAV = 132, TOP = 44, LBL = 52, CEN = 404, BASE_H = 1000;
 
 // ações (botões que não são parâmetro)
@@ -20,7 +20,8 @@ enum Acao { aAutoSel = 1, aCores, aPadrao, aGeral, aVu, aPpm, aEco, aHq, aAnt = 
 const float zooms[] = { 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.4f, 1.6f, 1.8f, 2.0f };
 
 const char* const pidsCanal[] = { "mode", "grp", "pre", "gain", "drive", "pad", "hpf", "eqon", "eqm", "dynpre", "hfg", "hmfg", "lmfg", "lfg",
-                                  "hff", "hmff", "lmff", "lff", "thr", "rat", "gate", "cmix", "pan", "mute", "solo", "fader", "hq" };
+                                  "hff", "hmff", "lmff", "lff", "thr", "rat", "gate", "cmix", "pan", "mute", "solo", "fader", "hq",
+                                  "lpf", "hmfq", "lmfq", "hfbell", "lfbell", "dynm", "atk", "rel" };
 const char* const pidsConsole[] = { "fader", "mthr", "matk", "mrel", "mmkp", "mrat", "mmix", "min", "mhpf" };
 
 juce::String nomeDe (const Canal& c)
@@ -162,6 +163,9 @@ void MesaTela::mouseDown (const juce::MouseEvent& e)
             int i = al.valor;
             if (al.pid == "grp" && inteiro (*c, "grp") == al.valor) i = 0;   // clicar no G aceso tira do grupo
             c->gesto (pid, true); c->mexe (pid, (float) i / (float) (n - 1)); c->gesto (pid, false);
+            // virou GRUPO com o compressor do canal: passa para o de barramento (o natural num grupo)
+            if (al.pid == "mode" && i == 1 && inteiro (*c, "dynm") == 0)
+            { c->gesto ("dynm", true); c->mexe ("dynm", 1.0f / 3.0f); c->gesto ("dynm", false); }
             break;
         }
         case Alvo::nome: case Alvo::seleciona: case Alvo::acao: case Alvo::posicao: break;
@@ -284,7 +288,8 @@ void MesaTela::menu()
                                  "fader do master. Mexer na console é mexer no plugin daquela faixa (a automação do DAW grava).\n\n"
                                  "O áudio segue o caminho do DAW: sends, returns e grupos continuam valendo. Deixe o fader do DAW "
                                  "em 0 dB e use o da MESA.\n\n"
-                                 "Clique no nome do PRÉ ou do EQ para trocar o modelo. Duplo clique: o knob volta ao padrão; no "
+                                 "Clique no nome do PRÉ ou do EQ, ou no visor verde da DINÂMICA, para trocar o modelo do circuito (E-4K, API, "
+                                 "BRIT; VCA 4K, COLA 4K, FET 76, OPTO 2A). BELL vira o HF/LF de prateleira em sino. Duplo clique: o knob volta ao padrão; no "
                                  "nome, renomeia. Shift: ajuste fino. Na console, a roda do mouse passa os canais, Ctrl + roda (ou "
                                  "- e +) muda o zoom e GERAL mostra todos de uma vez.\n\n"
                                  "A ordem dos canais na console é a das faixas do DAW: o número que o DAW informa ou o do "
@@ -298,7 +303,8 @@ void MesaTela::menu()
 void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& c, bool sel, bool fixa, bool cores)
 {
     const bool grupo = c.tipo() == 1;
-    const int eqm = juce::jlimit (0, 1, inteiro (c, "eqm")), pre = juce::jlimit (0, 2, inteiro (c, "pre"));
+    const int eqm = juce::jlimit (0, 2, inteiro (c, "eqm")), pre = juce::jlimit (0, 2, inteiro (c, "pre"));
+    const int dm = juce::jlimit (0, 3, inteiro (c, "dynm"));
     const bool clara = eqm == 1;
     const Colour base = clara ? hex (0x9ea2a7) : hex (0x232427);
     const Colour ink = clara ? hex (0x1b1c1e) : hex (0xc5c9ce), ink2 = clara ? hex (0x34363a) : hex (0x8f949a);
@@ -316,6 +322,12 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         L (rot, cx, cy + 18);
         alvo (Alvo::knob, { cx - 15, cy - 15, 30, 30 }, pid);
     };
+    auto Kp = [&] (float cx, float cy, Colour tampa, const char* pid, const juce::String& rot)   // knob pequeno (Q)
+    {
+        knob (g, cx, cy, 7, tampa, c.norm (pid), clara, false);
+        txt (g, rot, cx, cy + 11.5f, 5.6f, ink2);
+        alvo (Alvo::knob, { cx - 9, cy - 9, 18, 18 }, pid);
+    };
     auto T = [&] (juce::Rectangle<float> r, const juce::String& rot, bool on, Colour cor, Alvo::Tipo t, const char* pid, int valor = 0, int opcoes = 2)
     {
         tecla (g, r, rot, on, cor, clara, cor == acAzul);
@@ -330,17 +342,19 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         // --- cabeça: modelos, ordem, número ---
         vgrad (g, { x + 1, yy, SW - 2, rHead }, hex (0x17181a), hex (0x0e0f10));
         g.setColour (hex (0x2f3236)); g.fillRoundedRectangle (x + 4, yy + 4, SW - 8, 12, 2.0f);
-        txt (g, preNames[pre] + u8 (" \xc2\xb7 ") + eqNames[eqm], x + SW / 2, yy + 10.5f, 6.6f, hex (0xdfe2e6));
+        txt (g, grupo ? "GRUPO" : "CANAL", x + SW / 2, yy + 10.5f, 6.6f, hex (0xdfe2e6));
+        // a ordem do caminho, cada etapa com o modelo do circuito
         const bool dynPre = c.valor ("dynpre") > 0.5f;
-        const char* ord[3] = { "PR\xc3\x89", dynPre ? "DIN" : "EQ", dynPre ? "EQ" : "DIN" };
+        const juce::String sPre = u8 ("PR\xc3\x89 ") + preCurto[pre], sEq = juce::String ("EQ ") + eqCurto[eqm],
+                           sDin = juce::String ("DIN ") + dynCurto[dm];
+        const juce::String ord[3] = { sPre, dynPre ? sDin : sEq, dynPre ? sEq : sDin };
         for (int i = 0; i < 3; ++i)
         {
-            const auto r = juce::Rectangle<float> (x + 21, yy + 20 + (float) i * 11, SW - 42, 9);
+            const auto r = juce::Rectangle<float> (x + 12, yy + 19 + (float) i * 10, SW - 24, 8.5f);
             g.setColour (hex (0x2f9e7d, 0.12f)); g.fillRoundedRectangle (r, 1.5f);
             g.setColour (hex (0x2f9e7d)); g.drawRoundedRectangle (r, 1.5f, 0.8f);
-            txt (g, u8 (ord[i]), r.getCentreX(), r.getCentreY(), 6.0f, acVerdeAgua);
+            txt (g, ord[i], r.getCentreX(), r.getCentreY(), 5.8f, acVerdeAgua);
         }
-        txt (g, u8 ("\xe2\x96\xbc"), x + SW / 2, yy + 54, 5.0f, acVerdeAgua);
         g.setColour (hex (0x120606)); g.fillRect (x + 1, yy + rHead - 16, SW - 2, 16.0f);
         led7 (g, x + SW / 2 - 15, yy + rHead - 13, 10, tres (noLed (c)), grupo ? hex (0x38c8ff) : hex (0xff3326));
         alvo (Alvo::posicao, { x + 1, yy + rHead - 16, SW - 2, 16 }, nullptr);   // duplo clique: muda a posição
@@ -355,13 +369,12 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
     {
         sulco (g, x, yy, SW);
         // --- ENTRADA ---
-        K (kl, yy + 22, clara ? tampaBranca : tampaCinza, "gain", "GANHO");
-        K (kr, yy + 22, tampaVermelha, "drive", "DRIVE");
-        K (kl, yy + 70, clara ? tampaBranca : tampaCinza, "hpf", "HPF");
-        T ({ kr - 13, yy + 57, 26, 11 }, "PAD", c.valor ("pad") > 0.5f, acLaranja, Alvo::liga, "pad");
-        const char* curto[] = { "LIMPO", "312", "73" };
-        T ({ kr - 13, yy + 74, 26, 11 }, curto[pre], false, acVerdeAgua, Alvo::ciclo, "pre", 0, 3);
-        txt (g, u8 ("PR\xc3\x89"), kr, yy + 92, 6.3f, ink2);
+        K (kl, yy + 20, clara ? tampaBranca : tampaCinza, "gain", "GANHO");
+        K (kr, yy + 20, tampaVermelha, "drive", "DRIVE");
+        K (kl, yy + 62, clara ? tampaBranca : tampaCinza, "hpf", "HPF");
+        K (kr, yy + 62, clara ? tampaBranca : tampaCinza, "lpf", "LPF");
+        T ({ x + 5, yy + 93, 34, 12 }, "PAD", c.valor ("pad") > 0.5f, acLaranja, Alvo::liga, "pad");
+        T ({ x + SW - 39, yy + 93, 34, 12 }, u8 ("PR\xc3\x89 ") + preCurto[pre], false, acVerdeAgua, Alvo::ciclo, "pre", 0, 3);
     }
     yy += rInp;
     const float yDyn = yy;
@@ -369,33 +382,40 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
     {
         sulco (g, x, yy, SW);
         // --- DINÂMICA ---
-        txt (g, grupo ? juce::String ("COLA") : u8 ("DIN\xc3\x82MICA"), x + 6, yy + 8, 6.8f, ink, Al::esq);
+        txt (g, u8 ("DIN\xc3\x82MICA"), x + 6, yy + 8, 6.8f, ink, Al::esq);
         T ({ x + SW - 28, yy + 3, 22, 10 }, u8 ("PR\xc3\x89"), c.valor ("dynpre") > 0.5f, acLaranja, Alvo::liga, "dynpre");
-        g.setColour (hex (0x08130a)); g.fillRect (x + 5, yy + 16, SW - 10, 10.0f);
+        // visor: modelo do compressor + razão; clicar troca o modelo
+        const auto rv = juce::Rectangle<float> (x + 5, yy + 16, SW - 10, 11);
+        g.setColour (hex (0x08130a)); g.fillRect (rv);
         const float thr = c.valor ("thr");
-        const juce::String vis = grupo ? juce::String (juce::roundToInt (c.valor ("cmix"))) + "% MIX"
-                                       : (thr >= 9.9f ? juce::String ("COMP OFF") : juce::String (c.valor ("rat"), 1) + ":1");
-        txt (g, vis, x + SW / 2, yy + 21.5f, 6.6f, hex (0x7dff6a), Al::meio, true, true);
-        K (kl, yy + 42, clara ? tampaBranca : tampaPreta, "thr", "LIMIAR");
-        K (kl, yy + 83, clara ? tampaBranca : tampaPreta, "rat", u8 ("RAZ\xc3\x83O"));
-        if (grupo) K (kl, yy + 123, tampaLaranja, "cmix", "MIX");
-        else       K (kl, yy + 123, tampaVerde, "gate", "GATE");
-        txt (g, "GR", kr, yy + 34, 6.0f, ink2);
+        juce::String vis = juce::String (dynCurto[dm]) + " ";
+        if (thr >= 9.9f) vis << "OFF";
+        else if (dm == 3) vis << (c.valor ("rat") < 8.0f ? "COMP" : "LIMIT");
+        else vis << textoDe (c, "rat");
+        txt (g, vis, rv.getCentreX(), rv.getCentreY() + 0.5f, 6.4f, hex (0x7dff6a), Al::meio, true, true);
+        alvo (Alvo::ciclo, rv, "dynm", 0, 4);
+        // GR em LEDs, na horizontal
         const int grs[] = { 1, 3, 6, 10, 15, 20 };
-        for (int i = 0; i < 6; ++i) txt (g, juce::String (grs[i]), kr + 5, yy + 42 + (float) i * 13, 5.6f, ink2);
+        for (int i = 0; i < 6; ++i) txt (g, juce::String (grs[i]), x + 12 + (float) i * (SW - 24) / 5, yy + 42, 5.0f, ink2);
+        K (kl, yy + 60, clara ? tampaBranca : tampaPreta, "thr", "LIMIAR");
+        K (kr, yy + 60, clara ? tampaBranca : tampaPreta, "rat", u8 ("RAZ\xc3\x83O"));
+        K (kl, yy + 100, clara ? tampaBranca : tampaCinza, "atk", "ATAQUE");
+        K (kr, yy + 100, clara ? tampaBranca : tampaCinza, "rel", "SOLTURA");
+        if (! grupo) K (kl, yy + 140, tampaVerde, "gate", "GATE");
+        K (grupo ? x + SW / 2 : kr, yy + 140, tampaLaranja, "cmix", "MIX");
     }
     else
     {
         const int grs[] = { 1, 3, 6, 10, 15, 20 };
         for (int i = 0; i < 6; ++i)
         {
-            const float ly = yDyn + 42 + (float) i * 13;
+            const float lx = x + 12 + (float) i * (SW - 24) / 5, ly = yDyn + 34;
             const bool on = m.gr >= (float) grs[i];
             const Colour col = i < 2 ? hex (0x38d66b) : i < 4 ? hex (0xffc93a) : hex (0xff3b2e);
-            if (on) { g.setColour (col.withAlpha (0.25f)); g.fillEllipse (kr - 12, ly - 6, 12, 12); }
+            if (on) { g.setColour (col.withAlpha (0.25f)); g.fillEllipse (lx - 6, ly - 6, 12, 12); }
             g.setColour (on ? col : col.withAlpha (0.15f));
-            g.fillEllipse (kr - 6 - 3.2f, ly - 3.2f, 6.4f, 6.4f);
-            if (on) { g.setColour (Colour (0x99ffffffu)); g.fillEllipse (kr - 7 - 1.1f, ly - 1 - 1.1f, 2.2f, 2.2f); }
+            g.fillEllipse (lx - 3.2f, ly - 3.2f, 6.4f, 6.4f);
+            if (on) { g.setColour (Colour (0x99ffffffu)); g.fillEllipse (lx - 1 - 1.1f, ly - 1 - 1.1f, 2.2f, 2.2f); }
         }
     }
     yy += rDyn;
@@ -404,7 +424,7 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         sulco (g, x, yy, SW);
         // --- EQ ---
         txt (g, "EQ", x + 6, yy + 8, 6.8f, ink, Al::esq);
-        T ({ x + 21, yy + 3, 30, 10 }, eqNames[eqm], false, acVerdeAgua, Alvo::ciclo, "eqm", 0, 2);
+        T ({ x + 21, yy + 3, 30, 10 }, eqCurto[eqm], false, acVerdeAgua, Alvo::ciclo, "eqm", 0, 3);
         T ({ x + SW - 28, yy + 3, 22, 10 }, "IN", c.valor ("eqon") > 0.5f, acLaranja, Alvo::liga, "eqon");
         const char* bn[] = { "HF", "HMF", "LMF", "LF" };
         const Colour tampas[4] = { clara ? tampaCinza : tampaVermelha, clara ? tampaAzul : tampaVerde, tampaAzul, clara ? tampaCinza : tampaPreta };
@@ -413,10 +433,21 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         for (int b = 0; b < 4; ++b)
         {
             const float by = yy + 20 + (float) b * 60;
-            txt (g, bn[b], x + SW / 2, by + 4, 6.4f, ink);
             K (kl, by + 24, tampas[b], gp[b], "GANHO");
             K (kr, by + 24, tampas[b], fp[b], "FREQ");
-            if (b < 3) { g.setColour (clara ? Colour (0x2e000000u) : Colour (0x0fffffffu)); g.fillRect (x + 8, by + 52, SW - 16, 1.0f); }
+            if (b == 0 || b == 3)
+            {
+                // shelf ou sino
+                const char* bp = b == 0 ? "hfbell" : "lfbell";
+                txt (g, bn[b], kl, by + 4, 6.4f, ink);
+                T ({ kr - 13, by - 1, 26, 9.5f }, "BELL", c.valor (bp) > 0.5f, acLaranja, Alvo::liga, bp);
+            }
+            else
+            {
+                txt (g, bn[b], x + SW / 2, by + 4, 6.4f, ink);
+                Kp (x + SW / 2, by + 40, tampas[b], b == 1 ? "hmfq" : "lmfq", "Q");
+            }
+            if (b < 3) { g.setColour (clara ? Colour (0x2e000000u) : Colour (0x0fffffffu)); g.fillRect (x + 8, by + 57, SW - 16, 1.0f); }
         }
     }
     yy += rEq;
@@ -911,7 +942,7 @@ void ConsoleEditor::pintaCentral (juce::Graphics& g, float x, float w, bool fixa
     g.fillRoundedRectangle (x + 8, py, pw, ph, 3.0f);
     g.setColour (juce::Colours::black); g.drawRoundedRectangle (x + 8, py, pw, ph, 3.0f, 1.0f);
     g.setColour (juce::Colour (0x40ffffffu)); g.fillRect (x + 9, py + 1, pw - 2, 1.0f);
-    txt (g, barra == 3 ? juce::String ("COLA BUS") : "COLA " + nomesBarra[barra], x + 16, py + 12, 8, hex (0xe9ebee), Al::esq);
+    txt (g, barra == 3 ? juce::String ("COLA BUS") : "COMP " + nomesBarra[barra], x + 16, py + 12, 8, hex (0xe9ebee), Al::esq);
     auto KB = [&] (Canal& c, int i, const char* pid, const char* rot)
     {
         const float kx = x + 8 + pw / 6 + (float) (i % 3) * pw / 3, ky = py + 62 + (float) (i / 3) * 74;
@@ -932,7 +963,15 @@ void ConsoleEditor::pintaCentral (juce::Graphics& g, float x, float w, bool fixa
     else if (auto* gc = grupo (barra))
     {
         KB (*gc, 0, "thr", "LIMIAR"); KB (*gc, 1, "rat", "RAZ\xc3\x83O"); KB (*gc, 2, "cmix", "MIX");
-        txt (g, u8 ("ataque 10 ms \xc2\xb7 soltura AUTO"), x + 8 + pw / 2, py + 150, 8.0f, hex (0xd7dade), Al::meio, false);
+        KB (*gc, 3, "atk", "ATAQUE"); KB (*gc, 4, "rel", "SOLTURA");
+        // modelo do compressor do grupo (clicar troca)
+        const auto rm = juce::Rectangle<float> (x + w - 96, py + 5, 80, 15);
+        tecla (g, rm, dynNames[juce::jlimit (0, 3, inteiro (*gc, "dynm"))], true, acVerdeAgua);
+        { Alvo al; al.tipo = Alvo::ciclo; al.r = rm; al.c = gc; al.pid = "dynm"; al.opcoes = 4; alvos.push_back (al); }
+        const float kx = x + 8 + pw / 6 + 2 * pw / 3, ky = py + 62 + 74;
+        g.setColour (hex (0x0b0c0d)); g.fillRoundedRectangle (kx - 40, ky - 16, 80, 32, 2.0f);
+        txt (g, textoDe (*gc, "atk"), kx, ky - 6, 7.5f, hex (0x7dff6a), Al::meio, true, true);
+        txt (g, textoDe (*gc, "rel"), kx, ky + 7, 7.5f, hex (0x7dff6a), Al::meio, true, true);
     }
     else
     {
@@ -1089,15 +1128,22 @@ void CanalEditor::pintaFixa (juce::Graphics& g)
     vuCaixa (g, { px + 10, yy + 114, pw - 20, 86 }, u8 ("REDUÇÃO DE GANHO"), false, true, true);
     vuCaixa (g, { px + 10, yy + 206, pw - 20, 86 }, u8 ("SAÍDA"), false, true);
     // caráter
-    yy = cartao (150, "CAR\xc3\x81TER");
+    yy = cartao (186, "CAR\xc3\x81TER");
     txt (g, u8 ("PRÉ"), px + 10, yy + 32, 8, hex (0xd4d7db), Al::esq);
-    for (int i = 0; i < 3; ++i) escolhe ({ px + 46 + (float) i * 76, yy + 23, 72, 18 }, preNames[i], "pre", i, 3, acVerdeAgua);
-    txt (g, "EQ", px + 10, yy + 62, 8, hex (0xd4d7db), Al::esq);
-    for (int i = 0; i < 2; ++i) escolhe ({ px + 46 + (float) i * 76, yy + 53, 72, 18 }, eqNames[i], "eqm", i, 2, acVerdeAgua);
-    txt (g, "ORDEM", px + 10, yy + 92, 8, hex (0xd4d7db), Al::esq);
-    escolhe ({ px + 46, yy + 83, 72, 18 }, u8 ("EQ → DIN"), "dynpre", 0, 2, acLaranja);
-    escolhe ({ px + 122, yy + 83, 72, 18 }, u8 ("DIN → EQ"), "dynpre", 1, 2, acLaranja);
-    txt (g, u8 ("Muda só o som: o painel é o mesmo em todos."), px + 10, yy + 126, 8, hex (0x7b8086), Al::esq, false);
+    for (int i = 0; i < 3; ++i) escolhe ({ px + 46 + (float) i * 58, yy + 23, 56, 18 }, preNames[i], "pre", i, 3, acVerdeAgua);
+    txt (g, "EQ", px + 10, yy + 58, 8, hex (0xd4d7db), Al::esq);
+    for (int i = 0; i < 3; ++i) escolhe ({ px + 46 + (float) i * 58, yy + 49, 56, 18 }, eqNames[i], "eqm", i, 3, acVerdeAgua);
+    txt (g, "DIN", px + 10, yy + 84, 8, hex (0xd4d7db), Al::esq);
+    for (int i = 0; i < 4; ++i) escolhe ({ px + 46 + (float) i * 58, yy + 75, 56, 18 }, dynNames[i], "dynm", i, 4, acVerdeAgua);
+    txt (g, "ORDEM", px + 10, yy + 110, 8, hex (0xd4d7db), Al::esq);
+    escolhe ({ px + 46, yy + 101, 72, 18 }, u8 ("EQ → DIN"), "dynpre", 0, 2, acLaranja);
+    escolhe ({ px + 122, yy + 101, 72, 18 }, u8 ("DIN → EQ"), "dynpre", 1, 2, acLaranja);
+    {
+        const char* sobre[] = { "VCA 4K: comp do canal, limpo; SOLTURA no fim = AUTO.", "COLA 4K: comp de barramento; teclas 1.5/2/4/10.",
+                                "FET 76: ataque em µs, 4/8/12/20 e ALL; suja ao comprimir.", "OPTO 2A: ótico com válvula; solta em 2 tempos." };
+        txt (g, u8 (sobre[juce::jlimit (0, 3, inteiro (proc, "dynm"))]), px + 10, yy + 138, 8, hex (0xaeb3b9), Al::esq, false);
+    }
+    txt (g, u8 ("Muda só o som: o painel é o mesmo em todos."), px + 10, yy + 162, 8, hex (0x7b8086), Al::esq, false);
     // como ligar
     yy = cartao (H - 10 - y, "COMO LIGAR");
     const char* canal[] = { "1. MESA CANAL no fim de cada faixa.", "2. MESA (console) no master.", "3. O \xc3\xa1udio segue o caminho do DAW:",

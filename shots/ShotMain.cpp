@@ -226,6 +226,12 @@ int main (int argc, char** argv)
             setParam (*q, "fader", c.fader); setParam (*q, "pan", c.pan); setParam (*q, "thr", c.thr);
             setParam (*q, "hfg", (float) ((int) c.col % 7 - 3)); setParam (*q, "lmfg", (float) ((int) (c.col >> 8) % 9 - 4));
             if (c.mode == 1) { setParam (*q, "rat", 4); setParam (*q, "cmix", 70); }
+            // modelos variados de compressor e de EQ, para a foto mostrar todos
+            const int k = (int) extras.size();
+            const int dyns[] = { 2, 0, 0, 3, 3, 3, 0, 0, 0, 3, 2, 0, 1, 1, 1 };
+            setParam (*q, "dynm", (float) dyns[k % 15]);
+            if (k == 2 || k == 6 || k == 7) setParam (*q, "eqm", 2);
+            if (k == 0) { setParam (*q, "lfbell", 1); setParam (*q, "lpf", 9000); setParam (*q, "rat", 20); }
             extras.push_back (std::move (q));
         }
     }
