@@ -10,7 +10,7 @@ Não é VST: um plugin só recebe áudio e não enxerga nem edita os clips. A VA
 
 - **Device no master**, pequeno: OPEN ↗, THRESHOLD, ANALYZE e status.
 - **OPEN** abre a tela completa numa janela do Max que fica por cima do Live. Uma linha por faixa com o clip inteiro:
-  verde = tem som, vermelho tracejado = vazio.
+  cor da faixa = tem som, vermelho escuro tracejado = vazio.
 - **ANALYZE** lê o arquivo de cada clip de áudio do arranjo (pico em blocos de 10 ms) e marca os trechos abaixo do
   THRESHOLD por mais que o MIN LENGTH. Só lê: nada muda no set.
 

@@ -12,7 +12,8 @@ TESTAR
 2. Ajuste THRESHOLD (padrão -60 dB) e MIN LENGTH (padrão 1000 ms).
 3. Clique ANALYZE. A linha de status mostra o progresso e depois "N vazios em X faixas · Y% do tempo".
 4. Clique OPEN: abre a janela flutuante com uma linha por faixa.
-   - verde = clip com som · vermelho = trecho vazio (seria removido)
+   - cor da faixa = clip com som · vermelho escuro tracejado = trecho vazio (seria removido)
+   - passe o mouse numa faixa para ver o nome inteiro no rodapé
    - clique no vermelho = manter o trecho (fica cinza)
    - clique no nome da faixa = deixar a faixa fora da limpeza
 

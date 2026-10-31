@@ -5,6 +5,18 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.1.2 — 2026-10-31
+- Visual mais legível (pedido depois do 1º teste, que mostrou tudo pequeno demais):
+- **Janela maior** (1360×840) e **letras maiores**: nomes em 11–14 px, linhas de no mínimo 20 px (cabem ~35 faixas;
+  o resto rola pela barra ou pela roda do mouse), régua com o número do compasso em destaque.
+- **Cor de cada faixa igual à do Live** nos trechos com som, e uma tarja da cor ao lado do nome. O vazio fica vermelho
+  escuro tracejado, para o som se destacar (antes o vermelho dominava a tela).
+- **Nomes curtos**: o começo comum dos stems (ex.: `mel rose - neural collapse inteira - 140 Fm`) sai das linhas e
+  aparece uma vez em STEMS, em cima da lista. Cada linha mostra também o **% vazio** da faixa.
+- **Zoom no trecho com clips**: a régua começa no compasso do primeiro clip, sem a área vazia do início do set.
+- **Mouse por cima** de uma faixa destaca a linha e mostra no rodapé o nome inteiro, quantos vazios e o % vazio.
+- Borda em cada clip, para ver onde um clip termina e o outro começa; legenda das cores no cabeçalho.
+
 ## 0.1.1 — 2026-10-31
 - Primeiro teste real (Live Suite 12.4.16, 81 faixas de stems): a detecção rodou (465 vazios, 77% do tempo dos
   clips). Correções da janela:

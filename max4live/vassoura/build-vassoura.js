@@ -47,7 +47,7 @@ line(buf, 1, mLoaded, 0);
 line(mLoaded, 0, v8, 0);
 
 // controles (presentation)
-box({ maxclass: 'comment', text: 'VASSOURA', fontname: 'Arial Bold', fontsize: 14, textcolor: FG,
+box({ maxclass: 'comment', text: 'VASSOURA', fontname: 'Arial Bold', fontsize: 16, textcolor: FG,
   numinlets: 1, numoutlets: 0, patching_rect: [500, 20, 100, 22],
   presentation: 1, presentation_rect: [6, 4, 100, 22] });
 
@@ -89,7 +89,7 @@ line(tAn, 0, mAn, 0);
 line(mAn, 0, v8, 0);
 
 const st = msg('aguardando o Live...', [200, 440, 300, 22], {
-  ignoreclick: 1, bgcolor: [0.16, 0.16, 0.17, 1], textcolor: FG, fontsize: 9,
+  ignoreclick: 1, bgcolor: [0.16, 0.16, 0.17, 1], textcolor: FG, fontsize: 11,
   presentation: 1, presentation_rect: [6, 120, 200, 22] });
 line(v8, 1, st, 0);
 
@@ -101,7 +101,7 @@ const sub = {
   fileversion: 1,
   appversion: { major: 9, minor: 0, revision: 0, architecture: 'x64', modernui: 1 },
   classnamespace: 'box',
-  rect: [120, 120, 1220, 900],
+  rect: [80, 80, 1440, 920],
   openinpresentation: 1,
   toolbarvisible: 0,
   boxes: [
@@ -109,7 +109,7 @@ const sub = {
     { box: { id: 'obj-2', maxclass: 'newobj', text: 'thispatcher', numinlets: 1, numoutlets: 2, outlettype: ['', ''], patching_rect: [20, 70, 80, 22] } },
     { box: { id: 'obj-3', maxclass: 'newobj', text: 'r ---vassoura_ref', numinlets: 0, numoutlets: 1, outlettype: [''], patching_rect: [140, 20, 110, 22] } },
     { box: { id: 'obj-4', maxclass: 'jsui', filename: 'vassoura_view.js', numinlets: 1, numoutlets: 1, outlettype: [''],
-      parameter_enable: 0, patching_rect: [20, 120, 1100, 780], presentation: 1, presentation_rect: [0, 0, 1100, 780] } },
+      parameter_enable: 0, patching_rect: [20, 120, 1360, 840], presentation: 1, presentation_rect: [0, 0, 1360, 840] } },
   ],
   lines: [
     { patchline: { source: ['obj-1', 0], destination: ['obj-2', 0] } },
@@ -119,8 +119,8 @@ const sub = {
 const pj = box({ maxclass: 'newobj', text: 'p VASSOURA', numinlets: 1, numoutlets: 0,
   patching_rect: [500, 260, 80, 22], patcher: sub });
 const tOpen = obj('t b', 1, 1, [500, 200, 30, 22], { outlettype: ['bang'] });
-// janela do tamanho exato do jsui (1100x780), sem redimensionar, sempre por cima, título VASSOURA
-const mOpen = msg('window flags float, window flags nogrow, window size 120 120 1220 900, window exec, title VASSOURA, front',
+// janela do tamanho exato do jsui (1360x840), sem redimensionar, sempre por cima, título VASSOURA
+const mOpen = msg('window flags float, window flags nogrow, window size 80 80 1440 920, window exec, title VASSOURA, front',
   [500, 230, 520, 22]);
 line(open, 0, tOpen, 0);
 line(tOpen, 0, mOpen, 0);

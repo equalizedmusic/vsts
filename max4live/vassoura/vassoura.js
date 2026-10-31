@@ -73,7 +73,7 @@ function analyze() {
 		var t = new LiveAPI("live_set tracks " + i);
 		if (num(t.get("is_foldable"))) continue;      // grupo
 		if (!num(t.get("has_audio_input"))) continue; // MIDI
-		var tr = { name: str(t.get("name")), index: i, skip: 0, clips: [] };
+		var tr = { name: str(t.get("name")), index: i, color: num(t.get("color")), skip: 0, clips: [] };
 		var nc = t.getcount("arrangement_clips");
 		for (var j = 0; j < nc; j++) {
 			var c = new LiveAPI("live_set tracks " + i + " arrangement_clips " + j);
