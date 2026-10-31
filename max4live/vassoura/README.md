@@ -39,4 +39,9 @@ Copie a pasta de saída inteira para `User Library\Presets\Audio Effects\Max Aud
 `Vassoura.amxd` para o master. Os `.js` precisam ficar na mesma pasta do `.amxd`. Se aparecer
 "can't find vassoura.js", abra o device no editor do Max, clique em **FREEZE** e salve.
 
-Esta pasta não entra em nenhum build do GitHub Actions.
+## Download e versões
+
+O zip pronto (`.amxd` + `.js` + `LEIA-ME.txt`) fica no release `vassoura-vx.y.z`, em
+[Releases](https://github.com/equalizedmusic/vsts/releases). Quem publica é o workflow `release-max4live.yml`: a versão
+é o primeiro `## x.y.z` de [`novidades/Vassoura.md`](../../novidades/Vassoura.md). Para lançar, escreva a seção nova
+lá em cima no mesmo commit da mudança. Esta pasta não entra no build dos VSTs.

@@ -81,7 +81,9 @@ No menu de presets: *Salvar como novo*; com um preset do usuário aberto, també
 ## Max for Live
 
 Devices para o Ableton Live que mexem no set (clips, faixas), o que um VST não consegue. Ficam em `max4live/<nome>`,
-não entram em nenhum build nem instalador: cada um tem um `build-<nome>.js` que gera o `.amxd`.
+não entram em nenhum build nem instalador: cada um tem um `build-<nome>.js` que gera o `.amxd`. O workflow
+`release-max4live.yml` publica o zip pronto no release `<nome>-vx.y.z` quando sobe uma versão nova em
+`novidades/<Nome>.md` (fica só a última).
 
 | Device | O que é |
 |---|---|

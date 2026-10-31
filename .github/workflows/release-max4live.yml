@@ -1,0 +1,65 @@
+name: release-max4live
+
+# Devices Max for Live (max4live/<device>/). Não compila nada: roda o build-<device>.js (Node), zipa a saída com o
+# LEIA-ME.txt e publica o release fixo "<device>-vx.y.z". A versão é o primeiro título "## x.y.z" de
+# novidades/<Device>.md e a seção vira a nota. Versão já lançada não é sobrescrita (para lançar, suba a versão);
+# criado o release novo, os <device>-v… anteriores são apagados (fica só a última, como nos instaladores).
+on:
+  push:
+    branches: [main]
+    paths: ['max4live/**', 'novidades/Vassoura.md', '.github/workflows/release-max4live.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-max4live
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # RELEASE_TOKEN: o token automático toma 403 ao criar o release quando o commit mexe em .github/workflows
+      - name: Releases dos devices (vassoura-v…)
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          for build in max4live/*/build-*.js; do
+            dir=$(dirname "$build"); dev=$(basename "$dir")
+            Nome="$(tr '[:lower:]' '[:upper:]' <<< "${dev:0:1}")${dev:1}"
+            nov="novidades/$Nome.md"
+            if [ ! -f "$nov" ]; then echo "$dev: sem $nov, sem release"; continue; fi
+            ver=$(grep -m1 -E '^## [0-9]+\.[0-9]+\.[0-9]+' "$nov" | awk '{print $2}')
+            if [ -z "$ver" ]; then echo "$dev: sem '## x.y.z' em $nov"; continue; fi
+            tag="$dev-v$ver"
+            if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              echo "$tag já existe: mantido como está"; continue
+            fi
+            pub=$(mktemp -d); pasta="$Nome-$ver"
+            node "$build" "$pub/$pasta"
+            [ -f "$dir/LEIA-ME.txt" ] && cp "$dir/LEIA-ME.txt" "$pub/$pasta/"
+            (cd "$pub" && zip -r -X "$pasta.zip" "$pasta")
+            notas=$(mktemp)
+            {
+              awk -v v="$ver" '$0 ~ "^## "v {on=1; next} on && /^## / {exit} on' "$nov"
+              echo
+              echo "Download: \`$pasta.zip\` aqui embaixo em Assets. Max for Live (Live Suite, ou Standard com Max for Live)."
+              echo "Instalar: copie a pasta \`$pasta\` inteira para \`User Library/Presets/Audio Effects/Max Audio Effect/\` e arraste o \`.amxd\` para o master."
+            } > "$notas"
+            gh release create "$tag" "$pub/$pasta.zip" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "${Nome^^} $ver (Max for Live)" --notes-file "$notas"
+            echo "release $tag criado"
+            gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' \
+              | grep -E "^${dev}-v[0-9]" | grep -vxF "$tag" \
+              | while read -r antiga; do
+                  gh release delete "$antiga" --yes --cleanup-tag -R "$GITHUB_REPOSITORY"
+                  echo "versão antiga $antiga apagada"
+                done || true
+          done

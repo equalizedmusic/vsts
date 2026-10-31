@@ -1,0 +1,29 @@
+VASSOURA — Max for Live (Live Suite 12.4)
+Versão e novidades: ver o release no GitHub (equalizedmusic/vsts, releases vassoura-v...).
+
+INSTALAR
+1. Copie a pasta inteira (Vassoura-<versão>) para:
+   Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
+   Os 3 arquivos (Vassoura.amxd, vassoura.js e vassoura_view.js) PRECISAM ficar juntos.
+2. No Live, arraste o Vassoura.amxd para o MASTER.
+
+TESTAR
+1. Abra um set com stems (clips de áudio no Arrangement, WARP DESLIGADO).
+2. Ajuste THRESHOLD (padrão -60 dB) e MIN LENGTH (padrão 1000 ms).
+3. Clique ANALYZE. A linha de status mostra o progresso e depois "N vazios em X faixas · Y% do tempo".
+4. Clique OPEN: abre a janela flutuante com uma linha por faixa.
+   - verde = clip com som · vermelho = trecho vazio (seria removido)
+   - clique no vermelho = manter o trecho (fica cinza)
+   - clique no nome da faixa = deixar a faixa fora da limpeza
+
+O QUE A 0.1 AINDA NÃO FAZ (protótipo SÓ DE DETECÇÃO)
+- Não altera o set (APPLY / CUT / MUTE vêm na próxima fase).
+- Clips com WARP ligado e clips em LOOP aparecem em cinza com o aviso e não são analisados.
+- PRE / POST / FADE / SNAP / SCOPE ainda não estão na tela.
+
+SE DER ERRO
+- Abra o console do Max (no device: botão de editar → Max → Window → Max Console).
+- Ele imprime uma linha "VASSOURA:" por clip, com posição e markers.
+  Mande print dessas linhas — é com elas que confiro se o vazio caiu no lugar certo.
+- "v8: can't find vassoura.js" = os arquivos não estão na mesma pasta do .amxd.
+  Correção: abra o device no editor do Max, clique em FREEZE (ícone de floco de neve) e salve.
