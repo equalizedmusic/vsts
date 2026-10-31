@@ -346,11 +346,32 @@ juce::String MesaProcessor::displayName() const
     if (nameOverride.isNotEmpty()) return nameOverride;
     // "3-Audio" / "12 Baixo": o número vira a posição (LED); na fita vai só o nome
     int k = 0;
-    const auto t = hostName.trimStart();
+    const auto t = nomeFaixa().trimStart();
     while (k < t.length() && k < 4 && juce::CharacterFunctions::isDigit (t[k])) ++k;
     if (k > 0 && k < t.length() && (t[k] == '-' || t[k] == ' ' || t[k] == '.' || t[k] == '_'))
         if (const auto resto = t.substring (k + 1).trim(); resto.isNotEmpty()) return resto;
-    return hostName;
+    return t;
+}
+
+// Ableton: o título da janela do plugin é "<faixa>/<plugin>" ("1-Audio/MESA CANAL"). Só vale se um dos lados é o
+// nosso plugin — em outro DAW o título é outra coisa e fica de fora.
+void MesaProcessor::nomeDaJanela (const juce::String& titulo)
+{
+    const int b = titulo.lastIndexOfChar ('/');
+    if (b <= 0) return;
+    juce::String faixa;
+    const auto esq = titulo.substring (0, b).trim(), dir = titulo.substring (b + 1).trim();
+    if (dir.containsIgnoreCase ("MESA")) faixa = esq;
+    else if (esq.containsIgnoreCase ("MESA")) faixa = dir;
+    faixa = faixa.substring (0, 40);
+    if (faixa.isEmpty()) return;
+    {
+        const juce::ScopedLock sl (nameLock);
+        if (faixa == janelaName) return;
+        janelaName = faixa;
+    }
+    registry->changed();
+    ++mesa::Ponte::get().versao;
 }
 juce::String MesaProcessor::userName() const { const juce::ScopedLock sl (nameLock); return nameOverride; }
 void MesaProcessor::renomeia (const char* utf8)
@@ -375,6 +396,8 @@ void MesaProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("nome", userName(), nullptr);
+    { const juce::ScopedLock sl (nameLock); state.setProperty ("janela", janelaName, nullptr); }
+    state.setProperty ("uirec", uiRec.load(), nullptr);
     state.setProperty ("pos", posManual.load(), nullptr);
     state.setProperty ("uizoom", (double) uiZoom.load(), nullptr);
     state.setProperty ("uiw", uiW.load(), nullptr);
@@ -392,12 +415,14 @@ void MesaProcessor::setStateInformation (const void* data, int sizeInBytes)
             {
                 const juce::ScopedLock sl (nameLock);
                 nameOverride = vt.getProperty ("nome").toString();
+                janelaName = vt.getProperty ("janela").toString();   // o nome da faixa fica guardado: a console mostra sem abrir a janela
             }
+            uiRec = juce::jlimit (0, 31, (int) vt.getProperty ("uirec", 0));
             if ((int) vt.getProperty ("uiw", 0) > 0) { uiW = (int) vt.getProperty ("uiw"); uiH = (int) vt.getProperty ("uih"); }
             uiGeral = (bool) vt.getProperty ("uigeral", false);
             posManual = juce::jlimit (0, 999, (int) vt.getProperty ("pos", 0));
             uiZoom = juce::jlimit (0.5f, 2.0f, (float) (double) vt.getProperty ("uizoom", 1.0));
-            for (auto k : { "ui", "uiw", "uih", "uigeral", "pos", "uizoom" }) vt.removeProperty (k, nullptr);
+            for (auto k : { "ui", "uiw", "uih", "uigeral", "pos", "uizoom", "uirec", "janela" }) vt.removeProperty (k, nullptr);
             // sessão de antes da 0.5 (sem modelo de compressor): o GRUPO usava o COLA 4K com ataque de 10 ms
             const bool antigo = ! isConsole && ! vt.getChildWithProperty ("id", id::dynm).isValid();
             apvts.replaceState (vt);
@@ -511,7 +536,7 @@ int MesaProcessor::posicao() const
     if (const int m = posManual.load(); m > 0) return m;
     if (const int h = faixaHost.load(); h > 0) return h;
     const juce::ScopedLock sl (nameLock);
-    const auto t = hostName.trimStart();
+    const auto t = nomeFaixa().trimStart();
     int n = 0, k = 0;
     while (k < t.length() && k < 4 && juce::CharacterFunctions::isDigit (t[k])) n = n * 10 + (t[k++] - '0');
     return k > 0 ? n : 0;

@@ -77,4 +77,8 @@ private:
     void trava_() { int z = 0; while (! trava.compare_exchange_weak (z, 1, std::memory_order_acquire)) z = 0; }
     void solta_() { trava.store (0, std::memory_order_release); }
 };
+
+// Título da janela de fora em que o DAW pôs a nossa (handle nativo da tela: HWND no Windows, NSView no Mac), em UTF-8.
+// O Ableton não manda o nome da faixa ao plugin, mas o põe no título da janela do plugin ("1-Audio/MESA CANAL").
+int tituloDaJanela (void* nativo, char* out, int n);
 } // namespace mesa

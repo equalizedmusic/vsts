@@ -41,7 +41,8 @@ public:
         int codigo = 0;                 // acao: qual
     };
     // medidores suavizados de um canal
-    struct Med { float in = -60, out = -60, outL = -60, outR = -60, gr = 0, vuIn = -30, vuOut = -30, vuGr = 0; };
+    // barra = o que a barra do fader mostra (dBFS): VU (média de 300 ms) ou PPM (picos, cai 12 dB/s), escolhido na console
+    struct Med { float in = -60, out = -60, outL = -60, outR = -60, gr = 0, vuIn = -30, vuOut = -30, vuGr = 0, barra = -60; };
 
 protected:
     virtual void pintaFixa (juce::Graphics&) = 0;          // tela base, coordenadas base
@@ -64,6 +65,9 @@ protected:
 
     // canal inteiro (x, y, altura) — fixa = a parte que não mexe; senão só medidores
     void pintaCanal (juce::Graphics& g, float x, float y, float h, mesa::Canal& c, bool sel, bool fixa, bool cores);
+    // linhas do canal (0 cabeça, 1 INPUT, 2 DYN, 3 EQ, 4 AUX): altura, menor quando recolhida (só a console recolhe)
+    float alt (int linha) const;
+    bool rec[5] {};
 
     MesaProcessor& proc;
     std::vector<Alvo> alvos;                // refeito junto com a imagem guardada
@@ -101,10 +105,17 @@ private:
     bool existe (mesa::Canal* c) override;
 
     void listaCanais();
+    // a janela inteira (barra lateral, topo, seção central) escala só com a altura; o zoom vale só no MIXER (rótulos +
+    // canais), que tem a própria escala, rolagem vertical e recorte
     float escala() const;
     float larguraBase() const { return (float) getWidth() / escala(); }
-    float alturaBase() const { return juce::jmax (1000.0f, (float) getHeight() / escala()); }   // nunca espreme o canal
-    float rolaMax() const { return juce::jmax (0.0f, alturaBase() * escala() - (float) getHeight()); }
+    float alturaBase() const { return (float) getHeight() / escala(); }
+    float zMix() const;                      // zoom do mixer (PADRÃO: o escolhido; GERAL: o que faz caber todos)
+    float mixW() const;                      // área do mixer na tela base
+    float mixH() const;
+    float altMix() const;                    // altura do canal no mixer (px do mixer; nunca espreme o canal)
+    float rolaMax() const { return juce::jmax (0.0f, altMix() * zMix() - mixH()); }
+    juce::AffineTransform mix() const;       // mixer -> tela base
     void zoom (int passos);
     int cabem() const;
     void mostra (int indice);
@@ -117,7 +128,7 @@ private:
     std::vector<mesa::Canal*> canais;      // canais em ordem, depois os grupos
     int versaoLista = -1;
     int primeiro = 0;                       // primeiro canal à vista
-    float rolaY = 0;                        // rolagem vertical (px da janela) quando o zoom não cabe na altura
+    float rolaY = 0;                        // rolagem vertical do mixer (px da tela base) quando o zoom não cabe na altura
     int selNum = -1;                        // número do canal selecionado
     int barra = 3;                          // seção central: 0..2 = G1..G3, 3 = master
     bool autoSel = true, cores = true, ppm = false;
@@ -137,4 +148,5 @@ private:
     juce::AffineTransform base() const override;
     void assinatura (std::vector<float>& s) override;
     void mede() override;
+    int tique = 0;                          // de tempos em tempos lê o título da janela (nome da faixa no Ableton)
 };

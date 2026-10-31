@@ -69,6 +69,7 @@ public:
     int  mode() const     { return isConsole ? mesa::modeMaster : tipo(); }
     juce::String displayName() const;                 // nome escrito na fita (o do usuário, senão o da faixa do DAW)
     juce::String userName() const;
+    void nomeDaJanela (const juce::String& titulo);   // título da janela do plugin ("1-Audio/MESA CANAL"): tira o nome da faixa
 
     juce::AudioProcessorValueTreeState apvts;
     juce::SharedResourcePointer<mesa::Registry> registry;   // os CANAIS deste binário (SOLO)
@@ -82,6 +83,7 @@ public:
     std::atomic<int> uiW { 0 }, uiH { 0 };  // tamanho da janela (0 = ainda não abriu: a tela escolhe)
     std::atomic<bool> uiGeral { false };     // CONSOLE: vista GERAL (todos os canais na largura)
     std::atomic<float> uiZoom { 1.0f };      // CONSOLE: zoom da vista PADRÃO
+    std::atomic<int> uiRec { 0 };            // CONSOLE: linhas recolhidas (bit 0 cabeça, 1 INPUT, 2 DYN, 3 EQ, 4 AUX)
 
     // CONSOLE: últimas amostras do master para o goniômetro (escritas no áudio, lidas pela tela)
     static constexpr int gonioN = 2048;
@@ -127,6 +129,8 @@ private:
 
     juce::CriticalSection nameLock;
     juce::String hostName, nameOverride;
+    juce::String janelaName;                 // nome da faixa tirado do título da janela (quando o DAW não manda o nome)
+    juce::String nomeFaixa() const { return hostName.isNotEmpty() ? hostName : janelaName; }   // com nameLock
     juce::Colour hostColour { 0xff9aa0a8 };
 
     std::atomic<float> semParam[1] { { 0.0f } };   // parâmetro que este plugin não tem (CONSOLE x CANAL) lê zero

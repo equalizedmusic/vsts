@@ -4,6 +4,17 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.1 — 2026-10-31
+- Zoom da console só nos canais: o − / + e o Ctrl + roda aumentam ou diminuem o mixer (rótulos das linhas e canais).
+  A barra lateral, o topo e a seção central (MASTER, GR, COLA BUS, faders dos grupos) ficam sempre do mesmo tamanho.
+- Linhas recolhíveis, como no SSL 360: clique no rótulo à esquerda (CANAL, INPUT, DYN, EQ, AUX) para recolher ou abrir
+  a linha em todos os canais. O espaço que sobra vai para o fader. Fica guardado na sessão.
+- A linha dos grupos G1/G2/G3 passou a se chamar AUX.
+- Nome da faixa no Ableton: o Ableton não manda o nome ao plugin, então a MESA CANAL o lê do título da própria janela
+  ("1-Audio/MESA CANAL"). Basta abrir a MESA CANAL de cada faixa uma vez; o nome (e o número, que dá a ordem na
+  console) fica guardado na sessão.
+- MEDIDOR VU/PPM: agora muda a barra ao lado do fader de cada canal (VU = média, PPM = picos). Antes não mudava nada.
+
 ## 0.5.0 — 2026-10-31
 - Os circuitos que a MESA emula, agora com o timbre de cada um:
   - PRE: E-4K (o pré da console britânica, limpo e firme; era o LIMPO), API 312 e BRIT 73. Em 0 VU, sem DRIVE, a

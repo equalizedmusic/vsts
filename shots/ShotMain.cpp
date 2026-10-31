@@ -248,6 +248,26 @@ int main (int argc, char** argv)
     juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
     const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
    #if SHOT_MESA
+    // a mesma console com zoom de 140% e as linhas INPUT e DYN recolhidas: a lateral e a seção central não podem mudar
+    {
+        juce::MemoryBlock mb;
+        proc->getStateInformation (mb);
+        if (auto x = juce::AudioProcessor::getXmlFromBinary (mb.getData(), (int) mb.getSize()))
+        {
+            x->setAttribute ("uizoom", 1.4); x->setAttribute ("uirec", 6); x->setAttribute ("uigeral", 0);
+            juce::MemoryBlock m2;
+            juce::AudioProcessor::copyXmlToBinary (*x, m2);
+            proc->setStateInformation (m2.getData(), (int) m2.getSize());
+        }
+        editor->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (800);
+        const auto img3 = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+        const auto f3 = outDir.getChildFile ("MESA-ZOOM.png");
+        f3.deleteFile();
+        juce::FileOutputStream os3 (f3);
+        juce::PNGImageFormat png3;
+        std::printf ("MESA-ZOOM: %s\n", os3.openedOk() && png3.writeImageToStream (img3, os3) ? "ok" : "falhou");
+    }
     // a janela do MESA CANAL (o canal VOZ), a 200%
     {
         std::unique_ptr<juce::AudioProcessorEditor> ed2 (extras[9]->createEditorAndMakeActive());

@@ -16,7 +16,8 @@ constexpr float NAV = 132, TOP = 44, LBL = 52, CEN = 404, BASE_H = 1000;
 
 // ações (botões que não são parâmetro)
 enum Acao { aAutoSel = 1, aCores, aPadrao, aGeral, aVu, aPpm, aEco, aHq, aAnt = 10, aProx, aZerar, aBarra = 20, aLimpaSolo = 30, aRolagem = 40,
-            aZoomMenos = 50, aZoomMais, aZoom100 };
+            aZoomMenos = 50, aZoomMais, aZoom100, aRecolhe = 60 };
+constexpr float rRec = 14;   // linha recolhida (a cabeça recolhida fica só com o número: 16)
 const float zooms[] = { 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.4f, 1.6f, 1.8f, 2.0f };
 
 const char* const pidsCanal[] = { "mode", "grp", "pre", "gain", "drive", "pad", "hpf", "eqon", "eqm", "dynpre", "hfg", "hmfg", "lmfg", "lfg",
@@ -119,6 +120,7 @@ void MesaTela::atualizaMed (Canal* c, Med& m, bool ppm)
     const float alvoOut = (ppm ? o[7] : juce::jmax (o[2], o[3])) + 18.0f;    // 0 VU = -18 dBFS
     m.vuOut += (alvoOut - m.vuOut) * 0.6f;
     m.vuIn += (o[5] + 18.0f - m.vuIn) * 0.6f;
+    m.barra = ppm ? o[7] : juce::jmax (o[2], o[3]);
     m.vuGr += (o[4] - m.vuGr) * (o[4] > m.vuGr ? 0.6f : 0.3f);
 }
 
@@ -291,7 +293,11 @@ void MesaTela::menu()
                                  "Clique no nome do PRE ou do EQ, ou no visor verde da DYNAMICS, para trocar o modelo do circuito (E-4K, API, "
                                  "BRIT; VCA 4K, COLA 4K, FET 76, OPTO 2A). BELL vira o HF/LF de shelf em bell. Duplo clique: o knob volta ao padrão; no "
                                  "nome, renomeia. Shift: ajuste fino. Na console, a roda do mouse passa os canais, Ctrl + roda (ou "
-                                 "- e +) muda o zoom e GERAL mostra todos de uma vez.\n\n"
+                                 "- e +) muda o zoom dos canais (a lateral e a seção central não mudam) e GERAL mostra todos de "
+                                 "uma vez. Clique no rótulo da linha (CANAL, INPUT, DYN, EQ, AUX) para recolher ou abrir. "
+                                 "MEDIDOR: a barra ao lado do fader mostra a média (VU) ou os picos (PPM).\n\n"
+                                 "No Ableton, o nome da faixa vem do título da janela do plugin: abra uma vez a MESA CANAL de "
+                                 "cada faixa e o nome fica guardado na sessão.\n\n"
                                  "A ordem dos canais na console é a das faixas do DAW: o número que o DAW informa ou o do "
                                  "começo do nome da faixa (\"3-Audio\"). Duplo clique no número vermelho escolhe à mão.\n\n"
                                  "Os plugins se enxergam quando o DAW os carrega no mesmo processo (o padrão do Ableton, Logic, "
@@ -300,6 +306,13 @@ void MesaTela::menu()
 }
 
 // ---------------------------------------------------------------------------------------------------------- canal inteiro
+float MesaTela::alt (int i) const
+{
+    static const float a[] = { rHead, rInp, rDyn, rEq, rOut };
+    i = juce::jlimit (0, 4, i);
+    return rec[i] ? (i == 0 ? 16.0f : rRec) : a[i];
+}
+
 void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& c, bool sel, bool fixa, bool cores)
 {
     const bool grupo = c.tipo() == 1;
@@ -334,11 +347,20 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         alvo (t, r.expanded (1.5f), pid, valor, opcoes);
     };
 
+    // linha recolhida: só uma faixa funda no lugar dos controles
+    auto recolhida = [&] (float ry, float rh)
+    {
+        g.setColour (hex (0x000000, clara ? 0.18f : 0.32f)); g.fillRect (x + 1, ry + 2, SW - 2, rh - 3);
+        g.setColour (ink2.withAlpha (0.5f)); g.fillRect (x + SW / 2 - 6, ry + rh / 2, 12.0f, 1.0f);
+    };
     float yy = y;
     if (fixa)
     {
         alvo (Alvo::seleciona, { x, y, SW, h }, nullptr);
         chapa (g, { x, y, SW, h }, base);
+    }
+    if (fixa && ! rec[0])
+    {
         // --- cabeça: modelos, ordem, número ---
         vgrad (g, { x + 1, yy, SW - 2, rHead }, hex (0x17181a), hex (0x0e0f10));
         g.setColour (hex (0x2f3236)); g.fillRoundedRectangle (x + 4, yy + 4, SW - 8, 12, 2.0f);
@@ -355,19 +377,25 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
             g.setColour (hex (0x2f9e7d)); g.drawRoundedRectangle (r, 1.5f, 0.8f);
             txt (g, ord[i], r.getCentreX(), r.getCentreY(), 5.8f, acVerdeAgua);
         }
-        g.setColour (hex (0x120606)); g.fillRect (x + 1, yy + rHead - 16, SW - 2, 16.0f);
-        led7 (g, x + SW / 2 - 15, yy + rHead - 13, 10, tres (noLed (c)), grupo ? hex (0x38c8ff) : hex (0xff3326));
-        alvo (Alvo::posicao, { x + 1, yy + rHead - 16, SW - 2, 16 }, nullptr);   // duplo clique: muda a posição
     }
-    else
+    if (fixa)
+    {
+        // o número fica à vista mesmo com a cabeça recolhida
+        const float ly = yy + alt (0) - 16;
+        g.setColour (hex (0x120606)); g.fillRect (x + 1, ly, SW - 2, 16.0f);
+        led7 (g, x + SW / 2 - 15, ly + 3, 10, tres (noLed (c)), grupo ? hex (0x38c8ff) : hex (0xff3326));
+        alvo (Alvo::posicao, { x + 1, ly, SW - 2, 16 }, nullptr);   // duplo clique: muda a posição
+    }
+    else if (! rec[0])
     {
         barraLed (g, x + 6, yy + 21, 4, 32, m.in, 14);
         barraLed (g, x + SW - 10, yy + 21, 4, 32, m.out, 14);
     }
-    yy += rHead;
-    if (fixa)
+    yy += alt (0);
+    if (fixa) sulco (g, x, yy, SW);
+    if (fixa && rec[1]) recolhida (yy, alt (1));
+    else if (fixa)
     {
-        sulco (g, x, yy, SW);
         // --- ENTRADA ---
         K (kl, yy + 20, clara ? tampaBranca : tampaCinza, "gain", "GAIN");
         K (kr, yy + 20, tampaVermelha, "drive", "DRIVE");
@@ -376,11 +404,12 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         T ({ x + 5, yy + 93, 34, 12 }, "PAD", c.valor ("pad") > 0.5f, acLaranja, Alvo::liga, "pad");
         T ({ x + SW - 39, yy + 93, 34, 12 }, juce::String ("PRE ") + preCurto[pre], false, acVerdeAgua, Alvo::ciclo, "pre", 0, 3);
     }
-    yy += rInp;
+    yy += alt (1);
     const float yDyn = yy;
-    if (fixa)
+    if (fixa) sulco (g, x, yy, SW);
+    if (fixa && rec[2]) recolhida (yy, alt (2));
+    else if (fixa)
     {
-        sulco (g, x, yy, SW);
         // --- DINÂMICA ---
         txt (g, "DYNAMICS", x + 6, yy + 8, 6.8f, ink, Al::esq);
         T ({ x + SW - 28, yy + 3, 22, 10 }, "PRE", c.valor ("dynpre") > 0.5f, acLaranja, Alvo::liga, "dynpre");
@@ -404,7 +433,7 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
         if (! grupo) K (kl, yy + 140, tampaVerde, "gate", "GATE");
         K (grupo ? x + SW / 2 : kr, yy + 140, tampaLaranja, "cmix", "DRY/WET");
     }
-    else
+    else if (! fixa && ! rec[2])
     {
         const int grs[] = { 1, 3, 6, 10, 15, 20 };
         for (int i = 0; i < 6; ++i)
@@ -418,10 +447,11 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
             if (on) { g.setColour (Colour (0x99ffffffu)); g.fillEllipse (lx - 1 - 1.1f, ly - 1 - 1.1f, 2.2f, 2.2f); }
         }
     }
-    yy += rDyn;
-    if (fixa)
+    yy += alt (2);
+    if (fixa) sulco (g, x, yy, SW);
+    if (fixa && rec[3]) recolhida (yy, alt (3));
+    else if (fixa)
     {
-        sulco (g, x, yy, SW);
         // --- EQ ---
         txt (g, "EQ", x + 6, yy + 8, 6.8f, ink, Al::esq);
         T ({ x + 21, yy + 3, 30, 10 }, eqCurto[eqm], false, acVerdeAgua, Alvo::ciclo, "eqm", 0, 3);
@@ -450,16 +480,17 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
             if (b < 3) { g.setColour (clara ? Colour (0x2e000000u) : Colour (0x0fffffffu)); g.fillRect (x + 8, by + 57, SW - 16, 1.0f); }
         }
     }
-    yy += rEq;
-    if (fixa)
+    yy += alt (3);
+    if (fixa) sulco (g, x, yy, SW);
+    if (fixa && rec[4]) recolhida (yy, alt (4));
+    else if (fixa)
     {
-        sulco (g, x, yy, SW);
-        // --- SAÍDA: grupo (no CANAL: para onde vai; no GRUPO: qual é) ---
+        // --- AUX: grupo (no CANAL: para onde vai; no GRUPO: qual é) ---
         const int gr = inteiro (c, "grp");
         for (int i = 0; i < 3; ++i)
             T ({ x + 5 + (float) i * 25, yy + 8, 23, 14 }, "G" + juce::String (i + 1), gr == i + 1, acAzul, Alvo::escolhe, "grp", i + 1, 4);
     }
-    yy += rOut;
+    yy += alt (4);
     const Colour faixa = cores ? Colour (c.cor()) : hex (0x9aa0a8);
     if (fixa)
     {
@@ -497,8 +528,8 @@ void MesaTela::pintaCanal (juce::Graphics& g, float x, float y, float h, Canal& 
     }
     else
     {
-        barraLed (g, x + SW - 9, fy, 4, fh, m.out, 30);
-        txt (g, db1 (m.out), x + SW - 22, y + h - 12.5f, 7.4f, m.out > -3 ? hex (0xff6a5a) : hex (0x7fd0ff), Al::meio, true, true);
+        barraLed (g, x + SW - 9, fy, 4, fh, m.barra, 30);
+        txt (g, db1 (m.barra), x + SW - 22, y + h - 12.5f, 7.4f, m.out > -3 ? hex (0xff6a5a) : hex (0x7fd0ff), Al::meio, true, true);
     }
 }
 
@@ -530,18 +561,25 @@ void ConsoleEditor::resized()
     mudou();
 }
 
-// PADRÃO: a altura da janela é 100% e o zoom aumenta/diminui a partir dela (com zoom grande, a console rola na vertical;
-// com zoom pequeno, cabem mais canais e o fader fica mais comprido). GERAL: tudo na janela, todos os canais à vista.
+// A janela (barra lateral, topo e seção central) segue a altura e nunca muda com o zoom. O zoom vale só no MIXER
+// (rótulos das linhas + canais): PADRÃO = a altura do mixer é 100% e o zoom aumenta/diminui a partir dela (zoom grande:
+// o mixer rola na vertical; zoom pequeno: cabem mais canais e o fader fica mais comprido). GERAL: todos os canais à vista.
 float ConsoleEditor::escala() const
 {
-    float s = (float) getHeight() / BASE_H;
-    if (proc.uiGeral.load())
-        s = juce::jmin (s, (float) getWidth() / (NAV + LBL + CEN + (float) juce::jmax (1, (int) canais.size()) * SW));
-    else
-        s *= juce::jlimit (0.5f, 2.0f, proc.uiZoom.load());
+    const float s = juce::jmin ((float) getHeight() / BASE_H, (float) getWidth() / (NAV + LBL + CEN + 4 * SW));
     return juce::jmax (0.2f, s);
 }
-juce::AffineTransform ConsoleEditor::base() const { return juce::AffineTransform::scale (escala()).translated (0.0f, -rolaY); }
+juce::AffineTransform ConsoleEditor::base() const { return juce::AffineTransform::scale (escala()); }
+float ConsoleEditor::mixW() const { return juce::jmax (LBL + SW, larguraBase() - NAV - CEN); }
+float ConsoleEditor::mixH() const { return juce::jmax (100.0f, alturaBase() - TOP - 10); }
+float ConsoleEditor::zMix() const
+{
+    if (proc.uiGeral.load())
+        return juce::jlimit (0.2f, 1.0f, mixW() / (LBL + (float) juce::jmax (1, (int) canais.size()) * SW));
+    return juce::jlimit (0.5f, 2.0f, proc.uiZoom.load());
+}
+float ConsoleEditor::altMix() const { return juce::jmax (BASE_H - TOP - 10, mixH() / zMix()); }
+juce::AffineTransform ConsoleEditor::mix() const { return juce::AffineTransform::scale (zMix()).translated (NAV, TOP - rolaY); }
 
 void ConsoleEditor::zoom (int passos)
 {
@@ -554,7 +592,7 @@ void ConsoleEditor::zoom (int passos)
     primeiro = juce::jlimit (0, juce::jmax (0, (int) canais.size() - cabem()), primeiro);
     rolaY = juce::jlimit (0.0f, rolaMax(), rolaY);
 }
-int ConsoleEditor::cabem() const { return juce::jmax (1, (int) ((larguraBase() - NAV - LBL - CEN) / SW)); }
+int ConsoleEditor::cabem() const { return juce::jmax (1, (int) ((mixW() / zMix() - LBL) / SW)); }
 
 void ConsoleEditor::listaCanais()
 {
@@ -619,7 +657,7 @@ void ConsoleEditor::assinatura (std::vector<float>& s)
     s.push_back ((float) primeiro); s.push_back ((float) selNum); s.push_back ((float) barra);
     s.push_back (autoSel ? 1.0f : 0.0f); s.push_back (cores ? 1.0f : 0.0f); s.push_back (ppm ? 1.0f : 0.0f);
     s.push_back (proc.uiGeral.load() ? 1.0f : 0.0f);
-    s.push_back (proc.uiZoom.load()); s.push_back (rolaY);
+    s.push_back (proc.uiZoom.load()); s.push_back (rolaY); s.push_back ((float) proc.uiRec.load());
     for (auto* pid : pidsConsole) s.push_back (proc.norm (pid));
     for (auto* c : canais)
     {
@@ -650,7 +688,7 @@ void ConsoleEditor::mouseWheelMove (const juce::MouseEvent& e, const juce::Mouse
     if (e.mods.isCommandDown() || e.mods.isCtrlDown()) { zoom (d > 0 ? 1 : -1); mudou(); return; }
     if (! lateral && ! e.mods.isShiftDown() && rolaMax() > 0.5f)
     {
-        rolaY = juce::jlimit (0.0f, rolaMax(), rolaY - d * 240.0f);
+        rolaY = juce::jlimit (0.0f, rolaMax(), rolaY - d * 240.0f / escala());
         mudou();
         return;
     }
@@ -689,7 +727,7 @@ void ConsoleEditor::acao (int a, const juce::MouseEvent& e)
             break;
         case aRolagem:
         {
-            const float x = paraBase (e.position).x, x0 = NAV + LBL, w = larguraBase() - NAV - LBL - CEN;
+            const float x = paraBase (e.position).x, x0 = NAV, w = mixW();
             const int n = juce::jmax (1, (int) canais.size());
             const float t0 = x0 + w * (float) primeiro / (float) n;
             primeiro += x < t0 ? -cabem() : cabem();
@@ -698,6 +736,11 @@ void ConsoleEditor::acao (int a, const juce::MouseEvent& e)
         }
         default:
             if (a >= aBarra && a < aBarra + 4) barra = a - aBarra;
+            if (a >= aRecolhe && a < aRecolhe + 5)
+            {
+                proc.uiRec ^= 1 << (a - aRecolhe);   // clicar no rótulo recolhe/abre a linha em todos os canais
+                rolaY = juce::jlimit (0.0f, rolaMax(), rolaY);
+            }
             break;
     }
     mudou();
@@ -738,22 +781,24 @@ void ConsoleEditor::pintaLateral (juce::Graphics& g, float h)
         bt ({ x + 14, 164, hw, 18 }, "PADR\xc3\x83O", ! geral, aPadrao);
         bt ({ x + 18 + hw, 164, hw, 18 }, "GERAL", geral, aGeral);
     }
+    // o que a barra ao lado do fader de cada canal mostra
     sec ("MEDIDOR", 196);
     bt ({ x + 14, 218, hw, 18 }, "VU", ! ppm, aVu);
     bt ({ x + 18 + hw, 218, hw, 18 }, "PPM", ppm, aPpm);
-    sec ("QUALIDADE", 250);
+    txt (g, ppm ? u8 ("barra do fader: picos") : u8 ("barra do fader: média"), x + w / 2, 247, 7.5f, hex (0x8b9097), Al::meio, false);
+    sec ("QUALIDADE", 262);
     const bool hq = canais.empty() || canais.front()->valor ("hq") > 0.5f;
-    bt ({ x + 14, 272, hw, 18 }, "ECO", ! hq, aEco);
-    bt ({ x + 18 + hw, 272, hw, 18 }, "HQ", hq, aHq);
-    sec ("CANAIS", 304);
+    bt ({ x + 14, 284, hw, 18 }, "ECO", ! hq, aEco);
+    bt ({ x + 18 + hw, 284, hw, 18 }, "HQ", hq, aHq);
+    sec ("CANAIS", 316);
     int nc = 0, ng = 0;
     for (auto* c : canais) (c->tipo() == 1 ? ng : nc)++;
-    txt (g, juce::String ((int) canais.size()) + (canais.size() == 1 ? " conectado" : " conectados"), x + w / 2, 328, 9.0f, hex (0xd7dade), Al::meio, false);
-    txt (g, juce::String (nc) + u8 (" canais \xc2\xb7 ") + juce::String (ng) + " grupos", x + w / 2, 343, 8.0f, hex (0x8b9097), Al::meio, false);
+    txt (g, juce::String ((int) canais.size()) + (canais.size() == 1 ? " conectado" : " conectados"), x + w / 2, 340, 9.0f, hex (0xd7dade), Al::meio, false);
+    txt (g, juce::String (nc) + u8 (" canais \xc2\xb7 ") + juce::String (ng) + " grupos", x + w / 2, 355, 8.0f, hex (0x8b9097), Al::meio, false);
     if (canais.empty())
     {
         const char* ajuda[] = { "Ponha a MESA CANAL", "no fim de cada faixa", "do DAW: ela aparece", "aqui sozinha." };
-        for (int i = 0; i < 4; ++i) txt (g, ajuda[i], x + w / 2, 372 + (float) i * 14, 8.5f, hex (0xaeb3b9), Al::meio, false);
+        for (int i = 0; i < 4; ++i) txt (g, ajuda[i], x + w / 2, 384 + (float) i * 14, 8.5f, hex (0xaeb3b9), Al::meio, false);
     }
     g.setColour (hex (0x38d66b)); g.fillEllipse (x + 14, h - 26, 8, 8);
     txt (g, "no master", x + 28, h - 22, 8.5f, hex (0xaeb3b9), Al::esq, false);
@@ -799,18 +844,21 @@ void ConsoleEditor::pintaRotulos (juce::Graphics& g, float x, float y, float h)
     g.fillRect (x, y, LBL, h);
     g.setColour (juce::Colours::black); g.fillRect (x + LBL - 1, y, 1.0f, h);
     float yy = y;
-    struct Linha { const char* s; float h; };
-    const Linha rows[] = { { "CANAL", rHead }, { "INPUT", rInp }, { "DYN", rDyn }, { "EQ", rEq }, { "OUTPUT", rOut }, { "", rCor + rNome } };
-    for (auto& r : rows)
+    // clicar no rótulo recolhe a linha (como no SSL 360): quadrado cheio = aberta, vazado = recolhida
+    const char* rows[] = { "CANAL", "INPUT", "DYN", "EQ", "AUX" };
+    for (int i = 0; i < 5; ++i)
     {
-        if (r.s[0] != 0)
-        {
-            g.setColour (hex (0xa6abb1)); g.fillRoundedRectangle (x + 4, yy + 4, 8, 8, 1.5f);
-            txt (g, u8 (r.s), x + 15, yy + 8.5f, 6.4f, hex (0xaeb3b9), Al::esq);
-        }
-        yy += r.h;
+        const float h0 = alt (i);
+        g.setColour (hex (0xa6abb1));
+        if (rec[i]) g.drawRoundedRectangle (x + 4.5f, yy + 3.5f, 7, 7, 1.5f, 1.0f);
+        else g.fillRoundedRectangle (x + 4, yy + 3, 8, 8, 1.5f);
+        txt (g, rows[i], x + 15, yy + 7.5f, 6.4f, rec[i] ? hex (0x7b8086) : hex (0xaeb3b9), Al::esq);
+        Alvo al; al.tipo = Alvo::acao; al.r = { x, yy, LBL, h0 }; al.codigo = aRecolhe + i; alvos.push_back (al);
+        yy += h0;
         sulco (g, x, yy, LBL);
     }
+    yy += rCor + rNome;
+    sulco (g, x, yy, LBL);
     g.setColour (hex (0xa6abb1)); g.fillRoundedRectangle (x + 4, yy + 4, 8, 8, 1.5f);
     txt (g, "OUT", x + 15, yy + 8.5f, 6.4f, hex (0xaeb3b9), Al::esq);
     bool algumSolo = false;
@@ -1003,39 +1051,68 @@ void ConsoleEditor::pintaCentral (juce::Graphics& g, float x, float w, bool fixa
 void ConsoleEditor::pintaFixa (juce::Graphics& g)
 {
     const float W = larguraBase(), H = alturaBase();
+    for (int i = 0; i < 5; ++i) rec[i] = ((proc.uiRec.load() >> i) & 1) != 0;
     g.fillAll (hex (0x111111));
     pintaLateral (g, H);
     pintaTopo (g, NAV, W - NAV);
-    const float sy = TOP, sh = H - TOP - 10;
-    pintaRotulos (g, NAV, sy, sh);
+    // mixer: escala e rolagem próprias, recortado na sua área; os alvos voltam para a tela base
+    const auto area = juce::Rectangle<float> (NAV, TOP, mixW(), mixH());
+    const size_t a0 = alvos.size();
     const int n = cabem();
-    for (int i = 0; i < n; ++i)
     {
-        const int k = primeiro + i;
-        const float x = NAV + LBL + (float) i * SW;
-        if (k < (int) canais.size()) pintaCanal (g, x, sy, sh, *canais[(size_t) k], canais[(size_t) k]->numero() == selNum, true, cores);
-        else chapa (g, { x, sy, SW, sh }, hex (0x18191b));
+        juce::Graphics::ScopedSaveState ss (g);
+        g.reduceClipRegion (area.toNearestInt());
+        g.addTransform (mix());
+        const float sh = altMix();
+        pintaRotulos (g, 0, 0, sh);
+        for (int i = 0; i <= n; ++i)   // +1: o canal cortado na borda
+        {
+            const int k = primeiro + i;
+            const float x = LBL + (float) i * SW;
+            if (k < (int) canais.size()) pintaCanal (g, x, 0, sh, *canais[(size_t) k], canais[(size_t) k]->numero() == selNum, true, cores);
+            else chapa (g, { x, 0, SW, sh }, hex (0x18191b));
+        }
     }
-    const float aw = W - NAV - LBL - CEN;
-    g.setColour (hex (0x141516)); g.fillRect (NAV + LBL, H - 10, aw, 10.0f);
+    {
+        const auto t = mix();
+        const float z = zMix();
+        std::vector<Alvo> fora;
+        for (size_t k = a0; k < alvos.size(); ++k)
+        {
+            auto a = alvos[k];
+            a.r = a.r.transformedBy (t).getIntersection (area);
+            a.travel *= z;
+            if (! a.r.isEmpty()) fora.push_back (a);
+        }
+        alvos.resize (a0);
+        alvos.insert (alvos.end(), fora.begin(), fora.end());
+    }
+    const float aw = area.getWidth(), sy = area.getBottom();
+    g.setColour (hex (0x141516)); g.fillRect (NAV, sy, aw, 10.0f);
     const int tot = juce::jmax (1, (int) canais.size());
     if ((int) canais.size() > n)
     {
         g.setColour (hex (0x4a4e54));
-        g.fillRoundedRectangle (NAV + LBL + 2 + aw * (float) primeiro / (float) tot, H - 8, juce::jmax (20.0f, aw * (float) n / (float) tot - 4), 6, 3.0f);
+        g.fillRoundedRectangle (NAV + 2 + aw * (float) primeiro / (float) tot, sy + 2, juce::jmax (20.0f, aw * (float) n / (float) tot - 4), 6, 3.0f);
     }
-    { Alvo al; al.tipo = Alvo::acao; al.r = { NAV + LBL, H - 10, aw, 10 }; al.codigo = aRolagem; alvos.push_back (al); }
+    { Alvo al; al.tipo = Alvo::acao; al.r = { NAV, sy, aw, 10 }; al.codigo = aRolagem; alvos.push_back (al); }
     pintaCentral (g, W - CEN, CEN, true);
 }
 
 void ConsoleEditor::pintaViva (juce::Graphics& g)
 {
-    const float W = larguraBase(), H = alturaBase();
-    const float sy = TOP, sh = H - TOP - 10;
-    for (int i = 0; i < cabem(); ++i)
+    const float W = larguraBase();
+    for (int i = 0; i < 5; ++i) rec[i] = ((proc.uiRec.load() >> i) & 1) != 0;
     {
-        const int k = primeiro + i;
-        if (k < (int) canais.size()) pintaCanal (g, NAV + LBL + (float) i * SW, sy, sh, *canais[(size_t) k], false, false, cores);
+        juce::Graphics::ScopedSaveState ss (g);
+        g.reduceClipRegion (juce::Rectangle<float> (NAV, TOP, mixW(), mixH()).toNearestInt());
+        g.addTransform (mix());
+        const float sh = altMix();
+        for (int i = 0; i <= cabem(); ++i)
+        {
+            const int k = primeiro + i;
+            if (k < (int) canais.size()) pintaCanal (g, LBL + (float) i * SW, 0, sh, *canais[(size_t) k], false, false, cores);
+        }
     }
     pintaCentral (g, W - CEN, CEN, false);
 }
@@ -1069,7 +1146,17 @@ void CanalEditor::assinatura (std::vector<float>& s)
     for (auto* pid : pidsCanal) s.push_back (proc.norm (pid));
 }
 
-void CanalEditor::mede() { atualizaMed (&proc, meds[&proc], false); }
+void CanalEditor::mede()
+{
+    atualizaMed (&proc, meds[&proc], false);
+    // o Ableton não manda o nome da faixa, mas o põe no título da janela do plugin: lê a cada segundo
+    if (tique++ % 30 == 0)
+        if (auto* peer = getPeer())
+        {
+            char b[512] {};
+            if (tituloDaJanela (peer->getNativeHandle(), b, (int) sizeof (b)) > 0) proc.nomeDaJanela (juce::String::fromUTF8 (b));
+        }
+}
 
 namespace { constexpr float cpx = 106, cTop = TOP + 6, cVus = cTop + 64 + 8 + 96 + 8; }
 
