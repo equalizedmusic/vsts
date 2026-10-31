@@ -461,18 +461,18 @@ void MesaProcessor::posiciona (int n)
     ++mesa::Ponte::get().versao;
 }
 
-// chamado pelo invólucro VST3 do JUCE (remendo no CMakeLists da raiz, só nos alvos da MESA) quando o DAW informa o
-// índice da faixa. Pode vir fora da thread da interface: só mexe em atômicos.
-namespace juce
-{
-void ispIndiceDaFaixa (AudioProcessor* p, int indice)
+// chamado pelo invólucro VST3 do JUCE (remendo no instrumentos/CMakeLists.txt, só nos alvos da MESA) quando o DAW
+// informa o índice da faixa. Pode vir fora da thread da interface: só mexe em atômicos.
+// A declaração do remendo fica dentro de uma função do namespace juce: o clang a liga a juce::, o MSVC a ::. Existem
+// as duas.
+void ispIndiceDaFaixa (juce::AudioProcessor* p, int indice)
 {
     if (auto* m = dynamic_cast<MesaProcessor*> (p))
     {
         if (m->faixaHost.exchange (juce::jmax (0, indice)) != indice) ++mesa::Ponte::get().versao;
     }
 }
-}
+namespace juce { void ispIndiceDaFaixa (AudioProcessor* p, int indice) { ::ispIndiceDaFaixa (p, indice); } }
 
 #ifndef MESA_CONSOLE
  #define MESA_CONSOLE 1
