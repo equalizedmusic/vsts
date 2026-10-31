@@ -432,7 +432,7 @@ html { -webkit-text-size-adjust:100%; }
 // JS do navegador. Tudo que vem do banco (e-mail, nome da máquina, nota) entra por textContent, nunca por innerHTML.
 const JS = `
 'use strict';
-var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa']];
+var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa'],['align','Align']];
 var NOME = {}; PACOTES.forEach(function (p) { NOME[p[0]] = p[1]; });
 var $ = function (id) { return document.getElementById(id); };
 

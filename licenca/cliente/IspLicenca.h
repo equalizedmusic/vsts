@@ -60,6 +60,7 @@ public:
         if (p == "montamonta") return "MONTA-MONTA";
         if (p == "groovador") return "GROOVADOR";
         if (p == "mesa") return "MESA";
+        if (p == "align") return "ALIGN";
         return p.toUpperCase();
     }
 

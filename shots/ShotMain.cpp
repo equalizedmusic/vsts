@@ -13,6 +13,9 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_MESA
  #define SHOT_MESA 0
 #endif
+#ifndef SHOT_ALIGN
+ #define SHOT_ALIGN 0
+#endif
 // MESA: a foto mostra a CONSOLE cheia, com MESA CANAL (canais e grupos) tocando o mesmo loop; e a janela de um canal
 static std::vector<std::unique_ptr<juce::AudioProcessor>> extras;
 #if SHOT_MESA
@@ -56,7 +59,7 @@ public:
 
     void run() override
     {
-        juce::AudioBuffer<float> buf (2, block);
+        juce::AudioBuffer<float> buf (SHOT_ALIGN ? 4 : 2, block);
         juce::MidiBuffer midi;
         juce::Random rnd (7);
         const double twoPi = juce::MathConstants<double>::twoPi;
@@ -91,6 +94,40 @@ public:
                 l[i] = (float) (kick + bass + hat + pad);
                 r[i] = (float) (kick + bass - hat * 0.6 + pad * 0.8);
             }
+           #if SHOT_ALIGN
+            // ALIGN: rolling de psy (K b B B, o b a -3 dB). Entrada = BAIXO (saw com LP de envelope, sustain 0),
+            // sidechain = KICK (queda até G1). A nota começa ~155° fora da cauda do kick: cancela no grave.
+            {
+                auto* bl = buf.getWritePointer (0); auto* br = buf.getWritePointer (1);
+                auto* kl = buf.getWritePointer (2); auto* kr = buf.getWritePointer (3);
+                const double t0 = t - block / fs;
+                for (int i = 0; i < block; ++i)
+                {
+                    const double tt = t0 + i / fs, beatLen = 60.0 / bpm, s16 = beatLen / 4;
+                    const double tb = tt - std::floor (tt / beatLen) * beatLen;
+                    const double fk = 49.0 + 91.0 * std::exp (-tb * 90.0);
+                    if (tb < 1.0 / fs) aKick = 0;
+                    aKick += twoPi * fk / fs;
+                    const double kick = std::sin (aKick) * std::min (1.0, tb / 0.001) * std::exp (-tb * 13.0) * 0.9;
+                    const int slot = (int) (tb / s16);
+                    double bass = 0;
+                    if (slot > 0)
+                    {
+                        const double u = tb - slot * s16, gate = s16 * 0.86;
+                        const double ph = 49.0 * u + 155.0 / 360.0;
+                        const double saw = 2.0 * (ph - std::floor (ph + 0.5));
+                        const double env = std::min (1.0, u / 0.002) * (u < gate ? std::exp (-u * 7) : std::exp (-gate * 7) * std::max (0.0, 1 - (u - gate) / 0.006));
+                        const double fc = 120.0 + 260.0 * std::exp (-u * 35.0), gg = std::tan (juce::MathConstants<double>::pi * fc / fs), kq = 1.0 / 0.9;
+                        const double a1 = 1.0 / (1.0 + gg * (gg + kq)), a2 = gg * a1, a3 = gg * a2;
+                        const double v3 = saw - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
+                        ic1 = 2 * v1 - ic1; ic2 = 2 * v2 - ic2;
+                        bass = v2 * env * (slot == 1 ? 0.62 * 0.708 : 0.62);
+                    }
+                    bl[i] = br[i] = (float) bass;
+                    kl[i] = kr[i] = (float) kick;
+                }
+            }
+           #endif
             head.ppq.store (head.ppq.load() + block * bpm / 60.0 / fs);
            #if SHOT_SYNTH
             // instrumento: silêncio na entrada; acorde de Lá menor com 9ª e um baixo, pressão subindo
@@ -121,7 +158,7 @@ public:
 private:
     juce::AudioProcessor& proc;
     ShotPlayHead& head;
-    double t = 0.0, kickPh = 0.0, bassPh = 0.0, padPh1 = 0.0, padPh2 = 0.0;
+    double t = 0.0, kickPh = 0.0, bassPh = 0.0, padPh1 = 0.0, padPh2 = 0.0, aKick = 0.0, ic1 = 0.0, ic2 = 0.0;
     int blocks = 0;
 };
 
@@ -191,7 +228,7 @@ int main (int argc, char** argv)
     std::unique_ptr<juce::AudioProcessor> proc (createPluginFilter());
     ShotPlayHead head;
     proc->setPlayHead (&head);
-    proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : 2, 2, fs, block);
+    proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : (SHOT_ALIGN ? 4 : 2), 2, fs, block);   // ALIGN: baixo + sidechain
     proc->prepareToPlay (fs, block);
     applyLook (*proc);
    #if SHOT_MESA
@@ -242,6 +279,21 @@ int main (int argc, char** argv)
 
     AudioThread audio (*proc, head);
     audio.startThread();
+   #if SHOT_ALIGN
+    // desligado (ouvindo e aprendendo) e depois ligado
+    {
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (3500);
+        editor->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
+        const auto imgOff = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+        const auto fOff = outDir.getChildFile ("ALIGN-OFF.png");
+        fOff.deleteFile();
+        juce::FileOutputStream osOff (fOff);
+        juce::PNGImageFormat pngOff;
+        std::printf ("ALIGN-OFF: %s\n", osOff.openedOk() && pngOff.writeImageToStream (imgOff, osOff) ? "ok" : "falhou");
+        setParam (*proc, "align", 1.0f);
+    }
+   #endif
     juce::MessageManager::getInstance()->runDispatchLoopUntil (4500);
     // o editor pode ter voltado ao tamanho salvo depois de abrir: de novo em 200% para a foto
     editor->setSize (SHOT_W, SHOT_H);

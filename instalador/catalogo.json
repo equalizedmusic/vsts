@@ -37,5 +37,6 @@
   "MONTA-MONTA": ["MONTA-MONTA", "synth didático: monte as peças do Minimoog e aprenda síntese"],
   "GROOVADOR": ["GROOVADOR", "percussão sintetizada com gerador de groove e variação de timbre"],
   "MESA": ["MESA", "console analógica: vai no master e mostra todos os canais, os grupos e o master"],
-  "MESA-CANAL": ["MESA CANAL", "canal da console: vai no fim de cada faixa (ou no grupo) com pré, dinâmica, EQ e fader"]
+  "MESA-CANAL": ["MESA CANAL", "canal da console: vai no fim de cada faixa (ou no grupo) com pré, dinâmica, EQ e fader"],
+  "ALIGN": ["ALIGN", "fase kick/baixo: vai no baixo, kick pelo sidechain; alinha sozinho sem cancelar nem somar"]
 }
