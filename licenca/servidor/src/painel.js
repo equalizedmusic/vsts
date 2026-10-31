@@ -200,10 +200,28 @@ const HTML = `<!doctype html>
   </section>
 
   <section id="telaPainel" hidden>
-    <form id="fNova" class="cartao">
-      <h2>Nova licença</h2>
+    <div class="cartao">
+      <div class="linha topo">
+        <h2>Clientes <span id="contagem" class="det"></span></h2>
+        <div class="linha">
+          <form id="fBusca" class="busca"><input name="q" type="search" placeholder="Filtrar por e-mail ou pacote" autocomplete="off"></form>
+          <button type="button" id="btNovo">+ Novo cliente</button>
+        </div>
+      </div>
+      <div id="lista"></div>
+    </div>
+  </section>
+
+  <dialog id="dNovo" class="largo">
+    <form id="fNova">
+      <div class="linha topo">
+        <h2>Novo cliente</h2>
+        <button type="button" id="btNovoFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+      </div>
       <label>E-mail do cliente <input name="email" type="email" required autocomplete="off"></label>
-      <fieldset><legend>Pacotes</legend><div id="pacotes" class="pacotes"></div></fieldset>
+      <p id="novoJaExiste" class="aviso" hidden>Este e-mail já é cliente.
+        <button type="button" id="btNovoAbrirCli" class="discreto pequeno">Abrir o cliente e adicionar pacote</button></p>
+      <fieldset><legend>Pacotes</legend><div class="pacotes" data-pacotes></div></fieldset>
       <fieldset><legend>Sistema do cliente (links de download na mensagem)</legend><div class="pacotes">
         <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
         <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
@@ -216,28 +234,13 @@ const HTML = `<!doctype html>
         <label>Computadores <input name="maquinas" type="number" min="1" max="10" value="2"></label>
       </div>
       <label>Nota (opcional) <input name="nota" autocomplete="off"></label>
-      <button type="submit">Gerar licença</button>
+      <div class="linha rodape">
+        <span class="espaco"></span>
+        <button type="submit">Gerar licença</button>
+      </div>
       <p class="msg" id="msgNova"></p>
     </form>
-
-    <div id="resultado" class="cartao destaque" hidden>
-      <h2>Licença gerada</h2>
-      <p id="resResumo"></p>
-      <pre id="resMensagem"></pre>
-      <div class="linha">
-        <button type="button" id="btCopiar">Copiar mensagem</button>
-        <a id="btEmail" class="botao" href="#">Abrir no e-mail</a>
-      </div>
-    </div>
-
-    <div class="cartao">
-      <div class="linha topo">
-        <h2>Clientes <span id="contagem" class="det"></span></h2>
-        <form id="fBusca" class="busca"><input name="q" type="search" placeholder="Filtrar por e-mail ou pacote" autocomplete="off"></form>
-      </div>
-      <div id="lista"></div>
-    </div>
-  </section>
+  </dialog>
 
   <dialog id="dCliente" class="largo">
     <div class="linha topo">
@@ -246,14 +249,53 @@ const HTML = `<!doctype html>
     </div>
     <p id="cliResumo" class="det"></p>
     <div id="cliLicencas"></div>
-    <div class="linha rodape">
-      <button type="button" id="btCliPacote" class="discreto">Adicionar pacote</button>
+
+    <form id="fAdicionar" class="adicionar" hidden>
+      <h3>Adicionar pacote</h3>
+      <p class="det">Marque o que falta. Os que ele já tem aparecem travados. O cliente usa o mesmo token que já recebeu.</p>
+      <fieldset><legend>Pacotes</legend><div class="pacotes" data-pacotes></div></fieldset>
+      <fieldset><legend>Sistema do cliente (links de download na mensagem)</legend><div class="pacotes">
+        <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
+        <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
+      </div></fieldset>
+      <div class="linha">
+        <label>Origem
+          <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (teste grátis)</option></select>
+        </label>
+        <label>Pedido / Pix (opcional) <input name="pedido" autocomplete="off"></label>
+        <label>Computadores <input name="maquinas" type="number" min="1" max="10" value="2"></label>
+      </div>
+      <label>Nota (opcional) <input name="nota" autocomplete="off"></label>
+      <div class="linha">
+        <span class="espaco"></span>
+        <button type="button" id="btAdicionarCancelar" class="discreto">Cancelar</button>
+        <button type="submit">Gerar link do adicional</button>
+      </div>
+      <p class="msg" id="msgAdicionar"></p>
+    </form>
+
+    <div class="linha rodape" id="cliRodape">
+      <button type="button" id="btCliPacote">+ Adicionar pacote</button>
       <button type="button" id="btCliToken" class="discreto">Gerar token novo</button>
       <span class="espaco"></span>
       <button type="button" id="btCliRevogar" class="perigo">Cancelar todas</button>
       <button type="button" id="btCliExcluir" class="perigo">Excluir cliente</button>
     </div>
     <p class="msg" id="msgCliente"></p>
+  </dialog>
+
+  <dialog id="dResultado" class="largo">
+    <div class="linha topo">
+      <h2 id="resTitulo">Licença gerada</h2>
+      <button type="button" id="btResultadoFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+    </div>
+    <p id="resResumo"></p>
+    <pre id="resMensagem"></pre>
+    <div class="linha">
+      <button type="button" id="btCopiar">Copiar mensagem</button>
+      <a id="btEmail" class="botao" href="#">Abrir no e-mail</a>
+    </div>
+    <p></p>
   </dialog>
 
   <dialog id="dSenha">
@@ -320,6 +362,13 @@ dialog.largo { width:min(760px, 94vw); padding:16px 22px; }
 .pac { font-weight:600; } .status-ativa { color:var(--ok); } .status-revogada { color:var(--ruim); }
 .det { color:var(--fraco); font-size:13px; } .maq { display:flex; gap:8px; align-items:center; margin-top:3px; color:var(--texto); }
 .vazio { color:var(--fraco); }
+h3 { margin:0 0 6px; font-size:16px; }
+.adicionar { margin-top:14px; padding:14px 16px; border:1px solid var(--acento); border-radius:8px; }
+.adicionar .det { margin:0 0 12px; }
+.pacotes label.tem { color:var(--fraco); } .pacotes label.tem small { color:var(--ok); }
+.pacotes label.tem.cancelada small { color:var(--ruim); }
+.aviso { margin:-4px 0 12px; color:var(--acento); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+dialog { max-height:92vh; overflow:auto; }
 dialog { background:var(--cartao); color:var(--texto); border:1px solid var(--borda); border-radius:10px; padding:4px 20px; }
 dialog::backdrop { background:rgba(0,0,0,.6); } dialog .estreito { margin:10px auto; }
 @media (max-width:640px) { .lic { grid-template-columns:1fr; } .busca input { width:100%; } .col-opc { display:none; } }
@@ -404,26 +453,28 @@ function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
   return linhas.join('\\n');
 }
 
-function mostrarResultado(email, pacotes, token, extra, sistemas, maquinas) {
+function mostrarResultado(email, pacotes, token, extra, sistemas, maquinas, titulo) {
   var texto = mensagemCliente(email, pacotes, token, sistemas, maquinas);
+  $('resTitulo').textContent = titulo || 'Licença gerada';
   $('resResumo').textContent = email + ' · ' + pacotes.map(function (p) { return NOME[p]; }).join(', ') +
     (token ? ' · token novo: ' + token : ' · mesmo token que este e-mail já tem') + (extra ? ' · ' + extra : '');
   $('resMensagem').textContent = texto;
   $('btEmail').href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Sua licença InsideStudioSP') +
     '&body=' + encodeURIComponent(texto);
-  $('resultado').hidden = false;
-  $('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!$('dResultado').open) $('dResultado').showModal();
 }
 
-function criar(ev) {
-  ev.preventDefault();
-  var f = ev.target;
-  var pacotes = Array.prototype.slice.call(f.querySelectorAll('input[name=pacote]:checked')).map(function (c) { return c.value; });
-  var email = f.email.value.trim().toLowerCase();
-  var sistemas = Array.prototype.slice.call(f.querySelectorAll('input[name=sistema]:checked')).map(function (c) { return c.value; });
-  if (!pacotes.length) { msg('msgNova', 'Marque pelo menos um pacote.'); return; }
-  if (!sistemas.length) { msg('msgNova', 'Marque Windows, Mac ou os dois.'); return; }
-  var bt = f.querySelector('button[type=submit]'); bt.disabled = true; msg('msgNova', 'Gerando…', true);
+function marcados(f, nome) {
+  return Array.prototype.slice.call(f.querySelectorAll('input[name=' + nome + ']:checked:not(:disabled)')).map(function (c) { return c.value; });
+}
+
+// cria uma licença por pacote marcado no formulário f (do modal Novo cliente ou do Adicionar pacote do cliente)
+function gerar(f, email, msgId, titulo, depois) {
+  var pacotes = marcados(f, 'pacote');
+  var sistemas = marcados(f, 'sistema');
+  if (!pacotes.length) { msg(msgId, 'Marque pelo menos um pacote.'); return; }
+  if (!sistemas.length) { msg(msgId, 'Marque Windows, Mac ou os dois.'); return; }
+  var bt = f.querySelector('button[type=submit]'); bt.disabled = true; msg(msgId, 'Gerando…', true);
   var token = null, feitos = [], erros = [], aviso = '';
   var seq = Promise.resolve();
   pacotes.forEach(function (p) {
@@ -439,14 +490,61 @@ function criar(ev) {
   });
   seq.then(function () {
     bt.disabled = false;
-    msg('msgNova', erros.join(' · '), false);
-    if (feitos.length) {
-      mostrarResultado(email, feitos, token, aviso, sistemas, Number(f.maquinas.value) || 2);
-      f.reset(); f.maquinas.value = 2;
-      carregar();
-    }
+    msg(msgId, erros.join(' · '), false);
+    if (!feitos.length) return;
+    var maquinas = Number(f.maquinas.value) || 2;
+    carregar().then(function () {
+      if (depois) depois();
+      mostrarResultado(email, feitos, token, aviso, sistemas, maquinas, titulo);
+    });
   });
 }
+
+// caixas dos pacotes; no cliente, os que ele já tem ficam marcados e travados
+function desenharPacotes(caixa, lics) {
+  var tem = {};
+  (lics || []).forEach(function (l) { tem[l.pacote] = l.status; });
+  caixa.textContent = '';
+  PACOTES.forEach(function (p) {
+    var st = tem[p[0]];
+    var rotulo = el('label', { classe: st ? 'tem' + (st === 'ativa' ? '' : ' cancelada') : '' }, [
+      el('input', st ? { type: 'checkbox', name: 'pacote', value: p[0], checked: '', disabled: '' } : { type: 'checkbox', name: 'pacote', value: p[0] }),
+      p[1],
+      st ? el('small', { texto: st === 'ativa' ? '(já tem)' : '(cancelada: use Reativar acima)' }) : null
+    ]);
+    caixa.appendChild(rotulo);
+  });
+}
+
+function abrirNovo() {
+  var f = $('fNova');
+  f.reset(); f.maquinas.value = 2; msg('msgNova', '');
+  desenharPacotes(f.querySelector('[data-pacotes]'), null);
+  $('novoJaExiste').hidden = true;
+  $('dNovo').showModal();
+  f.email.focus();
+}
+
+// no Novo cliente, e-mail que já existe trava os pacotes que ele tem e oferece abrir o cliente
+function conferirEmailNovo() {
+  var f = $('fNova');
+  var email = f.email.value.trim().toLowerCase();
+  var lics = ultimaLista[email];
+  $('novoJaExiste').hidden = !lics;
+  desenharPacotes(f.querySelector('[data-pacotes]'), lics);
+}
+
+function abrirAdicionar() {
+  var email = clienteAberto, lics = ultimaLista[email] || [];
+  var f = $('fAdicionar');
+  f.reset(); msg('msgAdicionar', '');
+  f.maquinas.value = lics.reduce(function (n, l) { return Math.max(n, l.max_maquinas); }, 0) || 2;
+  desenharPacotes(f.querySelector('[data-pacotes]'), lics);
+  f.hidden = false; $('cliRodape').hidden = true;
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  var c = f.querySelector('input[name=pacote]:not(:disabled)'); if (c) c.focus();
+}
+function fecharAdicionar() { $('fAdicionar').hidden = true; $('cliRodape').hidden = false; }
 
 // ação sobre o cliente aberto no modal: refaz a lista e o modal com o resultado
 function acao(caminho, corpo, pergunta, depois) {
@@ -533,7 +631,9 @@ function abrirCliente(email) {
   $('btCliExcluir').disabled = !!ativas;
   $('btCliExcluir').title = ativas ? 'Cancele todas as licenças antes de excluir o cliente.' : '';
   $('btCliToken').disabled = !ativas;
-  if (!$('dCliente').open) { msg('msgCliente', ''); $('dCliente').showModal(); }
+  $('btCliPacote').disabled = lics.length >= PACOTES.length;
+  $('btCliPacote').title = lics.length >= PACOTES.length ? 'Este cliente já tem todos os pacotes.' : '';
+  if (!$('dCliente').open) { msg('msgCliente', ''); fecharAdicionar(); $('dCliente').showModal(); }
   lics.forEach(function (l) {
     var maquinas = el('div', { classe: 'det' }, [ l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
     l.maquinas.forEach(function (m) {
@@ -558,14 +658,11 @@ function abrirCliente(email) {
             onclick: function () { acao('/admin/reativar', { id: l.id }); } })
     ]));
   });
+  // área de adicionar aberta: refaz as caixas com a situação nova (ex.: depois de Reativar)
+  if (!$('fAdicionar').hidden) desenharPacotes($('fAdicionar').querySelector('[data-pacotes]'), lics);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  var caixa = $('pacotes');
-  PACOTES.forEach(function (p) {
-    caixa.appendChild(el('label', {}, [ el('input', { type: 'checkbox', name: 'pacote', value: p[0] }), p[1] ]));
-  });
-
   $('fLogin').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var f = ev.target; msg('msgLogin', '');
@@ -573,19 +670,35 @@ document.addEventListener('DOMContentLoaded', function () {
       if (j.ok) mostrarPainel(j.usuario); else msg('msgLogin', j.mensagem || 'Erro.');
     });
   });
-  $('fNova').addEventListener('submit', criar);
+  // Novo cliente (modal)
+  $('btNovo').addEventListener('click', abrirNovo);
+  $('btNovoFechar').addEventListener('click', function () { $('dNovo').close(); });
+  $('fNova').email.addEventListener('input', conferirEmailNovo);
+  $('btNovoAbrirCli').addEventListener('click', function () {
+    var email = $('fNova').email.value.trim().toLowerCase();
+    $('dNovo').close(); abrirCliente(email); abrirAdicionar();
+  });
+  $('fNova').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var f = ev.target, email = f.email.value.trim().toLowerCase();
+    gerar(f, email, 'msgNova', ultimaLista[email] ? 'Pacote adicionado' : 'Licença gerada', function () { $('dNovo').close(); });
+  });
+
+  // Adicionar pacote (dentro do modal do cliente)
+  $('btAdicionarCancelar').addEventListener('click', fecharAdicionar);
+  $('fAdicionar').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var email = clienteAberto;
+    gerar(ev.target, email, 'msgAdicionar', 'Pacote adicionado', function () { $('dCliente').close(); });
+  });
+  $('btResultadoFechar').addEventListener('click', function () { $('dResultado').close(); });
   $('fBusca').addEventListener('submit', function (ev) { ev.preventDefault(); });
   $('fBusca').q.addEventListener('input', desenharLista);
 
   // modal do cliente: fecha só no ✕ (ou Esc)
   $('btClienteFechar').addEventListener('click', function () { $('dCliente').close(); });
   $('dCliente').addEventListener('close', function () { clienteAberto = null; });
-  $('btCliPacote').addEventListener('click', function () {
-    var email = clienteAberto; $('dCliente').close();
-    $('fNova').email.value = email;
-    $('fNova').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    var c = $('fNova').querySelector('input[name=pacote]'); if (c) c.focus();
-  });
+  $('btCliPacote').addEventListener('click', abrirAdicionar);
   $('btCliToken').addEventListener('click', function () {
     var email = clienteAberto, lics = ultimaLista[email] || [];
     if (lics.length) acao('/admin/novo-token', { id: lics[0].id },
