@@ -222,7 +222,7 @@ const HTML = `<!doctype html>
       <p id="novoJaExiste" class="aviso" hidden>Este e-mail já é cliente.
         <button type="button" id="btNovoAbrirCli" class="discreto pequeno">Abrir o cliente e adicionar pacote</button></p>
       <fieldset><legend>Pacotes</legend><div class="pacotes" data-pacotes></div></fieldset>
-      <fieldset><legend>Sistema do cliente (links de download na mensagem)</legend><div class="pacotes">
+      <fieldset><legend>Sistema do cliente (links na mensagem)</legend><div class="pacotes">
         <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
         <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
       </div></fieldset>
@@ -254,7 +254,7 @@ const HTML = `<!doctype html>
       <h3>Adicionar pacote</h3>
       <p class="det">Marque o que falta. Os que ele já tem aparecem travados. O cliente usa o mesmo token que já recebeu.</p>
       <fieldset><legend>Pacotes</legend><div class="pacotes" data-pacotes></div></fieldset>
-      <fieldset><legend>Sistema do cliente (links de download na mensagem)</legend><div class="pacotes">
+      <fieldset><legend>Sistema do cliente (links na mensagem)</legend><div class="pacotes">
         <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
         <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
       </div></fieldset>
@@ -371,7 +371,62 @@ h3 { margin:0 0 6px; font-size:16px; }
 dialog { max-height:92vh; overflow:auto; }
 dialog { background:var(--cartao); color:var(--texto); border:1px solid var(--borda); border-radius:10px; padding:4px 20px; }
 dialog::backdrop { background:rgba(0,0,0,.6); } dialog .estreito { margin:10px auto; }
-@media (max-width:640px) { .lic { grid-template-columns:1fr; } .busca input { width:100%; } .col-opc { display:none; } }
+dialog .linha.topo { flex-wrap:nowrap; } .linha.topo h2 { min-width:0; } .linha.topo > button { flex:none; }
+html { -webkit-text-size-adjust:100%; }
+
+/* celular: lista vira cartões, modais em tela cheia, botões e caixas do tamanho do dedo */
+@media (max-width:640px) {
+  body { font-size:16px; }
+  input, select { font-size:16px; padding:11px 12px; }          /* 16px: o iPhone não dá zoom ao tocar no campo */
+  header { padding:10px 14px; gap:10px; }
+  .marca { font-size:13px; letter-spacing:.08em; white-space:nowrap; }
+  #quem { display:none; }
+  nav { gap:6px; } nav button { padding:6px 10px; font-size:13px; white-space:nowrap; }
+  main { padding:10px; }
+  .cartao { padding:14px; border-radius:8px; }
+  .estreito { margin:16px auto; }
+  button, .botao { min-height:44px; padding:10px 14px; text-align:center; }
+  button.pequeno { min-height:36px; }
+  #telaPainel .linha.topo > .linha { flex:1 1 100%; flex-wrap:nowrap; }
+  .busca { flex:1; min-width:0; } .busca input { width:100%; }
+  #btNovo { flex:none; white-space:nowrap; }
+
+  .tabela, .tabela tbody { display:block; } .tabela thead { display:none; }
+  .tabela tbody tr { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; padding:12px 6px; border-bottom:1px solid var(--borda); }
+  .tabela td { padding:0; border:0; }
+  .tabela td.cli-email { grid-column:1 / -1; word-break:normal; overflow-wrap:anywhere; }
+  .tabela td.num::before { content:'PCs '; }
+  .col-opc { display:none !important; }
+
+  dialog, dialog.largo { width:100%; max-width:100%; height:100vh; height:100dvh; max-height:100dvh; margin:0;
+                         border:0; border-radius:0; padding:0 16px 20px; }
+  dialog .linha.topo { position:sticky; top:0; z-index:1; background:var(--cartao); margin:0 0 10px; padding:12px 0;
+                       border-bottom:1px solid var(--borda); }
+  dialog .linha.topo h2 { font-size:17px; }
+  dialog .linha.topo > button { min-width:44px; min-height:44px; font-size:16px; }
+  dialog .estreito { max-width:none; margin:16px 0; }
+  #dResultado > .linha:not(.topo) { position:sticky; bottom:0; background:var(--cartao); padding:10px 0 4px; }
+
+  .email { word-break:normal; overflow-wrap:anywhere; }
+  .linha:not(.topo) { row-gap:0; }
+  .linha > label { flex:1 1 100%; }
+  .linha > label:has(input[type=number]) { flex:0 0 120px; }
+  .linha > label:has(input[name=pedido]) { flex:1 1 150px; }
+  .linha .espaco { display:none; }
+  .linha:not(.topo) > button, .linha:not(.topo) > .botao { flex:1 1 40%; }
+  .pacotes { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+  .pacotes label { min-height:40px; margin:0; flex-wrap:wrap; }
+  .pacotes small { flex-basis:100%; margin:-6px 0 6px 28px; }
+  input[type=checkbox] { width:20px; height:20px; }
+
+  .lic { grid-template-columns:1fr auto; gap:6px 12px; }
+  .lic > div:first-child { display:flex; gap:10px; align-items:baseline; }
+  .lic > div:nth-child(2) { grid-column:1 / -1; grid-row:2; }
+  .lic > button { grid-column:2; grid-row:1; }
+  .maq { flex-wrap:wrap; justify-content:space-between; padding:6px 0; }
+  .adicionar { padding:12px; }
+  pre { font-size:12px; }
+}
 `;
 
 // JS do navegador. Tudo que vem do banco (e-mail, nome da máquina, nota) entra por textContent, nunca por innerHTML.
