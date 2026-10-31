@@ -479,7 +479,7 @@ bool MesaProcessor::textoModelo (const juce::String& pid, juce::String& t) const
         if (pid == id::eqQ[b])
         {
             const float q = pQ[b]->load();
-            t = em == EqModel::brit81 ? (brit81Q (q) > 1.0f ? juce::String ("Q ALTO") : juce::String ("Q 0.7"))
+            t = em == EqModel::brit81 ? (brit81Q (q) > 1.0f ? juce::String ("HI Q") : juce::String ("Q 0.7"))
               : em == EqModel::api550 ? juce::String (juce::CharPointer_UTF8 ("Q proporcional \xc3\x97")) + juce::String (q, 2)
               : "Q " + juce::String (q, 2);
             return true;

@@ -33,11 +33,11 @@ Console analógica em plugin (efeito, VST3/AU), em dois plugins do mesmo código
 ## Módulos
 | Módulo | Modelos | Controles |
 |---|---|---|
-| PRÉ | E-4K (transistor de console britânica: limpo, um fio de 2ª, 3ª no topo), API 312 (operacional discreto: joelho duro, 3ª + 2ª), BRIT 73 (classe A: 2ª; o grave satura antes no transformador). Cada cópia tem tolerância própria entre L e R (0,97–1,03 na curva e na cor) | GANHO ±20 dB, DRIVE (+0 a +20 dB para dentro do circuito, nível compensado), PAD -20 dB, HPF 18 dB/oit, LPF 12 dB/oit (3–20 kHz) |
-| DINÂMICA | VCA 4K (comp do canal, feed-forward, SOLTURA no fim = AUTO), COLA 4K (barramento: teclas de razão/ataque/soltura), FET 76 (ataque 20–800 µs, 4/8/12/20/ALL, 2ª harmônica proporcional à redução), OPTO 2A (detector realimentado com agudo realçado, joelho largo, soltura em dois tempos com memória, válvula) | modelo (clicar no visor verde), LIMIAR, RAZÃO, ATAQUE, SOLTURA, GATE (canal), MIX, PRÉ (dinâmica antes do EQ) + LEDs de redução |
+| PRE | E-4K (transistor de console britânica: limpo, um fio de 2ª, 3ª no topo), API 312 (operacional discreto: knee duro, 3ª + 2ª), BRIT 73 (classe A: 2ª; o grave satura antes no transformador). Cada cópia tem tolerância própria entre L e R (0,97–1,03 na curva e na cor) | GAIN ±20 dB, DRIVE (+0 a +20 dB para dentro do circuito, nível compensado), PAD -20 dB, HPF 18 dB/oit, LPF 12 dB/oit (3–20 kHz) |
+| DYNAMICS | VCA 4K (comp do canal, feed-forward, RELEASE no fim = AUTO), COLA 4K (barramento: teclas de RATIO/ATTACK/RELEASE), FET 76 (ATTACK 20–800 µs, 4/8/12/20/ALL, 2ª harmônica proporcional à redução), OPTO 2A (detector realimentado com agudo realçado, knee largo, RELEASE em dois tempos com memória, válvula) | modelo (clicar no visor verde), THRESHOLD, RATIO, ATTACK, RELEASE, GATE (canal), DRY/WET, PRE (dinâmica antes do EQ) + LEDs de GR |
 | EQ | E-4K (Q no knob; chapa escura), BRIT 81 (frequências em degraus, Q normal/ALTO, indutor; chapa cinza), API 550 (frequências e ganho em degraus, Q proporcional ao ganho). Filtros "casados" (Vicanek): curva do analógico até Nyquist; knobs suavizados | HF, HMF, LMF, LF (ganho e frequência), Q nas médias, BELL no HF e no LF, IN |
 | SAÍDA | — | G1–G3, PAN, SOLO, CUT, fader (+10 a -∞) e medidor de LED |
-| MASTER (console) | COLA BUS | LIMIAR, GANHO, MIX, ATAQUE, SOLTURA (AUTO), RAZÃO, IN, SC HPF, fader do master |
+| MASTER (console) | COLA BUS | THRESHOLD, MAKEUP, DRY/WET, ATTACK, RELEASE (AUTO), RATIO, IN, SC HPF, fader do master |
 
 Na barra lateral da console: VU ou PPM (só a tela) e ECO ou HQ (saturação a 4×), que vale para todos os canais.
 

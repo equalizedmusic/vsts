@@ -70,8 +70,8 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout (bool co
         ch (id::mrel, "Cola release", { "0.1 s", "0.3 s", "0.6 s", "1.2 s", "AUTO" }, 4);
         fl (id::mmkp, "Cola makeup", { 0.0f, 20.0f, 0.1f }, 0.0f, db1);
         ch (id::mrat, "Cola ratio", { "1.5:1", "2:1", "4:1", "10:1" }, 2);
-        fl (id::mmix, "Cola mix", { 0.0f, 100.0f, 1.0f }, 100.0f, [] (float v) { return String (roundToInt (v)) + "%"; });
-        bo (id::min, "Cola ligado", true);
+        fl (id::mmix, "Cola dry/wet", { 0.0f, 100.0f, 1.0f }, 100.0f, [] (float v) { return String (roundToInt (v)) + "%"; });
+        bo (id::min, "Cola in", true);
         bo (id::mhpf, "Cola sidechain HPF", false);
         return { p.begin(), p.end() };
     }
@@ -79,8 +79,8 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout (bool co
     ch (id::mode, "Tipo", modeNames, 0);
     ch (id::grp, "Grupo", { "-", "G1", "G2", "G3" }, 0);
 
-    ch (id::pre, "Pré", preNames, 0);
-    fl (id::gain, "Ganho", { -20.0f, 20.0f, 0.1f }, 0.0f, db1);
+    ch (id::pre, "Preamp", preNames, 0);
+    fl (id::gain, "Gain", { -20.0f, 20.0f, 0.1f }, 0.0f, db1);
     fl (id::drive, "Drive", { 0.0f, 10.0f, 0.01f }, 0.0f, [] (float v) { return String (v, 1); });
     bo (id::pad, "Pad -20 dB", false);
     fl (id::hpf, "HPF", NormalisableRange<float> (20.0f, 400.0f, 0.0f, 0.45f), 20.0f,
@@ -88,21 +88,21 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout (bool co
     fl (id::lpf, "LPF", NormalisableRange<float> (3000.0f, 20000.0f, 0.0f, 0.5f), 20000.0f,
         [] (float v) { return v >= 19900.0f ? String ("OFF") : hzText (v); });
 
-    bo (id::eqOn, "EQ ligado", true);
+    bo (id::eqOn, "EQ in", true);
     ch (id::eqm, "Modelo do EQ", eqNames, 0);
-    bo (id::dynPre, "Dinamica antes do EQ", false);
+    bo (id::dynPre, "Dynamics pre EQ", false);
     const char* bandNames[4] = { "HF", "HMF", "LMF", "LF" };
     for (int b = 0; b < 4; ++b)
     {
-        fl (id::eqG[b], String (bandNames[b]) + " ganho", { -15.0f, 15.0f, 0.1f }, 0.0f, db1);
+        fl (id::eqG[b], String (bandNames[b]) + " gain", { -15.0f, 15.0f, 0.1f }, 0.0f, db1);
         fl (id::eqF[b], String (bandNames[b]) + " freq", NormalisableRange<float> (eqFMin[b], eqFMax[b], 0.0f, 0.4f), eqFDef[b],
             [] (float v) { return hzText (v); });
     }
     for (int b = 0; b < 2; ++b)
         fl (id::eqQ[b], String (b == 0 ? "HMF" : "LMF") + " Q", NormalisableRange<float> (0.4f, 4.0f, 0.0f, 0.5f), 1.0f,
             [] (float v) { return "Q " + String (v, 2); });
-    bo (id::hfBell, "HF em sino", false);
-    bo (id::lfBell, "LF em sino", false);
+    bo (id::hfBell, "HF bell", false);
+    bo (id::lfBell, "LF bell", false);
 
     ch (id::dynm, "Modelo do compressor", dynNames, 0);
     fl (id::thr, "Comp threshold", { -40.0f, 10.0f, 0.1f }, 10.0f,
@@ -114,7 +114,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout (bool co
     fl (id::rel, "Comp release", { 0.0f, 10.0f, 0.01f }, 10.0f, [] (float v) { return v >= 9.9f ? String ("AUTO") : String (v, 1); });
     fl (id::gate, "Gate", { -80.0f, -10.0f, 0.1f }, -80.0f,
         [] (float v) { return v <= -79.5f ? String ("OFF") : dbText (v); });
-    fl (id::cmix, "Cola mix", { 0.0f, 100.0f, 1.0f }, 100.0f, [] (float v) { return String (roundToInt (v)) + "%"; });
+    fl (id::cmix, "Comp dry/wet", { 0.0f, 100.0f, 1.0f }, 100.0f, [] (float v) { return String (roundToInt (v)) + "%"; });
 
     fl (id::pan, "Pan", { -1.0f, 1.0f, 0.01f }, 0.0f, [] (float v)
         { const int n = roundToInt (std::abs (v) * 100.0f); return n == 0 ? String ("C") : (v < 0 ? "L" : "R") + String (n); });
@@ -122,7 +122,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout (bool co
     bo (id::solo, "Solo", false);
     fl (id::fader, "Fader", NormalisableRange<float> (faderMin, 10.0f, 0.0f, 2.2f), 0.0f, faderTxt);
 
-    bo (id::hq, "HQ (sobreamostragem 4x)", true);
+    bo (id::hq, "HQ (oversampling 4x)", true);
     return { p.begin(), p.end() };
 }
 } // namespace mesa
