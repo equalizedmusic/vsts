@@ -8,24 +8,29 @@ Não é VST: um plugin só recebe áudio e não enxerga nem edita os clips. A VA
 
 ## Como funciona
 
-- **Device no master**, pequeno: OPEN ↗, THRESHOLD, ANALYZE e status.
-- **OPEN** abre a tela completa numa janela do Max que fica por cima do Live. Uma linha por faixa com o clip inteiro:
-  cor da faixa = tem som, vermelho escuro tracejado = vazio.
-- **ANALYZE** lê o arquivo de cada clip de áudio do arranjo (pico em blocos de 10 ms) e marca os trechos abaixo do
-  THRESHOLD por mais que o MIN LENGTH. Só lê: nada muda no set.
+- **Device no master**: THRESHOLD, MIN LENGTH, PRE, POST, MODE (MUTE/CUT), SNAP (OFF/1/16/BAR), SCOPE (ALL/SELECTED),
+  ANALYZE, APPLY, OPEN ↗ e status. Todos são parâmetros do Live (salvos com o set).
+- **OPEN** abre a tela completa numa janela do Max por cima do Live: barra com MODE/SNAP/SCOPE clicáveis, ANALYZE e
+  APPLY, e uma linha por faixa (cor da faixa = som, vermelho escuro tracejado = vazio, cinza = mantido).
+- **ANALYZE** lê o arquivo de cada clip de áudio do arranjo e guarda o pico em blocos de 10 ms. THRESHOLD, MIN LENGTH,
+  PRE, POST e SNAP recalculam os vazios na hora, sem reler.
+- **APPLY**: o LOM não tem "split", então para cada clip uma cópia de trabalho vai para depois do fim da música; para
+  cada vazio ela é aparada pelos markers, mutada, **conferida** (tamanho exato, senão o trecho é pulado) e colada por
+  cima do vazio com duplicate_clip_to_arrangement — o Live divide o original em volta. No CUT o pedaço colado é
+  apagado (delete_clip). Ao fim, a cópia de trabalho é apagada e o set é relido.
 
-## Estado — 0.1 (protótipo, só detecção)
+## Estado — 0.2.0
 
-- Ainda **não corta nem muta**: o APPLY (CUT/MUTE) é a próxima fase.
-- Clips com **WARP** ligado ou em **LOOP** aparecem em cinza e não são analisados.
-- PRE, POST, FADE, SNAP e SCOPE ainda não estão na tela.
-- Feito para o Live 12 (alvo: Live Suite 12.4.16). **Ainda não foi rodado no Live.**
-
+- MUTE e CUT completos, com PRE/POST, SNAP e SCOPE. Testado num simulador do arranjo (	mp/teste-apply/sim.js,
+  fora do git): som intacto e no mesmo lugar nos dois modos; **ainda não rodado no Live**.
+- Sem FADE próprio: o LOM não expõe fade de clip; o Live põe fade automático nas bordas ("Create Fades on Clip Edges").
+- Sem undo agrupado: o LOM não tem egin_undo_step, cada trecho é um Ctrl+Z. O CUT pede confirmação (2º clique).
+- Clips com **WARP** ligado ou em **LOOP** ficam de fora.
 ## Arquivos
 
 | Arquivo | O que é |
 |---|---|
-| `vassoura.js` | Motor ([v8]): percorre faixas e clips pelo LOM, carrega o áudio num `buffer~` e acha os vazios |
+| `vassoura.js` | Motor ([v8]): lê faixas e clips pelo LOM, carrega o áudio num `buffer~`, acha os vazios e aplica MUTE/CUT |
 | `vassoura_view.js` | Desenho da janela flutuante (`jsui`) |
 | `build-vassoura.js` | Gera `Vassoura.amxd` + `Vassoura.maxpat` e copia os dois `.js` para a pasta de saída |
 

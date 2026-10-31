@@ -7,24 +7,41 @@ INSTALAR
    Os 3 arquivos (Vassoura.amxd, vassoura.js e vassoura_view.js) PRECISAM ficar juntos.
 2. No Live, arraste o Vassoura.amxd para o MASTER.
 
-TESTAR
-1. Abra um set com stems (clips de áudio no Arrangement, WARP DESLIGADO).
-2. Ajuste THRESHOLD (padrão -60 dB) e MIN LENGTH (padrão 1000 ms).
-3. Clique ANALYZE. A linha de status mostra o progresso e depois "N vazios em X faixas · Y% do tempo".
-4. Clique OPEN: abre a janela flutuante com uma linha por faixa.
-   - cor da faixa = clip com som · vermelho escuro tracejado = trecho vazio (seria removido)
-   - passe o mouse numa faixa para ver o nome inteiro no rodapé
-   - clique no vermelho = manter o trecho (fica cinza)
-   - clique no nome da faixa = deixar a faixa fora da limpeza
+ANTES DO PRIMEIRO APPLY: SALVE UMA CÓPIA DO SET (File > Save Live Set As...).
+O Live não deixa juntar as edições num passo só: cada trecho mutado/apagado é um Ctrl+Z separado.
 
-O QUE A 0.1 AINDA NÃO FAZ (protótipo SÓ DE DETECÇÃO)
-- Não altera o set (APPLY / CUT / MUTE vêm na próxima fase).
-- Clips com WARP ligado e clips em LOOP aparecem em cinza com o aviso e não são analisados.
-- PRE / POST / FADE / SNAP / SCOPE ainda não estão na tela.
+USAR
+1. Abra um set com stems (clips de áudio no Arrangement, WARP DESLIGADO).
+2. Clique ANALYZE (no device ou na janela). Clique OPEN para ver a janela.
+3. Ajuste no device — a janela redesenha na hora, sem reler os arquivos:
+   - THRESHOLD (padrão -60 dB): abaixo disso é silêncio
+   - MIN LENGTH (padrão 1000 ms): silêncio mais curto que isso fica
+   - PRE (padrão 10 ms): folga mantida ANTES de cada som (não corta o ataque)
+   - POST (padrão 100 ms): cauda mantida DEPOIS de cada som (não corta reverb/release)
+   - SNAP: OFF / 1/16 / BAR — os cortes caem na grade, sempre para dentro do silêncio
+   - SCOPE: ALL (todas as faixas) / SELECTED (só a faixa selecionada; clique ANALYZE de novo)
+   - MODE: MUTE (divide o clip e desliga os pedaços vazios — nada é apagado)
+           CUT  (apaga os pedaços vazios; pede 2º clique no APPLY em até 4 s)
+   MODE, SNAP e SCOPE também mudam clicando na barra da janela.
+4. Na janela:
+   - cor da faixa = som (fica) · vermelho escuro tracejado = vazio (sai) · cinza = mantido
+   - clique no vermelho = manter aquele trecho · clique no nome da faixa = faixa fora da limpeza
+5. APPLY. Depois de aplicar, a VASSOURA relê o set e a janela mostra como ficou.
+
+LIMITES
+- Clips com WARP ligado e clips em LOOP aparecem em cinza e não são tocados.
+- FADE: o Live não deixa um device mexer no fade dos clips. Para evitar clique nos cortes, deixe ligado
+  em Preferences > Record, Warp & Launch > "Create Fades on Clip Edges" (vem ligado de fábrica).
+- Faixa congelada (Freeze) não pode ser editada: é pulada e aparece no console.
+
+COMO O APPLY EDITA (para entender o console)
+- Para cada clip, uma cópia de trabalho é posta depois do fim da música, aparada para o trecho vazio,
+  conferida e colada por cima dele. O Live divide o clip original em volta. No CUT, o pedaço é apagado.
+- Se a cópia não ficar exatamente do tamanho do vazio, aquele trecho é PULADO (o set não é tocado).
+- No fim, a cópia de trabalho é apagada. Se sobrar algum clip lá no fim do arranjo, apague à mão.
 
 SE DER ERRO
 - Abra o console do Max (no device: botão de editar → Max → Window → Max Console).
-- Ele imprime uma linha "VASSOURA:" por clip, com posição e markers.
-  Mande print dessas linhas — é com elas que confiro se o vazio caiu no lugar certo.
+- Linhas "VASSOURA:" mostram cada clip e cada trecho pulado. Mande print delas.
 - "v8: can't find vassoura.js" = os arquivos não estão na mesma pasta do .amxd.
   Correção: abra o device no editor do Max, clique em FREEZE (ícone de floco de neve) e salve.

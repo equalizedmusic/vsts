@@ -5,6 +5,24 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.2.0 — 2026-10-31
+- **APPLY completo** — a VASSOURA agora mexe no set:
+  - **MUTE**: divide o clip e desliga (Clip Activator) só os pedaços vazios. Nada é apagado; qualquer pedaço volta
+    ligando o clip no arranjo.
+  - **CUT**: apaga os pedaços vazios. Pede um 2º clique no APPLY em até 4 s para confirmar.
+  - Trava de segurança: cada pedaço é conferido (tamanho exato) antes de ir para o arranjo; se não bater, aquele trecho
+    é pulado e aparece no console. Clip que mudou desde o ANALYZE também é pulado.
+  - Depois do APPLY o set é relido e a janela mostra como ficou; o resultado fica no topo da janela.
+- **PRE** (folga antes do som, padrão 10 ms) e **POST** (cauda depois do som, padrão 100 ms): não cortam ataque nem
+  reverb. Na borda do clip não se aplica folga.
+- **SNAP** OFF / 1/16 / BAR: os cortes caem na grade, sempre arredondando para dentro do silêncio (nunca invade o som).
+- **SCOPE** ALL / SELECTED (só a faixa selecionada no Live).
+- **Ajuste ao vivo**: THRESHOLD, MIN LENGTH, PRE, POST e SNAP redesenham a janela na hora, sem reler os arquivos. Os
+  trechos marcados para manter continuam mantidos.
+- Device maior: dials THRESHOLD, MIN LENGTH, PRE, POST; seletores MODE, SNAP, SCOPE; botões ANALYZE e APPLY.
+- Janela: barra com MODE / SNAP / SCOPE clicáveis, ANALYZE e APPLY (azul no MUTE, vermelho no CUT), status ao vivo.
+- Limites do Live: não há fade por device (use "Create Fades on Clip Edges" nas Preferences) e não há undo agrupado —
+  cada trecho é um Ctrl+Z. **Salve uma cópia do set antes do primeiro APPLY.**
 ## 0.1.2 — 2026-10-31
 - Visual mais legível (pedido depois do 1º teste, que mostrou tudo pequeno demais):
 - **Janela maior** (1360×840) e **letras maiores**: nomes em 11–14 px, linhas de no mínimo 20 px (cabem ~35 faixas;

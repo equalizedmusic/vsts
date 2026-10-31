@@ -1,14 +1,20 @@
 // VASSOURA — janela flutuante (jsui). Desenha o dict "vassoura_data".
 // Cor da faixa = clip com som (fica) · vermelho escuro tracejado = vazio (sai) · cinza = vazio marcado para FICAR.
 // Clique no nome da faixa: deixa a faixa fora da limpeza. Clique no vermelho: mantém o trecho.
+// Barra de cima: MODE / SNAP / SCOPE clicáveis, ANALYZE e APPLY (mandam para o motor pela saída do jsui).
 
 mgraphics.init();
 mgraphics.relative_coords = 0;
 mgraphics.autofill = 0;
+outlets = 1;
 
 var DICT = "vassoura_data";
+var VERSAO = "0.2.0";
 var NAME_W = 250;
-var HEAD_H = 74;
+var HEAD_H = 112;
+var cfg = { threshold: -60, minlen: 1000, pre: 10, post: 100, snap: 0, mode: 0, scope: 0 };
+var msgStatus = "";   // o que o motor está fazendo agora
+var msgAviso = "";    // resultado do último APPLY (fica até o próximo)
 var RULER_H = 24;
 var FOOT_H = 30;
 var SB_W = 14;
@@ -30,7 +36,18 @@ function load() {
 	var d = new Dict(DICT);
 	try { data = JSON.parse(d.stringify()); } catch (e) { data = null; }
 	if (data && !data.tracks) data = null;
+	if (data && data.cfg) cfg = data.cfg;
 	prefixo = data ? comum(arr(data.tracks)) : "";
+}
+
+function status() {
+	msgStatus = arrayfromargs(arguments).join(" ");
+	mgraphics.redraw();
+}
+
+function aviso() {
+	msgAviso = arrayfromargs(arguments).join(" ");
+	mgraphics.redraw();
 }
 
 function save() {
@@ -140,6 +157,44 @@ function resumo(tr) {
 	return { n: n, pct: tot > 0 ? Math.round(100 * vaz / tot) : 0 };
 }
 
+// barra de controles: grupos de opções clicáveis + valores dos dials do device + ANALYZE / APPLY
+function botao(x, y, w, h, txt, fundo, frente, cmd) {
+	caixa(x, y, w, h, fundo[0], fundo[1], fundo[2]);
+	rgb(frente[0], frente[1], frente[2]);
+	texto(txt, x + (w - largura(txt, 12, true)) / 2, y + h / 2 + 4, 12, true);
+	hits.push({ x: x, y: y, w: w, h: h, tipo: "cmd", msg: cmd });
+}
+
+function grupo(x, y, h, rotulo, opcoes, val, cmd) {
+	rgb(0.55, 0.55, 0.58); texto(rotulo, x, y + h / 2 + 4, 11, true);
+	x += largura(rotulo, 11, true) + 8;
+	for (var i = 0; i < opcoes.length; i++) {
+		var w = largura(opcoes[i], 12, true) + 20;
+		var on = i == val;
+		botao(x, y, w, h, opcoes[i], on ? [0.86, 0.86, 0.88] : [0.19, 0.19, 0.21], on ? [0.08, 0.08, 0.09] : [0.70, 0.70, 0.73], [cmd, i]);
+		x += w + 2;
+	}
+	return x + 20;
+}
+
+function barra(W) {
+	var y = 70, h = 28;
+	caixa(0, y - 6, W, h + 12, 0.12, 0.12, 0.13);
+	var x = 16;
+	x = grupo(x, y, h, "MODE", ["MUTE", "CUT"], cfg.mode, "ui_mode");
+	x = grupo(x, y, h, "SNAP", ["OFF", "1/16", "BAR"], cfg.snap, "ui_snap");
+	x = grupo(x, y, h, "SCOPE", ["ALL TRACKS", "SELECTED"], cfg.scope, "ui_scope");
+
+	var wAp = 150, wAn = 110, xAp = W - 16 - wAp, xAn = xAp - 8 - wAn;
+	var vals = "THRESHOLD " + Number(cfg.threshold).toFixed(1) + " dB · MIN LENGTH " + (cfg.minlen / 1000).toFixed(2) +
+		" s · PRE " + Math.round(cfg.pre) + " ms · POST " + Math.round(cfg.post) + " ms";
+	rgb(0.62, 0.62, 0.65); texto(cabeFim(vals, xAn - 16 - x, 12), x, y + h / 2 + 4, 12, false);
+
+	botao(xAn, y, wAn, h, "ANALYZE", [0.30, 0.30, 0.34], [0.95, 0.95, 0.95], ["analyze"]);
+	var cut = cfg.mode == 1;
+	botao(xAp, y, wAp, h, "APPLY · " + (cut ? "CUT" : "MUTE"), cut ? [0.72, 0.20, 0.20] : [0.20, 0.42, 0.72], [1, 1, 1], ["apply"]);
+}
+
 function paint() {
 	var W = box.rect[2] - box.rect[0];
 	var H = box.rect[3] - box.rect[1];
@@ -147,10 +202,15 @@ function paint() {
 
 	caixa(0, 0, W, H, 0.09, 0.09, 0.10);
 	rgb(0.95, 0.95, 0.95); texto("VASSOURA", 16, 30, 22, true);
-	rgb(0.55, 0.55, 0.58); texto("PROTÓTIPO 0.1.2 · SÓ DETECÇÃO — nada é alterado no set", 16 + largura("VASSOURA", 22, true) + 14, 29, 12, false);
+	var tx = 16 + largura("VASSOURA", 22, true) + 12;
+	rgb(0.55, 0.55, 0.58); texto(VERSAO, tx, 29, 12, false);
+	tx += largura(VERSAO, 12, false) + 18;
+	if (msgStatus) { rgb(0.98, 0.78, 0.35); texto(cabeFim(msgStatus, W - tx - 20, 13), tx, 29, 13, true); }
+
+	barra(W);
 
 	if (!data) {
-		rgb(0.7, 0.7, 0.72); texto("Clique ANALYZE no device para ler as faixas.", 16, 110, 16, false);
+		rgb(0.7, 0.7, 0.72); texto("Clique ANALYZE para ler as faixas.", 16, HEAD_H + 40, 16, false);
 		return;
 	}
 
@@ -158,9 +218,11 @@ function paint() {
 	var pct = data.clipBeats > 0 ? Math.round(100 * data.emptyBeats / data.clipBeats) : 0;
 	rgb(0.92, 0.92, 0.92);
 	texto(data.nEmpty + " VAZIOS EM " + tracks.length + " FAIXAS · " + pct + "% DO TEMPO DOS CLIPS", 16, 56, 15, true);
-	rgb(0.60, 0.60, 0.63);
-	var lx = 16 + largura(data.nEmpty + " VAZIOS EM " + tracks.length + " FAIXAS · " + pct + "% DO TEMPO DOS CLIPS", 15, true) + 18;
-	texto("THRESHOLD " + data.threshold.toFixed(1) + " dB · MIN LENGTH " + (data.minlen / 1000).toFixed(2) + " s", lx, 56, 12, false);
+	if (msgAviso) {
+		rgb(0.55, 0.85, 0.60);
+		var ax = 16 + largura(data.nEmpty + " VAZIOS EM " + tracks.length + " FAIXAS · " + pct + "% DO TEMPO DOS CLIPS", 15, true) + 18;
+		texto(cabeFim("ÚLTIMO APPLY: " + msgAviso, W - 420 - ax, 12), ax, 56, 12, false);
+	}
 
 	// legenda
 	var gx = W - 400;
@@ -235,9 +297,11 @@ function paint() {
 			var c = clips[j];
 			var cx = bx(c.s), cw = Math.max(1, bx(c.e) - cx);
 			if (c.state == "ok") caixa(cx, by, cw, bh, cor[0], cor[1], cor[2], off ? 0.30 : 1);
+			else if (c.state == "muted") caixa(cx, by, cw, bh, 0.20, 0.20, 0.22, 1);  // já mutado (ex.: por um APPLY)
 			else caixa(cx, by, cw, bh, 0.32, 0.32, 0.35, 0.9);
-			if (c.state != "ok") {
-				rgb(0.95, 0.80, 0.35); texto(String(c.state).toUpperCase(), cx + 5, y + laneH / 2 + fs / 2 - 1, fs - 1, true);
+			if (c.state != "ok" && c.state != "muted") {
+				var et = String(c.state).toUpperCase();
+				if (largura(et, fs - 1, true) + 10 < cw) { rgb(0.95, 0.80, 0.35); texto(et, cx + 5, y + laneH / 2 + fs / 2 - 1, fs - 1, true); }
 			}
 			var em = arr(c.empties);
 			for (var k = 0; k < em.length; k++) {
@@ -288,8 +352,19 @@ function faixaEm(x, y) {
 }
 
 function onclick(x, y) {
-	if (!data) return;
 	arrasto = -1;
+	for (var b = hits.length - 1; b >= 0; b--) {
+		var hb = hits[b];
+		if (hb.tipo != "cmd" || x < hb.x || x > hb.x + hb.w || y < hb.y || y > hb.y + hb.h) continue;
+		var m = hb.msg;
+		if (m[0] == "ui_mode") cfg.mode = m[1];
+		else if (m[0] == "ui_snap") cfg.snap = m[1];
+		else if (m[0] == "ui_scope") cfg.scope = m[1];
+		outlet(0, m);
+		mgraphics.redraw();
+		return;
+	}
+	if (!data) return;
 	if (lay && lay.maxFirst > 0 && x >= lay.W - SB_W - 4) {
 		arrasto = y;
 		rolar(lay.maxFirst * (y - lay.top) / Math.max(1, lay.listH));
@@ -311,6 +386,7 @@ function onclick(x, y) {
 		}
 		save();
 		mgraphics.redraw();
+		outlet(0, "marcas");  // motor reconta os totais
 		return;
 	}
 }
