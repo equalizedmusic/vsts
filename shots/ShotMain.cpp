@@ -228,7 +228,20 @@ int main (int argc, char** argv)
     std::unique_ptr<juce::AudioProcessor> proc (createPluginFilter());
     ShotPlayHead head;
     proc->setPlayHead (&head);
-    proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : (SHOT_ALIGN ? 4 : 2), 2, fs, block);   // ALIGN: baixo + sidechain
+   #if SHOT_ALIGN
+    // ALIGN: baixo (estéreo) + sidechain (estéreo), como o DAW liga quando escolhe a faixa do kick
+    {
+        auto layout = proc->getBusesLayout();
+        if (layout.inputBuses.size() > 1) layout.inputBuses.getReference (1) = juce::AudioChannelSet::stereo();
+        const bool ok = proc->setBusesLayout (layout);
+        if (auto* sc = proc->getBus (true, 1)) sc->enable (true);
+        proc->setRateAndBufferSizeDetails (fs, block);
+        std::printf ("ALIGN: layout %s, entradas %d, sidechain %s\n", ok ? "ok" : "recusado", proc->getTotalNumInputChannels(),
+                     proc->getBus (true, 1) != nullptr && proc->getBus (true, 1)->isEnabled() ? "ligado" : "desligado");
+    }
+   #else
+    proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : 2, 2, fs, block);
+   #endif
     proc->prepareToPlay (fs, block);
     applyLook (*proc);
    #if SHOT_MESA
