@@ -101,7 +101,7 @@ const sub = {
   fileversion: 1,
   appversion: { major: 9, minor: 0, revision: 0, architecture: 'x64', modernui: 1 },
   classnamespace: 'box',
-  rect: [120, 120, 1120, 680],
+  rect: [120, 120, 1220, 900],
   openinpresentation: 1,
   toolbarvisible: 0,
   boxes: [
@@ -109,17 +109,19 @@ const sub = {
     { box: { id: 'obj-2', maxclass: 'newobj', text: 'thispatcher', numinlets: 1, numoutlets: 2, outlettype: ['', ''], patching_rect: [20, 70, 80, 22] } },
     { box: { id: 'obj-3', maxclass: 'newobj', text: 'r ---vassoura_ref', numinlets: 0, numoutlets: 1, outlettype: [''], patching_rect: [140, 20, 110, 22] } },
     { box: { id: 'obj-4', maxclass: 'jsui', filename: 'vassoura_view.js', numinlets: 1, numoutlets: 1, outlettype: [''],
-      parameter_enable: 0, patching_rect: [20, 120, 1000, 560], presentation: 1, presentation_rect: [0, 0, 1000, 560] } },
+      parameter_enable: 0, patching_rect: [20, 120, 1100, 780], presentation: 1, presentation_rect: [0, 0, 1100, 780] } },
   ],
   lines: [
     { patchline: { source: ['obj-1', 0], destination: ['obj-2', 0] } },
     { patchline: { source: ['obj-3', 0], destination: ['obj-4', 0] } },
   ],
 };
-const pj = box({ maxclass: 'newobj', text: 'p janela', numinlets: 1, numoutlets: 0,
-  patching_rect: [500, 260, 60, 22], patcher: sub });
+const pj = box({ maxclass: 'newobj', text: 'p VASSOURA', numinlets: 1, numoutlets: 0,
+  patching_rect: [500, 260, 80, 22], patcher: sub });
 const tOpen = obj('t b', 1, 1, [500, 200, 30, 22], { outlettype: ['bang'] });
-const mOpen = msg('window flags float, window exec, front', [500, 230, 250, 22]);
+// janela do tamanho exato do jsui (1100x780), sem redimensionar, sempre por cima, título VASSOURA
+const mOpen = msg('window flags float, window flags nogrow, window size 120 120 1220 900, window exec, title VASSOURA, front',
+  [500, 230, 520, 22]);
 line(open, 0, tOpen, 0);
 line(tOpen, 0, mOpen, 0);
 line(mOpen, 0, pj, 0);
