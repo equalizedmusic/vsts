@@ -50,3 +50,7 @@ O zip pronto (`.amxd` + `.js` + `LEIA-ME.txt`) fica no release `vassoura-vx.y.z`
 [Releases](https://github.com/equalizedmusic/vsts/releases). Quem publica é o workflow `release-max4live.yml`: a versão
 é o primeiro `## x.y.z` de [`novidades/Vassoura.md`](../../novidades/Vassoura.md). Para lançar, escreva a seção nova
 lá em cima no mesmo commit da mudança. Esta pasta não entra no build dos VSTs.
+
+Link fixo (sempre o zip da versão mais nova, pelo portal de licenças):
+`https://isp-licencas.insidestudiosp.workers.dev/baixar/vassoura/mac` (o `/win` dá o mesmo zip). No painel, o pacote
+**Vassoura** entra na mensagem ao cliente com esse link; o device não pede ativação.

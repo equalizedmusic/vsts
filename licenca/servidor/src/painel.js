@@ -432,7 +432,7 @@ html { -webkit-text-size-adjust:100%; }
 // JS do navegador. Tudo que vem do banco (e-mail, nome da máquina, nota) entra por textContent, nunca por innerHTML.
 const JS = `
 'use strict';
-var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa'],['align','Align']];
+var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa'],['align','Align'],['vassoura','Vassoura']];
 var NOME = {}; PACOTES.forEach(function (p) { NOME[p[0]] = p[1]; });
 var $ = function (id) { return document.getElementById(id); };
 
@@ -492,6 +492,8 @@ function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
   linhas.push('', 'Downloads:');
   pacotes.forEach(function (p) {
     var base = location.origin + '/baixar/' + p + '/';
+    // VASSOURA = Max for Live: um zip só para Windows e Mac
+    if (p === 'vassoura') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12 no Windows e no Mac): ' + base + 'mac'); return; }
     if (sistemas.indexOf('win') >= 0) linhas.push(NOME[p] + ' para Windows: ' + base + 'win');
     if (sistemas.indexOf('mac') >= 0) linhas.push(NOME[p] + ' para Mac: ' + base + 'mac');
   });
