@@ -256,7 +256,9 @@ function paginaSimples(titulo, texto, status) {
 
 async function rotaBaixar(caminho, env) {
     const [, , pacote, sistema] = caminho.split('/');
-    if (!PACOTES.includes(pacote) || !['win', 'mac'].includes(sistema))
+    // VASSOURA: link único /baixar/vassoura (win/mac continuam valendo para os links já enviados)
+    const unico = pacote === 'vassoura' && !sistema;
+    if (!PACOTES.includes(pacote) || (!unico && !['win', 'mac'].includes(sistema)))
         return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
     const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
     const achar = (lista) => {
@@ -420,7 +422,8 @@ export default {
             if (req.method === 'POST' && caminho === '/v1/validar') return await rotaPlugin('validar', req, env);
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
             if (req.method === 'GET' && caminho === '/v1/versao') return await rotaVersao(url, env);
-            if (req.method === 'GET' && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho, env);
+            // HEAD também: prévia de link (WhatsApp, Instagram) consulta antes de baixar
+            if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
             if (caminho === '/gratis/montamonta' || caminho === '/gratis')
                 return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento });

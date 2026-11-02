@@ -493,7 +493,7 @@ function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
   pacotes.forEach(function (p) {
     var base = location.origin + '/baixar/' + p + '/';
     // VASSOURA = Max for Live: um zip só para Windows e Mac
-    if (p === 'vassoura') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12 no Windows e no Mac): ' + base + 'mac'); return; }
+    if (p === 'vassoura') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12 no Windows e no Mac): ' + location.origin + '/baixar/vassoura'); return; }
     if (sistemas.indexOf('win') >= 0) linhas.push(NOME[p] + ' para Windows: ' + base + 'win');
     if (sistemas.indexOf('mac') >= 0) linhas.push(NOME[p] + ' para Mac: ' + base + 'mac');
   });
