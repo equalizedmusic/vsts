@@ -28,6 +28,9 @@ Isso segura o repasse casual de instalador + token; não segura quem quiser craq
 ## Pastas
 
 - Página grátis do MONTA-MONTA: `/gratis/montamonta` (e-mail → token na tela + download, origem `gratis`; ver `servidor/src/gratis.js`). Venda/cortesia num e-mail que só tem licença grátis troca o token.
+- Página grátis do ALIGN: `/align` (= `/gratis/align`): e-mail + Windows/Mac → token na tela, link de download só
+  do sistema escolhido e o passo a passo (baixo + sidechain do kick + ativar). Licença de **1 computador**, origem
+  `gratis`, nota `página ALIGN · Mac|Windows` (aparece no painel). Mesmos limites de pedidos da página do MONTA-MONTA.
 - `servidor/` — Cloudflare Worker + banco D1 (`isp-licencas.insidestudiosp.workers.dev`, conta pessoal
   insidestudiosp). Rotas em `src/index.js`, tabelas em `schema.sql`. Teste local: `npm install`, `npx wrangler d1
   execute isp-licencas --local --file schema.sql`, `npx wrangler dev --local` (segredos em `.dev.vars`, fora do git).

@@ -8,6 +8,7 @@
 //        -> { ok: true, atualizacao: null | { versao, url, notas } }   url = instalador do sistema (ou a página do release)
 //   GET  /baixar/<pacote>/<win|mac>   redireciona para o instalador (links da mensagem do painel)
 //   GET/POST /gratis/montamonta   página grátis: e-mail -> token + download do MONTA-MONTA (ver src/gratis.js)
+//   GET/POST /gratis/align (= /align)   e-mail + Windows/Mac -> token + download do ALIGN, 1 computador
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -30,7 +31,7 @@
 // Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura).
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
-import { rotaGratis } from './gratis.js';
+import { rotaGratis, PACOTES_GRATIS } from './gratis.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -425,8 +426,9 @@ export default {
             // HEAD também: prévia de link (WhatsApp, Instagram) consulta antes de baixar
             if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
-            if (caminho === '/gratis/montamonta' || caminho === '/gratis')
-                return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento });
+            if (caminho === '/gratis' || caminho === '/align' || (caminho.startsWith('/gratis/') && PACOTES_GRATIS.includes(caminho.slice(8))))
+                return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento },
+                    caminho === '/align' ? 'align' : caminho.slice(8) || 'montamonta');
             if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
             // navegador em endereço desconhecido (/Painel, /painel. colado com pontuação, raiz) ⇒ manda p/ o painel
             if (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'))

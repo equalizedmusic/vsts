@@ -1,23 +1,29 @@
-// Página grátis do MONTA-MONTA: a pessoa põe o e-mail e recebe na tela o token e os links de download, sem passar
-// pelo painel. É o link mandado no direct do Instagram para quem comenta QUERO.
+// Páginas grátis: a pessoa põe o e-mail e recebe na tela o token e os links de download, sem passar pelo painel.
+// É o link mandado no direct do Instagram para quem comenta a palavra do reel (QUERO, ALIGN…).
 //
-//   GET  /gratis/montamonta   a página
-//   POST /gratis/montamonta   { email, site }   (site = campo escondido; robô que preenche leva "ok" falso)
-//     -> { ok, novo, token?, mesmo_token?, ja_tinha?, baixar: { win, mac } }
+//   GET  /gratis/montamonta   MONTA-MONTA (2 computadores, links Windows e Mac)
+//   GET  /gratis/align        ALIGN (1 computador; a pessoa escolhe Windows ou Mac e recebe só aquele link)
+//   POST /gratis/<pacote>     { email, sistema?, site }   (site = campo escondido; robô que preenche leva "ok" falso)
+//     -> { ok, novo, token?, mesmo_token?, ja_tinha?, baixar: { win, mac } | { win } | { mac } }
 //
 // Regras:
-//   - e-mail sem cadastro: cria a licença montamonta (origem "gratis") e mostra o token UMA vez;
-//   - e-mail que já tem outra licença: entra o montamonta com o mesmo token (o token não aparece: ninguém lê o token
+//   - e-mail sem cadastro: cria a licença do pacote (origem "gratis") e mostra o token UMA vez;
+//   - e-mail que já tem outra licença: entra o pacote com o mesmo token (o token não aparece: ninguém lê o token
 //     de outro e-mail digitando o e-mail dele);
-//   - e-mail que já tem montamonta: não muda nada, só lembra de usar o token que já recebeu.
+//   - e-mail que já tem o pacote: não muda nada, só lembra de usar o token que já recebeu.
 //   - Como o token sai na tela sem conferir o e-mail, quem cadastra o e-mail de outra pessoa conhece o token dele.
 //     Por isso, quando uma venda ou cortesia entra num e-mail que só tem licença "gratis", o servidor troca o token
 //     (ver /admin/licencas em index.js) e o token da página deixa de valer para o pacote pago.
-//   - Até 8 cadastros por IP em 24 h e 300 por dia no total.
+//   - Até 8 cadastros por IP em 24 h e 300 por dia no total (as páginas somam juntas).
+//   - O sistema escolhido vai na nota da licença (aparece e é buscável no painel).
 
-const PACOTE = 'montamonta';
 const POR_IP_DIA = 8;
 const TOTAL_DIA = 300;
+const PAGINAS = {
+    montamonta: { maquinas: 2, sistema: false, nota: 'página grátis' },
+    align: { maquinas: 1, sistema: true, nota: 'página ALIGN' },
+};
+export const PACOTES_GRATIS = Object.keys(PAGINAS);
 
 function json(obj, status = 200) {
     return new Response(JSON.stringify(obj), {
@@ -25,8 +31,9 @@ function json(obj, status = 200) {
     });
 }
 
-export async function rotaGratis(req, env, url, h) {
-    if (req.method === 'GET') return new Response(PAGINA, {
+export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
+    const cfg = PAGINAS[PACOTE];
+    if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN : PAGINA, {
         headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
                    'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" },
     });
@@ -36,10 +43,14 @@ export async function rotaGratis(req, env, url, h) {
     let corpo;
     try { corpo = await req.json(); } catch { return json({ ok: false, mensagem: 'Pedido inválido.' }, 400); }
     const email = h.normEmail(corpo.email);
-    const baixar = { win: url.origin + '/baixar/montamonta/win', mac: url.origin + '/baixar/montamonta/mac' };
+    const sistema = cfg.sistema ? String(corpo.sistema || '') : '';
+    const baixar = {};
+    for (const s of ['win', 'mac']) if (!sistema || s === sistema) baixar[s] = `${url.origin}/baixar/${PACOTE}/${s}`;
     if (corpo.site) return json({ ok: true, novo: false, ja_tinha: true, baixar });   // robô
     if (email.length > 120 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
         return json({ ok: false, mensagem: 'Confira o e-mail.' }, 400);
+    if (cfg.sistema && !['win', 'mac'].includes(sistema))
+        return json({ ok: false, mensagem: 'Escolha Windows ou Mac.' }, 400);
 
     const desde = h.agora() - 86400;
     const n = await env.DB.prepare("SELECT SUM(ip = ?) AS ip, COUNT(*) AS total FROM eventos WHERE tipo = 'gratis' AND quando > ?")
@@ -55,9 +66,10 @@ export async function rotaGratis(req, env, url, h) {
     }
     const token = lista.length ? null : h.novoToken();
     const hash = lista.length ? lista[0].token_hash : await h.sha256Hex('ISP' + h.normToken(token));
+    const nota = cfg.nota + (sistema ? ' · ' + (sistema === 'mac' ? 'Mac' : 'Windows') : '');
     const r = await env.DB.prepare(
-        "INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, nota, criada_em) VALUES (?, ?, ?, 2, 'gratis', 'página grátis', ?)")
-        .bind(email, PACOTE, hash, h.agora()).run();
+        "INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, nota, criada_em) VALUES (?, ?, ?, ?, 'gratis', ?, ?)")
+        .bind(email, PACOTE, hash, cfg.maquinas, nota, h.agora()).run();
     await h.evento(env, r.meta.last_row_id, 'gratis', lista.length ? 'mesmo token' : 'novo', ip);
     return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar });
 }
@@ -165,6 +177,145 @@ const PAGINA = `<!doctype html>
         $('passo1').hidden = true; $('passo2').hidden = false; window.scrollTo(0, 0);
       })
       .catch(function () { $('ir').disabled = false; $('ir').textContent = 'RECEBER MONTA-MONTA'; $('erro').textContent = 'Sem conexão. Tente de novo.'; });
+  });
+  $('copiar').addEventListener('click', function () {
+    var t = $('token').textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('copiar').textContent = 'COPIADO ✓'; },
+      function () { var s = window.getSelection(), r = document.createRange(); r.selectNodeContents($('token')); s.removeAllRanges(); s.addRange(r); });
+  });
+})();
+</script>
+</body></html>`;
+
+// ALIGN: escolhe o sistema, recebe o token e só o link daquele sistema; vale para 1 computador
+const PAGINA_ALIGN = `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALIGN · InsideStudioSP</title>
+<style>
+  :root { --bg:#100e17; --card:#1b1926; --line:#33304a; --ink:#eeecf6; --dim:#8d8aa3; --pur:#a78bfa; --org:#ff8a3d; --blu:#3ba0ff; --grn:#34d399; --pink:#f43f5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(700px 500px at 85% 0%, rgba(167,139,250,.16), transparent 70%),
+         radial-gradient(700px 500px at 0% 100%, rgba(255,138,61,.10), transparent 70%), var(--bg);
+         color:var(--ink); font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:36px 20px 60px; }
+  .logo { display:flex; align-items:center; gap:14px; }
+  h1 { margin:0; font:800 clamp(34px, 11vw, 48px)/1 Bahnschrift, "Segoe UI", system-ui, sans-serif; letter-spacing:.22em; }
+  h1 b { color:var(--pur); }
+  .risco { height:4px; border-radius:2px; background:linear-gradient(90deg, var(--org), var(--blu)); margin-top:6px; }
+  .sub { color:var(--dim); font-size:13px; letter-spacing:.16em; font-weight:700; margin-top:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin-top:26px; }
+  .free { display:inline-block; background:var(--grn); color:#0b2316; font-weight:900; padding:2px 10px; border-radius:6px; }
+  p { margin:.4em 0; } .en { color:var(--dim); font-size:14px; font-style:italic; }
+  label, .rot { display:block; font-weight:700; margin:18px 0 6px; }
+  input[type=email] { width:100%; padding:14px; border-radius:10px; border:2px solid var(--line); background:#0b0a12; color:var(--ink); font-size:17px; }
+  input[type=email]:focus { outline:none; border-color:var(--pur); }
+  .so { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .so input { position:absolute; opacity:0; pointer-events:none; }
+  .so label { margin:0; padding:14px; text-align:center; border:2px solid var(--line); border-radius:10px; background:#0b0a12; cursor:pointer; font-weight:800; letter-spacing:.06em; }
+  .so input:checked + label { border-color:var(--pur); background:rgba(167,139,250,.16); color:#fff; }
+  .so input:focus-visible + label { outline:2px solid var(--pur); outline-offset:2px; }
+  button, .bt { display:block; width:100%; text-align:center; padding:15px; margin-top:16px; border:0; border-radius:12px; cursor:pointer;
+           font:900 17px "Segoe UI", system-ui, sans-serif; letter-spacing:.06em; text-decoration:none; }
+  .principal { background:var(--grn); color:#0b2316; }
+  .principal:disabled { opacity:.6; cursor:wait; }
+  .sec { background:#0b0a12; color:var(--ink); border:2px solid var(--line); }
+  .sec:hover { border-color:var(--pur); }
+  .token { font:700 clamp(14px, 4.3vw, 19px) Consolas, "SF Mono", monospace; background:#0b0a12; border:2px dashed var(--pur); border-radius:10px; padding:14px; text-align:center;
+           word-break:break-all; color:var(--pur); margin-top:8px; user-select:all; }
+  .aviso { background:rgba(167,139,250,.08); border:1px solid rgba(167,139,250,.4); border-radius:10px; padding:10px 12px; font-size:14px; margin-top:12px; }
+  .erro { color:var(--pink); font-weight:700; min-height:1.5em; margin-top:10px; }
+  ol { padding-left:20px; margin:8px 0 0; } li { margin:7px 0; }
+  .k { color:var(--org); font-weight:800; } .b { color:var(--blu); font-weight:800; }
+  .esc { position:absolute; left:-5000px; }
+  footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
+  [hidden] { display:none !important; }
+</style></head>
+<body><main>
+  <div class="logo">
+    <svg width="64" height="40" viewBox="0 0 64 40" aria-hidden="true"><path d="M2 20 C 12 2, 20 2, 32 20 S 52 38, 62 20" fill="none" stroke="#ff8a3d" stroke-width="5" stroke-linecap="round"/><path d="M2 22 C 12 4, 20 4, 32 22 S 52 40, 62 22" fill="none" stroke="#3ba0ff" stroke-width="5" stroke-linecap="round" opacity=".9"/></svg>
+    <div><h1><b>A</b>LIGN</h1><div class="risco"></div><div class="sub">KICK / BASS PHASE</div></div></div>
+
+  <section class="card" id="passo1">
+    <p><span class="free">GRÁTIS</span> &nbsp;Alinha a fase do <span class="k">kick</span> com o <span class="b">baixo</span> sozinho, com um botão só. Latência zero. VST3 e AU.</p>
+    <p class="en">Free kick/bass phase aligner: one button, zero latency. VST3 / AU.</p>
+    <form id="f" novalidate>
+      <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
+      <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">
+      <span class="rot">Seu sistema <span class="en">· your system</span></span>
+      <div class="so" role="radiogroup">
+        <input type="radio" name="so" id="soWin" value="win"><label for="soWin">WINDOWS</label>
+        <input type="radio" name="so" id="soMac" value="mac"><label for="soMac">MAC</label>
+      </div>
+      <input class="esc" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="principal" id="ir" type="submit">GERAR MINHA LICENÇA</button>
+      <div class="erro" id="erro"></div>
+    </form>
+    <p class="en" style="margin-top:8px">Licença para 1 computador. O e-mail é só para a sua licença. · 1 computer. Your e-mail is used only for your license.</p>
+  </section>
+
+  <section class="card" id="passo2" hidden>
+    <div id="comToken" hidden>
+      <p><b>Pronto! Este é o seu token:</b> <span class="en">· your token</span></p>
+      <div class="token" id="token"></div>
+      <button class="sec" id="copiar" type="button">COPIAR TOKEN</button>
+      <div class="aviso"><b>Guarde o token</b>: ele aparece só agora (tire um print). <span class="en">It is shown only once, save it.</span></div>
+    </div>
+    <div id="semToken" hidden>
+      <p id="txtSem"></p>
+    </div>
+    <span class="rot">1. Baixe e instale <span class="en">· download and install</span></span>
+    <a class="bt principal" id="baixar" href="#">BAIXAR ALIGN</a>
+    <p id="dicaSo" style="margin-top:10px"></p>
+    <span class="rot">2. Coloque no canal do baixo <span class="en">· put it on your bass</span></span>
+    <ol>
+      <li>Abra o seu DAW e coloque o <b>ALIGN</b> no canal do <span class="b">BAIXO</span>.</li>
+      <li>No <b>Sidechain</b> do ALIGN, escolha a faixa do <span class="k">KICK</span> (no Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX).</li>
+    </ol>
+    <span class="rot">3. Ative <span class="en">· activate</span></span>
+    <ol>
+      <li>Na tela de ativação do ALIGN, digite <b id="emailOk"></b> e o token, e clique em <b>ATIVAR</b>.</li>
+      <li>Vale para <b>1 computador</b>. Para trocar de PC: menu <b>≡</b> do plugin → <b>Licença…</b> → <b>Desativar este computador</b>, e ative no novo.</li>
+      <li>Aperte o botão <b>ALIGN</b>. Pronto: ele corrige sozinho, batida por batida.</li>
+    </ol>
+    <p class="en">Put ALIGN on the bass, route the kick to its sidechain, type your e-mail and token, click ATIVAR. Works on 1 computer.</p>
+  </section>
+  <footer>InsideStudioSP</footer>
+</main>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  $(mac ? 'soMac' : 'soWin').checked = true;
+  $('f').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var email = $('email').value.trim();
+    var so = $('soMac').checked ? 'mac' : $('soWin').checked ? 'win' : '';
+    $('erro').textContent = '';
+    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Confira o e-mail.'; return; }
+    if (!so) { $('erro').textContent = 'Escolha Windows ou Mac.'; return; }
+    $('ir').disabled = true; $('ir').textContent = 'GERANDO…';
+    fetch(location.pathname, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: email, sistema: so, site: $('site').value }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        $('ir').disabled = false; $('ir').textContent = 'GERAR MINHA LICENÇA';
+        if (!j.ok) { $('erro').textContent = j.mensagem || 'Não deu certo. Tente de novo.'; return; }
+        $('baixar').href = j.baixar[so] || '#';
+        $('baixar').textContent = 'BAIXAR ALIGN PARA ' + (so === 'mac' ? 'MAC' : 'WINDOWS');
+        $('dicaSo').textContent = so === 'mac'
+          ? 'Abra o .dmg baixado e rode o instalador (VST3 e AU). Depois reabra o DAW.'
+          : 'Rode o instalador .exe baixado (VST3). Se o Windows avisar, clique em "Mais informações" e depois em "Executar assim mesmo". Depois reabra o DAW.';
+        $('emailOk').textContent = email.toLowerCase();
+        if (j.token) { $('token').textContent = j.token; $('comToken').hidden = false; }
+        else {
+          $('txtSem').innerHTML = j.ja_tinha
+            ? '<b>Este e-mail já recebeu o ALIGN.</b> Use o token que apareceu da primeira vez. Perdeu? Chame a gente no direct.'
+            : '<b>Pronto! O ALIGN entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.';
+          $('semToken').hidden = false;
+        }
+        $('passo1').hidden = true; $('passo2').hidden = false; window.scrollTo(0, 0);
+      })
+      .catch(function () { $('ir').disabled = false; $('ir').textContent = 'GERAR MINHA LICENÇA'; $('erro').textContent = 'Sem conexão. Tente de novo.'; });
   });
   $('copiar').addEventListener('click', function () {
     var t = $('token').textContent;
