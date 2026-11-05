@@ -27,8 +27,8 @@ const PAGINAS = {
     montamonta: { maquinas: 2, sistema: false, nota: 'página grátis' },
     align: { maquinas: 1, sistema: true, nota: 'página ALIGN' },
     // VASSOURA (Max for Live) não ativa: o cadastro só guarda o e-mail (token_hash vazio, nenhum token vale nele)
-    // e manda por e-mail o link do zip e o passo a passo
-    vassoura: { maquinas: 0, sistema: false, nota: 'página VASSOURA', semToken: true },
+    // e manda por e-mail o link do zip e o passo a passo daquele sistema (o zip é o mesmo; muda a pasta e os atalhos)
+    vassoura: { maquinas: 0, sistema: true, nota: 'página VASSOURA', semToken: true },
 };
 export const PACOTES_GRATIS = Object.keys(PAGINAS);
 
@@ -84,7 +84,7 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
         .bind(email, PACOTE, hash, cfg.maquinas, nota, h.agora()).run();
     await h.evento(env, r.meta.last_row_id, 'gratis', cfg.semToken ? 'cadastro' : comToken.length ? 'mesmo token' : 'novo', ip);
     if (PACOTE === 'vassoura') {
-        const enviado = await emailVassoura(env, url, h, email);
+        const enviado = await emailVassoura(env, url, h, email, sistema);
         if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
         return json({ ok: true, novo: true, baixar, email_enviado: !!enviado });
     }
@@ -111,14 +111,26 @@ async function emailAlign(env, url, h, { email, token, sistema, assunto, aviso =
 // o link do arquivo é /baixar/vassoura/zip; o /baixar/vassoura sozinho (link antigo, site, posts) abre a página de cadastro
 export const VASSOURA_ZIP = '/baixar/vassoura/zip';
 
-async function emailVassoura(env, url, h, email) {
+async function emailVassoura(env, url, h, email, sistema) {
     if (!emailLigado(env)) return false;
     let inst = null;
     try { inst = await h.instalador(env, 'vassoura'); } catch (e) { console.error('email vassoura: instalador', e); }
     const link = 'https://insidestudiosp.com.br' + VASSOURA_ZIP,   // sempre o domínio do estúdio (o cadastro pode vir do workers.dev)
           pasta = (inst?.nome || 'Vassoura.zip').replace(/\.zip$/, '');
+    const mac = sistema === 'mac';
+    // zip igual nos dois; muda como extrai, a pasta da User Library e o atalho de desfazer
+    const extrair = mac ? 'Extraia o zip (dois cliques no arquivo baixado).' : 'Extraia o zip (botão direito > "Extrair tudo...").',
+          extract = mac ? 'Extract the zip (double-click the downloaded file).' : 'Extract the zip (right-click > "Extract All...").',
+          pastaPt = mac ? 'Música/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/   (no Finder: ~/Music/Ableton/...)'
+                        : 'Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+          pastaEn = mac ? 'Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/   (in Finder: ~/Music/Ableton/...)'
+                        : 'Documents\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+          desfazer = mac ? 'Cmd+Z' : 'Ctrl+Z',
+          salvar = mac ? 'File > Save Live Set As..., Cmd+Shift+S' : 'File > Save Live Set As..., Ctrl+Shift+S',
+          prefs = mac ? 'Live > Settings' : 'Options > Settings',
+          nomeSo = mac ? 'Mac' : 'Windows';
     const texto = [
-        'VASSOURA · InsideStudioSP' + (inst?.versao ? ' · v' + inst.versao : ''),
+        'VASSOURA · InsideStudioSP' + (inst?.versao ? ' · v' + inst.versao : '') + ' · ' + nomeSo,
         'Limpa os trechos vazios dos clips de áudio no Ableton Live · Cleans the empty parts of audio clips in Ableton Live',
         '',
         '(English below)',
@@ -126,20 +138,20 @@ async function emailVassoura(env, url, h, email) {
         '==================================== PORTUGUÊS ====================================',
         '',
         'Obrigado por baixar a VASSOURA! É um device Max for Live para o Ableton Live 12 (Suite, ou Standard com Max for Live),',
-        'no Windows e no Mac. Não precisa de ativação nem de token.',
+        'no Windows e no Mac. Não precisa de ativação nem de token. Este passo a passo é para ' + nomeSo + '.',
         '',
         '1. BAIXAR',
         '  ' + link,
         '',
         '2. INSTALAR',
-        '  1) Extraia o zip (Windows: botão direito > "Extrair tudo..."; Mac: dois cliques).',
+        '  1) ' + extrair,
         '  2) Copie a pasta inteira (' + pasta + ') para:',
-        '       Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+        '       ' + pastaPt,
         '     Os 3 arquivos (Vassoura.amxd, vassoura.js e vassoura_view.js) PRECISAM ficar juntos na mesma pasta.',
-        '  3) No Live, arraste o Vassoura.amxd para o canal MASTER.',
+        '  3) No Live, arraste o Vassoura.amxd para a PRIMEIRA faixa de áudio do projeto (no MASTER ele não funciona).',
         '',
-        '  ANTES DO PRIMEIRO APPLY, SALVE UMA CÓPIA DO SET (File > Save Live Set As...).',
-        '  Cada trecho mutado ou apagado é um Ctrl+Z separado no Live.',
+        '  ANTES DO PRIMEIRO APPLY, SALVE UMA CÓPIA DO SET (' + salvar + ').',
+        '  Cada trecho mutado ou apagado é um ' + desfazer + ' separado no Live.',
         '',
         '3. USAR',
         '  1) Abra um set com stems (clips de áudio no Arrangement, com WARP DESLIGADO).',
@@ -158,7 +170,7 @@ async function emailVassoura(env, url, h, email) {
         '  5) Clique em APPLY. Depois a VASSOURA relê o set e a janela mostra como ficou.',
         '',
         '  Limites: clips com WARP ligado ou em LOOP e faixas congeladas (Freeze) não são tocados.',
-        '  Para não dar clique nos cortes, deixe ligado em Preferences > Record, Warp & Launch > "Create Fades on Clip Edges".',
+        '  Para não dar clique nos cortes, deixe ligado em ' + prefs + ' > Record, Warp & Launch > "Create Fades on Clip Edges".',
         '',
         '4. SE DER ERRO',
         '  "v8: can\'t find vassoura.js" = os 3 arquivos não estão na mesma pasta do Vassoura.amxd.',
@@ -171,20 +183,20 @@ async function emailVassoura(env, url, h, email) {
         '===================================== ENGLISH =====================================',
         '',
         'Thanks for downloading VASSOURA! It is a Max for Live device for Ableton Live 12 (Suite, or Standard with Max for Live),',
-        'on Windows and Mac. No activation or token needed.',
+        'on Windows and Mac. No activation or token needed. These steps are for ' + nomeSo + '.',
         '',
         '1. DOWNLOAD',
         '  ' + link,
         '',
         '2. INSTALL',
-        '  1) Extract the zip (Windows: right-click > "Extract All..."; Mac: double-click).',
+        '  1) ' + extract,
         '  2) Copy the whole folder (' + pasta + ') to:',
-        '       Documents\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+        '       ' + pastaEn,
         '     The 3 files (Vassoura.amxd, vassoura.js and vassoura_view.js) MUST stay together in the same folder.',
-        '  3) In Live, drag Vassoura.amxd onto the MASTER track.',
+        '  3) In Live, drag Vassoura.amxd onto the FIRST audio track of the project (it does not work on the MASTER).',
         '',
-        '  BEFORE THE FIRST APPLY, SAVE A COPY OF YOUR SET (File > Save Live Set As...).',
-        '  Each muted or deleted part is a separate Ctrl+Z in Live.',
+        '  BEFORE THE FIRST APPLY, SAVE A COPY OF YOUR SET (' + salvar + ').',
+        '  Each muted or deleted part is a separate ' + desfazer + ' in Live.',
         '',
         '3. USE',
         '  1) Open a set with stems (audio clips in the Arrangement, WARP OFF).',
@@ -203,7 +215,7 @@ async function emailVassoura(env, url, h, email) {
         '  5) Click APPLY. VASSOURA then rereads the set and the window shows the result.',
         '',
         '  Limits: clips with WARP on or LOOP on and frozen tracks are not touched.',
-        '  To avoid clicks at the cuts, keep Preferences > Record, Warp & Launch > "Create Fades on Clip Edges" on.',
+        '  To avoid clicks at the cuts, keep ' + prefs + ' > Record, Warp & Launch > "Create Fades on Clip Edges" on.',
         '',
         '4. IF SOMETHING GOES WRONG',
         '  "v8: can\'t find vassoura.js" = the 3 files are not in the same folder as Vassoura.amxd.',
@@ -677,6 +689,11 @@ const PAGINA_VASSOURA = `<!doctype html>
   .erro { color:var(--red); font-weight:700; min-height:1.5em; margin-top:10px; }
   ol { padding-left:20px; margin:8px 0 0; } li { margin:7px 0; }
   code { font:13px Consolas, "SF Mono", monospace; background:#0d0b06; border:1px solid var(--line); border-radius:6px; padding:1px 5px; word-break:break-all; }
+  .so { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .so input { position:absolute; opacity:0; pointer-events:none; }
+  .so label { margin:0; padding:14px; text-align:center; border:2px solid var(--line); border-radius:10px; background:#0d0b06; cursor:pointer; font-weight:800; letter-spacing:.06em; }
+  .so input:checked + label { border-color:var(--yel); background:rgba(252,211,77,.14); color:#fff; }
+  .so input:focus-visible + label { outline:2px solid var(--yel); outline-offset:2px; }
   .esc { position:absolute; left:-5000px; }
   footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
   [hidden] { display:none !important; }
@@ -692,6 +709,11 @@ const PAGINA_VASSOURA = `<!doctype html>
     <form id="f" novalidate>
       <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
       <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">
+      <span class="rot">Seu sistema <span class="en">· your system</span></span>
+      <div class="so" role="radiogroup">
+        <input type="radio" name="so" id="soWin" value="win"><label for="soWin">WINDOWS</label>
+        <input type="radio" name="so" id="soMac" value="mac"><label for="soMac">MAC</label>
+      </div>
       <input class="esc" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="principal" id="ir" type="submit">RECEBER A VASSOURA</button>
       <div class="erro" id="erro"></div>
@@ -706,36 +728,44 @@ const PAGINA_VASSOURA = `<!doctype html>
     <a class="bt principal" id="baixar" href="#">BAIXAR VASSOURA</a>
     <span class="rot">2. Instale <span class="en">· install</span></span>
     <ol>
-      <li>Extraia o zip e copie a pasta inteira para <code>Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\</code>. Os 3 arquivos (<b>Vassoura.amxd</b>, <b>vassoura.js</b> e <b>vassoura_view.js</b>) precisam ficar juntos.</li>
-      <li>No Live, arraste o <b>Vassoura.amxd</b> para o canal <b>MASTER</b>.</li>
+      <li><span id="extrair"></span> e copie a pasta inteira para <code id="pasta"></code>. Os 3 arquivos (<b>Vassoura.amxd</b>, <b>vassoura.js</b> e <b>vassoura_view.js</b>) precisam ficar juntos.</li>
+      <li>No Live, arraste o <b>Vassoura.amxd</b> para a <b>PRIMEIRA faixa de áudio</b> do projeto. No <b>MASTER</b> ele não funciona: o ANALYZE não lê os clips.</li>
     </ol>
-    <div class="aviso"><b>Antes do primeiro APPLY, salve uma cópia do set</b> (File &gt; Save Live Set As…). <span class="en">Save a copy of your set before the first APPLY.</span></div>
+    <div class="aviso"><b>Antes do primeiro APPLY, salve uma cópia do set</b> (File &gt; Save Live Set As…). Cada trecho mutado ou apagado é um <b id="desfazer">Ctrl+Z</b> separado. <span class="en">Save a copy of your set before the first APPLY.</span></div>
     <span class="rot">3. Use <span class="en">· use</span></span>
     <ol>
       <li>Abra um set com stems (clips de áudio no Arrangement, com <b>WARP desligado</b>).</li>
       <li>Clique em <b>ANALYZE</b> e em <b>OPEN</b>. Ajuste THRESHOLD, MIN LENGTH, PRE, POST e SNAP: a janela redesenha na hora.</li>
       <li>Escolha <b>MUTE</b> (desliga os pedaços vazios) ou <b>CUT</b> (apaga) e clique em <b>APPLY</b>.</li>
     </ol>
-    <p class="en">Copy the folder to your User Library, drop Vassoura.amxd on the MASTER, ANALYZE, adjust, APPLY.</p>
+    <p class="en">Copy the folder to your User Library, drop Vassoura.amxd on the FIRST audio track (not the MASTER), ANALYZE, adjust, APPLY.</p>
   </section>
   <footer>InsideStudioSP</footer>
 </main>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
+  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  $(mac ? 'soMac' : 'soWin').checked = true;
   $('f').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var email = $('email').value.trim();
+    var so = $('soMac').checked ? 'mac' : $('soWin').checked ? 'win' : '';
     $('erro').textContent = '';
     if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Confira o e-mail.'; return; }
+    if (!so) { $('erro').textContent = 'Escolha Windows ou Mac.'; return; }
     $('ir').disabled = true; $('ir').textContent = 'ENVIANDO…';
     fetch(location.pathname, { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: email, site: $('site').value }) })
+      body: JSON.stringify({ email: email, sistema: so, site: $('site').value }) })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         $('ir').disabled = false; $('ir').textContent = 'RECEBER A VASSOURA';
         if (!j.ok) { $('erro').textContent = j.mensagem || 'Não deu certo. Tente de novo.'; return; }
         $('baixar').href = j.baixar.zip;
+        $('extrair').textContent = so === 'mac' ? 'Extraia o zip (dois cliques no arquivo)' : 'Extraia o zip (botão direito > "Extrair tudo...")';
+        $('pasta').textContent = so === 'mac' ? 'Música/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/'
+          : 'Documentos\\\\Ableton\\\\User Library\\\\Presets\\\\Audio Effects\\\\Max Audio Effect\\\\';
+        $('desfazer').textContent = so === 'mac' ? 'Cmd+Z' : 'Ctrl+Z';
         $('txtOk').innerHTML = j.ja_tinha
           ? '<b>Este e-mail já está cadastrado.</b> É só baixar de novo aqui embaixo. <span class="en">Already registered: just download again.</span>'
           : '<b>Pronto! Seu cadastro está feito.</b> <span class="en">You are registered.</span>';

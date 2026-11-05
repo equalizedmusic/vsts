@@ -5,7 +5,8 @@ INSTALAR
 1. Copie a pasta inteira (Vassoura-<versão>) para:
    Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
    Os 3 arquivos (Vassoura.amxd, vassoura.js e vassoura_view.js) PRECISAM ficar juntos.
-2. No Live, arraste o Vassoura.amxd para o MASTER.
+2. No Live, arraste o Vassoura.amxd para a PRIMEIRA faixa de áudio do projeto.
+   No MASTER ele não funciona: o ANALYZE não lê os clips.
 
 ANTES DO PRIMEIRO APPLY: SALVE UMA CÓPIA DO SET (File > Save Live Set As...).
 O Live não deixa juntar as edições num passo só: cada trecho mutado/apagado é um Ctrl+Z separado.

@@ -8,7 +8,7 @@ Não é VST: um plugin só recebe áudio e não enxerga nem edita os clips. A VA
 
 ## Como funciona
 
-- **Device no master**: THRESHOLD, MIN LENGTH, PRE, POST, MODE (MUTE/CUT), SNAP (OFF/1/16/BAR), SCOPE (ALL/SELECTED),
+- **Device na primeira faixa de áudio** (no master o ANALYZE não lê os clips): THRESHOLD, MIN LENGTH, PRE, POST, MODE (MUTE/CUT), SNAP (OFF/1/16/BAR), SCOPE (ALL/SELECTED),
   ANALYZE, APPLY, OPEN ↗ e status. Todos são parâmetros do Live (salvos com o set).
 - **OPEN** abre a tela completa numa janela do Max por cima do Live: barra com MODE/SNAP/SCOPE clicáveis, ANALYZE e
   APPLY, e uma linha por faixa (cor da faixa = som, vermelho escuro tracejado = vazio, cinza = mantido).
@@ -41,7 +41,7 @@ node build-vassoura.js <pasta-saida>     # sem argumento: ./dist (fora do git)
 ```
 
 Copie a pasta de saída inteira para `User Library\Presets\Audio Effects\Max Audio Effect\` e arraste o
-`Vassoura.amxd` para o master. Os `.js` precisam ficar na mesma pasta do `.amxd`. Se aparecer
+`Vassoura.amxd` para a primeira faixa de áudio do projeto (no master ele não analisa). Os `.js` precisam ficar na mesma pasta do `.amxd`. Se aparecer
 "can't find vassoura.js", abra o device no editor do Max, clique em **FREEZE** e salve.
 
 ## Download e versões
