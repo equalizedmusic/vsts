@@ -12,7 +12,7 @@ import { SITE, PACKS, LIC } from './dados.mjs';
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
 const DIST = join(RAIZ, 'dist');
-const PREVIA = process.env.PREVIA !== '0';   // prévia: noindex até virar o site oficial
+const PREVIA = process.env.PREVIA === '1';   // site oficial desde 05/11/2026; PREVIA=1 gera a versão noindex com a faixa
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const t = (pt, en) => `<span class="pt">${esc(pt)}</span><span class="en" lang="en">${esc(en ?? pt)}</span>`;
@@ -123,7 +123,7 @@ function loja() {
 <section class="faixa como">
   <h2 class="secao">${t('Como funciona a compra', 'How buying works')}</h2>
   <ol>
-    <li>${t('Escolha o pack e pague com Pix, cartão (até 12x) ou PayPal.', 'Pick a pack and pay with Pix, card or PayPal.')}</li>
+    <li>${t('Escolha o pack e pague com Pix ou cartão em até 12x.', 'Pick a pack and pay with Pix or card.')}</li>
     <li>${t('Pagamento aprovado, chega no seu e-mail o token, o link de download e as instruções.', 'Once approved, you get the token, the download link and the instructions by e-mail.')}</li>
     <li>${t('Instale, abra o plugin no DAW e ative com o e-mail e o token. Vale em 2 computadores.', 'Install, open the plugin in your DAW and activate it with your e-mail and token. Works on 2 computers.')}</li>
   </ol>
@@ -170,7 +170,23 @@ function estudio() {
     const youtube = SITE.youtube
         ? `<iframe src="https://www.youtube-nocookie.com/embed/${esc(SITE.youtube)}" loading="lazy" allowfullscreen title="YouTube"></iframe>`
         : `<div class="vaga">${t('Vídeo do YouTube — falta o link', 'YouTube video — link pending')}</div>`;
-    const fotos = [1, 2, 3, 4, 5, 6].map((n) => `<div class="vaga foto">${t(`Foto ${n}`, `Photo ${n}`)}</div>`).join('');
+    // Enquanto não houver texto, fotos e links, a página mostra só "em breve" (sem caixas vazias nem [texto]).
+    // Quando chegarem: preencher SITE.bio/spotify/youtube em dados.mjs e as fotos em img/ — as seções aparecem sozinhas.
+    const temConteudo = SITE.bio || SITE.spotify || SITE.youtube;
+    if (!temConteudo) return pagina({
+        titulo: 'Estúdio — InsideStudioSP',
+        descricao: 'InsideStudioSP: estúdio de produção, mix e master em São Paulo.',
+        corpo: `
+<section class="hero"><div class="faixa">
+  <p class="sobre">${t('ESTÚDIO · SÃO PAULO', 'STUDIO · SÃO PAULO, BRAZIL')}</p>
+  <h1>InsideStudioSP</h1>
+  <p><span class="selo-breve">${t('EM BREVE', 'COMING SOON')}</span></p>
+  <p class="lead">${t('A página do estúdio está chegando: fotos, vídeos, a história e os trabalhos de produção, mix e master. Enquanto isso, acompanhe no Instagram.',
+                      'The studio page is on its way: photos, videos, the story and the production, mixing and mastering work. Meanwhile, follow along on Instagram.')}</p>
+  <p><a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
+     <a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p>
+</div></section>`,
+    });
     return pagina({
         titulo: 'Estúdio — InsideStudioSP', raiz: '',
         descricao: 'InsideStudioSP: estúdio de produção, mix e master em São Paulo.',
@@ -178,17 +194,14 @@ function estudio() {
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('ESTÚDIO · SÃO PAULO', 'STUDIO · SÃO PAULO, BRAZIL')}</p>
   <h1>InsideStudioSP</h1>
-  <p class="lead">${t('[Texto sobre o estúdio: o que faz, para quem, o equipamento, o jeito de trabalhar.]',
-                      '[About the studio: what it does, who it is for, the gear, the way of working.]')}</p>
+  ${SITE.bio ? `<p class="lead">${t(...SITE.bio)}</p>` : ''}
 </div></section>
-<section class="faixa"><h2 class="secao">${t('Fotos', 'Photos')}</h2><div class="grade-fotos">${fotos}</div></section>
 <section class="faixa artista">
   <div><h2 class="secao">${t('O artista', 'The artist')}</h2>
-  <p class="lead">${t('[Bio do artista: trajetória, gênero, lançamentos, selos, shows.]', '[Artist bio: background, genre, releases, labels, gigs.]')}</p>
   <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a></div>
-  <div>${spotify}</div>
+  ${SITE.spotify ? `<div>${spotify}</div>` : ''}
 </section>
-<section class="faixa"><h2 class="secao">${t('Vídeos', 'Videos')}</h2><div class="video">${youtube}</div></section>`,
+${SITE.youtube ? `<section class="faixa"><h2 class="secao">${t('Vídeos', 'Videos')}</h2><div class="video">${youtube}</div></section>` : ''}`,
     });
 }
 
