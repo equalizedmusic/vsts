@@ -210,7 +210,9 @@ ${SITE.bio ? `<section class="faixa duo duo-artista">
   ${SITE.retrato ? `<div>${foto(SITE.retrato, 'Equalized', 'foto-img retrato')}</div>` : ''}
   <div><p class="sobre">${t('O ARTISTA', 'THE ARTIST')}</p>
   <h2 class="logo-artista"><img src="/img/equalized-logo.webp" alt="Equalized" width="900" height="213"></h2>
-  ${SITE.bio.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}</div>
+  ${SITE.bio.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}
+  ${SITE.lancamento ? `<p class="sobre">${t('LANÇAMENTO · BLUE TUNES RECORDS', 'NEW RELEASE · BLUE TUNES RECORDS')}</p>
+  <p><a class="bt bt-principal" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">${t('Ouça', 'Listen to')} Equalized — ${esc(SITE.lancamento.titulo)}</a></p>` : ''}</div>
 </section>` : ''}
 <section class="faixa artista">
   <div><h2 class="secao">${t('Ouça', 'Listen')}</h2>

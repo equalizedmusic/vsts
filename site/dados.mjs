@@ -36,6 +36,9 @@ export const SITE = {
          'Equalized is the project of São Paulo-born DJ and producer Rogério Cardoso, with more than 20 years devoted to electronic music. A standout name in the Psytrance scene, his sound moves freely between Techno and Full On, blending emotional melodies, hypnotic grooves and a strong progressive identity.'],
         ['Inspirado por artistas como Neelix, Astrix, Liquid Soul e Captain Hook, conquistou reconhecimento internacional, com destaque para o single “Mr. Rabbit”, que chegou ao Top 6 do chart de Psytrance da Beatport.',
          'Inspired by artists such as Neelix, Astrix, Liquid Soul and Captain Hook, he has earned international recognition, including the single “Mr. Rabbit”, which reached the Top 6 of the Beatport Psytrance chart.'],
+        // Pedido dele (05/11): citar os lançamentos pela Blue Tunes Records com destaque para Summer of '89 (botão logo abaixo da bio).
+        ['Seus lançamentos saem pela Blue Tunes Records, e o mais recente é “Summer of ’89”.',
+         'His releases come out on Blue Tunes Records, and the latest one is “Summer of ’89”.'],
         ['Também é mentor de produção musical e contribuiu diretamente para o desenvolvimento de projetos como Tiago Lutz (Sonic Massala), João Penna (Penna), DJ Mel Rose e Guilherme Araújo (At Work), entre outros talentos em ascensão.',
          'He is also a music production mentor and has directly helped develop projects such as Tiago Lutz (Sonic Massala), João Penna (Penna), DJ Mel Rose and Guilherme Araújo (At Work), among other rising talents.'],
     ],
