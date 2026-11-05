@@ -555,6 +555,28 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = f
     return L;
 }
 
+// topo e rodapé com os links do site (as páginas grátis podem abrir pelo workers.dev: links sempre absolutos no domínio do estúdio)
+const SITE_URL = 'https://insidestudiosp.com.br';
+const NAV = `<style>
+  .navsite { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; max-width:760px; margin:0 auto; padding:14px 20px;
+             border-bottom:1px solid var(--line); font-size:14px; }
+  .navsite a { color:var(--dim); text-decoration:none; font-weight:600; }
+  .navsite a:hover, .rodsite a:hover { color:var(--ink); }
+  .navsite .marca { color:var(--ink); font-weight:800; letter-spacing:.02em; }
+  .navsite nav { display:flex; gap:18px; flex-wrap:wrap; }
+  .rodsite { color:var(--dim); font-size:13px; text-align:center; margin-top:30px; line-height:1.9; }
+  .rodsite a { color:var(--dim); }
+  .rodsite .links a { margin:0 9px; white-space:nowrap; }
+</style>
+<header class="navsite">
+  <a class="marca" href="${SITE_URL}/">Inside<b>Studio</b>SP</a>
+  <nav><a href="${SITE_URL}/">Loja · Shop</a><a href="${SITE_URL}/estudio/">Estúdio · Studio</a><a href="${SITE_URL}/contato/">Contato · Contact</a></nav>
+</header>`;
+const RODAPE = `<footer class="rodsite">
+    <div class="links"><a href="${SITE_URL}/">Loja</a><a href="${SITE_URL}/#packs">Packs</a><a href="${SITE_URL}/estudio/">Estúdio</a><a href="${SITE_URL}/contato/">Contato</a><a href="${SITE_URL}/privacidade/">Privacidade</a></div>
+    <div>InsideStudioSP · <a href="mailto:${CONTATO}">${CONTATO}</a></div>
+  </footer>`;
+
 const PAGINA = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MONTA-MONTA grátis · InsideStudioSP</title>
@@ -593,7 +615,7 @@ const PAGINA = `<!doctype html>
   footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
   [hidden] { display:none !important; }
 </style></head>
-<body><main>
+<body>${NAV}<main>
   <div class="logo"><div class="q"><i style="background:#ff8a2a"></i><i style="background:#22d8ff"></i><i style="background:#5fe36a"></i><i style="background:#ff4f8b"></i></div>
     <div><h1><span class="a">MONTA</span>-<span class="b">MONTA</span></h1><div class="sub">INSIDE STUDIO SP · SYNTH DIDÁTICO</div></div></div>
 
@@ -630,7 +652,7 @@ const PAGINA = `<!doctype html>
     </ol>
     <p class="en">Open it in your DAW, type your e-mail and token, click ATIVAR. Works on 2 computers.</p>
   </section>
-  <footer>InsideStudioSP</footer>
+  ${RODAPE}
 </main>
 <script>
 (function () {
@@ -706,7 +728,7 @@ const PAGINA_VASSOURA = `<!doctype html>
   footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
   [hidden] { display:none !important; }
 </style></head>
-<body><main>
+<body>${NAV}<main>
   <div class="logo">
     <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><path d="M30 4 L20 26" stroke="#9a937c" stroke-width="4" stroke-linecap="round"/><path d="M12 26 h16 l6 18 H6 z" fill="#fcd34d"/><path d="M12 34 v8 M18 34 v8 M24 34 v8 M30 34 v8" stroke="#1a1505" stroke-width="2"/></svg>
     <div><h1>VASSOURA</h1><div class="risco"></div><div class="sub">MAX FOR LIVE · ABLETON LIVE 12</div></div></div>
@@ -748,7 +770,7 @@ const PAGINA_VASSOURA = `<!doctype html>
     </ol>
     <p class="en">Copy the folder to your User Library, drop Vassoura.amxd on the FIRST audio track (not the MASTER), ANALYZE, adjust, APPLY.</p>
   </section>
-  <footer>InsideStudioSP</footer>
+  ${RODAPE}
 </main>
 <script>
 (function () {
@@ -834,7 +856,7 @@ const PAGINA_ALIGN = `<!doctype html>
   footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
   [hidden] { display:none !important; }
 </style></head>
-<body><main>
+<body>${NAV}<main>
   <div class="logo">
     <svg width="64" height="40" viewBox="0 0 64 40" aria-hidden="true"><path d="M2 20 C 12 2, 20 2, 32 20 S 52 38, 62 20" fill="none" stroke="#ff8a3d" stroke-width="5" stroke-linecap="round"/><path d="M2 22 C 12 4, 20 4, 32 22 S 52 40, 62 22" fill="none" stroke="#3ba0ff" stroke-width="5" stroke-linecap="round" opacity=".9"/></svg>
     <div><h1><b>A</b>LIGN</h1><div class="risco"></div><div class="sub">KICK / BASS PHASE</div></div></div>
@@ -890,7 +912,7 @@ const PAGINA_ALIGN = `<!doctype html>
     </ol>
     <p class="en">Put ALIGN on the bass, route the kick to its sidechain, type your e-mail and token, click ATIVAR. Works on 1 computer.</p>
   </section>
-  <footer>InsideStudioSP</footer>
+  ${RODAPE}
 </main>
 <script>
 (function () {
