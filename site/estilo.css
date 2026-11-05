@@ -52,6 +52,7 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .pack-grande .pack-txt { padding:22px 24px 24px; }
 .pack-grande p { font-size:18px; }
 .selo-gratis { background:var(--grn); color:#0b2316; font-weight:900; font-size:12px; padding:2px 9px; border-radius:6px; letter-spacing:.08em; }
+.selo-breve { border:1px solid currentColor; color:var(--cor, var(--grn)); font-weight:900; font-size:12px; padding:1px 8px; border-radius:6px; letter-spacing:.08em; white-space:nowrap; }
 .valor { font-weight:800; }
 
 /* botões */
@@ -73,7 +74,12 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .compra .nota { color:var(--dim); font-size:13px; margin:4px 0 0; }
 .compra .campo { display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--dim); }
 .compra .campo input { font:inherit; font-size:15px; color:var(--ink); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:11px 12px; }
-.compra .campo input:focus { outline:2px solid var(--cor, var(--pur)); outline-offset:1px; }
+.compra .campo select, .compra .campo textarea { font:inherit; font-size:15px; color:var(--ink); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:11px 12px; }
+.compra .campo select option { background:#0d0b14; }
+.compra .campo textarea { resize:vertical; min-height:140px; }
+.form-contato { position:static; max-width:640px; margin-bottom:48px; }
+.isca { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.compra .campo select:focus, .compra .campo textarea:focus, .compra .campo input:focus { outline:2px solid var(--cor, var(--pur)); outline-offset:1px; }
 .ampliar { display:block; width:100%; padding:0; border:0; background:none; cursor:zoom-in; }
 .capa { margin-top:36px; }
 .capa img { border-radius:var(--raio); border:1px solid var(--line); box-shadow:0 30px 80px -30px rgba(0,0,0,.8); max-height:720px; width:auto; margin:0 auto; }

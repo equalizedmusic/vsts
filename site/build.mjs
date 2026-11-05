@@ -2,6 +2,7 @@
 //   /                 loja (VASSOURA e ALIGN em destaque + todos os packs)
 //   /<pack>/          página do pack (plugins, galeria, compra)
 //   /estudio/         o estúdio e o artista (fotos, vídeos, Spotify, YouTube)
+//   /contato/         formulário de contato: POST /contato/enviar (servidor de licenças) ⇒ e-mail para contato@ ⇒ Caixa de entrada do painel
 // Texto bilíngue no mesmo HTML: <span class="pt"> e <span class="en">; o site.js troca pelo atributo lang.
 
 import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
@@ -39,11 +40,11 @@ ${PREVIA ? '<meta name="robots" content="noindex, nofollow">' : ''}
   <nav>
     <a href="${raiz}/#packs">${t('Loja', 'Shop')}</a>
     <a href="${raiz}/estudio/">${t('Estúdio', 'Studio')}</a>
-    <a href="${raiz}/#contato">${t('Contato', 'Contact')}</a>
+    <a href="${raiz}/contato/">${t('Contato', 'Contact')}</a>
     <button class="idioma" type="button" aria-label="Idioma / Language"><span class="pt">EN</span><span class="en">PT</span></button>
   </nav>
 </div></header>
-${PREVIA ? `<div class="previa">${t('Prévia do site novo: preços e pagamento ainda não estão ligados.', 'Preview of the new site: prices and checkout are not live yet.')}</div>` : ''}
+${PREVIA ? `<div class="previa">${t('Prévia do site novo.', 'Preview of the new site.')}</div>` : ''}
 <main>${corpo}</main>
 <footer id="contato" class="rodape"><div class="faixa">
   <div>
@@ -70,9 +71,9 @@ function caixaCompra(p) {
   </div>`;
     // formulário comum (sem JS): o servidor de licenças cria a cobrança e manda para o Mercado Pago ou o PayPal
     if (!temBrl(p) && !temUsd(p)) return `<div class="compra">
-    <div class="preco">${t('Preço em breve', 'Price coming soon')}</div>
-    <button class="bt bt-principal" type="button" disabled aria-disabled="true">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>
-    <button class="bt bt-sec" type="button" disabled aria-disabled="true">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>
+    <div class="preco"><span class="selo-breve">${t('EM BREVE', 'COMING SOON')}</span></div>
+    <p class="nota">${t('Lançamento em breve. Siga o estúdio no Instagram para saber quando chegar.', 'Launching soon. Follow the studio on Instagram to know when it lands.')}</p>
+    <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>`;
     return `<form class="compra" method="post" action="${LIC}/loja/pagar">
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
@@ -88,7 +89,8 @@ function caixaCompra(p) {
 
 function cartaoPack(p, grande = false) {
     const etiqueta = p.gratis ? `<span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span>`
-        : temBrl(p) || temUsd(p) ? `<span class="valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>` : '';
+        : temBrl(p) || temUsd(p) ? `<span class="valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>`
+        : `<span class="selo-breve">${t('EM BREVE', 'SOON')}</span>`;
     return `<a class="pack${grande ? ' pack-grande' : ''}" href="/${p.id}/" style="--cor:${p.cor}">
     <div class="pack-img"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}" loading="lazy"></div>
     <div class="pack-txt">
@@ -190,11 +192,45 @@ function estudio() {
     });
 }
 
+function contato() {
+    return pagina({
+        titulo: 'Contato — InsideStudioSP',
+        descricao: 'Fale com o InsideStudioSP: plugins, produção, mix e master.',
+        corpo: `
+<section class="hero"><div class="faixa">
+  <p class="sobre">${t('CONTATO', 'CONTACT')}</p>
+  <h1>${t('Fale com a gente', 'Get in touch')}</h1>
+  <p class="lead">${t('Dúvida sobre um plugin, licença, produção ou mix: escreva aqui que a resposta chega no seu e-mail.',
+                      'Questions about a plugin, a license, production or mixing: write here and the answer goes to your e-mail.')}</p>
+</div></section>
+<section class="faixa"><form class="compra form-contato" method="post" action="/contato/enviar">
+  <label class="campo">${t('Seu nome', 'Your name')}<input name="nome" required maxlength="80" autocomplete="name"></label>
+  <label class="campo">${t('Seu e-mail', 'Your e-mail')}<input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
+  <label class="campo">${t('Assunto', 'Subject')}<select name="assunto">
+    <option value="Plugins">${esc('Plugins / licença · Plugins / license')}</option>
+    <option value="Estúdio">${esc('Estúdio: produção, mix, master · Studio')}</option>
+    <option value="Outro">${esc('Outro · Other')}</option></select></label>
+  <label class="campo">${t('Mensagem', 'Message')}<textarea name="mensagem" required minlength="5" maxlength="5000" rows="7"></textarea></label>
+  <label class="isca" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off"></label>
+  <button class="bt bt-principal">${t('Enviar mensagem', 'Send message')}</button>
+  <p class="nota">${t('Ou escreva direto para', 'Or write straight to')} <a href="mailto:${SITE.email}">${SITE.email}</a></p>
+</form></section>`,
+    });
+}
+
+const paginaAviso = (titulo, pt, en) => pagina({ titulo: titulo + ' — InsideStudioSP', descricao: '',
+    corpo: `<section class="hero"><div class="faixa"><h1>${titulo === 'Mensagem enviada' ? t('Mensagem enviada', 'Message sent') : t('Não deu para enviar', 'Could not send')}</h1>
+<p class="lead">${t(pt, en)}</p><p><a class="bt bt-sec" href="${titulo === 'Mensagem enviada' ? '/' : '/contato/'}">${titulo === 'Mensagem enviada' ? t('Voltar para a loja', 'Back to the shop') : t('Voltar ao formulário', 'Back to the form')}</a></p></div></section>` });
+
 rmSync(DIST, { recursive: true, force: true });
 const grava = (rel, txt) => { const f = join(DIST, rel); mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, txt); };
 grava('index.html', loja());
 for (const p of PACKS) grava(`${p.id}/index.html`, paginaPack(p));
 grava('estudio/index.html', estudio());
+grava('contato/index.html', contato());
+grava('contato/enviado/index.html', paginaAviso('Mensagem enviada', 'Recebemos sua mensagem. A resposta chega no e-mail que você informou.', 'We got your message. The reply will go to the e-mail you entered.'));
+grava('contato/erro/index.html', paginaAviso('Erro', 'Confira o nome, o e-mail e a mensagem e tente de novo. Se continuar, escreva para contato@insidestudiosp.com.br.', 'Check your name, e-mail and message and try again. If it keeps failing, write to contato@insidestudiosp.com.br.'));
+grava('contato/limite/index.html', paginaAviso('Erro', 'Muitas mensagens seguidas daqui. Tente de novo mais tarde ou escreva para contato@insidestudiosp.com.br.', 'Too many messages in a row. Try again later or write to contato@insidestudiosp.com.br.'));
 grava('404.html', pagina({ titulo: 'InsideStudioSP', descricao: '', corpo: `<section class="hero"><div class="faixa"><h1>404</h1><p class="lead">${t('Página não encontrada.', 'Page not found.')} <a href="/">${t('Voltar para a loja', 'Back to the shop')}</a></p></div></section>` }));
 mkdirSync(join(DIST, 'img'), { recursive: true });
 for (const f of readdirSync(join(RAIZ, 'img'))) copyFileSync(join(RAIZ, 'img', f), join(DIST, 'img', f));

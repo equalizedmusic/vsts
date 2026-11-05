@@ -12,6 +12,7 @@
 //   GET/POST /gratis/align (= /align)   e-mail + Windows/Mac -> token + download do ALIGN, 1 computador
 //   POST /gratis/align/zip   { email, token?, sistema }   zip com o instalador + LEIA-ME com e-mail, token e instruções
 //   POST /gratis/align/reenviar, GET/POST /gratis/align/novo-token   "perdi meu token" por e-mail (só com RESEND_API_KEY)
+//   POST /contato/enviar  formulário de contato do site ⇒ e-mail para contato@ (ver src/contato.js)
 //   POST /email/entrada   webhook do Resend: e-mail que chegou no contato@ (ver src/caixa.js)
 //   POST /loja/pagar, POST /loja/mp/webhook, GET /loja/retorno   venda pelo Mercado Pago e PayPal (ver src/loja.js)
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
@@ -43,6 +44,7 @@ import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './grat
 import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja } from './loja.js';
 import { avisarLicenca } from './avisos.js';
+import { rotaContato } from './contato.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -515,6 +517,7 @@ export default {
             // HEAD também: prévia de link (WhatsApp, Instagram) consulta antes de baixar
             if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
+            if (caminho === '/contato/enviar') return await rotaContato(req, env, url);
             if (caminho === '/email/entrada') return await rotaWebhookEntrada(req, env);
             if (caminho.startsWith('/loja/'))
                 return await rotaLoja(caminho, req, env, url, { normEmail, agora, evento, criarLicenca, paginaSimples });

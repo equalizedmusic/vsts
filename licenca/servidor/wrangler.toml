@@ -18,6 +18,9 @@ routes = [
   { pattern = "insidestudiosp.com.br/painel*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/painel*", zone_name = "insidestudiosp.com.br" },
   { pattern = "insidestudiosp.com.br/admin/*", zone_name = "insidestudiosp.com.br" },
+  # formulário de contato do site (a página /contato/ é do site; só o envio vem para cá)
+  { pattern = "insidestudiosp.com.br/contato/enviar", zone_name = "insidestudiosp.com.br" },
+  { pattern = "www.insidestudiosp.com.br/contato/enviar", zone_name = "insidestudiosp.com.br" },
 ]
 
 [[d1_databases]]

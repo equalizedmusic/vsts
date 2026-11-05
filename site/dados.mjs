@@ -1,5 +1,5 @@
 // Conteúdo do site: packs, plugins e textos. Cada texto vem em [pt, en] (PT primeiro: o site abre em português).
-// preco: vem de licenca/servidor/src/precos.js (o mesmo que o servidor cobra) — { brl, usd } ou null = "preço em breve". gratis: link da página grátis
+// preco: vem de licenca/servidor/src/precos.js (o mesmo que o servidor cobra) — { brl, usd } ou null = selo "EM BREVE". gratis: link da página grátis
 // (direto: true = o link já é o download, sem cadastro nem token — caso da VASSOURA, que não ativa).
 
 import { PRECOS } from '../licenca/servidor/src/precos.js';
