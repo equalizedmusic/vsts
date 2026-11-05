@@ -188,24 +188,38 @@ function estudio() {
      <a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p>
 </div></section>`,
     });
+    const E = SITE.estudio, foto = (img, alt, cls = 'foto-img') => `<button type="button" class="ampliar ${cls}" data-img="/img/${img}.webp"><img src="/img/${img}.webp" alt="${esc(alt)}" loading="lazy"></button>`;
     return pagina({
         titulo: 'Estúdio — InsideStudioSP', raiz: '',
-        descricao: 'InsideStudioSP: estúdio de produção, mix e master em São Paulo.',
+        descricao: 'InsideStudioSP: estúdio de produção, mix e master em São Paulo, do DJ e produtor Equalized.',
         corpo: `
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('ESTÚDIO · SÃO PAULO', 'STUDIO · SÃO PAULO, BRAZIL')}</p>
   <h1>InsideStudioSP</h1>
-  ${SITE.bio ? `<p class="lead">${t(...SITE.bio)}</p>`
-             : `<p class="lead">${t('Produção, mix e master em São Paulo. Ouça abaixo os lançamentos do Equalized.', 'Production, mixing and mastering in São Paulo, Brazil. Listen to Equalized releases below.')}</p>`}
+  <p class="lead">${E ? t(...E.lead) : t('Produção, mix e master em São Paulo. Ouça abaixo os lançamentos do Equalized.', 'Production, mixing and mastering in São Paulo, Brazil. Listen to Equalized releases below.')}</p>
 </div></section>
+${E ? `<section class="faixa duo">
+  <div><h2 class="secao">${t('O estúdio', 'The studio')}</h2>
+  ${E.texto.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}
+  <p><a class="bt bt-sec" href="/contato/">${t('Orçamento de produção, mix ou master', 'Ask for a production, mix or master quote')}</a></p></div>
+  <div class="fotos-estudio">${(E.fotos || []).map(([img, pt, en]) => foto(img, pt)).join('')}</div>
+</section>` : ''}
+${SITE.bio ? `<section class="faixa duo duo-artista">
+  ${SITE.retrato ? `<div>${foto(SITE.retrato, 'Equalized', 'foto-img retrato')}</div>` : ''}
+  <div><p class="sobre">${t('O ARTISTA', 'THE ARTIST')}</p>
+  <h2 class="logo-artista"><img src="/img/equalized-logo.webp" alt="Equalized" width="900" height="213"></h2>
+  ${SITE.bio.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}</div>
+</section>` : ''}
 <section class="faixa artista">
-  <div><h2 class="secao">${t('O artista', 'The artist')}</h2>
+  <div><h2 class="secao">${t('Ouça', 'Listen')}</h2>
   ${SITE.lancamento ? `<p class="sobre">${t('LANÇAMENTO', 'NEW RELEASE')}</p>
   <p><a class="bt bt-principal" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">Equalized — ${esc(SITE.lancamento.titulo)}</a></p>` : ''}
   <p class="links-artista">${(SITE.links || []).map(([nome, url, ic]) => `<a class="ico ico-${ic}" href="${esc(url)}" rel="noopener" target="_blank" aria-label="${esc(nome)}" title="${esc(nome)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONES[ic]}"/></svg></a>`).join('\n  ')}</p>
   <p><a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p></div>
   ${SITE.spotify ? `<div>${spotify}</div>` : ''}
 </section>
+${SITE.galeria?.length ? `<section class="faixa"><h2 class="secao">${t('Fotos', 'Photos')}</h2>
+  <div class="grade-fotos">${SITE.galeria.map((img) => foto(img, 'Equalized')).join('')}</div></section>` : ''}
 ${SITE.youtube ? `<section class="faixa"><h2 class="secao">${t('Vídeos', 'Videos')}</h2><div class="video">${youtube}</div></section>` : ''}`,
     });
 }

@@ -114,6 +114,16 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .ico-spotify { color:#1ed760; }
 .ico-soundcloud { color:#ff5500; }
 .ico-beatport { color:#01ff95; }
+.duo { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+.duo p { color:var(--dim); line-height:1.7; }
+.duo-artista { grid-template-columns:2fr 3fr; }
+.fotos-estudio { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.foto-img { border-radius:var(--raio); overflow:hidden; border:1px solid var(--line); }
+.foto-img img { display:block; width:100%; aspect-ratio:4/5; object-fit:cover; transition:transform .3s; }
+.foto-img:hover img { transform:scale(1.03); }
+.retrato img { aspect-ratio:2/3; }
+.logo-artista { margin:4px 0 20px; }
+.logo-artista img { display:block; width:min(360px, 100%); height:auto; }
 .video { aspect-ratio:16/9; }
 .video iframe, .video .vaga { width:100%; height:100%; border:0; border-radius:var(--raio); }
 
@@ -134,7 +144,7 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
           color:var(--ink); font-size:20px; cursor:pointer; }
 
 @media (max-width:860px) {
-  .grade-destaque, .pack-hero-grade, .artista, .como ol { grid-template-columns:1fr; }
+  .grade-destaque, .pack-hero-grade, .artista, .como ol, .duo, .duo-artista { grid-template-columns:1fr; }
   .compra { position:static; }
   .grade-fotos { grid-template-columns:1fr 1fr; }
   .chamada-estudio { flex-direction:column; align-items:flex-start; }

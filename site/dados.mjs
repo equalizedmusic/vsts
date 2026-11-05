@@ -16,6 +16,28 @@ export const SITE = {
     spotify: 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO',
     youtube: '',          // por ora fora, a pedido dele (05/11). Quando entrar: id de um vídeo para o player
     lancamento: { titulo: "Summer of '89", url: 'https://bluetunesrecords.lnk.to/summerof89' },
+    // Página Estúdio (05/11): texto do estúdio + bio tirada do release dele (Google Docs). Cada parágrafo = [pt, en].
+    estudio: {
+        lead: ['Estúdio de produção, mix e master em São Paulo, comandado pelo DJ e produtor Rogério Cardoso, o Equalized.',
+               'Production, mixing and mastering studio in São Paulo, Brazil, run by DJ and producer Rogério Cardoso, aka Equalized.'],
+        texto: [
+            ['É aqui que nascem as faixas do Equalized e os plugins da loja. Sala tratada, monitores de referência, sintetizador analógico, controladores e CDJs ficam no mesmo ambiente: dá para compor, mixar e testar a faixa como na pista, sem sair da sala.',
+             'This is where the Equalized tracks and the plugins in the shop are made. Treated room, reference monitors, analog synth, controllers and CDJs all in one place: you can write, mix and test the track the way it plays on the dancefloor, without leaving the room.'],
+            ['Produção, mix e master de música eletrônica, do Psytrance ao Techno, e mentoria para quem está construindo o próprio som.',
+             'Production, mixing and mastering of electronic music, from Psytrance to Techno, plus mentoring for artists shaping their own sound.'],
+        ],
+        fotos: [['st-mesa', 'A mesa de produção', 'The production desk'], ['st-sala', 'A sala: produção de um lado, CDJs do outro', 'The room: production on one side, CDJs on the other']],
+    },
+    bio: [
+        ['Equalized é o projeto do DJ e produtor paulistano Rogério Cardoso, com mais de 20 anos dedicados à música eletrônica. Nome de destaque na cena Psytrance, seu som transita entre o Techno e o Full On, misturando melodias emocionais, grooves hipnóticos e uma forte identidade progressiva.',
+         'Equalized is the project of São Paulo-born DJ and producer Rogério Cardoso, with more than 20 years devoted to electronic music. A standout name in the Psytrance scene, his sound moves freely between Techno and Full On, blending emotional melodies, hypnotic grooves and a strong progressive identity.'],
+        ['Inspirado por artistas como Neelix, Astrix, Liquid Soul e Captain Hook, conquistou reconhecimento internacional, com destaque para o single “Mr. Rabbit”, que chegou ao Top 6 do chart de Psytrance da Beatport.',
+         'Inspired by artists such as Neelix, Astrix, Liquid Soul and Captain Hook, he has earned international recognition, including the single “Mr. Rabbit”, which reached the Top 6 of the Beatport Psytrance chart.'],
+        ['Também é mentor de produção musical e contribuiu diretamente para o desenvolvimento de projetos como Tiago Lutz (Sonic Massala), João Penna (Penna), DJ Mel Rose e Guilherme Araújo (At Work), entre outros talentos em ascensão.',
+         'He is also a music production mentor and has directly helped develop projects such as Tiago Lutz (Sonic Massala), João Penna (Penna), DJ Mel Rose and Guilherme Araújo (At Work), among other rising talents.'],
+    ],
+    retrato: 'eq-retrato',
+    galeria: ['eq-mao', 'eq-palco', 'eq-synth', 'eq-praia', 'eq-sorriso', 'eq-holi1'],
     // [nome, url, ícone em icones.mjs]. Linktree saiu a pedido dele (05/11).
     links: [
         ['Instagram', 'https://instagram.com/equalizedmusic', 'instagram'],
