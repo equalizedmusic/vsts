@@ -18,6 +18,7 @@
 //   - O sistema escolhido vai na nota da licença (aparece e é buscável no painel).
 
 import { zipStream } from './zip.js';
+import { emailLigado, enviarEmail, CONTATO } from './email.js';
 
 const POR_IP_DIA = 8;
 const TOTAL_DIA = 300;
@@ -36,7 +37,7 @@ function json(obj, status = 200) {
 export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const cfg = PAGINAS[PACOTE];
     // form-action 'self': o botão de download do ALIGN é um formulário (POST /gratis/align/zip)
-    if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN : PAGINA, {
+    if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN.replace('<!--REENVIO-->', emailLigado(env) ? REENVIO : '') : PAGINA, {
         headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
                    'content-security-policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action ${PACOTE === 'align' ? "'self'" : "'none'"}; frame-ancestors 'none'` },
     });
@@ -65,7 +66,7 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const lista = doEmail.results || [];
     if (lista.some((l) => l.pacote === PACOTE)) {
         await h.evento(env, null, 'gratis_ja', email, ip);
-        return json({ ok: true, novo: false, ja_tinha: true, baixar });
+        return json({ ok: true, novo: false, ja_tinha: true, baixar, reenvio: PACOTE === 'align' && emailLigado(env) });
     }
     const token = lista.length ? null : h.novoToken();
     const hash = lista.length ? lista[0].token_hash : await h.sha256Hex('ISP' + h.normToken(token));
@@ -74,7 +75,122 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
         "INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, nota, criada_em) VALUES (?, ?, ?, ?, 'gratis', ?, ?)")
         .bind(email, PACOTE, hash, cfg.maquinas, nota, h.agora()).run();
     await h.evento(env, r.meta.last_row_id, 'gratis', lista.length ? 'mesmo token' : 'novo', ip);
-    return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar });
+    const enviado = PACOTE === 'align' && await emailAlign(env, url, h, { email, token, sistema, assunto: 'Sua licença do ALIGN · Your ALIGN license' });
+    if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
+    return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar, email_enviado: enviado, reenvio: PACOTE === 'align' && emailLigado(env) });
+}
+
+// e-mail com o mesmo conteúdo do LEIA-ME do zip + o link direto do instalador (o zip é POST com o token)
+async function emailAlign(env, url, h, { email, token, sistema, assunto, aviso = [] }) {
+    if (!emailLigado(env)) return false;
+    let inst = null;
+    try { inst = await h.instalador(env, 'align', sistema); } catch (e) { console.error('email align: instalador', e); }
+    const link = `${url.origin}/baixar/align/${sistema}`;
+    const texto = [
+        ...aviso,
+        ...leiaMeAlign({ email, token, sistema, nome: inst?.nome || (sistema === 'mac' ? 'ALIGN.dmg' : 'ALIGN.exe'),
+                         versao: inst?.versao, sha256: inst?.sha256, porEmail: true, link }),
+    ].join('\r\n');
+    return enviarEmail(env, { para: email, assunto, texto });
+}
+
+// ---------------- "Não recebi / perdi meu token" (só com o e-mail ligado) ----------------
+// O token fica guardado só como hash, então "reenviar" é gerar um token NOVO. Para ninguém trocar o token de outra
+// pessoa digitando o e-mail dela, a troca só acontece pelo link que vai PARA o e-mail (vale 1 h, uma vez só), e o
+// link abre uma página com botão (POST): leitor de link do provedor de e-mail que abre o GET não troca nada.
+//   POST /gratis/align/reenviar  { email, site }  -> sempre a mesma resposta (não revela se o e-mail tem cadastro)
+//   GET  /gratis/align/novo-token?c=…             -> página com o botão GERAR NOVO TOKEN
+//   POST /gratis/align/novo-token  c=…            -> troca o token do e-mail (todos os pacotes), mostra e manda por e-mail
+
+const REENVIO_VALIDADE = 3600;
+const REENVIO_POR_EMAIL_DIA = 3, REENVIO_POR_IP_DIA = 10, REENVIO_INTERVALO = 120;
+
+export async function rotaTokenAlign(req, env, url, h, acao) {
+    if (!emailLigado(env)) return h.paginaSimples('Indisponível', 'Chame a InsideStudioSP no direct do Instagram.', 404);
+    const ip = req.headers.get('cf-connecting-ip') || '';
+    if (acao === 'reenviar') {
+        if (req.method !== 'POST') return json({ ok: false, mensagem: 'Método não aceito.' }, 405);
+        let corpo;
+        try { corpo = await req.json(); } catch { return json({ ok: false, mensagem: 'Pedido inválido.' }, 400); }
+        const email = h.normEmail(corpo.email);
+        if (email.length > 120 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, mensagem: 'Confira o e-mail.' }, 400);
+        const pronto = json({ ok: true, mensagem: 'Se este e-mail tiver o ALIGN, o link chega em alguns minutos (olhe também o spam e Promoções). O link vale por 1 hora.' });
+        if (corpo.site) return pronto;
+        const desde = h.agora() - 86400;
+        const nIp = await env.DB.prepare("SELECT COUNT(*) AS n FROM eventos WHERE tipo = 'reenvio_pedido' AND ip = ? AND quando > ?").bind(ip, desde).first();
+        if ((nIp?.n || 0) >= REENVIO_POR_IP_DIA) return json({ ok: false, mensagem: 'Muitos pedidos agora. Tente de novo amanhã ou chame a gente no direct.' }, 429);
+        const lic = await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND pacote = 'align'").bind(email).first();
+        if (!lic) { await h.evento(env, null, 'reenvio_pedido', 'sem ALIGN', ip); return pronto; }
+        const ult = await env.DB.prepare("SELECT COUNT(*) AS n, MAX(quando) AS q FROM eventos WHERE tipo = 'reenvio_pedido' AND licenca_id = ? AND quando > ?")
+            .bind(lic.id, desde).first();
+        if ((ult?.n || 0) >= REENVIO_POR_EMAIL_DIA || (ult?.q && h.agora() - ult.q < REENVIO_INTERVALO)) return pronto;
+        const c = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+        await h.evento(env, lic.id, 'reenvio_pedido', await h.sha256Hex('REENVIO' + c), ip);
+        const link = `${url.origin}/gratis/align/novo-token?c=${c}`;
+        await enviarEmail(env, { para: email, assunto: 'Novo token do ALIGN · New ALIGN token', texto: [
+            'Alguém (provavelmente você) pediu um token novo do ALIGN para este e-mail.',
+            'Para gerar o token novo, abra o link abaixo e clique em GERAR NOVO TOKEN (vale por 1 hora, uma vez só):',
+            '', link, '',
+            'Atenção: o token antigo deixa de valer. Computador já ativado precisa ser ativado de novo com o token novo.',
+            'Não pediu? Ignore este e-mail: nada muda.',
+            'Dúvidas? Responda este e-mail ou escreva para ' + CONTATO + '.',
+            '', '==================================== ENGLISH ====================================', '',
+            'Someone (probably you) asked for a new ALIGN token for this e-mail.',
+            'To get the new token, open the link below and click GERAR NOVO TOKEN (valid for 1 hour, once):',
+            '', link, '',
+            'Note: the old token stops working. A computer already activated must be activated again with the new token.',
+            'Did not ask for it? Ignore this e-mail: nothing changes.',
+            'Questions? Reply to this e-mail or write to ' + CONTATO + '.',
+            '', 'InsideStudioSP',
+        ].join('\r\n') });
+        return pronto;
+    }
+
+    // novo-token
+    const c = req.method === 'POST' ? String((await req.formData().catch(() => null))?.get('c') || '') : String(url.searchParams.get('c') || '');
+    const expirado = () => h.paginaSimples('Link vencido', 'Este link já foi usado ou passou de 1 hora. Volte à página do ALIGN e peça de novo em "Perdi meu token". · This link was used or expired.', 410);
+    if (!/^[0-9a-f]{48}$/.test(c)) return expirado();
+    const hc = await h.sha256Hex('REENVIO' + c);
+    const ped = await env.DB.prepare("SELECT licenca_id FROM eventos WHERE tipo = 'reenvio_pedido' AND detalhe = ? AND quando > ?")
+        .bind(hc, h.agora() - REENVIO_VALIDADE).first();
+    const usado = ped && await env.DB.prepare("SELECT id FROM eventos WHERE tipo = 'reenvio_usado' AND detalhe = ?").bind(hc).first();
+    const lic = ped && !usado && await env.DB.prepare("SELECT id, email, nota FROM licencas WHERE id = ? AND pacote = 'align'").bind(ped.licenca_id).first();
+    if (!lic) return expirado();
+    if (req.method !== 'POST') return paginaToken({ c });
+
+    await h.evento(env, lic.id, 'reenvio_usado', hc, ip);
+    const token = h.novoToken();
+    await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await h.sha256Hex('ISP' + h.normToken(token)), lic.email).run();
+    await h.evento(env, lic.id, 'novo_token', 'pelo e-mail (perdi meu token)', ip);
+    const sistema = /Mac$/.test(lic.nota || '') ? 'mac' : 'win';
+    await emailAlign(env, url, h, { email: lic.email, token, sistema, assunto: 'Seu novo token do ALIGN · Your new ALIGN token',
+        aviso: ['O token antigo deixou de valer. · The old token no longer works.', ''] });
+    return paginaToken({ email: lic.email, token, sistema });
+}
+
+function paginaToken({ c, email, token, sistema }) {
+    const esc = (s) => String(s).replace(/[&<>"]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]));
+    const corpo = c
+        ? `<h2>Gerar novo token do ALIGN</h2>
+<p>O token antigo deixa de valer. Computador já ativado precisa ser ativado de novo com o token novo.</p>
+<p class="en">The old token stops working. A computer already activated must be activated again with the new token.</p>
+<form method="post"><input type="hidden" name="c" value="${esc(c)}"><button>GERAR NOVO TOKEN</button></form>`
+        : `<h2>Pronto! Seu novo token</h2>
+<p>E-mail: <b>${esc(email)}</b></p><div class="token">${esc(token)}</div>
+<p>Também mandamos para o seu e-mail. · We also sent it to your e-mail.</p>
+<form method="post" action="/gratis/align/zip"><input type="hidden" name="email" value="${esc(email)}"><input type="hidden" name="token" value="${esc(token)}">
+<input type="hidden" name="sistema" value="${sistema}"><button>BAIXAR ALIGN PARA ${sistema === 'mac' ? 'MAC' : 'WINDOWS'}</button></form>
+<p class="en">O zip traz o instalador e o LEIA-ME com o token. · The zip has the installer and a READ ME with your token.</p>`;
+    return new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALIGN · InsideStudioSP</title><style>
+body { margin:0; background:#100e17; color:#eeecf6; font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+main { max-width:520px; margin:0 auto; padding:36px 20px; } .en { color:#8d8aa3; font-size:14px; font-style:italic; }
+.token { font:700 19px Consolas, "SF Mono", monospace; border:2px dashed #a78bfa; color:#a78bfa; border-radius:10px; padding:14px; text-align:center; word-break:break-all; user-select:all; }
+button { width:100%; padding:15px; margin-top:16px; border:0; border-radius:12px; background:#34d399; color:#0b2316; font:900 17px "Segoe UI", system-ui, sans-serif; cursor:pointer; }
+</style><main>${corpo}</main></html>`, {
+        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer',
+                   'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" },
+    });
 }
 
 // ---------------- zip do ALIGN: instalador + LEIA-ME gerado na hora ----------------
@@ -123,8 +239,10 @@ export async function rotaZipAlign(req, env, h) {
     });
 }
 
-function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
+// porEmail: o e-mail leva o link direto do instalador (sem zip), então os passos falam do arquivo e não do zip
+function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = false, link = '' }) {
     const mac = sistema === 'mac';
+    const pt = porEmail ? 'Guarde este e-mail' : 'Guarde este arquivo', en = porEmail ? 'Keep this e-mail' : 'Keep this file';
     const L = [
         'ALIGN · InsideStudioSP' + (versao ? ' · v' + versao : '') + ' · ' + (mac ? 'Mac' : 'Windows'),
         'Kick / bass phase aligner',
@@ -137,23 +255,25 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
         '  E-mail: ' + email,
         token ? '  Token:  ' + token
               : '  Token:  use o token que você já recebeu da InsideStudioSP (o mesmo deste e-mail).',
-        '  Licença para 1 computador. Guarde este arquivo: o token não aparece de novo.',
+        '  Licença para 1 computador. ' + pt + ': o token não aparece de novo.',
         '',
         '1. INSTALAR',
+        ...(link ? ['  Baixe o instalador: ' + link] : []),
     ];
     if (mac) L.push(
-        '  1) Abra o zip (o Safari já costuma abrir sozinho) e dê dois cliques em ' + nome + '.',
+        porEmail ? '  1) Dê dois cliques em ' + nome + ' (na pasta Downloads).'
+                 : '  1) Abra o zip (o Safari já costuma abrir sozinho) e dê dois cliques em ' + nome + '.',
         '  2) Na janela que abrir, dê dois cliques em "Instalar InsideStudioSP Align.pkg" e siga o instalador.',
         '     Os plugins vão para as pastas padrão do Mac (VST3 e AU em /Library/Audio/Plug-Ins).',
         '  3) Feche e abra de novo o seu DAW. No Logic, se o ALIGN não aparecer: Logic Pro > Ajustes >',
         '     Plug-in Manager > "Redefinir e verificar".',
     );
     else L.push(
-        '  1) Extraia o zip: botão direito no arquivo > "Extrair tudo..." > Extrair.',
-        '     Não rode o instalador de dentro do zip.',
-        '  2) Rode ' + nome + ' e siga o instalador. A pasta já vem certa',
+        ...(porEmail ? [] : ['  1) Extraia o zip: botão direito no arquivo > "Extrair tudo..." > Extrair.',
+                             '     Não rode o instalador de dentro do zip.']),
+        '  ' + (porEmail ? 1 : 2) + ') Rode ' + nome + ' e siga o instalador. A pasta já vem certa',
         '     (C:\\Program Files\\Common Files\\VST3, onde o Ableton e os outros DAWs procuram).',
-        '  3) Feche e abra de novo o seu DAW (se o ALIGN não aparecer, mande o DAW procurar plugins de novo).',
+        '  ' + (porEmail ? 2 : 3) + ') Feche e abra de novo o seu DAW (se o ALIGN não aparecer, mande o DAW procurar plugins de novo).',
     );
     L.push(
         '',
@@ -186,8 +306,10 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
     else L.push(
         '  a) Tela azul "O Windows protegeu o computador" (SmartScreen):',
         '     clique em "Mais informações" e depois em "Executar assim mesmo".',
-        '  b) Para o aviso nem aparecer: ANTES de extrair, botão direito no zip > Propriedades >',
-        '     marque "Desbloquear" (embaixo, em Segurança) > OK. Depois extraia e rode o instalador.',
+        porEmail ? '  b) Para o aviso nem aparecer: botão direito no ' + nome + ' > Propriedades >'
+                 : '  b) Para o aviso nem aparecer: ANTES de extrair, botão direito no zip > Propriedades >',
+        porEmail ? '     marque "Desbloquear" (embaixo, em Segurança) > OK. Depois rode o instalador.'
+                 : '     marque "Desbloquear" (embaixo, em Segurança) > OK. Depois extraia e rode o instalador.',
         '  c) O navegador barrou o download (Chrome/Edge: "pode ser perigoso" / "não é baixado com frequência"):',
         '     abra a lista de downloads, clique nos "..." do arquivo > Manter > Manter assim mesmo.',
         '  d) O Microsoft Defender apagou o arquivo ou disse "Ameaça encontrada":',
@@ -205,7 +327,8 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
     );
     L.push(
         '',
-        '  Dúvidas? Chame a InsideStudioSP no direct do Instagram.',
+        '  Dúvidas ou dificuldade? ' + (porEmail ? 'Responda este e-mail ou escreva' : 'Escreva') + ' para ' + CONTATO + '.',
+        ...(porEmail ? ['  Não pediu esta licença? Ignore este e-mail.'] : []),
         '',
         '',
         '===================================== ENGLISH =====================================',
@@ -214,23 +337,25 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
         '  E-mail: ' + email,
         token ? '  Token:  ' + token
               : '  Token:  use the token you already received from InsideStudioSP (same one for this e-mail).',
-        '  License for 1 computer. Keep this file: the token is not shown again.',
+        '  License for 1 computer. ' + en + ': the token is not shown again.',
         '',
         '1. INSTALL',
+        ...(link ? ['  Download the installer: ' + link] : []),
     );
     if (mac) L.push(
-        '  1) Open the zip (Safari usually opens it by itself) and double-click ' + nome + '.',
+        porEmail ? '  1) Double-click ' + nome + ' (in your Downloads folder).'
+                 : '  1) Open the zip (Safari usually opens it by itself) and double-click ' + nome + '.',
         '  2) In the window that opens, double-click "Instalar InsideStudioSP Align.pkg" and follow the installer.',
         '     The plugins go to the standard Mac folders (VST3 and AU in /Library/Audio/Plug-Ins).',
         '  3) Close and reopen your DAW. In Logic, if ALIGN does not show up: Logic Pro > Settings >',
         '     Plug-in Manager > "Reset & Rescan Selection".',
     );
     else L.push(
-        '  1) Extract the zip: right-click the file > "Extract All..." > Extract.',
-        '     Do not run the installer from inside the zip.',
-        '  2) Run ' + nome + ' and follow the installer. The folder is already right',
+        ...(porEmail ? [] : ['  1) Extract the zip: right-click the file > "Extract All..." > Extract.',
+                             '     Do not run the installer from inside the zip.']),
+        '  ' + (porEmail ? 1 : 2) + ') Run ' + nome + ' and follow the installer. The folder is already right',
         '     (C:\\Program Files\\Common Files\\VST3, where Ableton and the other DAWs look).',
-        '  3) Close and reopen your DAW (if ALIGN does not show up, rescan your plugins).',
+        '  ' + (porEmail ? 2 : 3) + ') Close and reopen your DAW (if ALIGN does not show up, rescan your plugins).',
     );
     L.push(
         '',
@@ -263,8 +388,10 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
     else L.push(
         '  a) Blue screen "Windows protected your PC" (SmartScreen):',
         '     click "More info" and then "Run anyway".',
-        '  b) To avoid the warning: BEFORE extracting, right-click the zip > Properties >',
-        '     tick "Unblock" (bottom, under Security) > OK. Then extract and run the installer.',
+        porEmail ? '  b) To avoid the warning: right-click ' + nome + ' > Properties >'
+                 : '  b) To avoid the warning: BEFORE extracting, right-click the zip > Properties >',
+        porEmail ? '     tick "Unblock" (bottom, under Security) > OK. Then run the installer.'
+                 : '     tick "Unblock" (bottom, under Security) > OK. Then extract and run the installer.',
         '  c) The browser blocked the download (Chrome/Edge: "may be dangerous" / "not commonly downloaded"):',
         '     open the downloads list, click the "..." of the file > Keep > Keep anyway.',
         '  d) Microsoft Defender deleted the file or said "Threat found":',
@@ -280,7 +407,8 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
         mac ? '     In Terminal: shasum -a 256 ~/Downloads/' + nome
             : '     In PowerShell, in the file folder: Get-FileHash .\\' + nome,
     );
-    L.push('', '  Questions? Message InsideStudioSP on Instagram.', '');
+    L.push('', '  Questions or trouble? ' + (porEmail ? 'Reply to this e-mail or write' : 'Write') + ' to ' + CONTATO + '.',
+        ...(porEmail ? ['  Did not ask for this license? Just ignore this e-mail.'] : []), '');
     return L;
 }
 
@@ -397,6 +525,11 @@ const PAGINA = `<!doctype html>
 </script>
 </body></html>`;
 
+// entra no lugar de <!--REENVIO--> da página do ALIGN só quando o e-mail está ligado
+const REENVIO = `    <p style="margin-top:14px;font-size:14px">Já se cadastrou e não recebeu ou perdeu o token? <a href="#" id="perdi" style="color:var(--pur)">Receber um token novo no e-mail</a>
+      <span class="en">· lost your token?</span></p>
+    <p id="msgPerdi" style="font-size:14px"></p>`;
+
 // ALIGN: escolhe o sistema, recebe o token e só o link daquele sistema; vale para 1 computador
 const PAGINA_ALIGN = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -461,6 +594,7 @@ const PAGINA_ALIGN = `<!doctype html>
       <div class="erro" id="erro"></div>
     </form>
     <p class="en" style="margin-top:8px">Licença para 1 computador. O e-mail é só para a sua licença. · 1 computer. Your e-mail is used only for your license.</p>
+<!--REENVIO-->
   </section>
 
   <section class="card" id="passo2" hidden>
@@ -473,6 +607,7 @@ const PAGINA_ALIGN = `<!doctype html>
     <div id="semToken" hidden>
       <p id="txtSem"></p>
     </div>
+    <div class="aviso" id="mandado" hidden>Também mandamos o token e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções). <span class="en">We also e-mailed it to you (check spam).</span></div>
     <span class="rot">1. Baixe e instale <span class="en">· download and install</span></span>
     <form id="fz" method="post" action="/gratis/align/zip">
       <input type="hidden" name="email" id="zEmail"><input type="hidden" name="token" id="zToken"><input type="hidden" name="sistema" id="zSo">
@@ -525,13 +660,31 @@ const PAGINA_ALIGN = `<!doctype html>
         if (j.token) { $('token').textContent = j.token; $('comToken').hidden = false; }
         else {
           $('txtSem').innerHTML = j.ja_tinha
-            ? '<b>Este e-mail já recebeu o ALIGN.</b> Use o token que apareceu da primeira vez. Perdeu? Chame a gente no direct.'
-            : '<b>Pronto! O ALIGN entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.';
+            ? '<b>Este e-mail já recebeu o ALIGN.</b> Use o token que apareceu da primeira vez. ' + (j.reenvio
+                ? 'Perdeu? <a href="#" id="perdi2" style="color:var(--pur)">Receber um token novo no e-mail</a>.' : 'Perdeu? Chame a gente no direct.')
+            : '<b>Pronto! O ALIGN entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.' + (j.reenvio
+                ? ' Perdeu? <a href="#" id="perdi2" style="color:var(--pur)">Receber um token novo no e-mail</a>.' : '');
           $('semToken').hidden = false;
+          if ($('perdi2')) $('perdi2').addEventListener('click', function (ev) { ev.preventDefault(); reenviar(email, $('txtSem')); });
         }
+        if (j.email_enviado) { $('emailMandado').textContent = email.toLowerCase(); $('mandado').hidden = false; }
         $('passo1').hidden = true; $('passo2').hidden = false; window.scrollTo(0, 0);
       })
       .catch(function () { $('ir').disabled = false; $('ir').textContent = 'GERAR MINHA LICENÇA'; $('erro').textContent = 'Sem conexão. Tente de novo.'; });
+  });
+  function reenviar(email, onde) {
+    onde.textContent = 'Enviando…';
+    fetch('/gratis/align/reenviar', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: email, site: $('site').value }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { onde.textContent = j.mensagem || 'Não deu certo. Tente de novo.'; })
+      .catch(function () { onde.textContent = 'Sem conexão. Tente de novo.'; });
+  }
+  if ($('perdi')) $('perdi').addEventListener('click', function (ev) {
+    ev.preventDefault();
+    var email = $('email').value.trim();
+    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Digite acima o e-mail que você cadastrou e clique de novo.'; $('email').focus(); return; }
+    $('erro').textContent = ''; reenviar(email, $('msgPerdi'));
   });
   $('copiar').addEventListener('click', function () {
     var t = $('token').textContent;
