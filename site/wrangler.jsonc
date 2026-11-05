@@ -1,0 +1,7 @@
+// Site estático (só arquivos, sem código de servidor). Publicar: node build.mjs && npx wrangler deploy --config site/wrangler.jsonc
+// ATENÇÃO: rodar SEMPRE com --config deste arquivo; dentro de licenca/servidor o wrangler publica o servidor de licenças.
+{
+  "name": "insidestudiosp-site",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./dist", "not_found_handling": "404-page", "html_handling": "auto-trailing-slash" }
+}
