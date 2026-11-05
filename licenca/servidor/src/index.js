@@ -467,11 +467,20 @@ async function rotaAdmin(caminho, req, env, url) {
     return falha('pedido_invalido', 404);
 }
 
+// a página do ALIGN mora no domínio do estúdio: as rotas de wrangler.toml entregam /align*,
+// /gratis/align/* e /baixar/align/* do insidestudiosp.com.br para este Worker (o resto do domínio é o site)
+const ALIGN_OFICIAL = 'https://insidestudiosp.com.br/align/';
+
 export default {
     async fetch(req, env) {
         const url = new URL(req.url);
         const caminho = url.pathname.replace(/\/+$/, '');
         try {
+            // link antigo da página do ALIGN (workers.dev) ⇒ endereço oficial no domínio do estúdio.
+            // Só GET/HEAD: os POST da página (cadastro, reenvio) continuam funcionando em qualquer host.
+            if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
+                && (caminho === '/align' || caminho === '/gratis/align'))
+                return Response.redirect(ALIGN_OFICIAL, 302);
             if (req.method === 'POST' && caminho === '/v1/ativar') return await rotaPlugin('ativar', req, env);
             if (req.method === 'POST' && caminho === '/v1/validar') return await rotaPlugin('validar', req, env);
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
