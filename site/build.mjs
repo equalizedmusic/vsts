@@ -194,11 +194,16 @@ function estudio() {
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('ESTÚDIO · SÃO PAULO', 'STUDIO · SÃO PAULO, BRAZIL')}</p>
   <h1>InsideStudioSP</h1>
-  ${SITE.bio ? `<p class="lead">${t(...SITE.bio)}</p>` : ''}
+  ${SITE.bio ? `<p class="lead">${t(...SITE.bio)}</p>`
+             : `<p class="lead">${t('Produção, mix e master em São Paulo. Ouça abaixo os lançamentos do Equalized.', 'Production, mixing and mastering in São Paulo, Brazil. Listen to Equalized releases below.')}</p>`}
 </div></section>
 <section class="faixa artista">
   <div><h2 class="secao">${t('O artista', 'The artist')}</h2>
-  <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a></div>
+  ${SITE.lancamento ? `<p class="sobre">${t('LANÇAMENTO', 'NEW RELEASE')}</p>
+  <p><a class="bt bt-principal" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">Equalized — ${esc(SITE.lancamento.titulo)}</a></p>` : ''}
+  <p class="links-artista"><a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram</a>
+  ${(SITE.links || []).map(([nome, url]) => `<a class="bt bt-sec" href="${esc(url)}" rel="noopener" target="_blank">${esc(nome)}</a>`).join('\n  ')}</p>
+  <p><a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p></div>
   ${SITE.spotify ? `<div>${spotify}</div>` : ''}
 </section>
 ${SITE.youtube ? `<section class="faixa"><h2 class="secao">${t('Vídeos', 'Videos')}</h2><div class="video">${youtube}</div></section>` : ''}`,

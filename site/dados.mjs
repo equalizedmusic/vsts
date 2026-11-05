@@ -12,9 +12,16 @@ export const SITE = {
     nome: 'InsideStudioSP',
     instagram: 'https://instagram.com/equalizedmusic',
     email: 'contato@insidestudiosp.com.br',
-    // Preencher quando ele mandar: link do artista no Spotify e do canal no YouTube.
-    spotify: '',          // ex.: https://open.spotify.com/artist/XXXX
-    youtube: '',          // ex.: https://www.youtube.com/@XXXX (ou id de um vídeo para o player)
+    // Links do artista tirados do linktr.ee/equalizedmusic (05/11/2026), sem os parâmetros de rastreio.
+    spotify: 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO',
+    youtube: '',          // por ora fora, a pedido dele (05/11). Quando entrar: id de um vídeo para o player
+    lancamento: { titulo: "Summer of '89", url: 'https://bluetunesrecords.lnk.to/summerof89' },
+    links: [
+        ['Spotify', 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO'],
+        ['SoundCloud', 'https://soundcloud.com/equalizedmusic'],
+        ['Beatport', 'https://www.beatport.com/artist/equalized/647307'],
+        ['Linktree', 'https://linktr.ee/equalizedmusic'],
+    ],
 };
 
 export const PACKS = [
