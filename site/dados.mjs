@@ -1,8 +1,10 @@
 // Conteúdo do site: packs, plugins e textos. Cada texto vem em [pt, en] (PT primeiro: o site abre em português).
-// preco: null = "preço em breve" (botões de compra desligados); número = reais. gratis: link da página grátis
+// preco: vem de licenca/servidor/src/precos.js (o mesmo que o servidor cobra) — { brl, usd } ou null = "preço em breve". gratis: link da página grátis
 // (direto: true = o link já é o download, sem cadastro nem token — caso da VASSOURA, que não ativa).
 
-const LIC = 'https://isp-licencas.insidestudiosp.workers.dev';
+import { PRECOS } from '../licenca/servidor/src/precos.js';
+
+export const LIC = 'https://isp-licencas.insidestudiosp.workers.dev';
 
 export const SITE = {
     nome: 'InsideStudioSP',
@@ -147,3 +149,6 @@ export const PACKS = [
         plugins: [['groovador', 'GROOVADOR', '', '']],
     },
 ];
+
+// preço de cada pack = o do servidor (brl/usd null = em breve)
+for (const p of PACKS) p.preco = PRECOS[p.id] || null;

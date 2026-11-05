@@ -7,7 +7,7 @@
 import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SITE, PACKS } from './dados.mjs';
+import { SITE, PACKS, LIC } from './dados.mjs';
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
 const DIST = join(RAIZ, 'dist');
@@ -16,6 +16,10 @@ const PREVIA = process.env.PREVIA !== '0';   // prévia: noindex até virar o si
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const t = (pt, en) => `<span class="pt">${esc(pt)}</span><span class="en" lang="en">${esc(en ?? pt)}</span>`;
 const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const usd = (v) => 'US$ ' + v.toFixed(2);
+const temBrl = (p) => typeof p.preco?.brl === 'number', temUsd = (p) => typeof p.preco?.usd === 'number';
+// preço na etiqueta: reais em PT; em EN, dólares se houver (PayPal), senão reais
+const valor = (p) => t(brl(p.preco.brl), temUsd(p) ? usd(p.preco.usd) : brl(p.preco.brl));
 
 function pagina({ titulo, descricao, corpo, raiz = '' }) {
     return `<!doctype html>
@@ -64,20 +68,27 @@ function caixaCompra(p) {
         ? t('Download direto, sem cadastro. Um zip só para Windows e Mac, com o LEIA-ME de instalação.', 'Direct download, no sign-up. One zip for Windows and Mac, with the install README.')
         : t('Cadastre o e-mail e receba o token de ativação e o download na hora.', 'Enter your e-mail and get the activation token and download right away.')}</p>
   </div>`;
-    const temPreco = typeof p.preco === 'number';
-    const desl = temPreco ? '' : ' disabled aria-disabled="true"';
-    return `<div class="compra">
-    <div class="preco">${temPreco ? brl(p.preco) : t('Preço em breve', 'Price coming soon')}</div>
-    <button class="bt bt-principal" type="button" data-pagar="mp" data-pack="${p.id}"${desl}>${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>
-    <button class="bt bt-sec" type="button" data-pagar="paypal" data-pack="${p.id}"${desl}>${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>
+    // formulário comum (sem JS): o servidor de licenças cria a cobrança e manda para o Mercado Pago ou o PayPal
+    if (!temBrl(p) && !temUsd(p)) return `<div class="compra">
+    <div class="preco">${t('Preço em breve', 'Price coming soon')}</div>
+    <button class="bt bt-principal" type="button" disabled aria-disabled="true">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>
+    <button class="bt bt-sec" type="button" disabled aria-disabled="true">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>
+  </div>`;
+    return `<form class="compra" method="post" action="${LIC}/loja/pagar">
+    <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
+    <input type="hidden" name="pacote" value="${p.id}">
+    <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}
+      <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
+    ${temBrl(p) ? `<button class="bt bt-principal" name="metodo" value="mp">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>` : ''}
+    ${temUsd(p) ? `<button class="bt bt-sec" name="metodo" value="paypal">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>` : ''}
     <p class="nota">${t('Pagamento aprovado: você recebe no e-mail o token de ativação, o link de download e as instruções. O token vale em 2 computadores.',
                         'Once the payment is approved you get the activation token, the download link and the instructions by e-mail. The token works on 2 computers.')}</p>
-  </div>`;
+  </form>`;
 }
 
 function cartaoPack(p, grande = false) {
     const etiqueta = p.gratis ? `<span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span>`
-        : typeof p.preco === 'number' ? `<span class="valor">${brl(p.preco)}</span>` : '';
+        : temBrl(p) || temUsd(p) ? `<span class="valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>` : '';
     return `<a class="pack${grande ? ' pack-grande' : ''}" href="/${p.id}/" style="--cor:${p.cor}">
     <div class="pack-img"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}" loading="lazy"></div>
     <div class="pack-txt">
@@ -194,7 +205,7 @@ grava('_headers', `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self' https://isp-licencas.insidestudiosp.workers.dev; base-uri 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self' https://isp-licencas.insidestudiosp.workers.dev; base-uri 'none'; form-action 'self' https://isp-licencas.insidestudiosp.workers.dev; frame-ancestors 'none'
 ${PREVIA ? '  X-Robots-Tag: noindex, nofollow\n' : ''}/img/*
   Cache-Control: public, max-age=604800
 `);

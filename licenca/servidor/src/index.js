@@ -12,6 +12,7 @@
 //   POST /gratis/align/zip   { email, token?, sistema }   zip com o instalador + LEIA-ME com e-mail, token e instruções
 //   POST /gratis/align/reenviar, GET/POST /gratis/align/novo-token   "perdi meu token" por e-mail (só com RESEND_API_KEY)
 //   POST /email/entrada   webhook do Resend: e-mail que chegou no contato@ (ver src/caixa.js)
+//   POST /loja/pagar, POST /loja/mp/webhook, GET /loja/retorno   venda pelo Mercado Pago e PayPal (ver src/loja.js)
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -32,11 +33,13 @@
 // o mesmo token, e "novo token" troca o do e-mail inteiro.
 //
 // Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura),
-// RESEND_API_KEY e RESEND_WEBHOOK_SECRET (opcionais: e-mail e caixa de entrada; ver src/email.js e src/caixa.js).
+// RESEND_API_KEY e RESEND_WEBHOOK_SECRET (opcionais: e-mail e caixa de entrada; ver src/email.js e src/caixa.js),
+// MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, PAYPAL_CLIENT_ID e PAYPAL_SECRET (opcionais: loja; ver src/loja.js).
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './gratis.js';
 import { rotaWebhookEntrada } from './caixa.js';
+import { rotaLoja } from './loja.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -347,6 +350,36 @@ function iguais(a, b) {
     return d === 0;
 }
 
+// cria a licença de um pacote para o e-mail (painel e loja). Devolve { id, email, pacote, token, mesmo_token,
+// token_trocado } ou { erro }. Um token por e-mail: se o e-mail já tem licença de outro pacote, a nova usa o mesmo
+// token (que não está guardado, então volta token null e o cliente segue com o que já recebeu)
+async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, origem, pedido, nota, max_maquinas }) {
+    const email = normEmail(emailBruto);
+    const pacote = String(pacoteBruto || '');
+    if (!PACOTES.includes(pacote)) return { erro: 'pacote_invalido' };
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { erro: 'pedido_invalido' };
+    const existe = await env.DB.prepare('SELECT id FROM licencas WHERE email = ? AND pacote = ?').bind(email, pacote).first();
+    if (existe) return { erro: 'ja_existe', id: existe.id };
+    let doEmail = await env.DB.prepare('SELECT token_hash FROM licencas WHERE email = ? LIMIT 1').bind(email).first();
+    // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
+    // ter cadastrado), então licença dada por aqui troca o token do e-mail inteiro e o novo vai para o cliente
+    const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem <> 'gratis' LIMIT 1").bind(email).first());
+    if (soGratis) doEmail = null;
+    const token = doEmail ? null : novoToken();
+    if (soGratis)
+        await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await sha256Hex('ISP' + normToken(token)), email).run();
+    const r = await env.DB.prepare(
+        'INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(email, pacote, doEmail ? doEmail.token_hash : await sha256Hex('ISP' + normToken(token)),
+            Number(max_maquinas) || 2, origem === 'venda' ? 'venda' : 'cortesia',
+            pedido || null, nota || null, agora())
+        .run();
+    const id = r.meta.last_row_id;
+    await evento(env, id, 'criou', origem || 'cortesia', null);
+    if (soGratis) await evento(env, id, 'novo_token', 'tinha só a licença grátis', null);
+    return { id, email, pacote, token, mesmo_token: !!doEmail, token_trocado: !!soGratis };
+}
+
 async function rotaAdmin(caminho, req, env, url) {
     const auth = req.headers.get('authorization') || '';
     const porChave = !!env.ADMIN_KEY && iguais(auth, 'Bearer ' + env.ADMIN_KEY);
@@ -380,32 +413,8 @@ async function rotaAdmin(caminho, req, env, url) {
     }
 
     if (caminho === '/admin/licencas' && req.method === 'POST') {
-        const email = normEmail(corpo.email);
-        const pacote = String(corpo.pacote || '');
-        if (!PACOTES.includes(pacote)) return falha('pacote_invalido');
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return falha('pedido_invalido');
-        const existe = await env.DB.prepare('SELECT id FROM licencas WHERE email = ? AND pacote = ?').bind(email, pacote).first();
-        if (existe) return falha('ja_existe', 409);
-        // um token por e-mail: se o e-mail já tem licença de outro pacote, a nova usa o mesmo token (que não está
-        // guardado, então volta token null e o cliente segue com o que já recebeu)
-        let doEmail = await env.DB.prepare('SELECT token_hash FROM licencas WHERE email = ? LIMIT 1').bind(email).first();
-        // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
-        // ter cadastrado), então licença dada por aqui troca o token do e-mail inteiro e o novo vai para o cliente
-        const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem <> 'gratis' LIMIT 1").bind(email).first());
-        if (soGratis) doEmail = null;
-        const token = doEmail ? null : novoToken();
-        if (soGratis)
-            await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await sha256Hex('ISP' + normToken(token)), email).run();
-        const r = await env.DB.prepare(
-            'INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-            .bind(email, pacote, doEmail ? doEmail.token_hash : await sha256Hex('ISP' + normToken(token)),
-                Number(corpo.max_maquinas) || 2, corpo.origem === 'venda' ? 'venda' : 'cortesia',
-                corpo.pedido || null, corpo.nota || null, agora())
-            .run();
-        const id = r.meta.last_row_id;
-        await evento(env, id, 'criou', corpo.origem || 'cortesia', null);
-        if (soGratis) await evento(env, id, 'novo_token', 'tinha só a licença grátis', null);
-        return resposta({ ok: true, id, email, pacote, token, mesmo_token: !!doEmail, token_trocado: !!soGratis });
+        const r = await criarLicenca(env, corpo);
+        return r.erro ? falha(r.erro, r.erro === 'ja_existe' ? 409 : 400) : resposta({ ok: true, ...r });
     }
 
     // ações sobre o cliente inteiro (todas as licenças do e-mail)
@@ -471,6 +480,8 @@ export default {
             if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
             if (caminho === '/email/entrada') return await rotaWebhookEntrada(req, env);
+            if (caminho.startsWith('/loja/'))
+                return await rotaLoja(caminho, req, env, url, { normEmail, agora, evento, criarLicenca, paginaSimples });
             if (caminho === '/gratis/align/zip')
                 return await rotaZipAlign(req, env, { normEmail, normToken, sha256Hex, evento, instalador, paginaSimples });
             if (caminho === '/gratis/align/reenviar' || caminho === '/gratis/align/novo-token')

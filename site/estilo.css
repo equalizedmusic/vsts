@@ -71,6 +71,9 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .compra { background:var(--card); border:1px solid var(--line); border-radius:var(--raio); padding:22px; display:flex; flex-direction:column; gap:10px; position:sticky; top:84px; }
 .compra .preco { font:800 28px Bahnschrift, "Segoe UI", sans-serif; margin-bottom:4px; }
 .compra .nota { color:var(--dim); font-size:13px; margin:4px 0 0; }
+.compra .campo { display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--dim); }
+.compra .campo input { font:inherit; font-size:15px; color:var(--ink); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:11px 12px; }
+.compra .campo input:focus { outline:2px solid var(--cor, var(--pur)); outline-offset:1px; }
 .ampliar { display:block; width:100%; padding:0; border:0; background:none; cursor:zoom-in; }
 .capa { margin-top:36px; }
 .capa img { border-radius:var(--raio); border:1px solid var(--line); box-shadow:0 30px 80px -30px rgba(0,0,0,.8); max-height:720px; width:auto; margin:0 auto; }

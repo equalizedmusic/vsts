@@ -602,7 +602,7 @@ function carregarCaixa() {
   });
 }
 
-var ORIGEM = { automatico: 'automático (cadastro / token)', painel: 'pelo painel', recebido: '' };
+var ORIGEM = { automatico: 'automático (cadastro / token)', painel: 'pelo painel', venda: 'compra na loja', recebido: '' };
 
 function abrirConversa(contato) {
   caixa.conversa = contato; caixa.responder = null;
