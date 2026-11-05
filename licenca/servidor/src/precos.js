@@ -4,15 +4,17 @@
 // ALIGN e VASSOURA são grátis (páginas próprias), por isso não estão aqui.
 
 export const PRECOS = {
-    mesa:      { brl: null, usd: null },
-    criativo:  { brl: null, usd: null },
-    mix:       { brl: null, usd: null },
-    knob:      { brl: null, usd: null },
-    quimera:   { brl: null, usd: null },
-    limao:     { brl: null, usd: null },
-    mercurio:  { brl: null, usd: null },
-    resenha:   { brl: null, usd: null },
-    groovador: { brl: null, usd: null },
+    // usd fica null até o PayPal ser configurado e testado: o site mostra o botão PayPal só por haver usd.
+    // Combinado (05/11/2026): 79,90 -> US$ 14.90 e 24,90 -> US$ 4.90.
+    mesa:      { brl: 79.90, usd: null },
+    criativo:  { brl: 79.90, usd: null },
+    mix:       { brl: 79.90, usd: null },
+    knob:      { brl: 79.90, usd: null },
+    quimera:   { brl: 24.90, usd: null },
+    limao:     { brl: 24.90, usd: null },
+    mercurio:  { brl: 24.90, usd: null },
+    resenha:   { brl: 24.90, usd: null },
+    groovador: { brl: 24.90, usd: null },
 };
 
 export const NOMES = {
