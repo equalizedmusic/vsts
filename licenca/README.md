@@ -31,6 +31,13 @@ Isso segura o repasse casual de instalador + token; não segura quem quiser craq
 - Página grátis do ALIGN: `/align` (= `/gratis/align`): e-mail + Windows/Mac → token na tela, link de download só
   do sistema escolhido e o passo a passo (baixo + sidechain do kick + ativar). Licença de **1 computador**, origem
   `gratis`, nota `página ALIGN · Mac|Windows` (aparece no painel). Mesmos limites de pedidos da página do MONTA-MONTA.
+  O botão **BAIXAR ALIGN** entrega um **zip montado na hora** (`POST /gratis/align/zip`, `src/zip.js`): o instalador
+  do sistema + `LEIA-ME - READ ME.txt` (PT e EN) com o e-mail, o token, instalação, sidechain, ativação, o que fazer
+  com SmartScreen/Defender/Gatekeeper e o SHA-256 do instalador. O token só entra no texto se conferir com a licença.
+  Zip sem compressão e em streaming: o CRC32 do instalador vem pronto (`<instalador>.crc32` no release, gerado pelo
+  `release-versoes.sh`; os da 0.1.0 estão em `CRC_CONHECIDOS` no `index.js`), porque no plano grátis o Worker tem 10 ms
+  de CPU e o CRC de 5–9 MB em JS leva 11–22 ms. Sem CRC, o botão cai no download direto do instalador. Link
+  "Baixar só o instalador" na página como reserva.
 - `servidor/` — Cloudflare Worker + banco D1 (`isp-licencas.insidestudiosp.workers.dev`, conta pessoal
   insidestudiosp). Rotas em `src/index.js`, tabelas em `schema.sql`. Teste local: `npm install`, `npx wrangler d1
   execute isp-licencas --local --file schema.sql`, `npx wrangler dev --local` (segredos em `.dev.vars`, fora do git).

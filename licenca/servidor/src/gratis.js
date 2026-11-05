@@ -17,6 +17,8 @@
 //   - Até 8 cadastros por IP em 24 h e 300 por dia no total (as páginas somam juntas).
 //   - O sistema escolhido vai na nota da licença (aparece e é buscável no painel).
 
+import { zipStream } from './zip.js';
+
 const POR_IP_DIA = 8;
 const TOTAL_DIA = 300;
 const PAGINAS = {
@@ -33,9 +35,10 @@ function json(obj, status = 200) {
 
 export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const cfg = PAGINAS[PACOTE];
+    // form-action 'self': o botão de download do ALIGN é um formulário (POST /gratis/align/zip)
     if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN : PAGINA, {
         headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
-                   'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" },
+                   'content-security-policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action ${PACOTE === 'align' ? "'self'" : "'none'"}; frame-ancestors 'none'` },
     });
     if (req.method !== 'POST') return json({ ok: false, mensagem: 'Método não aceito.' }, 405);
 
@@ -72,6 +75,213 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
         .bind(email, PACOTE, hash, cfg.maquinas, nota, h.agora()).run();
     await h.evento(env, r.meta.last_row_id, 'gratis', lista.length ? 'mesmo token' : 'novo', ip);
     return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar });
+}
+
+// ---------------- zip do ALIGN: instalador + LEIA-ME gerado na hora ----------------
+// POST /gratis/align/zip (formulário da página, depois do cadastro): email, token (vazio se o e-mail já tinha token),
+// sistema. O token só entra no texto se conferir com a licença do e-mail (ninguém monta um leia-me com token alheio).
+// Sem o CRC do instalador (release sem .crc32 e fora de CRC_CONHECIDOS) cai no download direto do instalador.
+
+export async function rotaZipAlign(req, env, h) {
+    if (req.method !== 'POST') return h.paginaSimples('Link inválido', 'Abra a página do ALIGN e gere a sua licença.', 405);
+    let f;
+    try { f = await req.formData(); } catch { return h.paginaSimples('Pedido inválido', 'Volte à página do ALIGN e tente de novo.', 400); }
+    const email = h.normEmail(f.get('email'));
+    const sistema = f.get('sistema') === 'mac' ? 'mac' : 'win';
+    const tokenTxt = String(f.get('token') || '').trim();
+    const lic = await env.DB.prepare("SELECT id, token_hash FROM licencas WHERE email = ? AND pacote = 'align'").bind(email).first();
+    if (!lic) return h.paginaSimples('E-mail sem ALIGN', 'Este e-mail não tem licença do ALIGN. Volte à página e gere a sua.', 404);
+    let token = '';
+    if (tokenTxt) {
+        if (await h.sha256Hex('ISP' + h.normToken(tokenTxt)) !== lic.token_hash)
+            return h.paginaSimples('Token não confere', 'Volte à página do ALIGN e baixe pelo botão que apareceu junto com o seu token.', 403);
+        token = tokenTxt.toUpperCase();
+    }
+    const inst = await h.instalador(env, 'align', sistema);
+    if (!inst) return h.paginaSimples('Download indisponível', 'O instalador não está disponível agora. Tente de novo mais tarde.', 404);
+    if (inst.crc == null || !inst.tamanho) {
+        console.error('zip align: sem crc', inst.nome, inst.sha256);
+        return Response.redirect(inst.link, 302);
+    }
+    const r = await fetch(inst.link, { headers: { 'user-agent': 'isp-licencas' } });
+    const len = Number(r.headers.get('content-length') || inst.tamanho);
+    if (!r.ok || !r.body || len !== inst.tamanho) {
+        console.error('zip align: instalador', r.status, len, inst.tamanho);
+        return Response.redirect(inst.link, 302);
+    }
+    const texto = new TextEncoder().encode('\uFEFF' + leiaMeAlign({ email, token, sistema, ...inst }).join('\r\n') + '\r\n');
+    const zip = zipStream([
+        { nome: 'LEIA-ME - READ ME.txt', bytes: texto },
+        { nome: inst.nome, tamanho: inst.tamanho, crc: inst.crc, corpo: r.body },
+    ]);
+    await h.evento(env, lic.id, 'gratis_zip', sistema, req.headers.get('cf-connecting-ip') || '');
+    return new Response(zip.stream, {
+        headers: {
+            'content-type': 'application/zip', 'content-length': String(zip.tamanho), 'cache-control': 'no-store',
+            'content-disposition': `attachment; filename="ALIGN-${inst.versao || 'InsideStudioSP'}-${sistema === 'mac' ? 'Mac' : 'Windows'}.zip"`,
+        },
+    });
+}
+
+function leiaMeAlign({ email, token, sistema, nome, versao, sha256 }) {
+    const mac = sistema === 'mac';
+    const L = [
+        'ALIGN · InsideStudioSP' + (versao ? ' · v' + versao : '') + ' · ' + (mac ? 'Mac' : 'Windows'),
+        'Kick / bass phase aligner',
+        '',
+        '(English below)',
+        '',
+        '==================================== PORTUGUÊS ====================================',
+        '',
+        'SEUS DADOS DE ATIVAÇÃO',
+        '  E-mail: ' + email,
+        token ? '  Token:  ' + token
+              : '  Token:  use o token que você já recebeu da InsideStudioSP (o mesmo deste e-mail).',
+        '  Licença para 1 computador. Guarde este arquivo: o token não aparece de novo.',
+        '',
+        '1. INSTALAR',
+    ];
+    if (mac) L.push(
+        '  1) Abra o zip (o Safari já costuma abrir sozinho) e dê dois cliques em ' + nome + '.',
+        '  2) Na janela que abrir, dê dois cliques em "Instalar InsideStudioSP Align.pkg" e siga o instalador.',
+        '     Os plugins vão para as pastas padrão do Mac (VST3 e AU em /Library/Audio/Plug-Ins).',
+        '  3) Feche e abra de novo o seu DAW. No Logic, se o ALIGN não aparecer: Logic Pro > Ajustes >',
+        '     Plug-in Manager > "Redefinir e verificar".',
+    );
+    else L.push(
+        '  1) Extraia o zip: botão direito no arquivo > "Extrair tudo..." > Extrair.',
+        '     Não rode o instalador de dentro do zip.',
+        '  2) Rode ' + nome + ' e siga o instalador. A pasta já vem certa',
+        '     (C:\\Program Files\\Common Files\\VST3, onde o Ableton e os outros DAWs procuram).',
+        '  3) Feche e abra de novo o seu DAW (se o ALIGN não aparecer, mande o DAW procurar plugins de novo).',
+    );
+    L.push(
+        '',
+        '2. COLOCAR NO BAIXO',
+        '  1) Coloque o ALIGN no canal do BAIXO.',
+        '  2) No Sidechain do ALIGN, escolha a faixa do KICK.',
+        '     No Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX.',
+        '',
+        '3. ATIVAR',
+        '  1) Na tela de ativação do ALIGN, digite o e-mail e o token acima e clique em ATIVAR.',
+        '     Precisa de internet só nessa hora.',
+        '  2) Aperte o botão ALIGN. Pronto: ele corrige sozinho, batida por batida.',
+        '  3) Vai trocar de computador? Menu ≡ do plugin > Licença... > Desativar este computador, e ative no novo.',
+        '',
+        mac ? '4. SE O MAC DISSER QUE NÃO PODE ABRIR O INSTALADOR' : '4. SE O WINDOWS OU O ANTIVÍRUS DER AVISO DE SEGURANÇA',
+        mac ? '  O ALIGN ainda não é registrado na Apple, então o Mac avisa que não pode verificar o desenvolvedor.'
+            : '  O ALIGN ainda não tem assinatura digital paga, então o Windows não conhece o "editor" e pode avisar.',
+        '  É o aviso padrão para programa novo e sem assinatura, não quer dizer que o arquivo tenha vírus.',
+        '',
+    );
+    if (mac) L.push(
+        '  a) "Não é possível abrir porque a Apple não pode verificá-lo" / "desenvolvedor não identificado":',
+        '     clique em OK, abra Ajustes do Sistema > Privacidade e Segurança, role até o aviso do instalador,',
+        '     clique em "Abrir Mesmo Assim" e confirme com a sua senha. Depois abra o instalador de novo.',
+        '     (macOS 14 ou anterior: Control + clique no instalador > Abrir > Abrir.)',
+        '  b) "Está danificado e não pode ser aberto": abra o Terminal e rode (troque o caminho se baixou em outro lugar):',
+        '        xattr -dr com.apple.quarantine ~/Downloads/' + nome,
+        '     Depois abra o ' + nome + ' de novo.',
+    );
+    else L.push(
+        '  a) Tela azul "O Windows protegeu o computador" (SmartScreen):',
+        '     clique em "Mais informações" e depois em "Executar assim mesmo".',
+        '  b) Para o aviso nem aparecer: ANTES de extrair, botão direito no zip > Propriedades >',
+        '     marque "Desbloquear" (embaixo, em Segurança) > OK. Depois extraia e rode o instalador.',
+        '  c) O navegador barrou o download (Chrome/Edge: "pode ser perigoso" / "não é baixado com frequência"):',
+        '     abra a lista de downloads, clique nos "..." do arquivo > Manter > Manter assim mesmo.',
+        '  d) O Microsoft Defender apagou o arquivo ou disse "Ameaça encontrada":',
+        '     Iniciar > Segurança do Windows > Proteção contra vírus e ameaças > Histórico de proteção >',
+        '     abra o item do ' + nome + ' > Ações > Restaurar (ou "Permitir no dispositivo"). Depois rode de novo.',
+        '     Outro antivírus (Avast, AVG, Norton...): restaure o arquivo da quarentena / adicione como exceção.',
+        '     Não precisa desligar o antivírus: libere só este arquivo.',
+    );
+    if (sha256) L.push(
+        '',
+        '  Quer conferir se o arquivo é o original? Ele tem que ter este SHA-256:',
+        '     ' + sha256,
+        mac ? '     No Terminal: shasum -a 256 ~/Downloads/' + nome
+            : '     No PowerShell, na pasta do arquivo: Get-FileHash .\\' + nome,
+    );
+    L.push(
+        '',
+        '  Dúvidas? Chame a InsideStudioSP no direct do Instagram.',
+        '',
+        '',
+        '===================================== ENGLISH =====================================',
+        '',
+        'YOUR ACTIVATION DATA',
+        '  E-mail: ' + email,
+        token ? '  Token:  ' + token
+              : '  Token:  use the token you already received from InsideStudioSP (same one for this e-mail).',
+        '  License for 1 computer. Keep this file: the token is not shown again.',
+        '',
+        '1. INSTALL',
+    );
+    if (mac) L.push(
+        '  1) Open the zip (Safari usually opens it by itself) and double-click ' + nome + '.',
+        '  2) In the window that opens, double-click "Instalar InsideStudioSP Align.pkg" and follow the installer.',
+        '     The plugins go to the standard Mac folders (VST3 and AU in /Library/Audio/Plug-Ins).',
+        '  3) Close and reopen your DAW. In Logic, if ALIGN does not show up: Logic Pro > Settings >',
+        '     Plug-in Manager > "Reset & Rescan Selection".',
+    );
+    else L.push(
+        '  1) Extract the zip: right-click the file > "Extract All..." > Extract.',
+        '     Do not run the installer from inside the zip.',
+        '  2) Run ' + nome + ' and follow the installer. The folder is already right',
+        '     (C:\\Program Files\\Common Files\\VST3, where Ableton and the other DAWs look).',
+        '  3) Close and reopen your DAW (if ALIGN does not show up, rescan your plugins).',
+    );
+    L.push(
+        '',
+        '2. PUT IT ON THE BASS',
+        '  1) Put ALIGN on your BASS track.',
+        '  2) In the ALIGN Sidechain, pick the KICK track.',
+        '     In Ableton: open the plugin Sidechain, pick the kick track and set it to Post FX.',
+        '',
+        '3. ACTIVATE',
+        '  1) On the ALIGN activation screen, type the e-mail and token above and click ATIVAR (activate).',
+        '     Internet is needed only at this moment.',
+        '  2) Press the ALIGN button. Done: it corrects by itself, hit by hit.',
+        '  3) Changing computers? Plugin menu ≡ > Licença... > Desativar este computador (deactivate), then activate on the new one.',
+        '',
+        mac ? '4. IF YOUR MAC SAYS IT CANNOT OPEN THE INSTALLER' : '4. IF WINDOWS OR YOUR ANTIVIRUS SHOWS A SECURITY WARNING',
+        mac ? '  ALIGN is not registered with Apple yet, so macOS says it cannot verify the developer.'
+            : '  ALIGN does not have a paid digital signature yet, so Windows does not know the "publisher" and may warn you.',
+        '  This is the standard warning for new unsigned software, it does not mean the file has a virus.',
+        '',
+    );
+    if (mac) L.push(
+        '  a) "Cannot be opened because Apple cannot check it" / "unidentified developer":',
+        '     click OK, open System Settings > Privacy & Security, scroll to the installer message,',
+        '     click "Open Anyway" and confirm with your password. Then open the installer again.',
+        '     (macOS 14 or older: Control-click the installer > Open > Open.)',
+        '  b) "Is damaged and can\'t be opened": open Terminal and run (change the path if you saved it elsewhere):',
+        '        xattr -dr com.apple.quarantine ~/Downloads/' + nome,
+        '     Then open ' + nome + ' again.',
+    );
+    else L.push(
+        '  a) Blue screen "Windows protected your PC" (SmartScreen):',
+        '     click "More info" and then "Run anyway".',
+        '  b) To avoid the warning: BEFORE extracting, right-click the zip > Properties >',
+        '     tick "Unblock" (bottom, under Security) > OK. Then extract and run the installer.',
+        '  c) The browser blocked the download (Chrome/Edge: "may be dangerous" / "not commonly downloaded"):',
+        '     open the downloads list, click the "..." of the file > Keep > Keep anyway.',
+        '  d) Microsoft Defender deleted the file or said "Threat found":',
+        '     Start > Windows Security > Virus & threat protection > Protection history >',
+        '     open the ' + nome + ' item > Actions > Restore (or "Allow on device"). Then run it again.',
+        '     Other antivirus (Avast, AVG, Norton...): restore the file from quarantine / add it as an exception.',
+        '     No need to turn your antivirus off: just allow this file.',
+    );
+    if (sha256) L.push(
+        '',
+        '  Want to check it is the original file? It must have this SHA-256:',
+        '     ' + sha256,
+        mac ? '     In Terminal: shasum -a 256 ~/Downloads/' + nome
+            : '     In PowerShell, in the file folder: Get-FileHash .\\' + nome,
+    );
+    L.push('', '  Questions? Message InsideStudioSP on Instagram.', '');
+    return L;
 }
 
 const PAGINA = `<!doctype html>
@@ -264,8 +474,13 @@ const PAGINA_ALIGN = `<!doctype html>
       <p id="txtSem"></p>
     </div>
     <span class="rot">1. Baixe e instale <span class="en">· download and install</span></span>
-    <a class="bt principal" id="baixar" href="#">BAIXAR ALIGN</a>
+    <form id="fz" method="post" action="/gratis/align/zip">
+      <input type="hidden" name="email" id="zEmail"><input type="hidden" name="token" id="zToken"><input type="hidden" name="sistema" id="zSo">
+      <button class="principal" id="baixar" type="submit">BAIXAR ALIGN</button>
+    </form>
+    <p style="margin-top:10px">Vem um <b>.zip</b> com o instalador e o <b>LEIA-ME</b> com o seu e-mail, o token, o passo a passo e o que fazer se aparecer aviso de segurança. <span class="en">A .zip with the installer and a READ ME with your e-mail, token, steps and how to handle security warnings.</span></p>
     <p id="dicaSo" style="margin-top:10px"></p>
+    <p class="en" style="margin-top:6px">Não baixou? <a id="direto" href="#" style="color:var(--pur)">Baixar só o instalador</a> · installer only</p>
     <span class="rot">2. Coloque no canal do baixo <span class="en">· put it on your bass</span></span>
     <ol>
       <li>Abra o seu DAW e coloque o <b>ALIGN</b> no canal do <span class="b">BAIXO</span>.</li>
@@ -300,11 +515,12 @@ const PAGINA_ALIGN = `<!doctype html>
       .then(function (j) {
         $('ir').disabled = false; $('ir').textContent = 'GERAR MINHA LICENÇA';
         if (!j.ok) { $('erro').textContent = j.mensagem || 'Não deu certo. Tente de novo.'; return; }
-        $('baixar').href = j.baixar[so] || '#';
+        $('direto').href = j.baixar[so] || '#';
+        $('zEmail').value = email; $('zToken').value = j.token || ''; $('zSo').value = so;
         $('baixar').textContent = 'BAIXAR ALIGN PARA ' + (so === 'mac' ? 'MAC' : 'WINDOWS');
         $('dicaSo').textContent = so === 'mac'
-          ? 'Abra o .dmg baixado e rode o instalador (VST3 e AU). Depois reabra o DAW.'
-          : 'Rode o instalador .exe baixado (VST3). Se o Windows avisar, clique em "Mais informações" e depois em "Executar assim mesmo". Depois reabra o DAW.';
+          ? 'Abra o .dmg que vem no zip e rode o instalador (VST3 e AU). Depois reabra o DAW.'
+          : 'Extraia o zip e rode o instalador .exe (VST3). Se o Windows avisar, clique em "Mais informações" e depois em "Executar assim mesmo". Depois reabra o DAW.';
         $('emailOk').textContent = email.toLowerCase();
         if (j.token) { $('token').textContent = j.token; $('comToken').hidden = false; }
         else {

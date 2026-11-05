@@ -9,6 +9,7 @@
 //   GET  /baixar/<pacote>/<win|mac>   redireciona para o instalador (links da mensagem do painel)
 //   GET/POST /gratis/montamonta   página grátis: e-mail -> token + download do MONTA-MONTA (ver src/gratis.js)
 //   GET/POST /gratis/align (= /align)   e-mail + Windows/Mac -> token + download do ALIGN, 1 computador
+//   POST /gratis/align/zip   { email, token?, sistema }   zip com o instalador + LEIA-ME com e-mail, token e instruções
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -31,7 +32,7 @@
 // Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura).
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
-import { rotaGratis, PACOTES_GRATIS } from './gratis.js';
+import { rotaGratis, rotaZipAlign, PACOTES_GRATIS } from './gratis.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -210,6 +211,8 @@ async function releases(env, forcar = false) {
             tag: x.tag_name, pre: !!x.prerelease, pagina: x.html_url, notas: String(x.body || '').slice(0, 800),
             arquivos: (x.assets || []).map((a) => a.browser_download_url),
             api: (x.assets || []).map((a) => a.url),
+            tamanhos: (x.assets || []).map((a) => a.size),
+            digests: (x.assets || []).map((a) => String(a.digest || '').replace(/^sha256:/, '')),
         }));
         else console.error('github releases', g.status);
     } catch (e) { console.error('github releases', e); }
@@ -255,41 +258,78 @@ function paginaSimples(titulo, texto, status) {
         { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
 
+const nomeArquivo = (url) => decodeURIComponent(url.split('/').pop());
+
+function acharInstalador(lista, pacote, sistema) {
+    const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
+    const rel = (pacote !== 'vassoura' && lista.find((r) => r.tag === 'licenca-teste')) || releaseDoPacote(lista, pacote);
+    const i = rel ? rel.arquivos.findIndex((a) => {
+        const nome = nomeArquivo(a);
+        // VASSOURA (Max for Live): um zip só, igual no Windows e no Mac
+        if (pacote === 'vassoura') return /^Vassoura-.*\.zip$/.test(nome);
+        return INSTALADOR[pacote].some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
+    }) : -1;
+    return { rel, i };
+}
+
+// link para baixar o arquivo i do release; repo privado: o GitHub devolve um link temporário assinado
+async function linkArquivo(env, rel, i) {
+    if (!env.GITHUB_TOKEN) return rel.arquivos[i];
+    return (await fetch(rel.api[i], {
+        redirect: 'manual',
+        headers: { 'user-agent': 'isp-licencas', accept: 'application/octet-stream', authorization: 'Bearer ' + env.GITHUB_TOKEN },
+    })).headers.get('location');
+}
+
+// CRC dos instaladores publicados antes do .crc32 no release (chave = sha256 do GitHub)
+const CRC_CONHECIDOS = {
+    '7b5dac65240f6fb952779f73ca8b532d45da7856ad765c192b8d3a3ec6a50d3e': 0xde16e9a7,   // InsideStudioSP-Align-win.exe 0.1.0
+    '765881b271527dba562c89129a52a3e0456edd766a6e0dfc55ca6af5c37d8363': 0xb276600d,   // InsideStudioSP-Align-mac.dmg 0.1.0
+};
+// instalador mais novo do pacote: { nome, tamanho, sha256, versao, link, crc } (crc = null se o release não tem o .crc32
+// e o arquivo não está em CRC_CONHECIDOS) ou null. Usado pelo zip da página grátis (src/gratis.js).
+async function instalador(env, pacote, sistema) {
+    let { rel, i } = acharInstalador(await releases(env), pacote, sistema);
+    if (i < 0) ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema));
+    if (i < 0) return null;
+    const nome = nomeArquivo(rel.arquivos[i]);
+    let link = await linkArquivo(env, rel, i);
+    if (!link) {   // o release da lista guardada foi apagado
+        ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema));
+        if (i < 0 || !(link = await linkArquivo(env, rel, i))) return null;
+    }
+    let crc = CRC_CONHECIDOS[rel.digests?.[i]] ?? null;
+    const j = rel.arquivos.findIndex((a) => nomeArquivo(a) === nome + '.crc32');
+    if (j >= 0) {
+        try {
+            const r = await fetch(await linkArquivo(env, rel, j), { headers: { 'user-agent': 'isp-licencas' } });
+            const m = r.ok && (await r.text()).match(/^\s*([0-9a-f]{8})\b/i);
+            if (m) crc = parseInt(m[1], 16);
+        } catch (e) { console.error('crc32', e); }
+    }
+    return { nome, tamanho: rel.tamanhos?.[i], sha256: rel.digests?.[i] || '', versao: (rel.tag.match(/-v(\d+\.\d+\.\d+)$/) || [])[1] || '',
+             link, crc };
+}
+
 async function rotaBaixar(caminho, env) {
     const [, , pacote, sistema] = caminho.split('/');
     // VASSOURA: link único /baixar/vassoura (win/mac continuam valendo para os links já enviados)
     const unico = pacote === 'vassoura' && !sistema;
     if (!PACOTES.includes(pacote) || (!unico && !['win', 'mac'].includes(sistema)))
         return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
-    const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
-    const achar = (lista) => {
-        const rel = (pacote !== 'vassoura' && lista.find((r) => r.tag === 'licenca-teste')) || releaseDoPacote(lista, pacote);
-        const i = rel ? rel.arquivos.findIndex((a) => {
-            const nome = decodeURIComponent(a.split('/').pop());
-            // VASSOURA (Max for Live): um zip só, igual no Windows e no Mac
-            if (pacote === 'vassoura') return /^Vassoura-.*\.zip$/.test(nome);
-            return INSTALADOR[pacote].some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
-        }) : -1;
-        return { rel, i };
-    };
     const indisponivel = () => paginaSimples('Download indisponível',
         'Este instalador não está disponível agora. Tente de novo mais tarde ou responda o e-mail da licença.', 404);
-    let { rel, i } = achar(await releases(env));
+    let { rel, i } = acharInstalador(await releases(env), pacote, sistema);
     // a lista guardada pode ser de antes do release novo (ou de um release ainda subindo os arquivos)
-    if (i < 0) ({ rel, i } = achar(await releases(env, true)));
+    if (i < 0) ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema));
     if (i < 0) return indisponivel();
-    if (!env.GITHUB_TOKEN) return Response.redirect(rel.arquivos[i], 302);
-    // repo privado: o GitHub devolve um link temporário assinado do arquivo; o download não passa pelo Worker
-    const assinado = async () => (await fetch(rel.api[i], {
-        redirect: 'manual',
-        headers: { 'user-agent': 'isp-licencas', accept: 'application/octet-stream', authorization: 'Bearer ' + env.GITHUB_TOKEN },
-    })).headers.get('location');
-    let destino = await assinado();
+    // repo privado: link temporário assinado; o download não passa pelo Worker
+    let destino = await linkArquivo(env, rel, i);
     // sem link: o release da lista guardada foi apagado (ex.: o pré-release licenca-teste) ⇒ lista nova e outra tentativa
     if (!destino) {
-        ({ rel, i } = achar(await releases(env, true)));
+        ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema));
         if (i < 0) return indisponivel();
-        destino = await assinado();
+        destino = await linkArquivo(env, rel, i);
     }
     return Response.redirect(destino || rel.arquivos[i], 302);
 }
@@ -426,6 +466,8 @@ export default {
             // HEAD também: prévia de link (WhatsApp, Instagram) consulta antes de baixar
             if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
+            if (caminho === '/gratis/align/zip')
+                return await rotaZipAlign(req, env, { normEmail, normToken, sha256Hex, evento, instalador, paginaSimples });
             if (caminho === '/gratis' || caminho === '/align' || (caminho.startsWith('/gratis/') && PACOTES_GRATIS.includes(caminho.slice(8))))
                 return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento },
                     caminho === '/align' ? 'align' : caminho.slice(8) || 'montamonta');

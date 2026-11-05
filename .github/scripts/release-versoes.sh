@@ -38,7 +38,13 @@ for pac in "$@"; do
     echo
     echo "Instaladores: \`InsideStudioSP-$arq-win.exe\` (Windows) e \`InsideStudioSP-$arq-mac.dmg\` (Mac), aqui embaixo em Assets."
   } > "$notas"
+  # .crc32 de cada instalador: o Worker de licenças monta o zip da página grátis (instalador + LEIA-ME) sem calcular
+  # o CRC na hora (no plano grátis ele não tem CPU para isso)
+  for f in "$pub/InsideStudioSP-$arq-mac.dmg" "$pub/InsideStudioSP-$arq-win.exe"; do
+    python3 -c "import sys,zlib; print('%08x' % (zlib.crc32(open(sys.argv[1],'rb').read()) & 0xffffffff))" "$f" > "$f.crc32"
+  done
   gh release create "$tag" "$pub/InsideStudioSP-$arq-mac.dmg" "$pub/InsideStudioSP-$arq-win.exe" \
+    "$pub/InsideStudioSP-$arq-mac.dmg.crc32" "$pub/InsideStudioSP-$arq-win.exe.crc32" \
     -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$titulo" --notes-file "$notas"
   echo "release $tag criado"
   prefixo=${tag%-v*}
