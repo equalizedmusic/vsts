@@ -15,6 +15,10 @@ routes = [
   { pattern = "www.insidestudiosp.com.br/vassoura*", zone_name = "insidestudiosp.com.br" },
   { pattern = "insidestudiosp.com.br/baixar/vassoura*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/baixar/vassoura*", zone_name = "insidestudiosp.com.br" },
+  # painel de administração (página + /admin/* que ele chama); o www manda para o endereço sem www
+  { pattern = "insidestudiosp.com.br/painel*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "www.insidestudiosp.com.br/painel*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "insidestudiosp.com.br/admin/*", zone_name = "insidestudiosp.com.br" },
 ]
 
 [[d1_databases]]

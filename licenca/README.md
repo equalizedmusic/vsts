@@ -45,7 +45,8 @@ Isso segura o repasse casual de instalador + token; não segura quem quiser craq
   (tela), `IspEd25519.h` (conferência da assinatura, trecho do TweetNaCl), `licenca.cmake` (`isp_licenca(<alvo>
   <pacote>)`).
 - `admin/isp-licenca.mjs` — criar token, listar, revogar, liberar máquina, gerar token novo, `senha-painel <usuário>`.
-- **Painel web**: `https://isp-licencas.insidestudiosp.workers.dev/painel` (usuário e senha; código em
+- **Painel web**: `https://insidestudiosp.com.br/painel` (o endereço antigo `…workers.dev/painel` e o `www`
+  redirecionam para ele; rotas `/painel*` e `/admin/*` do domínio em `wrangler.toml`) (usuário e senha; código em
   `servidor/src/painel.js`). A página é só a lista de clientes (uma linha por e-mail, filtro na hora).
   **+ Novo cliente** abre um modal com e-mail + pacotes + sistema + origem; se o e-mail já existir, avisa, trava os
   pacotes que ele já tem e oferece abrir o cliente. Clicar num cliente abre o modal dele: cancela/reativa pacote,

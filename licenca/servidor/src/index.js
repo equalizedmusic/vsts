@@ -476,6 +476,9 @@ async function rotaAdmin(caminho, req, env, url) {
 const ALIGN_OFICIAL = 'https://insidestudiosp.com.br/align/';
 // a da VASSOURA também (rotas /vassoura* e /baixar/vassoura*): só e-mail, sem token
 const VASSOURA_OFICIAL = 'https://insidestudiosp.com.br/vassoura/';
+// o painel também (rotas /painel* e /admin/*). A sessão é um cookie do host, então fica num endereço só (sem www).
+// A linha de comando (admin/isp-licenca.mjs) segue usando /admin/* no workers.dev com a ADMIN_KEY.
+const PAINEL_OFICIAL = 'https://insidestudiosp.com.br/painel';
 
 export default {
     async fetch(req, env) {
@@ -490,6 +493,11 @@ export default {
             if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
                 && (caminho === '/vassoura' || caminho === '/gratis/vassoura'))
                 return Response.redirect(VASSOURA_OFICIAL, 302);
+            // painel aberto pelo endereço antigo (workers.dev) ou pelo www ⇒ endereço oficial. Só a página:
+            // as chamadas de uma aba já aberta continuam respondendo onde estão.
+            if ((req.method === 'GET' || req.method === 'HEAD') && caminho === '/painel'
+                && (url.hostname.endsWith('.workers.dev') || url.hostname === 'www.insidestudiosp.com.br'))
+                return Response.redirect(PAINEL_OFICIAL, 302);
             if (req.method === 'POST' && caminho === '/v1/ativar') return await rotaPlugin('ativar', req, env);
             if (req.method === 'POST' && caminho === '/v1/validar') return await rotaPlugin('validar', req, env);
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
