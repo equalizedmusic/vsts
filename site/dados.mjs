@@ -18,13 +18,13 @@ export const SITE = {
     lancamento: { titulo: "Summer of '89", url: 'https://bluetunesrecords.lnk.to/summerof89', capa: '/img/summer89.webp' },
     // Página Estúdio (05/11): texto do estúdio + bio tirada do release dele (Google Docs). Cada parágrafo = [pt, en].
     estudio: {
-        lead: ['Estúdio de produção, mix e master em São Paulo, comandado pelo DJ e produtor Rogério Cardoso, o Equalized.',
-               'Production, mixing and mastering studio in São Paulo, Brazil, run by DJ and producer Rogério Cardoso, aka Equalized.'],
+        lead: ['Estúdio de mix e master em São Paulo, comandado pelo DJ e produtor Rogério Cardoso, o Equalized.',
+               'Mixing and mastering studio in São Paulo, Brazil, run by DJ and producer Rogério Cardoso, aka Equalized.'],
         texto: [
             ['É aqui que nascem as faixas do Equalized e os plugins da loja. Sala tratada, monitores de referência, sintetizador analógico, controladores e CDJs ficam no mesmo ambiente: dá para compor, mixar e testar a faixa como na pista, sem sair da sala.',
              'This is where the Equalized tracks and the plugins in the shop are made. Treated room, reference monitors, analog synth, controllers and CDJs all in one place: you can write, mix and test the track the way it plays on the dancefloor, without leaving the room.'],
-            ['Produção, mix e master de música eletrônica, do Psytrance ao Techno, e mentoria para quem está construindo o próprio som.',
-             'Production, mixing and mastering of electronic music, from Psytrance to Techno, plus mentoring for artists shaping their own sound.'],
+            ['Mix e master de música eletrônica, do Psytrance ao Techno. A produção feita aqui é a autoral, as faixas do próprio Equalized.',
+             'Mixing and mastering of electronic music, from Psytrance to Techno. The production done here is original work: Equalized\'s own tracks.'],
         ],
         fotos: [['st-mesa', 'A mesa de produção', 'The production desk'], ['st-sala', 'A sala: produção de um lado, CDJs do outro', 'The room: production on one side, CDJs on the other']],
         // Galeria "Por dentro do estúdio", em largura cheia abaixo do texto.

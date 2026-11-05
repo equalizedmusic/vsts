@@ -50,7 +50,7 @@ ${PREVIA ? `<div class="previa">${t('Prévia do site novo.', 'Preview of the new
 <footer id="contato" class="rodape"><div class="faixa">
   <div>
     <div class="marca">Inside<b>Studio</b>SP</div>
-    <p>${t('Plugins, produção e mix em São Paulo.', 'Plugins, production and mixing from São Paulo, Brazil.')}</p>
+    <p>${t('Plugins, mix e master em São Paulo.', 'Plugins, mixing and mastering from São Paulo, Brazil.')}</p>
   </div>
   <div class="contatos">
     <a href="mailto:${SITE.email}">${SITE.email}</a>
@@ -131,7 +131,7 @@ function loja() {
 </section>
 <section class="faixa chamada-estudio">
   <div><h2>${t('Conheça o estúdio', 'Meet the studio')}</h2>
-  <p>${t('Produção, mix e master. Os plugins nascem aqui.', 'Production, mixing and mastering. The plugins are born here.')}</p></div>
+  <p>${t('Mix e master. Os plugins nascem aqui.', 'Mixing and mastering. The plugins are born here.')}</p></div>
   <a class="bt bt-sec" href="/estudio/">${t('Ver o estúdio', 'See the studio')}</a>
 </section>`,
     });
@@ -176,14 +176,14 @@ function estudio() {
     const temConteudo = SITE.bio || SITE.spotify || SITE.youtube;
     if (!temConteudo) return pagina({
         titulo: 'Estúdio — InsideStudioSP',
-        descricao: 'InsideStudioSP: estúdio de produção, mix e master em São Paulo.',
+        descricao: 'InsideStudioSP: estúdio de mix e master em São Paulo.',
         corpo: `
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('ESTÚDIO · SÃO PAULO', 'STUDIO · SÃO PAULO, BRAZIL')}</p>
   <h1>InsideStudioSP</h1>
   <p><span class="selo-breve">${t('EM BREVE', 'COMING SOON')}</span></p>
-  <p class="lead">${t('A página do estúdio está chegando: fotos, vídeos, a história e os trabalhos de produção, mix e master. Enquanto isso, acompanhe no Instagram.',
-                      'The studio page is on its way: photos, videos, the story and the production, mixing and mastering work. Meanwhile, follow along on Instagram.')}</p>
+  <p class="lead">${t('A página do estúdio está chegando: fotos, vídeos, a história e os trabalhos de mix e master. Enquanto isso, acompanhe no Instagram.',
+                      'The studio page is on its way: photos, videos, the story and the mixing and mastering work. Meanwhile, follow along on Instagram.')}</p>
   <p><a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
      <a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p>
 </div></section>`,
@@ -191,17 +191,17 @@ function estudio() {
     const E = SITE.estudio, foto = (img, alt, cls = 'foto-img') => `<button type="button" class="ampliar ${cls}" data-img="/img/${img}.webp"><img src="/img/${img}.webp" alt="${esc(alt)}" loading="lazy"></button>`;
     return pagina({
         titulo: 'Estúdio — InsideStudioSP', raiz: '',
-        descricao: 'InsideStudioSP: estúdio de produção, mix e master em São Paulo, do DJ e produtor Equalized.',
+        descricao: 'InsideStudioSP: estúdio de mix e master em São Paulo, do DJ e produtor Equalized.',
         corpo: `
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('ESTÚDIO · SÃO PAULO', 'STUDIO · SÃO PAULO, BRAZIL')}</p>
   <h1>InsideStudioSP</h1>
-  <p class="lead">${E ? t(...E.lead) : t('Produção, mix e master em São Paulo. Ouça abaixo os lançamentos do Equalized.', 'Production, mixing and mastering in São Paulo, Brazil. Listen to Equalized releases below.')}</p>
+  <p class="lead">${E ? t(...E.lead) : t('Mix e master em São Paulo. Ouça abaixo os lançamentos do Equalized.', 'Mixing and mastering in São Paulo, Brazil. Listen to Equalized releases below.')}</p>
 </div></section>
 ${E ? `<section class="faixa duo">
   <div><h2 class="secao">${t('O estúdio', 'The studio')}</h2>
   ${E.texto.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}
-  <p><a class="bt bt-sec" href="/contato/">${t('Orçamento de produção, mix ou master', 'Ask for a production, mix or master quote')}</a></p></div>
+  <p><a class="bt bt-sec" href="/contato/">${t('Orçamento de mix ou master', 'Ask for a mix or master quote')}</a></p></div>
   <div class="fotos-estudio">${(E.fotos || []).map(([img, pt, en]) => foto(img, pt)).join('')}</div>
 </section>
 ${E.maisFotos?.length ? `<section class="faixa"><h2 class="secao">${t('Por dentro do estúdio', 'Inside the studio')}</h2>
@@ -232,20 +232,20 @@ ${SITE.youtube ? `<section class="faixa"><h2 class="secao">${t('Vídeos', 'Video
 function contato() {
     return pagina({
         titulo: 'Contato — InsideStudioSP',
-        descricao: 'Fale com o InsideStudioSP: plugins, produção, mix e master.',
+        descricao: 'Fale com o InsideStudioSP: plugins, mix e master.',
         corpo: `
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('CONTATO', 'CONTACT')}</p>
   <h1>${t('Fale com a gente', 'Get in touch')}</h1>
-  <p class="lead">${t('Dúvida sobre um plugin, licença, produção ou mix: escreva aqui que a resposta chega no seu e-mail.',
-                      'Questions about a plugin, a license, production or mixing: write here and the answer goes to your e-mail.')}</p>
+  <p class="lead">${t('Dúvida sobre um plugin, licença, mix ou master: escreva aqui que a resposta chega no seu e-mail.',
+                      'Questions about a plugin, a license, mixing or mastering: write here and the answer goes to your e-mail.')}</p>
 </div></section>
 <section class="faixa"><form class="compra form-contato" method="post" action="/contato/enviar">
   <label class="campo">${t('Seu nome', 'Your name')}<input name="nome" required maxlength="80" autocomplete="name"></label>
   <label class="campo">${t('Seu e-mail', 'Your e-mail')}<input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
   <label class="campo">${t('Assunto', 'Subject')}<select name="assunto">
     <option value="Plugins">${esc('Plugins / licença · Plugins / license')}</option>
-    <option value="Estúdio">${esc('Estúdio: produção, mix, master · Studio')}</option>
+    <option value="Estúdio">${esc('Estúdio: mix, master · Studio')}</option>
     <option value="Outro">${esc('Outro · Other')}</option></select></label>
   <label class="campo">${t('Mensagem', 'Message')}<textarea name="mensagem" required minlength="5" maxlength="5000" rows="7"></textarea></label>
   <label class="isca" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off"></label>
