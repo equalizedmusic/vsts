@@ -290,10 +290,11 @@ const HTML = `<!doctype html>
       <p id="novoJaExiste" class="aviso" hidden>Este e-mail já é cliente.
         <button type="button" id="btNovoAbrirCli" class="discreto pequeno">Abrir o cliente e adicionar pacote</button></p>
       <fieldset><legend>Pacotes</legend><div class="pacotes" data-pacotes></div></fieldset>
-      <fieldset><legend>Sistema do cliente (links na mensagem)</legend><div class="pacotes">
+      <fieldset><legend>Sistema do cliente (links no e-mail e na mensagem)</legend><div class="pacotes">
         <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
         <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
       </div></fieldset>
+      <div class="pacotes"><label><input type="checkbox" name="avisar" checked> Enviar ao cliente um e-mail por pacote, com o download e o passo a passo de cada um</label></div>
       <div class="linha">
         <label>Origem
           <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (teste grátis)</option></select>
@@ -322,10 +323,11 @@ const HTML = `<!doctype html>
       <h3>Adicionar pacote</h3>
       <p class="det">Marque o que falta. Os que ele já tem aparecem travados. O cliente usa o mesmo token que já recebeu.</p>
       <fieldset><legend>Pacotes</legend><div class="pacotes" data-pacotes></div></fieldset>
-      <fieldset><legend>Sistema do cliente (links na mensagem)</legend><div class="pacotes">
+      <fieldset><legend>Sistema do cliente (links no e-mail e na mensagem)</legend><div class="pacotes">
         <label><input type="checkbox" name="sistema" value="win" checked> Windows</label>
         <label><input type="checkbox" name="sistema" value="mac" checked> Mac</label>
       </div></fieldset>
+      <div class="pacotes"><label><input type="checkbox" name="avisar" checked> Enviar ao cliente um e-mail por pacote, com o download e o passo a passo de cada um</label></div>
       <div class="linha">
         <label>Origem
           <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (teste grátis)</option></select>
@@ -717,15 +719,19 @@ function gerar(f, email, msgId, titulo, depois) {
   if (!pacotes.length) { msg(msgId, 'Marque pelo menos um pacote.'); return; }
   if (!sistemas.length) { msg(msgId, 'Marque Windows, Mac ou os dois.'); return; }
   var bt = f.querySelector('button[type=submit]'); bt.disabled = true; msg(msgId, 'Gerando…', true);
-  var token = null, feitos = [], erros = [], aviso = '';
+  var token = null, feitos = [], erros = [], aviso = '', avisar = f.avisar.checked, comEmail = [], semEmail = [];
   var seq = Promise.resolve();
+  // um pacote por vez: o primeiro de um e-mail novo gera o token (vai no e-mail dele); os outros usam o mesmo
   pacotes.forEach(function (p) {
     seq = seq.then(function () {
       return api('POST', '/admin/licencas', {
         email: email, pacote: p, origem: f.origem.value, pedido: f.pedido.value.trim(), nota: f.nota.value.trim(),
-        max_maquinas: Number(f.maquinas.value) || 2
+        max_maquinas: Number(f.maquinas.value) || 2, avisar: avisar, sistemas: sistemas
       }).then(function (j) {
-        if (j.ok) { feitos.push(p); if (j.token) token = j.token; if (j.token_trocado) aviso = 'o token da página grátis foi trocado por este'; }
+        if (j.ok) {
+          feitos.push(p); if (j.token) token = j.token; if (j.token_trocado) aviso = 'o token da página grátis foi trocado por este';
+          if (avisar) (j.email_enviado ? comEmail : semEmail).push(NOME[p]);
+        }
         else erros.push(NOME[p] + ': ' + (j.mensagem || 'erro'));
       });
     });
@@ -734,6 +740,10 @@ function gerar(f, email, msgId, titulo, depois) {
     bt.disabled = false;
     msg(msgId, erros.join(' · '), false);
     if (!feitos.length) return;
+    if (avisar) aviso = [aviso,
+      comEmail.length ? 'e-mail enviado ao cliente: ' + comEmail.join(', ') : '',
+      semEmail.length ? 'e-mail NÃO saiu (mande a mensagem abaixo): ' + semEmail.join(', ') : ''].filter(Boolean).join(' · ');
+    else aviso = [aviso, 'sem e-mail ao cliente (mande a mensagem abaixo)'].filter(Boolean).join(' · ');
     var maquinas = Number(f.maquinas.value) || 2;
     carregar().then(function () {
       if (depois) depois();

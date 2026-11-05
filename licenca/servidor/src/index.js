@@ -19,7 +19,8 @@
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
 //
 // Rotas de administração (cabeçalho Authorization: Bearer <ADMIN_KEY>): ver admin/isp-licenca.mjs
-//   POST /admin/licencas          { email, pacote, origem?, pedido?, nota?, max_maquinas? }  -> devolve o token (só aqui)
+//   POST /admin/licencas          { email, pacote, origem?, pedido?, nota?, max_maquinas?, avisar?, sistemas? }  -> devolve o token (só aqui)
+//                                 avisar: manda ao cliente o e-mail daquele pacote (src/avisos.js) -> email_enviado
 //   GET  /admin/licencas?email=   lista com as máquinas
 //   POST /admin/revogar           { id }
 //   POST /admin/reativar          { id }
@@ -41,6 +42,7 @@ import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './gratis.js';
 import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja } from './loja.js';
+import { avisarLicenca } from './avisos.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -418,7 +420,14 @@ async function rotaAdmin(caminho, req, env, url) {
 
     if (caminho === '/admin/licencas' && req.method === 'POST') {
         const r = await criarLicenca(env, corpo);
-        return r.erro ? falha(r.erro, r.erro === 'ja_existe' ? 409 : 400) : resposta({ ok: true, ...r });
+        if (r.erro) return falha(r.erro, r.erro === 'ja_existe' ? 409 : 400);
+        // avisar: um e-mail por pacote criado, com o passo a passo daquele plugin (src/avisos.js)
+        let email_enviado = null;
+        if (corpo.avisar) {
+            email_enviado = !!(await avisarLicenca(env, url, { instalador }, r, { sistemas: corpo.sistemas, maquinas: corpo.max_maquinas }));
+            await evento(env, r.id, email_enviado ? 'email' : 'email_falhou', 'painel', null);
+        }
+        return resposta({ ok: true, ...r, email_enviado });
     }
 
     // ações sobre o cliente inteiro (todas as licenças do e-mail)
@@ -472,9 +481,10 @@ async function rotaAdmin(caminho, req, env, url) {
 }
 
 // a página do ALIGN mora no domínio do estúdio: as rotas de wrangler.toml entregam /align*,
-// /gratis/align/* e /baixar/align/* do insidestudiosp.com.br para este Worker (o resto do domínio é o site)
+// /gratis/align/* e /baixar/* (downloads de todos os pacotes) do insidestudiosp.com.br para este Worker
+// (o resto do domínio é o site)
 const ALIGN_OFICIAL = 'https://insidestudiosp.com.br/align/';
-// a da VASSOURA também (rotas /vassoura* e /baixar/vassoura*): só e-mail, sem token
+// a da VASSOURA também (rota /vassoura*): só e-mail, sem token
 const VASSOURA_OFICIAL = 'https://insidestudiosp.com.br/vassoura/';
 // o painel também (rotas /painel* e /admin/*). A sessão é um cookie do host, então fica num endereço só (sem www).
 // A linha de comando (admin/isp-licenca.mjs) segue usando /admin/* no workers.dev com a ADMIN_KEY.

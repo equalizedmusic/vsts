@@ -111,33 +111,41 @@ async function emailAlign(env, url, h, { email, token, sistema, assunto, aviso =
 // o link do arquivo é /baixar/vassoura/zip; o /baixar/vassoura sozinho (link antigo, site, posts) abre a página de cadastro
 export const VASSOURA_ZIP = '/baixar/vassoura/zip';
 
-async function emailVassoura(env, url, h, email, sistema) {
+// sistema: 'win', 'mac' ou '' (painel com os dois marcados: o passo a passo traz os dois)
+//   assunto/abertura: o painel troca o "Obrigado por baixar" por "você recebeu acesso"
+export async function emailVassoura(env, url, h, email, sistema, { assunto, aberturaPt, aberturaEn, origem } = {}) {
     if (!emailLigado(env)) return false;
     let inst = null;
     try { inst = await h.instalador(env, 'vassoura'); } catch (e) { console.error('email vassoura: instalador', e); }
     const link = 'https://insidestudiosp.com.br' + VASSOURA_ZIP,   // sempre o domínio do estúdio (o cadastro pode vir do workers.dev)
           pasta = (inst?.nome || 'Vassoura.zip').replace(/\.zip$/, '');
-    const mac = sistema === 'mac';
+    const mac = sistema === 'mac', ambos = !['win', 'mac'].includes(sistema);
+    const S = (win, m) => ambos ? win + ' (Mac: ' + m + ')' : mac ? m : win;
     // zip igual nos dois; muda como extrai, a pasta da User Library e o atalho de desfazer
-    const extrair = mac ? 'Extraia o zip (dois cliques no arquivo baixado).' : 'Extraia o zip (botão direito > "Extrair tudo...").',
-          extract = mac ? 'Extract the zip (double-click the downloaded file).' : 'Extract the zip (right-click > "Extract All...").',
-          pastaPt = mac ? 'Música/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/   (no Finder: ~/Music/Ableton/...)'
-                        : 'Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
-          pastaEn = mac ? 'Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/   (in Finder: ~/Music/Ableton/...)'
-                        : 'Documents\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
-          desfazer = mac ? 'Cmd+Z' : 'Ctrl+Z',
-          salvar = mac ? 'File > Save Live Set As..., Cmd+Shift+S' : 'File > Save Live Set As..., Ctrl+Shift+S',
-          prefs = mac ? 'Live > Settings' : 'Options > Settings',
-          nomeSo = mac ? 'Mac' : 'Windows';
+    const pW = 'Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+          pM = 'Música/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/   (no Finder: ~/Music/Ableton/...)',
+          eW = 'Documents\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+          eM = 'Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/   (in Finder: ~/Music/Ableton/...)';
+    const extrair = ambos ? 'Extraia o zip (Windows: botão direito > "Extrair tudo..."; Mac: dois cliques no arquivo baixado).'
+                  : mac ? 'Extraia o zip (dois cliques no arquivo baixado).' : 'Extraia o zip (botão direito > "Extrair tudo...").',
+          extract = ambos ? 'Extract the zip (Windows: right-click > "Extract All..."; Mac: double-click the downloaded file).'
+                  : mac ? 'Extract the zip (double-click the downloaded file).' : 'Extract the zip (right-click > "Extract All...").',
+          pastaPt = ambos ? 'Windows: ' + pW + '\r\n       Mac:     ' + pM : mac ? pM : pW,
+          pastaEn = ambos ? 'Windows: ' + eW + '\r\n       Mac:     ' + eM : mac ? eM : eW,
+          desfazer = S('Ctrl+Z', 'Cmd+Z'),
+          salvar = 'File > Save Live Set As..., ' + S('Ctrl+Shift+S', 'Cmd+Shift+S'),
+          prefs = S('Options > Settings', 'Live > Settings'),
+          nomeSo = ambos ? 'Windows e Mac' : mac ? 'Mac' : 'Windows',
+          nomeEn = ambos ? 'Windows and Mac' : nomeSo;
     const texto = [
-        'VASSOURA · InsideStudioSP' + (inst?.versao ? ' · v' + inst.versao : '') + ' · ' + nomeSo,
+        'VASSOURA · InsideStudioSP' + (inst?.versao ? ' · v' + inst.versao : '') + ' · ' + (ambos ? 'Windows / Mac' : nomeSo),
         'Limpa os trechos vazios dos clips de áudio no Ableton Live · Cleans the empty parts of audio clips in Ableton Live',
         '',
         '(English below)',
         '',
         '==================================== PORTUGUÊS ====================================',
         '',
-        'Obrigado por baixar a VASSOURA! É um device Max for Live para o Ableton Live 12 (Suite, ou Standard com Max for Live),',
+        (aberturaPt || 'Obrigado por baixar a VASSOURA!') + ' É um device Max for Live para o Ableton Live 12 (Suite, ou Standard com Max for Live),',
         'no Windows e no Mac. Não precisa de ativação nem de token. Este passo a passo é para ' + nomeSo + '.',
         '',
         '1. BAIXAR',
@@ -182,8 +190,8 @@ async function emailVassoura(env, url, h, email, sistema) {
         '',
         '===================================== ENGLISH =====================================',
         '',
-        'Thanks for downloading VASSOURA! It is a Max for Live device for Ableton Live 12 (Suite, or Standard with Max for Live),',
-        'on Windows and Mac. No activation or token needed. These steps are for ' + nomeSo + '.',
+        (aberturaEn || 'Thanks for downloading VASSOURA!') + ' It is a Max for Live device for Ableton Live 12 (Suite, or Standard with Max for Live),',
+        'on Windows and Mac. No activation or token needed. These steps are for ' + nomeEn + '.',
         '',
         '1. DOWNLOAD',
         '  ' + link,
@@ -226,7 +234,7 @@ async function emailVassoura(env, url, h, email, sistema) {
         '',
         'InsideStudioSP',
     ].join('\r\n');
-    return enviarEmail(env, { para: email, assunto: 'Seu download da VASSOURA · Your VASSOURA download', texto });
+    return enviarEmail(env, { para: email, assunto: assunto || 'Seu download da VASSOURA · Your VASSOURA download', texto, origem });
 }
 
 // ---------------- "Não recebi / perdi meu token" (só com o e-mail ligado) ----------------
