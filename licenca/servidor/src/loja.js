@@ -19,6 +19,12 @@ const PAYPAL_API = 'https://api-m.paypal.com';
 const SITE = 'https://insidestudiosp-site.insidestudiosp.workers.dev';
 const PEDIDOS_POR_IP_HORA = 15;
 const PRESO = 300;   // pedido em 'processando' há mais que isso (s) pode ser retomado (o Worker caiu no meio)
+// prazo do pedido: 4 dias (dá para um boleto vencer e não ser pago). O link do Mercado Pago e o Pix/boleto gerado
+// por ele vencem nesse prazo; a limpeza diária (vencerPedidos, cron do wrangler.toml) marca o pedido 'vencido'.
+// Pagamento que mesmo assim chegar depois (boleto pago no prazo e compensado tarde) ainda libera a licença.
+const PRAZO = 4 * 86400;
+// data no formato do Mercado Pago, no horário de Brasília: 2026-11-09T15:00:00.000-03:00
+const dataMp = (seg) => new Date((seg - 3 * 3600) * 1000).toISOString().replace('Z', '-03:00');
 
 const siteUrl = (env) => (env.SITE_URL || SITE).replace(/\/+$/, '');
 const mpUrl = (env, c) => (env.MP_URL || MP_API) + c;
@@ -61,9 +67,9 @@ async function pagar(req, env, url, h) {
     if ((n?.n || 0) >= PEDIDOS_POR_IP_HORA) return erro('Muitas tentativas seguidas. Espere uma hora ou fale com a gente.', 'Too many attempts. Wait an hour or contact us.', 429);
 
     const id = 'P' + [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-    const pedido = { id, pacote, email, metodo, valor_centavos: Math.round(valor * 100), moeda: metodo === 'mp' ? 'BRL' : 'USD' };
+    const pedido = { id, pacote, email, metodo, valor_centavos: Math.round(valor * 100), moeda: metodo === 'mp' ? 'BRL' : 'USD', criado_em: h.agora() };
     await env.DB.prepare('INSERT INTO pedidos (id, pacote, email, metodo, valor_centavos, moeda, status, ip, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(id, pacote, email, metodo, pedido.valor_centavos, pedido.moeda, 'criado', ip, h.agora()).run();
+        .bind(id, pacote, email, metodo, pedido.valor_centavos, pedido.moeda, 'criado', ip, pedido.criado_em).run();
 
     let destino = null;
     try {
@@ -93,6 +99,8 @@ async function cobrancaMp(env, url, p) {
             auto_return: 'approved',
             payment_methods: { installments: 12 },
             statement_descriptor: 'INSIDESTUDIOSP',
+            expires: true, expiration_date_from: dataMp(p.criado_em), expiration_date_to: dataMp(p.criado_em + PRAZO),
+            date_of_expiration: dataMp(p.criado_em + PRAZO),
         }),
     });
     if (!r.ok) { console.error('loja: mp preferência', r.status, (await r.text()).slice(0, 300)); return null; }
@@ -180,7 +188,7 @@ async function aplicar(env, url, h, pedido, conf) {
 // pagamento aprovado: licença + e-mail, uma vez só (o webhook e a volta do navegador podem chegar juntos)
 async function concluir(env, url, h, pedido, conf) {
     const pegou = await env.DB.prepare("UPDATE pedidos SET status = 'processando', pagamento_id = ?, forma = ?, pago_em = ? " +
-        "WHERE id = ? AND (status IN ('criado', 'pendente', 'recusado') OR (status = 'processando' AND pago_em < ?))")
+        "WHERE id = ? AND (status IN ('criado', 'pendente', 'recusado', 'vencido') OR (status = 'processando' AND pago_em < ?))")
         .bind(conf.pagamento, conf.forma, h.agora(), pedido.id, h.agora() - PRESO).run();
     if (!pegou.meta.changes) return (await env.DB.prepare('SELECT status FROM pedidos WHERE id = ?').bind(pedido.id).first())?.status || 'pago';
 
@@ -199,6 +207,14 @@ async function concluir(env, url, h, pedido, conf) {
         .bind(lic.id, enviado ? 1 : 0, pedido.id).run();
     if (!enviado) await h.evento(env, lic.id, 'venda_sem_email', pedido.id + ': mandar o token pelo painel (Novo token)', null);
     return 'pago';
+}
+
+// limpeza diária (cron): pedido aberto há mais de 4 dias sem pagamento vira 'vencido'. Não apaga nada.
+export async function vencerPedidos(env, agora) {
+    const r = await env.DB.prepare("UPDATE pedidos SET status = 'vencido' WHERE status IN ('criado', 'pendente') AND criado_em < ?")
+        .bind(agora - PRAZO).run();
+    if (r.meta.changes) console.log('loja: pedidos vencidos', r.meta.changes);
+    return r.meta.changes || 0;
 }
 
 // ---------------- avisos e volta do checkout ----------------
@@ -251,6 +267,9 @@ async function retorno(req, env, url, h) {
     if (status === 'pago') return paginaLoja(env, { titulo: 'Pagamento aprovado! · Payment approved!',
         pt: `Obrigado pela compra do ${nome}. Mandamos para ${mascara} o token de ativação, os links de download e as instruções. Não chegou em 10 minutos? Olhe o spam e a aba Promoções, ou escreva para ${CONTATO} com o pedido ${pedido.id}.`,
         en: `Thanks for buying ${nome}. We sent the activation token, the download links and the instructions to ${mascara}. Nothing after 10 minutes? Check spam/Promotions, or write to ${CONTATO} with order ${pedido.id}.` });
+    if (status === 'vencido') return paginaLoja(env, { titulo: 'Pedido vencido · Order expired', link: `${siteUrl(env)}/${pedido.pacote}/`,
+        pt: 'Este pedido passou de 4 dias sem pagamento e venceu. Nada foi cobrado. Para comprar, faça um pedido novo na loja.',
+        en: 'This order went 4 days without payment and expired. Nothing was charged. To buy, place a new order in the shop.' });
     if (status === 'recusado') return paginaLoja(env, { titulo: 'Pagamento não aprovado · Payment not approved', link: `${siteUrl(env)}/${pedido.pacote}/`,
         pt: 'O pagamento não foi aprovado e nada foi cobrado. Você pode tentar de novo com outra forma de pagamento.',
         en: 'The payment was not approved and nothing was charged. You can try again with another payment method.' });

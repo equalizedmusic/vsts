@@ -23,6 +23,10 @@ routes = [
   { pattern = "www.insidestudiosp.com.br/contato/enviar", zone_name = "insidestudiosp.com.br" },
 ]
 
+# limpeza diária da loja: 09:00 UTC (06:00 de Brasília) marca 'vencido' o pedido aberto há mais de 4 dias
+[triggers]
+crons = ["0 9 * * *"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "isp-licencas"

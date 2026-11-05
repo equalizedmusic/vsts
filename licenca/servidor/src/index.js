@@ -42,7 +42,7 @@
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './gratis.js';
 import { rotaWebhookEntrada } from './caixa.js';
-import { rotaLoja } from './loja.js';
+import { rotaLoja, vencerPedidos } from './loja.js';
 import { avisarLicenca } from './avisos.js';
 import { rotaContato } from './contato.js';
 
@@ -539,5 +539,9 @@ export default {
             console.error(e);
             return falha('erro_interno', 500);
         }
+    },
+    // cron diário (wrangler.toml [triggers]): vence os pedidos da loja abertos há mais de 4 dias
+    async scheduled(evento, env, ctx) {
+        ctx.waitUntil(vencerPedidos(env, agora()));
     },
 };

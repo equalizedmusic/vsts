@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     metodo         TEXT    NOT NULL,                  -- mp | paypal
     valor_centavos INTEGER NOT NULL,
     moeda          TEXT    NOT NULL,                  -- BRL | USD
-    status         TEXT    NOT NULL DEFAULT 'criado', -- criado | pendente | recusado | processando | pago | erro
+    status         TEXT    NOT NULL DEFAULT 'criado', -- criado | pendente | recusado | vencido | processando | pago | erro
     ref            TEXT,                              -- id da preferência (MP) ou do pedido (PayPal)
     pagamento_id   TEXT,                              -- id do pagamento (MP) ou da captura (PayPal)
     forma          TEXT,                              -- Pix, cartão em 3x, boleto, PayPal
