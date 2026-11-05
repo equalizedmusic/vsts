@@ -53,6 +53,32 @@ export const SITE = {
     ],
 };
 
+// Perguntas frequentes da loja (05/11/2026, ideia tirada de rewindlabs.com.br). [pergunta pt, en, resposta pt, en].
+// Fatos daqui vêm do servidor: 2 máquinas por licença, 45 dias sem internet (VALIDADE_DIAS), pastas do instalador (loja.js/gratis.js).
+export const FAQ = [
+    ['Funciona no Mac?', 'Does it work on Mac?',
+     'Sim. Os plugins vêm em VST3 e AU, com instalador para Windows e para Mac. A VASSOURA é Max for Live e roda onde o Ableton Live 12.2 ou mais novo roda.',
+     'Yes. The plugins come as VST3 and AU, with installers for Windows and Mac. VASSOURA is Max for Live and runs wherever Ableton Live 12.2 or newer runs.'],
+    ['Funciona em outras DAWs além do Ableton?', 'Does it work in DAWs other than Ableton?',
+     'Sim. Funciona em qualquer DAW que abra VST3 (Windows e Mac) ou AU (Mac), como FL Studio, Logic, Cubase, Bitwig, Reaper e Studio One. A exceção é a VASSOURA, que é Max for Live e só roda no Ableton Live.',
+     'Yes. They work in any DAW that loads VST3 (Windows and Mac) or AU (Mac), such as FL Studio, Logic, Cubase, Bitwig, Reaper and Studio One. The exception is VASSOURA, which is Max for Live and only runs in Ableton Live.'],
+    ['Quando recebo os plugins?', 'When do I get the plugins?',
+     'Assim que o Mercado Pago aprova o pagamento, chegam no seu e-mail o token de ativação, o link de download e as instruções. Com Pix e cartão isso costuma ser na hora. Se não chegar em alguns minutos, olhe a caixa de spam e depois escreva para contato@insidestudiosp.com.br.',
+     'As soon as the payment is approved you get the activation token, the download link and the instructions by e-mail. With Pix and card this is usually instant. If nothing arrives within a few minutes, check your spam folder and then write to contato@insidestudiosp.com.br.'],
+    ['O navegador avisou que o arquivo é incomum ou suspeito. É normal?', 'My browser said the file is uncommon or suspicious. Is that normal?',
+     'É. Os instaladores são novos e ainda foram baixados por pouca gente, e por isso o navegador, o Windows (tela azul do SmartScreen) ou o Mac avisam. Baixe sempre pelo link do site ou do e-mail. No Windows, clique em "Mais informações" e depois em "Executar assim mesmo". No Mac, abra Ajustes do Sistema > Privacidade e Segurança e clique em "Abrir Mesmo Assim". O passo a passo completo vai junto com o download.',
+     'Yes. The installers are new and few people have downloaded them yet, so the browser, Windows (the blue SmartScreen screen) or the Mac show a warning. Always download from the link on the site or in the e-mail. On Windows, click "More info" and then "Run anyway". On Mac, open System Settings > Privacy & Security and click "Open Anyway". The full step-by-step comes with the download.'],
+    ['Em quantos computadores posso usar?', 'How many computers can I use it on?',
+     'Em 2. Para trocar de computador, desative a licença no antigo pelo menu da licença no próprio plugin e ative no novo.',
+     'On 2. To move to another computer, deactivate the license on the old one from the license menu inside the plugin and activate it on the new one.'],
+    ['Preciso de internet para usar?', 'Do I need internet to use it?',
+     'Só para ativar. Depois o plugin funciona sem internet por até 45 dias e renova sozinho quando o computador fica on-line.',
+     'Only to activate. After that the plugin works offline for up to 45 days and renews by itself when the computer is back online.'],
+    ['Posso pedir reembolso?', 'Can I get a refund?',
+     'Pode, em até 7 dias da compra, como garante o Código de Defesa do Consumidor (direito de arrependimento). Escreva para contato@insidestudiosp.com.br com o e-mail usado na compra. O valor é devolvido pelo Mercado Pago e a licença é cancelada.',
+     'Yes, within 7 days of purchase, as guaranteed by Brazilian consumer law. Write to contato@insidestudiosp.com.br with the e-mail you used to buy. The amount is refunded through Mercado Pago and the license is cancelled.'],
+];
+
 export const PACKS = [
     {
         id: 'align', nome: 'ALIGN', cor: '#a78bfa', tipo: ['VST3 · AU', 'VST3 · AU'], destaque: true,

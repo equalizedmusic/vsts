@@ -8,7 +8,7 @@
 import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SITE, PACKS, LIC } from './dados.mjs';
+import { SITE, PACKS, LIC, FAQ } from './dados.mjs';
 import { ICONES } from './icones.mjs';
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
@@ -56,7 +56,7 @@ ${PREVIA ? `<div class="previa">${t('Prévia do site novo.', 'Preview of the new
     <a href="mailto:${SITE.email}">${SITE.email}</a>
     <a href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>
-  <small>© ${new Date().getFullYear()} InsideStudioSP</small>
+  <small>© ${new Date().getFullYear()} InsideStudioSP · <a href="${raiz}/privacidade/">${t('Privacidade e cookies', 'Privacy and cookies')}</a></small>
 </div></footer>
 <dialog class="zoom"><button class="fechar" type="button" aria-label="Fechar / Close">✕</button><img alt=""></dialog>
 </body></html>`;
@@ -85,6 +85,7 @@ function caixaCompra(p) {
     ${temUsd(p) ? `<button class="bt bt-sec" name="metodo" value="paypal">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>` : ''}
     <p class="nota">${t('Pagamento aprovado: você recebe no e-mail o token de ativação, o link de download e as instruções. O token vale em 2 computadores.',
                         'Once the payment is approved you get the activation token, the download link and the instructions by e-mail. The token works on 2 computers.')}</p>
+    <p class="nota">${t('Seu e-mail é usado só para a licença e o suporte.', 'Your e-mail is used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
   </form>`;
 }
 
@@ -121,13 +122,21 @@ function loja() {
 <section id="packs" class="faixa"><h2 class="secao">${t('Todos os packs', 'All packs')}</h2>
   <div class="grade">${resto.map((p) => cartaoPack(p)).join('')}</div>
 </section>
-<section class="faixa como">
-  <h2 class="secao">${t('Como funciona a compra', 'How buying works')}</h2>
+<section id="instalacao" class="faixa como">
+  <p class="sobre">${t('INSTALAÇÃO', 'INSTALLATION')}</p>
+  <h2 class="titulo-sec">${t('Do pagamento ao seu DAW', 'From checkout to your DAW')}</h2>
   <ol>
-    <li>${t('Escolha o pack e pague com Pix ou cartão em até 12x.', 'Pick a pack and pay with Pix or card.')}</li>
-    <li>${t('Pagamento aprovado, chega no seu e-mail o token, o link de download e as instruções.', 'Once approved, you get the token, the download link and the instructions by e-mail.')}</li>
-    <li>${t('Instale, abra o plugin no DAW e ative com o e-mail e o token. Vale em 2 computadores.', 'Install, open the plugin in your DAW and activate it with your e-mail and token. Works on 2 computers.')}</li>
+    <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Pague com Pix ou cartão em até 12x. Assim que o pagamento é aprovado, chegam no seu e-mail o token de ativação, o link de download e as instruções.',
+        'Pay with Pix or card. As soon as the payment is approved you get the activation token, the download link and the instructions by e-mail.')}</li>
+    <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Rode o instalador. No Windows, o .exe põe os plugins em', 'Run the installer. On Windows, the .exe puts the plugins in')} <code>C:\\Program Files\\Common Files\\VST3</code>. ${t('No Mac, abra o .dmg e rode o .pkg (VST3 e AU em', 'On Mac, open the .dmg and run the .pkg (VST3 and AU in')} <code>/Library/Audio/Plug-Ins</code>).</li>
+    <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Reabra o DAW (no Ableton: Preferências › Plug-ins › Rescan), abra o plugin e ative com o e-mail e o token. Vale em 2 computadores.',
+        'Reopen your DAW (in Ableton: Settings › Plug-ins › Rescan), open the plugin and activate it with your e-mail and token. Works on 2 computers.')}</li>
   </ol>
+</section>
+<section id="duvidas" class="faixa faq">
+  <p class="sobre">${t('DÚVIDAS', 'FAQ')}</p>
+  <h2 class="titulo-sec">${t('Perguntas frequentes', 'Frequently asked questions')}</h2>
+  ${FAQ.map(([qp, qe, rp, re]) => `<details><summary>${t(qp, qe)}</summary><p>${t(rp, re)}</p></details>`).join('\n  ')}
 </section>
 <section class="faixa chamada-estudio">
   <div><h2>${t('Conheça o estúdio', 'Meet the studio')}</h2>
@@ -251,7 +260,55 @@ function contato() {
   <label class="isca" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off"></label>
   <button class="bt bt-principal">${t('Enviar mensagem', 'Send message')}</button>
   <p class="nota">${t('Ou escreva direto para', 'Or write straight to')} <a href="mailto:${SITE.email}">${SITE.email}</a></p>
+  <p class="nota">${t('Nome, e-mail e mensagem servem só para responder você.', 'Your name, e-mail and message are used only to reply to you.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
 </form></section>`,
+    });
+}
+
+// Política de privacidade e cookies (LGPD, Lei 13.709/2018). Escrita a partir do que o servidor guarda de fato
+// (licenca/servidor: licencas, ativacoes, pedidos, mensagens, eventos). Mudou o que se guarda ⇒ mudar aqui e a data.
+function privacidade() {
+    const blocos = [
+        ['Quem cuida dos seus dados', 'Who looks after your data',
+         ['O InsideStudioSP é o estúdio e a loja de plugins de Rogério Cardoso (Equalized), em São Paulo. Ele é o responsável pelos dados tratados neste site. Para qualquer assunto sobre os seus dados, escreva para contato@insidestudiosp.com.br.',
+          'InsideStudioSP is the studio and plugin shop of Rogério Cardoso (Equalized), in São Paulo, Brazil. He is responsible for the data handled on this site. For anything about your data, write to contato@insidestudiosp.com.br.']],
+        ['Cookies', 'Cookies',
+         ['Este site não usa cookies de propaganda, de rastreamento nem de estatística, e não tem Google Analytics, pixel do Facebook ou ferramenta parecida. Por isso não há aviso de cookies para aceitar.',
+          'This site does not use advertising, tracking or analytics cookies, and has no Google Analytics, Facebook pixel or similar tool. That is why there is no cookie banner to accept.'],
+         ['A exceção é o player do Spotify na página Estúdio. Ele é carregado do próprio Spotify, que pode gravar cookies dele no seu navegador, conforme a política de privacidade do Spotify.',
+          'The exception is the Spotify player on the Studio page. It is loaded from Spotify itself, which may set its own cookies in your browser under Spotify\'s privacy policy.']],
+        ['O que guardamos e para quê', 'What we keep and why',
+         ['Compra: o e-mail, o pack, o valor, a forma de pagamento e a situação do pedido, para emitir e enviar a sua licença. Os dados do cartão e do Pix ficam com o Mercado Pago e não passam por aqui.',
+          'Purchase: your e-mail, the pack, the amount, the payment method and the order status, to issue and send your license. Card and Pix details stay with Mercado Pago and never reach us.'],
+         ['Licença: o e-mail, o token (guardado só em hash, não dá para ler de volta) e, para cada computador ativado, um código anônimo da máquina e o nome do computador, para controlar o limite de 2 computadores.',
+          'License: your e-mail, the token (stored only as a hash, it cannot be read back) and, for each activated computer, an anonymous machine code and the computer name, to enforce the 2-computer limit.'],
+         ['Downloads grátis (ALIGN e VASSOURA): o e-mail, para mandar o link e o token.', 'Free downloads (ALIGN and VASSOURA): your e-mail, to send the link and the token.'],
+         ['Contato: nome, e-mail e a conversa, para responder você.', 'Contact: name, e-mail and the conversation, to reply to you.'],
+         ['Segurança: o endereço IP de compras e de tentativas de ativação, para barrar abuso e fraude.',
+          'Security: the IP address of purchases and activation attempts, to block abuse and fraud.']],
+        ['Com quem os dados são compartilhados', 'Who the data is shared with',
+         ['Só com os serviços que fazem o site funcionar: Mercado Pago (pagamento), Cloudflare (hospedagem e banco de dados) e Resend (envio dos e-mails). Alguns desses serviços ficam fora do Brasil. Nada é vendido nem repassado para propaganda.',
+          'Only with the services that run the site: Mercado Pago (payments), Cloudflare (hosting and database) and Resend (sending e-mails). Some of them are outside Brazil. Nothing is sold or shared for advertising.']],
+        ['Por quanto tempo', 'How long',
+         ['Os dados da licença ficam enquanto a licença existir, porque sem eles o plugin não ativa. Os dados de pedidos ficam pelo prazo exigido pela lei. Mensagens de contato podem ser apagadas a qualquer momento, a seu pedido.',
+          'License data is kept for as long as the license exists, because the plugin cannot activate without it. Order data is kept for as long as the law requires. Contact messages can be deleted at any time at your request.']],
+        ['Seus direitos', 'Your rights',
+         ['Pela LGPD você pode pedir para ver, corrigir ou apagar os seus dados, saber com quem foram compartilhados e retirar o consentimento. Escreva para contato@insidestudiosp.com.br com o e-mail cadastrado. Se você pedir para apagar a licença, o plugin deixa de ativar.',
+          'Under Brazil\'s data protection law (LGPD) you can ask to see, correct or delete your data, learn who it was shared with and withdraw consent. Write to contato@insidestudiosp.com.br from the e-mail on file. If you ask us to delete your license, the plugin will stop activating.']],
+    ];
+    return pagina({
+        titulo: 'Privacidade e cookies — InsideStudioSP',
+        descricao: 'Como o InsideStudioSP trata os seus dados e cookies (LGPD).',
+        corpo: `
+<section class="hero"><div class="faixa">
+  <p class="sobre">${t('PRIVACIDADE · LGPD', 'PRIVACY')}</p>
+  <h1>${t('Privacidade e cookies', 'Privacy and cookies')}</h1>
+  <p class="lead">${t('O mínimo de dados, só para vender, ativar o plugin e responder você.', 'As little data as possible, only to sell, activate the plugin and reply to you.')}</p>
+</div></section>
+<section class="faixa texto-legal">
+  ${blocos.map(([hp, he, ...ps]) => `<h2>${t(hp, he)}</h2>\n  ${ps.map(([pp, pe]) => `<p>${t(pp, pe)}</p>`).join('\n  ')}`).join('\n  ')}
+  <p class="dim">${t('Atualizada em 5 de novembro de 2026.', 'Last updated on November 5, 2026.')}</p>
+</section>`,
     });
 }
 
@@ -265,6 +322,7 @@ grava('index.html', loja());
 for (const p of PACKS) grava(`${p.id}/index.html`, paginaPack(p));
 grava('estudio/index.html', estudio());
 grava('contato/index.html', contato());
+grava('privacidade/index.html', privacidade());
 grava('contato/enviado/index.html', paginaAviso('Mensagem enviada', 'Recebemos sua mensagem. A resposta chega no e-mail que você informou.', 'We got your message. The reply will go to the e-mail you entered.'));
 grava('contato/erro/index.html', paginaAviso('Erro', 'Confira o nome, o e-mail e a mensagem e tente de novo. Se continuar, escreva para contato@insidestudiosp.com.br.', 'Check your name, e-mail and message and try again. If it keeps failing, write to contato@insidestudiosp.com.br.'));
 grava('contato/limite/index.html', paginaAviso('Erro', 'Muitas mensagens seguidas daqui. Tente de novo mais tarde ou escreva para contato@insidestudiosp.com.br.', 'Too many messages in a row. Try again later or write to contato@insidestudiosp.com.br.'));
