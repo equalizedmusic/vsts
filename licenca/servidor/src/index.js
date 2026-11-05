@@ -11,6 +11,7 @@
 //   GET/POST /gratis/align (= /align)   e-mail + Windows/Mac -> token + download do ALIGN, 1 computador
 //   POST /gratis/align/zip   { email, token?, sistema }   zip com o instalador + LEIA-ME com e-mail, token e instruções
 //   POST /gratis/align/reenviar, GET/POST /gratis/align/novo-token   "perdi meu token" por e-mail (só com RESEND_API_KEY)
+//   POST /email/entrada   webhook do Resend: e-mail que chegou no contato@ (ver src/caixa.js)
 // Resposta: { ok: true, licenca: { dados, assinatura } }  ou  { ok: false, erro, mensagem }
 //   dados = base64 do JSON { v, pacote, email, maquina, emitida, valida_ate }
 //   assinatura = base64 da assinatura Ed25519 dos bytes de dados (chave pública embutida no plugin)
@@ -30,10 +31,12 @@
 // Painel web (/painel, usuário e senha): ver src/painel.js. Um token por e-mail: a 2ª licença do mesmo e-mail usa
 // o mesmo token, e "novo token" troca o do e-mail inteiro.
 //
-// Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura).
+// Segredos (wrangler secret put): SIGN_KEY (Ed25519 privada, PKCS8 em base64), ADMIN_KEY, GITHUB_TOKEN (opcional, só leitura),
+// RESEND_API_KEY e RESEND_WEBHOOK_SECRET (opcionais: e-mail e caixa de entrada; ver src/email.js e src/caixa.js).
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './gratis.js';
+import { rotaWebhookEntrada } from './caixa.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -467,6 +470,7 @@ export default {
             // HEAD também: prévia de link (WhatsApp, Instagram) consulta antes de baixar
             if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
+            if (caminho === '/email/entrada') return await rotaWebhookEntrada(req, env);
             if (caminho === '/gratis/align/zip')
                 return await rotaZipAlign(req, env, { normEmail, normToken, sha256Hex, evento, instalador, paginaSimples });
             if (caminho === '/gratis/align/reenviar' || caminho === '/gratis/align/novo-token')

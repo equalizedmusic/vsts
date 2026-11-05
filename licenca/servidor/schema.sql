@@ -48,6 +48,25 @@ CREATE TABLE IF NOT EXISTS painel (
     trocada_em INTEGER NOT NULL
 );
 
+-- caixa de entrada do contato@ (painel, aba Caixa de entrada)
+CREATE TABLE IF NOT EXISTS mensagens (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    direcao    TEXT    NOT NULL,          -- entrada | saida
+    resend_id  TEXT,                      -- id do e-mail no Resend
+    contato    TEXT    NOT NULL,          -- o outro lado da conversa (e-mail minúsculo)
+    de         TEXT,
+    para       TEXT,
+    assunto    TEXT,
+    texto      TEXT,                      -- só texto puro; HTML recebido vira texto (o painel nunca renderiza HTML)
+    message_id TEXT,                      -- Message-ID do recebido (para a resposta cair na mesma conversa)
+    anexos     TEXT,                      -- JSON [{ id, nome, tipo, tamanho }] (o arquivo fica no Resend)
+    origem     TEXT,                      -- recebido | automatico (cadastro/token) | painel
+    lida       INTEGER NOT NULL DEFAULT 0,
+    quando     INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS mensagens_resend ON mensagens (direcao, resend_id);
+CREATE INDEX IF NOT EXISTS mensagens_contato ON mensagens (contato, id);
+
 CREATE INDEX IF NOT EXISTS licencas_token ON licencas (token_hash);
 CREATE INDEX IF NOT EXISTS eventos_licenca ON eventos (licenca_id);
 CREATE INDEX IF NOT EXISTS eventos_ip_quando ON eventos (ip, quando);

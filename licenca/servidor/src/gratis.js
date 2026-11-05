@@ -77,7 +77,7 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     await h.evento(env, r.meta.last_row_id, 'gratis', lista.length ? 'mesmo token' : 'novo', ip);
     const enviado = PACOTE === 'align' && await emailAlign(env, url, h, { email, token, sistema, assunto: 'Sua licença do ALIGN · Your ALIGN license' });
     if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
-    return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar, email_enviado: enviado, reenvio: PACOTE === 'align' && emailLigado(env) });
+    return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar, email_enviado: !!enviado, reenvio: PACOTE === 'align' && emailLigado(env) });
 }
 
 // e-mail com o mesmo conteúdo do LEIA-ME do zip + o link direto do instalador (o zip é POST com o token)
@@ -91,7 +91,7 @@ async function emailAlign(env, url, h, { email, token, sistema, assunto, aviso =
         ...leiaMeAlign({ email, token, sistema, nome: inst?.nome || (sistema === 'mac' ? 'ALIGN.dmg' : 'ALIGN.exe'),
                          versao: inst?.versao, sha256: inst?.sha256, porEmail: true, link }),
     ].join('\r\n');
-    return enviarEmail(env, { para: email, assunto, texto });
+    return enviarEmail(env, { para: email, assunto, texto, segredos: [token] });
 }
 
 // ---------------- "Não recebi / perdi meu token" (só com o e-mail ligado) ----------------
@@ -142,7 +142,7 @@ export async function rotaTokenAlign(req, env, url, h, acao) {
             'Did not ask for it? Ignore this e-mail: nothing changes.',
             'Questions? Reply to this e-mail or write to ' + CONTATO + '.',
             '', 'InsideStudioSP',
-        ].join('\r\n') });
+        ].join('\r\n'), segredos: [c] });
         return pronto;
     }
 

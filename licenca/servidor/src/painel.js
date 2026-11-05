@@ -6,12 +6,15 @@
 //   POST /painel/entrar       { usuario, senha }  -> cookie de sessão (12 h)
 //   POST /painel/sair
 //   POST /painel/senha        { atual, nova }
+//   /painel/caixa/*           caixa de entrada do contato@ (ver src/caixa.js)
 // As ações (criar, listar, revogar, liberar máquina, novo token) usam as mesmas rotas /admin/* da linha de comando,
 // com a sessão no lugar da ADMIN_KEY (ver rotaAdmin em index.js).
 //
 // Senha em PBKDF2-SHA256 (tabela painel). Sessão = cookie HttpOnly/Secure/SameSite=Strict assinado com HMAC da
 // ADMIN_KEY; leva o começo do hash da senha, então trocar a senha derruba as sessões abertas.
 // 10 senhas erradas do mesmo IP em 15 min bloqueiam o login desse IP por 15 min.
+
+import { rotaCaixa } from './caixa.js';
 
 const SESSAO_HORAS = 12;
 const ITERACOES = 100000;          // máximo que o Workers aceita no PBKDF2
@@ -121,6 +124,12 @@ const pagina = (corpo, tipo) => new Response(corpo, { headers: { 'content-type':
 export async function rotaPainel(caminho, req, env) {
     const ip = req.headers.get('cf-connecting-ip') || '';
 
+    if (caminho === '/painel/caixa' || caminho.startsWith('/painel/caixa/')) {
+        if (req.headers.get('x-painel') !== '1') return erro('Pedido inválido.', 400);
+        if (!(await sessaoPainel(req, env))) return erro('Sessão encerrada.', 401);
+        return rotaCaixa(caminho, req, env);
+    }
+
     if (req.method === 'GET') {
         if (caminho === '/painel') return pagina(HTML, 'text/html; charset=utf-8');
         if (caminho === '/painel/app.js') return pagina(JS, 'text/javascript; charset=utf-8');
@@ -199,6 +208,11 @@ const HTML = `<!doctype html>
     </form>
   </section>
 
+  <div id="abas" class="abas" role="tablist" hidden>
+    <button type="button" class="aba ativa" data-aba="telaPainel">Clientes</button>
+    <button type="button" class="aba" data-aba="telaCaixa">Caixa de entrada <span id="naoLidas" class="contador" hidden></span></button>
+  </div>
+
   <section id="telaPainel" hidden>
     <div class="cartao">
       <div class="linha topo">
@@ -211,6 +225,60 @@ const HTML = `<!doctype html>
       <div id="lista"></div>
     </div>
   </section>
+
+  <section id="telaCaixa" hidden>
+    <div class="cartao">
+      <div class="linha topo">
+        <h2>Caixa de entrada <span id="caixaEnd" class="det"></span></h2>
+        <div class="linha">
+          <select id="caixaFiltro" aria-label="Mostrar">
+            <option value="recebidas">Conversas com resposta</option>
+            <option value="todas">Todas (inclui os e-mails automáticos)</option>
+          </select>
+          <button type="button" id="btEscrever">+ Escrever</button>
+        </div>
+      </div>
+      <p id="caixaAviso" class="aviso" hidden></p>
+      <div id="caixaLista"></div>
+    </div>
+  </section>
+
+  <dialog id="dConversa" class="largo">
+    <div class="linha topo">
+      <h2 id="convContato" class="email"></h2>
+      <button type="button" id="btConvFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+    </div>
+    <div id="convMensagens"></div>
+    <form id="fResponder" class="adicionar">
+      <h3>Responder</h3>
+      <label>Assunto <input name="assunto" autocomplete="off" required></label>
+      <label>Mensagem <textarea name="texto" rows="7" required></textarea></label>
+      <div class="linha">
+        <button type="button" id="btConvApagar" class="perigo">Apagar conversa</button>
+        <span class="espaco"></span>
+        <button type="submit">Enviar</button>
+      </div>
+      <p class="msg" id="msgResponder"></p>
+    </form>
+  </dialog>
+
+  <dialog id="dEscrever" class="largo">
+    <form id="fEscrever">
+      <div class="linha topo">
+        <h2>Novo e-mail</h2>
+        <button type="button" id="btEscreverFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+      </div>
+      <p class="det">Sai de contato@insidestudiosp.com.br. A resposta volta para esta caixa.</p>
+      <label>Para <input name="para" type="email" required autocomplete="off"></label>
+      <label>Assunto <input name="assunto" required autocomplete="off"></label>
+      <label>Mensagem <textarea name="texto" rows="9" required></textarea></label>
+      <div class="linha rodape">
+        <span class="espaco"></span>
+        <button type="submit">Enviar</button>
+      </div>
+      <p class="msg" id="msgEscrever"></p>
+    </form>
+  </dialog>
 
   <dialog id="dNovo" class="largo">
     <form id="fNova">
@@ -329,8 +397,9 @@ main { max-width:980px; margin:0 auto; padding:22px; }
 .estreito { max-width:380px; margin:40px auto; }
 h1, h2 { margin:0 0 14px; font-size:18px; } h1 { font-size:22px; }
 label { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; color:var(--fraco); font-size:13px; flex:1; }
-input, select { background:#111214; color:var(--texto); border:1px solid var(--borda); border-radius:6px; padding:9px 10px; font:inherit; }
-input:focus, select:focus { outline:2px solid var(--acento); outline-offset:-1px; }
+input, select, textarea { background:#111214; color:var(--texto); border:1px solid var(--borda); border-radius:6px; padding:9px 10px; font:inherit; }
+textarea { resize:vertical; min-height:110px; font:14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+input:focus, select:focus, textarea:focus { outline:2px solid var(--acento); outline-offset:-1px; }
 fieldset { border:1px solid var(--borda); border-radius:6px; margin:0 0 12px; padding:8px 12px; }
 legend { color:var(--fraco); font-size:13px; padding:0 4px; }
 .pacotes { display:flex; flex-wrap:wrap; gap:6px 18px; }
@@ -373,11 +442,27 @@ dialog { background:var(--cartao); color:var(--texto); border:1px solid var(--bo
 dialog::backdrop { background:rgba(0,0,0,.6); } dialog .estreito { margin:10px auto; }
 dialog .linha.topo { flex-wrap:nowrap; } .linha.topo h2 { min-width:0; } .linha.topo > button { flex:none; }
 html { -webkit-text-size-adjust:100%; }
+.abas { display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid var(--borda); }
+.aba { background:transparent; color:var(--fraco); border:0; border-bottom:2px solid transparent; border-radius:0; padding:8px 14px; font-weight:500; }
+.aba.ativa { color:var(--texto); border-bottom-color:var(--acento); }
+.contador { display:inline-block; min-width:20px; padding:0 6px; margin-left:4px; border-radius:10px; background:var(--acento); color:#1a1306;
+            font-size:12px; font-weight:700; text-align:center; }
+.tabela tr.nao-lida td { font-weight:600; } .tabela tr.nao-lida .cli-email::before { content:'● '; color:var(--acento); }
+.assunto { color:var(--fraco); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:360px; }
+.mail { border:1px solid var(--borda); border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+.mail.entrada { border-left:3px solid var(--acento); } .mail.saida { border-left:3px solid var(--ok); }
+.mail .cab { display:flex; gap:8px 14px; flex-wrap:wrap; justify-content:space-between; color:var(--fraco); font-size:13px; margin-bottom:6px; }
+.mail .cab b { color:var(--texto); font-weight:600; }
+.mail pre { margin:6px 0 0; max-height:420px; overflow:auto; font:14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.anexos { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
 
 /* celular: lista vira cartões, modais em tela cheia, botões e caixas do tamanho do dedo */
 @media (max-width:640px) {
   body { font-size:16px; }
-  input, select { font-size:16px; padding:11px 12px; }          /* 16px: o iPhone não dá zoom ao tocar no campo */
+  input, select, textarea { font-size:16px; padding:11px 12px; }
+  .aba { flex:1; }
+  #telaCaixa .linha.topo > .linha { flex:1 1 100%; flex-wrap:nowrap; } #caixaFiltro { flex:1; min-width:0; }
+  .assunto { max-width:none; grid-column:1 / -1; }          /* 16px: o iPhone não dá zoom ao tocar no campo */
   header { padding:10px 14px; gap:10px; }
   .marca { font-size:13px; letter-spacing:.08em; white-space:nowrap; }
   #quem { display:none; }
@@ -465,13 +550,113 @@ function data(t) { return t ? new Date(t * 1000).toLocaleString('pt-BR', { dateS
 function msg(id, texto, ok) { var m = $(id); m.textContent = texto || ''; m.className = 'msg' + (ok ? ' ok' : ''); }
 
 function mostrarLogin() {
-  $('telaPainel').hidden = true; $('menu').hidden = true; $('telaLogin').hidden = false;
+  $('telaPainel').hidden = true; $('telaCaixa').hidden = true; $('abas').hidden = true; $('menu').hidden = true; $('telaLogin').hidden = false;
   $('fLogin').senha.value = ''; $('fLogin').usuario.focus();
 }
 function mostrarPainel(usuario) {
-  $('telaLogin').hidden = true; $('telaPainel').hidden = false; $('menu').hidden = false;
+  $('telaLogin').hidden = true; $('abas').hidden = false; $('menu').hidden = false;
   $('quem').textContent = usuario;
+  abrirAba('telaPainel');
   carregar('');
+  carregarCaixa();
+}
+
+// ---------------- caixa de entrada do contato@ ----------------
+var caixa = { filtro: 'recebidas', conversa: null, responder: null };
+
+function abrirAba(id) {
+  ['telaPainel', 'telaCaixa'].forEach(function (t) { $(t).hidden = t !== id; });
+  Array.prototype.forEach.call(document.querySelectorAll('.aba'), function (b) { b.classList.toggle('ativa', b.getAttribute('data-aba') === id); });
+  if (id === 'telaCaixa') carregarCaixa();
+}
+
+function carregarCaixa() {
+  return api('GET', '/painel/caixa?f=' + caixa.filtro).then(function (j) {
+    if (!j.ok) { $('caixaLista').textContent = j.mensagem || 'Erro ao carregar.'; return; }
+    $('naoLidas').textContent = j.nao_lidas; $('naoLidas').hidden = !j.nao_lidas;
+    $('caixaEnd').textContent = '· ' + j.contato;
+    var aviso = !j.ligado ? 'O e-mail ainda não está ligado (falta a chave do Resend): nada é enviado nem recebido.'
+      : !j.recebendo ? 'O envio está ligado, mas o recebimento ainda não (falta o webhook do Resend): respostas dos clientes não chegam aqui.' : '';
+    $('caixaAviso').textContent = aviso; $('caixaAviso').hidden = !aviso;
+    $('btEscrever').disabled = !j.ligado;
+    var lista = $('caixaLista'); lista.textContent = '';
+    if (!j.conversas.length) {
+      lista.appendChild(el('p', { classe: 'vazio', texto: caixa.filtro === 'todas' ? 'Nenhum e-mail ainda.' : 'Nenhum e-mail recebido ainda.' }));
+      return;
+    }
+    var corpo = el('tbody');
+    j.conversas.forEach(function (c) {
+      var abrir = function () { abrirConversa(c.contato); };
+      corpo.appendChild(el('tr', { classe: c.nao_lidas ? 'nao-lida' : '', tabindex: '0', onclick: abrir,
+        onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } }, [
+        el('td', { classe: 'cli-email', texto: c.contato }),
+        el('td', { classe: 'assunto', texto: (c.direcao === 'saida' ? '↗ ' : '') + (c.assunto || '') }),
+        el('td', { classe: 'num', texto: c.n + (c.n === 1 ? ' msg' : ' msgs') }),
+        el('td', { classe: 'num', texto: data(c.quando) })
+      ]));
+    });
+    lista.appendChild(el('table', { classe: 'tabela' }, [
+      el('thead', {}, [el('tr', {}, [el('th', { texto: 'E-mail' }), el('th', { texto: 'Assunto' }), el('th', { texto: 'Mensagens' }), el('th', { texto: 'Última' })])]),
+      corpo
+    ]));
+  });
+}
+
+var ORIGEM = { automatico: 'automático (cadastro / token)', painel: 'pelo painel', recebido: '' };
+
+function abrirConversa(contato) {
+  caixa.conversa = contato; caixa.responder = null;
+  var d = $('dConversa'), f = $('fResponder');
+  $('convContato').textContent = contato; $('convMensagens').textContent = 'Carregando…';
+  f.reset(); msg('msgResponder', '');
+  if (!d.open) d.showModal();
+  var pedido = contato;
+  api('GET', '/painel/caixa/conversa?c=' + encodeURIComponent(contato)).then(function (j) {
+    if (caixa.conversa !== pedido) return;                 // abriu outra conversa no meio do caminho
+    var box = $('convMensagens'); box.textContent = '';
+    if (!j.ok) { box.textContent = j.mensagem || 'Erro.'; return; }
+    var ultimaRecebida = null, ultimoAssunto = '';
+    j.mensagens.forEach(function (m) {
+      if (m.direcao === 'entrada') ultimaRecebida = m;
+      ultimoAssunto = m.assunto || ultimoAssunto;
+      var anexos = m.anexos.length ? el('div', { classe: 'anexos' }, m.anexos.map(function (a) {
+        return el('button', { type: 'button', classe: 'discreto pequeno', texto: '📎 ' + a.nome + ' (' + Math.max(1, Math.round(a.tamanho / 1024)) + ' KB)',
+          onclick: function () { baixarAnexo(m.id, a.id); } });
+      })) : null;
+      box.appendChild(el('div', { classe: 'mail ' + m.direcao }, [
+        el('div', { classe: 'cab' }, [
+          el('span', {}, [el('b', { texto: m.direcao === 'entrada' ? 'Recebido' : 'Enviado' }),
+            ' ' + (m.direcao === 'entrada' ? 'de ' + (m.de || contato) : 'para ' + (m.para || contato)) + (ORIGEM[m.origem] ? ' · ' + ORIGEM[m.origem] : '')]),
+          el('span', { texto: data(m.quando) })
+        ]),
+        el('div', { texto: m.assunto || '' }),
+        el('pre', { texto: m.texto || '' }),
+        anexos
+      ]));
+    });
+    caixa.responder = ultimaRecebida ? ultimaRecebida.id : null;
+    var base = (ultimaRecebida || {}).assunto || ultimoAssunto;
+    f.assunto.value = base ? (/^re:/i.test(base) ? base : 'Re: ' + base) : '';
+    f.hidden = !j.ligado;
+    if (box.lastChild) box.lastChild.scrollIntoView({ block: 'nearest' });
+    carregarCaixa();                                          // a conversa aberta deixa de contar como não lida
+  });
+}
+
+function baixarAnexo(id, anexo) {
+  api('GET', '/painel/caixa/anexo?m=' + id + '&a=' + encodeURIComponent(anexo)).then(function (j) {
+    if (j.ok) window.open(j.url, '_blank', 'noopener'); else alert(j.mensagem || 'Não consegui baixar o anexo.');
+  });
+}
+
+function enviarCaixa(corpo, msgId, botao, depois) {
+  botao.disabled = true; msg(msgId, 'Enviando…', true);
+  api('POST', '/painel/caixa/enviar', corpo).then(function (j) {
+    botao.disabled = false;
+    if (!j.ok) { msg(msgId, j.mensagem || 'Erro ao enviar.'); return; }
+    msg(msgId, 'Enviado.', true);
+    depois(j);
+  });
 }
 
 // sistemas: ['win'], ['mac'] ou os dois; só entram na mensagem os links dos sistemas marcados
@@ -720,6 +905,38 @@ function abrirCliente(email) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  // abas Clientes / Caixa de entrada
+  Array.prototype.forEach.call(document.querySelectorAll('.aba'), function (b) {
+    b.addEventListener('click', function () { abrirAba(b.getAttribute('data-aba')); });
+  });
+  $('caixaFiltro').addEventListener('change', function (ev) { caixa.filtro = ev.target.value; carregarCaixa(); });
+  // conversa: fecha só no ✕ (ou Esc)
+  $('btConvFechar').addEventListener('click', function () { $('dConversa').close(); });
+  $('dConversa').addEventListener('close', function () { caixa.conversa = null; });
+  $('fResponder').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var f = ev.target, contato = caixa.conversa;
+    enviarCaixa({ para: contato, assunto: f.assunto.value, texto: f.texto.value, responder: caixa.responder }, 'msgResponder',
+      f.querySelector('button[type=submit]'), function () { abrirConversa(contato); });
+  });
+  $('btConvApagar').addEventListener('click', function () {
+    var contato = caixa.conversa;
+    if (!confirm('Apagar do painel toda a conversa com ' + contato + '?\\n\\nNão dá para desfazer. Não mexe nas licenças dele.')) return;
+    api('POST', '/painel/caixa/apagar', { contato: contato }).then(function (j) {
+      if (j.ok) { $('dConversa').close(); carregarCaixa(); } else msg('msgResponder', j.mensagem || 'Erro.');
+    });
+  });
+  $('btEscrever').addEventListener('click', function () { $('fEscrever').reset(); msg('msgEscrever', ''); $('dEscrever').showModal(); });
+  $('btEscreverFechar').addEventListener('click', function () { $('dEscrever').close(); });
+  $('fEscrever').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var f = ev.target;
+    enviarCaixa({ para: f.para.value, assunto: f.assunto.value, texto: f.texto.value }, 'msgEscrever', f.querySelector('button[type=submit]'),
+      function (j) { $('dEscrever').close(); caixa.filtro = 'todas'; $('caixaFiltro').value = 'todas'; abrirAba('telaCaixa'); abrirConversa(j.contato); });
+  });
+  // contador de não lidas: confere de minuto em minuto enquanto o painel está aberto
+  setInterval(function () { if (!$('abas').hidden && !document.hidden) carregarCaixa(); }, 60000);
+
   $('fLogin').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var f = ev.target; msg('msgLogin', '');
