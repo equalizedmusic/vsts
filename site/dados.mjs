@@ -1,5 +1,6 @@
 // Conteúdo do site: packs, plugins e textos. Cada texto vem em [pt, en] (PT primeiro: o site abre em português).
-// preco: null = "preço em breve" (botões de compra desligados); número = reais. gratis: link da página grátis.
+// preco: null = "preço em breve" (botões de compra desligados); número = reais. gratis: link da página grátis
+// (direto: true = o link já é o download, sem cadastro nem token — caso da VASSOURA, que não ativa).
 
 const LIC = 'https://isp-licencas.insidestudiosp.workers.dev';
 
@@ -24,7 +25,7 @@ export const PACKS = [
     },
     {
         id: 'vassoura', nome: 'VASSOURA', cor: '#fcd34d', tipo: ['Max for Live · Ableton Live 12.2+', 'Max for Live · Ableton Live 12.2+'], destaque: true,
-        capa: 'vassoura', preco: null,
+        capa: 'vassoura', preco: null, gratis: `${LIC}/baixar/vassoura`, direto: true,
         frase: ['Pare de limpar stems na mão.', 'Stop cleaning stems by hand.'],
         texto: [
             'Lê todas as faixas do set, acha os trechos vazios dos clips de áudio e muta (MUTE) ou apaga (CUT) só o silêncio. PRE e POST protegem o ataque e a cauda, SNAP alinha os cortes na grade. Num set de 81 stems: 465 vazios em segundos.',
@@ -144,14 +145,5 @@ export const PACKS = [
             '8 instrumentos sem bumbo, 5 modelos cada, grade de até 4 compassos e gerador por estilo (psy, techno, house, tribal, break). Arraste o MIDI para o DAW.',
             '8 kick-less instruments, 5 models each, up to 4-bar grid and style-based generator (psy, techno, house, tribal, break). Drag the MIDI into your DAW.'],
         plugins: [['groovador', 'GROOVADOR', '', '']],
-    },
-    {
-        id: 'montamonta', nome: 'MONTA-MONTA', cor: '#60a5fa', tipo: ['Instrumento · VST3 · AU', 'Instrument · VST3 · AU'],
-        capa: 'montamonta', preco: null, gratis: `${LIC}/gratis/montamonta`,
-        frase: ['Aprenda síntese montando o synth peça por peça.', 'Learn synthesis by building the synth piece by piece.'],
-        texto: [
-            'As peças de um synth de 2 osciladores encaixam no rack como num quebra-cabeça. 6 lições, cartão de cada peça em português e inglês e modo CABOS.',
-            'The parts of a 2-oscillator synth snap into the rack like a puzzle. 6 lessons, a card for each part in Portuguese and English, and CABLES mode.'],
-        plugins: [['montamonta', 'MONTA-MONTA', '', '']],
     },
 ];

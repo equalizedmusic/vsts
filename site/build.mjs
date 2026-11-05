@@ -60,7 +60,9 @@ function caixaCompra(p) {
     if (p.gratis) return `<div class="compra">
     <div class="preco"><span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span></div>
     <a class="bt bt-principal" href="${p.gratis}">${t('Baixar grátis', 'Free download')}</a>
-    <p class="nota">${t('Cadastre o e-mail e receba o token de ativação e o download na hora.', 'Enter your e-mail and get the activation token and download right away.')}</p>
+    <p class="nota">${p.direto
+        ? t('Download direto, sem cadastro. Um zip só para Windows e Mac, com o LEIA-ME de instalação.', 'Direct download, no sign-up. One zip for Windows and Mac, with the install README.')
+        : t('Cadastre o e-mail e receba o token de ativação e o download na hora.', 'Enter your e-mail and get the activation token and download right away.')}</p>
   </div>`;
     const temPreco = typeof p.preco === 'number';
     const desl = temPreco ? '' : ' disabled aria-disabled="true"';
