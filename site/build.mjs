@@ -38,7 +38,7 @@ ${PREVIA ? '<meta name="robots" content="noindex, nofollow">' : ''}
 <header class="topo"><div class="faixa">
   <a class="marca" href="${raiz}/">Inside<b>Studio</b>SP</a>
   <nav>
-    <a href="${raiz}/#packs">${t('Loja', 'Shop')}</a>
+    <a href="${raiz}/">${t('Loja', 'Shop')}</a>
     <a href="${raiz}/estudio/">${t('Estúdio', 'Studio')}</a>
     <a href="${raiz}/contato/">${t('Contato', 'Contact')}</a>
     <button class="idioma" type="button" aria-label="Idioma / Language"><span class="pt">EN</span><span class="en">PT</span></button>
