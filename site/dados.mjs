@@ -27,6 +27,9 @@ export const SITE = {
              'Production, mixing and mastering of electronic music, from Psytrance to Techno, plus mentoring for artists shaping their own sound.'],
         ],
         fotos: [['st-mesa', 'A mesa de produção', 'The production desk'], ['st-sala', 'A sala: produção de um lado, CDJs do outro', 'The room: production on one side, CDJs on the other']],
+        // Galeria "Por dentro do estúdio", em largura cheia abaixo do texto.
+        maisFotos: [['st-bancada', 'A bancada de produção', 'The production desk'], ['st-setup', 'Sintetizador analógico e monitores', 'Analog synth and monitors'],
+                    ['st-mixer', 'A mesa de som', 'The mixing console'], ['st-mic', 'Microfone para gravação', 'Recording mic']],
     },
     bio: [
         ['Equalized é o projeto do DJ e produtor paulistano Rogério Cardoso, com mais de 20 anos dedicados à música eletrônica. Nome de destaque na cena Psytrance, seu som transita entre o Techno e o Full On, misturando melodias emocionais, grooves hipnóticos e uma forte identidade progressiva.',

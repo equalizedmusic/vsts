@@ -203,7 +203,9 @@ ${E ? `<section class="faixa duo">
   ${E.texto.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}
   <p><a class="bt bt-sec" href="/contato/">${t('Orçamento de produção, mix ou master', 'Ask for a production, mix or master quote')}</a></p></div>
   <div class="fotos-estudio">${(E.fotos || []).map(([img, pt, en]) => foto(img, pt)).join('')}</div>
-</section>` : ''}
+</section>
+${E.maisFotos?.length ? `<section class="faixa"><h2 class="secao">${t('Por dentro do estúdio', 'Inside the studio')}</h2>
+  <div class="grade-fotos grade-estudio">${E.maisFotos.map(([img, pt]) => foto(img, pt)).join('')}</div></section>` : ''}` : ''}
 ${SITE.bio ? `<section class="faixa duo duo-artista">
   ${SITE.retrato ? `<div>${foto(SITE.retrato, 'Equalized', 'foto-img retrato')}</div>` : ''}
   <div><p class="sobre">${t('O ARTISTA', 'THE ARTIST')}</p>
