@@ -4,7 +4,9 @@
 
 import { PRECOS } from '../licenca/servidor/src/precos.js';
 
-export const LIC = 'https://isp-licencas.insidestudiosp.workers.dev';
+// servidor de licenças no domínio do estúdio: as rotas /loja/*, /align*, /baixar/* (licenca/servidor/wrangler.toml)
+// valem com e sem www, então os links são relativos (o formulário de compra fica no mesmo endereço da página: form-action 'self')
+export const LIC = '';
 
 export const SITE = {
     nome: 'InsideStudioSP',

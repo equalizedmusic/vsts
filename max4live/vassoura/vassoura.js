@@ -15,7 +15,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela (bang / status)   3:
 var BUF = "vassoura_scan";
 var DICT = "vassoura_data";
 var WIN_MS = 10;
-var VERSAO = "0.2.0";
+var VERSAO = "0.2.1";
 
 var cfg = { threshold: -60, minlen: 1000, pre: 10, post: 100, snap: 0, mode: 0, scope: 0 };
 var SNAP_TXT = ["OFF", "1/16", "BAR"];

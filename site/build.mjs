@@ -237,11 +237,14 @@ for (const f of readdirSync(join(RAIZ, 'img'))) copyFileSync(join(RAIZ, 'img', f
 for (const f of ['estilo.css', 'site.js']) copyFileSync(join(RAIZ, f), join(DIST, f));
 grava('favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0d0b14"/><path d="M10 34c6-16 10-16 14 0s8 16 14 0 10-16 16 0" fill="none" stroke="#a78bfa" stroke-width="6" stroke-linecap="round"/></svg>');
 grava('robots.txt', PREVIA ? 'User-agent: *\nDisallow: /\n' : 'User-agent: *\nAllow: /\n');
+// form-action: o Chrome confere também o REDIRECIONAMENTO do envio. O /loja/pagar responde 303 para o checkout do
+// Mercado Pago, então o domínio dele tem que estar aqui (sem ele o botão de comprar não faz nada). PayPal: incluir
+// https://www.paypal.com quando ele voltar. O domínio sem www cobre a volta da loja para a página vista pelo www.
 grava('_headers', `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self' https://isp-licencas.insidestudiosp.workers.dev; base-uri 'none'; form-action 'self' https://isp-licencas.insidestudiosp.workers.dev; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self'; base-uri 'none'; form-action 'self' https://insidestudiosp.com.br https://www.mercadopago.com.br https://*.mercadopago.com.br; frame-ancestors 'none'
 ${PREVIA ? '  X-Robots-Tag: noindex, nofollow\n' : ''}/img/*
   Cache-Control: public, max-age=604800
 `);

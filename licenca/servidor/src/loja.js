@@ -16,7 +16,7 @@ import { enviarEmail, emailLigado, CONTATO } from './email.js';
 
 const MP_API = 'https://api.mercadopago.com';
 const PAYPAL_API = 'https://api-m.paypal.com';
-const SITE = 'https://insidestudiosp-site.insidestudiosp.workers.dev';
+const SITE = 'https://insidestudiosp.com.br';
 const PEDIDOS_POR_IP_HORA = 15;
 const PRESO = 300;   // pedido em 'processando' há mais que isso (s) pode ser retomado (o Worker caiu no meio)
 // prazo do pedido: 4 dias (dá para um boleto vencer e não ser pago). O link do Mercado Pago e o Pix/boleto gerado

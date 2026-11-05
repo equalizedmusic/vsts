@@ -21,6 +21,9 @@ routes = [
   # formulário de contato do site (a página /contato/ é do site; só o envio vem para cá)
   { pattern = "insidestudiosp.com.br/contato/enviar", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/contato/enviar", zone_name = "insidestudiosp.com.br" },
+  # loja: formulário de compra do site, volta do checkout e aviso do Mercado Pago (pedido antigo no workers.dev segue valendo)
+  { pattern = "insidestudiosp.com.br/loja/*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "www.insidestudiosp.com.br/loja/*", zone_name = "insidestudiosp.com.br" },
 ]
 
 # limpeza diária da loja: 09:00 UTC (06:00 de Brasília) marca 'vencido' o pedido aberto há mais de 4 dias

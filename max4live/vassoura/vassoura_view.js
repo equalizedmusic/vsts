@@ -9,7 +9,7 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "vassoura_data";
-var VERSAO = "0.2.0";
+var VERSAO = "0.2.1";
 var NAME_W = 250;
 var HEAD_H = 112;
 var cfg = { threshold: -60, minlen: 1000, pre: 10, post: 100, snap: 0, mode: 0, scope: 0 };

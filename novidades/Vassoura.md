@@ -5,6 +5,10 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.2.1 — 2026-11-05
+- **LEIA-ME corrigido**: o device vai na **primeira faixa de áudio** do projeto (no master o ANALYZE não lê os clips).
+  O funcionamento é o mesmo da 0.2.0.
+
 ## 0.2.0 — 2026-10-31
 - **APPLY completo** — a VASSOURA agora mexe no set:
   - **MUTE**: divide o clip e desliga (Clip Activator) só os pedaços vazios. Nada é apagado; qualquer pedaço volta

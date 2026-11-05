@@ -51,7 +51,7 @@ jobs:
               awk -v v="$ver" '$0 ~ "^## "v {on=1; next} on && /^## / {exit} on' "$nov"
               echo
               echo "Download: \`$pasta.zip\` aqui embaixo em Assets. Max for Live (Live Suite, ou Standard com Max for Live)."
-              echo "Instalar: copie a pasta \`$pasta\` inteira para \`User Library/Presets/Audio Effects/Max Audio Effect/\` e arraste o \`.amxd\` para o master."
+              echo "Instalar: copie a pasta \`$pasta\` inteira para \`User Library/Presets/Audio Effects/Max Audio Effect/\` e arraste o \`.amxd\` para a primeira faixa de áudio do projeto (no master ele não analisa)."
             } > "$notas"
             gh release create "$tag" "$pub/$pasta.zip" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
               --title "${Nome^^} $ver (Max for Live)" --notes-file "$notas"

@@ -19,7 +19,7 @@ Não é VST: um plugin só recebe áudio e não enxerga nem edita os clips. A VA
   cima do vazio com duplicate_clip_to_arrangement — o Live divide o original em volta. No CUT o pedaço colado é
   apagado (delete_clip). Ao fim, a cópia de trabalho é apagada e o set é relido.
 
-## Estado — 0.2.0
+## Estado — 0.2.1 (só o LEIA-ME mudou em relação à 0.2.0)
 
 - MUTE e CUT completos, com PRE/POST, SNAP e SCOPE. Testado num simulador do arranjo (	mp/teste-apply/sim.js,
   fora do git): som intacto e no mesmo lugar nos dois modos; **ainda não rodado no Live**.
@@ -52,5 +52,6 @@ O zip pronto (`.amxd` + `.js` + `LEIA-ME.txt`) fica no release `vassoura-vx.y.z`
 lá em cima no mesmo commit da mudança. Esta pasta não entra no build dos VSTs.
 
 Link fixo (sempre o zip da versão mais nova, pelo portal de licenças):
-`https://isp-licencas.insidestudiosp.workers.dev/baixar/vassoura/mac` (o `/win` dá o mesmo zip). No painel, o pacote
+`https://insidestudiosp.com.br/baixar/vassoura/zip` (os antigos `/mac` e `/win` dão o mesmo zip; `/baixar/vassoura`
+sozinho abre a página de cadastro). No painel, o pacote
 **Vassoura** entra na mensagem ao cliente com esse link; o device não pede ativação.
