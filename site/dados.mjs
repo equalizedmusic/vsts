@@ -15,7 +15,7 @@ export const SITE = {
     // Links do artista tirados do linktr.ee/equalizedmusic (05/11/2026), sem os parâmetros de rastreio.
     spotify: 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO',
     youtube: '',          // por ora fora, a pedido dele (05/11). Quando entrar: id de um vídeo para o player
-    lancamento: { titulo: "Summer of '89", url: 'https://bluetunesrecords.lnk.to/summerof89' },
+    lancamento: { titulo: "Summer of '89", url: 'https://bluetunesrecords.lnk.to/summerof89', capa: '/img/summer89.webp' },
     // Página Estúdio (05/11): texto do estúdio + bio tirada do release dele (Google Docs). Cada parágrafo = [pt, en].
     estudio: {
         lead: ['Estúdio de produção, mix e master em São Paulo, comandado pelo DJ e produtor Rogério Cardoso, o Equalized.',

@@ -110,6 +110,20 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
        border:2px solid var(--line); transition:border-color .15s, transform .15s; }
 .ico svg { width:24px; height:24px; fill:currentColor; }
 .ico:hover { transform:translateY(-2px); border-color:currentColor; }
+/* cartão do lançamento (capa + chamada) */
+.lanc { display:flex; gap:18px; align-items:center; text-decoration:none; background:var(--card); border:1px solid var(--line);
+        border-radius:var(--raio); padding:12px; margin:18px 0 22px; max-width:460px; transition:border-color .15s, transform .15s; }
+.lanc:hover { border-color:var(--grn); transform:translateY(-2px); }
+.lanc-capa { position:relative; flex:0 0 120px; }
+.lanc-capa img { width:120px; height:120px; border-radius:10px; object-fit:cover; }
+.lanc-play { position:absolute; inset:0; display:grid; place-items:center; border-radius:10px; background:rgba(0,0,0,.35); opacity:0; transition:opacity .15s; }
+.lanc-play svg { width:44px; height:44px; fill:#fff; }
+.lanc:hover .lanc-play { opacity:1; }
+.lanc-txt { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.lanc-rot { font-size:11px; letter-spacing:.12em; color:var(--dim); }
+.lanc-txt strong { font:700 22px Bahnschrift, "Segoe UI", sans-serif; }
+.lanc-art { color:var(--dim); }
+.lanc-cta { margin-top:8px; color:var(--grn); font-weight:600; }
 .ico-instagram { color:#ff0069; }
 .ico-spotify { color:#1ed760; }
 .ico-soundcloud { color:#ff5500; }

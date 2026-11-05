@@ -210,14 +210,15 @@ ${SITE.bio ? `<section class="faixa duo duo-artista">
   ${SITE.retrato ? `<div>${foto(SITE.retrato, 'Equalized', 'foto-img retrato')}</div>` : ''}
   <div><p class="sobre">${t('O ARTISTA', 'THE ARTIST')}</p>
   <h2 class="logo-artista"><img src="/img/equalized-logo.webp" alt="Equalized" width="900" height="213"></h2>
-  ${SITE.bio.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}
-  ${SITE.lancamento ? `<p class="sobre">${t('LANÇAMENTO · BLUE TUNES RECORDS', 'NEW RELEASE · BLUE TUNES RECORDS')}</p>
-  <p><a class="bt bt-principal" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">${t('Ouça', 'Listen to')} Equalized — ${esc(SITE.lancamento.titulo)}</a></p>` : ''}</div>
+  ${SITE.bio.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}</div>
 </section>` : ''}
 <section class="faixa artista">
   <div><h2 class="secao">${t('Ouça', 'Listen')}</h2>
-  ${SITE.lancamento ? `<p class="sobre">${t('LANÇAMENTO', 'NEW RELEASE')}</p>
-  <p><a class="bt bt-principal" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">Equalized — ${esc(SITE.lancamento.titulo)}</a></p>` : ''}
+  ${SITE.lancamento ? `<a class="lanc" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">
+    <span class="lanc-capa"><img src="${esc(SITE.lancamento.capa)}" alt="${esc(SITE.lancamento.titulo)}" width="440" height="440" loading="lazy"><span class="lanc-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></span>
+    <span class="lanc-txt"><span class="lanc-rot">${t('LANÇAMENTO · BLUE TUNES RECORDS', 'NEW RELEASE · BLUE TUNES RECORDS')}</span>
+    <strong>${esc(SITE.lancamento.titulo)}</strong><span class="lanc-art">Equalized</span>
+    <span class="lanc-cta">${t('Clique para ouvir', 'Click to listen')} →</span></span></a>` : ''}
   <p class="links-artista">${(SITE.links || []).map(([nome, url, ic]) => `<a class="ico ico-${ic}" href="${esc(url)}" rel="noopener" target="_blank" aria-label="${esc(nome)}" title="${esc(nome)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONES[ic]}"/></svg></a>`).join('\n  ')}</p>
   <p><a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p></div>
   ${SITE.spotify ? `<div>${spotify}</div>` : ''}
