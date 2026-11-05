@@ -219,5 +219,9 @@ for (const p of PACKS) p.preco = PRECOS[p.id] || null;
 
 // "de" da oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.
 // Preço "de" por faixa de preço real; pack sem entrada aqui mostra só o preço.
+// Tempo limitado: termina em OFERTA_FIM (horário de Brasília). Depois disso o site.js some com a oferta na hora
+// e o próximo build já sai sem ela. Para prorrogar, é só mudar a data e publicar.
+export const OFERTA_FIM = '2026-11-30T23:59:59-03:00';
+export const OFERTA_ATIVA = Date.now() < Date.parse(OFERTA_FIM);
 const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
-for (const p of PACKS) if (p.preco && DE_BRL[p.preco.brl]) p.de = DE_BRL[p.preco.brl];
+if (OFERTA_ATIVA) for (const p of PACKS) if (p.preco && DE_BRL[p.preco.brl]) p.de = DE_BRL[p.preco.brl];

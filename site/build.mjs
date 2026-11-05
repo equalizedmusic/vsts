@@ -8,7 +8,7 @@
 import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SITE, PACKS, LIC, FAQ } from './dados.mjs';
+import { SITE, PACKS, LIC, FAQ, OFERTA_FIM, OFERTA_ATIVA } from './dados.mjs';
 import { ICONES } from './icones.mjs';
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
@@ -24,7 +24,11 @@ const temBrl = (p) => typeof p.preco?.brl === 'number', temUsd = (p) => typeof p
 const valor = (p) => t(brl(p.preco.brl), temUsd(p) ? usd(p.preco.usd) : brl(p.preco.brl));
 // oferta de lançamento: "de" riscado + desconto (só em reais; em dólar não há "de")
 const off = (p) => Math.round((1 - p.preco.brl / p.de) * 100);
-const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de">${brl(p.de)}</s>` : '';
+const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de so-oferta">${brl(p.de)}</s>` : '';
+// contador regressivo (site.js atualiza a cada segundo; sem JS fica a data final)
+const FIM_TXT = new Date(OFERTA_FIM).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+const contador = (cls = '') => `<span class="contador ${cls}" data-fim="${OFERTA_FIM}">${t('até ' + FIM_TXT, 'until ' + FIM_TXT)}</span>`;
+const maiorOff = Math.max(0, ...PACKS.filter((p) => p.de && temBrl(p)).map((p) => off(p)));
 
 function pagina({ titulo, descricao, corpo, raiz = '' }) {
     return `<!doctype html>
@@ -48,6 +52,7 @@ ${PREVIA ? '<meta name="robots" content="noindex, nofollow">' : ''}
     <button class="idioma" type="button" aria-label="Idioma / Language"><span class="pt">EN</span><span class="en">PT</span></button>
   </nav>
 </div></header>
+${OFERTA_ATIVA && maiorOff ? `<a class="faixa-oferta so-oferta" href="${raiz}/#packs"><b>${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')}</b> ${t(`até ${maiorOff}% off nos packs`, `up to ${maiorOff}% off all packs`)} <span class="sep">·</span> ${t('termina em', 'ends in')} ${contador()}</a>` : ''}
 ${PREVIA ? `<div class="previa">${t('Prévia do site novo.', 'Preview of the new site.')}</div>` : ''}
 <main>${corpo}</main>
 <footer id="contato" class="rodape"><div class="faixa">
@@ -80,8 +85,9 @@ function caixaCompra(p) {
     <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>`;
     return `<form class="compra" method="post" action="${LIC}/loja/pagar">
-    ${p.de && temBrl(p) ? `<div class="oferta">${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
-    <div class="preco-de">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
+    ${p.de && temBrl(p) ? `<div class="oferta so-oferta">${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
+    <div class="tempo so-oferta">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte')}</div>
+    <div class="preco-de so-oferta">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <input type="hidden" name="pacote" value="${p.id}">
     <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}

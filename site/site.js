@@ -16,6 +16,25 @@
             try { localStorage.setItem('isp-idioma', novo); } catch (e) { /* ignora */ }
         });
 
+        // oferta por tempo limitado: contador regressivo; ao zerar, some com selo, "de" riscado e faixa
+        var conts = document.querySelectorAll('.contador[data-fim]');
+        if (conts.length) {
+            var fim = Date.parse(conts[0].getAttribute('data-fim'));
+            var d2 = function (n) { return (n < 10 ? '0' : '') + n; };
+            var tique = function () {
+                var r = Math.floor((fim - Date.now()) / 1000);
+                if (r <= 0) {
+                    document.querySelectorAll('.so-oferta').forEach(function (el) { el.remove(); });
+                    return false;
+                }
+                var txt = (r >= 86400 ? Math.floor(r / 86400) + 'd ' : '') + d2(Math.floor(r % 86400 / 3600)) + 'h '
+                        + d2(Math.floor(r % 3600 / 60)) + 'm ' + d2(r % 60) + 's';
+                conts.forEach(function (c) { c.textContent = txt; });
+                return true;
+            };
+            if (tique()) var iv = setInterval(function () { if (!tique()) clearInterval(iv); }, 1000);
+        }
+
         var dlg = document.querySelector('.zoom');
         if (!dlg || !dlg.showModal) return;
         var img = dlg.querySelector('img');
