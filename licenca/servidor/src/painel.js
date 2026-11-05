@@ -678,7 +678,7 @@ function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
   pacotes.forEach(function (p) {
     var base = location.origin + '/baixar/' + p + '/';
     // VASSOURA = Max for Live: um zip só para Windows e Mac
-    if (p === 'vassoura') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12 no Windows e no Mac): ' + location.origin + '/baixar/vassoura'); return; }
+    if (p === 'vassoura') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12 no Windows e no Mac): ' + location.origin + '/baixar/vassoura/zip'); return; }
     if (sistemas.indexOf('win') >= 0) linhas.push(NOME[p] + ' para Windows: ' + base + 'win');
     if (sistemas.indexOf('mac') >= 0) linhas.push(NOME[p] + ' para Mac: ' + base + 'mac');
   });
@@ -877,7 +877,7 @@ function abrirCliente(email) {
   $('btCliPacote').title = lics.length >= PACOTES.length ? 'Este cliente já tem todos os pacotes.' : '';
   if (!$('dCliente').open) { msg('msgCliente', ''); fecharAdicionar(); $('dCliente').showModal(); }
   lics.forEach(function (l) {
-    var maquinas = el('div', { classe: 'det' }, [ l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
+    var maquinas = el('div', { classe: 'det' }, [ l.pacote === 'vassoura' && !l.max_maquinas ? 'Max for Live: sem ativação (cadastro da página)' : l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
     l.maquinas.forEach(function (m) {
       maquinas.appendChild(el('div', { classe: 'maq' }, [
         el('span', { texto: (m.nome_maquina || '(sem nome)') + ' · ativado ' + data(m.criada_em) + ' · visto ' + data(m.visto_em) }),

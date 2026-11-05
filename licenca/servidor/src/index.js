@@ -8,6 +8,7 @@
 //        -> { ok: true, atualizacao: null | { versao, url, notas } }   url = instalador do sistema (ou a página do release)
 //   GET  /baixar/<pacote>/<win|mac>   redireciona para o instalador (links da mensagem do painel)
 //   GET/POST /gratis/montamonta   página grátis: e-mail -> token + download do MONTA-MONTA (ver src/gratis.js)
+//   GET/POST /gratis/vassoura (= /vassoura)   só e-mail -> cadastro sem token + e-mail com o link /baixar/vassoura/zip
 //   GET/POST /gratis/align (= /align)   e-mail + Windows/Mac -> token + download do ALIGN, 1 computador
 //   POST /gratis/align/zip   { email, token?, sistema }   zip com o instalador + LEIA-ME com e-mail, token e instruções
 //   POST /gratis/align/reenviar, GET/POST /gratis/align/novo-token   "perdi meu token" por e-mail (só com RESEND_API_KEY)
@@ -320,8 +321,10 @@ async function instalador(env, pacote, sistema) {
 
 async function rotaBaixar(caminho, env) {
     const [, , pacote, sistema] = caminho.split('/');
-    // VASSOURA: link único /baixar/vassoura (win/mac continuam valendo para os links já enviados)
-    const unico = pacote === 'vassoura' && !sistema;
+    // VASSOURA: /baixar/vassoura sozinho (link antigo do site, posts, painel) abre a página de cadastro;
+    // o arquivo sai por /baixar/vassoura/zip (win/mac continuam valendo para os links já enviados)
+    if (pacote === 'vassoura' && !sistema) return Response.redirect(VASSOURA_OFICIAL, 302);
+    const unico = pacote === 'vassoura' && sistema === 'zip';
     if (!PACOTES.includes(pacote) || (!unico && !['win', 'mac'].includes(sistema)))
         return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
     const indisponivel = () => paginaSimples('Download indisponível',
@@ -360,7 +363,8 @@ async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, orige
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { erro: 'pedido_invalido' };
     const existe = await env.DB.prepare('SELECT id FROM licencas WHERE email = ? AND pacote = ?').bind(email, pacote).first();
     if (existe) return { erro: 'ja_existe', id: existe.id };
-    let doEmail = await env.DB.prepare('SELECT token_hash FROM licencas WHERE email = ? LIMIT 1').bind(email).first();
+    // cadastro da página da VASSOURA não tem token (token_hash vazio): não serve de "mesmo token"
+    let doEmail = await env.DB.prepare("SELECT token_hash FROM licencas WHERE email = ? AND token_hash <> '' LIMIT 1").bind(email).first();
     // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
     // ter cadastrado), então licença dada por aqui troca o token do e-mail inteiro e o novo vai para o cliente
     const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem <> 'gratis' LIMIT 1").bind(email).first());
@@ -470,6 +474,8 @@ async function rotaAdmin(caminho, req, env, url) {
 // a página do ALIGN mora no domínio do estúdio: as rotas de wrangler.toml entregam /align*,
 // /gratis/align/* e /baixar/align/* do insidestudiosp.com.br para este Worker (o resto do domínio é o site)
 const ALIGN_OFICIAL = 'https://insidestudiosp.com.br/align/';
+// a da VASSOURA também (rotas /vassoura* e /baixar/vassoura*): só e-mail, sem token
+const VASSOURA_OFICIAL = 'https://insidestudiosp.com.br/vassoura/';
 
 export default {
     async fetch(req, env) {
@@ -481,6 +487,9 @@ export default {
             if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
                 && (caminho === '/align' || caminho === '/gratis/align'))
                 return Response.redirect(ALIGN_OFICIAL, 302);
+            if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
+                && (caminho === '/vassoura' || caminho === '/gratis/vassoura'))
+                return Response.redirect(VASSOURA_OFICIAL, 302);
             if (req.method === 'POST' && caminho === '/v1/ativar') return await rotaPlugin('ativar', req, env);
             if (req.method === 'POST' && caminho === '/v1/validar') return await rotaPlugin('validar', req, env);
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
@@ -496,9 +505,9 @@ export default {
             if (caminho === '/gratis/align/reenviar' || caminho === '/gratis/align/novo-token')
                 return await rotaTokenAlign(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento, paginaSimples, instalador },
                     caminho.endsWith('reenviar') ? 'reenviar' : 'novo-token');
-            if (caminho === '/gratis' || caminho === '/align' || (caminho.startsWith('/gratis/') && PACOTES_GRATIS.includes(caminho.slice(8))))
+            if (caminho === '/gratis' || caminho === '/align' || caminho === '/vassoura' || (caminho.startsWith('/gratis/') && PACOTES_GRATIS.includes(caminho.slice(8))))
                 return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento, instalador },
-                    caminho === '/align' ? 'align' : caminho.slice(8) || 'montamonta');
+                    caminho === '/align' ? 'align' : caminho === '/vassoura' ? 'vassoura' : caminho.slice(8) || 'montamonta');
             if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
             // navegador em endereço desconhecido (/Painel, /painel. colado com pontuação, raiz) ⇒ manda p/ o painel
             if (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'))

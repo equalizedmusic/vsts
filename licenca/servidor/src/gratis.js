@@ -2,6 +2,7 @@
 // É o link mandado no direct do Instagram para quem comenta a palavra do reel (QUERO, ALIGN…).
 //
 //   GET  /gratis/montamonta   MONTA-MONTA (2 computadores, links Windows e Mac)
+//   GET  /gratis/vassoura     VASSOURA (só o e-mail: cadastro sem token, e-mail com o link do zip e o passo a passo)
 //   GET  /gratis/align        ALIGN (1 computador; a pessoa escolhe Windows ou Mac e recebe só aquele link)
 //   POST /gratis/<pacote>     { email, sistema?, site }   (site = campo escondido; robô que preenche leva "ok" falso)
 //     -> { ok, novo, token?, mesmo_token?, ja_tinha?, baixar: { win, mac } | { win } | { mac } }
@@ -25,6 +26,9 @@ const TOTAL_DIA = 300;
 const PAGINAS = {
     montamonta: { maquinas: 2, sistema: false, nota: 'página grátis' },
     align: { maquinas: 1, sistema: true, nota: 'página ALIGN' },
+    // VASSOURA (Max for Live) não ativa: o cadastro só guarda o e-mail (token_hash vazio, nenhum token vale nele)
+    // e manda por e-mail o link do zip e o passo a passo
+    vassoura: { maquinas: 0, sistema: false, nota: 'página VASSOURA', semToken: true },
 };
 export const PACOTES_GRATIS = Object.keys(PAGINAS);
 
@@ -37,7 +41,8 @@ function json(obj, status = 200) {
 export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const cfg = PAGINAS[PACOTE];
     // form-action 'self': o botão de download do ALIGN é um formulário (POST /gratis/align/zip)
-    if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN.replace('<!--REENVIO-->', emailLigado(env) ? REENVIO : '') : PAGINA, {
+    if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN.replace('<!--REENVIO-->', emailLigado(env) ? REENVIO : '')
+                                                  : PACOTE === 'vassoura' ? PAGINA_VASSOURA : PAGINA, {
         headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
                    'content-security-policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action ${PACOTE === 'align' ? "'self'" : "'none'"}; frame-ancestors 'none'` },
     });
@@ -49,7 +54,8 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const email = h.normEmail(corpo.email);
     const sistema = cfg.sistema ? String(corpo.sistema || '') : '';
     const baixar = {};
-    for (const s of ['win', 'mac']) if (!sistema || s === sistema) baixar[s] = `${url.origin}/baixar/${PACOTE}/${s}`;
+    if (PACOTE === 'vassoura') baixar.zip = `${url.origin}${VASSOURA_ZIP}`;
+    else for (const s of ['win', 'mac']) if (!sistema || s === sistema) baixar[s] = `${url.origin}/baixar/${PACOTE}/${s}`;
     if (corpo.site) return json({ ok: true, novo: false, ja_tinha: true, baixar });   // robô
     if (email.length > 120 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
         return json({ ok: false, mensagem: 'Confira o e-mail.' }, 400);
@@ -68,16 +74,23 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
         await h.evento(env, null, 'gratis_ja', email, ip);
         return json({ ok: true, novo: false, ja_tinha: true, baixar, reenvio: PACOTE === 'align' && emailLigado(env) });
     }
-    const token = lista.length ? null : h.novoToken();
-    const hash = lista.length ? lista[0].token_hash : await h.sha256Hex('ISP' + h.normToken(token));
+    // cadastro da VASSOURA não tem token (token_hash vazio): não conta como "já tem token" para os outros pacotes
+    const comToken = lista.filter((l) => l.token_hash);
+    const token = cfg.semToken || comToken.length ? null : h.novoToken();
+    const hash = cfg.semToken ? '' : comToken.length ? comToken[0].token_hash : await h.sha256Hex('ISP' + h.normToken(token));
     const nota = cfg.nota + (sistema ? ' · ' + (sistema === 'mac' ? 'Mac' : 'Windows') : '');
     const r = await env.DB.prepare(
         "INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, nota, criada_em) VALUES (?, ?, ?, ?, 'gratis', ?, ?)")
         .bind(email, PACOTE, hash, cfg.maquinas, nota, h.agora()).run();
-    await h.evento(env, r.meta.last_row_id, 'gratis', lista.length ? 'mesmo token' : 'novo', ip);
+    await h.evento(env, r.meta.last_row_id, 'gratis', cfg.semToken ? 'cadastro' : comToken.length ? 'mesmo token' : 'novo', ip);
+    if (PACOTE === 'vassoura') {
+        const enviado = await emailVassoura(env, url, h, email);
+        if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
+        return json({ ok: true, novo: true, baixar, email_enviado: !!enviado });
+    }
     const enviado = PACOTE === 'align' && await emailAlign(env, url, h, { email, token, sistema, assunto: 'Sua licença do ALIGN · Your ALIGN license' });
     if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
-    return json({ ok: true, novo: true, token, mesmo_token: !!lista.length, baixar, email_enviado: !!enviado, reenvio: PACOTE === 'align' && emailLigado(env) });
+    return json({ ok: true, novo: true, token, mesmo_token: !!comToken.length, baixar, email_enviado: !!enviado, reenvio: PACOTE === 'align' && emailLigado(env) });
 }
 
 // e-mail com o mesmo conteúdo do LEIA-ME do zip + o link direto do instalador (o zip é POST com o token)
@@ -92,6 +105,116 @@ async function emailAlign(env, url, h, { email, token, sistema, assunto, aviso =
                          versao: inst?.versao, sha256: inst?.sha256, porEmail: true, link }),
     ].join('\r\n');
     return enviarEmail(env, { para: email, assunto, texto, segredos: [token] });
+}
+
+// ---------------- VASSOURA: e-mail com o link do zip e o passo a passo (mesmo conteúdo do LEIA-ME do zip) ----------------
+// o link do arquivo é /baixar/vassoura/zip; o /baixar/vassoura sozinho (link antigo, site, posts) abre a página de cadastro
+export const VASSOURA_ZIP = '/baixar/vassoura/zip';
+
+async function emailVassoura(env, url, h, email) {
+    if (!emailLigado(env)) return false;
+    let inst = null;
+    try { inst = await h.instalador(env, 'vassoura'); } catch (e) { console.error('email vassoura: instalador', e); }
+    const link = 'https://insidestudiosp.com.br' + VASSOURA_ZIP,   // sempre o domínio do estúdio (o cadastro pode vir do workers.dev)
+          pasta = (inst?.nome || 'Vassoura.zip').replace(/\.zip$/, '');
+    const texto = [
+        'VASSOURA · InsideStudioSP' + (inst?.versao ? ' · v' + inst.versao : ''),
+        'Limpa os trechos vazios dos clips de áudio no Ableton Live · Cleans the empty parts of audio clips in Ableton Live',
+        '',
+        '(English below)',
+        '',
+        '==================================== PORTUGUÊS ====================================',
+        '',
+        'Obrigado por baixar a VASSOURA! É um device Max for Live para o Ableton Live 12 (Suite, ou Standard com Max for Live),',
+        'no Windows e no Mac. Não precisa de ativação nem de token.',
+        '',
+        '1. BAIXAR',
+        '  ' + link,
+        '',
+        '2. INSTALAR',
+        '  1) Extraia o zip (Windows: botão direito > "Extrair tudo..."; Mac: dois cliques).',
+        '  2) Copie a pasta inteira (' + pasta + ') para:',
+        '       Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+        '     Os 3 arquivos (Vassoura.amxd, vassoura.js e vassoura_view.js) PRECISAM ficar juntos na mesma pasta.',
+        '  3) No Live, arraste o Vassoura.amxd para o canal MASTER.',
+        '',
+        '  ANTES DO PRIMEIRO APPLY, SALVE UMA CÓPIA DO SET (File > Save Live Set As...).',
+        '  Cada trecho mutado ou apagado é um Ctrl+Z separado no Live.',
+        '',
+        '3. USAR',
+        '  1) Abra um set com stems (clips de áudio no Arrangement, com WARP DESLIGADO).',
+        '  2) Clique em ANALYZE e depois em OPEN para ver a janela.',
+        '  3) Ajuste no device (a janela redesenha na hora):',
+        '     THRESHOLD (padrão -60 dB): abaixo disso é silêncio',
+        '     MIN LENGTH (padrão 1000 ms): silêncio mais curto que isso fica',
+        '     PRE (padrão 10 ms): folga mantida antes de cada som (não corta o ataque)',
+        '     POST (padrão 100 ms): cauda mantida depois de cada som (não corta reverb e release)',
+        '     SNAP: OFF / 1/16 / BAR, os cortes caem na grade, sempre dentro do silêncio',
+        '     SCOPE: ALL (todas as faixas) ou SELECTED (só a faixa selecionada)',
+        '     MODE: MUTE (divide o clip e desliga os pedaços vazios, nada é apagado)',
+        '           CUT (apaga os pedaços vazios; pede um 2º clique no APPLY em até 4 s)',
+        '  4) Na janela: cor da faixa = som (fica) · vermelho tracejado = vazio (sai) · cinza = mantido.',
+        '     Clique no vermelho para manter aquele trecho. Clique no nome da faixa para tirar a faixa da limpeza.',
+        '  5) Clique em APPLY. Depois a VASSOURA relê o set e a janela mostra como ficou.',
+        '',
+        '  Limites: clips com WARP ligado ou em LOOP e faixas congeladas (Freeze) não são tocados.',
+        '  Para não dar clique nos cortes, deixe ligado em Preferences > Record, Warp & Launch > "Create Fades on Clip Edges".',
+        '',
+        '4. SE DER ERRO',
+        '  "v8: can\'t find vassoura.js" = os 3 arquivos não estão na mesma pasta do Vassoura.amxd.',
+        '  Outro erro: abra o console do Max (editar o device > Max > Window > Max Console) e mande um print',
+        '  das linhas "VASSOURA:" respondendo este e-mail ou para ' + CONTATO + '.',
+        '',
+        '  Não pediu? Ignore este e-mail.',
+        '',
+        '',
+        '===================================== ENGLISH =====================================',
+        '',
+        'Thanks for downloading VASSOURA! It is a Max for Live device for Ableton Live 12 (Suite, or Standard with Max for Live),',
+        'on Windows and Mac. No activation or token needed.',
+        '',
+        '1. DOWNLOAD',
+        '  ' + link,
+        '',
+        '2. INSTALL',
+        '  1) Extract the zip (Windows: right-click > "Extract All..."; Mac: double-click).',
+        '  2) Copy the whole folder (' + pasta + ') to:',
+        '       Documents\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+        '     The 3 files (Vassoura.amxd, vassoura.js and vassoura_view.js) MUST stay together in the same folder.',
+        '  3) In Live, drag Vassoura.amxd onto the MASTER track.',
+        '',
+        '  BEFORE THE FIRST APPLY, SAVE A COPY OF YOUR SET (File > Save Live Set As...).',
+        '  Each muted or deleted part is a separate Ctrl+Z in Live.',
+        '',
+        '3. USE',
+        '  1) Open a set with stems (audio clips in the Arrangement, WARP OFF).',
+        '  2) Click ANALYZE, then OPEN to see the window.',
+        '  3) Adjust on the device (the window redraws instantly):',
+        '     THRESHOLD (default -60 dB): below this is silence',
+        '     MIN LENGTH (default 1000 ms): silence shorter than this stays',
+        '     PRE (default 10 ms): room kept before each sound (attacks are not cut)',
+        '     POST (default 100 ms): tail kept after each sound (reverb and release are not cut)',
+        '     SNAP: OFF / 1/16 / BAR, cuts land on the grid, always inside the silence',
+        '     SCOPE: ALL (every track) or SELECTED (selected track only)',
+        '     MODE: MUTE (splits the clip and turns off the empty parts, nothing is deleted)',
+        '           CUT (deletes the empty parts; asks for a 2nd APPLY click within 4 s)',
+        '  4) In the window: track color = sound (stays) · hatched red = empty (goes) · gray = kept.',
+        '     Click the red to keep that part. Click the track name to leave the track out.',
+        '  5) Click APPLY. VASSOURA then rereads the set and the window shows the result.',
+        '',
+        '  Limits: clips with WARP on or LOOP on and frozen tracks are not touched.',
+        '  To avoid clicks at the cuts, keep Preferences > Record, Warp & Launch > "Create Fades on Clip Edges" on.',
+        '',
+        '4. IF SOMETHING GOES WRONG',
+        '  "v8: can\'t find vassoura.js" = the 3 files are not in the same folder as Vassoura.amxd.',
+        '  Other errors: open the Max console (edit the device > Max > Window > Max Console) and send a screenshot',
+        '  of the "VASSOURA:" lines by replying to this e-mail or writing to ' + CONTATO + '.',
+        '',
+        '  Did not ask for it? Just ignore this e-mail.',
+        '',
+        'InsideStudioSP',
+    ].join('\r\n');
+    return enviarEmail(env, { para: email, assunto: 'Seu download da VASSOURA · Your VASSOURA download', texto });
 }
 
 // ---------------- "Não recebi / perdi meu token" (só com o e-mail ligado) ----------------
@@ -520,6 +643,106 @@ const PAGINA = `<!doctype html>
     var t = $('token').textContent;
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('copiar').textContent = 'COPIADO ✓'; },
       function () { var s = window.getSelection(), r = document.createRange(); r.selectNodeContents($('token')); s.removeAllRanges(); s.addRange(r); });
+  });
+})();
+</script>
+</body></html>`;
+
+// VASSOURA: só o e-mail (cadastro) ⇒ botão de download do zip + e-mail com o link e o passo a passo. Sem token.
+const PAGINA_VASSOURA = `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VASSOURA · InsideStudioSP</title>
+<style>
+  :root { --bg:#13110b; --card:#1f1c13; --line:#3a3524; --ink:#f3efe2; --dim:#9a937c; --yel:#fcd34d; --red:#ef4444; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(700px 500px at 85% 0%, rgba(252,211,77,.14), transparent 70%),
+         radial-gradient(700px 500px at 0% 100%, rgba(239,68,68,.08), transparent 70%), var(--bg);
+         color:var(--ink); font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:36px 20px 60px; }
+  .logo { display:flex; align-items:center; gap:14px; }
+  h1 { margin:0; font:800 clamp(30px, 9.5vw, 44px)/1 Bahnschrift, "Segoe UI", system-ui, sans-serif; letter-spacing:.16em; color:var(--yel); }
+  .risco { height:4px; border-radius:2px; background:repeating-linear-gradient(90deg, var(--yel) 0 18px, transparent 18px 24px, var(--red) 24px 34px, transparent 34px 40px); margin-top:6px; }
+  .sub { color:var(--dim); font-size:13px; letter-spacing:.16em; font-weight:700; margin-top:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin-top:26px; }
+  .free { display:inline-block; background:var(--yel); color:#1a1505; font-weight:900; padding:2px 10px; border-radius:6px; }
+  p { margin:.4em 0; } .en { color:var(--dim); font-size:14px; font-style:italic; }
+  label, .rot { display:block; font-weight:700; margin:18px 0 6px; }
+  input[type=email] { width:100%; padding:14px; border-radius:10px; border:2px solid var(--line); background:#0d0b06; color:var(--ink); font-size:17px; }
+  input[type=email]:focus { outline:none; border-color:var(--yel); }
+  button, .bt { display:block; width:100%; text-align:center; padding:15px; margin-top:16px; border:0; border-radius:12px; cursor:pointer;
+           font:900 17px "Segoe UI", system-ui, sans-serif; letter-spacing:.06em; text-decoration:none; }
+  .principal { background:var(--yel); color:#1a1505; }
+  .principal:disabled { opacity:.6; cursor:wait; }
+  .aviso { background:rgba(252,211,77,.08); border:1px solid rgba(252,211,77,.4); border-radius:10px; padding:10px 12px; font-size:14px; margin-top:12px; }
+  .erro { color:var(--red); font-weight:700; min-height:1.5em; margin-top:10px; }
+  ol { padding-left:20px; margin:8px 0 0; } li { margin:7px 0; }
+  code { font:13px Consolas, "SF Mono", monospace; background:#0d0b06; border:1px solid var(--line); border-radius:6px; padding:1px 5px; word-break:break-all; }
+  .esc { position:absolute; left:-5000px; }
+  footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
+  [hidden] { display:none !important; }
+</style></head>
+<body><main>
+  <div class="logo">
+    <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><path d="M30 4 L20 26" stroke="#9a937c" stroke-width="4" stroke-linecap="round"/><path d="M12 26 h16 l6 18 H6 z" fill="#fcd34d"/><path d="M12 34 v8 M18 34 v8 M24 34 v8 M30 34 v8" stroke="#1a1505" stroke-width="2"/></svg>
+    <div><h1>VASSOURA</h1><div class="risco"></div><div class="sub">MAX FOR LIVE · ABLETON LIVE 12</div></div></div>
+
+  <section class="card" id="passo1">
+    <p><span class="free">GRÁTIS</span> &nbsp;Pare de limpar stems na mão: a VASSOURA acha os trechos vazios dos clips de áudio de todas as faixas e muta (MUTE) ou apaga (CUT) só o silêncio. Windows e Mac.</p>
+    <p class="en">Free: finds the empty parts of the audio clips on every track and mutes or deletes only the silence. Windows and Mac.</p>
+    <form id="f" novalidate>
+      <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
+      <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">
+      <input class="esc" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="principal" id="ir" type="submit">RECEBER A VASSOURA</button>
+      <div class="erro" id="erro"></div>
+    </form>
+    <p class="en" style="margin-top:8px">Mandamos o link e o passo a passo para o seu e-mail. Não precisa de ativação. · We e-mail you the link and the steps. No activation needed.</p>
+  </section>
+
+  <section class="card" id="passo2" hidden>
+    <p id="txtOk"><b>Pronto!</b></p>
+    <div class="aviso" id="mandado" hidden>Também mandamos o link e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções). <span class="en">We also e-mailed it to you (check spam).</span></div>
+    <span class="rot">1. Baixe <span class="en">· download</span></span>
+    <a class="bt principal" id="baixar" href="#">BAIXAR VASSOURA</a>
+    <span class="rot">2. Instale <span class="en">· install</span></span>
+    <ol>
+      <li>Extraia o zip e copie a pasta inteira para <code>Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\</code>. Os 3 arquivos (<b>Vassoura.amxd</b>, <b>vassoura.js</b> e <b>vassoura_view.js</b>) precisam ficar juntos.</li>
+      <li>No Live, arraste o <b>Vassoura.amxd</b> para o canal <b>MASTER</b>.</li>
+    </ol>
+    <div class="aviso"><b>Antes do primeiro APPLY, salve uma cópia do set</b> (File &gt; Save Live Set As…). <span class="en">Save a copy of your set before the first APPLY.</span></div>
+    <span class="rot">3. Use <span class="en">· use</span></span>
+    <ol>
+      <li>Abra um set com stems (clips de áudio no Arrangement, com <b>WARP desligado</b>).</li>
+      <li>Clique em <b>ANALYZE</b> e em <b>OPEN</b>. Ajuste THRESHOLD, MIN LENGTH, PRE, POST e SNAP: a janela redesenha na hora.</li>
+      <li>Escolha <b>MUTE</b> (desliga os pedaços vazios) ou <b>CUT</b> (apaga) e clique em <b>APPLY</b>.</li>
+    </ol>
+    <p class="en">Copy the folder to your User Library, drop Vassoura.amxd on the MASTER, ANALYZE, adjust, APPLY.</p>
+  </section>
+  <footer>InsideStudioSP</footer>
+</main>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  $('f').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var email = $('email').value.trim();
+    $('erro').textContent = '';
+    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Confira o e-mail.'; return; }
+    $('ir').disabled = true; $('ir').textContent = 'ENVIANDO…';
+    fetch(location.pathname, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: email, site: $('site').value }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        $('ir').disabled = false; $('ir').textContent = 'RECEBER A VASSOURA';
+        if (!j.ok) { $('erro').textContent = j.mensagem || 'Não deu certo. Tente de novo.'; return; }
+        $('baixar').href = j.baixar.zip;
+        $('txtOk').innerHTML = j.ja_tinha
+          ? '<b>Este e-mail já está cadastrado.</b> É só baixar de novo aqui embaixo. <span class="en">Already registered: just download again.</span>'
+          : '<b>Pronto! Seu cadastro está feito.</b> <span class="en">You are registered.</span>';
+        if (j.email_enviado) { $('emailMandado').textContent = email.toLowerCase(); $('mandado').hidden = false; }
+        $('passo1').hidden = true; $('passo2').hidden = false; window.scrollTo(0, 0);
+      })
+      .catch(function () { $('ir').disabled = false; $('ir').textContent = 'RECEBER A VASSOURA'; $('erro').textContent = 'Sem conexão. Tente de novo.'; });
   });
 })();
 </script>

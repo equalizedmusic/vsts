@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2025-09-01"
 workers_dev = true
 
-# Página do ALIGN no domínio do estúdio. O resto do domínio é o Worker do site (insidestudiosp-site).
+# Páginas do ALIGN e da VASSOURA no domínio do estúdio. O resto do domínio é o Worker do site (insidestudiosp-site).
 routes = [
   { pattern = "insidestudiosp.com.br/align*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/align*", zone_name = "insidestudiosp.com.br" },
@@ -11,6 +11,10 @@ routes = [
   { pattern = "www.insidestudiosp.com.br/gratis/align/*", zone_name = "insidestudiosp.com.br" },
   { pattern = "insidestudiosp.com.br/baixar/align/*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/baixar/align/*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "insidestudiosp.com.br/vassoura*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "www.insidestudiosp.com.br/vassoura*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "insidestudiosp.com.br/baixar/vassoura*", zone_name = "insidestudiosp.com.br" },
+  { pattern = "www.insidestudiosp.com.br/baixar/vassoura*", zone_name = "insidestudiosp.com.br" },
 ]
 
 [[d1_databases]]
