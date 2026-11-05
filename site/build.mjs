@@ -22,6 +22,9 @@ const usd = (v) => 'US$ ' + v.toFixed(2);
 const temBrl = (p) => typeof p.preco?.brl === 'number', temUsd = (p) => typeof p.preco?.usd === 'number';
 // preço na etiqueta: reais em PT; em EN, dólares se houver (PayPal), senão reais
 const valor = (p) => t(brl(p.preco.brl), temUsd(p) ? usd(p.preco.usd) : brl(p.preco.brl));
+// oferta de lançamento: "de" riscado + desconto (só em reais; em dólar não há "de")
+const off = (p) => Math.round((1 - p.preco.brl / p.de) * 100);
+const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de">${brl(p.de)}</s>` : '';
 
 function pagina({ titulo, descricao, corpo, raiz = '' }) {
     return `<!doctype html>
@@ -77,6 +80,8 @@ function caixaCompra(p) {
     <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>`;
     return `<form class="compra" method="post" action="${LIC}/loja/pagar">
+    ${p.de && temBrl(p) ? `<div class="oferta">${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
+    <div class="preco-de">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <input type="hidden" name="pacote" value="${p.id}">
     <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}
@@ -91,7 +96,7 @@ function caixaCompra(p) {
 
 function cartaoPack(p, grande = false) {
     const etiqueta = p.gratis ? `<span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span>`
-        : temBrl(p) || temUsd(p) ? `<span class="valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>`
+        : temBrl(p) || temUsd(p) ? `<span class="valor">${deRiscado(p)}${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>`
         : `<span class="selo-breve">${t('EM BREVE', 'SOON')}</span>`;
     return `<a class="pack${grande ? ' pack-grande' : ''}" href="/${p.id}/" style="--cor:${p.cor}">
     <div class="pack-img"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}" loading="lazy"></div>

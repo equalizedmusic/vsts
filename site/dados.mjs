@@ -216,3 +216,8 @@ export const PACKS = [
 
 // preço de cada pack = o do servidor (brl/usd null = em breve)
 for (const p of PACKS) p.preco = PRECOS[p.id] || null;
+
+// "de" da oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.
+// Preço "de" por faixa de preço real; pack sem entrada aqui mostra só o preço.
+const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
+for (const p of PACKS) if (p.preco && DE_BRL[p.preco.brl]) p.de = DE_BRL[p.preco.brl];
