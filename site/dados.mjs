@@ -23,8 +23,8 @@ export const SITE = {
         texto: [
             ['É aqui que nascem as faixas do Equalized e os plugins da loja. Sala tratada, monitores de referência, sintetizador analógico, controladores e CDJs ficam no mesmo ambiente: dá para compor, mixar e testar a faixa como na pista, sem sair da sala.',
              'This is where the Equalized tracks and the plugins in the shop are made. Treated room, reference monitors, analog synth, controllers and CDJs all in one place: you can write, mix and test the track the way it plays on the dancefloor, without leaving the room.'],
-            ['Mix e master de música eletrônica, do Psytrance ao Techno. A produção feita aqui é a autoral, as faixas do próprio Equalized.',
-             'Mixing and mastering of electronic music, from Psytrance to Techno. The production done here is original work: Equalized\'s own tracks.'],
+            ['Mixagem e masterização com setup híbrido: o digital dá a precisão, o analógico traz o punch e a textura que deixam a faixa viva na pista, do Psytrance ao Techno.',
+             'Mixing and mastering on a hybrid setup: digital brings the precision, analog adds the punch and texture that make a track come alive on the dancefloor, from Psytrance to Techno.'],
         ],
         fotos: [['st-mesa', 'A mesa de produção', 'The production desk'], ['st-sala', 'A sala: produção de um lado, CDJs do outro', 'The room: production on one side, CDJs on the other']],
         // Galeria "Por dentro do estúdio", em largura cheia abaixo do texto.

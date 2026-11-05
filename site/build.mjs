@@ -201,7 +201,7 @@ function estudio() {
 ${E ? `<section class="faixa duo">
   <div><h2 class="secao">${t('O estúdio', 'The studio')}</h2>
   ${E.texto.map((p) => `<p>${t(...p)}</p>`).join('\n  ')}
-  <p><a class="bt bt-sec" href="/contato/">${t('Orçamento de mix ou master', 'Ask for a mix or master quote')}</a></p></div>
+  <p><a class="bt bt-sec" href="/contato/">${t('Peça um orçamento de mix ou master', 'Ask for a mix or master quote')}</a></p></div>
   <div class="fotos-estudio">${(E.fotos || []).map(([img, pt, en]) => foto(img, pt)).join('')}</div>
 </section>
 ${E.maisFotos?.length ? `<section class="faixa"><h2 class="secao">${t('Por dentro do estúdio', 'Inside the studio')}</h2>
