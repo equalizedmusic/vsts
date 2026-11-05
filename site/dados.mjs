@@ -16,11 +16,12 @@ export const SITE = {
     spotify: 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO',
     youtube: '',          // por ora fora, a pedido dele (05/11). Quando entrar: id de um vídeo para o player
     lancamento: { titulo: "Summer of '89", url: 'https://bluetunesrecords.lnk.to/summerof89' },
+    // [nome, url, ícone em icones.mjs]. Linktree saiu a pedido dele (05/11).
     links: [
-        ['Spotify', 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO'],
-        ['SoundCloud', 'https://soundcloud.com/equalizedmusic'],
-        ['Beatport', 'https://www.beatport.com/artist/equalized/647307'],
-        ['Linktree', 'https://linktr.ee/equalizedmusic'],
+        ['Instagram', 'https://instagram.com/equalizedmusic', 'instagram'],
+        ['Spotify', 'https://open.spotify.com/artist/5nIL632exR3FPgulSLr2IO', 'spotify'],
+        ['SoundCloud', 'https://soundcloud.com/equalizedmusic', 'soundcloud'],
+        ['Beatport', 'https://www.beatport.com/artist/equalized/647307', 'beatport'],
     ],
 };
 

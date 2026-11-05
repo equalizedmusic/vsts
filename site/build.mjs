@@ -9,6 +9,7 @@ import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'nod
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE, PACKS, LIC } from './dados.mjs';
+import { ICONES } from './icones.mjs';
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
 const DIST = join(RAIZ, 'dist');
@@ -201,8 +202,7 @@ function estudio() {
   <div><h2 class="secao">${t('O artista', 'The artist')}</h2>
   ${SITE.lancamento ? `<p class="sobre">${t('LANÇAMENTO', 'NEW RELEASE')}</p>
   <p><a class="bt bt-principal" href="${esc(SITE.lancamento.url)}" rel="noopener" target="_blank">Equalized — ${esc(SITE.lancamento.titulo)}</a></p>` : ''}
-  <p class="links-artista"><a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram</a>
-  ${(SITE.links || []).map(([nome, url]) => `<a class="bt bt-sec" href="${esc(url)}" rel="noopener" target="_blank">${esc(nome)}</a>`).join('\n  ')}</p>
+  <p class="links-artista">${(SITE.links || []).map(([nome, url, ic]) => `<a class="ico ico-${ic}" href="${esc(url)}" rel="noopener" target="_blank" aria-label="${esc(nome)}" title="${esc(nome)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONES[ic]}"/></svg></a>`).join('\n  ')}</p>
   <p><a class="bt bt-sec" href="/contato/">${t('Fale com a gente', 'Get in touch')}</a></p></div>
   ${SITE.spotify ? `<div>${spotify}</div>` : ''}
 </section>
