@@ -75,6 +75,7 @@ CREATE INDEX IF NOT EXISTS eventos_ip_quando ON eventos (ip, quando);
 CREATE TABLE IF NOT EXISTS pedidos (
     id             TEXT    PRIMARY KEY,               -- P + 24 hex (vai no external_reference / custom_id)
     pacote         TEXT    NOT NULL,
+    nome           TEXT,                              -- nome completo digitado na compra (vai ao Mercado Pago e no e-mail)
     email          TEXT    NOT NULL,
     metodo         TEXT    NOT NULL,                  -- mp | paypal
     valor_centavos INTEGER NOT NULL,

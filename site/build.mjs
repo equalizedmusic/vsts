@@ -90,13 +90,15 @@ function caixaCompra(p) {
     <div class="preco-de so-oferta">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <input type="hidden" name="pacote" value="${p.id}">
+    <label class="campo">${t('Nome completo', 'Full name')}
+      <input name="nome" required minlength="3" maxlength="80" autocomplete="name" placeholder="Nome e sobrenome · Full name"></label>
     <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}
       <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
     ${temBrl(p) ? `<button class="bt bt-principal" name="metodo" value="mp">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>` : ''}
     ${temUsd(p) ? `<button class="bt bt-sec" name="metodo" value="paypal">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>` : ''}
     <p class="nota">${t('Pagamento aprovado: você recebe no e-mail o token de ativação, o link de download e as instruções. O token vale em 2 computadores.',
                         'Once the payment is approved you get the activation token, the download link and the instructions by e-mail. The token works on 2 computers.')}</p>
-    <p class="nota">${t('Seu e-mail é usado só para a licença e o suporte.', 'Your e-mail is used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
+    <p class="nota">${t('Nome e e-mail são usados só para a licença e o suporte.', 'Your name and e-mail are used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
   </form>`;
 }
 
@@ -289,8 +291,8 @@ function privacidade() {
          ['A exceção é o player do Spotify na página Estúdio. Ele é carregado do próprio Spotify, que pode gravar cookies dele no seu navegador, conforme a política de privacidade do Spotify.',
           'The exception is the Spotify player on the Studio page. It is loaded from Spotify itself, which may set its own cookies in your browser under Spotify\'s privacy policy.']],
         ['O que guardamos e para quê', 'What we keep and why',
-         ['Compra: o e-mail, o pack, o valor, a forma de pagamento e a situação do pedido, para emitir e enviar a sua licença. Os dados do cartão e do Pix ficam com o Mercado Pago e não passam por aqui.',
-          'Purchase: your e-mail, the pack, the amount, the payment method and the order status, to issue and send your license. Card and Pix details stay with Mercado Pago and never reach us.'],
+         ['Compra: o nome completo, o e-mail, o pack, o valor, a forma de pagamento e a situação do pedido, para emitir e enviar a sua licença. O nome e o e-mail também vão ao Mercado Pago, para identificar a compra. Os dados do cartão e do Pix ficam com o Mercado Pago e não passam por aqui.',
+          'Purchase: your full name, e-mail, the pack, the amount, the payment method and the order status, to issue and send your license. Your name and e-mail also go to Mercado Pago, to identify the purchase. Card and Pix details stay with Mercado Pago and never reach us.'],
          ['Licença: o e-mail, o token (guardado só em hash, não dá para ler de volta) e, para cada computador ativado, um código anônimo da máquina e o nome do computador, para controlar o limite de 2 computadores.',
           'License: your e-mail, the token (stored only as a hash, it cannot be read back) and, for each activated computer, an anonymous machine code and the computer name, to enforce the 2-computer limit.'],
          ['Downloads grátis (ALIGN e VASSOURA): o e-mail, para mandar o link e o token.', 'Free downloads (ALIGN and VASSOURA): your e-mail, to send the link and the token.'],
