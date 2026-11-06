@@ -20,6 +20,8 @@
 
 import { zipStream } from './zip.js';
 import { emailLigado, enviarEmail, CONTATO } from './email.js';
+import { PRECOS, OFERTA_FIM, DE_BRL } from './precos.js';
+import { PACKS, SITE } from '../../../site/dados.mjs';   // nome, frase, texto, cor e capa: os mesmos da página de pack do site
 
 const POR_IP_DIA = 8;
 const TOTAL_DIA = 300;
@@ -41,11 +43,14 @@ function json(obj, status = 200) {
 export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const cfg = PAGINAS[PACOTE];
     // form-action 'self': o botão de download do ALIGN é um formulário (POST /gratis/align/zip)
-    if (req.method === 'GET') return new Response(PACOTE === 'align' ? PAGINA_ALIGN.replace('<!--REENVIO-->', emailLigado(env) ? REENVIO : '')
-                                                  : PACOTE === 'vassoura' ? PAGINA_VASSOURA : PAGINA, {
-        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
-                   'content-security-policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action ${PACOTE === 'align' ? "'self'" : "'none'"}; frame-ancestors 'none'` },
-    });
+    if (req.method === 'GET') {
+        const agora = Date.now();
+        const site = PACOTE === 'align' || PACOTE === 'vassoura';   // no molde do site (estilo.css e site.js do domínio do estúdio)
+        const html = PACOTE === 'align' ? paginaAlign(agora, emailLigado(env)) : PACOTE === 'vassoura' ? paginaVassoura(agora) : PAGINA;
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
+            'content-security-policy': site ? `${CSP_SITE}; form-action ${PACOTE === 'align' ? "'self'" : "'none'"}`
+                : "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
+    }
     if (req.method !== 'POST') return json({ ok: false, mensagem: 'Método não aceito.' }, 405);
 
     const ip = req.headers.get('cf-connecting-ip') || '';
@@ -691,291 +696,323 @@ const PAGINA = `<!doctype html>
 </script>
 </body></html>`;
 
-// VASSOURA: só o e-mail (cadastro) ⇒ botão de download do zip + e-mail com o link e o passo a passo. Sem token.
-const PAGINA_VASSOURA = `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VASSOURA · InsideStudioSP</title>
-<style>
-  :root { --bg:#13110b; --card:#1f1c13; --line:#3a3524; --ink:#f3efe2; --dim:#9a937c; --yel:#fcd34d; --red:#ef4444; }
-  * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; background:radial-gradient(700px 500px at 85% 0%, rgba(252,211,77,.14), transparent 70%),
-         radial-gradient(700px 500px at 0% 100%, rgba(239,68,68,.08), transparent 70%), var(--bg);
-         color:var(--ink); font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
-  main { max-width:520px; margin:0 auto; padding:36px 20px 60px; }
-  .logo { display:flex; align-items:center; gap:14px; }
-  h1 { margin:0; font:800 clamp(30px, 9.5vw, 44px)/1 Bahnschrift, "Segoe UI", system-ui, sans-serif; letter-spacing:.16em; color:var(--yel); }
-  .risco { height:4px; border-radius:2px; background:repeating-linear-gradient(90deg, var(--yel) 0 18px, transparent 18px 24px, var(--red) 24px 34px, transparent 34px 40px); margin-top:6px; }
-  .sub { color:var(--dim); font-size:13px; letter-spacing:.16em; font-weight:700; margin-top:8px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin-top:26px; }
-  .free { display:inline-block; background:var(--yel); color:#1a1505; font-weight:900; padding:2px 10px; border-radius:6px; }
-  p { margin:.4em 0; } .en { color:var(--dim); font-size:14px; font-style:italic; }
-  label, .rot { display:block; font-weight:700; margin:18px 0 6px; }
-  input[type=email] { width:100%; padding:14px; border-radius:10px; border:2px solid var(--line); background:#0d0b06; color:var(--ink); font-size:17px; }
-  input[type=email]:focus { outline:none; border-color:var(--yel); }
-  button, .bt { display:block; width:100%; text-align:center; padding:15px; margin-top:16px; border:0; border-radius:12px; cursor:pointer;
-           font:900 17px "Segoe UI", system-ui, sans-serif; letter-spacing:.06em; text-decoration:none; }
-  .principal { background:var(--yel); color:#1a1505; }
-  .principal:disabled { opacity:.6; cursor:wait; }
-  .aviso { background:rgba(252,211,77,.08); border:1px solid rgba(252,211,77,.4); border-radius:10px; padding:10px 12px; font-size:14px; margin-top:12px; }
-  .erro { color:var(--red); font-weight:700; min-height:1.5em; margin-top:10px; }
-  ol { padding-left:20px; margin:8px 0 0; } li { margin:7px 0; }
-  code { font:13px Consolas, "SF Mono", monospace; background:#0d0b06; border:1px solid var(--line); border-radius:6px; padding:1px 5px; word-break:break-all; }
-  .so { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .so input { position:absolute; opacity:0; pointer-events:none; }
-  .so label { margin:0; padding:14px; text-align:center; border:2px solid var(--line); border-radius:10px; background:#0d0b06; cursor:pointer; font-weight:800; letter-spacing:.06em; }
-  .so input:checked + label { border-color:var(--yel); background:rgba(252,211,77,.14); color:#fff; }
-  .so input:focus-visible + label { outline:2px solid var(--yel); outline-offset:2px; }
-  .esc { position:absolute; left:-5000px; }
-  footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
-  [hidden] { display:none !important; }
-</style></head>
-<body>${NAV}<main>
-  <div class="logo">
-    <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><path d="M30 4 L20 26" stroke="#9a937c" stroke-width="4" stroke-linecap="round"/><path d="M12 26 h16 l6 18 H6 z" fill="#fcd34d"/><path d="M12 34 v8 M18 34 v8 M24 34 v8 M30 34 v8" stroke="#1a1505" stroke-width="2"/></svg>
-    <div><h1>VASSOURA</h1><div class="risco"></div><div class="sub">MAX FOR LIVE · ABLETON LIVE 12</div></div></div>
+// ── ALIGN e VASSOURA no molde do site (pedido dele, 06/11/2026) ─────────────────────────────────────────────
+// Mesmo topo, rodapé, folha de estilo e troca PT/EN do site (estilo.css e site.js vêm do domínio do estúdio); nome, frase,
+// texto, cor e capa vêm de site/dados.mjs, o mesmo arquivo da página de pack. O cadastro fica na caixa lateral, no lugar
+// da caixa de compra. Embaixo, a vitrine com os packs pagos (preço de precos.js; o "de" riscado só enquanto a oferta vale).
+// O MONTA-MONTA (PAGINA, acima) continua na página antiga, de propósito.
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const t = (pt, en) => `<span class="pt">${esc(pt)}</span><span class="en" lang="en">${esc(en ?? pt)}</span>`;
+const th = (pt, en) => `<span class="pt">${pt}</span><span class="en" lang="en">${en}</span>`;   // com HTML dentro (texto fixo daqui)
+const brl = (v) => 'R$ ' + v.toFixed(2).replace('.', ',');
+const REQ_VST = th('Requisitos: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel)',
+                   'Requirements: Windows 10 or 11 (64-bit) · macOS 11 Big Sur or newer (Apple Silicon and Intel)');
+const CSP_SITE = `default-src 'none'; style-src 'unsafe-inline' 'self' ${SITE_URL}; script-src 'unsafe-inline' 'self' ${SITE_URL}; connect-src 'self'; `
+    + `img-src data: 'self' ${SITE_URL}; base-uri 'none'; frame-ancestors 'none'`;
 
-  <section class="card" id="passo1">
-    <p><span class="free">GRÁTIS</span> &nbsp;Pare de limpar stems na mão: a VASSOURA acha os trechos vazios dos clips de áudio de todas as faixas e muta (MUTE) ou apaga (CUT) só o silêncio. Windows e Mac.</p>
-    <p class="en">Free: finds the empty parts of the audio clips on every track and mutes or deletes only the silence. Windows and Mac.</p>
-    <form id="f" novalidate>
-      <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
-      <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">
-      <span class="rot">Seu sistema <span class="en">· your system</span></span>
+function oferta(agora) {
+    const ativa = agora < Date.parse(OFERTA_FIM);
+    const offs = Object.values(PRECOS).map((p) => p?.brl).filter((v) => ativa && DE_BRL[v]).map((v) => Math.round((1 - v / DE_BRL[v]) * 100));
+    return { ativa, maior: offs.length ? Math.max(...offs) : 0 };
+}
+
+function paginaSite({ titulo, corpo, agora }) {
+    const of = oferta(agora);
+    const fim = new Date(OFERTA_FIM).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+    return `<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(titulo)}</title>
+<meta name="theme-color" content="#0d0b14">
+<link rel="icon" href="${SITE_URL}/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="${SITE_URL}/estilo.css">
+<script src="${SITE_URL}/site.js" defer></script>
+<style>
+  .compra .so { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .compra .so input { position:absolute; opacity:0; pointer-events:none; }
+  .compra .so label { padding:11px; text-align:center; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.04); cursor:pointer; font-weight:800; letter-spacing:.06em; font-size:14px; color:var(--ink); }
+  .compra .so input:checked + label { border-color:var(--cor); background:color-mix(in srgb, var(--cor) 16%, transparent); }
+  .compra .so input:focus-visible + label { outline:2px solid var(--cor); outline-offset:2px; }
+  .compra .rot { font-size:13px; color:var(--dim); }
+  .compra .erro { color:#f87171; font-weight:700; min-height:1.4em; font-size:14px; }
+  .compra .token { font:700 17px Consolas, ui-monospace, monospace; background:#08070c; border:2px dashed var(--cor); border-radius:10px; padding:12px;
+                   text-align:center; word-break:break-all; color:var(--cor); user-select:all; }
+  .compra .aviso { background:color-mix(in srgb, var(--cor) 9%, transparent); border:1px solid color-mix(in srgb, var(--cor) 40%, transparent); border-radius:10px; padding:10px 12px; font-size:14px; }
+  .compra .passo { font-weight:800; margin-top:8px; }
+  .compra ol { padding-left:20px; margin:0; font-size:14px; color:#d6d2e4; } .compra li { margin:5px 0; }
+  .compra code { font:12px Consolas, ui-monospace, monospace; background:#08070c; border:1px solid var(--line); border-radius:6px; padding:1px 5px; word-break:break-all; }
+  .compra .bt { width:100%; } .compra form { display:flex; flex-direction:column; gap:10px; margin:0; }
+  .compra a.link { color:var(--cor); }
+  .compra.feito { position:static; }
+  .k { color:var(--org); font-weight:800; } .b { color:var(--blu); font-weight:800; }
+  [hidden] { display:none !important; }
+</style>
+</head><body>
+<header class="topo"><div class="faixa">
+  <a class="marca" href="${SITE_URL}/">Inside<b>Studio</b>SP</a>
+  <nav>
+    <a href="${SITE_URL}/">${t('Loja', 'Shop')}</a>
+    <a href="${SITE_URL}/estudio/">${t('Estúdio', 'Studio')}</a>
+    <a href="${SITE_URL}/contato/">${t('Contato', 'Contact')}</a>
+    <button class="idioma" type="button" aria-label="Idioma / Language"><span class="pt">EN</span><span class="en">PT</span></button>
+  </nav>
+</div></header>
+${of.ativa && of.maior ? `<a class="faixa-oferta so-oferta" href="${SITE_URL}/#packs"><b>${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')}</b> ${t(`até ${of.maior}% off nos packs`, `up to ${of.maior}% off all packs`)} <span class="sep">·</span> ${t('termina em', 'ends in')} <span class="contador" data-fim="${OFERTA_FIM}">${t('até ' + fim, 'until ' + fim)}</span></a>` : ''}
+<main>${corpo}</main>
+<footer id="contato" class="rodape"><div class="faixa">
+  <div>
+    <div class="marca">Inside<b>Studio</b>SP</div>
+    <p>${t('Plugins, mix e master em São Paulo.', 'Plugins, mixing and mastering from São Paulo, Brazil.')}</p>
+  </div>
+  <div class="contatos">
+    <a href="mailto:${SITE.email}">${SITE.email}</a>
+    <a href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
+  </div>
+  <small>© ${new Date(agora).getFullYear()} InsideStudioSP · <a href="${SITE_URL}/privacidade/">${t('Privacidade e cookies', 'Privacy and cookies')}</a></small>
+</div></footer>
+<dialog class="zoom"><button class="fechar" type="button" aria-label="Fechar / Close">✕</button><img alt=""></dialog>
+</body></html>`;
+}
+
+// vitrine: os packs pagos no cartão do site, com o preço que o servidor cobra
+function vitrine(agora) {
+    const ativa = oferta(agora).ativa;
+    const cartoes = PACKS.filter((p) => typeof PRECOS[p.id]?.brl === 'number').map((p) => {
+        const v = PRECOS[p.id].brl, de = ativa && DE_BRL[v];
+        return `<a class="pack" href="${SITE_URL}/${p.id}/" style="--cor:${p.cor}">
+    <div class="pack-img"><img src="${SITE_URL}/img/${p.capa}.webp" alt="${esc(p.nome)}" loading="lazy"></div>
+    <div class="pack-txt">
+      <div class="pack-topo"><h3>${esc(p.nome)}</h3><span class="valor">${de ? `<s class="de so-oferta">${brl(de)}</s>` : ''}${brl(v)}</span></div>
+      <p>${t(...p.frase)}</p>
+      <small>${t(...p.tipo)}</small>
+    </div>
+  </a>`;
+    }).join('\n  ');
+    if (!cartoes) return '';
+    return `<section class="faixa" id="loja">
+  <h2 class="titulo-sec">${t('Gostou? Conheça os plugins da loja', 'Like it? Check out the shop')}</h2>
+  <div class="grade">
+  ${cartoes}
+  </div>
+  <p style="margin-top:22px"><a class="bt bt-sec" href="${SITE_URL}/#packs">${t('Ver a loja completa', 'See the whole shop')}</a></p>
+</section>`;
+}
+
+// topo da página no molde do pack do site; a caixa lateral é o cadastro
+function heroGratis(p, caixa, { vst }) {
+    const [, , dPt, dEn] = p.plugins[0] || [];
+    return `
+<section class="pack-hero" style="--cor:${p.cor}"><div class="faixa pack-hero-grade">
+  <div>
+    <a class="voltar" href="${SITE_URL}/#packs">← ${t('Todos os packs', 'All packs')}</a>
+    <h1>${esc(p.nome)}</h1>
+    <p class="lead">${t(...p.frase)}</p>
+    <p>${t(...p.texto)}</p>
+    <p class="tipo">${t(...p.tipo)} · Windows · macOS</p>
+    ${vst ? `<p class="req">${REQ_VST}</p>` : ''}
+    ${dPt ? `<p class="dim">${t(dPt, dEn)}</p>` : ''}
+  </div>
+  ${caixa}
+</div>
+<div class="faixa"><button type="button" class="ampliar capa" data-img="${SITE_URL}/img/${p.capa}.webp"><img src="${SITE_URL}/img/${p.capa}.webp" alt="${esc(p.nome)}"></button></div>
+</section>`;
+}
+
+// script comum: T() monta o texto nas duas línguas (o site.js mostra a do botão EN/PT)
+const SCRIPT_BASE = `
+  var $ = function (id) { return document.getElementById(id); };
+  var T = function (pt, en) { return '<span class="pt">' + pt + '</span><span class="en" lang="en">' + en + '</span>'; };
+  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  $(mac ? 'soMac' : 'soWin').checked = true;
+  var okEmail = function (e) { return /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(e); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var erroServ = function (j) { return j && j.mensagem ? esc(j.mensagem) : T('Não deu certo. Tente de novo.', 'Something went wrong. Please try again.'); };
+  var SEMREDE = T('Sem conexão. Tente de novo.', 'No connection. Please try again.');`;
+
+const CAMPOS_EMAIL_SO = `
+      <label class="campo">${t('Seu e-mail', 'Your e-mail')}
+        <input id="email" type="email" autocomplete="email" required maxlength="120" placeholder="voce@email.com"></label>
+      <span class="rot">${t('Seu sistema', 'Your system')}</span>
       <div class="so" role="radiogroup">
         <input type="radio" name="so" id="soWin" value="win"><label for="soWin">WINDOWS</label>
         <input type="radio" name="so" id="soMac" value="mac"><label for="soMac">MAC</label>
       </div>
-      <input class="esc" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="principal" id="ir" type="submit">RECEBER A VASSOURA</button>
+      <input class="isca" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true">`;
+
+function paginaVassoura(agora) {
+    const p = PACKS.find((x) => x.id === 'vassoura');
+    const caixa = `<div class="compra" id="caixa">
+  <div id="passo1" style="display:contents">
+    <div class="preco"><span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span></div>
+    <form id="f" novalidate>${CAMPOS_EMAIL_SO}
+      <button class="bt bt-principal" id="ir" type="submit">${t('Receber a VASSOURA', 'Get VASSOURA')}</button>
       <div class="erro" id="erro"></div>
     </form>
-    <p class="en" style="margin-top:8px">Mandamos o link e o passo a passo para o seu e-mail. Não precisa de ativação. · We e-mail you the link and the steps. No activation needed.</p>
-  </section>
-
-  <section class="card" id="passo2" hidden>
-    <p id="txtOk"><b>Pronto!</b></p>
-    <div class="aviso" id="mandado" hidden>Também mandamos o link e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções). <span class="en">We also e-mailed it to you (check spam).</span></div>
-    <span class="rot">1. Baixe <span class="en">· download</span></span>
-    <a class="bt principal" id="baixar" href="#">BAIXAR VASSOURA</a>
-    <span class="rot">2. Instale <span class="en">· install</span></span>
+    <p class="nota">${t('Mandamos o link e o passo a passo para o seu e-mail. Não precisa de ativação.', 'We e-mail you the link and the steps. No activation needed.')}</p>
+  </div>
+  <div id="passo2" hidden style="display:contents">
+    <p id="txtOk"></p>
+    <div class="aviso" id="mandado" hidden>${th('Também mandamos o link e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções).', 'We also e-mailed the link and the steps to <b id="emailMandado2"></b> (check spam).')}</div>
+    <div class="passo">${t('1. Baixe', '1. Download')}</div>
+    <a class="bt bt-principal" id="baixar" href="#">${t('Baixar VASSOURA', 'Download VASSOURA')}</a>
+    <div class="passo">${t('2. Instale', '2. Install')}</div>
     <ol>
-      <li><span id="extrair"></span> e copie a pasta inteira para <code id="pasta"></code>. Os 3 arquivos (<b>Vassoura.amxd</b>, <b>vassoura.js</b> e <b>vassoura_view.js</b>) precisam ficar juntos.</li>
-      <li>No Live, arraste o <b>Vassoura.amxd</b> para a <b>PRIMEIRA faixa de áudio</b> do projeto. No <b>MASTER</b> ele não funciona: o ANALYZE não lê os clips.</li>
+      <li><span id="extrair"></span> <span id="copie"></span> <code id="pasta"></code>. ${th('Os 3 arquivos (<b>Vassoura.amxd</b>, <b>vassoura.js</b> e <b>vassoura_view.js</b>) precisam ficar juntos.', 'The 3 files (<b>Vassoura.amxd</b>, <b>vassoura.js</b> and <b>vassoura_view.js</b>) must stay together.')}</li>
+      <li>${th('No Live, arraste o <b>Vassoura.amxd</b> para a <b>PRIMEIRA faixa de áudio</b> do projeto. No <b>MASTER</b> ele não funciona: o ANALYZE não lê os clips.', 'In Live, drag <b>Vassoura.amxd</b> onto the <b>FIRST audio track</b> of the set. It does not work on the <b>MASTER</b>: ANALYZE cannot read the clips there.')}</li>
     </ol>
-    <div class="aviso"><b>Antes do primeiro APPLY, salve uma cópia do set</b> (File &gt; Save Live Set As…). Cada trecho mutado ou apagado é um <b id="desfazer">Ctrl+Z</b> separado. <span class="en">Save a copy of your set before the first APPLY.</span></div>
-    <span class="rot">3. Use <span class="en">· use</span></span>
+    <div class="aviso">${th('<b>Antes do primeiro APPLY, salve uma cópia do set</b> (File &gt; Save Live Set As…). Cada trecho mutado ou apagado é um <b class="desfazer"></b> separado.', '<b>Save a copy of your set before the first APPLY</b> (File &gt; Save Live Set As…). Each muted or deleted part is a separate <b class="desfazer"></b>.')}</div>
+    <div class="passo">${t('3. Use', '3. Use')}</div>
     <ol>
-      <li>Abra um set com stems (clips de áudio no Arrangement, com <b>WARP desligado</b>).</li>
-      <li>Clique em <b>ANALYZE</b> e em <b>OPEN</b>. Ajuste THRESHOLD, MIN LENGTH, PRE, POST e SNAP: a janela redesenha na hora.</li>
-      <li>Escolha <b>MUTE</b> (desliga os pedaços vazios) ou <b>CUT</b> (apaga) e clique em <b>APPLY</b>.</li>
+      <li>${th('Abra um set com stems (clips de áudio no Arrangement, com <b>WARP desligado</b>).', 'Open a set with stems (audio clips in the Arrangement, with <b>WARP off</b>).')}</li>
+      <li>${th('Clique em <b>ANALYZE</b> e em <b>OPEN</b>. Ajuste THRESHOLD, MIN LENGTH, PRE, POST e SNAP: a janela redesenha na hora.', 'Click <b>ANALYZE</b> and <b>OPEN</b>. Adjust THRESHOLD, MIN LENGTH, PRE, POST and SNAP: the window redraws instantly.')}</li>
+      <li>${th('Escolha <b>MUTE</b> (desliga os pedaços vazios) ou <b>CUT</b> (apaga) e clique em <b>APPLY</b>.', 'Pick <b>MUTE</b> (switches the empty parts off) or <b>CUT</b> (deletes them) and click <b>APPLY</b>.')}</li>
     </ol>
-    <p class="en">Copy the folder to your User Library, drop Vassoura.amxd on the FIRST audio track (not the MASTER), ANALYZE, adjust, APPLY.</p>
-  </section>
-  ${RODAPE}
-</main>
-<script>
-(function () {
-  var $ = function (id) { return document.getElementById(id); };
-  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-  $(mac ? 'soMac' : 'soWin').checked = true;
+  </div>
+</div>`;
+    const script = `<script>
+(function () {${SCRIPT_BASE}
+  var BOTAO = T('Receber a VASSOURA', 'Get VASSOURA');
   $('f').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var email = $('email').value.trim();
     var so = $('soMac').checked ? 'mac' : $('soWin').checked ? 'win' : '';
-    $('erro').textContent = '';
-    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Confira o e-mail.'; return; }
-    if (!so) { $('erro').textContent = 'Escolha Windows ou Mac.'; return; }
-    $('ir').disabled = true; $('ir').textContent = 'ENVIANDO…';
+    $('erro').innerHTML = '';
+    if (!okEmail(email)) { $('erro').innerHTML = T('Confira o e-mail.', 'Check your e-mail.'); return; }
+    if (!so) { $('erro').innerHTML = T('Escolha Windows ou Mac.', 'Choose Windows or Mac.'); return; }
+    $('ir').disabled = true; $('ir').innerHTML = T('Enviando…', 'Sending…');
     fetch(location.pathname, { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: email, sistema: so, site: $('site').value }) })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        $('ir').disabled = false; $('ir').textContent = 'RECEBER A VASSOURA';
-        if (!j.ok) { $('erro').textContent = j.mensagem || 'Não deu certo. Tente de novo.'; return; }
+        $('ir').disabled = false; $('ir').innerHTML = BOTAO;
+        if (!j.ok) { $('erro').innerHTML = erroServ(j); return; }
         $('baixar').href = j.baixar.zip;
-        $('extrair').textContent = so === 'mac' ? 'Extraia o zip (dois cliques no arquivo)' : 'Extraia o zip (botão direito > "Extrair tudo...")';
-        $('pasta').textContent = so === 'mac' ? 'Música/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/'
-          : 'Documentos\\\\Ableton\\\\User Library\\\\Presets\\\\Audio Effects\\\\Max Audio Effect\\\\';
-        $('desfazer').textContent = so === 'mac' ? 'Cmd+Z' : 'Ctrl+Z';
+        $('extrair').innerHTML = so === 'mac' ? T('Extraia o zip (dois cliques no arquivo)', 'Unzip it (double-click the file)')
+          : T('Extraia o zip (botão direito > "Extrair tudo...")', 'Unzip it (right-click > "Extract All...")');
+        $('copie').innerHTML = T('e copie a pasta inteira para', 'and copy the whole folder to');
+        var cam = 'Ableton/User Library/Presets/Audio Effects/Max Audio Effect/';
+        if (so !== 'mac') cam = cam.split('/').join('\\\\');
+        $('pasta').innerHTML = so === 'mac' ? T('Música/' + cam, 'Music/' + cam) : T('Documentos\\\\' + cam, 'Documents\\\\' + cam);
+        document.querySelectorAll('.desfazer').forEach(function (b) { b.textContent = so === 'mac' ? 'Cmd+Z' : 'Ctrl+Z'; });
         $('txtOk').innerHTML = j.ja_tinha
-          ? '<b>Este e-mail já está cadastrado.</b> É só baixar de novo aqui embaixo. <span class="en">Already registered: just download again.</span>'
-          : '<b>Pronto! Seu cadastro está feito.</b> <span class="en">You are registered.</span>';
-        if (j.email_enviado) { $('emailMandado').textContent = email.toLowerCase(); $('mandado').hidden = false; }
-        $('passo1').hidden = true; $('passo2').hidden = false; window.scrollTo(0, 0);
+          ? T('<b>Este e-mail já está cadastrado.</b> É só baixar de novo aqui embaixo.', '<b>This e-mail is already registered.</b> Just download it again below.')
+          : T('<b>Pronto! Seu cadastro está feito.</b>', '<b>Done! You are registered.</b>');
+        if (j.email_enviado) { $('emailMandado').textContent = $('emailMandado2').textContent = email.toLowerCase(); $('mandado').hidden = false; }
+        $('passo1').hidden = true; $('passo2').hidden = false; $('caixa').classList.add('feito'); $('caixa').scrollIntoView({ block: 'start' });
       })
-      .catch(function () { $('ir').disabled = false; $('ir').textContent = 'RECEBER A VASSOURA'; $('erro').textContent = 'Sem conexão. Tente de novo.'; });
+      .catch(function () { $('ir').disabled = false; $('ir').innerHTML = BOTAO; $('erro').innerHTML = SEMREDE; });
   });
 })();
-</script>
-</body></html>`;
+</script>`;
+    return paginaSite({ titulo: 'VASSOURA grátis — InsideStudioSP', agora,
+        corpo: heroGratis(p, caixa, { vst: false }) + '\n' + vitrine(agora) + '\n' + script });
+}
 
-// entra no lugar de <!--REENVIO--> da página do ALIGN só quando o e-mail está ligado
-const REENVIO = `    <p style="margin-top:14px;font-size:14px">Já se cadastrou e não recebeu ou perdeu o token? <a href="#" id="perdi" style="color:var(--pur)">Receber um token novo no e-mail</a>
-      <span class="en">· lost your token?</span></p>
-    <p id="msgPerdi" style="font-size:14px"></p>`;
-
-// ALIGN: escolhe o sistema, recebe o token e só o link daquele sistema; vale para 1 computador
-const PAGINA_ALIGN = `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ALIGN · InsideStudioSP</title>
-<style>
-  :root { --bg:#100e17; --card:#1b1926; --line:#33304a; --ink:#eeecf6; --dim:#8d8aa3; --pur:#a78bfa; --org:#ff8a3d; --blu:#3ba0ff; --grn:#34d399; --pink:#f43f5e; }
-  * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; background:radial-gradient(700px 500px at 85% 0%, rgba(167,139,250,.16), transparent 70%),
-         radial-gradient(700px 500px at 0% 100%, rgba(255,138,61,.10), transparent 70%), var(--bg);
-         color:var(--ink); font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
-  main { max-width:520px; margin:0 auto; padding:36px 20px 60px; }
-  .logo { display:flex; align-items:center; gap:14px; }
-  h1 { margin:0; font:800 clamp(34px, 11vw, 48px)/1 Bahnschrift, "Segoe UI", system-ui, sans-serif; letter-spacing:.22em; }
-  h1 b { color:var(--pur); }
-  .risco { height:4px; border-radius:2px; background:linear-gradient(90deg, var(--org), var(--blu)); margin-top:6px; }
-  .sub { color:var(--dim); font-size:13px; letter-spacing:.16em; font-weight:700; margin-top:8px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin-top:26px; }
-  .free { display:inline-block; background:var(--grn); color:#0b2316; font-weight:900; padding:2px 10px; border-radius:6px; }
-  p { margin:.4em 0; } .en { color:var(--dim); font-size:14px; font-style:italic; }
-  label, .rot { display:block; font-weight:700; margin:18px 0 6px; }
-  input[type=email] { width:100%; padding:14px; border-radius:10px; border:2px solid var(--line); background:#0b0a12; color:var(--ink); font-size:17px; }
-  input[type=email]:focus { outline:none; border-color:var(--pur); }
-  .so { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .so input { position:absolute; opacity:0; pointer-events:none; }
-  .so label { margin:0; padding:14px; text-align:center; border:2px solid var(--line); border-radius:10px; background:#0b0a12; cursor:pointer; font-weight:800; letter-spacing:.06em; }
-  .so input:checked + label { border-color:var(--pur); background:rgba(167,139,250,.16); color:#fff; }
-  .so input:focus-visible + label { outline:2px solid var(--pur); outline-offset:2px; }
-  button, .bt { display:block; width:100%; text-align:center; padding:15px; margin-top:16px; border:0; border-radius:12px; cursor:pointer;
-           font:900 17px "Segoe UI", system-ui, sans-serif; letter-spacing:.06em; text-decoration:none; }
-  .principal { background:var(--grn); color:#0b2316; }
-  .principal:disabled { opacity:.6; cursor:wait; }
-  .sec { background:#0b0a12; color:var(--ink); border:2px solid var(--line); }
-  .sec:hover { border-color:var(--pur); }
-  .token { font:700 clamp(14px, 4.3vw, 19px) Consolas, "SF Mono", monospace; background:#0b0a12; border:2px dashed var(--pur); border-radius:10px; padding:14px; text-align:center;
-           word-break:break-all; color:var(--pur); margin-top:8px; user-select:all; }
-  .aviso { background:rgba(167,139,250,.08); border:1px solid rgba(167,139,250,.4); border-radius:10px; padding:10px 12px; font-size:14px; margin-top:12px; }
-  .erro { color:var(--pink); font-weight:700; min-height:1.5em; margin-top:10px; }
-  ol { padding-left:20px; margin:8px 0 0; } li { margin:7px 0; }
-  .k { color:var(--org); font-weight:800; } .b { color:var(--blu); font-weight:800; }
-  .esc { position:absolute; left:-5000px; }
-  footer { color:var(--dim); font-size:12px; text-align:center; margin-top:26px; }
-  [hidden] { display:none !important; }
-</style></head>
-<body>${NAV}<main>
-  <div class="logo">
-    <svg width="64" height="40" viewBox="0 0 64 40" aria-hidden="true"><path d="M2 20 C 12 2, 20 2, 32 20 S 52 38, 62 20" fill="none" stroke="#ff8a3d" stroke-width="5" stroke-linecap="round"/><path d="M2 22 C 12 4, 20 4, 32 22 S 52 40, 62 22" fill="none" stroke="#3ba0ff" stroke-width="5" stroke-linecap="round" opacity=".9"/></svg>
-    <div><h1><b>A</b>LIGN</h1><div class="risco"></div><div class="sub">KICK / BASS PHASE</div></div></div>
-
-  <section class="card" id="passo1">
-    <p><span class="free">GRÁTIS</span> &nbsp;Alinha a fase do <span class="k">kick</span> com o <span class="b">baixo</span> sozinho, com um botão só. Latência zero. VST3 e AU.</p>
-    <p class="en">Free kick/bass phase aligner: one button, zero latency. VST3 / AU.</p>
-    <p class="en">Requisitos · Requirements: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel).</p>
-    <form id="f" novalidate>
-      <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
-      <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">
-      <span class="rot">Seu sistema <span class="en">· your system</span></span>
-      <div class="so" role="radiogroup">
-        <input type="radio" name="so" id="soWin" value="win"><label for="soWin">WINDOWS</label>
-        <input type="radio" name="so" id="soMac" value="mac"><label for="soMac">MAC</label>
-      </div>
-      <input class="esc" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="principal" id="ir" type="submit">GERAR MINHA LICENÇA</button>
+function paginaAlign(agora, reenvio) {
+    const p = PACKS.find((x) => x.id === 'align');
+    const caixa = `<div class="compra" id="caixa">
+  <div id="passo1" style="display:contents">
+    <div class="preco"><span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span></div>
+    <form id="f" novalidate>${CAMPOS_EMAIL_SO}
+      <button class="bt bt-principal" id="ir" type="submit">${t('Gerar minha licença', 'Get my license')}</button>
       <div class="erro" id="erro"></div>
     </form>
-    <p class="en" style="margin-top:8px">Licença para 1 computador. O e-mail é só para a sua licença. · 1 computer. Your e-mail is used only for your license.</p>
-<!--REENVIO-->
-  </section>
-
-  <section class="card" id="passo2" hidden>
-    <div id="comToken" hidden>
-      <p><b>Pronto! Este é o seu token:</b> <span class="en">· your token</span></p>
+    <p class="nota">${t('Licença para 1 computador. O e-mail é só para a sua licença.', 'License for 1 computer. Your e-mail is used only for your license.')}</p>
+    ${reenvio ? `<p class="nota">${t('Já se cadastrou e não recebeu ou perdeu o token?', 'Already signed up and lost your token?')} <a href="#" id="perdi" class="link">${t('Receber um token novo no e-mail', 'Get a new token by e-mail')}</a></p>
+    <p class="nota" id="msgPerdi"></p>` : ''}
+  </div>
+  <div id="passo2" hidden style="display:contents">
+    <div id="comToken" hidden style="display:contents">
+      <p style="margin:0"><b>${t('Pronto! Este é o seu token:', 'Done! This is your token:')}</b></p>
       <div class="token" id="token"></div>
-      <button class="sec" id="copiar" type="button">COPIAR TOKEN</button>
-      <div class="aviso"><b>Guarde o token</b>: ele aparece só agora (tire um print). <span class="en">It is shown only once, save it.</span></div>
+      <button class="bt bt-sec" id="copiar" type="button">${t('Copiar token', 'Copy token')}</button>
+      <div class="aviso">${th('<b>Guarde o token</b>: ele aparece só agora (tire um print).', '<b>Save your token</b>: it is shown only now (take a screenshot).')}</div>
     </div>
-    <div id="semToken" hidden>
-      <p id="txtSem"></p>
-    </div>
-    <div class="aviso" id="mandado" hidden>Também mandamos o token e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções). <span class="en">We also e-mailed it to you (check spam).</span></div>
-    <span class="rot">1. Baixe e instale <span class="en">· download and install</span></span>
+    <p id="txtSem" hidden></p>
+    <div class="aviso" id="mandado" hidden>${th('Também mandamos o token e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções).', 'We also e-mailed the token and the steps to <b id="emailMandado2"></b> (check spam).')}</div>
+    <div class="passo">${t('1. Baixe e instale', '1. Download and install')}</div>
     <form id="fz" method="post" action="/gratis/align/zip">
       <input type="hidden" name="email" id="zEmail"><input type="hidden" name="token" id="zToken"><input type="hidden" name="sistema" id="zSo">
-      <button class="principal" id="baixar" type="submit">BAIXAR ALIGN</button>
+      <button class="bt bt-principal" id="baixar" type="submit">${t('Baixar ALIGN', 'Download ALIGN')}</button>
     </form>
-    <p style="margin-top:10px">Vem um <b>.zip</b> com o instalador e o <b>LEIA-ME</b> com o seu e-mail, o token, o passo a passo e o que fazer se aparecer aviso de segurança. <span class="en">A .zip with the installer and a READ ME with your e-mail, token, steps and how to handle security warnings.</span></p>
-    <p id="dicaSo" style="margin-top:10px"></p>
-    <p class="en" style="margin-top:6px">Não baixou? <a id="direto" href="#" style="color:var(--pur)">Baixar só o instalador</a> · installer only</p>
-    <span class="rot">2. Coloque no canal do baixo <span class="en">· put it on your bass</span></span>
+    <p class="nota">${th('Vem um <b>.zip</b> com o instalador e o <b>LEIA-ME</b> com o seu e-mail, o token, o passo a passo e o que fazer se aparecer aviso de segurança.', 'You get a <b>.zip</b> with the installer and a <b>READ ME</b> with your e-mail, token, steps and what to do about security warnings.')}</p>
+    <p class="nota" id="dicaSo"></p>
+    <p class="nota">${t('Não baixou?', 'Download failed?')} <a id="direto" href="#" class="link">${t('Baixar só o instalador', 'Get the installer only')}</a></p>
+    <div class="passo">${t('2. Coloque no canal do baixo', '2. Put it on your bass')}</div>
     <ol>
-      <li>Abra o seu DAW e coloque o <b>ALIGN</b> no canal do <span class="b">BAIXO</span>.</li>
-      <li>No <b>Sidechain</b> do ALIGN, escolha a faixa do <span class="k">KICK</span> (no Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX).</li>
+      <li>${th('Abra o seu DAW e coloque o <b>ALIGN</b> no canal do <span class="b">BAIXO</span>.', 'Open your DAW and put <b>ALIGN</b> on the <span class="b">BASS</span> channel.')}</li>
+      <li>${th('No <b>Sidechain</b> do ALIGN, escolha a faixa do <span class="k">KICK</span> (no Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX).', 'In ALIGN\'s <b>Sidechain</b>, pick the <span class="k">KICK</span> track (in Ableton: open the plugin Sidechain, pick the kick track and leave it on Post FX).')}</li>
     </ol>
-    <span class="rot">3. Ative <span class="en">· activate</span></span>
+    <div class="passo">${t('3. Ative', '3. Activate')}</div>
     <ol>
-      <li>Na tela de ativação do ALIGN, digite <b id="emailOk"></b> e o token, e clique em <b>ATIVAR</b>.</li>
-      <li>Vale para <b>1 computador</b>. Para trocar de PC: menu <b>≡</b> do plugin → <b>Licença…</b> → <b>Desativar este computador</b>, e ative no novo.</li>
-      <li>Aperte o botão <b>ALIGN</b>. Pronto: ele corrige sozinho, batida por batida.</li>
+      <li>${th('Na tela de ativação do ALIGN, digite <b class="emailOk"></b> e o token, e clique em <b>ATIVAR</b>.', 'On the ALIGN activation screen, type <b class="emailOk"></b> and the token, and click <b>ATIVAR</b>.')}</li>
+      <li>${th('Vale para <b>1 computador</b>. Para trocar de PC: menu <b>≡</b> do plugin → <b>Licença…</b> → <b>Desativar este computador</b>, e ative no novo.', 'Works on <b>1 computer</b>. To switch: plugin menu <b>≡</b> → <b>Licença…</b> → <b>Desativar este computador</b>, then activate on the new one.')}</li>
+      <li>${th('Aperte o botão <b>ALIGN</b>. Pronto: ele corrige sozinho, batida por batida.', 'Press the <b>ALIGN</b> button. That\'s it: it corrects by itself, hit by hit.')}</li>
     </ol>
-    <p class="en">Put ALIGN on the bass, route the kick to its sidechain, type your e-mail and token, click ATIVAR. Works on 1 computer.</p>
-  </section>
-  ${RODAPE}
-</main>
-<script>
-(function () {
-  var $ = function (id) { return document.getElementById(id); };
-  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-  $(mac ? 'soMac' : 'soWin').checked = true;
+  </div>
+</div>`;
+    const script = `<script>
+(function () {${SCRIPT_BASE}
+  var BOTAO = T('Gerar minha licença', 'Get my license');
+  var NOVO = T('Receber um token novo no e-mail', 'Get a new token by e-mail');
   $('f').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var email = $('email').value.trim();
     var so = $('soMac').checked ? 'mac' : $('soWin').checked ? 'win' : '';
-    $('erro').textContent = '';
-    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Confira o e-mail.'; return; }
-    if (!so) { $('erro').textContent = 'Escolha Windows ou Mac.'; return; }
-    $('ir').disabled = true; $('ir').textContent = 'GERANDO…';
+    $('erro').innerHTML = '';
+    if (!okEmail(email)) { $('erro').innerHTML = T('Confira o e-mail.', 'Check your e-mail.'); return; }
+    if (!so) { $('erro').innerHTML = T('Escolha Windows ou Mac.', 'Choose Windows or Mac.'); return; }
+    $('ir').disabled = true; $('ir').innerHTML = T('Gerando…', 'Generating…');
     fetch(location.pathname, { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: email, sistema: so, site: $('site').value }) })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        $('ir').disabled = false; $('ir').textContent = 'GERAR MINHA LICENÇA';
-        if (!j.ok) { $('erro').textContent = j.mensagem || 'Não deu certo. Tente de novo.'; return; }
+        $('ir').disabled = false; $('ir').innerHTML = BOTAO;
+        if (!j.ok) { $('erro').innerHTML = erroServ(j); return; }
         $('direto').href = j.baixar[so] || '#';
         $('zEmail').value = email; $('zToken').value = j.token || ''; $('zSo').value = so;
-        $('baixar').textContent = 'BAIXAR ALIGN PARA ' + (so === 'mac' ? 'MAC' : 'WINDOWS');
-        $('dicaSo').textContent = so === 'mac'
-          ? 'Abra o .dmg que vem no zip e rode o instalador (VST3 e AU). Depois reabra o DAW.'
-          : 'Extraia o zip e rode o instalador .exe (VST3). Se o Windows avisar, clique em "Mais informações" e depois em "Executar assim mesmo". Depois reabra o DAW.';
-        $('emailOk').textContent = email.toLowerCase();
+        $('baixar').innerHTML = so === 'mac' ? T('Baixar ALIGN para Mac', 'Download ALIGN for Mac') : T('Baixar ALIGN para Windows', 'Download ALIGN for Windows');
+        $('dicaSo').innerHTML = so === 'mac'
+          ? T('Abra o .dmg que vem no zip e rode o instalador (VST3 e AU). Depois reabra o DAW.', 'Open the .dmg inside the zip and run the installer (VST3 and AU). Then restart your DAW.')
+          : T('Extraia o zip e rode o instalador .exe (VST3). Se o Windows avisar, clique em "Mais informações" e depois em "Executar assim mesmo". Depois reabra o DAW.',
+              'Unzip it and run the .exe installer (VST3). If Windows warns you, click "More info" and then "Run anyway". Then restart your DAW.');
+        document.querySelectorAll('.emailOk').forEach(function (b) { b.textContent = email.toLowerCase(); });
         if (j.token) { $('token').textContent = j.token; $('comToken').hidden = false; }
         else {
+          var perdeu = j.reenvio ? ' ' + T('Perdeu?', 'Lost it?') + ' <a href="#" id="perdi2" class="link">' + NOVO + '</a>.' : '';
           $('txtSem').innerHTML = j.ja_tinha
-            ? '<b>Este e-mail já recebeu o ALIGN.</b> Use o token que apareceu da primeira vez. ' + (j.reenvio
-                ? 'Perdeu? <a href="#" id="perdi2" style="color:var(--pur)">Receber um token novo no e-mail</a>.' : 'Perdeu? Chame a gente no direct.')
-            : '<b>Pronto! O ALIGN entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.' + (j.reenvio
-                ? ' Perdeu? <a href="#" id="perdi2" style="color:var(--pur)">Receber um token novo no e-mail</a>.' : '');
-          $('semToken').hidden = false;
+            ? T('<b>Este e-mail já recebeu o ALIGN.</b> Use o token que apareceu da primeira vez.', '<b>This e-mail already got ALIGN.</b> Use the token you were shown the first time.')
+              + (j.reenvio ? perdeu : ' ' + T('Perdeu? Chame a gente no direct.', 'Lost it? Message us on Instagram.'))
+            : T('<b>Pronto! O ALIGN entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.', '<b>Done! ALIGN was added to your account.</b> Use the same token you already got from InsideStudioSP.') + perdeu;
+          $('txtSem').hidden = false;
           if ($('perdi2')) $('perdi2').addEventListener('click', function (ev) { ev.preventDefault(); reenviar(email, $('txtSem')); });
         }
-        if (j.email_enviado) { $('emailMandado').textContent = email.toLowerCase(); $('mandado').hidden = false; }
-        $('passo1').hidden = true; $('passo2').hidden = false; window.scrollTo(0, 0);
+        if (j.email_enviado) { $('emailMandado').textContent = $('emailMandado2').textContent = email.toLowerCase(); $('mandado').hidden = false; }
+        $('passo1').hidden = true; $('passo2').hidden = false; $('caixa').classList.add('feito'); $('caixa').scrollIntoView({ block: 'start' });
       })
-      .catch(function () { $('ir').disabled = false; $('ir').textContent = 'GERAR MINHA LICENÇA'; $('erro').textContent = 'Sem conexão. Tente de novo.'; });
+      .catch(function () { $('ir').disabled = false; $('ir').innerHTML = BOTAO; $('erro').innerHTML = SEMREDE; });
   });
   function reenviar(email, onde) {
-    onde.textContent = 'Enviando…';
+    onde.innerHTML = T('Enviando…', 'Sending…');
     fetch('/gratis/align/reenviar', { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: email, site: $('site').value }) })
       .then(function (r) { return r.json(); })
-      .then(function (j) { onde.textContent = j.mensagem || 'Não deu certo. Tente de novo.'; })
-      .catch(function () { onde.textContent = 'Sem conexão. Tente de novo.'; });
+      .then(function (j) { onde.innerHTML = j.mensagem ? esc(j.mensagem) : erroServ(j); })
+      .catch(function () { onde.innerHTML = SEMREDE; });
   }
   if ($('perdi')) $('perdi').addEventListener('click', function (ev) {
     ev.preventDefault();
     var email = $('email').value.trim();
-    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { $('erro').textContent = 'Digite acima o e-mail que você cadastrou e clique de novo.'; $('email').focus(); return; }
-    $('erro').textContent = ''; reenviar(email, $('msgPerdi'));
+    if (!okEmail(email)) { $('erro').innerHTML = T('Digite acima o e-mail que você cadastrou e clique de novo.', 'Type the e-mail you signed up with above and click again.'); $('email').focus(); return; }
+    $('erro').innerHTML = ''; reenviar(email, $('msgPerdi'));
   });
   $('copiar').addEventListener('click', function () {
-    var t = $('token').textContent;
-    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('copiar').textContent = 'COPIADO ✓'; },
+    var tk = $('token').textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(tk) : Promise.reject()).then(function () { $('copiar').innerHTML = T('Copiado ✓', 'Copied ✓'); },
       function () { var s = window.getSelection(), r = document.createRange(); r.selectNodeContents($('token')); s.removeAllRanges(); s.addRange(r); });
   });
 })();
-</script>
-</body></html>`;
+</script>`;
+    return paginaSite({ titulo: 'ALIGN grátis — InsideStudioSP', agora,
+        corpo: heroGratis(p, caixa, { vst: true }) + '\n' + vitrine(agora) + '\n' + script });
+}

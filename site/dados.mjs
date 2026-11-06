@@ -2,7 +2,7 @@
 // preco: vem de licenca/servidor/src/precos.js (o mesmo que o servidor cobra) — { brl, usd } ou null = selo "EM BREVE". gratis: link da página grátis
 // (direto: true = o link já é o download, sem cadastro nem token — caso da VASSOURA, que não ativa).
 
-import { PRECOS } from '../licenca/servidor/src/precos.js';
+import { PRECOS, OFERTA_FIM, DE_BRL } from '../licenca/servidor/src/precos.js';
 
 // servidor de licenças no domínio do estúdio: as rotas /loja/*, /align*, /baixar/* (licenca/servidor/wrangler.toml)
 // valem com e sem www, então os links são relativos (o formulário de compra fica no mesmo endereço da página: form-action 'self')
@@ -217,11 +217,8 @@ export const PACKS = [
 // preço de cada pack = o do servidor (brl/usd null = em breve)
 for (const p of PACKS) p.preco = PRECOS[p.id] || null;
 
-// "de" da oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.
-// Preço "de" por faixa de preço real; pack sem entrada aqui mostra só o preço.
-// Tempo limitado: termina em OFERTA_FIM (horário de Brasília). Depois disso o site.js some com a oferta na hora
-// e o próximo build já sai sem ela. Para prorrogar, é só mudar a data e publicar.
-export const OFERTA_FIM = '2026-12-31T23:59:59-03:00';
+// "de" da oferta de lançamento: OFERTA_FIM e DE_BRL vêm de precos.js (a vitrine das páginas grátis usa os mesmos).
+// Depois de OFERTA_FIM o site.js some com a oferta na hora e o próximo build já sai sem ela.
+export { OFERTA_FIM };
 export const OFERTA_ATIVA = Date.now() < Date.parse(OFERTA_FIM);
-const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
 if (OFERTA_ATIVA) for (const p of PACKS) if (p.preco && DE_BRL[p.preco.brl]) p.de = DE_BRL[p.preco.brl];

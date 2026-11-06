@@ -21,3 +21,9 @@ export const NOMES = {
     mesa: 'MESA', criativo: 'SÉRIE CRIATIVO', mix: 'SÉRIE MIX', knob: 'SÉRIE KNOB', quimera: 'QUIMERA',
     limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR',
 };
+
+// Oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.
+// Preço "de" por faixa de preço real; pack sem entrada aqui mostra só o preço. Termina em OFERTA_FIM (Brasília).
+// Usado pelo site (site/dados.mjs) e pela vitrine das páginas grátis (gratis.js). Para prorrogar: mudar a data e publicar os dois.
+export const OFERTA_FIM = '2026-12-31T23:59:59-03:00';
+export const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
