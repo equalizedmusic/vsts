@@ -16,6 +16,9 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_ALIGN
  #define SHOT_ALIGN 0
 #endif
+#ifndef SHOT_VOZ
+ #define SHOT_VOZ 0
+#endif
 // MESA: a foto mostra a CONSOLE cheia, com MESA CANAL (canais e grupos) tocando o mesmo loop; e a janela de um canal
 static std::vector<std::unique_ptr<juce::AudioProcessor>> extras;
 #if SHOT_MESA
@@ -128,6 +131,40 @@ public:
                 }
             }
            #endif
+           #if SHOT_VOZ
+            // ONKEY: voz sintética (vogal "a", formantes 700/1220/2600 Hz) cantando em Lá menor, cada nota desafinada
+            // de 15 a 40 cents, vibrato de 5,5 Hz nas notas longas e um respiro (ruído) entre as frases
+            {
+                auto* vl = buf.getWritePointer (0); auto* vr = buf.getWritePointer (1);
+                static const int mel[] = { 57, 60, 64, 62, 60, 59, 57, 64, 65, 64, 62, 60 };
+                static const double desv[] = { 0.30, -0.25, 0.18, -0.35, 0.22, -0.40, 0.15, -0.28, 0.33, -0.20, 0.38, -0.30 };
+                const double t0 = t - block / fs, passo = 0.42;
+                for (int i = 0; i < block; ++i)
+                {
+                    const double tt = t0 + i / fs;
+                    const int k = (int) std::floor (tt / passo);
+                    const double u = tt - k * passo;
+                    const bool longa = k % 4 == 3, pausa = k % 8 == 7;
+                    const int nota = mel[k % 12];
+                    double v = 0.0;
+                    if (pausa) v = u < 0.12 ? (rnd.nextFloat() * 2.0 - 1.0) * 0.02 * std::sin (u / 0.12 * 3.14159) : 0.0;
+                    else if (u < passo - 0.03)
+                    {
+                        const double vib = longa ? 0.3 * std::sin (twoPi * 5.5 * u) * std::min (1.0, u / 0.2) : 0.0;
+                        const double f0 = 440.0 * std::pow (2.0, (nota + desv[k % 12] + vib - 69.0) / 12.0);
+                        vozPh += f0 / fs; vozPh -= std::floor (vozPh);
+                        auto pico = [] (double f, double fc, double bw) { const double x = (f - fc) / bw; return 1.0 / (1.0 + x * x); };
+                        for (int h = 1; h * f0 < 5000.0; ++h)
+                        {
+                            const double fh = h * f0;
+                            v += (0.05 + pico (fh, 700, 110) + 0.7 * pico (fh, 1220, 120) + 0.35 * pico (fh, 2600, 180)) / h * std::sin (twoPi * h * vozPh);
+                        }
+                        v *= 0.22 * std::min (1.0, u / 0.02) * std::min (1.0, (passo - 0.03 - u) / 0.03);
+                    }
+                    vl[i] = vr[i] = (float) v;
+                }
+            }
+           #endif
             head.ppq.store (head.ppq.load() + block * bpm / 60.0 / fs);
            #if SHOT_SYNTH
             // instrumento: silêncio na entrada; acorde de Lá menor com 9ª e um baixo, pressão subindo
@@ -158,7 +195,7 @@ public:
 private:
     juce::AudioProcessor& proc;
     ShotPlayHead& head;
-    double t = 0.0, kickPh = 0.0, bassPh = 0.0, padPh1 = 0.0, padPh2 = 0.0, aKick = 0.0, ic1 = 0.0, ic2 = 0.0;
+    double t = 0.0, kickPh = 0.0, bassPh = 0.0, padPh1 = 0.0, padPh2 = 0.0, aKick = 0.0, ic1 = 0.0, ic2 = 0.0, vozPh = 0.0;
     int blocks = 0;
 };
 
@@ -307,11 +344,37 @@ int main (int argc, char** argv)
         setParam (*proc, "align", 1.0f);
     }
    #endif
+   #if SHOT_VOZ
+    // ONKEY: o tom trava depois de ~4 s de voz; espera mais para o gráfico encher
+    juce::MessageManager::getInstance()->runDispatchLoopUntil (4000);
+   #endif
     juce::MessageManager::getInstance()->runDispatchLoopUntil (4500);
     // o editor pode ter voltado ao tamanho salvo depois de abrir: de novo em 200% para a foto
     editor->setSize (SHOT_W, SHOT_H);
     juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
     const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+   #if SHOT_VOZ
+    // ONKEY com o AJUSTE FINO aberto
+    {
+        juce::MemoryBlock mb;
+        proc->getStateInformation (mb);
+        if (auto x = juce::AudioProcessor::getXmlFromBinary (mb.getData(), (int) mb.getSize()))
+        {
+            x->setAttribute ("fino", 1);
+            juce::MemoryBlock m2;
+            juce::AudioProcessor::copyXmlToBinary (*x, m2);
+            proc->setStateInformation (m2.getData(), (int) m2.getSize());
+        }
+        editor->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (800);
+        const auto imgF = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+        const auto fF = outDir.getChildFile ("ONKEY-FINO.png");
+        fF.deleteFile();
+        juce::FileOutputStream osF (fF);
+        juce::PNGImageFormat pngF;
+        std::printf ("ONKEY-FINO: %s\n", osF.openedOk() && pngF.writeImageToStream (imgF, osF) ? "ok" : "falhou");
+    }
+   #endif
    #if SHOT_MESA
     // a mesma console com zoom de 140% e as linhas INPUT e DYN recolhidas: a lateral e a seção central não podem mudar
     {
