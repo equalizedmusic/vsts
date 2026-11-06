@@ -243,7 +243,9 @@ async function rotaVersao(url, env) {
     if (!maior || compararVersao(maior.versao, versao) <= 0) return resposta({ ok: true, atualizacao: null });
     const ext = sistema === 'mac' ? '.dmg' : '.exe';
     const instalador = maior.arquivos.find((a) => a.toLowerCase().endsWith(ext));
-    return resposta({ ok: true, atualizacao: { versao: maior.versao, url: instalador || maior.pagina, notas: maior.notas } });
+    // repo privado: o link do GitHub dá 404 para o cliente ⇒ sempre o /baixar do domínio (ele pede o link assinado com o token)
+    const link = instalador ? `https://insidestudiosp.com.br/baixar/${pacote}/${sistema}` : 'https://insidestudiosp.com.br/';
+    return resposta({ ok: true, atualizacao: { versao: maior.versao, url: link, notas: maior.notas } });
 }
 
 function releaseDoPacote(lista, pacote) {
