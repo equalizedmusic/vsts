@@ -516,7 +516,8 @@ html { -webkit-text-size-adjust:100%; }
   body { font-size:16px; }
   input, select, textarea { font-size:16px; padding:11px 12px; }
   .aba { flex:1; }
-  #telaCaixa .linha.topo > .linha { flex:1 1 100%; flex-wrap:nowrap; } #caixaFiltro { flex:1; min-width:0; }
+  #telaCaixa .linha.topo > .linha { flex:1 1 100%; flex-wrap:nowrap; min-width:0; }
+  #caixaFiltro { flex:1 1 0; min-width:0; width:0; } #btEscrever { flex:none; white-space:nowrap; }   /* o select media pelo texto da opção mais longa e empurrava o botão para fora */
   .assunto { max-width:none; grid-column:1 / -1; }          /* 16px: o iPhone não dá zoom ao tocar no campo */
   header { padding:10px 14px; gap:10px; }
   .marca { font-size:13px; letter-spacing:.08em; white-space:nowrap; }
