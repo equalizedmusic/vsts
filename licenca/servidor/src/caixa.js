@@ -12,6 +12,7 @@
 //   GET  /painel/caixa/anexo?m=<id>&a=<anexo>  { url } link temporário do Resend
 //   POST /painel/caixa/enviar   { para, assunto, texto, responder? }   responder = id da mensagem recebida
 //   POST /painel/caixa/apagar   { contato }    apaga a conversa do painel (spam)
+// Cada e-mail recebido também vai em cópia para insidestudiosp@gmail.com (copiaParaGmail, abaixo).
 // Sem a RESEND_API_KEY a aba mostra que o e-mail está desligado; sem a tabela mensagens nada daqui quebra o resto.
 
 import { CONTATO, emailLigado, enviarEmail, resendUrl } from './email.js';
@@ -108,7 +109,32 @@ export async function rotaWebhookEntrada(req, env) {
         .bind(id, contato.slice(0, 200), String(m.headers?.from || m.from || '').slice(0, 300), (m.to || []).join(', ').slice(0, 500),
               String(m.subject || '(sem assunto)').slice(0, 300), texto.slice(0, 100000), String(m.message_id || '').slice(0, 300) || null,
               anexos.length ? JSON.stringify(anexos) : null, Math.floor(Date.parse(m.created_at) / 1000) || agora()).run();
+    await copiaParaGmail(env, { de: String(m.headers?.from || m.from || contato), contato, assunto: String(m.subject || '(sem assunto)'), texto, anexos });
     return json({ ok: true });
+}
+
+// Cópia de cada e-mail recebido para o Gmail dele (o painel continua sendo a caixa oficial).
+// Responder no Gmail vai direto para quem escreveu (reply_to). Não grava na tabela mensagens (senão viraria
+// uma conversa "insidestudiosp@gmail.com" no painel). Falha aqui não derruba o recebimento.
+// COPIA_PARA (variável opcional) troca o destino; COPIA_PARA = "off" desliga.
+const COPIA_PARA = 'insidestudiosp@gmail.com';
+async function copiaParaGmail(env, { de, contato, assunto, texto, anexos }) {
+    const destino = env.COPIA_PARA || COPIA_PARA;
+    if (destino === 'off' || !contato || contato === CONTATO || contato === destino.toLowerCase()) return;
+    const nome = (de.match(/^\s*"?([^"<]+?)"?\s*</) || [])[1] || contato;
+    const aviso = anexos.length ? `\n\n[${anexos.length} anexo(s): abrir no painel, aba Caixa de entrada]` : '';
+    try {
+        const r = await fetch(resendUrl(env, '/emails'), {
+            method: 'POST',
+            headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
+            body: JSON.stringify({
+                from: `${nome.replace(/[<>"\r\n]/g, '').slice(0, 60)} via InsideStudioSP <${CONTATO}>`,
+                to: [destino], reply_to: contato, subject: assunto.slice(0, 300),
+                text: `De: ${de}\nPara: ${CONTATO}\n\n${texto.slice(0, 90000)}${aviso}`,
+            }),
+        });
+        if (!r.ok) console.error('caixa: cópia gmail', r.status, (await r.text()).slice(0, 300));
+    } catch (e) { console.error('caixa: cópia gmail', e); }
 }
 
 // /painel/caixa/* (a sessão já foi conferida em painel.js)
