@@ -7,6 +7,7 @@
 //   POST /painel/sair
 //   POST /painel/senha        { atual, nova }
 //   /painel/caixa/*           caixa de entrada do contato@ (ver src/caixa.js)
+//   /painel/vendas*           pedidos da loja e total do mês (ver src/vendas.js)
 // As ações (criar, listar, revogar, liberar máquina, novo token) usam as mesmas rotas /admin/* da linha de comando,
 // com a sessão no lugar da ADMIN_KEY (ver rotaAdmin em index.js).
 //
@@ -15,6 +16,7 @@
 // 10 senhas erradas do mesmo IP em 15 min bloqueiam o login desse IP por 15 min.
 
 import { rotaCaixa } from './caixa.js';
+import { rotaVendas } from './vendas.js';
 
 const SESSAO_HORAS = 12;
 const ITERACOES = 100000;          // máximo que o Workers aceita no PBKDF2
@@ -129,6 +131,11 @@ export async function rotaPainel(caminho, req, env) {
         if (!(await sessaoPainel(req, env))) return erro('Sessão encerrada.', 401);
         return rotaCaixa(caminho, req, env);
     }
+    if (caminho === '/painel/vendas' || caminho.startsWith('/painel/vendas/')) {
+        if (req.headers.get('x-painel') !== '1') return erro('Pedido inválido.', 400);
+        if (!(await sessaoPainel(req, env))) return erro('Sessão encerrada.', 401);
+        return rotaVendas(caminho, req, env);
+    }
 
     if (req.method === 'GET') {
         if (caminho === '/painel') return pagina(HTML, 'text/html; charset=utf-8');
@@ -210,6 +217,7 @@ const HTML = `<!doctype html>
 
   <div id="abas" class="abas" role="tablist" hidden>
     <button type="button" class="aba ativa" data-aba="telaPainel">Clientes</button>
+    <button type="button" class="aba" data-aba="telaVendas">Vendas</button>
     <button type="button" class="aba" data-aba="telaCaixa">Caixa de entrada <span id="naoLidas" class="contador" hidden></span></button>
   </div>
 
@@ -223,6 +231,25 @@ const HTML = `<!doctype html>
         </div>
       </div>
       <div id="lista"></div>
+    </div>
+  </section>
+
+  <section id="telaVendas" hidden>
+    <div class="cartao">
+      <div class="linha topo">
+        <h2>Vendas</h2>
+        <div class="linha">
+          <select id="vendasMes" aria-label="Mês"></select>
+          <select id="vendasFiltro" aria-label="Mostrar">
+            <option value="pagas">Só vendas pagas</option>
+            <option value="todas">Todos os pedidos</option>
+          </select>
+        </div>
+      </div>
+      <div id="vendasResumo" class="resumo"></div>
+      <div id="vendasLista"></div>
+      <p class="det" id="vendasConta"></p>
+      <p class="det">Devolução: primeiro devolva o dinheiro no Mercado Pago (Atividade › a venda › Devolver dinheiro); depois toque na venda aqui e use "Marcar como devolvida", que cancela a licença.</p>
     </div>
   </section>
 
@@ -368,6 +395,20 @@ const HTML = `<!doctype html>
     <p></p>
   </dialog>
 
+  <dialog id="dVenda" class="largo">
+    <div class="linha topo">
+      <h2 id="vendaTitulo"></h2>
+      <button type="button" id="btVendaFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+    </div>
+    <dl id="vendaDados" class="dados"></dl>
+    <div class="linha rodape">
+      <button type="button" id="btVendaCliente" class="discreto">Abrir o cliente</button>
+      <span class="espaco"></span>
+      <button type="button" id="btVendaDevolver" class="perigo">Marcar como devolvida</button>
+    </div>
+    <p class="msg" id="msgVenda"></p>
+  </dialog>
+
   <dialog id="dSenha">
     <form id="fSenha" method="dialog" class="estreito">
       <h2>Trocar senha</h2>
@@ -457,6 +498,18 @@ html { -webkit-text-size-adjust:100%; }
 .mail .cab b { color:var(--texto); font-weight:600; }
 .mail pre { margin:6px 0 0; max-height:420px; overflow:auto; font:14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .anexos { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.resumo { display:flex; gap:10px; flex-wrap:wrap; margin:4px 0 14px; }
+.resumo .box { flex:1 1 150px; border:1px solid var(--borda); border-radius:8px; padding:10px 12px; }
+.resumo .box b { display:block; font-size:22px; color:var(--texto); } .resumo .box.total b { color:var(--ok); }
+.resumo .box span { color:var(--fraco); font-size:13px; }
+.st { font-size:12px; padding:1px 8px; border-radius:10px; border:1px solid var(--borda); color:var(--fraco); white-space:nowrap; }
+.st.pago { border-color:var(--ok); color:var(--ok); } .st.devolvido { border-color:var(--ruim); color:var(--ruim); }
+.st.pendente, .st.processando { border-color:var(--acento); color:var(--acento); }
+.tabela td.valor { white-space:nowrap; text-align:right; font-weight:600; } .tabela th.valor { text-align:right; }
+.tabela tr.devolvido td.valor { text-decoration:line-through; color:var(--fraco); }
+.tabela td.quando { white-space:nowrap; color:var(--fraco); font-size:13px; }
+.dados { display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 16px; margin:0 0 6px; }
+.dados dt { color:var(--fraco); font-size:13px; } .dados dd { margin:0; overflow-wrap:anywhere; }
 
 /* celular: lista vira cartões, modais em tela cheia, botões e caixas do tamanho do dedo */
 @media (max-width:640px) {
@@ -513,6 +566,12 @@ html { -webkit-text-size-adjust:100%; }
   .maq { flex-wrap:wrap; justify-content:space-between; padding:6px 0; }
   .adicionar { padding:12px; }
   pre { font-size:12px; }
+
+  #telaVendas .linha.topo > .linha { flex:1 1 100%; flex-wrap:nowrap; min-width:0; } #vendasMes, #vendasFiltro { flex:1 1 0; width:0; min-width:0; }
+  .dados { grid-template-columns:minmax(0,1fr); gap:0; } .dados dd { margin-bottom:10px; overflow-wrap:anywhere; }
+  .resumo .box { flex:1 1 40%; padding:8px 10px; } .resumo .box b { font-size:19px; }
+  #telaVendas .tabela tbody tr { grid-template-columns:1fr auto; }
+  #telaVendas .tabela td.quem { grid-column:1; } #telaVendas .tabela td.valor { grid-column:2; grid-row:1; }
 }
 `;
 
@@ -552,7 +611,7 @@ function data(t) { return t ? new Date(t * 1000).toLocaleString('pt-BR', { dateS
 function msg(id, texto, ok) { var m = $(id); m.textContent = texto || ''; m.className = 'msg' + (ok ? ' ok' : ''); }
 
 function mostrarLogin() {
-  $('telaPainel').hidden = true; $('telaCaixa').hidden = true; $('abas').hidden = true; $('menu').hidden = true; $('telaLogin').hidden = false;
+  $('telaPainel').hidden = true; $('telaVendas').hidden = true; $('telaCaixa').hidden = true; $('abas').hidden = true; $('menu').hidden = true; $('telaLogin').hidden = false;
   $('fLogin').senha.value = ''; $('fLogin').usuario.focus();
 }
 function mostrarPainel(usuario) {
@@ -567,9 +626,96 @@ function mostrarPainel(usuario) {
 var caixa = { filtro: 'recebidas', conversa: null, responder: null };
 
 function abrirAba(id) {
-  ['telaPainel', 'telaCaixa'].forEach(function (t) { $(t).hidden = t !== id; });
+  ['telaPainel', 'telaVendas', 'telaCaixa'].forEach(function (t) { $(t).hidden = t !== id; });
   Array.prototype.forEach.call(document.querySelectorAll('.aba'), function (b) { b.classList.toggle('ativa', b.getAttribute('data-aba') === id); });
   if (id === 'telaCaixa') carregarCaixa();
+  if (id === 'telaVendas') { carregarVendas(); carregarConta(); }
+}
+
+// ---------------- vendas da loja ----------------
+var vendas = { mes: '', filtro: 'pagas', pedidos: [], seq: 0, aberta: null, conta: false };
+var ST = { pago: 'paga', processando: 'paga (gerando licença)', devolvido: 'devolvida', pendente: 'aguardando pagamento', criado: 'não pagou',
+           recusado: 'recusada', vencido: 'não pagou', erro: 'erro' };
+var NOMES_MES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function nomeMes(m) { var p = m.split('-'); return NOMES_MES[Number(p[1]) - 1] + '/' + p[0]; }
+function dinheiro(c, moeda) { return (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: moeda || 'BRL' }); }
+
+function carregarVendas() {
+  var seq = ++vendas.seq;
+  return api('GET', '/painel/vendas' + (vendas.mes ? '?m=' + vendas.mes : '')).then(function (j) {
+    if (seq !== vendas.seq) return;
+    var lista = $('vendasLista');
+    if (!j.ok) { lista.textContent = j.mensagem || 'Erro ao carregar.'; return; }
+    vendas.mes = j.mes; vendas.pedidos = j.pedidos;
+    var sel = $('vendasMes'); sel.textContent = '';
+    j.meses.forEach(function (m) { sel.appendChild(el('option', { value: m, texto: nomeMes(m) })); });
+    sel.value = j.mes;
+    // resumo
+    var res = $('vendasResumo'); res.textContent = '';
+    var moedas = Object.keys(j.resumo); if (!moedas.length) moedas = ['BRL'];
+    moedas.forEach(function (m) {
+      var r = j.resumo[m] || { pagas: 0, total: 0, devolvidas: 0, devolvido: 0 };
+      res.appendChild(el('div', { classe: 'box total' }, [ el('b', { texto: dinheiro(r.total, m) }), el('span', { texto: 'recebido no mês' + (moedas.length > 1 ? ' (' + m + ')' : '') }) ]));
+      res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: String(r.pagas) }), el('span', { texto: r.pagas === 1 ? 'venda paga' : 'vendas pagas' }) ]));
+      if (r.devolvidas) res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: dinheiro(r.devolvido, m) }), el('span', { texto: r.devolvidas + (r.devolvidas === 1 ? ' devolvida' : ' devolvidas') }) ]));
+    });
+    if (j.abertos) res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: String(j.abertos) }), el('span', { texto: 'pedidos sem pagamento' }) ]));
+    desenharVendas();
+  });
+}
+
+function desenharVendas() {
+  var lista = $('vendasLista'); lista.textContent = '';
+  var mostrar = vendas.pedidos.filter(function (p) { return vendas.filtro === 'todas' || ['pago', 'processando', 'devolvido'].indexOf(p.status) >= 0; });
+  if (!mostrar.length) {
+    lista.appendChild(el('p', { classe: 'vazio', texto: vendas.filtro === 'todas' ? 'Nenhum pedido neste mês.' : 'Nenhuma venda paga neste mês.' }));
+    return;
+  }
+  var corpo = el('tbody');
+  mostrar.forEach(function (p) {
+    var abrir = function () { abrirVenda(p.id); };
+    corpo.appendChild(el('tr', { tabindex: '0', classe: p.status, onclick: abrir, onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } }, [
+      el('td', { classe: 'quem' }, [ el('div', { classe: 'cli-email', texto: p.nome || p.email }), p.nome ? el('div', { classe: 'det', texto: p.email }) : null ]),
+      el('td', { texto: p.pacote_nome }),
+      el('td', {}, [ el('span', { classe: 'st ' + p.status, texto: ST[p.status] || p.status }) ]),
+      el('td', { classe: 'quando', texto: data(p.pago_em || p.criado_em) }),
+      el('td', { classe: 'valor', texto: dinheiro(p.valor_centavos, p.moeda) })
+    ]));
+  });
+  lista.appendChild(el('table', { classe: 'tabela' }, [
+    el('thead', {}, [ el('tr', {}, [ el('th', { texto: 'Cliente' }), el('th', { texto: 'Pacote' }), el('th', { texto: 'Situação' }),
+      el('th', { texto: 'Data' }), el('th', { classe: 'valor', texto: 'Valor' }) ]) ]),
+    corpo
+  ]));
+}
+
+function abrirVenda(id) {
+  var p = vendas.pedidos.filter(function (x) { return x.id === id; })[0];
+  if (!p) return;
+  vendas.aberta = p;
+  $('vendaTitulo').textContent = p.pacote_nome + ' · ' + dinheiro(p.valor_centavos, p.moeda);
+  var d = $('vendaDados'); d.textContent = '';
+  [['Cliente', p.nome || '-'], ['E-mail', p.email], ['Situação', ST[p.status] || p.status],
+   ['Pagamento', (p.metodo === 'mp' ? 'Mercado Pago' : p.metodo === 'paypal' ? 'PayPal' : p.metodo) + (p.forma ? ' · ' + p.forma : '')],
+   ['Pedido em', data(p.criado_em)], ['Pago em', data(p.pago_em)],
+   ['E-mail da licença', p.status === 'pago' || p.status === 'devolvido' ? (p.email_enviado ? 'enviado' : 'NÃO saiu: mande pelo cliente (Gerar token novo)') : '-'],
+   ['Código do pedido', p.id]
+  ].forEach(function (par) { d.appendChild(el('dt', { texto: par[0] })); d.appendChild(el('dd', { texto: par[1] })); });
+  $('btVendaDevolver').hidden = p.status !== 'pago';
+  $('btVendaCliente').hidden = !p.licenca_id;
+  msg('msgVenda', '');
+  if (!$('dVenda').open) $('dVenda').showModal();
+}
+
+function carregarConta() {
+  if (vendas.conta) return;
+  api('GET', '/painel/vendas/conta').then(function (j) {
+    if (!j.ok) return;
+    vendas.conta = true;
+    var c = j.conta;
+    $('vendasConta').textContent = c ? 'Conta do Mercado Pago que recebe: ' + (c.email || c.apelido || c.id) + (c.apelido && c.email ? ' (' + c.apelido + ')' : '') + (c.teste ? ' · chave de TESTE' : '')
+                                     : (j.erro ? 'Conta do Mercado Pago: não consegui ler (' + j.erro + ').' : 'Mercado Pago não configurado.');
+  });
 }
 
 function carregarCaixa() {
@@ -920,6 +1066,26 @@ document.addEventListener('DOMContentLoaded', function () {
     b.addEventListener('click', function () { abrirAba(b.getAttribute('data-aba')); });
   });
   $('caixaFiltro').addEventListener('change', function (ev) { caixa.filtro = ev.target.value; carregarCaixa(); });
+  // vendas
+  $('vendasMes').addEventListener('change', function (ev) { vendas.mes = ev.target.value; carregarVendas(); });
+  $('vendasFiltro').addEventListener('change', function (ev) { vendas.filtro = ev.target.value; desenharVendas(); });
+  $('btVendaFechar').addEventListener('click', function () { $('dVenda').close(); });
+  $('btVendaCliente').addEventListener('click', function () {
+    var email = vendas.aberta && vendas.aberta.email;
+    $('dVenda').close();
+    carregar().then(function () { abrirCliente(email); });
+  });
+  $('btVendaDevolver').addEventListener('click', function () {
+    var p = vendas.aberta; if (!p) return;
+    if (!confirm('Marcar como devolvida a venda de ' + p.pacote_nome + ' para ' + p.email + '?\\n\\nIsso cancela a licença desse pacote (os plugins travam na próxima conferência) e tira o valor do total do mês.\\n\\nO dinheiro NÃO volta por aqui: devolva antes no Mercado Pago.')) return;
+    var bt = $('btVendaDevolver'); bt.disabled = true;
+    api('POST', '/painel/vendas/devolvido', { id: p.id }).then(function (j) {
+      bt.disabled = false;
+      if (!j.ok) { msg('msgVenda', j.mensagem || 'Erro.'); return; }
+      carregarVendas().then(function () { abrirVenda(p.id); msg('msgVenda', j.cancelou ? 'Marcada como devolvida; licença cancelada.' : p.licenca_id ? 'Marcada como devolvida (a licença já estava cancelada).' : 'Marcada como devolvida (esta venda não tinha licença ligada).', true); });
+      carregar();
+    });
+  });
   // conversa: fecha só no ✕ (ou Esc)
   $('btConvFechar').addEventListener('click', function () { $('dConversa').close(); });
   $('dConversa').addEventListener('close', function () { caixa.conversa = null; });
