@@ -24,6 +24,9 @@ const temBrl = (p) => typeof p.preco?.brl === 'number', temUsd = (p) => typeof p
 const valor = (p) => t(brl(p.preco.brl), temUsd(p) ? usd(p.preco.usd) : brl(p.preco.brl));
 // oferta de lançamento: "de" riscado + desconto (só em reais; em dólar não há "de")
 const off = (p) => Math.round((1 - p.preco.brl / p.de) * 100);
+// requisitos de sistema (CMakeLists: macOS mínimo 11.0, universal arm64+x86_64; instalador Windows só x64)
+const REQ = () => t('Requisitos: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel)', 'Requirements: Windows 10 or 11 (64-bit) · macOS 11 Big Sur or newer (Apple Silicon and Intel)');
+const ehVst = (p) => !p.direto;   // a VASSOURA é Max for Live: segue o requisito do Ableton, não o dos instaladores
 const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de so-oferta">${brl(p.de)}</s>` : '';
 // contador regressivo (site.js atualiza a cada segundo; sem JS fica a data final)
 const FIM_TXT = new Date(OFERTA_FIM).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
@@ -89,6 +92,7 @@ function caixaCompra(p) {
     <div class="tempo so-oferta">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte')}</div>
     <div class="preco-de so-oferta">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
+    <p class="req">${REQ()}</p>
     <input type="hidden" name="pacote" value="${p.id}">
     <label class="campo">${t('Nome completo', 'Full name')}
       <input name="nome" required minlength="3" maxlength="80" autocomplete="name" placeholder="Nome e sobrenome · Full name"></label>
@@ -141,7 +145,7 @@ function loja() {
   <ol>
     <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Pague com Pix ou cartão em até 12x. Assim que o pagamento é aprovado, chegam no seu e-mail o token de ativação, o link de download e as instruções.',
         'Pay with Pix or card. As soon as the payment is approved you get the activation token, the download link and the instructions by e-mail.')}</li>
-    <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Rode o instalador. No Windows, o .exe põe os plugins em', 'Run the installer. On Windows, the .exe puts the plugins in')} <code>C:\\Program Files\\Common Files\\VST3</code>. ${t('No Mac, abra o .dmg e rode o .pkg (VST3 e AU em', 'On Mac, open the .dmg and run the .pkg (VST3 and AU in')} <code>/Library/Audio/Plug-Ins</code>).</li>
+    <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Rode o instalador. No Windows, o .exe põe os plugins em', 'Run the installer. On Windows, the .exe puts the plugins in')} <code>C:\\Program Files\\Common Files\\VST3</code>. ${t('No Mac, abra o .dmg e rode o .pkg (VST3 e AU em', 'On Mac, open the .dmg and run the .pkg (VST3 and AU in')} <code>/Library/Audio/Plug-Ins</code>). ${t('Precisa de Windows 10 ou 11 (64 bits) ou macOS 11 Big Sur ou mais novo.', 'Requires Windows 10 or 11 (64-bit) or macOS 11 Big Sur or newer.')}</li>
     <li><span class="passo">${t('PASSO', 'STEP')}</span>${t('Reabra o DAW (no Ableton: Preferências › Plug-ins › Rescan), abra o plugin e ative com o e-mail e o token. Vale em 2 computadores.',
         'Reopen your DAW (in Ableton: Settings › Plug-ins › Rescan), open the plugin and activate it with your e-mail and token. Works on 2 computers.')}</li>
   </ol>
@@ -176,6 +180,7 @@ function paginaPack(p) {
     <p class="lead">${t(...p.frase)}</p>
     <p>${t(...p.texto)}</p>
     <p class="tipo">${t(...p.tipo)} · Windows · macOS</p>
+    ${ehVst(p) ? `<p class="req">${REQ()}</p>` : ''}
     ${p.plugins.length === 1 && p.plugins[0][2] ? `<p class="dim">${t(p.plugins[0][2], p.plugins[0][3])}</p>` : ''}
   </div>
   ${caixaCompra(p)}

@@ -622,6 +622,7 @@ const PAGINA = `<!doctype html>
   <section class="card" id="passo1">
     <p><span class="free">GRÁTIS</span> &nbsp;Monte um sintetizador peça por peça e aprenda o caminho do som. VST3 e AU, Windows e Mac.</p>
     <p class="en">Free learning synth: build it piece by piece. VST3 / AU, Windows and Mac.</p>
+    <p class="en">Requisitos · Requirements: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel).</p>
     <form id="f" novalidate>
       <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
       <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">
@@ -864,6 +865,7 @@ const PAGINA_ALIGN = `<!doctype html>
   <section class="card" id="passo1">
     <p><span class="free">GRÁTIS</span> &nbsp;Alinha a fase do <span class="k">kick</span> com o <span class="b">baixo</span> sozinho, com um botão só. Latência zero. VST3 e AU.</p>
     <p class="en">Free kick/bass phase aligner: one button, zero latency. VST3 / AU.</p>
+    <p class="en">Requisitos · Requirements: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel).</p>
     <form id="f" novalidate>
       <label for="email">Seu e-mail <span class="en">· your e-mail</span></label>
       <input id="email" type="email" autocomplete="email" required placeholder="voce@email.com">

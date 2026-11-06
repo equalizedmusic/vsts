@@ -56,9 +56,9 @@ export const SITE = {
 // Perguntas frequentes da loja (05/11/2026, ideia tirada de rewindlabs.com.br). [pergunta pt, en, resposta pt, en].
 // Fatos daqui vêm do servidor: 2 máquinas por licença, 45 dias sem internet (VALIDADE_DIAS), pastas do instalador (loja.js/gratis.js).
 export const FAQ = [
-    ['Funciona no Mac?', 'Does it work on Mac?',
-     'Sim. Os plugins vêm em VST3 e AU, com instalador para Windows e para Mac. A VASSOURA é Max for Live e roda onde o Ableton Live 12.2 ou mais novo roda.',
-     'Yes. The plugins come as VST3 and AU, with installers for Windows and Mac. VASSOURA is Max for Live and runs wherever Ableton Live 12.2 or newer runs.'],
+    ['Funciona no Mac? Quais sistemas?', 'Does it work on Mac? Which systems?',
+     'Sim. Os plugins vêm em VST3 e AU, com instalador para Windows e para Mac. Precisa de macOS 11 Big Sur ou mais novo (Apple Silicon ou Intel); versões anteriores, como o Catalina, não instalam. No Windows, precisa do Windows 10 ou 11 de 64 bits. A VASSOURA é Max for Live e roda onde o Ableton Live 12.2 ou mais novo roda.',
+     'Yes. The plugins come as VST3 and AU, with installers for Windows and Mac. They need macOS 11 Big Sur or newer (Apple Silicon or Intel); older versions such as Catalina will not install. On Windows they need 64-bit Windows 10 or 11. VASSOURA is Max for Live and runs wherever Ableton Live 12.2 or newer runs.'],
     ['Funciona em outras DAWs além do Ableton?', 'Does it work in DAWs other than Ableton?',
      'Sim. Funciona em qualquer DAW que abra VST3 (Windows e Mac) ou AU (Mac), como FL Studio, Logic, Cubase, Bitwig, Reaper e Studio One. A exceção é a VASSOURA, que é Max for Live e só roda no Ableton Live.',
      'Yes. They work in any DAW that loads VST3 (Windows and Mac) or AU (Mac), such as FL Studio, Logic, Cubase, Bitwig, Reaper and Studio One. The exception is VASSOURA, which is Max for Live and only runs in Ableton Live.'],
