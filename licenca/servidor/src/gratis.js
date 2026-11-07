@@ -425,7 +425,7 @@ export async function rotaZipVst(req, env, h, pacote) {
         console.error('zip ' + pacote + ': instalador', r.status, len, inst.tamanho);
         return Response.redirect(inst.link, 302);
     }
-    const texto = new TextEncoder().encode('\uFEFF' + leiaMe(pacote, { email, token, sistema, ...inst }).join('\r\n') + '\r\n');
+    const texto = new TextEncoder().encode('\uFEFF' + leiaMe(pacote, { email, token, sistema, ...inst, link: '' }).join('\r\n') + '\r\n');
     const zip = zipStream([
         { nome: 'LEIA-ME - READ ME.txt', bytes: texto },
         { nome: inst.nome, tamanho: inst.tamanho, crc: inst.crc, corpo: r.body },
