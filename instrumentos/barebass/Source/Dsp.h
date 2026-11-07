@@ -210,12 +210,9 @@ public:
         const double nyq = fs * 0.45;
         double mult[2], multSub = std::pow (2.0, a.oitavaSub);
         for (int o = 0; o < 2; ++o) mult[o] = std::pow (2.0, a.oitava[o] + a.fino[o] / 1200.0);
-        // referência do scope: a frequência mais grave que está soando (dois ciclos dela na tela)
-        int oitMin = 9;
-        for (int o = 0; o < 2; ++o) if (a.nivel[o] > 0.001f) oitMin = std::min (oitMin, a.oitava[o]);
-        if (a.nivelSub > 0.001f) oitMin = std::min (oitMin, a.oitavaSub);
-        if (oitMin == 9) oitMin = 0;
-        const double multRef = std::pow (2.0, oitMin);
+        // referência do scope: a frequência da nota tocada (dois ciclos dela na tela; o sub −1 aparece como um ciclo).
+        // Dois ciclos do sub passariam de uma nota de 1/16 e a tela misturaria duas notas.
+        const double multRef = 1.0;
         const double tau = hunfTau (a.hunf), piso = hunfPiso (a.hunf);
         const bool hunfOn = a.hunf > 0.001f;
         const double hCoef = std::exp (-1.0 / (tau * fs));

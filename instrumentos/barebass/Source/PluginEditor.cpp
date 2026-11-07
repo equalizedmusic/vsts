@@ -631,10 +631,10 @@ void BarebassEditor::painelHunf (juce::Graphics& g, juce::Rectangle<float> r)
     if (L.gate.load() && h > 0.001f && L.envT.load() < jan)
         led (g, { xDe (L.envT.load()), yDe ((float) barebass::hunfGanho (h, L.envT.load())) }, 3.0f, cVerde, true);
     g.setFont (fonte (9.5f)); g.setColour (cApagado);
-    g.drawText (h > 0.001f ? u8 ("sub sem HUNF (embola)") : u8 ("HUNF desligado"), t.reduced (6, 3), juce::Justification::topRight);
+    g.drawText (h > 0.001f ? u8 ("- - sub sem HUNF (embola)") : u8 ("HUNF desligado"), t.reduced (6, 0).withTrimmedTop (12), juce::Justification::topRight);
     g.setColour (juce::Colours::black); g.drawRoundedRectangle (t, 3.0f, 1.0f);
 
-    knobRotulado (g, "hunf", "HUNF", { r.getX() + 46, r.getY() + 108 }, 16.0f, cRoxo, false, true);
+    knobRotulado (g, "hunf", "HUNF", { r.getX() + 46, r.getY() + 101 }, 14.0f, cRoxo, false, true);
     // tempo em que o grave cai e o medidor de redução
     g.setColour (cTexto); g.setFont (fonte (10.0f, true).withExtraKerningFactor (0.14f));
     g.drawText ("SUB DECAY", juce::Rectangle<float> (r.getX() + 86, r.getY() + 94, 90, 12), juce::Justification::centredLeft);

@@ -174,15 +174,17 @@ public:
             buf.clear();
             midi.clear();
            #if SHOT_BAIXO
-            // BAREBASS (uma voz): baixo rolando em F1, 1/16 nos três contratempos, nota de 60% do passo
+            // BAREBASS (uma voz): baixo rolando em F1, 1/16 nos três contratempos, nota de 60% do passo. Depois de 1 s
+            // de áudio as notas não soltam mais (cada 1/16 redispara): a foto pega uma nota tocando, não o intervalo
             {
+                const bool solta = (double) blocks * block < fs * 1.0;
                 const double passo = fs * 60.0 / bpm / 4.0;
                 const double b0 = (double) blocks * block, b1 = b0 + block;
                 for (int k = (int) std::floor (b0 / passo); k * passo < b1; ++k)
                 {
                     const double on = k * passo, off = on + passo * 0.6;
                     if (k % 4 != 0 && on >= b0 && on < b1) midi.addEvent (juce::MidiMessage::noteOn (1, 29, (juce::uint8) 100), (int) (on - b0));
-                    if (k % 4 != 0 && off >= b0 && off < b1) midi.addEvent (juce::MidiMessage::noteOff (1, 29), (int) (off - b0));
+                    if (solta && k % 4 != 0 && off >= b0 && off < b1) midi.addEvent (juce::MidiMessage::noteOff (1, 29), (int) (off - b0));
                 }
             }
             if (false)

@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-07
+- Tela: a onda mostra dois ciclos da NOTA tocada (antes eram dois ciclos do sub, mais longos que uma nota de 1/16,
+  e a tela juntava duas notas). No HUNF, o texto não fica mais riscado pela linha tracejada e o valor do knob
+  não sai do painel.
+- Ainda TESTE: sem ativação por licença e fora do site.
+
 ## 0.1.0 — 2026-11-07
 - Primeira versão do BAREBASS, para TESTE (ainda sem ativação por licença e fora do site): synth de baixo simples,
   uma voz (toca a última nota apertada).
