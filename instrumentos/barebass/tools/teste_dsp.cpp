@@ -149,6 +149,34 @@ int main()
         confere (std::abs (db (a0) - db (a1)) < 1.5, "acima de 300 Hz não muda");
     }
 
+    // 4b) unHUNF no rolling (pedido dele 07/11: na 0.1.2 ficou fraco): F#1 em 1/16 a 143 BPM (≈105 ms por nota).
+    //     No fim de cada nota (60–100 ms) o grave abaixo de 50 Hz tem que cair bem; acima de 150 Hz quase nada.
+    {
+        std::printf ("4b) unHUNF no rolling F#1 1/16 a 143 BPM\n");
+        const int passo = (int) (fs * 60.0 / 143.0 / 4.0);
+        auto mede = [&] (float h, double& sub, double& meio)
+        {
+            Ajustes a; a.hunf = h;
+            e->reset();
+            std::vector<Ev> ev;
+            for (int k = 0; k < 8; ++k) { ev.push_back ({ k * passo, 30, true }); ev.push_back ({ k * passo + passo - 200, 30, false }); }
+            auto r = toca (*e, a, passo * 8, ev);
+            sub = meio = 0;
+            for (int k = 4; k < 8; ++k)
+            {
+                sub += rmsFaixa (r.s, k * passo + (int) (fs * 0.06), k * passo + (int) (fs * 0.1), 50.0, false) / 4;
+                meio += rmsFaixa (r.s, k * passo + (int) (fs * 0.06), k * passo + (int) (fs * 0.1), 150.0, true) / 4;
+            }
+        };
+        double s0, m0, s5, m5, s1, m1;
+        mede (0.0f, s0, m0); mede (0.5f, s5, m5); mede (1.0f, s1, m1);
+        std::printf ("   < 50 Hz no fim da nota: 0%% %.1f dB · 50%% %.1f dB · 100%% %.1f dB\n", db (s0), db (s5), db (s1));
+        std::printf ("   > 150 Hz no fim da nota: 0%% %.1f dB · 50%% %.1f dB · 100%% %.1f dB\n", db (m0), db (m5), db (m1));
+        confere (db (s0) - db (s5) > 6.0, "50% tira mais de 6 dB do grave < 50 Hz no fim da nota");
+        confere (db (s0) - db (s1) > 18.0, "100% tira mais de 18 dB do grave < 50 Hz no fim da nota");
+        confere (std::abs (db (m0) - db (m1)) < 1.5, "acima de 150 Hz não muda");
+    }
+
     // 5) LEGATO x MONO
     {
         std::printf ("5) LEGATO não redispara, MONO redispara\n");

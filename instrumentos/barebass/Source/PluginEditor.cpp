@@ -9,7 +9,7 @@ const juce::Colour cFundoA { 0xff1b1726 }, cFundoB { 0xff110f18 }, cTopoA { 0xff
                    cLaranja { 0xffff8a3d }, cVerde { 0xff3fd68a }, cRoxo { 0xffa77bff },
                    cRoxoClaro { 0xffc9b0ff }, cBranco { 0xfff3efff }, cAzul { 0xff4fa3ff };
 
-constexpr int menuSobre = 1;
+constexpr int menuLicenca = 1, menuSobre = 2;
 
 juce::Font fonte (float h, bool negrito = false)
 {
@@ -139,6 +139,7 @@ BarebassEditor::BarebassEditor (BarebassProcessor& p) : AudioProcessorEditor (p)
     const int w = w0 > 0 ? juce::jlimit (700, 2000, w0) : baseW;
     setSize (w, juce::roundToInt (w * (double) baseH / baseW));
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void BarebassEditor::resized() { proc.uiW = getWidth(); }
@@ -625,33 +626,35 @@ void BarebassEditor::painelHunf (juce::Graphics& g, juce::Rectangle<float> r)
         rotulo (g, c, u8 ("10–50 Hz"), cVerde, juce::Justification::centred);
     }
     const float h = real ("hunf") * 0.01f;
-    // gráfico: um sub de 30 Hz sem unHUNF (tracejado) e com unHUNF (roxo), nos primeiros 400 ms da nota
-    const juce::Rectangle<float> t (r.getX() + 10, r.getY() + 30, r.getWidth() - 20, 50);
+    // gráfico: nível de um sub de 30 Hz sem unHUNF (tracejado, 0 dB) e com unHUNF (roxo), nos primeiros 500 ms da nota.
+    // Escala em dB (0 a -24): em linear a queda de poucos dB ficava colada na linha de cima e a curva sumia.
+    const juce::Rectangle<float> t (r.getX() + 10, r.getY() + 30, r.getWidth() - 20, 44);
     g.setColour (cTela); g.fillRoundedRectangle (t, 3.0f);
-    const float jan = 0.4f;
+    const float jan = 0.5f, pisoDb = -24.0f;
     auto xDe = [&] (float tt) { return t.getX() + 4 + tt / jan * (t.getWidth() - 8); };
-    auto yDe = [&] (float v) { return t.getBottom() - 6 - v * (t.getHeight() - 14); };
+    auto yDe = [&] (float v) { const float db = juce::jlimit (pisoDb, 0.0f, 20.0f * std::log10 (juce::jmax (1.0e-4f, v)));
+                               return t.getY() + 7 + db / pisoDb * (t.getHeight() - 12); };
     {
-        juce::Path sem; sem.startNewSubPath (xDe (0), yDe (0)); sem.lineTo (xDe (0), yDe (1)); sem.lineTo (xDe (jan), yDe (1));
+        juce::Path sem; sem.startNewSubPath (xDe (0), yDe (1)); sem.lineTo (xDe (jan), yDe (1));
         juce::Path tr; const float dash[] = { 4.0f, 3.0f };
         juce::PathStrokeType (1.0f).createDashedStroke (tr, sem, dash, 2);
         g.setColour (cApagado.withAlpha (0.7f)); g.fillPath (tr);
     }
     juce::Path com;
-    com.startNewSubPath (xDe (0), yDe (0));
-    for (int i = 0; i <= 80; ++i)
+    com.startNewSubPath (xDe (0), yDe (1));
+    for (int i = 1; i <= 80; ++i)
     {
         const float tt = jan * i / 80.0f;
         com.lineTo (xDe (tt), yDe ((float) barebass::hunfGanho (h, tt)));
     }
     juce::Path area (com);
-    area.lineTo (xDe (jan), yDe (0)); area.closeSubPath();
+    area.lineTo (xDe (jan), yDe (1)); area.closeSubPath();
     g.setColour (cRoxo.withAlpha (0.18f)); g.fillPath (area);
     g.setColour (cRoxo); g.strokePath (com, juce::PathStrokeType (1.8f));
     if (L.gate.load() && h > 0.001f && L.envT.load() < jan)
         led (g, { xDe (L.envT.load()), yDe ((float) barebass::hunfGanho (h, L.envT.load())) }, 3.0f, cVerde, true);
     g.setFont (fonte (9.5f)); g.setColour (cApagado);
-    g.drawText (h > 0.001f ? u8 ("- - sub sem unHUNF (embola)") : u8 ("unHUNF desligado"), t.reduced (6, 0).withTrimmedTop (12), juce::Justification::topRight);
+    g.drawText (h > 0.001f ? u8 ("- - sub sem unHUNF (embola)") : u8 ("unHUNF desligado"), t.reduced (6, 0).withTrimmedBottom (4), juce::Justification::bottomRight);
     g.setColour (juce::Colours::black); g.drawRoundedRectangle (t, 3.0f, 1.0f);
 
     knobRotulado (g, "hunf", "unHUNF", { r.getX() + 46, r.getY() + 101 }, 14.0f, cRoxo, false, true);
@@ -783,6 +786,7 @@ void BarebassEditor::menu()
 {
     juce::PopupMenu m;
     m.addItem (menuSobre, "Como funciona");
+    m.addItem (menuLicenca, u8 ("Licença…"));
     m.addSeparator();
    #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     m.addItem (-1, "BAREBASS " + juce::String (JucePlugin_VersionString), false, false);
@@ -792,6 +796,7 @@ void BarebassEditor::menu()
                      [safe] (int r)
                      {
                          if (safe == nullptr) return;
+                         if (r == menuLicenca) safe->ativacao.mostrarInfo();
                          if (r == menuSobre)
                              juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "BAREBASS",
                                  u8 ("Synth de baixo de uma voz: toca uma nota por vez (a última que você apertar).\n\n"

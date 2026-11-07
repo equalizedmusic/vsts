@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Dsp.h"
+#include "IspLicenca.h"
 
 // BAREBASS: synth de baixo simples (uma voz). OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB com envelope ADSR ->
 // unHUNF (decay só no sub, 10–50 Hz) -> VOLUME. MONO ou LEGATO, GLIDE e presets de fábrica.
@@ -51,6 +52,7 @@ private:
 
     std::unique_ptr<barebass::Engine> motor;
     double fs = 48000.0;
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o synth fica mudo
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BarebassProcessor)
 };

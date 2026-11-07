@@ -40,13 +40,13 @@
 // MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, PAYPAL_CLIENT_ID e PAYPAL_SECRET (opcionais: loja; ver src/loja.js).
 
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
-import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './gratis.js';
+import { rotaGratis, rotaZipVst, rotaTokenVst, PACOTES_GRATIS, VST_GRATIS } from './gratis.js';
 import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja, vencerPedidos } from './loja.js';
 import { avisarLicenca } from './avisos.js';
 import { rotaContato } from './contato.js';
 
-const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'vassoura'];
+const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'barebass', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
 const TENTATIVAS_POR_IP = 20;      // recusas em 15 min antes de bloquear o IP
 const JANELA_TENTATIVAS = 15 * 60;
@@ -262,7 +262,7 @@ function releaseDoPacote(lista, pacote) {
 // Enquanto existir o pré-release "licenca-teste" (instaladores com ativação), ele vale para todos os pacotes; depois
 // do merge, apagar o pré-release e o link passa a dar o release <pacote>-vX.Y.Z mais novo.
 // a QUIMERA sai como "Quimera" (até o build de teste da ativação o pacote se chamava "Instrumentos")
-const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'], resenha: ['Resenha'], montamonta: ['MontaMonta'], groovador: ['Groovador'], mesa: ['Mesa'], align: ['Align'], vassoura: ['Vassoura'] };
+const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'], resenha: ['Resenha'], montamonta: ['MontaMonta'], groovador: ['Groovador'], mesa: ['Mesa'], align: ['Align'], barebass: ['Barebass'], vassoura: ['Vassoura'] };
 
 function paginaSimples(titulo, texto, status) {
     const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -490,6 +490,8 @@ async function rotaAdmin(caminho, req, env, url) {
 const ALIGN_OFICIAL = 'https://insidestudiosp.com.br/align/';
 // a da VASSOURA também (rota /vassoura*): só e-mail, sem token
 const VASSOURA_OFICIAL = 'https://insidestudiosp.com.br/vassoura/';
+// e a do BAREBASS (rotas /barebass* e /gratis/barebass/*): igual à do ALIGN
+const BAREBASS_OFICIAL = 'https://insidestudiosp.com.br/barebass/';
 // o painel também (rotas /painel* e /admin/*). A sessão é um cookie do host, então fica num endereço só (sem www).
 // A linha de comando (admin/isp-licenca.mjs) segue usando /admin/* no workers.dev com a ADMIN_KEY.
 const PAINEL_OFICIAL = 'https://insidestudiosp.com.br/painel';
@@ -507,6 +509,9 @@ export default {
             if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
                 && (caminho === '/vassoura' || caminho === '/gratis/vassoura'))
                 return Response.redirect(VASSOURA_OFICIAL, 302);
+            if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
+                && (caminho === '/barebass' || caminho === '/gratis/barebass'))
+                return Response.redirect(BAREBASS_OFICIAL, 302);
             // painel aberto pelo endereço antigo (workers.dev) ou pelo www ⇒ endereço oficial. Só a página:
             // as chamadas de uma aba já aberta continuam respondendo onde estão.
             if ((req.method === 'GET' || req.method === 'HEAD') && caminho === '/painel'
@@ -523,14 +528,18 @@ export default {
             if (caminho === '/email/entrada') return await rotaWebhookEntrada(req, env);
             if (caminho.startsWith('/loja/'))
                 return await rotaLoja(caminho, req, env, url, { normEmail, agora, evento, criarLicenca, paginaSimples });
-            if (caminho === '/gratis/align/zip')
-                return await rotaZipAlign(req, env, { normEmail, normToken, sha256Hex, evento, instalador, paginaSimples });
-            if (caminho === '/gratis/align/reenviar' || caminho === '/gratis/align/novo-token')
-                return await rotaTokenAlign(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento, paginaSimples, instalador },
-                    caminho.endsWith('reenviar') ? 'reenviar' : 'novo-token');
-            if (caminho === '/gratis' || caminho === '/align' || caminho === '/vassoura' || (caminho.startsWith('/gratis/') && PACOTES_GRATIS.includes(caminho.slice(8))))
+            // VSTs grátis com token (ALIGN, BAREBASS): zip com LEIA-ME e "perdi meu token"
+            const vst = caminho.match(/^\/gratis\/([a-z]+)\/(zip|reenviar|novo-token)$/);
+            if (vst && VST_GRATIS[vst[1]]) {
+                if (vst[2] === 'zip')
+                    return await rotaZipVst(req, env, { normEmail, normToken, sha256Hex, evento, instalador, paginaSimples }, vst[1]);
+                return await rotaTokenVst(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento, paginaSimples, instalador },
+                    vst[2], vst[1]);
+            }
+            const curto = caminho.slice(1);   // /align, /barebass, /vassoura = /gratis/<pacote>
+            if (caminho === '/gratis' || (curto !== 'montamonta' && PACOTES_GRATIS.includes(curto)) || (caminho.startsWith('/gratis/') && PACOTES_GRATIS.includes(caminho.slice(8))))
                 return await rotaGratis(req, env, url, { normEmail, normToken, novoToken, sha256Hex, agora, evento, instalador },
-                    caminho === '/align' ? 'align' : caminho === '/vassoura' ? 'vassoura' : caminho.slice(8) || 'montamonta');
+                    PACOTES_GRATIS.includes(curto) ? curto : caminho.slice(8) || 'montamonta');
             if (caminho === '/painel' || caminho.startsWith('/painel/')) return await rotaPainel(caminho, req, env);
             // navegador em endereço desconhecido (/Painel, /painel. colado com pontuação, raiz) ⇒ manda p/ o painel
             if (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'))

@@ -171,6 +171,7 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     const int nch = juce::jmin (2, buffer.getNumChannels());
     buffer.clear();
     if (n == 0 || nch == 0) return;
+    if (! licenca->liberada()) return;   // sem ativação: mudo (o buffer já foi zerado)
 
     const auto a = ajustes();
     float* const* out = buffer.getArrayOfWritePointers();

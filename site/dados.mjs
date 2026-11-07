@@ -90,6 +90,15 @@ export const PACKS = [
         plugins: [['align', 'ALIGN', 'Osciloscópio de 2 tempos travado no kick, LOW END, CORRELATION e NOTE MEMORY.', '2-beat oscilloscope locked to the kick, LOW END, CORRELATION and NOTE MEMORY.']],
     },
     {
+        id: 'barebass', nome: 'BAREBASS', cor: '#34d399', tipo: ['Synth · VST3 · AU', 'Synth · VST3 · AU'], destaque: true,
+        capa: 'barebass', preco: null, gratis: `${LIC}/barebass`,
+        frase: ['Síntese de baixo sem complicação.', 'Bass synthesis, stripped down.'],
+        texto: [
+            'Dois osciladores e um SUB, filtro de 12/24 dB com envelope e o unHUNF: o sub bate no começo da nota e some, e o baixo fica seco sem embolar com o kick. Cada nota começa a onda do mesmo ponto, então todas batem igual. Junto com o ALIGN, kick e baixo ficam em fase sozinhos.',
+            'Two oscillators and a SUB, a 12/24 dB filter with envelope and unHUNF: the sub hits at the start of the note and fades away, so the bass stays tight without clashing with the kick. Every note starts the wave from the same point, so they all hit the same. Paired with ALIGN, kick and bass stay in phase on their own.'],
+        plugins: [['barebass', 'BAREBASS', 'A tela mostra ao vivo a onda, o filtro e o envelope de cada nota.', 'The screen shows the wave, filter and envelope of every note, live.']],
+    },
+    {
         id: 'vassoura', nome: 'VASSOURA', cor: '#fcd34d', tipo: ['Max for Live · Ableton Live 12.2+', 'Max for Live · Ableton Live 12.2+'], destaque: true,
         capa: 'vassoura', preco: null, gratis: `${LIC}/baixar/vassoura`, direto: true,
         frase: ['Pare de limpar stems na mão.', 'Stop cleaning stems by hand.'],

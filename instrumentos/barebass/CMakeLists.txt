@@ -2,7 +2,7 @@
 vsts_versao(Barebass.md BAREBASS_VERSAO)
 
 # BAREBASS: synth de baixo simples (uma voz). Build, instalador e release próprios, como o ALIGN e o ONKEY.
-# Versão de TESTE: ainda sem isp_licenca (o servidor não conhece o pacote).
+# Licença: pacote barebass (grátis, como o ALIGN: página /barebass no servidor de licenças).
 juce_add_plugin(Barebass
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.barebass
@@ -22,6 +22,7 @@ juce_add_plugin(Barebass
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
 
 target_sources(Barebass PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
+isp_licenca(Barebass barebass)
 target_compile_definitions(Barebass PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

@@ -1,7 +1,7 @@
 #pragma once
 // BAREBASS: motor do synth de baixo, sem JUCE (o teste em tools/ compila só com este arquivo).
 // Uma voz (mono): OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB (TPT/SVF, sem atraso) com envelope ADSR
-// -> unHUNF (decay só no grave, abaixo de 50 Hz) -> volume. Amplitude = gate (abre na hora, fecha no RELEASE).
+// -> unHUNF (decay só no grave, de 10 a 50 Hz) -> volume. Amplitude = gate (abre na hora, fecha no RELEASE).
 // A cada nota redisparada as ondas recomeçam do ponto inicial (fase 0): todas as notas batem igual, sem drift.
 // A tela lê o que acontece agora pela struct Leitura e pelo Scope (dois ciclos da onda antes e depois do filtro).
 #include <atomic>
@@ -148,19 +148,21 @@ inline double respostaDb (double f, double fc, double reso, bool slope24)
     return 20.0 * std::log10 (std::max (1.0e-9, m));
 }
 
-// unHUNF: um passa-alta de 24 dB (Butterworth) que sobe depois de cada nota e tira o sub. No disparo ele está em
-// 2 Hz (transparente: o sub bate inteiro, sem atraso); depois sobe até o ponto do knob, entre 10 e 50 Hz, no tempo
-// do knob (1,5 s em pouco, 40 ms no máximo). O começo do knob é suave: em 10% ele chega a 15 Hz e quase não toca no
-// sub de uma nota grave; em 100% chega a 50 Hz.
+// unHUNF: um passa-alta de 48 dB (Butterworth de 8ª ordem) que sobe depois de cada nota e tira o sub. No disparo ele
+// está em 2 Hz (transparente: o sub bate inteiro, sem atraso); depois sobe até o ponto do knob, de 12 Hz (pouco) a
+// 65 Hz (máximo), no tempo do knob (300 ms em pouco, 15 ms no máximo). Em 100%: tudo de 10 a 50 Hz some (−18 dB a
+// 50 Hz, −40 dB a 30 Hz) e acima de 100 Hz não muda nada. 0.2.0: antes eram 24 dB, até 50 Hz e 40 ms–1,5 s, e numa
+// nota de 1/16 (≈105 ms a 143 BPM) o corte mal saía do lugar: o efeito ficava fraco.
+// A subida é linear em Hz (não em oitavas): chega a ~63% do ponto final em um tempo do knob.
 constexpr double hunfInicio = 2.0;
-inline double hunfTau (double h) { return 1.5 * std::pow (0.0267, h); }
-inline double hunfFim (double h) { return h <= 0.0005 ? hunfInicio : 10.0 * std::pow (5.0, std::pow (h, 0.6)); }
+inline double hunfTau (double h) { return 0.3 * std::pow (0.05, h); }
+inline double hunfFim (double h) { return h <= 0.0005 ? hunfInicio : 12.0 * std::pow (65.0 / 12.0, std::pow (h, 0.4)); }
 inline double hunfFc (double h, double t)
 {
-    const double l0 = std::log (hunfInicio), l1 = std::log (hunfFim (h));
-    return std::exp (l1 + (l0 - l1) * std::exp (-t / hunfTau (h)));
+    const double f1 = hunfFim (h);
+    return f1 + (hunfInicio - f1) * std::exp (-t / hunfTau (h));
 }
-inline double hunfGanhoEm (double f, double fc) { const double r = fc / f; return 1.0 / std::sqrt (1.0 + r * r * r * r * r * r * r * r); }
+inline double hunfGanhoEm (double f, double fc) { const double r = fc / f, r4 = r * r * r * r, r8 = r4 * r4; return 1.0 / std::sqrt (1.0 + r8 * r8); }
 // o que sobra de um sub de 30 Hz (a tela desenha isso)
 constexpr double hunfRef = 30.0;
 inline double hunfPiso (double h) { return hunfGanhoEm (hunfRef, hunfFim (h)); }
@@ -186,7 +188,7 @@ public:
         for (auto& c : conta) c = 0;
         envF.zera(); amp = 0.0; gateOn = false;
         svf[0].zera(); svf[1].zera();
-        hpH[0].zera(); hpH[1].zera();
+        for (auto& f : hpH) f.zera();
         for (auto& p : fase) p = 0.0;
         faseSub = faseRef = 0.0;
         tDisparo = 10.0; ganhoHunf = 1.0;
@@ -290,7 +292,7 @@ public:
                 fcH = hunfFc (hunfSuave, tDisparo);
                 gH = std::tan (pi * fcH / fs);
             }
-            const double depois = hpH[1].hp (hpH[0].hp (y, gH, 1.0 / 0.541), gH, 1.0 / 1.307);
+            const double depois = hpH[3].hp (hpH[2].hp (hpH[1].hp (hpH[0].hp (y, gH, 1.0 / 0.5098), gH, 1.0 / 0.6013), gH, 1.0 / 0.9000), gH, 1.0 / 2.5629);
 
             volSuave = volAlvo + (volSuave - volAlvo) * cutCoef;
             const float s = (float) (depois * volSuave);
@@ -392,7 +394,7 @@ private:
     double fs = 48000.0;
     Envelope envF;
     Svf svf[2];
-    Svf hpH[2];   // passa-alta do unHUNF
+    Svf hpH[4];   // passa-alta do unHUNF (4 estágios = 8ª ordem)
     double fase[2] {}, faseSub = 0, faseRef = 0, hunfSuave = 0;
     bool inicio[2] { true, true }, inicioSub = true;
     double notaGlide = 36, alvoGlide = 36, bend = 0;

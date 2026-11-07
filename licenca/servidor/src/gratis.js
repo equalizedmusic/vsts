@@ -4,6 +4,7 @@
 //   GET  /gratis/montamonta   MONTA-MONTA (2 computadores, links Windows e Mac)
 //   GET  /gratis/vassoura     VASSOURA (só o e-mail: cadastro sem token, e-mail com o link do zip e o passo a passo)
 //   GET  /gratis/align        ALIGN (1 computador; a pessoa escolhe Windows ou Mac e recebe só aquele link)
+//   GET  /gratis/barebass     BAREBASS (igual ao ALIGN; config em VST_GRATIS)
 //   POST /gratis/<pacote>     { email, sistema?, site }   (site = campo escondido; robô que preenche leva "ok" falso)
 //     -> { ok, novo, token?, mesmo_token?, ja_tinha?, baixar: { win, mac } | { win } | { mac } }
 //
@@ -28,11 +29,57 @@ const TOTAL_DIA = 300;
 const PAGINAS = {
     montamonta: { maquinas: 2, sistema: false, nota: 'página grátis' },
     align: { maquinas: 1, sistema: true, nota: 'página ALIGN' },
+    barebass: { maquinas: 1, sistema: true, nota: 'página BAREBASS' },
     // VASSOURA (Max for Live) não ativa: o cadastro só guarda o e-mail (token_hash vazio, nenhum token vale nele)
     // e manda por e-mail o link do zip e o passo a passo daquele sistema (o zip é o mesmo; muda a pasta e os atalhos)
     vassoura: { maquinas: 0, sistema: true, nota: 'página VASSOURA', semToken: true },
 };
 export const PACOTES_GRATIS = Object.keys(PAGINAS);
+
+// VSTs grátis com token (página no molde do site, zip com LEIA-ME, e-mail e "perdi meu token"): o que muda de um para o outro.
+// pkg = nome do pacote do instalador (InsideStudioSP-<pkg>-win.exe / "Instalar InsideStudioSP <pkg>.pkg").
+// usoPt/usoEn = passo 2 do LEIA-ME; prontoPt/prontoEn = último passo da ativação; pagUso = passo 2 da página (HTML).
+export const VST_GRATIS = {
+    align: {
+        nome: 'ALIGN', pkg: 'Align', sub: 'Kick / bass phase aligner',
+        usoTitPt: '2. COLOCAR NO BAIXO', usoTitEn: '2. PUT IT ON THE BASS',
+        usoPt: ['  1) Coloque o ALIGN no canal do BAIXO.',
+                '  2) No Sidechain do ALIGN, escolha a faixa do KICK.',
+                '     No Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX.'],
+        usoEn: ['  1) Put ALIGN on your BASS track.',
+                '  2) In the ALIGN Sidechain, pick the KICK track.',
+                '     In Ableton: open the plugin Sidechain, pick the kick track and set it to Post FX.'],
+        prontoPt: '  2) Aperte o botão ALIGN. Pronto: ele corrige sozinho, batida por batida.',
+        prontoEn: '  2) Press the ALIGN button. Done: it corrects by itself, hit by hit.',
+        pagUsoTit: ['2. Coloque no canal do baixo', '2. Put it on your bass'],
+        pagUso: [
+            ['Abra o seu DAW e coloque o <b>ALIGN</b> no canal do <span class="b">BAIXO</span>.', 'Open your DAW and put <b>ALIGN</b> on the <span class="b">BASS</span> channel.'],
+            ['No <b>Sidechain</b> do ALIGN, escolha a faixa do <span class="k">KICK</span> (no Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX).', 'In ALIGN\'s <b>Sidechain</b>, pick the <span class="k">KICK</span> track (in Ableton: open the plugin Sidechain, pick the kick track and leave it on Post FX).'],
+        ],
+        pagPronto: ['Aperte o botão <b>ALIGN</b>. Pronto: ele corrige sozinho, batida por batida.', 'Press the <b>ALIGN</b> button. That\'s it: it corrects by itself, hit by hit.'],
+    },
+    barebass: {
+        nome: 'BAREBASS', pkg: 'Barebass', sub: 'Simple bass synth',
+        usoTitPt: '2. ABRIR NO DAW', usoTitEn: '2. OPEN IT IN YOUR DAW',
+        usoPt: ['  1) Crie uma faixa MIDI e coloque o BAREBASS nela (ele é instrumento: fica junto dos synths).',
+                '  2) Toque notas graves. O PRESET (no alto) traz timbres prontos; o INIT é o ponto de partida.',
+                '  3) Com o ALIGN (grátis também): coloque o ALIGN depois do BAREBASS, na mesma faixa,',
+                '     e mande o KICK pelo Sidechain do ALIGN. Baixo e kick ficam em fase sozinhos.'],
+        usoEn: ['  1) Create a MIDI track and put BAREBASS on it (it is an instrument: look among the synths).',
+                '  2) Play low notes. PRESET (at the top) has ready-made sounds; INIT is the starting point.',
+                '  3) With ALIGN (also free): put ALIGN after BAREBASS on the same track and send the KICK',
+                '     to the ALIGN Sidechain. Bass and kick stay in phase by themselves.'],
+        prontoPt: '  2) Pronto: o BAREBASS já toca. Sem ativação ele fica mudo.',
+        prontoEn: '  2) Done: BAREBASS plays now. Without activation it stays silent.',
+        pagUsoTit: ['2. Abra no seu DAW', '2. Open it in your DAW'],
+        pagUso: [
+            ['Crie uma faixa <b>MIDI</b> e coloque o <b>BAREBASS</b> nela (é instrumento: fica junto dos synths).', 'Create a <b>MIDI</b> track and put <b>BAREBASS</b> on it (it is an instrument: look among the synths).'],
+            ['Toque notas graves. O <b>PRESET</b> traz timbres prontos; o <b>INIT</b> é o ponto de partida.', 'Play low notes. <b>PRESET</b> has ready-made sounds; <b>INIT</b> is the starting point.'],
+            ['Tem o <a class="link" href="/align/">ALIGN</a>? Coloque depois do BAREBASS e mande o <span class="k">KICK</span> pelo Sidechain: baixo e kick ficam em fase sozinhos.', 'Got <a class="link" href="/align/">ALIGN</a>? Put it after BAREBASS and send the <span class="k">KICK</span> to its Sidechain: bass and kick stay in phase by themselves.'],
+        ],
+        pagPronto: ['Pronto: o BAREBASS já toca. Sem ativação ele fica mudo.', 'Done: BAREBASS plays now. Without activation it stays silent.'],
+    },
+};
 
 function json(obj, status = 200) {
     return new Response(JSON.stringify(obj), {
@@ -45,10 +92,10 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     // form-action 'self': o botão de download do ALIGN é um formulário (POST /gratis/align/zip)
     if (req.method === 'GET') {
         const agora = Date.now();
-        const site = PACOTE === 'align' || PACOTE === 'vassoura';   // no molde do site (estilo.css e site.js do domínio do estúdio)
-        const html = PACOTE === 'align' ? paginaAlign(agora, emailLigado(env)) : PACOTE === 'vassoura' ? paginaVassoura(agora) : PAGINA;
+        const site = !!VST_GRATIS[PACOTE] || PACOTE === 'vassoura';   // no molde do site (estilo.css e site.js do domínio do estúdio)
+        const html = VST_GRATIS[PACOTE] ? paginaVst(PACOTE, agora, emailLigado(env)) : PACOTE === 'vassoura' ? paginaVassoura(agora) : PAGINA;
         return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
-            'content-security-policy': site ? `${CSP_SITE}; form-action ${PACOTE === 'align' ? "'self'" : "'none'"}`
+            'content-security-policy': site ? `${CSP_SITE}; form-action ${VST_GRATIS[PACOTE] ? "'self'" : "'none'"}`
                 : "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
     }
     if (req.method !== 'POST') return json({ ok: false, mensagem: 'Método não aceito.' }, 405);
@@ -77,7 +124,7 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     const lista = doEmail.results || [];
     if (lista.some((l) => l.pacote === PACOTE)) {
         await h.evento(env, null, 'gratis_ja', email, ip);
-        return json({ ok: true, novo: false, ja_tinha: true, baixar, reenvio: PACOTE === 'align' && emailLigado(env) });
+        return json({ ok: true, novo: false, ja_tinha: true, baixar, reenvio: !!VST_GRATIS[PACOTE] && emailLigado(env) });
     }
     // cadastro da VASSOURA não tem token (token_hash vazio): não conta como "já tem token" para os outros pacotes
     const comToken = lista.filter((l) => l.token_hash);
@@ -93,20 +140,22 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
         if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
         return json({ ok: true, novo: true, baixar, email_enviado: !!enviado });
     }
-    const enviado = PACOTE === 'align' && await emailAlign(env, url, h, { email, token, sistema, assunto: 'Sua licença do ALIGN · Your ALIGN license' });
+    const V = VST_GRATIS[PACOTE];
+    const enviado = !!V && await emailVst(env, url, h, { pacote: PACOTE, email, token, sistema, assunto: `Sua licença do ${V.nome} · Your ${V.nome} license` });
     if (enviado) await h.evento(env, r.meta.last_row_id, 'email', 'cadastro', ip);
-    return json({ ok: true, novo: true, token, mesmo_token: !!comToken.length, baixar, email_enviado: !!enviado, reenvio: PACOTE === 'align' && emailLigado(env) });
+    return json({ ok: true, novo: true, token, mesmo_token: !!comToken.length, baixar, email_enviado: !!enviado, reenvio: !!VST_GRATIS[PACOTE] && emailLigado(env) });
 }
 
 // e-mail com o mesmo conteúdo do LEIA-ME do zip + o link direto do instalador (o zip é POST com o token)
-async function emailAlign(env, url, h, { email, token, sistema, assunto, aviso = [] }) {
+async function emailVst(env, url, h, { pacote, email, token, sistema, assunto, aviso = [] }) {
     if (!emailLigado(env)) return false;
+    const V = VST_GRATIS[pacote];
     let inst = null;
-    try { inst = await h.instalador(env, 'align', sistema); } catch (e) { console.error('email align: instalador', e); }
-    const link = `${url.origin}/baixar/align/${sistema}`;
+    try { inst = await h.instalador(env, pacote, sistema); } catch (e) { console.error('email ' + pacote + ': instalador', e); }
+    const link = `${url.origin}/baixar/${pacote}/${sistema}`;
     const texto = [
         ...aviso,
-        ...leiaMeAlign({ email, token, sistema, nome: inst?.nome || (sistema === 'mac' ? 'ALIGN.dmg' : 'ALIGN.exe'),
+        ...leiaMe(pacote, { email, token, sistema, nome: inst?.nome || V.nome + (sistema === 'mac' ? '.dmg' : '.exe'),
                          versao: inst?.versao, sha256: inst?.sha256, porEmail: true, link }),
     ].join('\r\n');
     return enviarEmail(env, { para: email, assunto, texto, segredos: [token] });
@@ -253,7 +302,8 @@ export async function emailVassoura(env, url, h, email, sistema, { assunto, aber
 const REENVIO_VALIDADE = 3600;
 const REENVIO_POR_EMAIL_DIA = 3, REENVIO_POR_IP_DIA = 10, REENVIO_INTERVALO = 120;
 
-export async function rotaTokenAlign(req, env, url, h, acao) {
+export async function rotaTokenVst(req, env, url, h, acao, pacote) {
+    const V = VST_GRATIS[pacote];
     if (!emailLigado(env)) return h.paginaSimples('Indisponível', 'Chame a InsideStudioSP no direct do Instagram.', 404);
     const ip = req.headers.get('cf-connecting-ip') || '';
     if (acao === 'reenviar') {
@@ -262,28 +312,28 @@ export async function rotaTokenAlign(req, env, url, h, acao) {
         try { corpo = await req.json(); } catch { return json({ ok: false, mensagem: 'Pedido inválido.' }, 400); }
         const email = h.normEmail(corpo.email);
         if (email.length > 120 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, mensagem: 'Confira o e-mail.' }, 400);
-        const pronto = json({ ok: true, mensagem: 'Se este e-mail tiver o ALIGN, o link chega em alguns minutos (olhe também o spam e Promoções). O link vale por 1 hora.' });
+        const pronto = json({ ok: true, mensagem: 'Se este e-mail tiver o ' + V.nome + ', o link chega em alguns minutos (olhe também o spam e Promoções). O link vale por 1 hora.' });
         if (corpo.site) return pronto;
         const desde = h.agora() - 86400;
         const nIp = await env.DB.prepare("SELECT COUNT(*) AS n FROM eventos WHERE tipo = 'reenvio_pedido' AND ip = ? AND quando > ?").bind(ip, desde).first();
         if ((nIp?.n || 0) >= REENVIO_POR_IP_DIA) return json({ ok: false, mensagem: 'Muitos pedidos agora. Tente de novo amanhã ou chame a gente no direct.' }, 429);
-        const lic = await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND pacote = 'align'").bind(email).first();
-        if (!lic) { await h.evento(env, null, 'reenvio_pedido', 'sem ALIGN', ip); return pronto; }
+        const lic = await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND pacote = ?").bind(email, pacote).first();
+        if (!lic) { await h.evento(env, null, 'reenvio_pedido', 'sem ' + V.nome, ip); return pronto; }
         const ult = await env.DB.prepare("SELECT COUNT(*) AS n, MAX(quando) AS q FROM eventos WHERE tipo = 'reenvio_pedido' AND licenca_id = ? AND quando > ?")
             .bind(lic.id, desde).first();
         if ((ult?.n || 0) >= REENVIO_POR_EMAIL_DIA || (ult?.q && h.agora() - ult.q < REENVIO_INTERVALO)) return pronto;
         const c = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
         await h.evento(env, lic.id, 'reenvio_pedido', await h.sha256Hex('REENVIO' + c), ip);
-        const link = `${url.origin}/gratis/align/novo-token?c=${c}`;
-        await enviarEmail(env, { para: email, assunto: 'Novo token do ALIGN · New ALIGN token', texto: [
-            'Alguém (provavelmente você) pediu um token novo do ALIGN para este e-mail.',
+        const link = `${url.origin}/gratis/${pacote}/novo-token?c=${c}`;
+        await enviarEmail(env, { para: email, assunto: `Novo token do ${V.nome} · New ${V.nome} token`, texto: [
+            `Alguém (provavelmente você) pediu um token novo do ${V.nome} para este e-mail.`,
             'Para gerar o token novo, abra o link abaixo e clique em GERAR NOVO TOKEN (vale por 1 hora, uma vez só):',
             '', link, '',
             'Atenção: o token antigo deixa de valer. Computador já ativado precisa ser ativado de novo com o token novo.',
             'Não pediu? Ignore este e-mail: nada muda.',
             'Dúvidas? Responda este e-mail ou escreva para ' + CONTATO + '.',
             '', '==================================== ENGLISH ====================================', '',
-            'Someone (probably you) asked for a new ALIGN token for this e-mail.',
+            `Someone (probably you) asked for a new ${V.nome} token for this e-mail.`,
             'To get the new token, open the link below and click GERAR NOVO TOKEN (valid for 1 hour, once):',
             '', link, '',
             'Note: the old token stops working. A computer already activated must be activated again with the new token.',
@@ -296,41 +346,42 @@ export async function rotaTokenAlign(req, env, url, h, acao) {
 
     // novo-token
     const c = req.method === 'POST' ? String((await req.formData().catch(() => null))?.get('c') || '') : String(url.searchParams.get('c') || '');
-    const expirado = () => h.paginaSimples('Link vencido', 'Este link já foi usado ou passou de 1 hora. Volte à página do ALIGN e peça de novo em "Perdi meu token". · This link was used or expired.', 410);
+    const expirado = () => h.paginaSimples('Link vencido', 'Este link já foi usado ou passou de 1 hora. Volte à página do ' + V.nome + ' e peça de novo em "Perdi meu token". · This link was used or expired.', 410);
     if (!/^[0-9a-f]{48}$/.test(c)) return expirado();
     const hc = await h.sha256Hex('REENVIO' + c);
     const ped = await env.DB.prepare("SELECT licenca_id FROM eventos WHERE tipo = 'reenvio_pedido' AND detalhe = ? AND quando > ?")
         .bind(hc, h.agora() - REENVIO_VALIDADE).first();
     const usado = ped && await env.DB.prepare("SELECT id FROM eventos WHERE tipo = 'reenvio_usado' AND detalhe = ?").bind(hc).first();
-    const lic = ped && !usado && await env.DB.prepare("SELECT id, email, nota FROM licencas WHERE id = ? AND pacote = 'align'").bind(ped.licenca_id).first();
+    const lic = ped && !usado && await env.DB.prepare("SELECT id, email, nota FROM licencas WHERE id = ? AND pacote = ?").bind(ped.licenca_id, pacote).first();
     if (!lic) return expirado();
-    if (req.method !== 'POST') return paginaToken({ c });
+    if (req.method !== 'POST') return paginaToken({ c, pacote });
 
     await h.evento(env, lic.id, 'reenvio_usado', hc, ip);
     const token = h.novoToken();
     await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await h.sha256Hex('ISP' + h.normToken(token)), lic.email).run();
     await h.evento(env, lic.id, 'novo_token', 'pelo e-mail (perdi meu token)', ip);
     const sistema = /Mac$/.test(lic.nota || '') ? 'mac' : 'win';
-    await emailAlign(env, url, h, { email: lic.email, token, sistema, assunto: 'Seu novo token do ALIGN · Your new ALIGN token',
+    await emailVst(env, url, h, { pacote, email: lic.email, token, sistema, assunto: `Seu novo token do ${V.nome} · Your new ${V.nome} token`,
         aviso: ['O token antigo deixou de valer. · The old token no longer works.', ''] });
-    return paginaToken({ email: lic.email, token, sistema });
+    return paginaToken({ email: lic.email, token, sistema, pacote });
 }
 
-function paginaToken({ c, email, token, sistema }) {
+function paginaToken({ c, email, token, sistema, pacote }) {
+    const V = VST_GRATIS[pacote];
     const esc = (s) => String(s).replace(/[&<>"]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]));
     const corpo = c
-        ? `<h2>Gerar novo token do ALIGN</h2>
+        ? `<h2>Gerar novo token do ${V.nome}</h2>
 <p>O token antigo deixa de valer. Computador já ativado precisa ser ativado de novo com o token novo.</p>
 <p class="en">The old token stops working. A computer already activated must be activated again with the new token.</p>
 <form method="post"><input type="hidden" name="c" value="${esc(c)}"><button>GERAR NOVO TOKEN</button></form>`
         : `<h2>Pronto! Seu novo token</h2>
 <p>E-mail: <b>${esc(email)}</b></p><div class="token">${esc(token)}</div>
 <p>Também mandamos para o seu e-mail. · We also sent it to your e-mail.</p>
-<form method="post" action="/gratis/align/zip"><input type="hidden" name="email" value="${esc(email)}"><input type="hidden" name="token" value="${esc(token)}">
-<input type="hidden" name="sistema" value="${sistema}"><button>BAIXAR ALIGN PARA ${sistema === 'mac' ? 'MAC' : 'WINDOWS'}</button></form>
+<form method="post" action="/gratis/${pacote}/zip"><input type="hidden" name="email" value="${esc(email)}"><input type="hidden" name="token" value="${esc(token)}">
+<input type="hidden" name="sistema" value="${sistema}"><button>BAIXAR ${V.nome} PARA ${sistema === 'mac' ? 'MAC' : 'WINDOWS'}</button></form>
 <p class="en">O zip traz o instalador e o LEIA-ME com o token. · The zip has the installer and a READ ME with your token.</p>`;
     return new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ALIGN · InsideStudioSP</title><style>
+<title>${V.nome} · InsideStudioSP</title><style>
 body { margin:0; background:#100e17; color:#eeecf6; font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
 main { max-width:520px; margin:0 auto; padding:36px 20px; } .en { color:#8d8aa3; font-size:14px; font-style:italic; }
 .token { font:700 19px Consolas, "SF Mono", monospace; border:2px dashed #a78bfa; color:#a78bfa; border-radius:10px; padding:14px; text-align:center; word-break:break-all; user-select:all; }
@@ -341,39 +392,40 @@ button { width:100%; padding:15px; margin-top:16px; border:0; border-radius:12px
     });
 }
 
-// ---------------- zip do ALIGN: instalador + LEIA-ME gerado na hora ----------------
-// POST /gratis/align/zip (formulário da página, depois do cadastro): email, token (vazio se o e-mail já tinha token),
+// ---------------- zip dos VSTs grátis: instalador + LEIA-ME gerado na hora ----------------
+// POST /gratis/<align|barebass>/zip (formulário da página, depois do cadastro): email, token (vazio se o e-mail já tinha token),
 // sistema. O token só entra no texto se conferir com a licença do e-mail (ninguém monta um leia-me com token alheio).
 // Sem o CRC do instalador (release sem .crc32 e fora de CRC_CONHECIDOS) cai no download direto do instalador.
 
-export async function rotaZipAlign(req, env, h) {
-    if (req.method !== 'POST') return h.paginaSimples('Link inválido', 'Abra a página do ALIGN e gere a sua licença.', 405);
+export async function rotaZipVst(req, env, h, pacote) {
+    const V = VST_GRATIS[pacote];
+    if (req.method !== 'POST') return h.paginaSimples('Link inválido', 'Abra a página do ' + V.nome + ' e gere a sua licença.', 405);
     let f;
-    try { f = await req.formData(); } catch { return h.paginaSimples('Pedido inválido', 'Volte à página do ALIGN e tente de novo.', 400); }
+    try { f = await req.formData(); } catch { return h.paginaSimples('Pedido inválido', 'Volte à página do ' + V.nome + ' e tente de novo.', 400); }
     const email = h.normEmail(f.get('email'));
     const sistema = f.get('sistema') === 'mac' ? 'mac' : 'win';
     const tokenTxt = String(f.get('token') || '').trim();
-    const lic = await env.DB.prepare("SELECT id, token_hash FROM licencas WHERE email = ? AND pacote = 'align'").bind(email).first();
-    if (!lic) return h.paginaSimples('E-mail sem ALIGN', 'Este e-mail não tem licença do ALIGN. Volte à página e gere a sua.', 404);
+    const lic = await env.DB.prepare("SELECT id, token_hash FROM licencas WHERE email = ? AND pacote = ?").bind(email, pacote).first();
+    if (!lic) return h.paginaSimples('E-mail sem ' + V.nome, 'Este e-mail não tem licença do ' + V.nome + '. Volte à página e gere a sua.', 404);
     let token = '';
     if (tokenTxt) {
         if (await h.sha256Hex('ISP' + h.normToken(tokenTxt)) !== lic.token_hash)
-            return h.paginaSimples('Token não confere', 'Volte à página do ALIGN e baixe pelo botão que apareceu junto com o seu token.', 403);
+            return h.paginaSimples('Token não confere', 'Volte à página do ' + V.nome + ' e baixe pelo botão que apareceu junto com o seu token.', 403);
         token = tokenTxt.toUpperCase();
     }
-    const inst = await h.instalador(env, 'align', sistema);
+    const inst = await h.instalador(env, pacote, sistema);
     if (!inst) return h.paginaSimples('Download indisponível', 'O instalador não está disponível agora. Tente de novo mais tarde.', 404);
     if (inst.crc == null || !inst.tamanho) {
-        console.error('zip align: sem crc', inst.nome, inst.sha256);
+        console.error('zip ' + pacote + ': sem crc', inst.nome, inst.sha256);
         return Response.redirect(inst.link, 302);
     }
     const r = await fetch(inst.link, { headers: { 'user-agent': 'isp-licencas' } });
     const len = Number(r.headers.get('content-length') || inst.tamanho);
     if (!r.ok || !r.body || len !== inst.tamanho) {
-        console.error('zip align: instalador', r.status, len, inst.tamanho);
+        console.error('zip ' + pacote + ': instalador', r.status, len, inst.tamanho);
         return Response.redirect(inst.link, 302);
     }
-    const texto = new TextEncoder().encode('\uFEFF' + leiaMeAlign({ email, token, sistema, ...inst }).join('\r\n') + '\r\n');
+    const texto = new TextEncoder().encode('\uFEFF' + leiaMe(pacote, { email, token, sistema, ...inst }).join('\r\n') + '\r\n');
     const zip = zipStream([
         { nome: 'LEIA-ME - READ ME.txt', bytes: texto },
         { nome: inst.nome, tamanho: inst.tamanho, crc: inst.crc, corpo: r.body },
@@ -382,18 +434,19 @@ export async function rotaZipAlign(req, env, h) {
     return new Response(zip.stream, {
         headers: {
             'content-type': 'application/zip', 'content-length': String(zip.tamanho), 'cache-control': 'no-store',
-            'content-disposition': `attachment; filename="ALIGN-${inst.versao || 'InsideStudioSP'}-${sistema === 'mac' ? 'Mac' : 'Windows'}.zip"`,
+            'content-disposition': `attachment; filename="${V.nome}-${inst.versao || 'InsideStudioSP'}-${sistema === 'mac' ? 'Mac' : 'Windows'}.zip"`,
         },
     });
 }
 
 // porEmail: o e-mail leva o link direto do instalador (sem zip), então os passos falam do arquivo e não do zip
-function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = false, link = '' }) {
+function leiaMe(pacote, { email, token, sistema, nome, versao, sha256, porEmail = false, link = '' }) {
+    const V = VST_GRATIS[pacote];
     const mac = sistema === 'mac';
     const pt = porEmail ? 'Guarde este e-mail' : 'Guarde este arquivo', en = porEmail ? 'Keep this e-mail' : 'Keep this file';
     const L = [
-        'ALIGN · InsideStudioSP' + (versao ? ' · v' + versao : '') + ' · ' + (mac ? 'Mac' : 'Windows'),
-        'Kick / bass phase aligner',
+        V.nome + ' · InsideStudioSP' + (versao ? ' · v' + versao : '') + ' · ' + (mac ? 'Mac' : 'Windows'),
+        V.sub,
         '',
         '(English below)',
         '',
@@ -411,9 +464,9 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = f
     if (mac) L.push(
         porEmail ? '  1) Dê dois cliques em ' + nome + ' (na pasta Downloads).'
                  : '  1) Abra o zip (o Safari já costuma abrir sozinho) e dê dois cliques em ' + nome + '.',
-        '  2) Na janela que abrir, dê dois cliques em "Instalar InsideStudioSP Align.pkg" e siga o instalador.',
+        '  2) Na janela que abrir, dê dois cliques em "Instalar InsideStudioSP ' + V.pkg + '.pkg" e siga o instalador.',
         '     Os plugins vão para as pastas padrão do Mac (VST3 e AU em /Library/Audio/Plug-Ins).',
-        '  3) Feche e abra de novo o seu DAW. No Logic, se o ALIGN não aparecer: Logic Pro > Ajustes >',
+        '  3) Feche e abra de novo o seu DAW. No Logic, se o ' + V.nome + ' não aparecer: Logic Pro > Ajustes >',
         '     Plug-in Manager > "Redefinir e verificar".',
     );
     else L.push(
@@ -421,24 +474,22 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = f
                              '     Não rode o instalador de dentro do zip.']),
         '  ' + (porEmail ? 1 : 2) + ') Rode ' + nome + ' e siga o instalador. A pasta já vem certa',
         '     (C:\\Program Files\\Common Files\\VST3, onde o Ableton e os outros DAWs procuram).',
-        '  ' + (porEmail ? 2 : 3) + ') Feche e abra de novo o seu DAW (se o ALIGN não aparecer, mande o DAW procurar plugins de novo).',
+        '  ' + (porEmail ? 2 : 3) + ') Feche e abra de novo o seu DAW (se o ' + V.nome + ' não aparecer, mande o DAW procurar plugins de novo).',
     );
     L.push(
         '',
-        '2. COLOCAR NO BAIXO',
-        '  1) Coloque o ALIGN no canal do BAIXO.',
-        '  2) No Sidechain do ALIGN, escolha a faixa do KICK.',
-        '     No Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX.',
+        V.usoTitPt,
+        ...V.usoPt,
         '',
         '3. ATIVAR',
-        '  1) Na tela de ativação do ALIGN, digite o e-mail e o token acima e clique em ATIVAR.',
+        '  1) Na tela de ativação do ' + V.nome + ', digite o e-mail e o token acima e clique em ATIVAR.',
         '     Precisa de internet só nessa hora.',
-        '  2) Aperte o botão ALIGN. Pronto: ele corrige sozinho, batida por batida.',
+        V.prontoPt,
         '  3) Vai trocar de computador? Menu ≡ do plugin > Licença... > Desativar este computador, e ative no novo.',
         '',
         mac ? '4. SE O MAC DISSER QUE NÃO PODE ABRIR O INSTALADOR' : '4. SE O WINDOWS OU O ANTIVÍRUS DER AVISO DE SEGURANÇA',
-        mac ? '  O ALIGN ainda não é registrado na Apple, então o Mac avisa que não pode verificar o desenvolvedor.'
-            : '  O ALIGN ainda não tem assinatura digital paga, então o Windows não conhece o "editor" e pode avisar.',
+        mac ? '  O ' + V.nome + ' ainda não é registrado na Apple, então o Mac avisa que não pode verificar o desenvolvedor.'
+            : '  O ' + V.nome + ' ainda não tem assinatura digital paga, então o Windows não conhece o "editor" e pode avisar.',
         '  É o aviso padrão para programa novo e sem assinatura, não quer dizer que o arquivo tenha vírus.',
         '',
     );
@@ -493,9 +544,9 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = f
     if (mac) L.push(
         porEmail ? '  1) Double-click ' + nome + ' (in your Downloads folder).'
                  : '  1) Open the zip (Safari usually opens it by itself) and double-click ' + nome + '.',
-        '  2) In the window that opens, double-click "Instalar InsideStudioSP Align.pkg" and follow the installer.',
+        '  2) In the window that opens, double-click "Instalar InsideStudioSP ' + V.pkg + '.pkg" and follow the installer.',
         '     The plugins go to the standard Mac folders (VST3 and AU in /Library/Audio/Plug-Ins).',
-        '  3) Close and reopen your DAW. In Logic, if ALIGN does not show up: Logic Pro > Settings >',
+        '  3) Close and reopen your DAW. In Logic, if ' + V.nome + ' does not show up: Logic Pro > Settings >',
         '     Plug-in Manager > "Reset & Rescan Selection".',
     );
     else L.push(
@@ -503,24 +554,22 @@ function leiaMeAlign({ email, token, sistema, nome, versao, sha256, porEmail = f
                              '     Do not run the installer from inside the zip.']),
         '  ' + (porEmail ? 1 : 2) + ') Run ' + nome + ' and follow the installer. The folder is already right',
         '     (C:\\Program Files\\Common Files\\VST3, where Ableton and the other DAWs look).',
-        '  ' + (porEmail ? 2 : 3) + ') Close and reopen your DAW (if ALIGN does not show up, rescan your plugins).',
+        '  ' + (porEmail ? 2 : 3) + ') Close and reopen your DAW (if ' + V.nome + ' does not show up, rescan your plugins).',
     );
     L.push(
         '',
-        '2. PUT IT ON THE BASS',
-        '  1) Put ALIGN on your BASS track.',
-        '  2) In the ALIGN Sidechain, pick the KICK track.',
-        '     In Ableton: open the plugin Sidechain, pick the kick track and set it to Post FX.',
+        V.usoTitEn,
+        ...V.usoEn,
         '',
         '3. ACTIVATE',
-        '  1) On the ALIGN activation screen, type the e-mail and token above and click ATIVAR (activate).',
+        '  1) On the ' + V.nome + ' activation screen, type the e-mail and token above and click ATIVAR (activate).',
         '     Internet is needed only at this moment.',
-        '  2) Press the ALIGN button. Done: it corrects by itself, hit by hit.',
+        V.prontoEn,
         '  3) Changing computers? Plugin menu ≡ > Licença... > Desativar este computador (deactivate), then activate on the new one.',
         '',
         mac ? '4. IF YOUR MAC SAYS IT CANNOT OPEN THE INSTALLER' : '4. IF WINDOWS OR YOUR ANTIVIRUS SHOWS A SECURITY WARNING',
-        mac ? '  ALIGN is not registered with Apple yet, so macOS says it cannot verify the developer.'
-            : '  ALIGN does not have a paid digital signature yet, so Windows does not know the "publisher" and may warn you.',
+        mac ? '  ' + V.nome + ' is not registered with Apple yet, so macOS says it cannot verify the developer.'
+            : '  ' + V.nome + ' does not have a paid digital signature yet, so Windows does not know the "publisher" and may warn you.',
         '  This is the standard warning for new unsigned software, it does not mean the file has a virus.',
         '',
     );
@@ -908,8 +957,9 @@ function paginaVassoura(agora) {
         corpo: heroGratis(p, caixa, { vst: false }) + '\n' + vitrine(agora) + '\n' + script });
 }
 
-function paginaAlign(agora, reenvio) {
-    const p = PACKS.find((x) => x.id === 'align');
+function paginaVst(pacote, agora, reenvio) {
+    const V = VST_GRATIS[pacote];
+    const p = PACKS.find((x) => x.id === pacote);
     const caixa = `<div class="compra" id="caixa">
   <div id="passo1" style="display:contents">
     <div class="preco"><span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span></div>
@@ -931,23 +981,22 @@ function paginaAlign(agora, reenvio) {
     <p id="txtSem" hidden></p>
     <div class="aviso" id="mandado" hidden>${th('Também mandamos o token e o passo a passo para <b id="emailMandado"></b> (olhe o spam e Promoções).', 'We also e-mailed the token and the steps to <b id="emailMandado2"></b> (check spam).')}</div>
     <div class="passo">${t('1. Baixe e instale', '1. Download and install')}</div>
-    <form id="fz" method="post" action="/gratis/align/zip">
+    <form id="fz" method="post" action="/gratis/${pacote}/zip">
       <input type="hidden" name="email" id="zEmail"><input type="hidden" name="token" id="zToken"><input type="hidden" name="sistema" id="zSo">
-      <button class="bt bt-principal" id="baixar" type="submit">${t('Baixar ALIGN', 'Download ALIGN')}</button>
+      <button class="bt bt-principal" id="baixar" type="submit">${t('Baixar ' + V.nome, 'Download ' + V.nome)}</button>
     </form>
     <p class="nota">${th('Vem um <b>.zip</b> com o instalador e o <b>LEIA-ME</b> com o seu e-mail, o token, o passo a passo e o que fazer se aparecer aviso de segurança.', 'You get a <b>.zip</b> with the installer and a <b>READ ME</b> with your e-mail, token, steps and what to do about security warnings.')}</p>
     <p class="nota" id="dicaSo"></p>
     <p class="nota">${t('Não baixou?', 'Download failed?')} <a id="direto" href="#" class="link">${t('Baixar só o instalador', 'Get the installer only')}</a></p>
-    <div class="passo">${t('2. Coloque no canal do baixo', '2. Put it on your bass')}</div>
+    <div class="passo">${t(...V.pagUsoTit)}</div>
     <ol>
-      <li>${th('Abra o seu DAW e coloque o <b>ALIGN</b> no canal do <span class="b">BAIXO</span>.', 'Open your DAW and put <b>ALIGN</b> on the <span class="b">BASS</span> channel.')}</li>
-      <li>${th('No <b>Sidechain</b> do ALIGN, escolha a faixa do <span class="k">KICK</span> (no Ableton: abra o Sidechain do plugin, escolha a faixa do kick e deixe em Post FX).', 'In ALIGN\'s <b>Sidechain</b>, pick the <span class="k">KICK</span> track (in Ableton: open the plugin Sidechain, pick the kick track and leave it on Post FX).')}</li>
+      ${V.pagUso.map((x) => `<li>${th(...x)}</li>`).join('\n      ')}
     </ol>
     <div class="passo">${t('3. Ative', '3. Activate')}</div>
     <ol>
-      <li>${th('Na tela de ativação do ALIGN, digite <b class="emailOk"></b> e o token, e clique em <b>ATIVAR</b>.', 'On the ALIGN activation screen, type <b class="emailOk"></b> and the token, and click <b>ATIVAR</b>.')}</li>
+      <li>${th('Na tela de ativação do ' + V.nome + ', digite <b class="emailOk"></b> e o token, e clique em <b>ATIVAR</b>.', 'On the ' + V.nome + ' activation screen, type <b class="emailOk"></b> and the token, and click <b>ATIVAR</b>.')}</li>
       <li>${th('Vale para <b>1 computador</b>. Para trocar de PC: menu <b>≡</b> do plugin → <b>Licença…</b> → <b>Desativar este computador</b>, e ative no novo.', 'Works on <b>1 computer</b>. To switch: plugin menu <b>≡</b> → <b>Licença…</b> → <b>Desativar este computador</b>, then activate on the new one.')}</li>
-      <li>${th('Aperte o botão <b>ALIGN</b>. Pronto: ele corrige sozinho, batida por batida.', 'Press the <b>ALIGN</b> button. That\'s it: it corrects by itself, hit by hit.')}</li>
+      <li>${th(...V.pagPronto)}</li>
     </ol>
   </div>
 </div>`;
@@ -971,7 +1020,7 @@ function paginaAlign(agora, reenvio) {
         if (!j.ok) { $('erro').innerHTML = erroServ(j); return; }
         $('direto').href = j.baixar[so] || '#';
         $('zEmail').value = email; $('zToken').value = j.token || ''; $('zSo').value = so;
-        $('baixar').innerHTML = so === 'mac' ? T('Baixar ALIGN para Mac', 'Download ALIGN for Mac') : T('Baixar ALIGN para Windows', 'Download ALIGN for Windows');
+        $('baixar').innerHTML = so === 'mac' ? T('Baixar ${V.nome} para Mac', 'Download ${V.nome} for Mac') : T('Baixar ${V.nome} para Windows', 'Download ${V.nome} for Windows');
         $('dicaSo').innerHTML = so === 'mac'
           ? T('Abra o .dmg que vem no zip e rode o instalador (VST3 e AU). Depois reabra o DAW.', 'Open the .dmg inside the zip and run the installer (VST3 and AU). Then restart your DAW.')
           : T('Extraia o zip e rode o instalador .exe (VST3). Se o Windows avisar, clique em "Mais informações" e depois em "Executar assim mesmo". Depois reabra o DAW.',
@@ -981,9 +1030,9 @@ function paginaAlign(agora, reenvio) {
         else {
           var perdeu = j.reenvio ? ' ' + T('Perdeu?', 'Lost it?') + ' <a href="#" id="perdi2" class="link">' + NOVO + '</a>.' : '';
           $('txtSem').innerHTML = j.ja_tinha
-            ? T('<b>Este e-mail já recebeu o ALIGN.</b> Use o token que apareceu da primeira vez.', '<b>This e-mail already got ALIGN.</b> Use the token you were shown the first time.')
+            ? T('<b>Este e-mail já recebeu o ${V.nome}.</b> Use o token que apareceu da primeira vez.', '<b>This e-mail already got ${V.nome}.</b> Use the token you were shown the first time.')
               + (j.reenvio ? perdeu : ' ' + T('Perdeu? Chame a gente no direct.', 'Lost it? Message us on Instagram.'))
-            : T('<b>Pronto! O ALIGN entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.', '<b>Done! ALIGN was added to your account.</b> Use the same token you already got from InsideStudioSP.') + perdeu;
+            : T('<b>Pronto! O ${V.nome} entrou no seu cadastro.</b> Use o mesmo token que você já recebeu da InsideStudioSP.', '<b>Done! ${V.nome} was added to your account.</b> Use the same token you already got from InsideStudioSP.') + perdeu;
           $('txtSem').hidden = false;
           if ($('perdi2')) $('perdi2').addEventListener('click', function (ev) { ev.preventDefault(); reenviar(email, $('txtSem')); });
         }
@@ -994,7 +1043,7 @@ function paginaAlign(agora, reenvio) {
   });
   function reenviar(email, onde) {
     onde.innerHTML = T('Enviando…', 'Sending…');
-    fetch('/gratis/align/reenviar', { method: 'POST', headers: { 'content-type': 'application/json' },
+    fetch('/gratis/${pacote}/reenviar', { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: email, site: $('site').value }) })
       .then(function (r) { return r.json(); })
       .then(function (j) { onde.innerHTML = j.mensagem ? esc(j.mensagem) : erroServ(j); })
@@ -1013,6 +1062,6 @@ function paginaAlign(agora, reenvio) {
   });
 })();
 </script>`;
-    return paginaSite({ titulo: 'ALIGN grátis — InsideStudioSP', agora,
+    return paginaSite({ titulo: V.nome + ' grátis — InsideStudioSP', agora,
         corpo: heroGratis(p, caixa, { vst: true }) + '\n' + vitrine(agora) + '\n' + script });
 }

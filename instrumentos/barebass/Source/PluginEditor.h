@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 
 // Tela do BAREBASS (base 1000 × 606, escala junto com a janela). Tudo desenhado no paint, a 30 Hz, no molde do ALIGN.
 // Em cima, o que está acontecendo AGORA: a onda (dois ciclos, antes do filtro e na saída), a curva do filtro com o
@@ -55,6 +56,7 @@ private:
     int escolha (const juce::String& id) const { return juce::roundToInt (real (id)); }
 
     BarebassProcessor& proc;
+    isp::TelaAtivacao ativacao;
 
     // última onda mostrada (fica na tela, apagada, depois que a nota acaba)
     static constexpr int pontos = 360;

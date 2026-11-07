@@ -4,6 +4,16 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-07
+- Primeira versão oficial: grátis, com ativação por licença (e-mail + token, 1 computador), como o ALIGN.
+  Página: insidestudiosp.com.br/barebass. Sem ativação o synth fica mudo; menu ≡ > Licença… mostra/desativa.
+- unHUNF mais forte: passa-alta de 48 dB (antes 24 dB), que sobe até 65 Hz no máximo (antes 50 Hz) e bem mais
+  rápido (15 ms no máximo, 300 ms no mínimo; antes 40 ms–1,5 s). Numa nota de 1/16 a 143 BPM o grave abaixo
+  de 50 Hz cai ~10 dB com o knob em 50% e ~37 dB em 100% (na 0.1.2, ~2 dB em 50%). O ataque continua batendo
+  inteiro e acima de 150 Hz nada muda.
+- Gráfico do unHUNF em dB (0 a −24) nos primeiros 500 ms da nota: a curva "com unHUNF" agora aparece; o knob
+  não encosta mais no gráfico.
+
 ## 0.1.2 — 2026-11-07
 - Fase: toda nota redisparada recomeça a onda do ponto inicial (antes a fase andava de nota para nota e cada uma
   batia diferente). SAW começa no topo, SQR em +1, SIN e TRI no zero subindo.

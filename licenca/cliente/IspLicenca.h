@@ -61,6 +61,7 @@ public:
         if (p == "groovador") return "GROOVADOR";
         if (p == "mesa") return "MESA";
         if (p == "align") return "ALIGN";
+        if (p == "barebass") return "BAREBASS";
         return p.toUpperCase();
     }
 
