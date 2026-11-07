@@ -40,5 +40,6 @@
   "MESA-CANAL": ["MESA CANAL", "canal da console: vai no fim de cada faixa (ou no grupo) com pré, dinâmica, EQ e fader"],
   "ALIGN": ["ALIGN", "fase kick/baixo: vai no baixo, kick pelo sidechain; alinha sozinho sem cancelar nem somar"],
   "ONKEY": ["ONKEY", "afinação automática de voz: acha o tom sozinho e leva ao tom sem mexer no timbre nem no vibrato"],
-  "BAREBASS": ["BAREBASS", "synth de baixo simples: 2 osciladores + sub, filtro com envelope e HUNF (decay só no grave)"]
+  "BAREBASS": ["BAREBASS", "synth de baixo simples: 2 osciladores + sub, filtro com envelope e HUNF (decay só no grave)"],
+  "STOMPBOX": ["STOMPBOX", "pedalboard de guitarra: 10 pedais em série, AMP + CAB e noise gate, presets de estilos"]
 }

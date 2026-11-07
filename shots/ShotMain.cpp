@@ -19,6 +19,9 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_VOZ
  #define SHOT_VOZ 0
 #endif
+#ifndef SHOT_GUITARRA
+ #define SHOT_GUITARRA 0
+#endif
 #ifndef SHOT_BAIXO
  #define SHOT_BAIXO 0
 #endif
@@ -168,6 +171,26 @@ public:
                 }
             }
            #endif
+           #if SHOT_GUITARRA
+            // STOMPBOX: guitarra sintética (power chord de E/G/A em colcheias, cordas que decaem), no lugar do loop
+            {
+                auto* gl = buf.getWritePointer (0); auto* gr = buf.getWritePointer (1);
+                static const double raiz[] = { 82.41, 82.41, 98.0, 110.0 };
+                const double t0 = t - block / fs, passo = 60.0 / bpm / 2.0;
+                for (int i = 0; i < block; ++i)
+                {
+                    const double tt = t0 + i / fs;
+                    const int k = (int) std::floor (tt / passo);
+                    const double u = tt - k * passo, f = raiz[(k / 4) % 4];
+                    double v = 0.0;
+                    for (double n : { 1.0, 1.5, 2.0 })
+                        for (int h = 1; h <= 10; ++h)
+                            v += std::sin (twoPi * f * n * h * u) / h * std::exp (-u * (3.0 + h * 1.5));
+                    v *= 0.07 * std::min (1.0, u / 0.002);
+                    gl[i] = gr[i] = (float) v;
+                }
+            }
+           #endif
             head.ppq.store (head.ppq.load() + block * bpm / 60.0 / fs);
            #if SHOT_SYNTH
             // instrumento: silêncio na entrada; acorde de Lá menor com 9ª e um baixo, pressão subindo
@@ -300,6 +323,9 @@ int main (int argc, char** argv)
     proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : 2, 2, fs, block);
    #endif
     proc->prepareToPlay (fs, block);
+   #if SHOT_GUITARRA
+    proc->setCurrentProgram (1);   // STOMPBOX: o board do esboço aprovado (BLUES CRUNCH, amp CITRUS)
+   #endif
    #if SHOT_BAIXO
     proc->setCurrentProgram (1);   // BAREBASS abre no INIT (filtro aberto); a foto mostra o ROLLING
    #endif
