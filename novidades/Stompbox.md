@@ -4,6 +4,19 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-07
+- Ainda TESTE (sem licença, fora do site).
+- Pedal novo: BENDER (pitch shifter de pedal, categoria PITCH no seletor). Arraste o pedal: calcanhar = som normal,
+  bico = o intervalo do SHIFT (-2 OCT, -1 OCT, -5TH, +4TH, +5TH, +1 OCT, +2 OCT). MIX 10 = só o som deslocado.
+  Chave WHAMMY/DETUNE: no DETUNE o pedal dá até 30 cents de dobra (uma voz acima à esquerda, outra abaixo à direita).
+  O intervalo que está soando aparece no pé do pedal. Só o som deslocado tem atraso (16 a 32 ms, como nos pedais
+  de pitch clássicos); no calcanhar ele sai sem atraso.
+- Presets com o nome do guitarrista "de brincadeira": JHON MORELO (agora com o BENDER no +2 OCT, é só pisar), SDASH,
+  JHON FRUSHANTE, DAVID GILMOR, JIMMY HENDRIQUES, LINKIN PARQUE, TONY IOMI, ZAKK WAILD.
+- 12 presets novos de timbres famosos: KURT COBAINHO, THE EJ, STEVIE RAY VAUGHAM, EDDIE VAN HALLEN, JACK WHITTE
+  (oitava abaixo no BENDER), KIRK HAMETT, MARK KNOPFLA, BILLY CORGANN, BRIAN MAIO, ANGUS YOUNGUE, CARLOS SANTANNA e
+  JONNY GREENWOODY. Total: 24 presets, todos nivelados.
+
 ## 0.1.0 — 2026-11-07
 - Primeira versão do STOMPBOX, para TESTE (ainda sem ativação por licença e fora do site): pedalboard de guitarra.
 - Até 10 pedais em série (6 à vista, com rolagem), da esquerda para a direita, ligados por cabos. O "+" da posição

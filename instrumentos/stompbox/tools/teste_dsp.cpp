@@ -5,6 +5,7 @@
 // tempo do SYNC; o reverb que morre; os 5 amps limpo/sujo (nível e quanto distorcem); todos os presets (nível, CPU).
 #include "../Source/Dsp.h"
 #include "../Source/Presets.h"
+#include <algorithm>
 #include <chrono>
 #include <complex>
 #include <cstdio>
@@ -76,8 +77,8 @@ static double goertzel (const std::vector<float>& x, double f, int ini)
 
 int main()
 {
-    const char* nomes[] = { "", "SQUASH", "HUMP", "CLEARCUT", "GRIT", "WOOLLY", "QUACK", "SWIRL", "TIDE", "ECHO", "HALO" };
-    const int nChaves[] = { 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3 };
+    const char* nomes[] = { "", "SQUASH", "HUMP", "CLEARCUT", "GRIT", "WOOLLY", "QUACK", "SWIRL", "TIDE", "ECHO", "HALO", "BENDER" };
+    const int nChaves[] = { 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 2 };
 
     std::printf ("== meio-banda (2x a 96 kHz)\n");
     {
@@ -202,6 +203,46 @@ int main()
                 std::printf ("  %-9s %-5s RMS %6.1f dB | THD %5.1f%%\n", an[a], ch ? "DIRTY" : "CLEAN", db (m.rms), 100.0 * std::sqrt (hs) / std::max (f1, 1e-9));
                 char o[64]; std::snprintf (o, sizeof o, "%s %s sem NaN e < 0 dBFS", an[a], ch ? "DIRTY" : "CLEAN"); confere (m.finito && m.pico < 1.0, o);
             }
+    }
+
+    std::printf ("\n== BENDER: seno de 220 Hz, pedal no bico, em cada intervalo (frequência que sai)\n");
+    {
+        for (int iv = 0; iv < 7; ++iv)
+        {
+            std::vector<float> s ((size_t) fs); for (size_t i = 0; i < s.size(); ++i) s[i] = 0.3f * (float) std::sin (2 * pi * 220.0 * (double) i / fs);
+            Ctl c; c.on = true; c.sw = 0; c.k[0] = 1.0f; c.k[1] = ((float) iv + 0.5f) / 7.0f; c.k[2] = 1.0f;
+            const auto y = rodaPedal (Bender, c, s);
+            const double alvo = 220.0 * std::pow (2.0, benderSemitons (c.k[1]) / 12.0);
+            // pitch por quadro (autocorrelação normalizada em quadros de 4096), mediana dos quadros
+            std::vector<double> fr;
+            for (int i0 = (int) fs / 2; i0 + 4096 + 1200 <= (int) y.size(); i0 += 2048)
+            {
+                std::vector<double> r (1100, 0.0);
+                for (int lag = 1; lag < 1100; ++lag)
+                {
+                    double s = 0, e1 = 0, e2 = 0;
+                    for (int i = 0; i < 4096; i += 2) { const double u = y[(size_t) (i0 + i)], v = y[(size_t) (i0 + i + lag)]; s += u * v; e1 += u * u; e2 += v * v; }
+                    r[(size_t) lag] = s / std::sqrt (e1 * e2 + 1e-12);
+                }
+                int l0 = 1; while (l0 < 1099 && r[(size_t) l0] > 0) ++l0;            // passa o lóbulo do lag 0
+                double mx = -1; for (int l = l0; l < 1099; ++l) mx = std::max (mx, r[(size_t) l]);
+                int melhor = l0;                                                     // o 1º pico perto do maior
+                for (int l = l0 + 1; l < 1098; ++l)
+                    if (r[(size_t) l] >= 0.9 * mx && r[(size_t) l] >= r[(size_t) l - 1] && r[(size_t) l] >= r[(size_t) l + 1]) { melhor = l; break; }
+                fr.push_back (fs / melhor);
+            }
+            std::sort (fr.begin(), fr.end());
+            const double med = fr[fr.size() / 2];
+            std::printf ("  %-6s alvo %7.1f Hz | medido %7.1f Hz | RMS %5.1f dB\n", benderNome (c.k[1]), alvo, med, db (mede (y, (int) fs / 2).rms));
+            char o[80]; std::snprintf (o, sizeof o, "BENDER %s: sai no intervalo (±4%%, a emenda dos grãos espalha a medida)", benderNome (c.k[1]));
+            confere (std::abs (med / alvo - 1.0) < 0.04 && mede (y).finito, o);
+        }
+        // calcanhar: sai o som original intacto
+        std::vector<float> s ((size_t) fs); for (size_t i = 0; i < s.size(); ++i) s[i] = 0.3f * (float) std::sin (2 * pi * 220.0 * (double) i / fs);
+        Ctl c; c.on = true; c.k[0] = 0.0f; c.k[1] = 0.8f; c.k[2] = 1.0f;
+        const auto y = rodaPedal (Bender, c, s);
+        double dif = 0; for (size_t i = 1000; i < y.size(); ++i) dif = std::max (dif, (double) std::abs (y[i] - s[i]));
+        confere (dif < 1e-4, "BENDER no calcanhar = som original, sem atraso");
     }
 
     std::printf ("\n== presets de fábrica no board inteiro (guitarra de teste; CPU em 48 kHz)\n");

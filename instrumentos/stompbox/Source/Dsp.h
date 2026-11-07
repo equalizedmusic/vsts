@@ -179,7 +179,19 @@ inline float trilho (float x) { return 2.0f * tanhA (x * 0.5f); }   // o op-amp 
 // --------------------------------------------------------------------------------------------------------------
 // pedais
 
-enum Tipo { Vazio = 0, Squash, Hump, Clearcut, Grit, Woolly, Quack, Swirl, Tide, Echo, Halo, numTipos };
+enum Tipo { Vazio = 0, Squash, Hump, Clearcut, Grit, Woolly, Quack, Swirl, Tide, Echo, Halo, Bender, numTipos };
+
+// BENDER: intervalos do SHIFT (no bico do pedal), em semitons
+inline int benderSemitons (float k)
+{
+    static const int s[] = { -24, -12, -7, 5, 7, 12, 24 };
+    return s[std::min (6, (int) (std::min (1.0f, std::max (0.0f, k)) * 6.999f))];
+}
+inline const char* benderNome (float k)
+{
+    static const char* n[] = { "-2 OCT", "-1 OCT", "-5TH", "+4TH", "+5TH", "+1 OCT", "+2 OCT" };
+    return n[std::min (6, (int) (std::min (1.0f, std::max (0.0f, k)) * 6.999f))];
+}
 
 struct Ctl          // o que o processador manda para cada pedal a cada bloco
 {
@@ -654,6 +666,88 @@ struct HaloPedal : Pedal
     }
 };
 
+// ---- BENDER: pitch shifter de pedal (abre para estéreo). PEDAL (calcanhar = som normal, bico = o intervalo),
+// SHIFT (intervalo no bico, 7 passos), MIX (10 = só o som deslocado); chave WHAMMY/DETUNE.
+// Deslocamento no tempo com duas cabeças de leitura que se revezam (janela sin²), como os pedais de 1ª geração:
+// latência média de ~1/2 janela (WHAMMY 16 a 32 ms conforme o salto, DETUNE ~11 ms) só no som deslocado.
+struct Shifter
+{
+    DelayLine dl; float ph = 0, W = 1000;
+    void alloc (int n) { dl.alloc (n); }
+    void reset() { dl.reset(); ph = 0; }
+    float tick (float x, float razao)
+    {
+        dl.push (x);
+        ph += (1.0f - razao) / W;
+        ph -= std::floor (ph);
+        float y = 0;
+        for (int i = 0; i < 2; ++i)
+        {
+            float f = ph + 0.5f * (float) i; if (f >= 1.0f) f -= 1.0f;
+            const float s = (float) std::sin (pi * f);
+            y += s * s * dl.read (4.0f + f * W);
+        }
+        return y;
+    }
+};
+
+struct BenderPedal : Pedal
+{
+    double fs = 48000; Shifter sh[2]; Biquad aa; Ramp mix; float semi = 0, semiK = 0.01f; int modoAnt = -1;
+    bool tornaEstereo() const override { return true; }
+    void prepare (double f, int) override
+    {
+        fs = f; for (auto& s : sh) s.alloc ((int) (0.09 * fs));
+        semiK = (float) (1.0 - std::exp (-1.0 / (0.012 * fs)));
+        reset();
+    }
+    void reset() override { for (auto& s : sh) s.reset(); aa.reset(); semi = 0; modoAnt = -1; }
+    void process (float* L, float* R, int n, bool& st, const Ctl& c) override
+    {
+        const int modo = c.sw;
+        if (modo != modoAnt) { for (auto& s : sh) { s.reset(); s.W = (float) ((modo == 0 ? 0.032 : 0.022) * fs); } modoAnt = modo; }
+        mix.set (c.k[2]);
+        const float m = mix.next();
+        const float pos = clampf (c.k[0], 0.0f, 1.0f);
+        if (modo == 0)
+        {
+            const float alvo = (float) benderSemitons (c.k[1]) * pos;
+            // janela maior quanto maior o salto (para cima: emenda menos frequente; para baixo: cabe o período da nota grave)
+            const float rAlvo = std::pow (2.0f, alvo / 12.0f), wAlvo = (float) (0.032 * fs) * std::sqrt (std::max (rAlvo, 1.0f / rAlvo));
+            // para cima, corta o que passaria de Nyquist depois de deslocado
+            const float razaoMax = std::pow (2.0f, std::max (0.0f, alvo) / 12.0f);
+            aa.lowPass (std::min (16000.0, 0.42 * fs / razaoMax), 0.7, fs);
+            for (int i = 0; i < n; ++i)
+            {
+                semi += (alvo - semi) * semiK;
+                sh[0].W += (wAlvo - sh[0].W) * 0.0005f;
+                const float dry = st ? 0.5f * (L[i] + R[i]) : L[i];
+                const float y = sh[0].tick (aa.process (dry), std::pow (2.0f, semi / 12.0f));
+                const float b = clampf (std::abs (semi) * 2.0f, 0.0f, 1.0f);   // perto de 0 semitom, volta ao som limpo
+                const float wet = dry + (y - dry) * b;
+                const float out = dry + (wet - dry) * m;
+                L[i] = out; R[i] = out;
+            }
+        }
+        else
+        {
+            // DETUNE: uma voz um pouco acima (L) e outra um pouco abaixo (R); o PEDAL dá até 30 cents
+            const float alvo = 0.3f * pos;
+            for (auto& s : sh) s.W = (float) (0.022 * fs);
+            for (int i = 0; i < n; ++i)
+            {
+                semi += (alvo - semi) * semiK;
+                const float r = std::pow (2.0f, semi / 12.0f);
+                const float inL = L[i], inR = st ? R[i] : L[i], dry = 0.5f * (inL + inR);
+                const float a = sh[0].tick (dry, r), b = sh[1].tick (dry, 1.0f / r);
+                L[i] = inL + (0.7f * (inL + a) - inL) * m;
+                R[i] = inR + (0.7f * (inR + b) - inR) * m;
+            }
+        }
+        st = true;
+    }
+};
+
 inline std::unique_ptr<Pedal> criaPedal (int t)
 {
     switch (t)
@@ -668,7 +762,8 @@ inline std::unique_ptr<Pedal> criaPedal (int t)
         case Tide:     return std::make_unique<TidePedal>();
         case Echo:     return std::make_unique<EchoPedal>();
         case Halo:     return std::make_unique<HaloPedal>();
-        default:       return nullptr;
+        case Bender:   return std::make_unique<BenderPedal>();
+        default:      return nullptr;
     }
 }
 

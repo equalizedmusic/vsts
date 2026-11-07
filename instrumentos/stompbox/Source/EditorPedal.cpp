@@ -90,6 +90,17 @@ void StompboxEditor::desenhaPedal (juce::Graphics& g, int tipo, juce::Point<floa
         // indicador da posição na lateral
         g.setColour (juce::Colours::black.withAlpha (0.5f)); g.fillRoundedRectangle (t.getRight() - 9, t.getY() + 14, 4, t.getHeight() - 28, 2.0f);
         g.setColour (juce::Colour (0xffffd24a)); g.fillEllipse (t.getRight() - 11, t.getBottom() - 14 - (t.getHeight() - 28) * pos - 4, 8, 8);
+        if (tipo == stomp::Bender)   // o intervalo que está soando, no pé do pedal
+        {
+            const bool det = d.sw == 1;
+            const int semi = stomp::benderSemitons (d.k[1] / 10.0f);
+            const juce::String s = det ? juce::String ("DETUNE ") + juce::String (juce::roundToInt (30.0f * d.k[0] / 10.0f)) + " ct"
+                                       : juce::String (stomp::benderNome (d.k[1] / 10.0f)) + u8 (" \xc2\xb7 ") + (semi > 0 ? "+" : "")
+                                             + juce::String (semi * d.k[0] / 10.0f, 1);
+            const juce::Rectangle<float> rot (cx - 60, t.getBottom() - 32, 120, 20);
+            g.setColour (juce::Colours::black.withAlpha (0.75f)); g.fillRoundedRectangle (rot, 4.0f);
+            texto (g, s, rot, juce::Colour (0xffffd24a), fonte (10.0f));
+        }
         alvos.push_back ({ t, aTreadle, slot, -1, kpid (0), inf.def[0] });
         const float y1 = r.getY() + 262;
         knobP (g, kpid (1), { cx - 52, y1 }, 32, 1, inf.knob[1], corT, inf.def[1], slot, d.k[1]);

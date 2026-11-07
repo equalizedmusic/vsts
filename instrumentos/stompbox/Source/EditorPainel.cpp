@@ -195,11 +195,11 @@ void StompboxEditor::seletor (juce::Graphics& g)
     g.setColour (juce::Colour (0xff2f5a53)); g.drawRoundedRectangle (caixa, 14.0f, 1.0f);
     texto (g, (seletorTroca ? u8 ("TROCAR PEDAL \xc2\xb7 POSI\xc3\x87\xc3\x83O ") : u8 ("ESCOLHER PEDAL \xc2\xb7 POSI\xc3\x87\xc3\x83O ")) + juce::String (seletorSlot + 1),
            { caixa.getX() + 26, caixa.getY() + 18, 400, 26 }, corTexto, fonte (15.0f), juce::Justification::centredLeft);
-    const char* cats[7] = { "TODOS", "DIN\xc3\x82MICA", "DRIVE", "FILTRO", "MODULA\xc3\x87\xc3\x83O", "TEMPO", "AMBI\xc3\x8ANCIA" };
+    const char* cats[8] = { "TODOS", "DIN\xc3\x82MICA", "DRIVE", "FILTRO", "PITCH", "MODULA\xc3\x87\xc3\x83O", "TEMPO", "AMBI\xc3\x8ANCIA" };
     float x = caixa.getRight() - 26 - 40 - 16;
-    float larg[7]; for (int c = 6; c >= 0; --c) { larg[c] = c == 4 || c == 6 ? 96.0f : c == 1 ? 86.0f : 70.0f; x -= larg[c] + 6; }
+    float larg[8]; for (int c = 7; c >= 0; --c) { larg[c] = c == 5 || c == 7 ? 96.0f : c == 1 ? 86.0f : 70.0f; x -= larg[c] + 6; }
     x += 6;
-    for (int c = 0; c < 7; ++c) { botao (g, { x, caixa.getY() + 18, larg[c], 26 }, u8 (cats[c]), seletorCat == c, aPickCat, c, 10.0f); x += larg[c] + 6; }
+    for (int c = 0; c < 8; ++c) { botao (g, { x, caixa.getY() + 18, larg[c], 26 }, u8 (cats[c]), seletorCat == c, aPickCat, c, 10.0f); x += larg[c] + 6; }
     botao (g, { caixa.getRight() - 26 - 40, caixa.getY() + 18, 40, 26 }, u8 ("\xe2\x9c\x95"), false, aPickFecha);
 
     int i = 0;
@@ -207,7 +207,7 @@ void StompboxEditor::seletor (juce::Graphics& g)
     {
         const auto& inf = infoPedal (t);
         if (seletorCat > 0 && juce::String::fromUTF8 (inf.categoria) != u8 (cats[seletorCat])) continue;
-        const juce::Rectangle<float> cel (caixa.getX() + 26 + (float) (i % 5) * 242.0f, caixa.getY() + 64 + (float) (i / 5) * 340.0f, 230, 330);
+        const juce::Rectangle<float> cel (caixa.getX() + 26 + (float) (i % 6) * 202.0f, caixa.getY() + 64 + (float) (i / 6) * 340.0f, 194, 330);
         g.setColour (juce::Colours::white.withAlpha (0.03f)); g.fillRoundedRectangle (cel, 10.0f);
         {
             juce::Graphics::ScopedSaveState ss (g);

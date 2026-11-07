@@ -44,8 +44,10 @@ inline const InfoPedal& infoPedal (int t)
           0xffd8cda8, 0xff3b2a17, 0, 2, 2, 0 },
         { "HALO", "REVERB", "AMBI\xc3\x8ANCIA", 4, { "DECAY", "TONE", "MIX", "PRE-DLY" }, { 5, 5, 3, 1 }, 3, { "SPRING", "PLATE", "HALL" }, "",
           0xff4a2e78, 0xffefe7fb, 0, 5, 1, 0 },
+        { "BENDER", "PITCH SHIFTER", "PITCH", 3, { "PEDAL", "SHIFT", "MIX" }, { 10, 7.9f, 10 }, 2, { "WHAMMY", "DETUNE" }, "",
+          0xffc81e2e, 0xfffbe9e9, 0, 0, 1, 2 },
     };
-    return v[(t >= 0 && t <= 10) ? t : 0];
+    return v[(t >= 0 && t <= 11) ? t : 0];
 }
 
 struct InfoAmp { const char* nome; const char* sub; uint32_t tolex, painel, texto, grade; };

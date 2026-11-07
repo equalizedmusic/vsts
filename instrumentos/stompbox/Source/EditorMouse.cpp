@@ -38,6 +38,11 @@ juce::String StompboxEditor::textoKnob (const Alvo& a) const
         else if ((d.tipo == stomp::Swirl || d.tipo == stomp::Tide) && k == 0)
             val = sync ? juce::String (stomp::nomeDivisaoLfo (v / 10.0f))
                        : juce::String (d.tipo == stomp::Swirl ? stomp::expMap (0.08f, 9.0f, v / 10.0f) : stomp::expMap (0.1f, 8.0f, v / 10.0f), 2) + " Hz";
+        else if (d.tipo == stomp::Bender && k == 1)
+            val = stomp::benderNome (v / 10.0f);
+        else if (d.tipo == stomp::Bender && k == 0)
+            val = d.sw == 1 ? juce::String (juce::roundToInt (3.0f * v)) + " cents"
+                            : juce::String (stomp::benderSemitons (d.k[1] / 10.0f) * v / 10.0f, 1) + " st";
         else if (d.tipo == stomp::Halo && k == 3)
             val = juce::String (juce::roundToInt (v * 20.0f)) + " ms";
         return nome + "  " + val;
