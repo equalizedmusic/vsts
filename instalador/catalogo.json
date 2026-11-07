@@ -39,5 +39,6 @@
   "MESA": ["MESA", "console analógica: vai no master e mostra todos os canais, os grupos e o master"],
   "MESA-CANAL": ["MESA CANAL", "canal da console: vai no fim de cada faixa (ou no grupo) com pré, dinâmica, EQ e fader"],
   "ALIGN": ["ALIGN", "fase kick/baixo: vai no baixo, kick pelo sidechain; alinha sozinho sem cancelar nem somar"],
-  "ONKEY": ["ONKEY", "afinação automática de voz: acha o tom sozinho e leva ao tom sem mexer no timbre nem no vibrato"]
+  "ONKEY": ["ONKEY", "afinação automática de voz: acha o tom sozinho e leva ao tom sem mexer no timbre nem no vibrato"],
+  "BAREBASS": ["BAREBASS", "synth de baixo simples: 2 osciladores + sub, filtro com envelope e HUNF (decay só no grave)"]
 }

@@ -19,6 +19,9 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_VOZ
  #define SHOT_VOZ 0
 #endif
+#ifndef SHOT_BAIXO
+ #define SHOT_BAIXO 0
+#endif
 // MESA: a foto mostra a CONSOLE cheia, com MESA CANAL (canais e grupos) tocando o mesmo loop; e a janela de um canal
 static std::vector<std::unique_ptr<juce::AudioProcessor>> extras;
 #if SHOT_MESA
@@ -170,7 +173,22 @@ public:
             // instrumento: silêncio na entrada; acorde de Lá menor com 9ª e um baixo, pressão subindo
             buf.clear();
             midi.clear();
+           #if SHOT_BAIXO
+            // BAREBASS (uma voz): baixo rolando em F1, 1/16 nos três contratempos, nota de 60% do passo
+            {
+                const double passo = fs * 60.0 / bpm / 4.0;
+                const double b0 = (double) blocks * block, b1 = b0 + block;
+                for (int k = (int) std::floor (b0 / passo); k * passo < b1; ++k)
+                {
+                    const double on = k * passo, off = on + passo * 0.6;
+                    if (k % 4 != 0 && on >= b0 && on < b1) midi.addEvent (juce::MidiMessage::noteOn (1, 29, (juce::uint8) 100), (int) (on - b0));
+                    if (k % 4 != 0 && off >= b0 && off < b1) midi.addEvent (juce::MidiMessage::noteOff (1, 29), (int) (off - b0));
+                }
+            }
+            if (false)
+           #else
             if (blocks == 0)
+           #endif
                 for (int note : { 45, 57, 60, 64, 67, 71 })
                     midi.addEvent (juce::MidiMessage::noteOn (1, note, (juce::uint8) 100), 0);
             if (blocks % 8 == 0)
