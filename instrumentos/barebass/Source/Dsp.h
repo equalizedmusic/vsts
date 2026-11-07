@@ -1,7 +1,8 @@
 #pragma once
 // BAREBASS: motor do synth de baixo, sem JUCE (o teste em tools/ compila só com este arquivo).
 // Uma voz (mono): OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB (TPT/SVF, sem atraso) com envelope ADSR
-// -> HUNF (decay só no grave de 20–80 Hz) -> volume. Amplitude = gate (abre em 1,5 ms, fecha no RELEASE).
+// -> unHUNF (decay só no grave, abaixo de 50 Hz) -> volume. Amplitude = gate (abre na hora, fecha no RELEASE).
+// A cada nota redisparada as ondas recomeçam do ponto inicial (fase 0): todas as notas batem igual, sem drift.
 // A tela lê o que acontece agora pela struct Leitura e pelo Scope (dois ciclos da onda antes e depois do filtro).
 #include <atomic>
 #include <cmath>
@@ -17,6 +18,8 @@ enum OndaSub { subSen = 0, subSqr };
 
 struct Ajustes
 {
+    bool   liga[2] { true, true };      // LED do OSC 1 / OSC 2
+    bool   ligaSub = true;
     int    onda[2] { ondaSaw, ondaSqr };
     int    oitava[2] { 0, -1 };
     float  fino[2] { 7.0f, -7.0f };     // cents
@@ -41,10 +44,10 @@ struct Leitura
     std::atomic<int>   nota { -1 };         // nota MIDI soando (−1 = nenhuma)
     std::atomic<bool>  gate { false };
     std::atomic<float> freq { 0.0f };       // Hz da nota (com glide e bend)
-    std::atomic<float> cutoffAgora { 180.0f };
+    std::atomic<float> cutoffAgora { 18000.0f };
     std::atomic<float> env { 0.0f };        // 0..1
     std::atomic<float> envT { 10.0f };      // s desde o último disparo
-    std::atomic<float> hunfGr { 0.0f };     // dB (≤ 0) no grave agora
+    std::atomic<float> hunfGr { 0.0f };     // dB (≤ 0) que o unHUNF tira agora do sub da nota
     std::atomic<float> pico { 0.0f };       // pico da saída no último bloco
 };
 
@@ -101,6 +104,16 @@ struct Svf
 {
     double ic1 = 0, ic2 = 0;
     void zera() { ic1 = ic2 = 0; }
+    double hp (double x, double g, double k)
+    {
+        const double a1 = 1.0 / (1.0 + g * (g + k)), a2 = g * a1, a3 = g * a2;
+        const double v3 = x - ic2;
+        const double v1 = a1 * ic1 + a2 * v3;
+        const double v2 = ic2 + a2 * ic1 + a3 * v3;
+        ic1 = 2.0 * v1 - ic1;
+        ic2 = 2.0 * v2 - ic2;
+        return x - k * v1 - v2;
+    }
     double lp (double x, double g, double k)
     {
         const double a1 = 1.0 / (1.0 + g * (g + k)), a2 = g * a1, a3 = g * a2;
@@ -135,15 +148,23 @@ inline double respostaDb (double f, double fc, double reso, bool slope24)
     return 20.0 * std::log10 (std::max (1.0e-9, m));
 }
 
-// HUNF: o grave (passa-baixa de 80 Hz, 24 dB) cai depois de cada nota; acima de 80 Hz nada muda
-inline double hunfTau (double h) { return 1.5 * std::pow (0.02, h); }   // 1,5 s (pouco) .. 30 ms (100%)
-inline double hunfPiso (double h) { return 1.0 - h; }
-inline double hunfGanho (double h, double t)
+// unHUNF: um passa-alta de 24 dB (Butterworth) que sobe depois de cada nota e tira o sub. No disparo ele está em
+// 2 Hz (transparente: o sub bate inteiro, sem atraso); depois sobe até o ponto do knob, entre 10 e 50 Hz, no tempo
+// do knob (1,5 s em pouco, 40 ms no máximo). O começo do knob é suave: em 10% ele chega a 15 Hz e quase não toca no
+// sub de uma nota grave; em 100% chega a 50 Hz.
+constexpr double hunfInicio = 2.0;
+inline double hunfTau (double h) { return 1.5 * std::pow (0.0267, h); }
+inline double hunfFim (double h) { return h <= 0.0005 ? hunfInicio : 10.0 * std::pow (5.0, std::pow (h, 0.6)); }
+inline double hunfFc (double h, double t)
 {
-    if (h <= 0.001) return 1.0;
-    const double piso = hunfPiso (h);
-    return piso + (1.0 - piso) * std::exp (-t / hunfTau (h));
+    const double l0 = std::log (hunfInicio), l1 = std::log (hunfFim (h));
+    return std::exp (l1 + (l0 - l1) * std::exp (-t / hunfTau (h)));
 }
+inline double hunfGanhoEm (double f, double fc) { const double r = fc / f; return 1.0 / std::sqrt (1.0 + r * r * r * r * r * r * r * r); }
+// o que sobra de um sub de 30 Hz (a tela desenha isso)
+constexpr double hunfRef = 30.0;
+inline double hunfPiso (double h) { return hunfGanhoEm (hunfRef, hunfFim (h)); }
+inline double hunfGanho (double h, double t) { return hunfGanhoEm (hunfRef, hunfFc (h, t)); }
 
 class Engine
 {
@@ -156,30 +177,30 @@ public:
         fs = sampleRate;
         envF.prepare (fs);
         reset();
-        // passa-baixa do HUNF: dois Butterworth de 2ª ordem em 80 Hz (biquad, coeficientes fixos)
-        const double w = std::tan (pi * 80.0 / fs), q = 0.7071;
-        const double n = 1.0 / (1.0 + w / q + w * w);
-        hb0 = w * w * n; hb1 = 2.0 * hb0; hb2 = hb0; hn = n;
-        ha1 = 2.0 * (w * w - 1.0) * n; ha2 = (1.0 - w / q + w * w) * n;
-        cutSuave = 180.0; volSuave = 0.7;
+        cutSuave = 18000.0; volSuave = 0.7; hunfSuave = 0.0;
     }
 
     void reset()
     {
         nHeld = 0; notaAtual = -1;
+        for (auto& c : conta) c = 0;
         envF.zera(); amp = 0.0; gateOn = false;
         svf[0].zera(); svf[1].zera();
-        for (auto& z : hz) z[0] = z[1] = 0.0;
-        for (auto& z : hzA) z[0] = z[1] = 0.0;
+        hpH[0].zera(); hpH[1].zera();
         for (auto& p : fase) p = 0.0;
         faseSub = faseRef = 0.0;
         tDisparo = 10.0; ganhoHunf = 1.0;
+        inicio[0] = inicio[1] = inicioSub = true;
         leitura.nota = -1; leitura.gate = false;
     }
 
     // ---- MIDI ----
+    // conta[] = quantas vezes a mesma nota está ligada: com 1/16 encostados alguns DAWs mandam o "liga" da nota nova
+    // antes do "solta" da anterior (mesma altura). Esse "solta" atrasado não pode cortar a nota que acabou de começar.
     void noteOn (int nota, const Ajustes& a)
     {
+        nota &= 127;
+        ++conta[nota];
         removeHeld (nota);
         const bool tinha = nHeld > 0;
         if (nHeld < maxHeld) held[nHeld++] = nota;
@@ -188,6 +209,9 @@ public:
 
     void noteOff (int nota, const Ajustes& a)
     {
+        nota &= 127;
+        if (conta[nota] > 0) --conta[nota];
+        if (conta[nota] > 0) return;
         const bool eraAtual = nHeld > 0 && held[nHeld - 1] == nota;
         removeHeld (nota);
         if (! eraAtual) return;
@@ -195,7 +219,7 @@ public:
         else { gateOn = false; envF.solta(); leitura.gate = false; }
     }
 
-    void allNotesOff() { nHeld = 0; gateOn = false; envF.solta(); leitura.gate = false; }
+    void allNotesOff() { for (auto& c : conta) c = 0; nHeld = 0; gateOn = false; envF.solta(); leitura.gate = false; }
     void pitchBend (int valor14) { bend = (valor14 - 8192) / 8192.0 * 2.0; }   // ±2 semitons
 
     // ---- áudio ----
@@ -204,7 +228,6 @@ public:
         const double glideCoef = a.glide > 0.0005f ? std::exp (-4.6 / (a.glide * fs)) : 0.0;
         const double cutCoef = std::exp (-1.0 / (0.01 * fs));
         const double volAlvo = std::pow (10.0, a.volumeDb / 20.0);
-        const double ampAtk = 1.0 / (0.0015 * fs);
         const double ampRel = std::exp (-4.6 / (std::max (0.005f, a.rel) * fs));
         const double k1 = 1.0 / qDe (a.reso, a.slope24, 0), k2 = 1.0 / qDe (a.reso, a.slope24, 1);
         const double nyq = fs * 0.45;
@@ -213,10 +236,9 @@ public:
         // referência do scope: a frequência da nota tocada (dois ciclos dela na tela; o sub −1 aparece como um ciclo).
         // Dois ciclos do sub passariam de uma nota de 1/16 e a tela misturaria duas notas.
         const double multRef = 1.0;
-        const double tau = hunfTau (a.hunf), piso = hunfPiso (a.hunf);
-        const bool hunfOn = a.hunf > 0.001f;
-        const double hCoef = std::exp (-1.0 / (tau * fs));
-        const double sobe = std::exp (-1.0 / (0.002 * fs));
+        // o knob do unHUNF anda suave (20 ms): girar não estala
+        const double hunfCoef = std::exp (-1.0 / (0.02 * fs));
+        double fcH = hunfInicio, gH = std::tan (pi * fcH / fs);
         float pk = 0.0f;
         int64_t w = scope.escrito.load (std::memory_order_relaxed);
 
@@ -232,20 +254,22 @@ public:
             for (int o = 0; o < 2; ++o)
             {
                 const double dt = std::min (0.45, f0 * mult[o] / fs);
-                const double s = oscila (a.onda[o], fase[o], dt);
+                const double s = oscila (a.onda[o], fase[o], dt, inicio[o]);
+                inicio[o] = false;
                 fase[o] += dt; if (fase[o] >= 1.0) fase[o] -= 1.0;
-                mix += s * a.nivel[o];
+                if (a.liga[o]) mix += s * a.nivel[o];
             }
             {
                 const double dt = std::min (0.45, f0 * multSub / fs);
-                sOsc = oscila (a.ondaSub == subSqr ? ondaSqr : ondaSen, faseSub, dt) * a.nivelSub;
+                sOsc = oscila (a.ondaSub == subSqr ? ondaSqr : ondaSen, faseSub, dt, inicioSub) * (a.ligaSub ? a.nivelSub : 0.0f);
+                inicioSub = false;
                 faseSub += dt; if (faseSub >= 1.0) faseSub -= 1.0;
                 mix += sOsc;
             }
             mix *= 0.5;
 
             // amplitude (gate)
-            if (gateOn) amp = std::min (1.0, amp + ampAtk);
+            if (gateOn) amp = 1.0;   // abre na hora: o ataque é o da própria onda saindo do ponto inicial
             else amp *= ampRel;
             const double antes = mix * amp;
 
@@ -258,27 +282,15 @@ public:
             double y = svf[0].lp (x, g, k1);
             if (a.slope24) y = svf[1].lp (y, g, k2);
 
-            // HUNF: crossover Linkwitz-Riley de 4ª ordem em 80 Hz (grave + agudo somam plano) e o decay só no grave
-            double baixo = y, alto = y;
-            for (int s2 = 0; s2 < 2; ++s2)
-            {
-                auto& z = hz[s2];
-                const double o = hb0 * baixo + z[0];
-                z[0] = hb1 * baixo - ha1 * o + z[1];
-                z[1] = hb2 * baixo - ha2 * o;
-                baixo = o;
-                auto& zh = hzA[s2];
-                const double oh = hn * alto + zh[0];
-                zh[0] = -2.0 * hn * alto - ha1 * oh + zh[1];
-                zh[1] = hn * alto - ha2 * oh;
-                alto = oh;
-            }
+            // unHUNF: passa-alta subindo depois do disparo (corte recalculado a cada 8 amostras)
+            hunfSuave = a.hunf + (hunfSuave - a.hunf) * hunfCoef;
             tDisparo += 1.0 / fs;
-            double alvoH = 1.0;
-            if (hunfOn) { hDecai = piso + (hDecai - piso) * hCoef; alvoH = hDecai; }
-            ganhoHunf = alvoH + (ganhoHunf - alvoH) * (alvoH > ganhoHunf ? sobe : 0.0);
-            // HUNF em 0: sem crossover nenhum (a onda sai como o filtro deixou)
-            const double depois = hunfOn ? alto + baixo * ganhoHunf : y;
+            if ((i & 7) == 0)
+            {
+                fcH = hunfFc (hunfSuave, tDisparo);
+                gH = std::tan (pi * fcH / fs);
+            }
+            const double depois = hpH[1].hp (hpH[0].hp (y, gH, 1.0 / 0.541), gH, 1.0 / 1.307);
 
             volSuave = volAlvo + (volSuave - volAlvo) * cutCoef;
             const float s = (float) (depois * volSuave);
@@ -290,7 +302,7 @@ public:
             scope.antes[idx] = (float) antes; scope.depois[idx] = (float) depois; scope.sub[idx] = (float) (sOsc * 0.5 * amp);
             const double dRef = f0 * multRef / fs;
             faseRef += dRef;
-            if (faseRef >= 1.0)
+            if (faseRef >= 1.0)   // zerada no disparo: as marcas caem sempre no mesmo ponto da onda, nota após nota
             {
                 faseRef -= 1.0;
                 const int m = scope.nMarcas.load (std::memory_order_relaxed);
@@ -307,6 +319,8 @@ public:
         leitura.cutoffAgora = (float) ultimoFc;
         leitura.env = (float) envF.valor();
         leitura.envT = (float) tDisparo;
+        // quanto o unHUNF está tirando agora do sub desta nota
+        ganhoHunf = hunfGanhoEm (std::max (5.0, (double) leitura.freq.load() * multSub), fcH);
         leitura.hunfGr = (float) (20.0 * std::log10 (std::max (1.0e-4, ganhoHunf)));
         leitura.pico = pk;
     }
@@ -321,21 +335,24 @@ private:
         return 0.0;
     }
 
-    static double oscila (int onda, double p, double dt)
+    // fase 0 = o ponto inicial de cada onda: SIN e TRI começam no zero subindo; SAW começa no topo (+1) e desce;
+    // SQR começa em +1. Na primeira amostra depois do disparo (inicio) a borda da SAW/SQR sai seca, sem a correção
+    // de aliasing do "ciclo anterior" que não existiu: é o clique do ataque.
+    static double oscila (int onda, double p, double dt, bool inicio)
     {
         switch (onda)
         {
             case ondaSen: return std::sin (2.0 * pi * p);
-            case ondaTri: return p < 0.5 ? 4.0 * p - 1.0 : 3.0 - 4.0 * p;
-            case ondaSaw:
+            case ondaTri:
             {
-                double q = p + 0.5; if (q >= 1.0) q -= 1.0;     // fase 0 = valor 0 (sem estalo no disparo)
-                return 2.0 * q - 1.0 - polyBlep (q, dt);
+                double q = p + 0.25; if (q >= 1.0) q -= 1.0;
+                return q < 0.5 ? 4.0 * q - 1.0 : 3.0 - 4.0 * q;
             }
+            case ondaSaw: return 1.0 - 2.0 * p + (inicio ? 0.0 : polyBlep (p, dt));
             default:
             {
                 double s = p < 0.5 ? 1.0 : -1.0;
-                s += polyBlep (p, dt);
+                if (! inicio) s += polyBlep (p, dt);
                 double q = p + 0.5; if (q >= 1.0) q -= 1.0;
                 s -= polyBlep (q, dt);
                 return s;
@@ -357,30 +374,30 @@ private:
         notaAtual = nota;
         if (redispara)
         {
-            if (! gateOn && amp < 0.01)   // nota nova do silêncio: fases do começo (ataque igual em toda nota)
-            {
-                for (auto& p : fase) p = 0.0;
-                faseSub = 0.0;
-            }
+            // toda nota redisparada recomeça a onda do ponto inicial (também por cima do release da anterior):
+            // sem isso a fase "anda" de nota para nota e cada uma bate diferente
+            for (auto& p : fase) p = 0.0;
+            faseSub = 0.0; faseRef = 0.0;
+            inicio[0] = inicio[1] = inicioSub = true;
             envF.dispara();
         }
-        // o HUNF recomeça a cada nota (também em legato): o grave bate e some de novo
-        tDisparo = 0.0; hDecai = 1.0;
+        // o unHUNF recomeça a cada nota (também em legato): o sub bate e some de novo
+        tDisparo = 0.0;
         gateOn = true;
         leitura.nota = nota; leitura.gate = true;
     }
 
     static constexpr int maxHeld = 16;
-    int held[maxHeld] {}, nHeld = 0, notaAtual = -1;
+    int held[maxHeld] {}, nHeld = 0, notaAtual = -1, conta[128] {};
     double fs = 48000.0;
     Envelope envF;
     Svf svf[2];
-    double hz[2][2] {}, hzA[2][2] {};
-    double hb0 = 0, hb1 = 0, hb2 = 0, ha1 = 0, ha2 = 0, hn = 0;
-    double fase[2] {}, faseSub = 0, faseRef = 0;
+    Svf hpH[2];   // passa-alta do unHUNF
+    double fase[2] {}, faseSub = 0, faseRef = 0, hunfSuave = 0;
+    bool inicio[2] { true, true }, inicioSub = true;
     double notaGlide = 36, alvoGlide = 36, bend = 0;
-    double amp = 0, cutSuave = 180, volSuave = 0.7, ultimoFc = 180;
-    double tDisparo = 10, hDecai = 1, ganhoHunf = 1;
+    double amp = 0, cutSuave = 18000, volSuave = 0.7, ultimoFc = 18000;
+    double tDisparo = 10, ganhoHunf = 1;
     bool gateOn = false;
 };
 } // namespace barebass

@@ -4,6 +4,23 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.2 — 2026-11-07
+- Fase: toda nota redisparada recomeça a onda do ponto inicial (antes a fase andava de nota para nota e cada uma
+  batia diferente). SAW começa no topo, SQR em +1, SIN e TRI no zero subindo.
+- ATTACK em 0 agora dá o clique do ataque: a amplitude abre na hora (antes subia em 1,5 ms) e a borda da onda sai seca.
+- Nota encostada: quando o DAW manda o "liga" da nota nova antes do "solta" da anterior (mesma nota), a nova não é
+  mais cortada.
+- HUNF virou unHUNF e passou a agir só no sub (10–50 Hz): um passa-alta de 24 dB que fica em 2 Hz no ataque
+  (o sub bate inteiro, sem atraso) e sobe até 15–50 Hz conforme o knob. O começo do knob é suave e girar não
+  estala mais (na 0.1.1 o caminho do som trocava na hora em que o knob saía do 0).
+- O plugin abre no preset INIT: FINE e OCTAVE em 0 (o SUB uma oitava abaixo), LEVEL em 80, filtro aberto.
+  INIT é o primeiro da lista.
+- LED do OSC 1, OSC 2 e SUB: clicar liga e desliga (o painel apaga quando desligado).
+- MONO / LEGATO virou um seletor à vista no MASTER, junto do GLIDE (saiu o chip do topo).
+- Tela: saiu a faixa de baixo (teclado e texto de ajuda); os valores embaixo dos knobs dos osciladores não
+  encostam mais na borda.
+- Ainda TESTE: sem ativação por licença e fora do site.
+
 ## 0.1.1 — 2026-11-07
 - Tela: a onda mostra dois ciclos da NOTA tocada (antes eram dois ciclos do sub, mais longos que uma nota de 1/16,
   e a tela juntava duas notas). No HUNF, o texto não fica mais riscado pela linha tracejada e o valor do knob

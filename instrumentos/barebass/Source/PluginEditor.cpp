@@ -133,7 +133,7 @@ BarebassEditor::BarebassEditor (BarebassProcessor& p) : AudioProcessorEditor (p)
     if (auto* c = getConstrainer())
     {
         c->setFixedAspectRatio ((double) baseW / baseH);
-        c->setSizeLimits (700, 490, 2000, 1400);
+        c->setSizeLimits (700, 424, 2000, 1212);
     }
     const int w0 = proc.uiW.load();
     const int w = w0 > 0 ? juce::jlimit (700, 2000, w0) : baseW;
@@ -212,14 +212,34 @@ void BarebassEditor::paint (juce::Graphics& g)
     painelOnda (g, { 16, 64, 498, 218 });
     painelCurvaFiltro (g, { 524, 64, 244, 218 });
     painelCurvaEnv (g, { 778, 64, 206, 218 });
-    painelOsc (g, { 16, 292, 316, 126 }, 0);
-    painelOsc (g, { 342, 292, 316, 126 }, 1);
-    painelSub (g, { 668, 292, 316, 126 });
-    painelFiltro (g, { 16, 428, 280, 152 });
-    painelEnv (g, { 306, 428, 300, 152 });
-    painelHunf (g, { 616, 428, 214, 152 });
-    painelMaster (g, { 840, 428, 144, 152 });
-    base (g);
+    painelOsc (g, { 16, 292, 316, 136 }, 0);
+    painelOsc (g, { 342, 292, 316, 136 }, 1);
+    painelSub (g, { 668, 292, 316, 136 });
+    painelFiltro (g, { 16, 438, 280, 152 });
+    painelEnv (g, { 306, 438, 300, 152 });
+    painelHunf (g, { 616, 438, 214, 152 });
+    painelMaster (g, { 840, 438, 144, 152 });
+}
+
+// título com LED que liga / desliga (clique no LED ou no nome)
+void BarebassEditor::tituloLiga (juce::Graphics& g, juce::Rectangle<float> r, const juce::String& t, juce::Colour cor, const juce::String& idLiga)
+{
+    const bool ligado = real (idLiga) > 0.5f;
+    led (g, { r.getX() + 16, r.getY() + 17 }, 4.5f, cor, ligado);
+    g.setColour (juce::Colour (0xff0c0b11));
+    g.drawEllipse (juce::Rectangle<float> (11, 11).withCentre ({ r.getX() + 16, r.getY() + 17 }), 1.0f);
+    g.setColour (ligado ? cTexto : cApagado);
+    const auto f = fonte (11.5f, true).withExtraKerningFactor (0.22f);
+    g.setFont (f);
+    g.drawText (t, juce::Rectangle<float> (r.getX() + 28, r.getY() + 9, r.getWidth() - 40, 16), juce::Justification::centredLeft);
+    rotulo (g, { r.getRight() - 60, r.getY() + 10, 48, 14 }, ligado ? "ON" : "OFF", ligado ? cor : cApagado, juce::Justification::centredRight);
+    botoes.push_back ({ { r.getX() + 6, r.getY() + 5, largura (f, t) + 34, 24 }, idLiga, ligado ? 0.0f : 1.0f });
+}
+
+void BarebassEditor::apaga (juce::Graphics& g, juce::Rectangle<float> r)
+{
+    g.setColour (cFundoB.withAlpha (0.62f));
+    g.fillRoundedRectangle (r.withTrimmedTop (30).reduced (2, 0).withTrimmedBottom (2), 3.0f);
 }
 
 void BarebassEditor::topo (juce::Graphics& g)
@@ -273,8 +293,6 @@ void BarebassEditor::topo (juce::Graphics& g)
     };
     rMenu = chip (u8 ("≡"), cRoxo, false, false);
     rPreset = chip ("PRESET " + u8 ("· ") + proc.getProgramName (proc.preset.load()) + u8 (" ▾"), cRoxo, false, false);
-    const bool legato = escolha ("mode") == 1;
-    rModo = chip (legato ? "LEGATO" : "MONO", cRoxo, true, true);
     const int nota = L.nota.load();
     chip ("NOTE " + u8 ("· ") + (L.gate.load() ? nomeNota (nota) : u8 ("—")), cVerde, L.gate.load(), true);
 }
@@ -543,22 +561,24 @@ void BarebassEditor::painelOsc (juce::Graphics& g, juce::Rectangle<float> r, int
 {
     chapa (g, r);
     const juce::String p = qual == 0 ? "o1" : "o2";
-    titulo (g, r, qual == 0 ? "OSC 1" : "OSC 2", cLaranja);
+    tituloLiga (g, r, qual == 0 ? "OSC 1" : "OSC 2", cLaranja, p + "on");
     seletorOnda (g, { r.getX() + 12, r.getY() + 32, r.getWidth() - 24, 26 }, p + "wave", 4, cVerde);
-    const float y = r.getY() + 80, w = (r.getWidth() - 24) / 3.0f;
+    const float y = r.getY() + 84, w = (r.getWidth() - 24) / 3.0f;
     knobRotulado (g, p + "oct", "OCTAVE", { r.getX() + 12 + w * 0.5f, y }, 13.0f, cLaranja, true);
     knobRotulado (g, p + "fine", "FINE", { r.getX() + 12 + w * 1.5f, y }, 13.0f, cLaranja, true);
     knobRotulado (g, p + "level", "LEVEL", { r.getX() + 12 + w * 2.5f, y }, 13.0f, cLaranja, false);
+    if (real (p + "on") < 0.5f) apaga (g, r);
 }
 
 void BarebassEditor::painelSub (juce::Graphics& g, juce::Rectangle<float> r)
 {
     chapa (g, r);
-    titulo (g, r, "SUB", cRoxo);
+    tituloLiga (g, r, "SUB", cRoxo, "subon");
     seletorOnda (g, { r.getX() + 12, r.getY() + 32, r.getWidth() - 24, 26 }, "subwave", 2, cRoxo);
-    const float y = r.getY() + 80, w = (r.getWidth() - 24) / 2.0f;
+    const float y = r.getY() + 84, w = (r.getWidth() - 24) / 2.0f;
     knobRotulado (g, "suboct", "OCTAVE", { r.getX() + 12 + w * 0.5f, y }, 13.0f, cRoxo, false);
     knobRotulado (g, "sublevel", "LEVEL", { r.getX() + 12 + w * 1.5f, y }, 13.0f, cRoxo, false);
+    if (real ("subon") < 0.5f) apaga (g, r);
 }
 
 void BarebassEditor::painelFiltro (juce::Graphics& g, juce::Rectangle<float> r)
@@ -598,14 +618,14 @@ void BarebassEditor::painelHunf (juce::Graphics& g, juce::Rectangle<float> r)
 {
     chapa (g, r);
     auto& L = proc.engine().leitura;
-    titulo (g, r, "HUNF", cRoxo);
+    titulo (g, r, "unHUNF", cRoxo);
     {
         const juce::Rectangle<float> c (r.getRight() - 70, r.getY() + 9, 58, 16);
         g.setColour (cVerde.withAlpha (0.12f)); g.fillRoundedRectangle (c, 3.0f);
-        rotulo (g, c, u8 ("20–80 Hz"), cVerde, juce::Justification::centred);
+        rotulo (g, c, u8 ("10–50 Hz"), cVerde, juce::Justification::centred);
     }
     const float h = real ("hunf") * 0.01f;
-    // gráfico: o grave sem HUNF (tracejado) e com HUNF (roxo), nos primeiros 400 ms da nota
+    // gráfico: um sub de 30 Hz sem unHUNF (tracejado) e com unHUNF (roxo), nos primeiros 400 ms da nota
     const juce::Rectangle<float> t (r.getX() + 10, r.getY() + 30, r.getWidth() - 20, 50);
     g.setColour (cTela); g.fillRoundedRectangle (t, 3.0f);
     const float jan = 0.4f;
@@ -631,10 +651,10 @@ void BarebassEditor::painelHunf (juce::Graphics& g, juce::Rectangle<float> r)
     if (L.gate.load() && h > 0.001f && L.envT.load() < jan)
         led (g, { xDe (L.envT.load()), yDe ((float) barebass::hunfGanho (h, L.envT.load())) }, 3.0f, cVerde, true);
     g.setFont (fonte (9.5f)); g.setColour (cApagado);
-    g.drawText (h > 0.001f ? u8 ("- - sub sem HUNF (embola)") : u8 ("HUNF desligado"), t.reduced (6, 0).withTrimmedTop (12), juce::Justification::topRight);
+    g.drawText (h > 0.001f ? u8 ("- - sub sem unHUNF (embola)") : u8 ("unHUNF desligado"), t.reduced (6, 0).withTrimmedTop (12), juce::Justification::topRight);
     g.setColour (juce::Colours::black); g.drawRoundedRectangle (t, 3.0f, 1.0f);
 
-    knobRotulado (g, "hunf", "HUNF", { r.getX() + 46, r.getY() + 101 }, 14.0f, cRoxo, false, true);
+    knobRotulado (g, "hunf", "unHUNF", { r.getX() + 46, r.getY() + 101 }, 14.0f, cRoxo, false, true);
     // tempo em que o grave cai e o medidor de redução
     g.setColour (cTexto); g.setFont (fonte (10.0f, true).withExtraKerningFactor (0.14f));
     g.drawText ("SUB DECAY", juce::Rectangle<float> (r.getX() + 86, r.getY() + 94, 90, 12), juce::Justification::centredLeft);
@@ -655,61 +675,23 @@ void BarebassEditor::painelMaster (juce::Graphics& g, juce::Rectangle<float> r)
 {
     chapa (g, r);
     titulo (g, r, "MASTER", cAzul);
-    knobRotulado (g, "volume", "VOLUME", { r.getX() + 38, r.getY() + 80 }, 16.0f, cAzul, false, true);
-    knobRotulado (g, "glide", "GLIDE", { r.getX() + 106, r.getY() + 80 }, 13.0f, cRoxo, false);
-}
-
-void BarebassEditor::base (juce::Graphics& g)
-{
-    const juce::Rectangle<float> r (0, 592, (float) baseW, 108);
-    g.setGradientFill (juce::ColourGradient (cTopoB, 0, r.getY(), juce::Colour (0xff0f0d15), 0, r.getBottom(), false));
-    g.fillRect (r);
-    g.setColour (juce::Colours::black); g.drawLine (0, r.getY(), (float) baseW, r.getY(), 1.0f);
-    auto& L = proc.engine().leitura;
-
-    // teclado de uma oitava com a nota que está soando
-    const int nota = L.gate.load() ? L.nota.load() : -1;
-    const juce::Rectangle<float> k (16, r.getY() + 18, 168, 70);
-    const float wb = k.getWidth() / 7.0f;
-    static const int brancas[] = { 0, 2, 4, 5, 7, 9, 11 };
-    static const int pretas[] = { 1, 3, -1, 6, 8, 10 };
-    for (int i = 0; i < 7; ++i)
+    // MONO / LEGATO à vista (antes era um chip no topo que só mudava clicando)
+    const int modo = escolha ("mode");
+    const float bw = (r.getWidth() - 24) / 2.0f;
+    for (int i = 0; i < 2; ++i)
     {
-        const juce::Rectangle<float> b (k.getX() + i * wb, k.getY(), wb - 2, k.getHeight());
-        g.setColour (nota >= 0 && nota % 12 == brancas[i] ? cVerde : juce::Colour (0xffdcd8e8));
-        g.fillRoundedRectangle (b, 2.0f);
+        const juce::Rectangle<float> b (r.getX() + 12 + i * bw, r.getY() + 34, bw, 22);
+        botoes.push_back ({ b, "mode", (float) i });
+        const bool sel = modo == i;
+        g.setColour (sel ? cRoxo.withAlpha (0.22f) : cTela); g.fillRect (b);
+        if (sel) { g.setColour (cRoxo); g.fillRect (b.getX() + 1, b.getBottom() - 3, b.getWidth() - 2, 2.0f); }
+        g.setColour (sel ? cBranco : cApagado); g.setFont (fonte (10.5f, sel).withExtraKerningFactor (0.12f));
+        g.drawText (i == 0 ? "MONO" : "LEGATO", b, juce::Justification::centred);
     }
-    for (int i = 0; i < 6; ++i)
-    {
-        if (pretas[i] < 0) continue;
-        const juce::Rectangle<float> b (k.getX() + (i + 1) * wb - wb * 0.32f - 1, k.getY(), wb * 0.64f, k.getHeight() * 0.6f);
-        g.setColour (nota >= 0 && nota % 12 == pretas[i] ? cVerde : juce::Colour (0xff15121d));
-        g.fillRoundedRectangle (b, 2.0f);
-    }
-    g.setColour (nota >= 0 ? cVerde : cApagado); g.setFont (fonte (22.0f, true));
-    g.drawText (nomeNota (nota), juce::Rectangle<float> (194, r.getY() + 30, 70, 30), juce::Justification::centredLeft);
-    rotulo (g, { 194, r.getY() + 60, 80, 12 }, nota >= 0 ? hz (L.freq.load()) : juce::String ("MIDI IN"));
-
-    // ajuda: a receita do baixo e o que está acontecendo com os valores de agora
-    const float cut = real ("cutoff"), amt = real ("envamt") * 0.01f, h = real ("hunf") * 0.01f;
-    const juce::String t1 = u8 ("CUTOFF baixo + ENV alto + DECAY curto = baixo seco e marcado.");
-    juce::String t2 = amt > 0.01f ? u8 ("O envelope abre o filtro até ") + hz (juce::jmin (20000.0f, cut * std::pow (2.0f, amt * 6.0f)))
-                                         + u8 (" a cada nota e fecha em ") + ms (real ("decay")) + ". "
-                                  : u8 ("ENV em 0: o filtro fica parado no CUTOFF. ");
-    t2 += h > 0.001f ? u8 ("Depois do filtro, o HUNF deixa o grave de 20 a 80 Hz bater e sumir em ") + ms ((float) barebass::hunfTau (h) * 1000.0f)
-                           + u8 (", sem embolar com o kick.")
-                     : u8 ("HUNF em 0: o grave segue a nota inteira.");
-    g.setColour (cVerde); g.setFont (fonte (14.0f, true));
-    g.drawText (t1, juce::Rectangle<float> (282, r.getY() + 20, 500, 20), juce::Justification::centredLeft);
-    g.setColour (cTexto.withAlpha (0.85f)); g.setFont (fonte (12.0f));
-    g.drawFittedText (t2, juce::Rectangle<int> (282, (int) r.getY() + 44, 500, 44), juce::Justification::topLeft, 3);
-
-    g.setFont (fonte (10.0f).withExtraKerningFactor (0.15f));
-    g.setColour (cApagado);
-    g.drawFittedText (u8 ("OSC 1 + OSC 2 + SUB → FILTER → HUNF → VOLUME"), juce::Rectangle<int> (800, (int) r.getY() + 20, 184, 30),
-                      juce::Justification::topRight, 2);
-    g.drawText ((escolha ("mode") == 1 ? "LEGATO" : "MONO") + u8 (" · GLIDE ") + ms (real ("glide")),
-                juce::Rectangle<float> (790, r.getY() + 62, 194, 14), juce::Justification::centredRight);
+    g.setColour (juce::Colours::black); g.drawRect (juce::Rectangle<float> (r.getX() + 12, r.getY() + 34, bw * 2, 22), 1.0f);
+    g.setColour (cBorda); g.drawLine (r.getX() + 12 + bw, r.getY() + 37, r.getX() + 12 + bw, r.getY() + 53, 1.0f);
+    knobRotulado (g, "volume", "VOLUME", { r.getX() + 38, r.getY() + 96 }, 16.0f, cAzul, false, true);
+    knobRotulado (g, "glide", "GLIDE", { r.getX() + 106, r.getY() + 96 }, 13.0f, cRoxo, false);
 }
 
 void BarebassEditor::mouseDown (const juce::MouseEvent& e)
@@ -729,7 +711,6 @@ void BarebassEditor::mouseDown (const juce::MouseEvent& e)
         }
     for (auto& b : botoes)
         if (b.r.contains (p)) { proc.define (b.id, b.valor); repaint(); return; }
-    if (rModo.contains (p)) { proc.define ("mode", escolha ("mode") == 1 ? 0.0f : 1.0f); repaint(); return; }
     if (rPreset.contains (p)) { menuPreset(); return; }
     if (rMenu.contains (p) || e.mods.isPopupMenu()) menu();
 }
@@ -815,11 +796,12 @@ void BarebassEditor::menu()
                              juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "BAREBASS",
                                  u8 ("Synth de baixo de uma voz: toca uma nota por vez (a última que você apertar).\n\n"
                                      "OSC 1, OSC 2 e SUB: escolha a onda, a oitava e o volume de cada um. FINE desafina de leve "
-                                     "para engordar o som.\n\n"
+                                     "para engordar o som. O LED do título liga e desliga cada um. A cada nota a onda recomeça "
+                                     "do ponto inicial: todas batem igual.\n\n"
                                      "FILTER: passa-baixa de 12 ou 24 dB. CUTOFF é onde ele corta; ENV é o quanto o envelope "
                                      "abre o filtro a cada nota. FILTER ENV (A D S R): o DECAY curto deixa o baixo seco.\n\n"
-                                     "HUNF: depois do filtro, faz o grave de 20 a 80 Hz bater no começo da nota e sumir. "
-                                     "Quanto mais alto, mais rápido some. Em 0 fica desligado.\n\n"
+                                     "unHUNF: depois do filtro, deixa o sub (10 a 50 Hz) bater no começo da nota e some com ele. "
+                                     "Quanto mais alto, mais rápido e mais fundo. Em 0 fica desligado.\n\n"
                                      "MONO redispara o envelope a cada nota; LEGATO não redispara quando as notas se encostam. "
                                      "GLIDE desliza de uma nota para a outra."));
                      });

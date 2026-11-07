@@ -1,8 +1,9 @@
 // Mede o Dsp.h do BAREBASS fora do plugin.
 //   D:\Apps\granular-vst\toolchain\zig\ziglang\zig.exe c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
 // Confere: baixo rolando em 1/16 a 145 BPM (nível, NaN, estalos, CPU); o filtro corta (cutoff baixo x alto, 12 x 24 dB);
-// o ENV abre o filtro e o DECAY fecha; o HUNF tira o grave depois do ataque sem mexer acima de 200 Hz;
-// LEGATO não redispara o envelope e MONO redispara; GLIDE desliza.
+// o ENV abre o filtro e o DECAY fecha; o unHUNF tira o grave depois do ataque sem mexer acima de 300 Hz;
+// LEGATO não redispara o envelope e MONO redispara; GLIDE desliza; cada nota recomeça a onda do ponto inicial;
+// ATTACK 0 sai seco; girar o unHUNF não estala; nota encostada não é cortada; LEDs desligam os osciladores.
 #include "../Source/Dsp.h"
 #include <chrono>
 #include <cstdio>
@@ -125,15 +126,15 @@ int main()
         confere (db (ini) - db (fim) > 20.0, "o envelope abre o filtro e o decay fecha");
     }
 
-    // 4) HUNF: o grave cai depois do ataque; acima de 200 Hz não muda
+    // 4) unHUNF: o grave cai depois do ataque (sem atrasar o ataque); acima de 300 Hz não muda
     {
-        std::printf ("4) HUNF (nota longa em F1, filtro aberto)\n");
+        std::printf ("4) unHUNF (nota longa em F1, filtro aberto)\n");
         auto mede = [&] (float h, double& gIni, double& gFim, double& agudo)
         {
             Ajustes a; a.hunf = h; a.envAmt = 0; a.cutoff = 3000;
             e->reset();
             auto r = toca (*e, a, (int) fs, { { 0, 29, true } });
-            gIni = rmsFaixa (r.s, (int) (fs * 0.005), (int) (fs * 0.03), 70.0, false);
+            gIni = rmsFaixa (r.s, (int) (fs * 0.002), (int) (fs * 0.015), 70.0, false);
             gFim = rmsFaixa (r.s, (int) (fs * 0.5), (int) (fs * 0.9), 70.0, false);
             agudo = rmsFaixa (r.s, (int) (fs * 0.5), (int) (fs * 0.9), 300.0, true);
         };
@@ -144,7 +145,7 @@ int main()
         std::printf ("   grave depois de 500 ms:    sem %.1f dB · com %.1f dB\n", db (f0), db (f1));
         std::printf ("   acima de 300 Hz depois:    sem %.1f dB · com %.1f dB\n", db (a0), db (a1));
         confere (std::abs (db (i0) - db (i1)) < 3.0, "o ataque do grave fica");
-        confere (db (f0) - db (f1) > 10.0, "o grave some depois (HUNF 80% > 10 dB)");
+        confere (db (f0) - db (f1) > 10.0, "o grave some depois (unHUNF 80% > 10 dB)");
         confere (std::abs (db (a0) - db (a1)) < 1.5, "acima de 300 Hz não muda");
     }
 
@@ -176,6 +177,91 @@ int main()
         std::printf ("   A1 (55 Hz) -> A2 (110 Hz): 50 ms depois %.1f Hz, 550 ms depois %.1f Hz\n", meio, fim);
         confere (meio > 58 && meio < 105, "no meio do caminho");
         confere (std::abs (fim - 110.0f) < 1.0f, "chega na nota");
+    }
+
+    // patch INIT (filtro aberto, sem unHUNF): o que sai é a onda crua, dá para comparar nota com nota
+    auto init = []
+    {
+        Ajustes a; a.fino[0] = a.fino[1] = 0; a.oitava[1] = 0; a.nivel[0] = a.nivel[1] = 0.8f; a.nivelSub = 0.8f;
+        a.cutoff = 18000; a.reso = 0; a.envAmt = 0; a.sus = 1; a.hunf = 0;
+        return a;
+    };
+
+    // 7) toda nota recomeça a onda do ponto inicial (rolando em F#1, 143 BPM, notas de 90% do passo: o release da
+    //    anterior ainda soa quando a próxima entra)
+    {
+        std::printf ("7) fase: cada nota começa igual (F#1, 1/16, 143 BPM)\n");
+        for (int patch = 0; patch < 2; ++patch)
+        {
+            Ajustes a = patch == 0 ? init() : Ajustes {};
+            if (patch == 1) a.hunf = 0;
+            const int passo = (int) (fs * 60.0 / 143.0 / 4.0);
+            std::vector<Ev> evs;
+            for (int k = 1; k < 4; ++k) { evs.push_back ({ k * passo, 30, true }); evs.push_back ({ k * passo + passo * 9 / 10, 30, false }); }
+            e->reset();
+            auto r = toca (*e, a, passo * 4, evs);
+            double dif = 0, ref = 0;
+            for (int i = 0; i < 400; ++i)
+            {
+                dif = std::max (dif, (double) std::abs (r.s[(size_t) (2 * passo + i)] - r.s[(size_t) (3 * passo + i)]));
+                ref = std::max (ref, (double) std::abs (r.s[(size_t) (2 * passo + i)]));
+            }
+            std::printf ("   %s: 2ª x 3ª nota, primeiras 400 amostras: maior diferença %.4f (pico %.2f)\n",
+                         patch == 0 ? "INIT" : "ROLLING", dif, ref);
+            confere (dif < 0.05 * ref, patch == 0 ? "INIT: as notas saem iguais" : "ROLLING: as notas saem iguais");
+        }
+    }
+
+    // 8) ATTACK 0 = ataque seco: a SAW sai do topo já na 2ª amostra
+    {
+        std::printf ("8) ATTACK 0: clique do ataque\n");
+        Ajustes a = init(); a.liga[1] = false; a.ligaSub = false;
+        e->reset();
+        toca (*e, a, 2400, {});   // o CUTOFF anda suave (10 ms): deixa ele chegar nos 18 kHz do INIT antes da nota
+        auto r = toca (*e, a, 64, { { 0, 30, true } });
+        std::printf ("   amostras 0..3: %.3f %.3f %.3f %.3f\n", r.s[0], r.s[1], r.s[2], r.s[3]);
+        confere (r.s[1] > 0.3f || r.s[2] > 0.3f, "a onda sai do ponto inicial na hora (sem rampa)");
+    }
+
+    // 9) girar o unHUNF com a nota soando não estala; 10% tira pouco
+    {
+        std::printf ("9) unHUNF: girar não estala; o começo do knob é suave\n");
+        Ajustes a; a.envAmt = 0; a.cutoff = 3000; a.hunf = 0.15f;
+        e->reset();
+        const int n0 = (int) (fs * 0.5);
+        auto r1 = toca (*e, a, n0, { { 0, 30, true } });
+        Ajustes b = a; b.hunf = 0.8f;
+        auto r2 = toca (*e, b, n0, {});
+        double base = 0, giro = 0;
+        for (int i = n0 / 2; i < n0; ++i) base = std::max (base, (double) std::abs (r1.s[(size_t) i] - r1.s[(size_t) i - 1]));
+        giro = std::abs (r2.s[0] - r1.s[(size_t) n0 - 1]);
+        for (int i = 1; i < 4800; ++i) giro = std::max (giro, (double) std::abs (r2.s[(size_t) i] - r2.s[(size_t) i - 1]));
+        std::printf ("   maior salto entre amostras: nota parada %.4f · girando 15 -> 80%% %.4f\n", base, giro);
+        confere (giro < base * 1.1 + 1e-4, "sem estalo ao girar");
+        std::printf ("   o que sai de um sub de 30 Hz no fim: 10%% %.1f dB · 30%% %.1f dB · 50%% %.1f dB · 100%% %.1f dB\n", db (hunfPiso (0.1)),
+                     db (hunfPiso (0.3)), db (hunfPiso (0.5)), db (hunfPiso (1.0)));
+        confere (db (hunfPiso (0.1)) > -1.5, "10% tira menos de 1,5 dB do sub de 30 Hz");
+    }
+
+    // 10) nota encostada: o "liga" da nova chega antes do "solta" da anterior (mesma nota)
+    {
+        std::printf ("10) nota encostada (liga antes do solta, mesma amostra)\n");
+        Ajustes a;
+        e->reset();
+        toca (*e, a, 2000, { { 0, 30, true }, { 1000, 30, true }, { 1000, 30, false } });
+        confere (e->leitura.gate.load(), "a nota nova continua tocando");
+        toca (*e, a, 1000, { { 10, 30, false } });
+        confere (! e->leitura.gate.load(), "o solta dela fecha a nota");
+    }
+
+    // 11) LEDs: OSC 1, OSC 2 e SUB desligados = silêncio
+    {
+        std::printf ("11) LEDs dos osciladores\n");
+        Ajustes a = init(); a.liga[0] = a.liga[1] = false; a.ligaSub = false;
+        e->reset();
+        auto r = toca (*e, a, 4800, { { 0, 30, true } });
+        double pk = 0; for (float v : r.s) pk = std::max (pk, (double) std::abs (v));
+        confere (pk < 1e-6, "tudo desligado = silêncio");
     }
 
     std::printf (falhas ? "\n%d FALHA(S)\n" : "\nTUDO OK\n", falhas);

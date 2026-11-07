@@ -2,10 +2,10 @@
 
 #include "PluginProcessor.h"
 
-// Tela do BAREBASS (base 1000 × 700, escala junto com a janela). Tudo desenhado no paint, a 30 Hz, no molde do ALIGN.
+// Tela do BAREBASS (base 1000 × 606, escala junto com a janela). Tudo desenhado no paint, a 30 Hz, no molde do ALIGN.
 // Em cima, o que está acontecendo AGORA: a onda (dois ciclos, antes do filtro e na saída), a curva do filtro com o
 // corte deste instante e o envelope do filtro com o ponto onde a nota está. No meio, OSC 1 / OSC 2 / SUB; embaixo,
-// FILTER, FILTER ENV, HUNF e MASTER. Paleta do ALIGN, com VERDE (saída / filtro) e ROXO (marca, sub, envelope).
+// FILTER, FILTER ENV, unHUNF e MASTER (com o seletor MONO / LEGATO). O LED de OSC 1 / OSC 2 / SUB liga e desliga. Paleta do ALIGN, com VERDE (saída / filtro) e ROXO (marca, sub, envelope).
 class BarebassEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
@@ -20,7 +20,7 @@ public:
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
-    static constexpr int baseW = 1000, baseH = 700;
+    static constexpr int baseW = 1000, baseH = 606;
 
 private:
     struct Knob { juce::String id; juce::Point<float> c; float r; };
@@ -39,7 +39,8 @@ private:
     void painelEnv (juce::Graphics&, juce::Rectangle<float> r);
     void painelHunf (juce::Graphics&, juce::Rectangle<float> r);
     void painelMaster (juce::Graphics&, juce::Rectangle<float> r);
-    void base (juce::Graphics&);
+    void tituloLiga (juce::Graphics&, juce::Rectangle<float> r, const juce::String& t, juce::Colour cor, const juce::String& idLiga);
+    void apaga (juce::Graphics&, juce::Rectangle<float> r);   // painel desligado: véu por cima (menos o título)
 
     void knob (juce::Graphics&, const juce::String& id, juce::Point<float> c, float raio, juce::Colour cor, bool bipolar);
     void knobRotulado (juce::Graphics&, const juce::String& id, const juce::String& nome, juce::Point<float> c, float raio,
@@ -62,7 +63,7 @@ private:
     float escVis = 0.3f, freqOnda = 0.0f;
 
     // alvos de clique (coordenadas da tela base)
-    juce::Rectangle<float> rMenu, rPreset, rModo;
+    juce::Rectangle<float> rMenu, rPreset;
     std::vector<Knob> knobs;
     std::vector<Botao> botoes;
     juce::String arrastando;

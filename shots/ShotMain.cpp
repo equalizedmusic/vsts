@@ -300,6 +300,9 @@ int main (int argc, char** argv)
     proc->setPlayConfigDetails (SHOT_SYNTH ? 0 : 2, 2, fs, block);
    #endif
     proc->prepareToPlay (fs, block);
+   #if SHOT_BAIXO
+    proc->setCurrentProgram (1);   // BAREBASS abre no INIT (filtro aberto); a foto mostra o ROLLING
+   #endif
     applyLook (*proc);
    #if SHOT_MESA
     {

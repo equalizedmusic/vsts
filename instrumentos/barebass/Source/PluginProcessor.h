@@ -4,7 +4,7 @@
 #include "Dsp.h"
 
 // BAREBASS: synth de baixo simples (uma voz). OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB com envelope ADSR ->
-// HUNF (decay só no grave de 20–80 Hz) -> VOLUME. MONO ou LEGATO, GLIDE e presets de fábrica.
+// unHUNF (decay só no sub, 10–50 Hz) -> VOLUME. MONO ou LEGATO, GLIDE e presets de fábrica.
 class BarebassProcessor : public juce::AudioProcessor
 {
 public:
