@@ -6,8 +6,10 @@
 // Em cima: presets (◀ visor ▶, SAVE, A/B), SYNC com o BPM do DAW, TUNER e HQ. No meio: o board, 6 pedais à vista com
 // rolagem (até 10), ligados por cabos, da esquerda para a direita; a posição livre depois do último tem o "+".
 // Embaixo: INPUT + NOISE GATE, o AMP (5 modelos, a cor muda com o modelo), o CAB e o OUTPUT.
-// A cena estática é desenhada numa imagem guardada e só refeita quando algum parâmetro muda; medidores, LED do gate,
-// afinador e o pedal sendo arrastado vão por cima, a 30 Hz.
+// Desempenho: as peças caras (fundo, carcaça de cada pedal, corpo do amp, caixa do cab, base de cada knob) ficam
+// prontas em imagens guardadas na resolução da tela; a cena (montagem dessas peças + ponteiros, chaves e LEDs) só é
+// refeita quando algum parâmetro muda. A 30 Hz só os medidores, o LED do gate e o afinador são repintados (área
+// pequena), nunca a janela inteira.
 class StompboxEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
@@ -44,6 +46,10 @@ private:
     void painelCab (juce::Graphics&, juce::Rectangle<float>);
     void seletor (juce::Graphics&);
     void desenhaPedal (juce::Graphics&, int tipo, juce::Point<float> baseCentro, const StompboxProcessor::SlotDados& d, int slot, bool alvos);
+    void corpoPedal (juce::Graphics&, int tipo, juce::Point<float> baseCentro);   // partes fixas (vão para a imagem guardada)
+    void corpoAmp (juce::Graphics&, int modelo, juce::Rectangle<float> corpo);
+    void corpoCab (juce::Graphics&, int cab, juce::Rectangle<float> caixa);
+    void fundo (juce::Graphics&);
     void knobP (juce::Graphics&, const juce::String& pid, juce::Point<float> c, float diam, int estilo, const juce::String& rotulo,
                 juce::Colour corRotulo, float def, int slot, float valor);
     void chave (juce::Graphics&, juce::Point<float> c, int n, int pos, const char* const* nomes, juce::Colour cor, float tam);
@@ -52,6 +58,15 @@ private:
     // dinâmico
     void medidor (juce::Graphics&, juce::Rectangle<float> r, float nivel);
     void desenhaAfinador (juce::Graphics&);
+    void miniAfinador (juce::Graphics&);   // sempre ligado, na entrada (não silencia)
+    void repintaBase (juce::Rectangle<float> r);   // repinta só esta área (coordenadas da tela base)
+
+    // camadas guardadas (pixels = escala da cena); "fazCamada" desenha a área uma vez, "pinta" põe na tela
+    juce::Image fazCamada (juce::Rectangle<float> area, const std::function<void (juce::Graphics&)>& desenha) const;
+    void pinta (juce::Graphics&, const juce::Image&, juce::Point<float> origem) const;
+    const juce::Image& camadaPedal (int tipo);
+    const juce::Image& camadaKnob (int estilo, float diam);
+    void limpaCamadas();
     void bolhaValor (juce::Graphics&);
 
     // ações
@@ -72,6 +87,9 @@ private:
     static constexpr int visiveis = 6;
     std::vector<Alvo> alvos;
     juce::Image cena; bool cenaSuja = true; float cenaEscala = 0;
+    juce::Image imgFundo, imgPedal[stomp::numTipos], imgAmp[stomp::numAmps], imgCab[3], grao, graoTolex;
+    std::map<int, juce::Image> imgKnob;
+    float camadasEscala = 0;
     double somaParams = 0;
 
     // arrasto
@@ -86,7 +104,8 @@ private:
 
     // medidores e afinador
     float vIn = 0, vOut = 0;
-    float afinHz = 0, afinCents = 0; juce::String afinNota; float afinVis = 0;
+    float afinHz = 0, afinCents = 0; juce::String afinNota; float afinVis = 0; int tick = 0;
+    juce::String afinNotaDesenhada; int afinCentsDesenhado = 999;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StompboxEditor)
 };

@@ -5,6 +5,10 @@
 using namespace desenho;
 using stomp::infoPedal;
 
+#ifndef JucePlugin_VersionString
+ #define JucePlugin_VersionString "teste"   // a foto (shots) compila sem os defines do plugin
+#endif
+
 const StompboxEditor::Alvo* StompboxEditor::acha (juce::Point<float> p) const
 {
     for (auto it = alvos.rbegin(); it != alvos.rend(); ++it)
@@ -182,6 +186,7 @@ void StompboxEditor::mouseDrag (const juce::MouseEvent& e)
     {
         const float faixa = alvoArrasto.tipo == aTreadle ? 200.0f : (e.mods.isShiftDown() ? 800.0f : 200.0f);
         mudaKnob (alvoArrasto, valorIni + (yIni - p.y) / faixa);
+        sujo();   // responde já, sem esperar o timer
         return;
     }
     if (arrastandoBarra)
@@ -229,6 +234,7 @@ void StompboxEditor::mouseWheelMove (const juce::MouseEvent& e, const juce::Mous
     if (a != nullptr && (a->tipo == aKnob || a->tipo == aTreadle))
     {
         if (auto* prm = proc.apvts.getParameter (a->pid)) prm->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, prm->getValue() + w.deltaY * 0.08f));
+        sujo();
         return;
     }
     if (p.y < 540.0f)

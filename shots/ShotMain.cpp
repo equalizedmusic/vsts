@@ -10,6 +10,10 @@
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 
+#if SHOT_GUITARRA
+ #include "PluginProcessor.h"   // STOMPBOX: monta boards de conferência (todos os pedais, os 5 amps, o TUNER)
+#endif
+
 #ifndef SHOT_MESA
  #define SHOT_MESA 0
 #endif
@@ -458,6 +462,55 @@ int main (int argc, char** argv)
         juce::FileOutputStream os2 (f2);
         juce::PNGImageFormat png2;
         std::printf ("MESA-CANAL: %s\n", os2.openedOk() && png2.writeImageToStream (img2, os2) ? "ok" : "falhou");
+    }
+   #endif
+   #if SHOT_GUITARRA
+    // STOMPBOX: fotos de conferência dos textos: todos os pedais, cada amp, amp desligado + bypass e o TUNER
+    if (auto* sb = dynamic_cast<StompboxProcessor*> (proc.get()))
+    {
+        auto foto = [&] (const juce::String& nome, juce::Rectangle<int> recorte)
+        {
+            editor->setSize (SHOT_W, SHOT_H);
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (900);
+            const auto img = editor->createComponentSnapshot (recorte.isEmpty() ? editor->getLocalBounds() : recorte, true, 1.0f);
+            const auto f = outDir.getChildFile (nome + ".png");
+            f.deleteFile();
+            juce::FileOutputStream os (f);
+            juce::PNGImageFormat png;
+            std::printf ("%s: %s\n", nome.toRawUTF8(), os.openedOk() && png.writeImageToStream (img, os) ? "ok" : "falhou");
+        };
+        auto monta = [&] (std::initializer_list<int> tipos)
+        {
+            int s = 0;
+            for (int t : tipos)
+            {
+                StompboxProcessor::SlotDados d; d.tipo = t; d.on = true;
+                const auto& inf = stomp::infoPedal (t);
+                for (int k = 0; k < 4; ++k) d.k[k] = k < inf.nk ? inf.def[k] : 5.0f;
+                sb->grava (s++, d);
+            }
+            for (; s < stomp::numSlots; ++s) sb->grava (s, StompboxProcessor::SlotDados());
+            sb->rolagem = 0;
+        };
+        const int sw = SHOT_W, sh = SHOT_H;
+        monta ({ 1, 2, 3, 4, 5, 6 });
+        foto ("STOMPBOX-PEDAIS-1", {});
+        setParam (*proc, "sync", 1.0f);   // o ECHO mostra a divisão do SYNC no rótulo do TIME
+        monta ({ 7, 8, 9, 10, 11, 3 });
+        { auto d = sb->le (3); d.sw = 1; sb->grava (3, d); auto e = sb->le (1); e.on = false; sb->grava (1, e); }   // HALO no PLATE, TIDE em BYPASS
+        foto ("STOMPBOX-PEDAIS-2", {});
+        setParam (*proc, "sync", 0.0f);
+        for (int a = 0; a < stomp::numAmps; ++a)
+        {
+            setParam (*proc, "amp", (float) a); setParam (*proc, "canal", (float) (a % 2));
+            foto ("STOMPBOX-AMP-" + juce::String (a + 1), { 0, sh * 600 / 900, sw, sh - sh * 600 / 900 });
+        }
+        setParam (*proc, "ampon", 0.0f);
+        foto ("STOMPBOX-AMP-OFF", { 0, sh * 600 / 900, sw, sh - sh * 600 / 900 });
+        setParam (*proc, "ampon", 1.0f);
+        sb->afinador = true;
+        foto ("STOMPBOX-TUNER", {});
+        sb->afinador = false;
     }
    #endif
     audio.stopThread (3000);

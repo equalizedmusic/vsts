@@ -36,6 +36,30 @@ inline void texto (juce::Graphics& g, const juce::String& t, juce::Rectangle<flo
     g.setColour (c); g.setFont (f); g.drawText (t, r, j, false);
 }
 
+// texto que encolhe (até 70%) para caber na caixa, em vez de vazar por cima do vizinho
+inline void textoCabe (juce::Graphics& g, const juce::String& t, juce::Rectangle<float> r, juce::Colour c, const juce::Font& f,
+                       juce::Justification j = juce::Justification::centred)
+{
+    g.setColour (c); g.setFont (f); g.drawFittedText (t, r.toNearestInt(), j, 1, 0.7f);
+}
+
+// ladrilho de ruído (128 px) para pintura e tolex: pontos claros e escuros esparsos, determinístico
+inline juce::Image fazGrao (float alfa)
+{
+    juce::Image im (juce::Image::ARGB, 128, 128, true, juce::SoftwareImageType());
+    {
+        juce::Image::BitmapData bd (im, juce::Image::BitmapData::writeOnly);
+        juce::Random rnd (4321);
+        for (int y = 0; y < 128; ++y)
+            for (int x = 0; x < 128; ++x)
+            {
+                const int v = rnd.nextInt (1000);
+                bd.setPixelColour (x, y, v < 22 ? juce::Colours::white.withAlpha (alfa) : v < 44 ? juce::Colours::black.withAlpha (alfa) : juce::Colours::transparentBlack);
+            }
+    }
+    return juce::NativeImageType().convert (im);
+}
+
 // sombra suave de um retângulo arredondado (várias camadas, sem DropShadow por quadro)
 inline void sombra (juce::Graphics& g, juce::Rectangle<float> r, float raio, float dy, float espalha, float alfa)
 {
@@ -58,7 +82,7 @@ inline void sombraElipse (juce::Graphics& g, juce::Rectangle<float> r, float dy,
 }
 
 // carcaça de alumínio pintada (pintura fosca, quina mais clara em cima, sombra embaixo)
-inline void carcaca (juce::Graphics& g, juce::Rectangle<float> r, float raio, juce::Colour c, bool elipse = false)
+inline void carcaca (juce::Graphics& g, juce::Rectangle<float> r, float raio, juce::Colour c, bool elipse = false, const juce::Image* grao = nullptr)
 {
     if (elipse) sombraElipse (g, r, 14.0f, 10.0f, 0.55f); else sombra (g, r, raio, 14.0f, 10.0f, 0.55f);
     juce::Path p;
@@ -68,16 +92,8 @@ inline void carcaca (juce::Graphics& g, juce::Rectangle<float> r, float raio, ju
                               juce::Colours::black.withAlpha (0.20f), r.getRight(), r.getBottom(), false);
     luz.addColour (0.35, juce::Colours::white.withAlpha (0.0f));
     g.setGradientFill (luz); g.fillPath (p);
-    // textura de pintura (pó fino, determinístico)
-    juce::Random rnd (1234 + (int) r.getX());
-    g.saveState(); g.reduceClipRegion (p);
-    for (int i = 0; i < (int) (r.getWidth() * r.getHeight() / 90.0f); ++i)
-    {
-        const float x = r.getX() + rnd.nextFloat() * r.getWidth(), y = r.getY() + rnd.nextFloat() * r.getHeight();
-        g.setColour ((rnd.nextBool() ? juce::Colours::white : juce::Colours::black).withAlpha (0.035f));
-        g.fillRect (x, y, 1.2f, 1.2f);
-    }
-    g.restoreState();
+    // textura de pintura (pó fino): um ladrilho de ruído pronto, uma operação só
+    if (grao != nullptr && grao->isValid()) { g.setTiledImageFill (*grao, (int) r.getX(), (int) r.getY(), 1.0f); g.fillPath (p); }
     g.setColour (juce::Colours::white.withAlpha (0.30f)); g.strokePath (p, juce::PathStrokeType (1.2f), juce::AffineTransform::translation (0, 0.8f));
     g.setColour (juce::Colours::black.withAlpha (0.45f)); g.strokePath (p, juce::PathStrokeType (1.0f));
 }
@@ -110,39 +126,31 @@ inline void led (juce::Graphics& g, juce::Point<float> c, float r, bool aceso, j
 }
 
 // knob: 0 preto serrilhado, 1 metal, 2 creme, 3 bico (chicken head). valor 0..1 -> -135°..+135°
-inline void knob (juce::Graphics& g, juce::Point<float> c, float d, int estilo, float valor)
+// A base (sombra, saia, serrilha, tampa) não depende do valor: a tela guarda ela pronta numa imagem e só desenha o ponteiro.
+inline void knobBase (juce::Graphics& g, juce::Point<float> c, float d, int estilo)
 {
-    const float r = d * 0.5f, ang = (-135.0f + 270.0f * juce::jlimit (0.0f, 1.0f, valor)) * juce::MathConstants<float>::pi / 180.0f;
+    const float r = d * 0.5f;
     sombraElipse (g, { c.x - r, c.y - r, d, d }, 4.0f, 3.0f, 0.55f);
-    if (estilo == 3)   // bico: base redonda preta + bico apontando
+    if (estilo == 3)   // bico: base redonda preta (o bico gira, vai no ponteiro)
     {
         g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3a3a3a), c.x - r * 0.4f, c.y - r * 0.5f, juce::Colour (0xff0c0c0c), c.x + r, c.y + r, true));
         g.fillEllipse (c.x - r * 0.78f, c.y - r * 0.78f, r * 1.56f, r * 1.56f);
-        juce::Path bico;
-        bico.startNewSubPath (-r * 0.30f, r * 0.55f);
-        bico.quadraticTo (-r * 0.36f, -r * 0.5f, 0.0f, -r * 1.12f);
-        bico.quadraticTo (r * 0.36f, -r * 0.5f, r * 0.30f, r * 0.55f);
-        bico.closeSubPath();
-        const auto t = juce::AffineTransform::rotation (ang).translated (c);
-        g.setColour (juce::Colours::black.withAlpha (0.5f)); g.fillPath (bico, t.translated (0, 2.5f));
-        g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3b3b3b), c.x - r, c.y, juce::Colour (0xff0d0d0d), c.x + r, c.y, false));
-        g.fillPath (bico, t);
-        g.setColour (juce::Colour (0xfff2efe6));
-        g.drawLine (juce::Line<float> (c + juce::Point<float> (std::sin (ang), -std::cos (ang)) * (r * 0.35f),
-                                       c + juce::Point<float> (std::sin (ang), -std::cos (ang)) * (r * 1.0f)), 2.2f);
         return;
     }
     const juce::Colour base = estilo == 1 ? juce::Colour (0xffa9a9a6) : estilo == 2 ? juce::Colour (0xffd9cfb3) : juce::Colour (0xff1c1c1c);
     const juce::Colour claro = estilo == 1 ? juce::Colour (0xffd8d8d4) : estilo == 2 ? juce::Colour (0xfff3ecda) : juce::Colour (0xff3a3a3a);
     g.setColour (base); g.fillEllipse (c.x - r, c.y - r, d, d);
-    if (estilo != 2)   // serrilha da saia
+    if (estilo != 2)   // serrilha da saia (um caminho só)
     {
-        g.setColour ((estilo == 1 ? juce::Colours::black : juce::Colours::white).withAlpha (estilo == 1 ? 0.18f : 0.07f));
+        juce::Path s;
         for (int i = 0; i < 40; ++i)
         {
-            const float a = (float) i / 40.0f * juce::MathConstants<float>::twoPi + ang;
-            g.drawLine (c.x + std::cos (a) * r * 0.84f, c.y + std::sin (a) * r * 0.84f, c.x + std::cos (a) * r * 0.99f, c.y + std::sin (a) * r * 0.99f, 1.0f);
+            const float a = (float) i / 40.0f * juce::MathConstants<float>::twoPi;
+            s.startNewSubPath (c.x + std::cos (a) * r * 0.84f, c.y + std::sin (a) * r * 0.84f);
+            s.lineTo (c.x + std::cos (a) * r * 0.99f, c.y + std::sin (a) * r * 0.99f);
         }
+        g.setColour ((estilo == 1 ? juce::Colours::black : juce::Colours::white).withAlpha (estilo == 1 ? 0.18f : 0.07f));
+        g.strokePath (s, juce::PathStrokeType (1.0f));
     }
     const float rt = estilo == 2 ? r * 0.72f : r * 0.80f;   // tampa
     juce::ColourGradient tampa (claro, c.x - rt * 0.5f, c.y - rt * 0.6f, base.darker (estilo == 0 ? 0.3f : 0.25f), c.x + rt, c.y + rt, true);
@@ -150,10 +158,35 @@ inline void knob (juce::Graphics& g, juce::Point<float> c, float d, int estilo, 
     g.setColour (juce::Colours::black.withAlpha (0.35f)); g.drawEllipse (c.x - rt, c.y - rt, rt * 2, rt * 2, 0.8f);
     g.setColour (juce::Colours::white.withAlpha (estilo == 0 ? 0.10f : 0.25f));
     g.drawEllipse (c.x - rt + 0.6f, c.y - rt + 0.6f, rt * 2 - 1.2f, rt * 2 - 1.2f, 0.6f);
-    const juce::Colour ponteiro = estilo == 0 ? juce::Colour (0xfff4f4f4) : estilo == 1 ? juce::Colour (0xff1e1e1e) : juce::Colour (0xff3b2a1a);
-    g.setColour (ponteiro);
+}
+
+inline void knobPonteiro (juce::Graphics& g, juce::Point<float> c, float d, int estilo, float valor)
+{
+    const float r = d * 0.5f, ang = (-135.0f + 270.0f * juce::jlimit (0.0f, 1.0f, valor)) * juce::MathConstants<float>::pi / 180.0f;
     const juce::Point<float> v (std::sin (ang), -std::cos (ang));
+    if (estilo == 3)
+    {
+        juce::Path bico;
+        bico.startNewSubPath (-r * 0.30f, r * 0.55f);
+        bico.quadraticTo (-r * 0.36f, -r * 0.5f, 0.0f, -r * 1.12f);
+        bico.quadraticTo (r * 0.36f, -r * 0.5f, r * 0.30f, r * 0.55f);
+        bico.closeSubPath();
+        const auto t = juce::AffineTransform::rotation (ang).translated (c);
+        g.setColour (juce::Colours::black.withAlpha (0.5f)); g.fillPath (bico, t.translated (0, 2.5f));
+        g.setColour (juce::Colour (0xff1e1e1e)); g.fillPath (bico, t);
+        g.setColour (juce::Colours::white.withAlpha (0.10f)); g.strokePath (bico, juce::PathStrokeType (0.8f), t);
+        g.setColour (juce::Colour (0xfff2efe6));
+        g.drawLine (juce::Line<float> (c + v * (r * 0.35f), c + v * (r * 1.0f)), 2.2f);
+        return;
+    }
+    g.setColour (estilo == 0 ? juce::Colour (0xfff4f4f4) : estilo == 1 ? juce::Colour (0xff1e1e1e) : juce::Colour (0xff3b2a1a));
     g.drawLine (juce::Line<float> (c + v * (r * 0.18f), c + v * (r * 0.92f)), juce::jmax (2.0f, d * 0.065f));
+}
+
+inline void knob (juce::Graphics& g, juce::Point<float> c, float d, int estilo, float valor)
+{
+    knobBase (g, c, d, estilo);
+    knobPonteiro (g, c, d, estilo, valor);
 }
 
 // footswitch: porca sextavada + botão cromado fosco

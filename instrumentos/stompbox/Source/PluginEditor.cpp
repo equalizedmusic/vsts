@@ -51,13 +51,72 @@ void StompboxEditor::timerCallback()
     int i = 1;
     for (auto* p : proc.getParameters()) soma += (double) p->getValue() * (double) (i++ % 97 + 1);
     soma += (double) proc.nomePreset.hashCode() * 1e-9;
+    soma += std::floor (proc.bpm.load() + 0.5) * 1e-3;   // o BPM aparece no chip do SYNC
     if (soma != somaParams) { somaParams = soma; cenaSuja = true; }
     if (proc.rolagem.load() > maxRolagem()) proc.rolagem = maxRolagem();
 
     const float pi = proc.picoIn.exchange (0.0f), po = proc.picoOut.exchange (0.0f);
     vIn = juce::jmax (pi, vIn * 0.85f); vOut = juce::jmax (po, vOut * 0.85f);
-    if (proc.afinador.load()) analisaAfinador();
-    repaint();
+    // afinador: sempre analisa (o indicador da entrada fica sempre ligado); 15 Hz basta
+    if ((++tick & 1) == 0 || proc.afinador.load()) analisaAfinador();
+
+    if (cenaSuja || arrastandoPedal || arrastandoKnob) { repaint(); return; }
+    // só o que mexe sozinho: medidores, LED do gate e afinador
+    repintaBase ({ 226.0f, 582.0f, 18.0f, 158.0f });
+    repintaBase ({ 1512.0f, 696.0f, 18.0f, 158.0f });
+    repintaBase ({ 46.0f, 826.0f, 150.0f, 50.0f });
+    repintaBase ({ 128.0f, 566.0f, 96.0f, 104.0f });
+    if (proc.afinador.load()) repintaBase ({ 396.0f, 146.0f, 808.0f, 308.0f });
+}
+
+void StompboxEditor::repintaBase (juce::Rectangle<float> r)
+{
+    repaint ((r * escala()).getSmallestIntegerContainer().expanded (2));
+}
+
+// --------------------------------------------------------------------------------------------------------------
+// camadas guardadas
+
+juce::Image StompboxEditor::fazCamada (juce::Rectangle<float> area, const std::function<void (juce::Graphics&)>& desenha) const
+{
+    const int w = juce::jmax (1, (int) std::ceil (area.getWidth() * camadasEscala)), h = juce::jmax (1, (int) std::ceil (area.getHeight() * camadasEscala));
+    juce::Image img (juce::Image::ARGB, w, h, true);
+    juce::Graphics g (img);
+    g.addTransform (juce::AffineTransform::translation (-area.getX(), -area.getY()).scaled (camadasEscala));
+    desenha (g);
+    return img;
+}
+
+void StompboxEditor::pinta (juce::Graphics& g, const juce::Image& img, juce::Point<float> origem) const
+{
+    g.drawImageTransformed (img, juce::AffineTransform::scale (1.0f / camadasEscala).translated (origem));
+}
+
+void StompboxEditor::limpaCamadas()
+{
+    imgFundo = {};
+    for (auto& i : imgPedal) i = {};
+    for (auto& i : imgAmp) i = {};
+    for (auto& i : imgCab) i = {};
+    imgKnob.clear();
+    if (! grao.isValid()) { grao = fazGrao (0.06f); graoTolex = fazGrao (0.10f); }
+}
+
+const juce::Image& StompboxEditor::camadaPedal (int tipo)
+{
+    tipo = juce::jlimit (1, stomp::numTipos - 1, tipo);
+    auto& img = imgPedal[tipo];
+    if (! img.isValid()) img = fazCamada ({ -150.0f, -400.0f, 300.0f, 440.0f }, [&] (juce::Graphics& g) { corpoPedal (g, tipo, { 0.0f, 0.0f }); });
+    return img;
+}
+
+const juce::Image& StompboxEditor::camadaKnob (int estilo, float diam)
+{
+    const int chave = estilo * 10000 + juce::roundToInt (diam * 10.0f);
+    auto it = imgKnob.find (chave);
+    if (it != imgKnob.end()) return it->second;
+    const float m = diam * 0.5f + 9.0f;
+    return imgKnob[chave] = fazCamada ({ -m, -m, m * 2.0f, m * 2.0f }, [&] (juce::Graphics& g) { knobBase (g, { 0.0f, 0.0f }, diam, estilo); });
 }
 
 void StompboxEditor::paint (juce::Graphics& g)
@@ -67,6 +126,7 @@ void StompboxEditor::paint (juce::Graphics& g)
     if (cenaSuja || ! cena.isValid() || std::abs (cenaEscala - s * dpi) > 0.001f)
     {
         cenaEscala = s * dpi;
+        if (std::abs (camadasEscala - cenaEscala) > 0.001f) { camadasEscala = cenaEscala; limpaCamadas(); }
         const int w = juce::roundToInt (baseW * cenaEscala), h = juce::roundToInt (baseH * cenaEscala);
         if (! cena.isValid() || cena.getWidth() != w || cena.getHeight() != h) cena = juce::Image (juce::Image::RGB, w, h, false);
         juce::Graphics gc (cena);
@@ -75,19 +135,20 @@ void StompboxEditor::paint (juce::Graphics& g)
         desenhaCena (gc);
         cenaSuja = false;
     }
-    g.drawImage (cena, getLocalBounds().toFloat());
+    g.drawImageTransformed (cena, juce::AffineTransform::scale ((float) getWidth() / (float) cena.getWidth(), (float) getHeight() / (float) cena.getHeight()));
 
     g.addTransform (juce::AffineTransform::scale (s));
-    // medidores e LED do gate (por cima da cena)
+    // medidores, LED do gate e afinador da entrada (por cima da cena)
     medidor (g, { 230.0f, 586.0f, 10.0f, 150.0f }, vIn);
     medidor (g, { 1516.0f, 700.0f, 10.0f, 150.0f }, vOut);
     {
         const bool desl = proc.real ("gate") <= -89.5f;
         const bool aberto = proc.gateAberto.load();
-        g.setColour (juce::Colour (0xff10201f)); g.fillRect (juce::Rectangle<float> (60.0f, 840.0f, 120.0f, 22.0f));
+        g.setColour (juce::Colour (0xff10201f)); g.fillRoundedRectangle (juce::Rectangle<float> (52.0f, 834.0f, 136.0f, 34.0f), 6.0f);
         led (g, { 70.0f, 851.0f }, 5.5f, ! desl && aberto, juce::Colour (0xff28d15a));
-        texto (g, desl ? "OFF" : aberto ? "ABERTO" : "FECHADO", { 82.0f, 840.0f, 100.0f, 22.0f }, corRotulo, fonte (11.0f), juce::Justification::centredLeft);
+        texto (g, desl ? "GATE OFF" : aberto ? "ABERTO" : "FECHADO", { 84.0f, 840.0f, 100.0f, 22.0f }, corRotulo, fonte (11.0f), juce::Justification::centredLeft);
     }
+    miniAfinador (g);
     if (arrastandoPedal && pedalArrastado >= 0)
     {
         const auto d = proc.le (pedalArrastado);
@@ -104,15 +165,33 @@ void StompboxEditor::paint (juce::Graphics& g)
     if (arrastandoKnob) bolhaValor (g);
 }
 
-void StompboxEditor::desenhaCena (juce::Graphics& g)
+void StompboxEditor::fundo (juce::Graphics& g)
 {
-    // fundo: verde-petróleo com trama fina
+    // verde-petróleo com trama fina (um caminho só)
     g.setColour (corFundo); g.fillRect (0, 0, baseW, baseH);
     g.setGradientFill (juce::ColourGradient (juce::Colour (0x593c7870), 800.0f, 300.0f, juce::Colour (0x003c7870), 800.0f, 900.0f, true));
     g.fillRect (0, 0, baseW, baseH);
-    g.setColour (juce::Colours::black.withAlpha (0.05f));
-    for (int x = -900; x < baseW; x += 4) g.drawLine ((float) x, 0.0f, (float) x + 900.0f, 900.0f, 1.0f);
+    {
+        juce::Path trama;
+        for (int x = -900; x < baseW; x += 4) { trama.startNewSubPath ((float) x, 0.0f); trama.lineTo ((float) x + 900.0f, 900.0f); }
+        g.setColour (juce::Colours::black.withAlpha (0.05f)); g.strokePath (trama, juce::PathStrokeType (1.0f));
+    }
+    // trilhos do pedalboard
+    const juce::Rectangle<float> trilhos (46, 94, 1508, 404);
+    sombra (g, trilhos, 8.0f, 14.0f, 12.0f, 0.6f);
+    for (float y = trilhos.getY(); y < trilhos.getBottom(); y += 44.0f)
+    {
+        g.setColour (juce::Colour (0xff1b1d1f)); g.fillRect (trilhos.getX(), y, trilhos.getWidth(), juce::jmin (34.0f, trilhos.getBottom() - y));
+        g.setColour (juce::Colour (0xff0b0c0d)); g.fillRect (trilhos.getX(), y + 34.0f, trilhos.getWidth(), juce::jmin (10.0f, juce::jmax (0.0f, trilhos.getBottom() - y - 34.0f)));
+        g.setColour (juce::Colours::white.withAlpha (0.05f)); g.drawLine (trilhos.getX(), y + 0.5f, trilhos.getRight(), y + 0.5f, 1.0f);
+    }
+    g.setColour (juce::Colour (0xff0a0b0c)); g.drawRoundedRectangle (trilhos, 8.0f, 2.0f);
+}
 
+void StompboxEditor::desenhaCena (juce::Graphics& g)
+{
+    if (! imgFundo.isValid()) imgFundo = fazCamada ({ 0.0f, 0.0f, (float) baseW, (float) baseH }, [this] (juce::Graphics& gf) { fundo (gf); });
+    pinta (g, imgFundo, { 0.0f, 0.0f });
     boardArea (g);
     embaixo (g);
     topo (g);
@@ -179,17 +258,6 @@ static juce::Point<float> posJack (int tipo, juce::Rectangle<float> slot, bool s
 
 void StompboxEditor::boardArea (juce::Graphics& g)
 {
-    // trilhos do pedalboard
-    const juce::Rectangle<float> trilhos (46, 94, 1508, 404);
-    sombra (g, trilhos, 8.0f, 14.0f, 12.0f, 0.6f);
-    for (float y = trilhos.getY(); y < trilhos.getBottom(); y += 44.0f)
-    {
-        g.setColour (juce::Colour (0xff1b1d1f)); g.fillRect (trilhos.getX(), y, trilhos.getWidth(), juce::jmin (34.0f, trilhos.getBottom() - y));
-        g.setColour (juce::Colour (0xff0b0c0d)); g.fillRect (trilhos.getX(), y + 34.0f, trilhos.getWidth(), juce::jmin (10.0f, juce::jmax (0.0f, trilhos.getBottom() - y - 34.0f)));
-        g.setColour (juce::Colours::white.withAlpha (0.05f)); g.drawLine (trilhos.getX(), y + 0.5f, trilhos.getRight(), y + 0.5f, 1.0f);
-    }
-    g.setColour (juce::Colour (0xff0a0b0c)); g.drawRoundedRectangle (trilhos, 8.0f, 2.0f);
-
     const int rol = proc.rolagem.load(), n = proc.numPedais(), total = totalPosicoes();
     // setas
     for (int lado = 0; lado < 2; ++lado)
@@ -237,8 +305,13 @@ void StompboxEditor::boardArea (juce::Graphics& g)
             const juce::Rectangle<float> cab (r.getX(), r.getY() - 2, r.getWidth(), 20);
             g.setColour (juce::Colour (0xff0d2220)); g.fillEllipse (cab.getCentreX() - 70, cab.getY() + 1, 18, 18);
             texto (g, juce::String (pos + 1), { cab.getCentreX() - 70, cab.getY() + 1, 18, 18 }, corTexto, fonte (11.0f));
-            texto (g, juce::String (inf.tipo) + (d.on ? "" : u8 (" \xc2\xb7 BYPASS")), cab.withTrimmedLeft (54).withTrimmedRight (24), juce::Colour (0xff7fb3a8),
-                   fonte (10.5f), juce::Justification::centredLeft);
+            textoCabe (g, inf.tipo, cab.withTrimmedLeft (54).withTrimmedRight (d.on ? 26 : 74), juce::Colour (0xff7fb3a8), fonte (10.5f), juce::Justification::centredLeft);
+            if (! d.on)
+            {
+                const juce::Rectangle<float> tag (cab.getRight() - 72, cab.getY() + 3, 46, 15);
+                g.setColour (juce::Colour (0xff3a2a14)); g.fillRoundedRectangle (tag, 3.0f);
+                texto (g, "BYPASS", tag, juce::Colour (0xffffc46a), fonte (9.0f));
+            }
             texto (g, u8 ("\xe2\x8b\xae\xe2\x8b\xae"), { cab.getRight() - 22, cab.getY(), 20, 20 }, juce::Colour (0xff5f8f86), fonte (14.0f));
             texto (g, u8 ("\xe2\x9c\x95"), { cab.getX(), cab.getY(), 20, 20 }, juce::Colour (0xff5f8f86), fonte (12.0f));
             alvos.push_back ({ { cab.getX(), cab.getY(), 22, 22 }, aRemove, pos });
