@@ -76,6 +76,11 @@ const GATILHOS = [
         publico: PUBLICO,
     },
     {
+        palavra: 'stompbox',
+        dm: 'Opa! Aqui está o STOMPBOX, a pedaleira de guitarra inteira num plugin só 🎸\n\nVeja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/stompbox/\n\nPix, cartão em até 12x ou boleto.',
+        publico: PUBLICO,
+    },
+    {
         palavra: 'mesa', curto: true,
         dm: 'Opa! Aqui está a MESA, a console analógica dentro da sua DAW 🎚️\n\nVeja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/mesa/\n\nPix, cartão em até 12x ou boleto.',
         publico: PUBLICO,
@@ -285,7 +290,7 @@ const EXCLUSAO = `<h1>Exclusão de dados</h1><p class="sub">App "InsideStudio DM
 // Tabela ig_agenda (migracao-2026-11-08d-instagram-agenda.sql). O cron de 10 em 10 min chama publicarAgendados:
 //   pendente (hora chegou) -> cria o(s) contêiner(es) na Meta -> processando -> (vídeo termina) -> publicado | erro
 // As mídias precisam estar num endereço https público (a Meta baixa de lá).
-const TIPOS = { imagem: [1, 1], reels: [1, 1], carrossel: [2, 10], story: [1, 1] };   // story: foto ou vídeo, sem legenda (a Meta ignora)
+const TIPOS = { imagem: [1, 1], reels: [1, 2], carrossel: [2, 10], story: [1, 1] };   // story: foto ou vídeo, sem legenda (a Meta ignora)
 const ehVideo = (u) => /\.(mp4|mov)(\?|$)/i.test(u);
 const igAlvo = (env, tk) => (ehIg(tk) ? '/me' : '/' + (env.IG_ID || '17841400749768561'));
 const form = (o) => ({
@@ -299,6 +304,7 @@ function validarAgenda(d) {
     if (!Array.isArray(d.midias) || d.midias.length < min || d.midias.length > max) return `midias: de ${min} a ${max} endereços`;
     if (d.midias.some((u) => typeof u !== 'string' || !/^https:\/\/\S+$/.test(u))) return 'midias: só endereços https';
     if (d.tipo === 'reels' && !ehVideo(d.midias[0])) return 'reels: a mídia tem que ser .mp4 ou .mov';
+    if (d.tipo === 'reels' && d.midias[1] && ehVideo(d.midias[1])) return 'reels: a 2ª mídia é a capa (.jpg/.png)';
     if (d.tipo === 'imagem' && ehVideo(d.midias[0])) return 'imagem: para vídeo use reels';
     if (d.legenda != null && (typeof d.legenda !== 'string' || d.legenda.length > 2200)) return 'legenda: texto de até 2200 caracteres';
     const q = Date.parse(d.quando || '');
@@ -325,7 +331,7 @@ async function passoAgenda(env, tk, a) {
             const r = await graph(alvo + '/media', tk, form(a.tipo === 'story'
                 ? (ehVideo(midias[0]) ? { media_type: 'STORIES', video_url: midias[0] } : { media_type: 'STORIES', image_url: midias[0] })
                 : a.tipo === 'reels'
-                ? { media_type: 'REELS', video_url: midias[0], caption: a.legenda, share_to_feed: 'true' }
+                ? { media_type: 'REELS', video_url: midias[0], cover_url: midias[1], caption: a.legenda, share_to_feed: 'true' }   // midias[1] = capa (opcional)
                 : { image_url: midias[0], caption: a.legenda }));
             if (!r.ok || !r.corpo?.id) return { estado: 'erro', resultado: erro(r) };
             c.principal = r.corpo.id;
