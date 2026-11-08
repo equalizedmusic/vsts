@@ -222,6 +222,15 @@ async function diag(env) {
         const perm = await graph('/me/permissions', env.IG_TOKEN);
         out.permissoes = perm.ok ? perm.corpo.data.filter((p) => p.status === 'granted').map((p) => p.permission) : { status: perm.status };
     }
+    if (env.IG_APP_SECRET) {   // confere a chave do app com o token de app (id|secret); mostra o webhook assinado
+        const appTk = '1453925772739380|' + env.IG_APP_SECRET;
+        const app = await graph('/1453925772739380?fields=name', appTk);
+        out.app_secret_valido = app.ok;
+        if (!app.ok) out.app_secret_erro = app.corpo?.error?.message || app.status;
+        const sub = await graph('/1453925772739380/subscriptions', appTk);
+        out.webhooks = sub.ok ? (sub.corpo.data || []).map((d) => ({ objeto: d.object, ativo: d.active, url: d.callback_url, campos: (d.fields || []).map((f) => f.name) }))
+            : { status: sub.status, erro: sub.corpo?.error?.message };
+    }
     try {
         const r = await env.DB.prepare('SELECT * FROM ig_respostas ORDER BY quando DESC LIMIT 20').all();
         out.ultimos = r.results;
