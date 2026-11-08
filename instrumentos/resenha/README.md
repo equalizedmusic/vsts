@@ -16,6 +16,13 @@ ataque: o lead fala. **MOVE** é um LFO no tempo do DAW (RATE de 1/16 a 2 compas
 durante a nota inteira, começando devagar e acelerando, e a tela desenha a cauda dela. Cada timbre é monofônico; as
 caudas de timbres diferentes se sobrepõem (8 vozes no total).
 
+**ENGINE** (0.4): cada timbre escolhe FM (o de cima) ou **VA**, analógico virtual no molde dos leads/arps de psy de
+synth de subtração: SAW, SQUARE, PULSE 25 ou PULSE 12 com até 8 vozes desafinadas abertas no estéreo, OSC 2 em outro
+intervalo e filtro de 24 dB (LP/BP/HP, ou VOWEL) com drive. No VA: RATIO = intervalo do OSC 2, FM = nível do OSC 2,
+FEEDBACK = DETUNE, FM DEC = tempo do envelope do filtro, UNISON = vozes (1 a 8). **PAPO** (na troca de timbre): o
+quanto a troca soa como conversa — falas de tamanhos diferentes, respiro ou resposta por cima, resposta fora da grade,
+legato nas notas vizinhas; 0% = grade dura.
+
 ## Gerador de frase
 
 SCALE e ROOT, tamanho de 1, 2 ou 4 compassos, RATE (1/32 a 1/8, com tercinas), OITAVAS, DENSIDADE, GATE, VAR. GATE

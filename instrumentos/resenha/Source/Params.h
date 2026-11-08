@@ -16,7 +16,15 @@ inline constexpr int maxSteps  = 64;
 inline constexpr int numVoices = 4;
 
 // ---------------- listas (o parâmetro guarda o ÍNDICE) ----------------
-inline const juce::StringArray waveNames  { "SINE", "TRI", "SAW", "SQUARE" };
+inline const juce::StringArray waveNames  { "SINE", "TRI", "SAW", "SQUARE", "PULSE 25", "PULSE 12" };
+// ENGINE de cada timbre: FM (2 operadores, como até a 0.3) ou VA (analógico virtual, no molde dos leads de psy feitos
+// em synth de subtração: serra/pulso com até 8 vozes desafinadas abertas no estéreo, um 2º oscilador em outro
+// intervalo e filtro de 24 dB). No VA os knobs da 1ª fileira mudam de papel: RATIO = intervalo do OSC 2, FM = nível do
+// OSC 2, FEEDBACK = DETUNE, FM DEC = tempo do envelope do filtro; UNISON = quantas vozes (1 a 8).
+inline const juce::StringArray engineNames { "FM", "VA" };
+// VA: intervalo do OSC 2 em semitons = a razão do RATIO arredondada para o semitom (0.5 = −12, 1.5 = +7, 2 = +12...)
+inline int vaSemis (float ratio) { return (int) std::lround (12.0 * std::log2 ((double) ratio)); }
+inline int vaVoices (float uni01) { return 1 + (int) std::lround (juce::jlimit (0.0f, 1.0f, uni01) * 7.0f); }
 inline const juce::StringArray ratioNames { "0.50", "1.00", "1.50", "2.00", "2.50", "3.00", "3.50", "4.00", "5.00",
                                             "6.00", "7.00", "8.00", "9.00", "11.0", "13.0" };
 inline constexpr float ratios[] = { 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 11.0f, 13.0f };
@@ -43,8 +51,9 @@ inline const juce::StringArray contourNames { "MOTIVO", "CORRIDA", "QUEDA", "OND
 enum class Contour { motif = 0, run = 1, fall = 2, wave = 3, pedal = 4 };
 inline constexpr int numContours = 5;
 // FILTRO de cada timbre: LP (passa-baixas), BP (passa-banda, mais nasal) e VOWEL (dois formantes: o lead "fala"
-// a-e-i-o-u; o CUTOFF escolhe a vogal, o F.ENV abre a boca no ataque e o MOVE faz a vogal andar)
-inline const juce::StringArray filterNames { "LP", "BP", "VOWEL" };
+// a-e-i-o-u; o CUTOFF escolhe a vogal, o F.ENV abre a boca no ataque e o MOVE faz a vogal andar) e HP (passa-altas).
+// No VA, LP/BP/HP são de 24 dB (dois estágios), como nos leads de psy de referência (a maioria em BP 24).
+inline const juce::StringArray filterNames { "LP", "BP", "VOWEL", "HP" };
 // MOVE: LFO no tempo do DAW que mexe no FM e no filtro (ou na vogal); RATE = o período
 inline const juce::StringArray moveRateNames { "1/16", "1/8", "1/4", "1/2", "1 BAR", "2 BARS" };
 inline constexpr double moveRateBeats[] = { 0.25, 0.5, 1.0, 2.0, 4.0, 8.0 };
@@ -66,16 +75,17 @@ namespace id
 inline const juce::String wave = "wave", ratio = "ratio", fm = "fm", fb = "fb", fmDec = "fmdec",
                           cut = "cut", res = "res", dec = "dec", pan = "pan",
                           glide = "glide", pEnv = "penv", fEnv = "fenv", bend = "bend",
-                          uni = "uni", filt = "filt", move = "move", mRate = "mrate";
+                          uni = "uni", filt = "filt", move = "move", mRate = "mrate", eng = "eng";
 inline const juce::StringArray voiceParams { wave, ratio, fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend,
-                                             uni, filt, move, mRate };
+                                             uni, filt, move, mRate, eng };
+inline constexpr int numVoiceParams = 18;
 inline juce::String v (int voice, const juce::String& name) { return juce::String::charToString ((juce::juce_wchar) ('a' + voice)) + name; }
 
 // gerador e troca de timbre
 inline const juce::String scale = "scale", root = "root", bars = "bars", rate = "rate", octaves = "octaves",
                           density = "density", gate = "gate", gateVar = "gatevar", swing = "swing",
                           voices = "voices", every = "every", order = "order", response = "response",
-                          interval = "interval", play = "play", contour = "contour";
+                          interval = "interval", play = "play", contour = "contour", talk = "talk";
 // travas (performance: o preset não mexe)
 inline const juce::String lockNotes = "lknotes", lockRhythm = "lkrhythm", lockGate = "lkgate";
 inline juce::String lockVoice (int voice) { return "lk" + juce::String::charToString ((juce::juce_wchar) ('a' + voice)); }
@@ -99,6 +109,7 @@ inline bool isPerformanceParam (const juce::String& pid)
 // BEND = semitons que a ÚLTIMA nota de cada fala do timbre desliza durante a nota (o mergulho no fim da frase,
 // como nos leads de full on); 0 = reta.
 // UNISON = 3 cópias desafinadas abertas no estéreo (o lead gordo); FILTER/MOVE/RATE: ver filterNames/moveRateNames.
+// ENGINE: o padrão do parâmetro é FM (projeto e preset do usuário da 0.3 abrem como eram); o Init e a fábrica usam VA.
 struct VoiceDefaults { int wave, ratio; float fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend, uni; int filt; float move; int mRate; };
 inline constexpr VoiceDefaults voiceDefaults[numVoices] = {
     { 2, 1, 60.0f, 45.0f, 260.0f, 3600.0f, 35.0f, 420.0f, -30.0f, 25.0f, 12.0f, 45.0f, -12.0f, 40.0f, 0, 20.0f, 3 },
@@ -165,6 +176,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         add (new AudioParameterFloat ({ id::v (v, id::move), 1 }, n + "Move", NormalisableRange<float> (0.0f, 100.0f), d.move,
                                       AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
         add (new AudioParameterChoice ({ id::v (v, id::mRate), 1 }, n + "Move Rate", moveRateNames, d.mRate));
+        add (new AudioParameterChoice ({ id::v (v, id::eng), 1 }, n + "Engine", engineNames, 0));
     }
 
     // ---- gerador de frase ----
@@ -190,6 +202,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (new AudioParameterChoice ({ id::response, 1 }, "Response", responseNames, 1));
     add (new AudioParameterChoice ({ id::interval, 1 }, "Response Pitch", intervalNames, 1));
     add (new AudioParameterChoice ({ id::play, 1 }, "Play Mode", playNames, 0));
+    // PAPO: o quanto a troca soa como conversa e não como sequência — respiro antes da resposta, resposta que entra um
+    // pouco atrasada ou por cima da pergunta, falas de tamanhos diferentes, legato nas notas vizinhas, a última nota
+    // da fala mais longa. 0% = grade dura (como até a 0.3).
+    add (new AudioParameterFloat ({ id::talk, 1 }, "Talk", NormalisableRange<float> (0.0f, 100.0f), 0.0f,
+                                  AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
 
     add (new AudioParameterBool ({ id::lockNotes, 1 }, "Lock Notes", false));
     add (new AudioParameterBool ({ id::lockRhythm, 1 }, "Lock Rhythm", false));

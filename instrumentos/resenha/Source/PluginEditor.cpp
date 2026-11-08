@@ -57,9 +57,12 @@ VoiceCard::VoiceCard (ResenhaProcessor& p, int voiceIndex) : proc (p), v (voiceI
     dice.setBounds (w - 32, 7, 25, 24);
     dice.onClick = [this] { proc.randomizeVoice (v); };
 
-    wave = std::make_unique<rs::ChoiceBox> (st, id::v (v, id::wave), colour, " + FM");
+    wave = std::make_unique<rs::ChoiceBox> (st, id::v (v, id::wave), colour);
     addAndMakeVisible (*wave);
-    wave->setBounds (8, 72, w - 16, 18);
+    wave->setBounds (8, 72, w - 74, 18);
+    engine = std::make_unique<rs::ChoiceBox> (st, id::v (v, id::eng), colour);
+    addAndMakeVisible (*engine);
+    engine->setBounds (w - 62, 72, 54, 18);
 
     struct K { const juce::String* pid; const char* label; bool bipolar; };
     const K rows[4][4] = {
@@ -82,9 +85,43 @@ VoiceCard::VoiceCard (ResenhaProcessor& p, int voiceIndex) : proc (p), v (voiceI
         }
     }
 
-    for (const auto* pid : { &id::wave, &id::ratio, &id::fm, &id::fb, &id::uni })
+    for (const auto* pid : { &id::wave, &id::ratio, &id::fm, &id::fb, &id::uni, &id::eng })
         if (auto* prm = st.getParameter (id::v (v, *pid)))
-            watch.push_back (std::make_unique<juce::ParameterAttachment> (*prm, [this] (float) { repaint (8, 36, getWidth() - 16, 34); }));
+            watch.push_back (std::make_unique<juce::ParameterAttachment> (*prm, [this] (float) { applyEngine(); repaint (8, 36, getWidth() - 16, 34); }));
+    applyEngine();
+}
+
+bool VoiceCard::isVa() const
+{
+    return juce::roundToInt (proc.apvts.getRawParameterValue (id::v (v, id::eng))->load()) == 1;
+}
+
+void VoiceCard::applyEngine()
+{
+    // knobs na ordem de rows: 0 RATIO, 1 FM, 2 FEEDBACK, 3 FM DEC ... 8 UNISON
+    const bool va = isVa();
+    auto raw = [this] (const juce::String& name) { return proc.apvts.getRawParameterValue (id::v (v, name)); };
+    knobs[0]->setLabel (va ? "OSC 2" : "RATIO");
+    knobs[1]->setLabel (va ? "OSC 2 LVL" : "FM");
+    knobs[2]->setLabel (va ? "DETUNE" : "FEEDBACK");
+    knobs[3]->setLabel (va ? "ENV DEC" : "FM DEC");
+    knobs[8]->setLabel (va ? "VOICES" : "UNISON");
+    if (va)
+    {
+        auto* r = raw (id::ratio);
+        knobs[0]->setValueText ([r]
+        {
+            const int st = vaSemis (ratios[juce::jlimit (0, (int) std::size (ratios) - 1, juce::roundToInt (r->load()))]);
+            return (st > 0 ? "+" : "") + juce::String (st) + " st";
+        });
+        auto* u = raw (id::uni);
+        knobs[8]->setValueText ([u] { return juce::String (vaVoices (u->load() * 0.01f)); });
+    }
+    else
+    {
+        knobs[0]->setValueText ({});
+        knobs[8]->setValueText ({});
+    }
 }
 
 void VoiceCard::setTalk (float level)
@@ -101,11 +138,58 @@ void VoiceCard::setSilent (bool s)
     silent = s;
     for (auto& k : knobs) k->setDim (s);
     wave->setColour (s ? rs::faint : colour);
+    engine->setColour (s ? rs::faint : colour);
     repaint();
+}
+
+// VA: um ciclo do OSC 1 somado ao OSC 2 (no intervalo e no nível dele), e quantas vozes de uníssono
+void VoiceCard::drawVa (juce::Graphics& g, RF r)
+{
+    auto val = [this] (const juce::String& name) { return proc.apvts.getRawParameterValue (id::v (v, name))->load(); };
+    const int waveIdx = juce::roundToInt (val (id::wave));
+    const float ratio = ratios[juce::jlimit (0, (int) std::size (ratios) - 1, juce::roundToInt (val (id::ratio)))];
+    const float mul = std::exp2 ((float) vaSemis (ratio) / 12.0f);
+    const float lvl2 = val (id::fm) * 0.01f;
+    const int voicesN = vaVoices (val (id::uni) * 0.01f);
+    auto shape = [waveIdx] (float ph)
+    {
+        ph -= std::floor (ph);
+        switch (waveIdx)
+        {
+            case 0:  return std::sin (juce::MathConstants<float>::twoPi * ph);
+            case 1:  return 4.0f * std::abs (ph - 0.5f) - 1.0f;
+            case 2:  return 2.0f * ph - 1.0f;
+            default:
+            {
+                const float w = waveIdx == 4 ? 0.25f : waveIdx == 5 ? 0.125f : 0.5f;
+                return (ph < w ? 1.0f : -1.0f) * 0.85f;
+            }
+        }
+    };
+    const int N = 320;
+    juce::Path p;
+    for (int i = 0; i <= N; ++i)
+    {
+        const float ph = 2.0f * (float) i / (float) N;
+        const float y = (shape (ph) + lvl2 * shape (ph * mul + 0.25f)) / (1.0f + lvl2);
+        const float x = r.getX() + 4.0f + (r.getWidth() - 8.0f) * (float) i / (float) N;
+        const float yy = r.getCentreY() - y * r.getHeight() * 0.36f;
+        if (i == 0) p.startNewSubPath (x, yy); else p.lineTo (x, yy);
+    }
+    const auto c = silent ? rs::faint : colour;
+    g.setColour (c.withAlpha (0.2f));
+    g.strokePath (p, juce::PathStrokeType (4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (c);
+    g.strokePath (p, juce::PathStrokeType (1.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setFont (theme::mono (7.5f));
+    g.setColour (rs::dim.withAlpha (0.8f));
+    g.drawText (juce::String::fromUTF8 ("OSC 1 + OSC 2 · ") + juce::String (voicesN) + (voicesN == 1 ? " VOZ" : " VOZES"),
+                RF (r.getX() + 5.0f, r.getBottom() - 11.0f, r.getWidth() - 10.0f, 10.0f), juce::Justification::centredLeft, false);
 }
 
 void VoiceCard::drawWave (juce::Graphics& g, RF r)
 {
+    if (isVa()) { drawVa (g, r); return; }
     // a forma de onda do timbre no pico do ataque: o modulador (RATIO, FEEDBACK) entortando a portadora (FM)
     auto val = [this] (const juce::String& name) { return proc.apvts.getRawParameterValue (id::v (v, name))->load(); };
     const int waveIdx = juce::roundToInt (val (id::wave));
@@ -445,7 +529,8 @@ ResenhaEditor::ResenhaEditor (ResenhaProcessor& p) : AudioProcessorEditor (&p), 
     add<rs::Segmented> ({ 768, 458, 196, 26 }, st, id::every,    rs::cyan);
     add<rs::Segmented> ({ 974, 458, 208, 26 }, st, id::response, rs::orange);
     add<rs::Segmented> ({ 618, 508, 230, 26 }, st, id::order,    rs::lime);
-    add<rs::Segmented> ({ 858, 508, 324, 26 }, st, id::interval, rs::violet);
+    add<rs::Segmented> ({ 858, 508, 252, 26 }, st, id::interval, rs::violet);
+    add<NeonKnob> ({ 1120, 482, 62, 62 }, st, id::talk, "PAPO", rs::orange, 30.0f);
 
     // ---- sorteios ----
     struct Part { const char* text; int part; const juce::String* lockId; };
@@ -786,7 +871,7 @@ void ResenhaEditor::drawCanvas (juce::Graphics& g)
     rs::label (g, "TROCA A CADA (NOTAS / COMPASSO)", { 768.0f, 444.0f, 196.0f, 12.0f });
     rs::label (g, "RESPOSTA",           { 974.0f, 444.0f, 208.0f, 12.0f });
     rs::label (g, "ORDEM",              { 618.0f, 494.0f, 230.0f, 12.0f });
-    rs::label (g, "ALTURA DA RESPOSTA", { 858.0f, 494.0f, 324.0f, 12.0f });
+    rs::label (g, "ALTURA DA RESPOSTA", { 858.0f, 494.0f, 252.0f, 12.0f });
     rs::label (g, "TOCAR",              { 990.0f, 541.0f, 192.0f, 12.0f }, juce::Justification::centred);
 
     g.setFont (theme::sans (9.0f, false, 0.03f));

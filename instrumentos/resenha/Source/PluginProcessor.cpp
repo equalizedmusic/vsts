@@ -21,7 +21,7 @@ ResenhaProcessor::ResenhaProcessor()
     pDlOn = raw (id::dlOn);         pDlDiv = raw (id::dlDiv);       pDlFb = raw (id::dlFb);
     pDlMix = raw (id::dlMix);       pRvOn = raw (id::rvOn);         pRvSize = raw (id::rvSize);
     pRvMix = raw (id::rvMix);       pVol = raw (id::volume);
-    pContour = raw (id::contour);   pDuck = raw (id::duck);
+    pContour = raw (id::contour);   pDuck = raw (id::duck);         pTalk = raw (id::talk);
 
     factory = factoryPresetData();
     refreshBanks();
@@ -52,6 +52,7 @@ void ResenhaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     volSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (pVol->load()));
     lastAbsStep = -1;
     gateOffPpq.fill (-1.0);
+    pendNote.fill (-1);
     wasRunning = false;
     freePpq = 0.0;
     numHeld = 0;
@@ -80,9 +81,10 @@ void ResenhaProcessor::readSettings()
         t.fEnv    = p[11]->load() * 0.01f;
         t.bend    = p[12]->load();
         t.uni     = p[13]->load() * 0.01f;
-        t.filt    = juce::jlimit (0, 2, choice (p[14]));
+        t.filt    = juce::jlimit (0, 3, choice (p[14]));
         t.move    = p[15]->load() * 0.01f;
         t.moveBeats = moveRateBeats[juce::jlimit (0, 5, choice (p[16]))];
+        t.eng     = juce::jlimit (0, 1, choice (p[17]));
     }
     s.drvType = choice (pDrvType);
     s.drive   = pDrive->load() * 0.01f;
@@ -108,6 +110,7 @@ PhraseParams ResenhaProcessor::phraseParams() const
     p.order    = (Order) juce::jlimit (0, 2, choice (pOrder));
     p.response = (Response) juce::jlimit (0, 3, choice (pResp));
     p.interval = choice (pInterval);
+    p.talk     = pTalk->load() * 0.01f;
     return p;
 }
 
@@ -201,6 +204,7 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         engine.allOff();
         lastAbsStep = -1;
         gateOffPpq.fill (-1.0);
+        pendNote.fill (-1);
         playStep = -1;
     };
 
@@ -244,18 +248,36 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             if (ni >= 0)
             {
                 const auto& pn = phrase.notes[(size_t) ni];
-                const auto& tb = s.t[(size_t) pn.voice];
                 const double lenBeats = sb * ((double) (pn.len - 1) + (double) pn.gate);
-                const float  bendSt = pn.last ? tb.bend : 0.0f;    // o mergulho só na nota que fecha a fala
-                const int    bendLen = (int) (lenBeats * 60.0 / bpm * currentRate);
-                engine.noteOn (pn.voice, pn.note + transpose, pn.accent, tb.glideMs, bendSt, bendLen);
                 const double start = pair * 2.0 * sb + (second ? sb + sw : 0.0);
-                gateOffPpq[(size_t) pn.voice] = start + lenBeats;
+                const auto vi = (size_t) pn.voice;
+                pendNote[vi] = ni;                                   // dispara já ou, com PAPO, um pouco depois
+                pendPpq[vi]  = start + (double) pn.delay * sb;
+                // gate cheio (legato/POR CIMA): segura um pouco além do passo, para a próxima nota — que com PAPO pode
+                // chegar atrasada — pegar a voz ainda soando e deslizar (o noteOn novo troca o gateOff)
+                const double tail = pn.gate >= 0.999f ? sb * 0.45 : 0.0;
+                pendEnd[vi]  = juce::jmax (start + lenBeats + tail, pendPpq[vi] + sb * 0.25);
             }
             lastAbsStep = absStep;
             playStep    = idx;
         }
 
+        for (int v = 0; v < numVoices; ++v)
+        {
+            const auto vi = (size_t) v;
+            if (pendNote[vi] >= 0 && p >= pendPpq[vi])
+            {
+                flush (i);
+                const auto& pn = phrase.notes[(size_t) juce::jlimit (0, maxSteps - 1, pendNote[vi])];
+                const auto& tb = s.t[vi];
+                const double lenBeats = pendEnd[vi] - pendPpq[vi];
+                const float  bendSt = pn.last ? tb.bend : 0.0f;    // o mergulho só na nota que fecha a fala
+                const int    bendLen = (int) (lenBeats * 60.0 / bpm * currentRate);
+                engine.noteOn (pn.voice, pn.note + transpose, pn.accent, tb.glideMs, bendSt, bendLen);
+                gateOffPpq[vi] = pendEnd[vi];
+                pendNote[vi] = -1;
+            }
+        }
         for (int v = 0; v < numVoices; ++v)
             if (gateOffPpq[(size_t) v] >= 0.0 && p >= gateOffPpq[(size_t) v])
             {
@@ -711,23 +733,44 @@ void ResenhaProcessor::randomizeTimbre (int v)
     auto logRange = [this] (float lo, float hi) { return lo * std::pow (hi / lo, rnd.nextFloat()); };
     auto set = [this, v] (const juce::String& name, float value) { setParam (id::v (v, name), value); };
 
-    set (id::wave,  (float) pick ({ 0, 0, 1, 2, 2, 3 }));
-    set (id::ratio, (float) pick ({ 1, 3, 3, 5, 7, 8, 9, 10, 11, 12, 0, 2, 4 }));
-    set (id::fm,    25.0f + rnd.nextFloat() * 60.0f);
-    set (id::fb,    rnd.nextFloat() * rnd.nextFloat() * 70.0f);
-    set (id::fmDec, logRange (40.0f, 700.0f));
-    set (id::cut,   logRange (1200.0f, 9000.0f));
-    set (id::res,   5.0f + rnd.nextFloat() * 55.0f);
-    set (id::dec,   logRange (120.0f, 650.0f));
+    // VA em 4 de 5 sorteios, nas faixas dos leads/arps de psy de referência (ver Engine.h); FM como era
+    const bool va = rnd.nextInt (5) != 0;
+    set (id::eng, va ? 1.0f : 0.0f);
+    if (va)
+    {
+        const int voicesN = pick ({ 1, 1, 1, 2, 3, 4, 4, 4, 7 });
+        set (id::wave,  (float) pick ({ 2, 2, 2, 2, 2, 2, 3, 4, 4, 5, 1, 0 }));
+        set (id::ratio, (float) (rnd.nextInt (5) < 2 ? 1 : pick ({ 1, 1, 3, 3, 0, 2 })));     // OSC 2: uníssono, +12, −12, +7
+        set (id::fm,    rnd.nextInt (5) < 2 ? 0.0f : 45.0f + rnd.nextFloat() * 50.0f);
+        set (id::fb,    voicesN > 1 ? 22.0f + rnd.nextFloat() * 25.0f : rnd.nextFloat() * 20.0f);
+        set (id::fmDec, logRange (40.0f, 320.0f));
+        set (id::cut,   logRange (350.0f, 2600.0f));
+        set (id::res,   20.0f + rnd.nextFloat() * 40.0f);
+        set (id::dec,   logRange (250.0f, 1500.0f));
+        set (id::fEnv,  30.0f + rnd.nextFloat() * 40.0f);
+        set (id::uni,   (float) (voicesN - 1) * 100.0f / 7.0f);
+        set (id::filt,  (float) pick ({ 1, 1, 1, 1, 0, 0, 0, 3, 2 }));
+    }
+    else
+    {
+        set (id::wave,  (float) pick ({ 0, 0, 1, 2, 2, 3 }));
+        set (id::ratio, (float) pick ({ 1, 3, 3, 5, 7, 8, 9, 10, 11, 12, 0, 2, 4 }));
+        set (id::fm,    25.0f + rnd.nextFloat() * 60.0f);
+        set (id::fb,    rnd.nextFloat() * rnd.nextFloat() * 70.0f);
+        set (id::fmDec, logRange (40.0f, 700.0f));
+        set (id::cut,   logRange (1200.0f, 9000.0f));
+        set (id::res,   5.0f + rnd.nextFloat() * 55.0f);
+        set (id::dec,   logRange (120.0f, 650.0f));
+        set (id::fEnv,  rnd.nextFloat() * 70.0f);
+        set (id::uni,   rnd.nextInt (5) == 0 ? 0.0f : 15.0f + rnd.nextFloat() * 50.0f);
+        set (id::filt,  (float) pick ({ 0, 0, 0, 1, 2, 2 }));
+    }
     set (id::pan,   (v % 2 == 0 ? -1.0f : 1.0f) * (10.0f + rnd.nextFloat() * 40.0f));
     set (id::glide, rnd.nextInt (2) == 0 ? 0.0f : logRange (20.0f, 140.0f));
     set (id::pEnv,  rnd.nextInt (5) < 2 ? 0.0f : (float) (pick ({ 12, 7, 5, 3, 24 }) * (rnd.nextInt (4) == 0 ? -1 : 1)));
-    set (id::fEnv,  rnd.nextFloat() * 70.0f);
     // mergulho no fim da fala: quase sempre para baixo (o lead "cai"), às vezes sobe
     set (id::bend,  rnd.nextInt (5) < 2 ? 0.0f : (float) (pick ({ -12, -12, -7, -24, -5, 12, 7 })));
-    // corpo do lead: uníssono quase sempre, filtro VOWEL em ~1/3 (o lead que fala), MOVE no tempo
-    set (id::uni,   rnd.nextInt (5) == 0 ? 0.0f : 15.0f + rnd.nextFloat() * 50.0f);
-    set (id::filt,  (float) pick ({ 0, 0, 0, 1, 2, 2 }));
+    // MOVE no tempo (no VA vai no corte, em triângulo)
     set (id::move,  rnd.nextInt (4) == 0 ? 0.0f : 10.0f + rnd.nextFloat() * 45.0f);
     set (id::mRate, (float) pick ({ 1, 2, 3, 3, 4, 5 }));
 }
@@ -743,6 +786,7 @@ void ResenhaProcessor::randomizeConversation()
     setParam (id::interval, (float) itv[rnd.nextInt (5)]);
     setParam (id::order,    (float) rnd.nextInt (3));
     setParam (id::contour,  (float) rnd.nextInt (numContours));
+    setParam (id::talk,     35.0f + rnd.nextFloat() * 50.0f);
 }
 
 void ResenhaProcessor::generate (int parts, bool respectLocks)
@@ -790,8 +834,8 @@ juce::File ResenhaProcessor::writeMidiFile()
     for (int i = 0; i < ph.count; ++i)
     {
         const auto& pn = ph.notes[(size_t) i];
-        const double on  = pn.step * stepTicks;
-        const double off = on + juce::jmax (10.0, stepTicks * ((double) (pn.len - 1) + (double) pn.gate));
+        const double on  = (pn.step + (double) pn.delay) * stepTicks;
+        const double off = juce::jmax (on + 10.0, pn.step * stepTicks + stepTicks * ((double) (pn.len - 1) + (double) pn.gate));
         const int ch = pn.voice + 1;
         seq.addEvent (juce::MidiMessage::noteOn (ch, pn.note, (juce::uint8) (pn.accent ? 127 : 96)), on);
         seq.addEvent (juce::MidiMessage::noteOff (ch, pn.note), off);

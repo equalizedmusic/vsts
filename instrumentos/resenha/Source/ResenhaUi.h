@@ -215,6 +215,9 @@ public:
     }
 
     void setDim (bool d) { if (d != dimmed) { dimmed = d; repaint(); } }
+    void setLabel (const juce::String& l) { if (l != label) { label = l; repaint(); } }
+    // texto do valor no lugar do texto do parâmetro (o mesmo knob muda de papel no VA)
+    void setValueText (std::function<juce::String()> f) { valueText = std::move (f); repaint(); }
 
     void resized() override
     {
@@ -230,12 +233,13 @@ public:
         g.drawFittedText (label, juce::Rectangle<int> (0, (int) top, (int) w, 11), juce::Justification::centred, 1, 0.7f);
         g.setFont (theme::mono (dia > 34.0f ? 9.5f : 8.5f));
         g.setColour (dimmed ? faint : dim);
-        g.drawText (param->getCurrentValueAsText(), RF (0.0f, top + 10.0f, w, 11.0f), juce::Justification::centred, false);
+        g.drawText (valueText ? valueText() : param->getCurrentValueAsText(), RF (0.0f, top + 10.0f, w, 11.0f), juce::Justification::centred, false);
     }
 
 private:
     juce::RangedAudioParameter* param;
     juce::String label;
+    std::function<juce::String()> valueText;
     float dia;
     bool dimmed = false;
     juce::Slider slider;

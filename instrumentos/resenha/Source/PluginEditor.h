@@ -22,6 +22,9 @@ public:
 
 private:
     void drawWave (juce::Graphics& g, rs::RF r);
+    void drawVa (juce::Graphics& g, rs::RF r);
+    void applyEngine();                  // FM x VA: os knobs da 1ª fileira e o UNISON mudam de nome e de texto
+    bool isVa() const;
 
     ResenhaProcessor& proc;
     int v;
@@ -31,7 +34,7 @@ private:
     juce::String role;
     rs::LockButton lock;
     rs::NeonButton dice { {}, rs::NeonButton::Icon::dice };
-    std::unique_ptr<rs::ChoiceBox> wave;
+    std::unique_ptr<rs::ChoiceBox> wave, engine;
     std::vector<std::unique_ptr<rs::NeonKnob>> knobs;
     std::unique_ptr<APVTS::ButtonAttachment> lockAtt;
     std::vector<std::unique_ptr<juce::ParameterAttachment>> watch;   // o desenho da onda segue os knobs

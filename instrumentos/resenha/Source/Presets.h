@@ -33,7 +33,7 @@ struct PresetData
 inline const std::vector<FactoryPreset>& factoryPresets()
 {
     static const std::vector<FactoryPreset> list {
-        { "Init", -1, {}, "0:7 2:7 4:7 2:7 0:7 2:7 4:7 7:7 0:7 2:7 4:7 2:7 0:7 2:7 4:7 7:7 "
+        { "Init", -1, { { "aeng", 1.0f }, { "beng", 1.0f }, { "ceng", 1.0f }, { "deng", 1.0f }, { "talk", 50.0f } },"0:7 2:7 4:7 2:7 0:7 2:7 4:7 7:7 0:7 2:7 4:7 2:7 0:7 2:7 4:7 7:7 "
                           "0:7 2:7 4:7 2:7 0:7 2:7 4:7 7:7 0:7 2:7 4:7 2:7 0:7 2:7 4:7 7:7" },
        #include "presets/fabrica.inc"
     };

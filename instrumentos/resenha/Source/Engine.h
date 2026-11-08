@@ -15,6 +15,10 @@
 // UNISON: a portadora e o modulador viram 3 cópias (centro + duas desafinadas, uma em cada lado do estéreo).
 // FILTER: LP, BP ou VOWEL (dois formantes; o CUTOFF escolhe a vogal u-o-a-e-i, o F.ENV abre a "boca" no ataque).
 // MOVE: LFO no tempo do DAW (RATE) que mexe no índice de FM e no filtro/vogal — o lead que "fala" e não fica parado.
+// ENGINE VA (0.4): analógico virtual no molde dos leads/arps de psy feitos em synth de subtração (análise de 555
+// presets de referência: serra em 2/3 dos osciladores, 1 a 4 vozes de uníssono com detune ~3/10 e estéreo aberto,
+// 2º oscilador em uníssono ou na oitava, filtro BP/LP de 24 dB com drive, envelope curto no corte, amp quase cheio
+// enquanto a nota dura, e o resto é gate, glide e LFO no corte). OSC 1 e OSC 2 com até 8 vozes cada.
 // Depois vêm os efeitos: drive (com TONE), delay pingue-pongue no tempo e reverb.
 namespace resenha
 {
@@ -25,7 +29,8 @@ struct Timbre
     float glideMs = 0.0f, pEnv = 0.0f, fEnv = 0.0f;     // pEnv em semitons; fEnv 0..1 (até +4 oitavas no corte)
     float bend = 0.0f;                                   // semitons no fim da fala
     float uni = 0.0f;                                    // 0..1
-    int   filt = 0;                                      // 0 LP, 1 BP, 2 VOWEL
+    int   filt = 0;                                      // 0 LP, 1 BP, 2 VOWEL, 3 HP
+    int   eng = 0;                                       // 0 FM, 1 VA
     float move = 0.0f;                                   // 0..1
     double moveBeats = 2.0;                              // período do MOVE em tempos
 };
@@ -110,6 +115,7 @@ public:
     {
         if (stage == Stage::idle || timbre < 0) return;
         const auto& t = s.t[(size_t) timbre];
+        if (t.eng == 1) { renderVa (l, r, n, s, t); age += n; return; }
         const float sr = (float) fs;
         const float twoPi = juce::MathConstants<float>::twoPi;
 
@@ -249,6 +255,10 @@ private:
 
     void resetOsc()
     {
+        // VA: as vozes do uníssono nascem em fases fixas e diferentes (ataque igual toda vez, estéreo aberto já no ataque)
+        static constexpr double ph1[maxUni] = { 0.00, 0.37, 0.71, 0.13, 0.59, 0.83, 0.29, 0.47 };
+        static constexpr double ph2[maxUni] = { 0.25, 0.62, 0.05, 0.91, 0.44, 0.18, 0.77, 0.53 };
+        for (int k = 0; k < maxUni; ++k) { va1[(size_t) k] = ph1[k]; va2[(size_t) k] = ph2[k]; }
         for (auto& o : u) o = Osc {};
         // as cópias do uníssono começam em fases diferentes (senão nascem juntas e o estéreo demora a abrir)
         u[1].cph = 0.31; u[1].mph = 0.17;
@@ -259,6 +269,7 @@ private:
     {
         for (auto& f : f2) f.fill (0.0f);
         for (auto& f : vw) f.fill (0.0f);
+        for (auto& f : f4) f.fill (0.0f);
     }
 
     // uma cópia: modulador com feedback (média das duas últimas saídas, sem o chiado do feedback puro) → portadora
@@ -286,15 +297,8 @@ private:
         {
             case 1:  return 4.0f * std::abs (phi - 0.5f) - 1.0f;                       // TRI
             case 2:  return 2.0f * phi - 1.0f - blep (phi, dt);                         // SAW
-            case 3:                                                                     // SQUARE
-            {
-                float sq = phi < 0.5f ? 1.0f : -1.0f;
-                sq += blep (phi, dt);
-                float p2 = phi + 0.5f;
-                if (p2 >= 1.0f) p2 -= 1.0f;
-                sq -= blep (p2, dt);
-                return sq * 0.8f;
-            }
+            case 3: case 4: case 5:                                                     // SQUARE / PULSE 25 / 12
+                return pulse (phi, dt, wave == 3 ? 0.5f : wave == 4 ? 0.25f : 0.125f) * 0.8f;
             default: return std::sin (twoPi * phi);                                     // SINE
         }
     }
@@ -328,6 +332,200 @@ private:
         return (v1 + w1 * 0.75f) * k * 2.2f + x * 0.12f;
     }
 
+    static constexpr int   maxUni = 8;          // VA: vozes de uníssono por oscilador
+    static constexpr float vaGain = 0.24f;      // VA: nível (medido para ficar junto do FM)
+
+    // pulso com largura w (polyBLEP nas duas bordas), sem DC
+    static float pulse (float phi, float dt, float w)
+    {
+        float y = phi < w ? 1.0f : -1.0f;
+        y += blep (phi, dt);
+        float p2 = phi - w;
+        if (p2 < 0.0f) p2 += 1.0f;
+        y -= blep (p2, dt);
+        return y - (2.0f * w - 1.0f);
+    }
+
+    // ---------------- VA ----------------
+    static float vaWave (float p, float dt, int wave, float w)
+    {
+        switch (wave)
+        {
+            case 0:  return std::sin (juce::MathConstants<float>::twoPi * p);
+            case 1:  return 4.0f * std::abs (p - 0.5f) - 1.0f;
+            case 2:  return 2.0f * p - 1.0f - blep (p, dt);
+            default: return pulse (p, dt, w) * 0.85f;
+        }
+    }
+
+    // SVF de dois estágios (24 dB): o 1º sem ressonância, o 2º com a RESO; mode 0 LP, 1 BP, 3 HP
+    float svf24 (int c, float x, float g, float k, int mode)
+    {
+        auto& st = f4[(size_t) c];
+        auto stage = [g, mode] (float in, float& s0, float& s1, float kk)
+        {
+            const float a1 = 1.0f / (1.0f + g * (g + kk));
+            const float v1 = a1 * (s0 + g * (in - s1));
+            const float v2 = s1 + g * v1;
+            s0 = 2.0f * v1 - s0;
+            s1 = 2.0f * v2 - s1;
+            if (mode == 1) return v1 * kk;                 // BP com ganho 1 no centro
+            if (mode == 3) return in - kk * v1 - v2;      // HP
+            return v2;                                     // LP
+        };
+        const float y1 = stage (x, st[0], st[1], 1.414f);
+        return stage (y1, st[2], st[3], k);
+    }
+
+    // uma voz VA: OSC 1 + OSC 2 (até 8 vozes cada) → drive quente → filtro 24 dB (ou VOWEL) → amp
+    void renderVa (float* l, float* r, int n, const Settings& s, const Timbre& t)
+    {
+        const float sr = (float) fs;
+        const float aGl = t.glideMs < 1.0f ? 1.0f : 1.0f - std::exp (-1.0f / (t.glideMs * 0.001f * sr / 4.6f));
+        const float fEnvOct = t.fEnv * 5.0f;
+        const float cutMax = std::log2 (juce::jmin (18000.0f, sr * 0.45f));
+        const float aAtk = 1.0f - std::exp (-1.0f / (0.0016f * sr));
+        const float aDec = std::exp (-1.0f / (juce::jmax (5.0f, t.decMs) * 0.001f * sr / 2.3f));
+        const float aRel = std::exp (-1.0f / (0.025f * sr));
+        const float aKill = std::exp (-1.0f / (0.003f * sr));
+        const float fDec = std::exp (-1.0f / (juce::jmax (2.0f, t.fmDecMs) * 0.001f * sr / 4.6f));
+        const float kSm  = 1.0f - std::exp (-1.0f / (0.015f * sr));
+        constexpr float sus = 0.62f;                     // o amp desce até aqui no DECAY e fica enquanto a nota dura
+
+        // uníssono: N vozes espalhadas no detune e no estéreo (as de fora mais abertas)
+        const int   N = vaVoices (t.uni);
+        const float spread = N > 1 ? 70.0f * std::pow (juce::jlimit (0.0f, 1.0f, t.fb), 1.4f) : 0.0f;   // cents na ponta
+        const float lvl2 = juce::jlimit (0.0f, 1.0f, t.fm);
+        const float cents2 = 100.0f * (float) vaSemis (t.ratio) + 4.0f + 9.0f * t.fb;                    // OSC 2 levemente desafinado
+        std::array<float, maxUni> m1 {}, m2 {}, gl1 {}, gr1 {}, gl2 {}, gr2 {};
+        const float qp = juce::MathConstants<float>::pi * 0.25f;
+        for (int k = 0; k < N; ++k)
+        {
+            const float x = N == 1 ? 0.0f : -1.0f + 2.0f * (float) k / (float) (N - 1);
+            m1[(size_t) k] = std::exp2 (x * spread / 1200.0f);
+            m2[(size_t) k] = std::exp2 ((cents2 + x * spread * 0.85f) / 1200.0f);
+            const float wd = N == 2 ? 0.6f : 0.95f;           // 2 vozes nas pontas soariam separadas demais
+            const float pn = x * wd, pn2 = -x * wd * 0.85f;
+            gl1[(size_t) k] = std::cos ((pn + 1.0f) * qp);
+            gr1[(size_t) k] = std::sin ((pn + 1.0f) * qp);
+            gl2[(size_t) k] = std::cos ((pn2 + 1.0f) * qp);
+            gr2[(size_t) k] = std::sin ((pn2 + 1.0f) * qp);
+        }
+        const float norm = 1.414f / std::sqrt ((float) N) / (1.0f + 0.55f * lvl2);
+
+        const float cutTg = std::log2 (juce::jlimit (40.0f, juce::jmin (18000.0f, sr * 0.45f), t.cut * (accent ? 1.4f : 1.0f)));
+        if (! smReady) { smFm = lvl2; smCut = cutTg; smRes = t.res; smMov = t.move; smReady = true; }
+        const float gain = (accent ? 1.12f : 0.88f) * vaGain;
+        const float pan  = juce::jlimit (-1.0f, 1.0f, t.pan * 0.01f);
+        const float pgl = std::cos ((pan + 1.0f) * qp) * 1.414f;
+        const float pgr = std::sin ((pan + 1.0f) * qp) * 1.414f;
+        const int   mode = juce::jlimit (0, 3, t.filt);
+        const double lfoBeats = juce::jmax (0.0625, t.moveBeats);
+        const float nyq = sr * 0.45f;
+        const float vLo = std::log2 (150.0f), vSpan = std::log2 (18000.0f) - std::log2 (150.0f);
+        const float w0 = t.wave == 4 ? 0.25f : t.wave == 5 ? 0.125f : 0.5f;
+
+        for (int i = 0; i < n; ++i)
+        {
+            smFm  += (lvl2 - smFm) * kSm;
+            smCut += (cutTg - smCut) * kSm;
+            smRes += (t.res - smRes) * kSm;
+            smMov += (t.move - smMov) * kSm;
+
+            switch (stage)
+            {
+                case Stage::attack:  amp += (1.0f - amp) * aAtk; if (amp > 0.99f) stage = Stage::decay; break;
+                case Stage::decay:   amp = sus + (amp - sus) * aDec; break;
+                case Stage::release: amp *= aRel; break;
+                case Stage::kill:    amp *= aKill; break;
+                case Stage::idle:    break;
+            }
+            if ((stage == Stage::release || stage == Stage::kill) && amp < 1.0e-4f) { stage = Stage::idle; amp = 0.0f; break; }
+            fmEnv *= fDec;
+
+            // MOVE: triângulo no tempo do DAW (o LFO no corte das referências é quase sempre triângulo)
+            float lfo = 0.0f;
+            if (smMov > 0.001f)
+            {
+                const double lp = (s.ppq + s.ppqPerSample * (double) i) / lfoBeats;
+                const float ph = (float) (lp - std::floor (lp));
+                lfo = (4.0f * std::abs (ph - 0.5f) - 1.0f) * smMov;
+            }
+
+            pitch += ((float) note - pitch) * aGl;
+            if (bendLen > 0)
+            {
+                const float x = juce::jmin (1.0f, (float) bendPos / (float) bendLen);
+                bendNow = bendSt * x * std::sqrt (x);
+                if (bendPos < bendLen) ++bendPos;
+            }
+            const float pNow = pitch + bendNow + t.pEnv * fmEnv * fmEnv;
+            const float hz = 440.0f * std::exp2 ((pNow - 69.0f) / 12.0f);
+            const float w = juce::jlimit (0.06f, 0.94f, w0 + (t.wave >= 3 ? 0.18f * lfo : 0.0f));
+
+            float oL = 0.0f, oR = 0.0f;
+            const double base = (double) hz / fs;
+            const bool two = smFm > 0.002f;
+            for (int k = 0; k < N; ++k)
+            {
+                auto& p1 = va1[(size_t) k];
+                const double inc = juce::jmin (0.45, base * (double) m1[(size_t) k]);
+                p1 += inc;
+                if (p1 >= 1.0) p1 -= 1.0;
+                const float o = vaWave ((float) p1, (float) inc, t.wave, w);
+                oL += o * gl1[(size_t) k];
+                oR += o * gr1[(size_t) k];
+                if (two)
+                {
+                    auto& p2 = va2[(size_t) k];
+                    const double inc2 = juce::jmin (0.45, base * (double) m2[(size_t) k]);
+                    p2 += inc2;
+                    if (p2 >= 1.0) p2 -= 1.0;
+                    const float o2 = vaWave ((float) p2, (float) inc2, t.wave, w) * smFm;
+                    oL += o2 * gl2[(size_t) k];
+                    oR += o2 * gr2[(size_t) k];
+                }
+            }
+            // drive quente antes do filtro (o "warm drive" ligado na maioria das referências)
+            oL = std::tanh (oL * norm * 1.25f);
+            oR = std::tanh (oR * norm * 1.25f);
+
+            float yL, yR;
+            if (mode == 2)
+            {
+                const float cutPos = (smCut - vLo) / vSpan;
+                const float vp = juce::jlimit (0.0f, 3.999f, cutPos * 4.0f + t.fEnv * fmEnv * 2.5f + lfo * 1.6f);
+                const int   vi = (int) vp;
+                const float vf = vp - (float) vi;
+                const float fa = juce::jmin (nyq, vowelF[vi][0] + (vowelF[vi + 1][0] - vowelF[vi][0]) * vf);
+                const float fb2 = juce::jmin (nyq, vowelF[vi][1] + (vowelF[vi + 1][1] - vowelF[vi][1]) * vf);
+                const float g1 = std::tan (juce::MathConstants<float>::pi * fa / sr);
+                const float g2 = std::tan (juce::MathConstants<float>::pi * fb2 / sr);
+                const float k  = 0.42f - 0.32f * smRes;
+                yL = vowel (0, oL, g1, g2, k);
+                yR = vowel (1, oR, g1, g2, k);
+            }
+            else
+            {
+                // corte: knob + teclado (30%) + envelope + MOVE (±2 oitavas)
+                const float key = 0.3f * (pNow - 60.0f) / 12.0f;
+                const float fc = std::exp2 (juce::jlimit (5.0f, cutMax, smCut + key + fEnvOct * fmEnv + lfo * 2.0f));
+                const float g  = std::tan (juce::MathConstants<float>::pi * fc / sr);
+                const float k  = 2.0f - 1.86f * smRes;
+                yL = svf24 (0, oL, g, k, mode);
+                yR = svf24 (1, oR, g, k, mode);
+                if (mode == 1) { yL *= 1.0f + smRes * 0.8f; yR *= 1.0f + smRes * 0.8f; }   // BP estreito perde corpo
+            }
+            const float drv = 1.0f + smRes * 0.6f;
+            yL = std::tanh (yL * drv);
+            yR = std::tanh (yR * drv);
+
+            const float a = amp * gain;
+            l[i] += yL * a * pgl;
+            r[i] += yR * a * pgr;
+        }
+    }
+
     static float blep (float t, float dt)
     {
         if (t < dt)        { t /= dt;             return t + t - t * t - 1.0f; }
@@ -339,6 +537,8 @@ private:
     std::array<Osc, 3> u {};
     std::array<std::array<float, 2>, 2> f2 {};      // SVF L/R
     std::array<std::array<float, 4>, 2> vw {};      // VOWEL L/R (dois formantes)
+    std::array<std::array<float, 4>, 2> f4 {};      // VA: SVF de 2 estágios L/R
+    std::array<double, maxUni> va1 {}, va2 {};       // VA: fases do OSC 1 e do OSC 2
     double fs = 44100.0;
     float pitch = 60.0f, bendSt = 0.0f, bendNow = 0.0f;
     int   bendLen = 0, bendPos = 0;

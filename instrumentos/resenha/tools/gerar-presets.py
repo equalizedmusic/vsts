@@ -103,6 +103,35 @@ RECEITAS = [
          uni=(35, 75), filt=[2, 2, 2, 0], move=(0.95, 25, 65), mrate=[1, 2, 3, 3, 4]),
 ]
 
+# ENGINE VA (0.4) por categoria — faixas tiradas da análise de 555 presets de psy de referência feitos em synth de
+# subtração (leads: serra de 1 voz em BP 24 com envelope curto no corte, mono com portamento; arps: serra+serra com
+# 4 vozes e detune ~3/10). Nada copiado de preset: só a faixa de cada parâmetro. Nos knobs do VA: ratio = intervalo
+# do OSC 2 (1 = uníssono, 2 = +12, 0.5 = −12, 1.5 = +7), fm = nível do OSC 2, fb = DETUNE, fmdec = tempo do envelope
+# do filtro, uni = vozes (1..8). ondas: 0 SINE 1 TRI 2 SAW 3 SQUARE 4 PULSE 25 5 PULSE 12; filt: 0 LP 1 BP 2 VOWEL 3 HP.
+# None = a categoria fica no FM (CONVERSA FM). talk = PAPO (0..100).
+VA = [
+    dict(ondas=[2, 2, 2, 4], vozes=[1, 1, 1, 4], osc2=(0.3, [1, 2], (40, 80)), det=(18, 35), cut=(380, 1400), res=(25, 55),
+         fmdec=(60, 260), fenv=(40, 70), dec=(300, 1200), filt=[1, 1, 1, 0], talk=(40, 70)),
+    dict(ondas=[2, 2, 2, 3, 4], vozes=[1, 4, 4, 4, 7], osc2=(0.6, [1, 2, 2, 1.5], (45, 90)), det=(22, 45), cut=(550, 2400),
+         res=(20, 50), fmdec=(50, 220), fenv=(35, 65), dec=(350, 1400), filt=[1, 1, 0, 0], talk=(35, 65)),
+    dict(ondas=[2, 3, 2, 5], vozes=[1, 1, 2], osc2=(0.35, [0.5, 1, 1.5], (40, 80)), det=(10, 30), cut=(280, 1100), res=(40, 72),
+         fmdec=(30, 140), fenv=(40, 75), dec=(250, 900), filt=[1, 1, 3, 0], talk=(45, 80)),
+    dict(ondas=[2, 2, 4, 2], vozes=[3, 4, 4, 1], osc2=(0.7, [1, 1, 2], (50, 90)), det=(20, 40), cut=(450, 2000), res=(40, 70),
+         fmdec=(80, 320), fenv=(35, 65), dec=(400, 1500), filt=[0, 1, 1, 0], talk=(45, 75)),
+    dict(ondas=[2, 4, 1, 3], vozes=[1, 2, 4], osc2=(0.5, [1, 2, 0.5], (35, 75)), det=(15, 35), cut=(700, 3000), res=(20, 50),
+         fmdec=(120, 450), fenv=(25, 55), dec=(400, 1600), filt=[0, 0, 1], talk=(55, 85)),
+    dict(ondas=[2, 2, 3, 5], vozes=[1, 1, 2], osc2=(0.2, [1, 2], (40, 70)), det=(8, 25), cut=(600, 2600), res=(25, 50),
+         fmdec=(20, 90), fenv=(45, 80), dec=(150, 600), filt=[1, 1, 1, 3], talk=(20, 45)),
+    dict(ondas=[4, 5, 3, 2], vozes=[1, 1, 1, 2], osc2=(0.2, [1, 2], (30, 60)), det=(5, 20), cut=(400, 1600), res=(20, 50),
+         fmdec=(30, 160), fenv=(30, 60), dec=(150, 600), filt=[0, 1, 0], talk=(25, 55)),
+    dict(ondas=[2, 3, 5, 0, 1], vozes=[1, 4, 7, 8], osc2=(0.6, [0.5, 1.5, 2, 1], (40, 95)), det=(20, 70), cut=(300, 4000),
+         res=(40, 85), fmdec=(150, 1500), fenv=(40, 95), dec=(300, 2000), filt=[1, 3, 3, 2, 0], talk=(40, 85)),
+    None,
+    dict(ondas=[2, 2, 4], vozes=[3, 4, 4], osc2=(0.5, [1, 2], (40, 80)), det=(20, 40), cut=(250, 1800), res=(40, 80),
+         fmdec=(100, 450), fenv=(35, 75), dec=(400, 1500), filt=[2, 2, 2, 1], talk=(45, 75)),
+]
+TALK_FM = (40, 70)
+
 # o que a receita não diz (UNISON, FILTER, MOVE, BEND): o corpo de lead que vale para todas as categorias
 PADRAO = dict(uni=(15, 50), filt=[0, 0, 0, 1, 2], move=(0.6, 10, 40), mrate=[2, 3, 3, 4],
               bend=(0.35, 0.2, [-12, -7, -12, 12]))
@@ -275,6 +304,28 @@ def preset(nome, cat):
         mp, m0, m1 = rc.get("move", PADRAO["move"])
         v[p + "move"] = round(faixa(rnd, m0, m1)) if rnd.random() < mp else 0
         v[p + "mrate"] = rnd.choice(rc.get("mrate", PADRAO["mrate"]))
+        va = VA[cat]
+        v[p + "eng"] = 1 if va else 0
+        if va:
+            # VA por cima do que o sorteio FM deixou (pan, glide, penv, bend e move continuam valendo)
+            vrnd = random.Random(zlib.crc32(f"{nome}/va/{k}".encode("utf-8")))
+            v[p + "wave"] = vrnd.choice(va["ondas"])
+            nv = vrnd.choice(va["vozes"])
+            v[p + "uni"] = round((nv - 1) * 100 / 7)
+            prob, rs, lv = va["osc2"]
+            on2 = vrnd.random() < prob
+            v[p + "ratio"] = ratio_idx(vrnd.choice(rs) if on2 else 1)
+            v[p + "fm"] = round(faixa(vrnd, *lv)) if on2 else 0
+            v[p + "fb"] = round(faixa(vrnd, *va["det"])) if nv > 1 or on2 else round(faixa(vrnd, 0, 12))
+            v[p + "cut"] = round(faixa(vrnd, *va["cut"], log=True))
+            v[p + "res"] = round(faixa(vrnd, *va["res"]))
+            v[p + "fmdec"] = round(faixa(vrnd, *va["fmdec"], log=True))
+            v[p + "fenv"] = round(faixa(vrnd, *va["fenv"]))
+            v[p + "dec"] = round(faixa(vrnd, *va["dec"], log=True))
+            v[p + "filt"] = vrnd.choice(va["filt"])
+            # leads de referência: mono com portamento quase sempre
+            if v[p + "glide"] == 0 and vrnd.random() < 0.5:
+                v[p + "glide"] = round(faixa(vrnd, 15, 70))
         if v[p + "filt"] == 2:
             # VOWEL: o CUTOFF é a vogal (abaixo de ~1 kHz = u/o/a, a boca abre no ataque com o F.ENV)
             v[p + "cut"] = round(faixa(rnd, 250, 1800, log=True))
@@ -313,6 +364,9 @@ def preset(nome, cat):
     v["contour"] = contorno
     if "duck" in rc:
         v["duck"] = round(faixa(rnd, *rc["duck"]))
+    # PAPO (0.4): sorteio à parte para não mudar as frases que já existiam
+    trnd = random.Random(zlib.crc32(f"{nome}/papo".encode("utf-8")))
+    v["talk"] = round(faixa(trnd, *(VA[cat]["talk"] if VA[cat] else TALK_FM)))
 
     cromatica = esc == "CHROMATIC"
     texto = frase(rnd, GRAUS_POR_OITAVA[ESCALAS[esc]], v["octaves"], dens / 100, gate / 100, gatevar / 100, cromatica, contorno)

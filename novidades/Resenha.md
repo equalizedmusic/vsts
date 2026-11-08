@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.0 — 2026-11-08
+- Oscilador novo: ENGINE VA por timbre (analógico virtual, no molde dos leads e arps de psy feitos em synth de subtração). Serra, quadrada e pulso 25%/12% com até 8 vozes desafinadas abertas no estéreo, 2º oscilador (uníssono, oitava ou quinta) e filtro de 24 dB (LP, BP ou HP) com drive e envelope curto no corte: a nota "fala" no ataque. O FM continua como opção (ENGINE = FM) para os timbres metálicos.
+- No VA os knobs da 1ª fileira mudam de papel: RATIO = intervalo do OSC 2, FM = nível do OSC 2, FEEDBACK = DETUNE, FM DEC = tempo do envelope do filtro; UNISON = número de vozes.
+- PAPO: o quanto a troca soa como conversa e não como sequência. Falas de tamanhos diferentes, respiro antes da resposta ou resposta que entra por cima da pergunta, resposta um pouco fora da grade, legato com glide nas notas vizinhas e a última nota da fala mais longa. 0% = grade dura, como até a 0.3.
+- Os 120 presets de fábrica refeitos no VA (a CONVERSA FM continua no FM), com PAPO. O Init também abre no VA.
+- O dado dos timbres sorteia VA na maioria das vezes; GERAR CONVERSA também sorteia o PAPO.
+- Projetos e presets do usuário da 0.3 abrem como eram (ENGINE = FM, PAPO = 0%).
+
 ## 0.3.0 — 2026-10-29
 - Timbre mais cheio: UNISON por timbre (3 cópias desafinadas abertas no estéreo).
 - FILTER por timbre: LP, BP ou VOWEL. No VOWEL o lead "fala" (u-o-a-e-i): o CUTOFF escolhe a vogal e o F.ENV abre a boca no ataque.

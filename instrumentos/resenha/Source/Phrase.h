@@ -14,6 +14,12 @@
 // o que está escrito. A resposta ainda sobe/desce pela ALTURA DA RESPOSTA. O ritmo é sempre o do passo.
 // A resposta FECHA na tônica (a última nota dela cai na tônica mais perto, menos no LIVRE): a pergunta fica no ar e a
 // resposta conclui. A última nota de cada fala (antes de passar a vez) fica marcada: é nela que entra o BEND do timbre.
+// PAPO (0.4): o quanto isso soa como conversa e não como sequência. Com PAPO > 0 as falas têm tamanhos diferentes
+// (quem responde pode falar uma nota a mais ou a menos), quem pergunta respira antes da resposta (a última nota dela
+// encurta) ou a resposta entra POR CIMA (a nota que fecha a pergunta segue soando), a resposta chega um pouco atrasada
+// (fora da grade), notas vizinhas da mesma fala viram legato (gate cheio: o GLIDE liga uma na outra), a última nota da
+// fala se alonga sobre a pausa seguinte (como quem termina a frase) e o acento cai no começo de cada fala.
+// Tudo por sorteio determinístico (hash do passo): a mesma frase toca sempre igual e a tela mostra o que toca.
 namespace resenha
 {
 struct PhraseParams
@@ -23,12 +29,14 @@ struct PhraseParams
     Order order = Order::sequence;
     Response response = Response::echo;
     int interval = 1;
+    float talk = 0.0f;      // PAPO 0..1
 };
 
 struct PhraseNote
 {
     int  step = 0, len = 1, note = 60, voice = 0;
     float gate = 0.5f;      // fração do último passo da nota
+    float delay = 0.0f;     // atraso do ataque em fração de passo (PAPO: a resposta fora da grade)
     bool accent = false, response = false;
     bool last = false;      // fecha a fala (a próxima nota é de outro turno, ou a frase acabou)
 };
@@ -99,6 +107,62 @@ inline int voiceForTurn (int turn, const PhraseParams& p)
     }
 }
 
+// PAPO: depois de escrita a conversa, o jeito de falar (ver o cabeçalho). Só mexe em duração, gate, atraso e acento.
+inline void applyTalk (const PhraseParams& p, Phrase& out)
+{
+    const float t = juce::jlimit (0.0f, 1.0f, p.talk);
+    if (t <= 0.001f || out.count == 0) return;
+    auto chance = [] (int j, unsigned salt, float prob)
+    {
+        return (float) (mix ((unsigned) j * 2654435761U + salt) % 1000U) < prob * 1000.0f;
+    };
+    auto hashF = [] (int j, unsigned salt) { return (float) (mix ((unsigned) j * 40503U + salt) % 1000U) / 1000.0f; };
+
+    for (int j = 0; j < out.count; ++j)
+    {
+        auto& pn = out.notes[(size_t) j];
+        const bool hasNext = j + 1 < out.count;
+        const auto* nx = hasNext ? &out.notes[(size_t) j + 1] : nullptr;
+        const int  room = (hasNext ? nx->step : out.steps) - (pn.step + pn.len);   // passos de pausa depois da nota
+        const bool first = j == 0 || out.notes[(size_t) j - 1].last;
+
+        // acento no começo de cada fala; no meio da fala as notas repetidas falam mais baixo
+        if (first) pn.accent = pn.accent || chance (j, 101U, 0.4f + 0.4f * t);
+        else if (j > 0 && out.notes[(size_t) j - 1].note == pn.note && chance (j, 103U, 0.5f * t)) pn.accent = false;
+
+        // a resposta chega um pouco atrasada; dentro da fala, um tiquinho fora da grade (quem responde, mais solto)
+        if (first && j > 0) pn.delay = t * (0.12f + 0.28f * hashF (j, 107U));
+        else                pn.delay = t * (pn.response ? 0.07f : 0.03f) * hashF (j, 109U);
+
+        if (pn.last)
+        {
+            if (nx != nullptr && nx->voice != pn.voice && chance (j, 113U, 0.3f * t))
+            {
+                // POR CIMA: a nota que fecha a fala segue soando enquanto o outro timbre começa
+                pn.len += 1;
+                pn.gate = 1.0f;
+            }
+            else if (nx != nullptr && chance (j, 127U, 0.55f * t) && room == 0)
+            {
+                // RESPIRO: sem pausa entre as falas, quem fala encurta a última nota
+                pn.gate *= 0.55f;
+            }
+            else if (room > 0 && chance (j, 131U, 0.8f * t))
+            {
+                // a última nota da fala se alonga sobre a pausa (como quem termina a frase)
+                pn.len += juce::jmin (room, 2);
+                pn.gate = juce::jmax (pn.gate, 0.85f);
+            }
+        }
+        else if (nx != nullptr && room == 0 && std::abs (nx->note - pn.note) <= 3 && nx->note != pn.note
+                 && chance (j, 137U, 0.45f * t))
+        {
+            // LEGATO: nota vizinha da mesma fala, sem pausa: gate cheio (com GLIDE, desliza)
+            pn.gate = 1.0f;
+        }
+    }
+}
+
 inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
 {
     out.count = 0;
@@ -112,7 +176,7 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
 
     // primeira passada: notas, duração e de quem é a vez
     std::array<int, maxSteps> deg {}, turnOf {}, posOf {};
-    int k = 0, prevTurn = -1, pos = 0;
+    int k = 0, prevTurn = -1, pos = 0, noteTurn = -1, turnEnd = 0;
     for (int i = 0; i < out.steps; ++i)
     {
         const Step st = pat.get (i);
@@ -120,7 +184,20 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
         int len = 1;
         while (i + len < out.steps && pat.get (i + len).mode == Mode::tie) ++len;
 
-        const int turn = byTime ? i / turnSteps : k / every;
+        // PAPO: a fala tem tamanho variável (±1 ou +2 notas) — a troca não cai sempre no mesmo lugar
+        if (! byTime && k == turnEnd)
+        {
+            ++noteTurn;
+            int len = every;
+            if (p.talk >= 0.2f)
+            {
+                static const int deltas[8] = { 0, 1, -1, 0, 2, -1, 1, 0 };
+                const int d = deltas[mix ((unsigned) noteTurn * 2246822519U + 7U) % 8U];
+                if ((float) (mix ((unsigned) noteTurn * 3266489917U + 11U) % 100U) < p.talk * 100.0f) len += d;
+            }
+            turnEnd = k + juce::jmax (1, len);
+        }
+        const int turn = byTime ? i / turnSteps : noteTurn;
         pos = turn == prevTurn ? pos + 1 : 0;
         prevTurn = turn;
 
@@ -184,6 +261,8 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
         }
         pn.note = juce::jlimit (24, 108, note);
     }
+
+    applyTalk (p, out);
 }
 
 // ======================================================================================
