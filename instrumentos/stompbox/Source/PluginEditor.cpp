@@ -89,6 +89,10 @@ juce::Image StompboxEditor::fazCamada (juce::Rectangle<float> area, const std::f
 
 void StompboxEditor::pinta (juce::Graphics& g, const juce::Image& img, juce::Point<float> origem) const
 {
+    // drawImage usa a opacidade da cor atual: sem isto, um setColour com alfa feito antes (LED aceso, fundo de 3%
+    // da célula do seletor) deixava o knob/pedal esmaecido ou quase invisível.
+    juce::Graphics::ScopedSaveState ss (g);
+    g.setColour (juce::Colours::black.withAlpha (opacCamada));
     g.drawImageTransformed (img, juce::AffineTransform::scale (1.0f / camadasEscala).translated (origem));
 }
 
@@ -152,9 +156,9 @@ void StompboxEditor::paint (juce::Graphics& g)
     if (arrastandoPedal && pedalArrastado >= 0)
     {
         const auto d = proc.le (pedalArrastado);
-        g.setOpacity (0.92f);
+        g.setOpacity (0.92f); opacCamada = 0.92f;
         desenhaPedal (g, d.tipo, { xPedal, 480.0f }, d, pedalArrastado, false);
-        g.setOpacity (1.0f);
+        g.setOpacity (1.0f); opacCamada = 1.0f;
         if (destinoPedal >= 0)
         {
             const float x = rectSlot (destinoPedal - proc.rolagem.load()).getX() - 15.0f;

@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.4 — 2026-11-08
+- Ainda TESTE (sem licença, fora do site).
+- Seletor de pedais (adicionar/trocar): os pedais apareciam sem cor, quase transparentes. Agora aparecem inteiros.
+- No board, o 1º knob de cada pedal (LEVEL, DRIVE, DIST, RATE, TIME, DECAY...) saía esmaecido. Agora sai igual aos outros.
+  (Causa: a imagem pronta do knob/pedal herdava a transparência da última cor usada — LED aceso, fundo da célula.)
+
 ## 0.1.3 — 2026-11-08
 - Ainda TESTE (sem licença, fora do site).
 - Textos que ainda encostavam, achados nas fotos da 0.1.2:

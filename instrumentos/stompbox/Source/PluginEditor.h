@@ -90,6 +90,7 @@ private:
     juce::Image imgFundo, imgPedal[stomp::numTipos], imgAmp[stomp::numAmps], imgCab[3], grao, graoTolex;
     std::map<int, juce::Image> imgKnob;
     float camadasEscala = 0;
+    float opacCamada = 1.0f;   // opacidade das camadas guardadas (0.92 só no pedal arrastado)
     double somaParams = 0;
 
     // arrasto
