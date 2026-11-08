@@ -3,18 +3,31 @@
 # e a seção da versão em novidades/<arquivo>.md como nota. Só sai quando:
 #   - a versão é nova (a tag ainda não existe: versão já lançada não é sobrescrita — para lançar, suba a versão);
 #   - os dois instaladores do pacote existem (Mac e Windows);
-#   - o pluginval não falhou em nenhum dos dois sistemas.
+#   - o pluginval não reprovou o pacote em nenhum dos dois sistemas. Se o workflow lista os reprovados
+#     (pluginval-falhou-<sistema>.txt + pluginval-fim-<sistema>.txt), só eles ficam de fora; se o pluginval
+#     falhou sem essa lista (não baixou, estourou o tempo, workflow antigo), nenhum pacote sai.
 # Fica só a última versão de cada pacote: criado o release novo, os <prefixo>-v… anteriores (release e tag) são apagados.
 # Uso: release-versoes.sh <pasta dos instaladores> <pasta do relatório> <checkout do repo> <Pacote>...
 set -euo pipefail
 pacotes=$1; report=$2; src=$3; shift 3
 
-if grep -h "pluginval=failure" "$report"/status-*.txt 2>/dev/null; then
-  echo "pluginval falhou: nenhum release de versão neste build"
-  exit 0
-fi
+reprovados=" "
+for st in "$report"/status-*.txt; do
+  [ -e "$st" ] || continue
+  grep -q "pluginval=failure" "$st" || continue
+  sis=$(basename "$st" .txt); sis=${sis#status-}
+  if [ ! -e "$report/pluginval-fim-$sis.txt" ]; then
+    echo "pluginval falhou no $sis sem chegar ao fim: nenhum release de versão neste build"
+    exit 0
+  fi
+  reprovados="$reprovados$( { cat "$report/pluginval-falhou-$sis.txt" 2>/dev/null || true; } | tr -d '\r' | tr '\n' ' ')"
+done
+[ "$reprovados" != " " ] && echo "pluginval reprovou:$reprovados(só esses ficam sem release)"
 
 for pac in "$@"; do
+  case "$reprovados" in
+    *" $pac "*) echo "$pac: reprovado no pluginval; sem release de versão"; continue ;;
+  esac
   mac="$pacotes/InsideStudioSP-$pac-mac.dmg"
   win="$pacotes/InsideStudioSP-$pac-win.exe"
   if [ ! -e "$mac" ] || [ ! -e "$win" ]; then

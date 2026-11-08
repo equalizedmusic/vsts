@@ -161,10 +161,24 @@ jobs:
             7z x -y pv.zip > /dev/null
             PV=./pluginval.exe
           fi
-          for p in dist/VST3/*.vst3 dist-limao/VST3/*.vst3 dist-mercurio/VST3/*.vst3 dist-resenha/VST3/*.vst3 dist-montamonta/VST3/*.vst3 dist-groovador/VST3/*.vst3 dist-mesa/VST3/*.vst3 dist-align/VST3/*.vst3 dist-onkey/VST3/*.vst3 dist-barebass/VST3/*.vst3 dist-stompbox/VST3/*.vst3; do
-            [ -e "$p" ] || continue
-            "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log
+          # Cada plugin é testado à parte: o pacote reprovado vai para pv-falhou.txt e só ele fica sem release
+          # (release-versoes.sh). pv-fim.txt marca que o teste chegou ao fim; sem ele (pluginval não baixou, step
+          # estourou o tempo) nenhum pacote sai, porque não dá para saber quem passou.
+          : > pv-falhou.txt
+          falha=0
+          for par in dist:Quimera dist-limao:Limao dist-mercurio:Mercurio dist-resenha:Resenha dist-montamonta:MontaMonta dist-groovador:Groovador dist-mesa:Mesa dist-align:Align dist-onkey:Onkey dist-barebass:Barebass dist-stompbox:Stompbox; do
+            d=${par%%:*}; pac=${par#*:}
+            for p in "$d"/VST3/*.vst3; do
+              [ -e "$p" ] || continue
+              if ! "$PV" --strictness-level 5 --validate-in-process --timeout-ms 120000 "$p" 2>&1 | tee -a pluginval.log; then
+                echo "$pac" >> pv-falhou.txt
+                echo "::warning::pluginval reprovou $pac (${{ matrix.name }})"
+                falha=1
+              fi
+            done
           done
+          echo fim > pv-fim.txt
+          exit $falha
 
       - name: Relatório
         if: always()
@@ -173,6 +187,8 @@ jobs:
           cp build.log     "report/build-${{ matrix.name }}.log"     2>/dev/null || true
           cp pack.log      "report/pack-${{ matrix.name }}.log"      2>/dev/null || true
           cp pluginval.log "report/pluginval-${{ matrix.name }}.log" 2>/dev/null || true
+          cp pv-falhou.txt "report/pluginval-falhou-${{ matrix.name }}.txt" 2>/dev/null || true
+          cp pv-fim.txt    "report/pluginval-fim-${{ matrix.name }}.txt"    2>/dev/null || true
           cp InsideStudioSP-*-${{ matrix.name }}.* report/ 2>/dev/null || true
           echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }} pluginval=${{ steps.pluginval.outcome }}" > "report/status-${{ matrix.name }}.txt"
 
