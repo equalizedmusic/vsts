@@ -285,7 +285,7 @@ const EXCLUSAO = `<h1>Exclusão de dados</h1><p class="sub">App "InsideStudio DM
 // Tabela ig_agenda (migracao-2026-11-08d-instagram-agenda.sql). O cron de 10 em 10 min chama publicarAgendados:
 //   pendente (hora chegou) -> cria o(s) contêiner(es) na Meta -> processando -> (vídeo termina) -> publicado | erro
 // As mídias precisam estar num endereço https público (a Meta baixa de lá).
-const TIPOS = { imagem: [1, 1], reels: [1, 1], carrossel: [2, 10] };
+const TIPOS = { imagem: [1, 1], reels: [1, 1], carrossel: [2, 10], story: [1, 1] };   // story: foto ou vídeo, sem legenda (a Meta ignora)
 const ehVideo = (u) => /\.(mp4|mov)(\?|$)/i.test(u);
 const igAlvo = (env, tk) => (ehIg(tk) ? '/me' : '/' + (env.IG_ID || '17841400749768561'));
 const form = (o) => ({
@@ -294,7 +294,7 @@ const form = (o) => ({
 });
 
 function validarAgenda(d) {
-    if (!d || !TIPOS[d.tipo]) return 'tipo deve ser imagem, reels ou carrossel';
+    if (!d || !TIPOS[d.tipo]) return 'tipo deve ser imagem, reels, carrossel ou story';
     const [min, max] = TIPOS[d.tipo];
     if (!Array.isArray(d.midias) || d.midias.length < min || d.midias.length > max) return `midias: de ${min} a ${max} endereços`;
     if (d.midias.some((u) => typeof u !== 'string' || !/^https:\/\/\S+$/.test(u))) return 'midias: só endereços https';
@@ -322,7 +322,9 @@ async function passoAgenda(env, tk, a) {
                 c.filhos.push(r.corpo.id);
             }
         } else {
-            const r = await graph(alvo + '/media', tk, form(a.tipo === 'reels'
+            const r = await graph(alvo + '/media', tk, form(a.tipo === 'story'
+                ? (ehVideo(midias[0]) ? { media_type: 'STORIES', video_url: midias[0] } : { media_type: 'STORIES', image_url: midias[0] })
+                : a.tipo === 'reels'
                 ? { media_type: 'REELS', video_url: midias[0], caption: a.legenda, share_to_feed: 'true' }
                 : { image_url: midias[0], caption: a.legenda }));
             if (!r.ok || !r.corpo?.id) return { estado: 'erro', resultado: erro(r) };
