@@ -96,7 +96,7 @@ int main()
         for (int i = 0; i < 4800; ++i) x[(size_t) i] = (float) std::sin (2 * pi * 1000 * i / fs);
         for (int o = 0; o < 4800; o += maxSub) { os.up (&x[(size_t) o], maxSub); os.down (&y[(size_t) o], maxSub); }
         double m = 0; for (int i = 2400; i < 4800; ++i) m = std::max (m, (double) std::abs (y[(size_t) i]));
-        confere (std::abs (db (m)) < 0.1, "4x sobe e desce 1 kHz sem perda");
+        confere (std::abs (db (m)) < 0.15, "4x sobe e desce 1 kHz sem perda (antidobra: ondulação 0,1 dB)");
     }
 
     const auto gtr = guitarra ((int) (fs * 4));
@@ -114,14 +114,14 @@ int main()
                 if (t == Echo) c.k[1] = std::min (v, 0.85f);
                 std::vector<float> R; const auto y = rodaPedal (t, c, gtr, &R);
                 const auto m = mede (y, (int) fs / 2), mr = mede (R, (int) fs / 2);
-                ok = ok && m.finito && mr.finito && m.pico < 4.0 && std::abs (m.dc) < 0.02;
+                ok = ok && m.finito && mr.finito && m.pico < 4.6 && std::abs (m.dc) < 0.02;   // 0.1.6: trilho sem dobra passa ~1 dB do teto (Gibbs)
                 pmax = std::max (pmax, m.pico); rmin = std::min (rmin, m.rms); rmax = std::max (rmax, m.rms);
             }
         // o "meio" (knobs em 5, chave 0) perto do nível de entrada
         Ctl c; c.on = true; for (auto& k : c.k) k = 0.5f;
         const auto mm = mede (rodaPedal (t, c, gtr), (int) fs / 2);
         std::printf ("  %-9s pico máx %6.1f dB | RMS %6.1f a %6.1f dB | knobs em 5: RMS %+5.1f dB da entrada\n", nomes[t], db (pmax), db (rmin), db (rmax), db (mm.rms) - db (mIn.rms));
-        char o[96]; std::snprintf (o, sizeof o, "%s: sem NaN, pico < +12 dB, sem DC", nomes[t]); confere (ok, o);
+        char o[96]; std::snprintf (o, sizeof o, "%s: sem NaN, pico < +13 dB, sem DC", nomes[t]); confere (ok, o);
         std::snprintf (o, sizeof o, "%s: knobs em 5 a ±12 dB da entrada", nomes[t]); confere (std::abs (db (mm.rms) - db (mIn.rms)) < 12.0, o);
     }
 

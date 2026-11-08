@@ -4,6 +4,21 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.6 — 2026-11-08
+- Ainda TESTE (sem licença, fora do site).
+- HUMP e CLEARCUT soavam como fuzz quebrado e sujo, e o som ia e voltava entre bom e "downsampler" (o 8x da 0.1.5
+  não resolveu, e o HQ também não mudava nada). Eram duas causas, fora do oversampling:
+  - O último clipe do pedal (o limite de 9 V, depois do TONE e do LEVEL) rodava na taxa do DAW. HUMP e CLEARCUT
+    somam o sinal limpo com o clipado, como no circuito real: com a guitarra forte, a soma batia nesse clipe e
+    dobrava. Agora ele roda no oversampling, nos quatro drives. A saturação do SQUASH também.
+  - O filtro de volta para a taxa do DAW deixava passar 24–27 kHz (só −37 dB em 25 kHz). Esses harmônicos voltavam
+    em 21–24 kHz, e o pedal seguinte ou o amp sujo os misturava com a nota, trazendo a sujeira para a faixa
+    audível. Agora há um passa-baixa elíptico (−95 dB a partir de 24 kHz; passa até 20 kHz) antes de cada volta.
+  - Medido com um seno de 2,6 kHz, efeitos de tempo desligados (sujeira fora do tom abaixo do som): TONY IOMI de 34
+    para 75 dB, BRIAN MAIO de 36 para 75, BLUES CRUNCH de 55 para 75, CARLOS SANTANNA de 51 para 75. CLEARCUT do TONY
+    sozinho: de 53 para 75 dB. O GRIT no máximo ganhou a banda do op-amp (16 kHz) na saída: de 40 para 54 dB.
+- O nível dos pedais e dos presets não mudou. CPU: o pior caso (10 drives + amp em HQ) fica em ~29% de um núcleo.
+
 ## 0.1.5 — 2026-11-08
 - Ainda TESTE (sem licença, fora do site).
 - Distorção com cara de downsampler (HUMP, CLEARCUT, GRIT, WOOLLY e o AMP): os drives rodavam com oversampling 2x,

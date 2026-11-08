@@ -150,11 +150,40 @@ struct Halfband2x
     float down (float x0, float x1) { const float y = 0.5f * (dnA.process (x0) + dnB.process (impar)); impar = x1; return y; }
 };
 
+// Passa-baixa elíptico de ordem 10 na taxa 2x, antes da última decimação: passa até 0,42·fs (20,2 kHz em 48 kHz)
+// e corta 95 dB a partir de fs/2. O meio-banda sozinho deixava passar 24–27 kHz (−37 dB em 25 kHz): esses harmônicos
+// dobravam para 21–24 kHz e o estágio seguinte (outro drive, o amp sujo) os misturava com a nota e trazia a sujeira
+// para a faixa audível — o "downsampler" que aparecia mais em drive + amp. Normalizado à taxa 2x: vale em qualquer fs.
+struct AntiDobra
+{
+    static constexpr int nSec = 5;
+    double z[nSec][2] {};
+    void reset() { for (auto& s : z) s[0] = s[1] = 0.0; }
+    float process (float xf)
+    {
+        static const double c[nSec][5] = {   // b0 b1 b2 a1 a2 (scipy ellip(10, 0.1, 95, 0.42))
+            { 0.0020243145418248776, 0.0037518331919685942, 0.0020243145418248776, -1.1506524218459493, 0.37343473691290707 },
+            { 1, 1.0926065112383325, 0.99999999999999978, -0.94301414552466178, 0.52491125437472375 },
+            { 1, 0.46542029671206259, 1.0000000000000002, -0.69988622857434224, 0.70869767582508758 },
+            { 1, 0.13632899252728556, 1, -0.53322828219543406, 0.85190371535231491 },
+            { 1, 0.0034683375606779651, 0.99999999999999989, -0.46163585054082862, 0.95481446907548118 } };
+        double x = xf;
+        for (int k = 0; k < nSec; ++k)
+        {
+            const double y = c[k][0] * x + z[k][0];
+            z[k][0] = c[k][1] * x - c[k][3] * y + z[k][1];
+            z[k][1] = c[k][2] * x - c[k][4] * y;
+            x = y;
+        }
+        return (float) x;
+    }
+};
+
 struct Oversampler   // fator 1, 2, 4, 8 ou 16 para um canal (estágios de 2x em cascata)
 {
-    Halfband2x st[4]; int fator = 8;
+    Halfband2x st[4]; AntiDobra ad; int fator = 8;
     float buf[maxSub * 16] {}, tmp[2][maxSub * 8] {};
-    void reset() { for (auto& h : st) h.reset(); }
+    void reset() { for (auto& h : st) h.reset(); ad.reset(); }
     int estagios() const { return fator >= 16 ? 4 : fator >= 8 ? 3 : fator >= 4 ? 2 : fator >= 2 ? 1 : 0; }
     int up (const float* x, int n)
     {
@@ -178,7 +207,10 @@ struct Oversampler   // fator 1, 2, 4, 8 ou 16 para um canal (estágios de 2x em
         {
             len /= 2;
             float* dst = k == 0 ? y : tmp[k & 1];
-            for (int i = 0; i < len; ++i) dst[i] = st[k].down (src[2 * i], src[2 * i + 1]);
+            if (k == 0)
+                for (int i = 0; i < len; ++i) { const float a = ad.process (src[2 * i]), b = ad.process (src[2 * i + 1]); dst[i] = st[0].down (a, b); }
+            else
+                for (int i = 0; i < len; ++i) dst[i] = st[k].down (src[2 * i], src[2 * i + 1]);
             src = dst;
         }
     }
@@ -193,6 +225,22 @@ inline float trilho (float x) { return 2.0f * tanhA (x * 0.5f); }   // o op-amp 
 inline float clip2 (float x) { return x / std::sqrt (1.0f + x * x); }
 inline float clip4 (float x) { const float x2 = x * x; return x / std::sqrt (std::sqrt (1.0f + x2 * x2)); }
 inline float tanAprox (float w) { const float w2 = w * w; return w * (1.0f + w2 * (0.33333f + w2 * 0.13333f)); }   // tan(w), w < 0,4
+
+// trilho de saída do pedal (depois do tom e do volume) NO oversampling. Até a 0.1.5 ele rodava na taxa do DAW: com o
+// volume do pedal alto o trilho clipava duro ali e dobrava (aliasing) — o "downsampler" que ia e voltava com a
+// palhetada, igual em HQ (só 39 dB abaixo no TONY IOMI). Aqui: x já com o ganho; sai trilho(x) sem dobra.
+struct TrilhoOS
+{
+    Oversampler os;
+    void prepare (int f) { os.fator = f; os.reset(); }
+    void reset() { os.reset(); }
+    void process (float* x, int n)
+    {
+        const int m = os.up (x, n);
+        for (int i = 0; i < m; ++i) os.buf[i] = trilho (os.buf[i]);
+        os.down (x, n);
+    }
+};
 
 // --------------------------------------------------------------------------------------------------------------
 // pedais
@@ -271,9 +319,9 @@ struct Dual : Pedal
 // lento (~0,35 s): o "squish" no ataque e o "pump" quando a nota morre. O OTA satura de leve (o grão do pedal).
 struct SquashCore
 {
-    double fs = 48000; float env = 0, gr = 1; Ramp lvl, sus, mix; float atk = 0.01f, rel = 0.0f, grK = 0.02f; OnePole cor;
-    void prepare (double s, int) { fs = s; cor.set (6500, fs); rel = (float) std::exp (-1.0 / (0.35 * fs)); grK = (float) (1.0 - std::exp (-1.0 / (0.0008 * fs))); reset(); }
-    void reset() { env = 0; gr = 1; cor.reset(); }
+    double fs = 48000; float env = 0, gr = 1; Ramp lvl, sus, mix; float atk = 0.01f, rel = 0.0f, grK = 0.02f; OnePole cor; TrilhoOS sat;
+    void prepare (double s, int f) { fs = s; sat.prepare (std::min (f, 4)); cor.set (6500, fs); rel = (float) std::exp (-1.0 / (0.35 * fs)); grK = (float) (1.0 - std::exp (-1.0 / (0.0008 * fs))); reset(); }
+    void reset() { env = 0; gr = 1; cor.reset(); sat.reset(); }
     void set (const Ctl& c)
     {
         lvl.set (dbToGain (lerp (-12.0f, 18.0f, c.k[0])));
@@ -285,15 +333,16 @@ struct SquashCore
     {
         const float g = lvl.next(), S = sus.next(), m = mix.next();
         const float comp = 1.0f + 0.22f * S;   // o pedal devolve o nível que o SUSTAIN tira
+        float u[maxSub];
         for (int i = 0; i < n; ++i)
         {
             const float a = std::abs (x[i]);
             env = a > env ? a + (env - a) * atk : a + (env - a) * rel;
             gr += (1.0f / (1.0f + S * 4.0f * env) - gr) * grK;
-            const float u = x[i] * gr * comp;
-            const float wet = cor.lp (0.6f * tanhA (u / 0.6f)) * g;
-            x[i] = x[i] * (1.0f - m) + wet * m;
+            u[i] = x[i] * gr * comp / 1.2f;   // trilho(v) = 2·tanh(v/2): 1,2·trilho(u/1,2) = 0,6·tanh(u/0,6)
         }
+        sat.process (u, n);   // a saturação do OTA no oversampling (na taxa do DAW ela dobrava)
+        for (int i = 0; i < n; ++i) x[i] = x[i] * (1.0f - m) + cor.lp (1.2f * u[i]) * g * m;
     }
 };
 using SquashPedal = Dual<SquashCore>;
@@ -305,10 +354,10 @@ using SquashPedal = Dual<SquashCore>;
 // ativo de agudo.
 struct HumpCore
 {
-    double fs = 48000; Oversampler os; OnePole hpIn, lpClip, toneLp; DcBlock dc; float dAtual = -1, ganho = 12;
+    double fs = 48000; Oversampler os; TrilhoOS tr; OnePole hpIn, lpClip, toneLp; DcBlock dc; float dAtual = -1, ganho = 12;
     Ramp drive, lvl, tone;
-    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (720, fs * f); toneLp.set (723, fs); dc.set (fs); dAtual = -1; reset(); }
-    void reset() { os.reset(); hpIn.reset(); lpClip.reset(); toneLp.reset(); dc.reset(); }
+    void prepare (double s, int f) { fs = s; os.fator = f; tr.prepare (f); hpIn.set (720, fs * f); toneLp.set (723, fs); dc.set (fs); dAtual = -1; reset(); }
+    void reset() { os.reset(); tr.reset(); hpIn.reset(); lpClip.reset(); toneLp.reset(); dc.reset(); }
     void set (const Ctl& c) { drive.set (c.k[0]); lvl.set (dbToGain (lerp (-24.0f, 10.0f, c.k[1]))); tone.set (c.k[2]); }
     void process (float* x, int n)
     {
@@ -332,8 +381,9 @@ struct HumpCore
         {
             const float lo = toneLp.lp (x[i]), hi = x[i] - lo;
             const float y = lo + hi * lerp (0.06f, 1.2f, t);
-            x[i] = trilho (dc.process (y) * g * 0.8f);
+            x[i] = dc.process (y) * g * 0.8f;
         }
+        tr.process (x, n);
     }
 };
 using HumpPedal = Dual<HumpCore>;
@@ -343,10 +393,10 @@ using HumpPedal = Dual<HumpCore>;
 // (joelho duro e baixo, ~0,3 V); o caminho sujo tem o médio na frente (corta grave antes do clip).
 struct ClearCore
 {
-    double fs = 48000; Oversampler os; OnePole hpIn; Biquad treble, bass, bump; DcBlock dc;
+    double fs = 48000; Oversampler os; TrilhoOS trl; OnePole hpIn; Biquad treble, bass, bump; DcBlock dc;
     Ramp gain, vol; float clipLvl = 0.3f; float tr = -1, ba = -1;
-    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (160, fs * f); bump.peak (1000, 0.6, 3.0, fs * f); dc.set (fs); tr = ba = -1; reset(); }
-    void reset() { os.reset(); hpIn.reset(); treble.reset(); bass.reset(); bump.reset(); dc.reset(); }
+    void prepare (double s, int f) { fs = s; os.fator = f; trl.prepare (f); hpIn.set (160, fs * f); bump.peak (1000, 0.6, 3.0, fs * f); dc.set (fs); tr = ba = -1; reset(); }
+    void reset() { os.reset(); trl.reset(); hpIn.reset(); treble.reset(); bass.reset(); bump.reset(); dc.reset(); }
     void set (const Ctl& c)
     {
         gain.set (c.k[0]); vol.set (dbToGain (lerp (-20.0f, 12.0f, c.k[2])));
@@ -367,7 +417,8 @@ struct ClearCore
             os.buf[i] = s * limpo + c * sujo;
         }
         os.down (x, n);
-        for (int i = 0; i < n; ++i) x[i] = trilho (bass.process (treble.process (dc.process (x[i]))) * v * 0.9f);
+        for (int i = 0; i < n; ++i) x[i] = bass.process (treble.process (dc.process (x[i]))) * v * 0.9f;
+        trl.process (x, n);
     }
 };
 using ClearPedal = Dual<ClearCore>;
@@ -379,15 +430,15 @@ using ClearPedal = Dual<ClearCore>;
 // 1,5k + 100k·pot com 3,3 nF (32 kHz a 475 Hz).
 struct GritCore
 {
-    double fs = 48000; Oversampler os; OnePole hp1, h60, h1539, slew, filtro; DcBlock dc; Ramp dist, vol; float fAtual = -1, dAtual = -1; int modo = -1;
+    double fs = 48000; Oversampler os; TrilhoOS tr; OnePole hp1, h60, h1539, slew, filtro, banda; DcBlock dc; Ramp dist, vol; float fAtual = -1, dAtual = -1; int modo = -1;
     float gMed = 0, gAlto = 0;
     void prepare (double s, int f)
     {
-        fs = s; os.fator = f; dc.set (fs); fAtual = dAtual = -1; modo = -1;
-        h60.set (1.0 / (2 * pi * 560.0 * 4.7e-6), fs * f); h1539.set (1.0 / (2 * pi * 47.0 * 2.2e-6), fs * f);
+        fs = s; os.fator = f; tr.prepare (f); dc.set (fs); fAtual = dAtual = -1; modo = -1;
+        h60.set (1.0 / (2 * pi * 560.0 * 4.7e-6), fs * f); banda.set (16000.0, fs * f); h1539.set (1.0 / (2 * pi * 47.0 * 2.2e-6), fs * f);
         reset();
     }
-    void reset() { os.reset(); hp1.reset(); h60.reset(); h1539.reset(); slew.reset(); filtro.reset(); dc.reset(); }
+    void reset() { os.reset(); tr.reset(); banda.reset(); hp1.reset(); h60.reset(); h1539.reset(); slew.reset(); filtro.reset(); dc.reset(); }
     void set (const Ctl& c)
     {
         dist.set (c.k[0]); vol.set (dbToGain (lerp (-30.0f, 8.0f, c.k[2])));
@@ -410,11 +461,13 @@ struct GritCore
         {
             const float s = hp1.hp (os.buf[i]);
             float a = s + gMed * h60.hp (s) + gAlto * h1539.hp (s);
-            a = 4.0f * tanhA (slew.lp (a) * 0.25f);                    // trilhos de 9 V do op-amp
+            a = banda.lp (4.0f * tanhA (slew.lp (a) * 0.25f));          // trilhos de 9 V do op-amp; a saída não tem quina
+                                                                         // (banda do LM308): a quadrada dobrava mesmo em 8x
             os.buf[i] = vd * (modo == 0 ? clip4 (a / vd) : clip2 (a / vd)) * comp;
         }
         os.down (x, n);
-        for (int i = 0; i < n; ++i) x[i] = trilho (dc.process (filtro.lp (x[i])) * v);
+        for (int i = 0; i < n; ++i) x[i] = dc.process (filtro.lp (x[i])) * v;
+        tr.process (x, n);
     }
 };
 using GritPedal = Dual<GritCore>;
@@ -425,9 +478,9 @@ using GritPedal = Dual<GritCore>;
 // (baixe o INPUT como se fosse o volume da guitarra). Entrada por 2,2 µF: grave cheio.
 struct WoollyCore
 {
-    double fs = 48000; Oversampler os; OnePole hpIn, lpOut, lpPre; DcBlock dc, dc2; Ramp fuzz, vol; int modo = -1; float bias = 0;
-    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (35, fs * f); dc.set (fs * f); dc2.set (fs); modo = -1; reset(); }
-    void reset() { os.reset(); hpIn.reset(); lpOut.reset(); lpPre.reset(); dc.reset(); dc2.reset(); bias = 0; }
+    double fs = 48000; Oversampler os; TrilhoOS tr; OnePole hpIn, lpOut, lpPre; DcBlock dc, dc2; Ramp fuzz, vol; int modo = -1; float bias = 0;
+    void prepare (double s, int f) { fs = s; os.fator = f; tr.prepare (f); hpIn.set (35, fs * f); dc.set (fs * f); dc2.set (fs); modo = -1; reset(); }
+    void reset() { os.reset(); tr.reset(); hpIn.reset(); lpOut.reset(); lpPre.reset(); dc.reset(); dc2.reset(); bias = 0; }
     void set (const Ctl& c)
     {
         vol.set (dbToGain (lerp (-36.0f, 6.0f, c.k[0]))); fuzz.set (c.k[1]);
@@ -450,7 +503,8 @@ struct WoollyCore
             os.buf[i] = dc.process (y);
         }
         os.down (x, n);
-        for (int i = 0; i < n; ++i) x[i] = trilho (dc2.process (lpOut.lp (x[i])) * v * 0.9f);
+        for (int i = 0; i < n; ++i) x[i] = dc2.process (lpOut.lp (x[i])) * v * 0.9f;
+        tr.process (x, n);
     }
 };
 using WoollyPedal = Dual<WoollyCore>;
