@@ -60,6 +60,13 @@ void StompboxEditor::timerCallback()
     // afinador: sempre analisa (o indicador da entrada fica sempre ligado); 15 Hz basta
     if ((++tick & 1) == 0 || proc.afinador.load()) analisaAfinador();
 
+    // arrastando um pedal até a borda do board: rola uma posição a cada ~0,3 s (com 7+ pedais)
+    if (arrastandoPedal)
+    {
+        const int lado = xPedal < 110.0f ? -1 : xPedal > 1490.0f ? 1 : 0;
+        if (lado == 0) tickBorda = 0;
+        else if (tickBorda++ % 10 == 0) { rola (lado); atualizaDestino(); }
+    }
     if (cenaSuja || arrastandoPedal || arrastandoKnob) { repaint(); return; }
     // só o que mexe sozinho: medidores, LED do gate e afinador
     repintaBase ({ 226.0f, 582.0f, 18.0f, 158.0f });
@@ -156,12 +163,17 @@ void StompboxEditor::paint (juce::Graphics& g)
     if (arrastandoPedal && pedalArrastado >= 0)
     {
         const auto d = proc.le (pedalArrastado);
-        g.setOpacity (0.92f); opacCamada = 0.92f;
-        desenhaPedal (g, d.tipo, { xPedal, 480.0f }, d, pedalArrastado, false);
-        g.setOpacity (1.0f); opacCamada = 1.0f;
-        if (destinoPedal >= 0)
+        // o pedal segue o mouse (um pouco acima/abaixo do trilho, sem sair do board)
+        const float yBase = juce::jlimit (440.0f, 520.0f, 480.0f + (yPedal - yIni));
+        opacCamada = 0.92f;
+        desenhaPedal (g, d.tipo, { xPedal, yBase }, d, pedalArrastado, false);
+        opacCamada = 1.0f;
+        // a linha amarela (por cima do pedal) fica no vão onde ele vai cair; no próprio lugar não aparece
+        const int vao = destinoPedal - proc.rolagem.load();
+        if (destinoPedal >= 0 && destinoFinal() != pedalArrastado && vao >= 0 && vao <= visiveis)
         {
-            const float x = rectSlot (destinoPedal - proc.rolagem.load()).getX() - 15.0f;
+            const float x = rectSlot (vao).getX() - 15.0f;
+            g.setColour (juce::Colour (0x55ffd24a)); g.fillRoundedRectangle (x - 7, 116.0f, 14.0f, 368.0f, 7.0f);
             g.setColour (juce::Colour (0xffffd24a)); g.fillRoundedRectangle (x - 2, 120.0f, 4.0f, 360.0f, 2.0f);
         }
     }
@@ -319,6 +331,7 @@ void StompboxEditor::boardArea (juce::Graphics& g)
             texto (g, u8 ("\xe2\x8b\xae\xe2\x8b\xae"), { cab.getRight() - 22, cab.getY(), 20, 20 }, juce::Colour (0xff5f8f86), fonte (14.0f));
             texto (g, u8 ("\xe2\x9c\x95"), { cab.getX(), cab.getY(), 20, 20 }, juce::Colour (0xff5f8f86), fonte (12.0f));
             alvos.push_back ({ { cab.getX(), cab.getY(), 22, 22 }, aRemove, pos });
+            alvos.push_back ({ cab.withTrimmedLeft (24).withHeight (22), aPedal, pos });   // a faixa do nome e a alça ⋮⋮ pegam o pedal
             if (arrastandoPedal && pos == pedalArrastado)
             {
                 g.setColour (juce::Colour (0xff3f7068));

@@ -9,6 +9,11 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 - Seletor de pedais (adicionar/trocar): os pedais apareciam sem cor, quase transparentes. Agora aparecem inteiros.
 - No board, o 1º knob de cada pedal (LEVEL, DRIVE, DIST, RATE, TIME, DECAY...) saía esmaecido. Agora sai igual aos outros.
   (Causa: a imagem pronta do knob/pedal herdava a transparência da última cor usada — LED aceso, fundo da célula.)
+- Arrastar pedais entre as posições do board:
+  - Pega pela alça ⋮⋮ ou pela faixa do nome no topo do pedal (além do corpo, fora dos knobs e chaves).
+  - A linha amarela mostra o vão exato onde o pedal vai cair (antes ela errava uma posição ao arrastar para a direita).
+  - Levando o pedal até a borda do board, ele rola sozinho para as posições escondidas (7 a 10 pedais).
+  - O pedal arrastado acompanha o mouse; solto no mesmo lugar, nada muda.
 
 ## 0.1.3 — 2026-11-08
 - Ainda TESTE (sem licença, fora do site).

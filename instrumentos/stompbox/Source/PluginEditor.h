@@ -96,7 +96,10 @@ private:
     // arrasto
     const Alvo* ativo = nullptr; Alvo alvoArrasto; bool arrastandoKnob = false;
     float valorIni = 0, yIni = 0, xIni = 0;
-    int pedalArrastado = -1; bool arrastandoPedal = false; float xPedal = 0; int destinoPedal = -1;
+    // destinoPedal = o vão entre pedais onde o arrastado vai cair (0 = antes do 1º, n = depois do último)
+    int pedalArrastado = -1; bool arrastandoPedal = false; float xPedal = 0, yPedal = 0; int destinoPedal = -1; int tickBorda = 0;
+    void atualizaDestino();
+    int destinoFinal() const { return destinoPedal > pedalArrastado ? destinoPedal - 1 : destinoPedal; }
     bool arrastandoBarra = false;
     juce::Point<float> mouse;
 

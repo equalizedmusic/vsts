@@ -125,7 +125,7 @@ void StompboxEditor::mouseDown (const juce::MouseEvent& e)
         case aSwitch:
             proc.define (a->pid, (float) ((juce::roundToInt (proc.real (a->pid)) + 1) % juce::jmax (1, a->idx))); break;
         case aFoot:   proc.alternaPedal (a->slot); break;
-        case aPedal:  pedalArrastado = a->slot; xIni = p.x; arrastandoPedal = false; break;
+        case aPedal:  pedalArrastado = a->slot; xIni = p.x; yIni = p.y; arrastandoPedal = false; break;
         case aRemove: proc.removePedal (a->slot); break;
         case aVazio:  seletorAberto = true; seletorSlot = a->slot; seletorTroca = false; seletorCat = 0; break;
         case aPrev: case aNext:
@@ -197,23 +197,29 @@ void StompboxEditor::mouseDrag (const juce::MouseEvent& e)
     }
     if (pedalArrastado >= 0)
     {
-        if (! arrastandoPedal && std::abs (p.x - xIni) > 8.0f) { arrastandoPedal = true; cenaSuja = true; }
+        if (! arrastandoPedal && p.getDistanceFrom ({ xIni, yIni }) > 8.0f) { arrastandoPedal = true; tickBorda = 0; cenaSuja = true; }
         if (arrastandoPedal)
         {
-            xPedal = p.x;
-            const int n = proc.numPedais();
-            destinoPedal = juce::jlimit (0, n - 1, proc.rolagem.load() + (int) std::floor ((p.x - 63.0f) / 240.0f));
-            if (destinoPedal > pedalArrastado) destinoPedal = juce::jmin (n - 1, destinoPedal);
+            xPedal = juce::jlimit (60.0f, 1540.0f, p.x);
+            yPedal = p.y;
+            atualizaDestino();
             repaint();
         }
     }
+}
+
+// vão mais perto do mouse: os vãos ficam 15 px antes de cada posição (x = 63 + 240·k na tela)
+void StompboxEditor::atualizaDestino()
+{
+    const int n = proc.numPedais();
+    destinoPedal = juce::jlimit (0, n, proc.rolagem.load() + juce::roundToInt ((xPedal - 63.0f) / 240.0f));
 }
 
 void StompboxEditor::mouseUp (const juce::MouseEvent&)
 {
     if (arrastandoKnob)
         if (auto* prm = proc.apvts.getParameter (alvoArrasto.pid)) prm->endChangeGesture();
-    if (arrastandoPedal && pedalArrastado >= 0 && destinoPedal >= 0) proc.movePedal (pedalArrastado, destinoPedal);
+    if (arrastandoPedal && pedalArrastado >= 0 && destinoPedal >= 0) proc.movePedal (pedalArrastado, destinoFinal());
     arrastandoKnob = arrastandoBarra = arrastandoPedal = false;
     pedalArrastado = destinoPedal = -1;
     sujo();
