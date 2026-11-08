@@ -305,7 +305,7 @@ void StompboxEditor::boardArea (juce::Graphics& g)
             const juce::Rectangle<float> cab (r.getX(), r.getY() - 2, r.getWidth(), 20);
             g.setColour (juce::Colour (0xff0d2220)); g.fillEllipse (cab.getCentreX() - 70, cab.getY() + 1, 18, 18);
             texto (g, juce::String (pos + 1), { cab.getCentreX() - 70, cab.getY() + 1, 18, 18 }, corTexto, fonte (11.0f));
-            textoCabe (g, inf.tipo, cab.withTrimmedLeft (54).withTrimmedRight (d.on ? 26 : 74), juce::Colour (0xff7fb3a8), fonte (10.5f), juce::Justification::centredLeft);
+            textoCabe (g, inf.tipo, cab.withTrimmedLeft (54).withTrimmedRight (d.on ? 26 : 82), juce::Colour (0xff7fb3a8), fonte (10.5f), juce::Justification::centredLeft);
             if (! d.on)
             {
                 const juce::Rectangle<float> tag (cab.getRight() - 72, cab.getY() + 3, 46, 15);

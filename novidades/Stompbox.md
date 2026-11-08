@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.3 — 2026-11-08
+- Ainda TESTE (sem licença, fora do site).
+- Textos que ainda encostavam, achados nas fotos da 0.1.2:
+  - CLEARCUT e HALO: HEADROOM e o PLATE da chave ficavam na mesma linha dos rótulos dos knobs; a chave desceu.
+  - Etiqueta BYPASS colada no nome do pedal no topo (CHORUS / VIBRATO): agora com folga.
+  - AMP + CAB OFF: o aviso ficava em cima da placa do amp; agora vai numa faixa própria abaixo dela.
+  - TUNER grande: os cents saíam com 6 casas (-0.156637); agora inteiro. Fundo do TUNER sem transparência.
+
 ## 0.1.2 — 2026-11-07
 - Ainda TESTE (sem licença, fora do site).
 - Tela muito mais leve: as peças (fundo, pedais, amp, cab, knobs) ficam prontas na memória e só os medidores, o LED

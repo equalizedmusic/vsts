@@ -86,7 +86,7 @@ void StompboxEditor::corpoPedal (juce::Graphics& g, int tipo, juce::Point<float>
             g.setColour (juce::Colour (inf.faixa)); g.fillRect (r.getX(), y0 + 150, r.getWidth(), 5.0f); g.fillRect (r.getX(), y0 + 158, r.getWidth(), 2.0f);
         }
         if (inf.nsw > 0 && inf.rotuloSw[0] != 0 && inf.nk == 4)
-            textoCabe (g, inf.rotuloSw, { r.getX() + 60, y0 + 141, 90, 10 }, corT.withAlpha (0.7f), fonte (8.0f));
+            textoCabe (g, inf.rotuloSw, { r.getX() + 60, y0 + 159, 90, 10 }, corT.withAlpha (0.7f), fonte (8.0f));
         else if (inf.nsw > 0 && inf.rotuloSw[0] != 0)
             textoCabe (g, inf.rotuloSw, { r.getX() + 60, y0 + 88, 90, 10 }, corT.withAlpha (0.7f), fonte (8.0f));
         textoCabe (g, inf.nome, { r.getX() + 10, y0 + 194, 190, 38 }, corT, fontePedal (inf.fonte, inf.fonte == 3 || inf.fonte == 5 ? 40.0f : 31.0f));
@@ -196,7 +196,7 @@ void StompboxEditor::desenhaPedal (juce::Graphics& g, int tipo, juce::Point<floa
             const float xs[2] = { -50, 50 }, ys[2] = { 58, 114 };
             for (int k = 0; k < 4; ++k)
                 knobP (g, kpid (k), { cx + xs[k % 2], y0 + ys[k / 2] }, 38, inf.knobEst, rotulo (k), corT, inf.def[k], slot, d.k[k]);
-            yChave = y0 + 172;
+            yChave = y0 + 186;   // abaixo dos rótulos da 2a fileira (o nome do meio da chave de 3 fica livre)
         }
         else
         {

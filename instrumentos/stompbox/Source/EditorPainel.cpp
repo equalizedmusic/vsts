@@ -139,7 +139,10 @@ void StompboxEditor::painelAmp (juce::Graphics& g, juce::Rectangle<float> r)
     if (! ligado)
     {
         g.setColour (juce::Colour (0xff163533).withAlpha (0.55f)); g.fillRoundedRectangle (corpo, 12.0f);
-        textoCabe (g, u8 ("AMP + CAB DESLIGADOS \xc2\xb7 sa\xc3\xad""da direta para um amp de verdade"), corpo.withHeight (30).withCentre (grade.getCentre()), corTexto, fonte (13.0f));
+        // o aviso vai numa faixa própria, abaixo da placa do amp (no centro da grade ficava em cima do nome)
+        const auto faixa = juce::Rectangle<float> (0, 0, 460, 30).withCentre ({ grade.getCentreX(), grade.getBottom() - 26 });
+        g.setColour (juce::Colour (0xff0d2220).withAlpha (0.9f)); g.fillRoundedRectangle (faixa, 6.0f);
+        textoCabe (g, u8 ("AMP + CAB DESLIGADOS \xc2\xb7 sa\xc3\xad""da direta para um amp de verdade"), faixa.reduced (8, 0), corTexto, fonte (13.0f));
     }
 }
 
@@ -319,14 +322,14 @@ void StompboxEditor::analisaAfinador()
 void StompboxEditor::desenhaAfinador (juce::Graphics& g)
 {
     const juce::Rectangle<float> r (400, 150, 800, 300);
-    g.setColour (juce::Colour (0xf0081010)); g.fillRoundedRectangle (r, 14.0f);
+    g.setColour (juce::Colour (0xff081010)); g.fillRoundedRectangle (r, 14.0f);
     g.setColour (juce::Colour (0xff2f5a53)); g.drawRoundedRectangle (r, 14.0f, 1.5f);
     texto (g, u8 ("TUNER \xc2\xb7 sa\xc3\xad""da muda"), { r.getX() + 20, r.getY() + 12, 300, 18 }, corSuave, fonte (11.0f), juce::Justification::centredLeft);
     const bool tem = afinVis > 0.05f;
     const bool certo = tem && std::abs (afinCents) < 3.0f;
     const juce::Colour c = certo ? juce::Colour (0xff3ce07a) : juce::Colour (0xffff9a3a);
     texto (g, tem ? afinNota : "--", { r.getX(), r.getY() + 40, r.getWidth(), 110 }, tem ? c : corSuave, fonte (96.0f, true, "Arial Black"));
-    texto (g, tem ? juce::String (afinHz, 1) + " Hz   " + (afinCents >= 0 ? "+" : "") + juce::String (afinCents, 0) + " cents" : u8 ("toque uma corda"),
+    texto (g, tem ? juce::String (afinHz, 1) + " Hz   " + (afinCents >= 0 ? "+" : "") + juce::String (juce::roundToInt (afinCents)) + " cents" : u8 ("toque uma corda"),
            { r.getX(), r.getY() + 150, r.getWidth(), 20 }, corTexto, fonte (13.0f, false));
     // escala de -50 a +50 cents
     const juce::Rectangle<float> esc (r.getX() + 80, r.getY() + 200, r.getWidth() - 160, 60);
