@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <complex>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -175,6 +176,11 @@ struct Oversampler   // fator 1, 2 ou 4 para um canal
 inline float tanhA (float x) { if (x > 3.0f) return 1.0f; if (x < -3.0f) return -1.0f; const float x2 = x * x; return x * (27.0f + x2) / (27.0f + 9.0f * x2); }
 inline float hardish (float x, float p) { return x / std::pow (1.0f + std::pow (std::abs (x), p), 1.0f / p); }   // joelho de dureza p
 inline float trilho (float x) { return 2.0f * tanhA (x * 0.5f); }   // o op-amp do pedal não passa da alimentação (9 V)
+// diodos (sem pow por amostra): clip2 = joelho macio (par de silício na realimentação do op-amp, como no TS);
+// clip4 = joelho duro (diodos para a terra depois de um resistor, como no RAT; germânio do Klon)
+inline float clip2 (float x) { return x / std::sqrt (1.0f + x * x); }
+inline float clip4 (float x) { const float x2 = x * x; return x / std::sqrt (std::sqrt (1.0f + x2 * x2)); }
+inline float tanAprox (float w) { const float w2 = w * w; return w * (1.0f + w2 * (0.33333f + w2 * 0.13333f)); }   // tan(w), w < 0,4
 
 // --------------------------------------------------------------------------------------------------------------
 // pedais
@@ -248,75 +254,86 @@ struct Dual : Pedal
     }
 };
 
-// ---- SQUASH: compressor de pedal (OTA). LEVEL, SUSTAIN, ATTACK, BLEND
+// ---- SQUASH: compressor de pedal com OTA (linha Dyna/Ross). LEVEL, SUSTAIN, ATTACK, BLEND.
+// O OTA não tem joelho em dB: o ganho cai com a corrente de controle, g = 1 / (1 + S·env). Ataque rápido, release
+// lento (~0,35 s): o "squish" no ataque e o "pump" quando a nota morre. O OTA satura de leve (o grão do pedal).
 struct SquashCore
 {
-    double fs = 48000; float env = 0, gr = 1; Ramp lvl, thr, mix; float atk = 0.01f, rel = 0.0f, grK = 0.02f; OnePole cor;
-    void prepare (double s, int) { fs = s; cor.set (7500, fs); rel = (float) std::exp (-1.0 / (0.18 * fs)); grK = (float) (1.0 - std::exp (-1.0 / (0.0015 * fs))); reset(); }
+    double fs = 48000; float env = 0, gr = 1; Ramp lvl, sus, mix; float atk = 0.01f, rel = 0.0f, grK = 0.02f; OnePole cor;
+    void prepare (double s, int) { fs = s; cor.set (6500, fs); rel = (float) std::exp (-1.0 / (0.35 * fs)); grK = (float) (1.0 - std::exp (-1.0 / (0.0008 * fs))); reset(); }
     void reset() { env = 0; gr = 1; cor.reset(); }
     void set (const Ctl& c)
     {
         lvl.set (dbToGain (lerp (-12.0f, 18.0f, c.k[0])));
-        thr.set (lerp (-8.0f, -46.0f, c.k[1]));
+        sus.set (expMap (1.5f, 60.0f, c.k[1]));
         atk = (float) std::exp (-1.0 / (expMap (0.0008f, 0.05f, c.k[2]) * fs));
         mix.set (c.k[3]);
     }
     void process (float* x, int n)
     {
-        const float g = lvl.next(), t = thr.next(), m = mix.next();
+        const float g = lvl.next(), S = sus.next(), m = mix.next();
+        const float comp = 1.0f + 0.22f * S;   // o pedal devolve o nível que o SUSTAIN tira
         for (int i = 0; i < n; ++i)
         {
             const float a = std::abs (x[i]);
             env = a > env ? a + (env - a) * atk : a + (env - a) * rel;
-            const float over = gainToDb (env) - t;
-            constexpr float sl = 1.0f - 1.0f / 10.0f;   // ratio 10:1, joelho de 12 dB
-            float red = 0.0f;
-            if (over > 6.0f) red = sl * over;
-            else if (over > -6.0f) { const float o = over + 6.0f; red = sl * o * o / 24.0f; }
-            gr += (dbToGain (-red) - gr) * grK;
-            const float wet = cor.lp (x[i] * gr) * g;
+            gr += (1.0f / (1.0f + S * 4.0f * env) - gr) * grK;
+            const float u = x[i] * gr * comp;
+            const float wet = cor.lp (0.6f * tanhA (u / 0.6f)) * g;
             x[i] = x[i] * (1.0f - m) + wet * m;
         }
     }
 };
 using SquashPedal = Dual<SquashCore>;
 
-// ---- HUMP: overdrive de pedal verde (op-amp com diodos na realimentação, corcova de médios). DRIVE, LEVEL, TONE
+// ---- HUMP: Tube Screamer (TS808). DRIVE, LEVEL, TONE.
+// Estágio de clip: op-amp não inversor com o par de diodos NA REALIMENTAÇÃO ⇒ saída = entrada + (ganho−1)·(sinal
+// filtrado) limitado pelos diodos. Entrada do ganho: passa-alta de 720 Hz (4,7k + 47 nF), passa-baixa de 51 pF com
+// 51k + DRIVE (500k, curva log): é daí que vem a corcova de médios. Tom: passivo de 723 Hz (1k + 220 nF) + o controle
+// ativo de agudo.
 struct HumpCore
 {
-    double fs = 48000; Oversampler os; OnePole hpIn, lpClip, toneLp; Biquad corcova; DcBlock dc;
+    double fs = 48000; Oversampler os; OnePole hpIn, lpClip, toneLp; DcBlock dc; float dAtual = -1, ganho = 12;
     Ramp drive, lvl, tone;
-    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (720, fs * f); toneLp.set (720, fs); corcova.peak (750, 0.7, 3.0, fs); dc.set (fs); reset(); }
-    void reset() { os.reset(); hpIn.reset(); lpClip.reset(); toneLp.reset(); corcova.reset(); dc.reset(); }
+    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (720, fs * f); toneLp.set (723, fs); dc.set (fs); dAtual = -1; reset(); }
+    void reset() { os.reset(); hpIn.reset(); lpClip.reset(); toneLp.reset(); dc.reset(); }
     void set (const Ctl& c) { drive.set (c.k[0]); lvl.set (dbToGain (lerp (-24.0f, 10.0f, c.k[1]))); tone.set (c.k[2]); }
     void process (float* x, int n)
     {
         const float d = drive.next(), g = lvl.next(), t = tone.next();
-        const float ganho = 1.0f + (51.0f + 500.0f * d * d) / 4.7f;          // 21 a 41 dB nos agudos
-        lpClip.set (1.0 / (2 * pi * (51e3 + 500e3 * d * d) * 51e-12), fs * os.fator);
+        if (std::abs (d - dAtual) > 0.001f)
+        {
+            dAtual = d;
+            const double r = 51e3 + 500e3 * (double) (d * d);
+            ganho = (float) (r / 4.7e3);
+            lpClip.set (1.0 / (2 * pi * r * 51e-12), fs * os.fator);
+        }
+        constexpr float vd = 0.55f;   // queda do par de silício
         const int m = os.up (x, n);
         for (int i = 0; i < m; ++i)
         {
             const float v = os.buf[i];
-            os.buf[i] = v + 0.45f * tanhA (lpClip.lp (hpIn.hp (v)) * ganho / 0.45f);
+            os.buf[i] = v + vd * clip2 (lpClip.lp (hpIn.hp (v)) * ganho / vd);
         }
         os.down (x, n);
         for (int i = 0; i < n; ++i)
         {
             const float lo = toneLp.lp (x[i]), hi = x[i] - lo;
-            const float y = lo + hi * lerp (0.08f, 1.15f, t);                // TONE: o quanto do agudo passa
-            x[i] = trilho (dc.process (corcova.process (y)) * g * 0.8f);
+            const float y = lo + hi * lerp (0.06f, 1.2f, t);
+            x[i] = trilho (dc.process (y) * g * 0.8f);
         }
     }
 };
 using HumpPedal = Dual<HumpCore>;
 
-// ---- CLEARCUT: overdrive transparente (limpo + clipado juntos). GAIN, TREBLE, VOLUME, BASS; chave HEADROOM LOW/HIGH
+// ---- CLEARCUT: Klon. GAIN, TREBLE, VOLUME, BASS; chave HEADROOM LOW/HIGH.
+// Dois caminhos somados: o limpo (cai conforme o GAIN sobe, o pot duplo) e o clipado por diodos de germânio
+// (joelho duro e baixo, ~0,3 V); o caminho sujo tem o médio na frente (corta grave antes do clip).
 struct ClearCore
 {
     double fs = 48000; Oversampler os; OnePole hpIn; Biquad treble, bass, bump; DcBlock dc;
     Ramp gain, vol; float clipLvl = 0.3f; float tr = -1, ba = -1;
-    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (80, fs * f); bump.peak (1000, 0.6, 2.0, fs * f); dc.set (fs); tr = ba = -1; reset(); }
+    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (160, fs * f); bump.peak (1000, 0.6, 3.0, fs * f); dc.set (fs); tr = ba = -1; reset(); }
     void reset() { os.reset(); hpIn.reset(); treble.reset(); bass.reset(); bump.reset(); dc.reset(); }
     void set (const Ctl& c)
     {
@@ -328,13 +345,13 @@ struct ClearCore
     void process (float* x, int n)
     {
         const float gk = gain.next(), v = vol.next();
-        const float ganho = dbToGain (lerp (0.0f, 38.0f, gk));
-        const float limpo = lerp (0.95f, 0.15f, gk), sujo = lerp (0.35f, 1.0f, gk);
+        const float ganho = dbToGain (lerp (2.0f, 40.0f, gk));
+        const float limpo = lerp (0.95f, 0.12f, gk), sujo = lerp (0.35f, 1.0f, gk);
         const int m = os.up (x, n);
         for (int i = 0; i < m; ++i)
         {
             const float s = os.buf[i];
-            const float c = clipLvl * hardish (bump.process (hpIn.hp (s)) * ganho / clipLvl, 3.0f);
+            const float c = clipLvl * clip4 (bump.process (hpIn.hp (s)) * ganho / clipLvl);
             os.buf[i] = s * limpo + c * sujo;
         }
         os.down (x, n);
@@ -343,31 +360,46 @@ struct ClearCore
 };
 using ClearPedal = Dual<ClearCore>;
 
-// ---- GRIT: distorção de op-amp com diodos para a terra. DIST, FILTER, VOLUME; chave CLASSIC/MODERN
+// ---- GRIT: RAT. DIST, FILTER, VOLUME; chave CLASSIC/MODERN.
+// Ganho do LM308 = 1 + DIST·Y, com Y = (47 Ω + 2,2 µF) ∥ (560 Ω + 4,7 µF): até ~45 dB no médio (acima de 60 Hz) e
+// ~67 dB acima de 1,5 kHz. O op-amp é lento (GBW ~1 MHz): com o ganho alto a banda fecha e o som escurece. Depois,
+// 1N914 duros para a terra (CLASSIC) ou LEDs, mais altos e abertos, com o grave apertado (MODERN). FILTER = RC de
+// 1,5k + 100k·pot com 3,3 nF (32 kHz a 475 Hz).
 struct GritCore
 {
-    double fs = 48000; Oversampler os; OnePole hp1, hp2, slew, filtro; DcBlock dc; Ramp dist, vol; float fAtual = -1; int modo = 0;
-    void prepare (double s, int f) { fs = s; os.fator = f; dc.set (fs); fAtual = -1; reset(); }
-    void reset() { os.reset(); hp1.reset(); hp2.reset(); slew.reset(); filtro.reset(); dc.reset(); }
+    double fs = 48000; Oversampler os; OnePole hp1, h60, h1539, slew, filtro; DcBlock dc; Ramp dist, vol; float fAtual = -1, dAtual = -1; int modo = -1;
+    float gMed = 0, gAlto = 0;
+    void prepare (double s, int f)
+    {
+        fs = s; os.fator = f; dc.set (fs); fAtual = dAtual = -1; modo = -1;
+        h60.set (1.0 / (2 * pi * 560.0 * 4.7e-6), fs * f); h1539.set (1.0 / (2 * pi * 47.0 * 2.2e-6), fs * f);
+        reset();
+    }
+    void reset() { os.reset(); hp1.reset(); h60.reset(); h1539.reset(); slew.reset(); filtro.reset(); dc.reset(); }
     void set (const Ctl& c)
     {
-        dist.set (c.k[0]); vol.set (dbToGain (lerp (-30.0f, 8.0f, c.k[2]))); modo = c.sw;
-        if (std::abs (c.k[1] - fAtual) > 0.002f) { fAtual = c.k[1]; filtro.set (expMap (16000.0f, 480.0f, fAtual), fs); }
-        hp1.set (modo == 0 ? 60.0 : 160.0, fs * os.fator);
+        dist.set (c.k[0]); vol.set (dbToGain (lerp (-30.0f, 8.0f, c.k[2])));
+        if (c.sw != modo) { modo = c.sw; hp1.set (modo == 0 ? 30.0 : 160.0, fs * os.fator); }
+        if (std::abs (c.k[1] - fAtual) > 0.002f) { fAtual = c.k[1]; filtro.set (1.0 / (2 * pi * (1500.0 + 100e3 * fAtual) * 3.3e-9), fs); }
     }
     void process (float* x, int n)
     {
         const float d = dist.next(), v = vol.next();
-        const float ganho = 1.0f + 2000.0f * d * d * d + 20.0f * d;          // até ~66 dB
-        hp2.set (lerp (40.0f, 900.0f, d), fs * os.fator);                       // o ganho alto só vale nos agudos
-        slew.set (std::max (2500.0, 1.0e6 * 1.2 / ganho), fs * os.fator);       // op-amp lento: abafa com o ganho
-        const float th = modo == 0 ? 0.5f : 0.9f, p = modo == 0 ? 2.8f : 2.0f;
+        if (std::abs (d - dAtual) > 0.001f)
+        {
+            dAtual = d;
+            const double r = 100e3 * (0.02 * d + 0.98 * d * d * d);   // pot log
+            gMed = (float) (r / 560.0); gAlto = (float) (r / 47.0);
+            slew.set (std::max (1800.0, 1.0e6 / (1.0 + gMed + gAlto)), fs * os.fator);
+        }
+        const float vd = modo == 0 ? 0.55f : 1.3f, comp = modo == 0 ? 1.0f : 0.55f;
         const int m = os.up (x, n);
         for (int i = 0; i < m; ++i)
         {
             const float s = hp1.hp (os.buf[i]);
-            const float a = s * (1.0f + 20.0f * d) + hp2.hp (s) * (ganho - 1.0f - 20.0f * d);
-            os.buf[i] = th * hardish (slew.lp (a) / th, p);
+            float a = s + gMed * h60.hp (s) + gAlto * h1539.hp (s);
+            a = 4.0f * tanhA (slew.lp (a) * 0.25f);                    // trilhos de 9 V do op-amp
+            os.buf[i] = vd * (modo == 0 ? clip4 (a / vd) : clip2 (a / vd)) * comp;
         }
         os.down (x, n);
         for (int i = 0; i < n; ++i) x[i] = trilho (dc.process (filtro.lp (x[i])) * v);
@@ -375,32 +407,34 @@ struct GritCore
 };
 using GritPedal = Dual<GritCore>;
 
-// ---- WOOLLY: fuzz de dois transistores (redondo). VOLUME, FUZZ; chave GE/SI
+// ---- WOOLLY: Fuzz Face (dois transistores com realimentação). VOLUME, FUZZ; chave GE/SI.
+// GE: menos ganho, mais macio e assimétrico (harmônicos pares), escuro; SI: mais ganho, corte duro, mais agudo.
+// A polarização "afunda" com sinal forte (o engasgo do fuzz, mais forte com o FUZZ baixo) e limpa com pouco sinal
+// (baixe o INPUT como se fosse o volume da guitarra). Entrada por 2,2 µF: grave cheio.
 struct WoollyCore
 {
-    double fs = 48000; Oversampler os; OnePole hpIn, lpOut, lpPre; DcBlock dc, dc2; Ramp fuzz, vol; int modo = 0; float bias = 0;
-    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (90, fs * f); dc.set (fs * f); dc2.set (fs); reset(); }
+    double fs = 48000; Oversampler os; OnePole hpIn, lpOut, lpPre; DcBlock dc, dc2; Ramp fuzz, vol; int modo = -1; float bias = 0;
+    void prepare (double s, int f) { fs = s; os.fator = f; hpIn.set (35, fs * f); dc.set (fs * f); dc2.set (fs); modo = -1; reset(); }
     void reset() { os.reset(); hpIn.reset(); lpOut.reset(); lpPre.reset(); dc.reset(); dc2.reset(); bias = 0; }
     void set (const Ctl& c)
     {
-        vol.set (dbToGain (lerp (-36.0f, 6.0f, c.k[0]))); fuzz.set (c.k[1]); modo = c.sw;
-        lpOut.set (modo == 0 ? 4200.0 : 6500.0, fs);
-        lpPre.set (modo == 0 ? 9000.0 : 14000.0, fs * os.fator);
+        vol.set (dbToGain (lerp (-36.0f, 6.0f, c.k[0]))); fuzz.set (c.k[1]);
+        if (c.sw != modo) { modo = c.sw; lpOut.set (modo == 0 ? 4000.0 : 6500.0, fs); lpPre.set (modo == 0 ? 8000.0 : 14000.0, fs * os.fator); }
     }
     void process (float* x, int n)
     {
         const float f = fuzz.next(), v = vol.next();
-        const float ganho = dbToGain (lerp (6.0f, modo == 0 ? 40.0f : 50.0f, f));
-        const float pos = modo == 0 ? 0.55f : 0.42f, neg = modo == 0 ? 0.9f : 0.5f;
+        const float ganho = dbToGain (lerp (6.0f, modo == 0 ? 38.0f : 50.0f, f));
+        const float pos = modo == 0 ? 0.45f : 0.42f, neg = modo == 0 ? 1.3f : 0.5f;
         const float bk = (float) (1.0 - std::exp (-1.0 / (0.03 * fs * os.fator)));
+        const float afunda = lerp (0.14f, 0.06f, f);
         const int m = os.up (x, n);
         for (int i = 0; i < m; ++i)
         {
             float s = lpPre.lp (hpIn.hp (os.buf[i])) * ganho;
-            // polarização que "afunda" com sinal forte (o engasgo do fuzz) e assimetria dos dois lados
-            bias += (std::min (std::abs (s), 4.0f) * 0.08f - bias) * bk;
+            bias += (std::min (std::abs (s), 4.0f) * afunda - bias) * bk;
             s -= bias;
-            const float y = s > 0 ? pos * tanhA (s / pos) : neg * hardish (s / neg, modo == 0 ? 2.0f : 4.0f);
+            const float y = s > 0 ? pos * tanhA (s / pos) : neg * (modo == 0 ? clip2 (s / neg) : clip4 (s / neg));
             os.buf[i] = dc.process (y);
         }
         os.down (x, n);
@@ -409,18 +443,21 @@ struct WoollyCore
 };
 using WoollyPedal = Dual<WoollyCore>;
 
-// ---- QUACK: wah (passa-banda ressonante que varre). PEDAL (no AUTO, a sensibilidade), Q, RANGE; chave PEDAL/AUTO
+// ---- QUACK: wah Cry Baby. PEDAL (no AUTO, a sensibilidade), Q, RANGE; chave PEDAL/AUTO.
+// Passa-banda ressonante (o indutor) de ~350 Hz no calcanhar a ~2,2 kHz no bico, Q de 4 a 10, e o grave que o
+// indutor deixa passar por baixo. Coeficientes refeitos a cada 4 amostras (sem tan/pow por amostra).
 struct QuackCore
 {
     double fs = 48000; float ic1 = 0, ic2 = 0; Ramp pos, q, range; float env = 0; int modo = 0; float atk = 0, rel = 0, posAtual = -1, posK = 0.01f;
+    float a1 = 1, a2 = 0, a3 = 0; int conta = 0;
     void prepare (double s, int) { fs = s; atk = (float) std::exp (-1.0 / (0.004 * fs)); rel = (float) std::exp (-1.0 / (0.12 * fs)); posK = (float) (1.0 - std::exp (-1.0 / (0.012 * fs))); reset(); }
-    void reset() { ic1 = ic2 = 0; env = 0; posAtual = -1; }
+    void reset() { ic1 = ic2 = 0; env = 0; posAtual = -1; conta = 0; }
     void set (const Ctl& c) { pos.set (c.k[0]); q.set (c.k[1]); range.set (c.k[2]); modo = c.sw; }
     void process (float* x, int n)
     {
         const float p = pos.next(), qq = q.next(), r = range.next();
-        const float lo = lerp (280.0f, 520.0f, r), hi = lerp (1500.0f, 2900.0f, r);
-        const float Q = lerp (2.0f, 9.0f, qq), k = 1.0f / Q, ganhoPico = 1.4f * std::sqrt (Q) * k;
+        const float lo = lerp (300.0f, 420.0f, r), hi = lerp (1800.0f, 2600.0f, r), lnR = std::log (hi / lo);
+        const float Q = lerp (4.0f, 10.0f, qq), k = 1.0f / Q, ganhoPico = 1.3f * std::sqrt (Q) * k;
         if (posAtual < 0) posAtual = p;
         for (int i = 0; i < n; ++i)
         {
@@ -432,35 +469,44 @@ struct QuackCore
                 u = clampf (env * lerp (2.0f, 40.0f, p), 0.0f, 1.0f);
             }
             posAtual += (u - posAtual) * posK;
-            const float fc = lo * std::pow (hi / lo, posAtual);
-            const float g = (float) std::tan (pi * fc / fs);
-            const float a1 = 1.0f / (1.0f + g * (g + k)), a2 = g * a1, a3 = g * a2;
+            if ((conta++ & 3) == 0)
+            {
+                const float fc = lo * std::exp (lnR * posAtual);
+                const float g = tanAprox ((float) (pi * fc / fs));
+                a1 = 1.0f / (1.0f + g * (g + k)); a2 = g * a1; a3 = g * a2;
+            }
             const float v3 = x[i] - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
             ic1 = 2 * v1 - ic1; ic2 = 2 * v2 - ic2;
-            x[i] = v1 * ganhoPico + v2 * 0.18f;   // pico + um pouco de grave
+            x[i] = v1 * ganhoPico + v2 * 0.2f;   // pico + o grave do indutor
         }
     }
 };
 using QuackPedal = Dual<QuackCore>;
 
-// ---- SWIRL: phaser de 4 estágios (JFET). SPEED, FEEDBACK; chave VINTAGE/MODERN
+// ---- SWIRL: Phase 90 (4 estágios de JFET). SPEED, FEEDBACK; chave VINTAGE/MODERN.
+// VINTAGE = o "script" (realimentação baixa, varredura macia); MODERN = o de logo em bloco (mais realimentação,
+// os vales mais fundos). Coeficientes a cada 4 amostras.
 struct SwirlCore
 {
-    double fs = 48000; float s[4] {}; float fb = 0, ph = 0; Ramp spd, fbk; int modo = 0; double bpm = 120; bool sync = false; float kSpd = 0;
+    double fs = 48000; float s[4] {}; float fb = 0, ph = 0, a = 0; int conta = 0; Ramp spd, fbk; int modo = 0; double bpm = 120; bool sync = false; float kSpd = 0;
     void prepare (double f, int) { fs = f; reset(); }
-    void reset() { for (auto& v : s) v = 0; fb = 0; }
+    void reset() { for (auto& v : s) v = 0; fb = 0; conta = 0; }
     void set (const Ctl& c) { spd.set (c.k[0]); fbk.set (c.k[1]); modo = c.sw; bpm = c.bpm; sync = c.sync; kSpd = c.k[0]; }
     void process (float* x, int n)
     {
         const float sp = spd.next(), f = fbk.next();
         const double hz = sync ? bpm / 60.0 / divisaoLfo (kSpd) : expMap (0.08f, 9.0f, sp);
         const float inc = (float) (hz / fs), realim = modo == 0 ? f * 0.35f : f * 0.75f;
+        const float ln = std::log (2000.0f / 160.0f);
         for (int i = 0; i < n; ++i)
         {
             ph += inc; if (ph >= 1.0f) ph -= 1.0f;
-            const float tri = ph < 0.5f ? ph * 2.0f : 2.0f - ph * 2.0f;
-            const float fc = 180.0f * std::pow (2400.0f / 180.0f, tri * tri * (3 - 2 * tri));
-            const float w = (float) std::tan (pi * fc / fs), a = (w - 1.0f) / (w + 1.0f);
+            if ((conta++ & 3) == 0)
+            {
+                const float tri = ph < 0.5f ? ph * 2.0f : 2.0f - ph * 2.0f;
+                const float fc = 160.0f * std::exp (ln * tri * tri * (3 - 2 * tri));
+                const float w = tanAprox ((float) (pi * fc / fs)); a = (w - 1.0f) / (w + 1.0f);
+            }
             float v = x[i] + fb * realim;
             for (int k = 0; k < 4; ++k) { const float y = a * v + s[k]; s[k] = v - a * y; v = y; }
             fb = v;
@@ -802,14 +848,91 @@ inline const AmpVoz& vozAmp (int m)
     return v[std::clamp (m, 0, (int) numAmps - 1)];
 }
 
+// tone stack FMV (Fender/Marshall/Vox): função de transferência analítica de 3ª ordem (Yeh & Smith, 2006) com os
+// valores de componentes de cada amp, discretizada por bilinear na taxa do oversampling; refeita só quando um knob
+// muda. R1 = pot de agudo, R2 = pot de grave, R3 = pot de médio, R4 = resistor de inclinação; C1 agudo, C2 grave, C3 médio.
+struct StackVals { double R1, R2, R3, R4, C1, C2, C3; };
+inline const StackVals& stackAmp (int m)
+{
+    static const StackVals v[numAmps] = {
+        { 250e3, 250e3, 10e3, 100e3, 250e-12, 100e-9, 47e-9 },   // BLONDE 65: blackface (médio quase fixo)
+        { 1e6,   1e6,   10e3, 100e3, 56e-12,  6.8e-9, 22e-9 },   // CHIME 30: top boost (agudo de 56 pF, grave magro)
+        { 220e3, 1e6,   25e3, 33e3,  470e-12, 22e-9,  22e-9 },   // PLEX 68: Marshall
+        { 220e3, 1e6,   25e3, 56e3,  470e-12, 47e-9,  22e-9 },   // CITRUS: britânico com o grave mais gordo
+        { 250e3, 1e6,   25e3, 47e3,  250e-12, 20e-9,  20e-9 },   // IRON HG: médio cavado (inclinação de Bassman)
+    };
+    return v[std::clamp (m, 0, (int) numAmps - 1)];
+}
+
+struct ToneStack
+{
+    double b[4] {}, a[4] {}, z[3] {};
+    void reset() { z[0] = z[1] = z[2] = 0.0; }
+    // coeficientes analógicos: H(s) = (b1 s + b2 s² + b3 s³) / (1 + a1 s + a2 s² + a3 s³); t, m, l = posição dos pots 0..1
+    static void analog (const StackVals& v, double t, double m, double l, double* B, double* A)
+    {
+        const double R1 = v.R1, R2 = v.R2, R3 = v.R3, R4 = v.R4, C1 = v.C1, C2 = v.C2, C3 = v.C3;
+        B[0] = 0.0;
+        B[1] = t * C1 * R1 + m * C3 * R3 + l * (C1 * R2 + C2 * R2) + (C1 * R3 + C2 * R3);
+        B[2] = t * (C1 * C2 * R1 * R4 + C1 * C3 * R1 * R4) - m * m * (C1 * C3 * R3 * R3 + C2 * C3 * R3 * R3)
+             + m * (C1 * C3 * R1 * R3 + C1 * C3 * R3 * R3 + C2 * C3 * R3 * R3)
+             + l * (C1 * C2 * R1 * R2 + C1 * C2 * R2 * R4 + C1 * C3 * R2 * R4)
+             + l * m * (C1 * C3 * R2 * R3 + C2 * C3 * R2 * R3)
+             + (C1 * C2 * R1 * R3 + C1 * C2 * R3 * R4 + C1 * C3 * R3 * R4);
+        const double C123 = C1 * C2 * C3;
+        B[3] = l * m * (C123 * R1 * R2 * R3 + C123 * R2 * R3 * R4) - m * m * (C123 * R1 * R3 * R3 + C123 * R3 * R3 * R4)
+             + m * (C123 * R1 * R3 * R3 + C123 * R3 * R3 * R4) + t * C123 * R1 * R3 * R4 - t * m * C123 * R1 * R3 * R4
+             + t * l * C123 * R1 * R2 * R4;
+        A[0] = 1.0;
+        A[1] = (C1 * R1 + C1 * R3 + C2 * R3 + C2 * R4 + C3 * R4) + m * C3 * R3 + l * (C1 * R2 + C2 * R2);
+        A[2] = m * (C1 * C3 * R1 * R3 - C2 * C3 * R3 * R4 + C1 * C3 * R3 * R3 + C2 * C3 * R3 * R3)
+             + l * m * (C1 * C3 * R2 * R3 + C2 * C3 * R2 * R3) - m * m * (C1 * C3 * R3 * R3 + C2 * C3 * R3 * R3)
+             + l * (C1 * C2 * R2 * R4 + C1 * C2 * R1 * R2 + C1 * C3 * R2 * R4 + C2 * C3 * R2 * R4)
+             + (C1 * C2 * R1 * R4 + C1 * C3 * R1 * R4 + C1 * C2 * R3 * R4 + C1 * C2 * R1 * R3 + C1 * C3 * R3 * R4 + C2 * C3 * R3 * R4);
+        A[3] = l * m * (C123 * R1 * R2 * R3 + C123 * R2 * R3 * R4) - m * m * (C123 * R1 * R3 * R3 + C123 * R3 * R3 * R4)
+             + m * (C123 * R3 * R3 * R4 + C123 * R1 * R3 * R3 - C123 * R1 * R3 * R4) + l * C123 * R1 * R2 * R4 + C123 * R1 * R3 * R4;
+    }
+    static double magnitude (const StackVals& v, double t, double m, double l, double f)
+    {
+        double B[4], A[4]; analog (v, t, m, l, B, A);
+        const std::complex<double> s (0.0, 2 * pi * f);
+        const auto num = s * (B[1] + s * (B[2] + s * B[3])), den = 1.0 + s * (A[1] + s * (A[2] + s * A[3]));
+        return std::abs (num / den);
+    }
+    static double taperLog (double k) { return (std::exp (3.5 * k) - 1.0) / (std::exp (3.5) - 1.0); }   // pot de grave (log)
+    void set (const StackVals& v, double t, double m, double l, double fs, double ganho)
+    {
+        double B[4], A[4]; analog (v, t, m, l, B, A);
+        static const double P[4][4] = { { 1, 3, 3, 1 }, { 1, 1, -1, -1 }, { 1, -1, -1, 1 }, { 1, -3, 3, -1 } };   // (1-z)^k (1+z)^(3-k)
+        const double c = 2.0 * fs; double nb[4] {}, na[4] {}, ck = 1.0;
+        for (int k = 0; k < 4; ++k) { for (int i = 0; i < 4; ++i) { nb[i] += B[k] * ck * P[k][i]; na[i] += A[k] * ck * P[k][i]; } ck *= c; }
+        for (int i = 0; i < 4; ++i) { b[i] = nb[i] / na[0] * ganho; a[i] = na[i] / na[0]; }
+    }
+    float process (float xf)
+    {
+        const double x = xf, y = b[0] * x + z[0];
+        z[0] = b[1] * x - a[1] * y + z[1]; z[1] = b[2] * x - a[2] * y + z[2]; z[2] = b[3] * x - a[3] * y;
+        return (float) y;
+    }
+};
+
+// por modelo: corte do capacitor de catodo nos degraus (0 = totalmente desviado, grave cheio) e polarização do power
+// (classe A do CHIME: assimétrico, harmônicos pares)
+inline float catodoAmp (int m) { static const float f[numAmps] = { 0.0f, 70.0f, 110.0f, 120.0f, 260.0f }; return f[std::clamp (m, 0, (int) numAmps - 1)]; }
+inline float classeA (int m) { return m == Chime30 ? 0.22f : 0.0f; }
+
 struct AmpCore
 {
     double fs = 48000; Oversampler os; int modelo = -1, canal = -1; int fator = 2;
-    OnePole hpIn, hpEst[3], lpEst[3]; Biquad brilho; DcBlock dcEst[3];
-    Biquad bass, mid, treb, pres, hpOut; float sag = 0, sagK = 0.0004f;
+    OnePole hpIn, hpEst[3], lpEst[3], hpCat[3]; Biquad brilho; DcBlock dcEst[3];
+    ToneStack stack; double stackNorm = 1.0; Biquad pres, hpOut; float sag = 0, sagK = 0.0004f;
     float k[6] { -1, -1, -1, -1, -1, -1 }; Ramp pre, master;
     void prepare (double s, int f) { fs = s; fator = f; os.fator = f; modelo = canal = -1; for (auto& v : k) v = -1; sagK = (float) (1.0 - std::exp (-1.0 / (0.05 * fs * f))); reset(); }
-    void reset() { os.reset(); hpIn.reset(); brilho.reset(); for (int i = 0; i < 3; ++i) { hpEst[i].reset(); lpEst[i].reset(); dcEst[i].reset(); } bass.reset(); mid.reset(); treb.reset(); pres.reset(); hpOut.reset(); sag = 0; }
+    void reset()
+    {
+        os.reset(); hpIn.reset(); brilho.reset(); stack.reset(); pres.reset(); hpOut.reset(); sag = 0;
+        for (int i = 0; i < 3; ++i) { hpEst[i].reset(); lpEst[i].reset(); dcEst[i].reset(); hpCat[i].reset(); }
+    }
     void set (int m, int ch, const float* kn)   // kn: GAIN BASS MID TREBLE PRESENCE MASTER (0..1)
     {
         const double fo = fs * fator;
@@ -817,24 +940,30 @@ struct AmpCore
         const bool mudou = m != modelo || ch != canal;
         if (mudou)
         {
+            const bool trocouModelo = m != modelo;
             modelo = m; canal = ch;
             hpIn.set (m == IronHG ? 70.0 : 35.0, fo);
-            for (int i = 0; i < 3; ++i) { hpEst[i].set (i == 0 ? 30.0 : v.hpEntre, fo); lpEst[i].set (v.lpEntre * (i == 0 ? 1.4f : 1.0f), fo); dcEst[i].set (fo); }
+            for (int i = 0; i < 3; ++i)
+            {
+                hpEst[i].set (i == 0 ? 30.0 : v.hpEntre, fo); lpEst[i].set (v.lpEntre * (i == 0 ? 1.4f : 1.0f), fo); dcEst[i].set (fo);
+                hpCat[i].set (std::max (10.0f, catodoAmp (m)), fo);
+            }
             hpOut.highPass (45, 0.7, fs);
+            if (trocouModelo)   // nível do stack com os knobs no meio = 0 dB em 700 Hz
+                stackNorm = 1.0 / std::max (1e-6, ToneStack::magnitude (stackAmp (m), 0.5, 0.5, ToneStack::taperLog (0.5), 700.0));
         }
         if (mudou || std::abs (kn[0] - k[0]) > 0.002f) brilho.highShelf (2500, v.brilho * (1.0f - kn[0]) + 1.0f, fo);
-        if (mudou || std::abs (kn[1] - k[1]) > 0.002f) bass.lowShelf (v.bassF, lerp (-12.0f, 9.0f, kn[1]), fs);
-        if (mudou || std::abs (kn[2] - k[2]) > 0.002f) mid.peak (v.midF, v.midQ, lerp (-v.midFaixa, 6.0f, kn[2]), fs);
-        if (mudou || std::abs (kn[3] - k[3]) > 0.002f) treb.highShelf (v.trebF, lerp (-12.0f, 9.0f, kn[3]), fs);
-        if (mudou || std::abs (kn[4] - k[4]) > 0.002f) pres.highShelf (4500, lerp (-2.0f, 8.0f, kn[4]), fs);
+        if (mudou || std::abs (kn[1] - k[1]) > 0.002f || std::abs (kn[2] - k[2]) > 0.002f || std::abs (kn[3] - k[3]) > 0.002f)
+            stack.set (stackAmp (m), clampf (kn[3], 0, 1), clampf (kn[2], 0, 1), ToneStack::taperLog (clampf (kn[1], 0, 1)), fo, stackNorm);
+        if (mudou || std::abs (kn[4] - k[4]) > 0.002f) pres.highShelf (3500, lerp (-3.0f, 9.0f, kn[4]), fo);   // PRESENCE: tira realimentação dos agudos no power
         for (int i = 0; i < 6; ++i) k[i] = kn[i];
         const float gmax = ch == 0 ? v.ganhoClean : v.ganhoDirty;
         pre.set (dbToGain (lerp (0.0f, gmax, kn[0])));
         master.set (kn[5]);
     }
-    static float triodo (float x)   // válvula: o lado positivo amacia antes, o negativo corta mais duro
+    static float triodo (float x)   // válvula: o lado positivo (corrente de grade) amacia antes; o negativo (corte) é mais duro
     {
-        return x >= 0.0f ? tanhA (x) : 1.15f * hardish (x / 1.15f, 2.4f);
+        return x >= 0.0f ? tanhA (x) : 1.15f * clip4 (x / 1.15f);
     }
     void process (float* x, int n)
     {
@@ -843,65 +972,163 @@ struct AmpCore
         const int estagios = canal == 0 ? 1 : v.estagiosDirty;
         const float pot = dbToGain (lerp (-12.0f, 12.0f, mk) * v.potencia);
         const float limpoComp = estagios == 1 ? 1.0f / std::max (1.0f, std::sqrt (g) * 0.5f) : 1.0f;
+        const bool temCatodo = catodoAmp (modelo) > 0.0f;
+        const float ca = classeA (modelo), caOff = tanhA (ca);
         const int m = os.up (x, n);
         for (int i = 0; i < m; ++i)
         {
             float s = brilho.process (hpIn.hp (os.buf[i])) * g;
             for (int e = 0; e < estagios; ++e)
             {
-                s = triodo (s * (e == 0 ? 1.0f : 2.4f) + 0.08f);
+                if (e > 0) s *= 2.4f;
+                if (temCatodo) s = 0.35f * s + 0.65f * hpCat[e].hp (s);   // catodo parcialmente desviado: grave com menos ganho
+                s = triodo (s + 0.08f);
                 s = dcEst[e].process (s);
                 s = lpEst[e].lp (hpEst[e].hp (s));
             }
             s *= limpoComp;
-            // power amp com sag: o ganho cede quando o sinal fica forte
+            s = pres.process (stack.process (s));
+            // power amp push-pull com sag: o ganho cede quando o sinal fica forte; classe A = assimétrico
             sag += (std::abs (s) - sag) * sagK;
             const float pp = s * pot / (1.0f + 0.35f * sag * v.potencia);
-            os.buf[i] = 0.9f * tanhA (pp / 0.9f) / std::max (0.6f, std::min (pot, 1.6f));
+            os.buf[i] = 0.9f * (tanhA (pp / 0.9f + ca) - caOff) / std::max (0.6f, std::min (pot, 1.6f));
         }
         os.down (x, n);
         const float out = dbToGain (lerp (-30.0f, 0.0f, mk) + v.trim + (canal == 0 ? 7.0f : 0.0f));   // o canal limpo sai no nível do sujo
-        for (int i = 0; i < n; ++i)
-            x[i] = hpOut.process (pres.process (treb.process (mid.process (bass.process (x[i]))))) * out;
+        for (int i = 0; i < n; ++i) x[i] = hpOut.process (x[i]) * out;
     }
 };
 
 // --------------------------------------------------------------------------------------------------------------
 // CAB: 1x12 OPEN, 2x12, 4x12; mic DYN/RIBBON; MIC POS (centro -> borda); DISTANCE (perto -> longe)
+// Cada caixa é um FIR curto de fase mínima (sem latência) gerado no prepare a partir da curva típica do falante
+// microfonado (pontos em dB, interpolados em log-frequência): a ressonância da caixa, o médio, os picos de quebra do
+// cone entre 2 e 5 kHz (com a irregularidade fina de um falante de verdade) e a queda íngreme acima de ~5,5 kHz.
+// O microfone (posição, distância, dinâmico/fita) são filtros simples por cima.
+
+inline void fftInPlace (std::vector<std::complex<double>>& a, bool inversa)
+{
+    const size_t n = a.size();
+    for (size_t i = 1, j = 0; i < n; ++i) { size_t bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) std::swap (a[i], a[j]); }
+    for (size_t len = 2; len <= n; len <<= 1)
+    {
+        const double ang = 2 * pi / (double) len * (inversa ? 1 : -1);
+        const std::complex<double> wl (std::cos (ang), std::sin (ang));
+        for (size_t i = 0; i < n; i += len)
+        {
+            std::complex<double> w (1.0);
+            for (size_t j = 0; j < len / 2; ++j) { const auto u = a[i + j], t = a[i + j + len / 2] * w; a[i + j] = u + t; a[i + j + len / 2] = u - t; w *= wl; }
+        }
+    }
+    if (inversa) for (auto& x : a) x /= (double) n;
+}
+
+struct CurvaFalante { int n; float f[30], db[30]; };
+inline const CurvaFalante& curvaCab (int c)
+{
+    static const CurvaFalante v[3] = {
+        // 1x12 aberto, falante alnico "azul": brilhante, grave solto (caixa aberta corta abaixo de ~110 Hz)
+        { 24, { 50, 70, 90, 110, 140, 200, 300, 450, 700, 1000, 1400, 1800, 2200, 2700, 3200, 3700, 4300, 5000, 6000, 7000, 8500, 10000, 13000, 20000 },
+              { -24, -14, -7, -2, 0, -1, -2, -2.5f, -1.5f, 0, 1, 2.5f, 3.5f, 5, 4, 6, 4, 1, -7, -15, -25, -33, -44, -60 } },
+        // 2x12 fechado, falante de 30 W "moderno": médio-agudo na cara (2–4 kHz), grave firme
+        { 25, { 50, 70, 90, 115, 140, 200, 300, 450, 700, 1000, 1200, 1500, 2000, 2500, 3000, 3500, 4000, 4600, 5200, 6000, 7000, 8500, 10000, 13000, 20000 },
+              { -18, -9, -2, 1.5f, 0, -2, -3, -3.5f, -2, 0.5f, 2.5f, 1, 4, 7, 6, 3.5f, 5, 1, -5, -12, -20, -28, -36, -46, -60 } },
+        // 4x12 fechado, falante "verde" de 25 W: médio macio e redondo, ressonância grande, agudo que cai cedo
+        { 24, { 50, 70, 90, 105, 130, 180, 250, 400, 600, 900, 1300, 1700, 2100, 2600, 3100, 3600, 4100, 4700, 5300, 6200, 7500, 9000, 12000, 20000 },
+              { -17, -8, -1, 2.5f, 1, -1, -2, -3, -2, 0, 1.5f, 3, 4.5f, 5, 3, 4.5f, 1.5f, -3, -9, -17, -27, -35, -45, -60 } },
+    };
+    return v[std::clamp (c, 0, 2)];
+}
 
 struct CabCore
 {
-    double fs = 48000; Biquad f[9]; DelayLine sala; float salaMix = 0; int salaD = 1;
+    double fs = 48000, fsFir = 0; int taps = 0; std::vector<float> fir[3], hist; int hp = 0;
+    Biquad f[5]; DelayLine sala; float salaMix = 0; int salaD = 1;
     int cab = -1, mic = -1; float pos = -1, dist = -1;
-    void prepare (double s) { fs = s; sala.alloc ((int) (0.01 * fs)); cab = mic = -1; reset(); }
-    void reset() { for (auto& b : f) b.reset(); sala.reset(); }
+    void prepare (double s)
+    {
+        fs = s;
+        if (fsFir != fs) { projeta(); fsFir = fs; }   // HQ liga/desliga sem refazer (e sem alocar)
+        sala.alloc ((int) (0.01 * fs)); cab = mic = -1; reset();
+    }
+    void reset() { for (auto& b : f) b.reset(); sala.reset(); std::fill (hist.begin(), hist.end(), 0.0f); hp = 0; }
+    static double dbCurva (const CurvaFalante& c, double fr, int qual)
+    {
+        double d;
+        if (fr <= c.f[0]) d = c.db[0] - 18.0 * std::log2 (c.f[0] / std::max (fr, 1.0));          // abaixo: 18 dB/oitava
+        else if (fr >= c.f[c.n - 1]) d = c.db[c.n - 1];
+        else
+        {
+            int i = 0; while (fr > c.f[i + 1]) ++i;
+            const double t = std::log (fr / c.f[i]) / std::log ((double) c.f[i + 1] / c.f[i]);
+            d = c.db[i] + (c.db[i + 1] - c.db[i]) * t;
+        }
+        // irregularidade fina do cone (determinística), só do médio-agudo para cima
+        const double lf = std::log2 (std::max (fr, 1.0));
+        const double w = clampf ((float) ((lf - std::log2 (900.0)) / (std::log2 (4000.0) - std::log2 (900.0))), 0.0f, 1.0f);
+        d += w * (1.3 * std::sin (2 * pi * 5.3 * lf + qual) + 0.8 * std::sin (2 * pi * 11.7 * lf + 2.0 * qual) + 0.5 * std::sin (2 * pi * 23.1 * lf + 0.7 * qual));
+        return std::max (d, -80.0);
+    }
+    void projeta()
+    {
+        taps = std::min (1024, std::max (64, (int) std::lround (0.009 * fs)));
+        int N = 4096; while (N < taps * 8 || N < (int) (fs / 6.0)) N <<= 1;
+        std::vector<std::complex<double>> a ((size_t) N);
+        for (int c = 0; c < 3; ++c)
+        {
+            const auto& cv = curvaCab (c);
+            for (int k = 0; k <= N / 2; ++k)
+            {
+                const double lm = dbCurva (cv, (double) k * fs / N, c) * std::log (10.0) / 20.0;   // ln|H|
+                a[(size_t) k] = lm; if (k > 0 && k < N / 2) a[(size_t) (N - k)] = lm;
+            }
+            fftInPlace (a, true);                                    // cepstro real
+            for (int i = 1; i < N / 2; ++i) a[(size_t) i] *= 2.0;
+            for (int i = N / 2 + 1; i < N; ++i) a[(size_t) i] = 0.0;
+            fftInPlace (a, false);
+            for (auto& x : a) x = std::exp (x);                      // espectro de fase mínima
+            fftInPlace (a, true);
+            fir[c].assign ((size_t) taps, 0.0f);
+            const int fade = taps / 4;
+            for (int i = 0; i < taps; ++i)
+            {
+                const double w = i < taps - fade ? 1.0 : 0.5 * (1.0 + std::cos (pi * (double) (i - (taps - fade)) / fade));
+                fir[c][(size_t) i] = (float) (a[(size_t) i].real() * w);
+            }
+            // 0 dB em 1 kHz
+            std::complex<double> h1 = 0; for (int i = 0; i < taps; ++i) h1 += (double) fir[c][(size_t) i] * std::polar (1.0, -2 * pi * 1000.0 * i / fs);
+            const float g = (float) (1.0 / std::max (1e-6, std::abs (h1)));
+            for (auto& x : fir[c]) x *= g;
+        }
+        hist.assign ((size_t) taps * 2, 0.0f); hp = 0;
+    }
     void set (int c, int mc, float p, float d)
     {
         if (c == cab && mc == mic && std::abs (p - pos) < 0.002f && std::abs (d - dist) < 0.002f) return;
-        cab = c; mic = mc; pos = p; dist = d;
-        const bool aberta = c == 0;
-        const float res = c == 2 ? 105.0f : c == 1 ? 120.0f : 140.0f;          // ressonância da caixa
-        f[0].highPass (aberta ? 95.0 : 70.0, aberta ? 0.6 : 1.1, fs);
-        f[1].peak (res, 1.4, aberta ? 1.0 : (c == 2 ? 4.5 : 3.0), fs);
-        f[2].peak (420, 1.0, c == 2 ? -3.5 : -2.0, fs);                        // o "buraco" de médio-grave
-        f[3].peak (lerp (1800.0f, 3200.0f, 1 - p), 1.3, lerp (2.0f, 5.0f, 1 - p) - (mc == 1 ? 2.5f : 0.0f), fs);
-        const float corte = lerp (6500.0f, 3400.0f, p) * (mc == 1 ? 0.78f : 1.0f) * (aberta ? 1.08f : 1.0f);
-        f[4].lowPass (corte, 0.75, fs);
-        f[5].lowPass (corte * 1.25f, 0.55, fs);
-        f[6].peak (mc == 0 ? 5200.0 : 3800.0, 2.0, mc == 0 ? 3.5 : -2.0, fs);   // o pico do dinâmico / o veludo da fita
-        f[7].lowShelf (160, lerp (4.0f, -4.0f, d) + (mc == 1 ? 1.5f : 0.0f), fs); // proximidade
-        f[8].peak (8000, 0.7, -6.0, fs);
+        cab = std::clamp (c, 0, 2); mic = mc; pos = p; dist = d;
+        f[0].highShelf (2500, lerp (2.0f, -7.0f, p), fs);                                      // centro brilha, borda escurece
+        f[1].peak (lerp (3300.0f, 2000.0f, p), 1.2, lerp (2.0f, 0.0f, p), fs);
+        if (mc == 0) f[2].peak (5200, 2.0, 2.0, fs); else f[2].highShelf (3500, -5.0, fs);      // o pico do dinâmico / o veludo da fita
+        f[3].lowShelf (180, lerp (3.5f, -4.0f, d) + (mc == 1 ? 1.5f : 0.0f), fs);              // proximidade
+        f[4].highPass (40, 0.7, fs);
         salaD = std::max (1, (int) (lerp (0.0012f, 0.0075f, d) * fs));
         salaMix = d * 0.35f;
     }
     void process (float* x, int n)
     {
+        const float* h = fir[cab].data();
         for (int i = 0; i < n; ++i)
         {
-            float s = x[i];
+            hp = (hp == 0 ? taps : hp) - 1;
+            hist[(size_t) hp] = hist[(size_t) (hp + taps)] = x[i];
+            const float* xs = hist.data() + hp;
+            float a0 = 0, a1 = 0, a2 = 0, a3 = 0; int j = 0;
+            for (; j + 3 < taps; j += 4) { a0 += h[j] * xs[j]; a1 += h[j + 1] * xs[j + 1]; a2 += h[j + 2] * xs[j + 2]; a3 += h[j + 3] * xs[j + 3]; }
+            for (; j < taps; ++j) a0 += h[j] * xs[j];
+            float s = (a0 + a1) + (a2 + a3);
             for (auto& b : f) s = b.process (s);
             sala.push (s);
-            x[i] = (s + sala.at (salaD) * salaMix) * 1.6f;
+            x[i] = (s + sala.at (salaD) * salaMix) * 1.1f;
         }
     }
 };

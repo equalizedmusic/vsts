@@ -245,6 +245,78 @@ int main()
         confere (dif < 1e-4, "BENDER no calcanhar = som original, sem atraso");
     }
 
+    std::printf ("\n== tone stack (FMV, valores de componentes de cada amp): dB relativo a 700 Hz com tudo em 5\n");
+    {
+        const char* an[] = { "BLONDE 65", "CHIME 30", "PLEX 68", "CITRUS", "IRON HG" };
+        auto mag = [] (int a, double t, double m, double l, double f) { return db (ToneStack::magnitude (stackAmp (a), t, m, ToneStack::taperLog (l), f)); };
+        bool ok = true, okDig = true;
+        for (int a = 0; a < numAmps; ++a)
+        {
+            const double ref = mag (a, .5, .5, .5, 700);
+            std::printf ("  %-9s 100 Hz %+5.1f | 500 Hz %+5.1f | 1 kHz %+5.1f | 3 kHz %+5.1f || BASS 0→10 em 100 Hz %+5.1f | MID 0→10 em 500 Hz %+5.1f | TREBLE 0→10 em 3 kHz %+5.1f\n",
+                         an[a], mag (a, .5, .5, .5, 100) - ref, mag (a, .5, .5, .5, 500) - ref, mag (a, .5, .5, .5, 1000) - ref, mag (a, .5, .5, .5, 3000) - ref,
+                         mag (a, .5, .5, 1, 100) - mag (a, .5, .5, 0, 100), mag (a, .5, 1, .5, 500) - mag (a, .5, 0, .5, 500), mag (a, 1, .5, .5, 3000) - mag (a, 0, .5, .5, 3000));
+            ok = ok && mag (a, .5, .5, 1, 100) > mag (a, .5, .5, 0, 100) + 3 && mag (a, 1, .5, .5, 3000) > mag (a, 0, .5, .5, 3000) + 3 && mag (a, .5, 1, .5, 500) > mag (a, .5, 0, .5, 500) + 1;
+            // o digital (bilinear a 96 kHz) segue o analógico
+            ToneStack ts; ts.set (stackAmp (a), .5, .5, ToneStack::taperLog (.5), 96000.0, 1.0);
+            for (double f : { 100.0, 1000.0, 5000.0 })
+            {
+                std::vector<float> s (96000); double acc = 0; int nn = 0; std::complex<double> c = 0;
+                for (int i = 0; i < 96000; ++i) { const float y = ts.process ((float) std::sin (2 * pi * f * i / 96000.0)); if (i >= 48000) { c += (double) y * std::polar (1.0, -2 * pi * f * i / 96000.0); ++nn; } }
+                acc = std::abs (c) * 2.0 / nn;
+                okDig = okDig && std::abs (db (acc) - mag (a, .5, .5, .5, f)) < 0.3;
+            }
+        }
+        confere (ok, "BASS, MID e TREBLE mexem onde devem (grave, médio, agudo)");
+        confere (okDig, "stack digital = circuito analógico (±0,3 dB em 100 Hz / 1 kHz / 5 kHz)");
+    }
+
+    std::printf ("\n== CAB (FIR de fase mínima, mic no centro e perto): dB relativo a 1 kHz\n");
+    {
+        const char* cn[] = { "1x12 OPEN", "2x12", "4x12" };
+        bool ok = true;
+        for (int c = 0; c < 3; ++c)
+        {
+            CabCore cab; cab.prepare (fs); cab.set (c, 0, 0.0f, 0.0f);
+            std::vector<float> h ((size_t) fs / 4, 0.0f); h[0] = 1.0f;
+            for (size_t o = 0; o < h.size(); o += maxSub) cab.process (&h[o], maxSub);
+            auto resp = [&] (double f) { std::complex<double> acc = 0; for (size_t i = 0; i < h.size(); ++i) acc += (double) h[i] * std::polar (1.0, -2 * pi * f * (double) i / fs); return db (std::abs (acc)); };
+            const double r = resp (1000);
+            std::printf ("  %-9s (%d taps) 80 Hz %+5.1f | 120 %+5.1f | 500 %+5.1f | 2,5k %+5.1f | 4k %+5.1f | 6k %+5.1f | 8k %+5.1f | 12k %+5.1f\n", cn[c], cab.taps,
+                         resp (80) - r, resp (120) - r, resp (500) - r, resp (2500) - r, resp (4000) - r, resp (6000) - r, resp (8000) - r, resp (12000) - r);
+            ok = ok && resp (8000) - r < -15 && resp (12000) - r < -30 && resp (2500) - r > 0;
+        }
+        confere (ok, "cab: presença em 2,5 kHz, agudo cai (8 kHz < -15 dB, 12 kHz < -30 dB)");
+    }
+
+    std::printf ("\n== WOOLLY GE x SI (seno de 200 Hz, 0,1 de pico, FUZZ 7): harmônicos relativos à fundamental\n");
+    {
+        double h2[2], h3[2];
+        for (int sw = 0; sw < 2; ++sw)
+        {
+            std::vector<float> s ((size_t) fs); for (size_t i = 0; i < s.size(); ++i) s[i] = 0.1f * (float) std::sin (2 * pi * 200.0 * (double) i / fs);
+            Ctl c; c.on = true; c.sw = sw; c.k[0] = 0.6f; c.k[1] = 0.7f;
+            const auto y = rodaPedal (Woolly, c, s);
+            const double f1 = goertzel (y, 200, (int) fs / 2);
+            h2[sw] = db (goertzel (y, 400, (int) fs / 2)) - db (f1); h3[sw] = db (goertzel (y, 600, (int) fs / 2)) - db (f1);
+            std::printf ("  %s: 2º harmônico %+5.1f dB | 3º %+5.1f dB\n", sw ? "SI" : "GE", h2[sw], h3[sw]);
+        }
+        confere (h2[0] - h3[0] > h2[1] - h3[1], "GE mais par (2º sobre 3º) que o SI");
+    }
+
+    std::printf ("\n== GRIT (RAT) DIST 10, sinal pequeno: ganho do op-amp por frequência (antes dos diodos)\n");
+    {
+        GritCore g; g.prepare (fs, 2); Ctl c; c.on = true; c.k[0] = 1.0f; c.k[1] = 0.0f; c.k[2] = 0.5f; g.set (c);
+        // o ganho de pequeno sinal de 1 + DIST·Y (com o GBW do LM308), direto pela resposta dos filtros
+        for (double f : { 100.0, 500.0, 3000.0 })
+        {
+            GritCore q; q.prepare (fs, 2); q.set (c);
+            std::vector<float> s ((size_t) fs / 2); for (size_t i = 0; i < s.size(); ++i) s[i] = 1e-5f * (float) std::sin (2 * pi * f * (double) i / fs);
+            std::vector<float> x2 = s; for (size_t o = 0; o < x2.size(); o += maxSub) q.process (&x2[o], maxSub);
+            std::printf ("  %5.0f Hz: %+5.1f dB (saída/entrada, com o VOLUME em 5)\n", f, db (goertzel (x2, f, (int) fs / 4)) - db (goertzel (s, f, (int) fs / 4)));
+        }
+    }
+
     std::printf ("\n== presets de fábrica no board inteiro (guitarra de teste; CPU em 48 kHz)\n");
     {
         const auto& ps = presetsFabrica();

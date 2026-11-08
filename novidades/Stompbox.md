@@ -4,6 +4,23 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.2 — 2026-11-07
+- Ainda TESTE (sem licença, fora do site).
+- Tela muito mais leve: as peças (fundo, pedais, amp, cab, knobs) ficam prontas na memória e só os medidores, o LED
+  do gate e o afinador são repintados 30 vezes por segundo. Knob e pedal respondem na hora e o Ableton não engasga
+  mais com a janela aberta. O motor de áudio não tem atraso (só o BENDER, quando pisado).
+- Textos que encavalavam: pedais de 4 knobs (SQUASH, CLEARCUT, ECHO, HALO) em 2 fileiras; HEADROOM e a chave do HALO
+  com folga; "AMP + CAB" virou botão ON/OFF; BYPASS virou etiqueta no topo do pedal; rótulos encolhem para caber.
+- AFINADOR fixo na entrada, ao lado do INPUT: nota, barra de cents e "afinado" em verde. Não corta o som; clicar
+  nele abre o TUNER grande (que deixa a saída muda).
+- Som refeito pelos circuitos de referência:
+  - AMP: BASS/MID/TREBLE são o tone stack de cada amp (Fender, Marshall, Vox, britânico encorpado e high-gain),
+    entre o pré e a potência, com os knobs interagindo como no amp real; PRESENCE na potência; CHIME 30 classe A.
+  - CAB: cada caixa é uma resposta de impulso gerada da curva do falante (1x12 aberto, 2x12, 4x12), sem latência.
+  - HUMP = Tube Screamer, GRIT = RAT (CLASSIC diodos / MODERN LEDs), WOOLLY = Fuzz Face (GE macio e assimétrico, SI
+    mais duro), CLEARCUT = Klon, SQUASH = Dyna/Ross, QUACK = Cry Baby.
+  - Os 24 presets renivelados.
+
 ## 0.1.1 — 2026-11-07
 - Ainda TESTE (sem licença, fora do site).
 - Pedal novo: BENDER (pitch shifter de pedal, categoria PITCH no seletor). Arraste o pedal: calcanhar = som normal,
