@@ -1,0 +1,136 @@
+diff --git a/licenca/servidor/src/index.js b/licenca/servidor/src/index.js
+index b138692..86e9973 100644
+--- a/licenca/servidor/src/index.js
++++ b/licenca/servidor/src/index.js
+@@ -42,7 +42,8 @@
+ import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
+ import { rotaGratis, rotaZipAlign, rotaTokenAlign, PACOTES_GRATIS } from './gratis.js';
+ import { rotaWebhookEntrada } from './caixa.js';
+-import { rotaLoja, vencerPedidos } from './loja.js';
++import { rotaLoja, vencerPedidos, reconsultarPaypal } from './loja.js';
++const CRON_DIARIO = '0 9 * * *';   // igual ao wrangler.toml
+ import { avisarLicenca } from './avisos.js';
+ import { rotaContato } from './contato.js';
+ 
+@@ -540,8 +541,14 @@ export default {
+             return falha('erro_interno', 500);
+         }
+     },
+-    // cron diário (wrangler.toml [triggers]): vence os pedidos da loja abertos há mais de 4 dias
+-    async scheduled(evento, env, ctx) {
+-        ctx.waitUntil(vencerPedidos(env, agora()));
++    // crons (wrangler.toml [triggers]): de hora em hora reconsulta os pedidos PayPal em aberto (o PayPal não avisa o
++    // servidor); 1x por dia, depois da reconsulta, vence os pedidos da loja abertos há mais de 4 dias.
++    // Links do e-mail sempre no domínio (sem requisição não há url.origin).
++    async scheduled(gatilho, env, ctx) {
++        ctx.waitUntil((async () => {
++            try { await reconsultarPaypal(env, agora(), { normEmail, agora, evento, criarLicenca, paginaSimples }, 'https://insidestudiosp.com.br'); }
++            catch (e) { console.error('cron: reconsulta paypal', e); }
++            if (gatilho.cron === CRON_DIARIO) await vencerPedidos(env, agora());
++        })());
+     },
+ };
+diff --git a/licenca/servidor/src/loja.js b/licenca/servidor/src/loja.js
+index 5b10c62..1bf8475 100644
+--- a/licenca/servidor/src/loja.js
++++ b/licenca/servidor/src/loja.js
+@@ -217,6 +217,36 @@ export async function vencerPedidos(env, agora) {
+     return r.meta.changes || 0;
+ }
+ 
++// reconsulta de hora em hora (cron): o PayPal não avisa o servidor. Se o comprador aprovou e fechou a página antes de
++// voltar, ou se a captura ficou PENDING (conta vendedora em aceite manual, análise), ninguém mais conferiria. Aqui o
++// servidor captura/relê cada pedido PayPal em aberto e, quando estiver COMPLETED, gera a licença e manda o e-mail.
++//   - 'criado'/'pendente' dentro do prazo de 4 dias (comprador pode aprovar a qualquer momento);
++//   - já capturado (pagamento_id preenchido) até 30 dias, mesmo 'vencido': o dinheiro saiu, a licença tem que sair.
++const RECONSULTA_MAX = 40;   // por rodada (cada um custa 2-3 chamadas ao PayPal)
++const CAPTURADO_ATE = 30 * 86400;
++export async function reconsultarPaypal(env, agora, h, base) {
++    if (!ppLigado(env)) return 0;
++    const { results = [] } = await env.DB.prepare(
++        "SELECT * FROM pedidos WHERE metodo = 'paypal' AND ref IS NOT NULL AND ref <> '' AND (" +
++        "(status IN ('criado', 'pendente') AND criado_em >= ?) OR " +
++        "(status IN ('pendente', 'vencido') AND pagamento_id IS NOT NULL AND criado_em >= ?) OR " +
++        "(status = 'processando' AND pago_em < ?)) ORDER BY criado_em DESC LIMIT ?")
++        .bind(agora - PRAZO, agora - CAPTURADO_ATE, agora - PRESO, RECONSULTA_MAX).all();
++    const url = new URL(base);
++    let pagos = 0;
++    for (const pedido of results) {
++        try {
++            const conf = await conferirPaypal(env, pedido);
++            // pedido que nunca foi aprovado continua como está (não vira 'pendente' só porque o cron passou)
++            if (conf.status === 'pendente' && !conf.pagamento) continue;
++            if (pedido.status === 'vencido' && conf.status !== 'pago') continue;
++            if (await aplicar(env, url, h, pedido, conf) === 'pago') pagos++;
++        } catch (e) { console.error('loja: reconsulta paypal', pedido.id, e); }
++    }
++    if (results.length) console.log('loja: reconsulta paypal', results.length, 'em aberto,', pagos, 'pagos agora');
++    return pagos;
++}
++
+ // ---------------- avisos e volta do checkout ----------------
+ 
+ async function hmacHex(chave, texto) {
+@@ -274,8 +304,12 @@ async function retorno(req, env, url, h) {
+         pt: 'O pagamento não foi aprovado e nada foi cobrado. Você pode tentar de novo com outra forma de pagamento.',
+         en: 'The payment was not approved and nothing was charged. You can try again with another payment method.' });
+     return paginaLoja(env, { titulo: 'Aguardando o pagamento · Waiting for payment', atualizar: true, link: `${siteUrl(env)}/${pedido.pacote}/`,
+-        pt: `Assim que o ${pedido.metodo === 'mp' ? 'Mercado Pago' : 'PayPal'} confirmar (Pix costuma levar segundos; boleto, até 2 dias úteis), o e-mail com o token chega em ${mascara}. Esta página se atualiza sozinha.`,
+-        en: `As soon as ${pedido.metodo === 'mp' ? 'Mercado Pago' : 'PayPal'} confirms, the e-mail with your token arrives at ${mascara}. This page refreshes by itself.` });
++        pt: pedido.metodo === 'mp'
++            ? `Assim que o Mercado Pago confirmar (Pix costuma levar segundos; boleto, até 2 dias úteis), o e-mail com o token chega em ${mascara}. Esta página se atualiza sozinha.`
++            : `Assim que o PayPal confirmar (às vezes leva algumas horas), o e-mail com o token chega em ${mascara}. Pode fechar esta página: conferimos o pagamento sozinhos.`,
++        en: pedido.metodo === 'mp'
++            ? `As soon as Mercado Pago confirms, the e-mail with your token arrives at ${mascara}. This page refreshes by itself.`
++            : `As soon as PayPal confirms (it can take a few hours), the e-mail with your token arrives at ${mascara}. You can close this page: we check the payment automatically.` });
+ }
+ 
+ function paginaLoja(env, { titulo, pt, en, status = 200, atualizar = false, link = '' }) {
+diff --git a/licenca/servidor/src/precos.js b/licenca/servidor/src/precos.js
+index 1ec0962..96362b5 100644
+--- a/licenca/servidor/src/precos.js
++++ b/licenca/servidor/src/precos.js
+@@ -4,17 +4,16 @@
+ // ALIGN e VASSOURA são grátis (páginas próprias), por isso não estão aqui.
+ 
+ export const PRECOS = {
+-    // usd fica null até o PayPal ser configurado e testado: o site mostra o botão PayPal só por haver usd.
+-    // Combinado (05/11/2026): 79,90 -> US$ 14.90 e 24,90 -> US$ 4.90.
+-    mesa:      { brl: 79.90, usd: null },
+-    criativo:  { brl: 79.90, usd: null },
+-    mix:       { brl: 79.90, usd: null },
+-    knob:      { brl: 79.90, usd: null },
+-    quimera:   { brl: 24.90, usd: null },
+-    limao:     { brl: 24.90, usd: null },
+-    mercurio:  { brl: 24.90, usd: null },
+-    resenha:   { brl: 24.90, usd: null },
+-    groovador: { brl: 24.90, usd: null },
++    // o site mostra o botão PayPal só por haver usd. Combinado (05/11/2026): 79,90 -> US$ 14.90 e 24,90 -> US$ 4.90.
++    mesa:      { brl: 79.90, usd: 14.90 },
++    criativo:  { brl: 79.90, usd: 14.90 },
++    mix:       { brl: 79.90, usd: 14.90 },
++    knob:      { brl: 79.90, usd: 14.90 },
++    quimera:   { brl: 24.90, usd: 4.90 },
++    limao:     { brl: 24.90, usd: 4.90 },
++    mercurio:  { brl: 24.90, usd: 4.90 },
++    resenha:   { brl: 24.90, usd: 4.90 },
++    groovador: { brl: 24.90, usd: 4.90 },
+ };
+ 
+ export const NOMES = {
+diff --git a/licenca/servidor/wrangler.toml b/licenca/servidor/wrangler.toml
+index aa31750..876dc77 100644
+--- a/licenca/servidor/wrangler.toml
++++ b/licenca/servidor/wrangler.toml
+@@ -24,8 +24,10 @@ routes = [
+ ]
+ 
+ # limpeza diária da loja: 09:00 UTC (06:00 de Brasília) marca 'vencido' o pedido aberto há mais de 4 dias
++# reconsulta PayPal: minuto 17 de toda hora (o PayPal não avisa o servidor; libera a licença de captura que concluiu)
++# o "0 9 * * *" tem que ser igual ao CRON_DIARIO de src/index.js
+ [triggers]
+-crons = ["0 9 * * *"]
++crons = ["0 9 * * *", "17 * * * *"]
+ 
+ [[d1_databases]]
+ binding = "DB"

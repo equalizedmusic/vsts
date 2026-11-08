@@ -18,6 +18,8 @@
 // Tabela ig_respostas (migracao-2026-11-08-instagram.sql): um comentário é respondido uma vez só
 // (a Meta reenvia o aviso quando a resposta demora ou falha).
 
+import { moldura, esc, comAssinatura } from './emailhtml.js';
+
 const GRAPH_FB = 'https://graph.facebook.com/v23.0';
 const GRAPH_IG = 'https://graph.instagram.com/v23.0';
 const ehIg = (t) => typeof t === 'string' && t.startsWith('IG');
@@ -369,6 +371,167 @@ export async function publicarAgendados(env) {
     return { ok: true, feitos };
 }
 
+// ---------- Relatório semanal (sem instagram_manage_insights) ----------
+// Toda segunda no cron diário (09:00 UTC = 06:00 de Brasília) manda para o Gmail do estúdio:
+// seguidores (e a variação desde o último relatório), posts da semana com curtidas/comentários, o que mais ganhou
+// interação na semana, pedidos por palavra-chave, spams ocultados e a agenda. Alcance/impressões/salvamentos
+// precisam do insights e ficam de fora. A "foto" da semana anterior fica em ig_config (chave 'relatorio').
+//   POST /instagram/relatorio          (admin) prévia: devolve o texto, não manda nem grava a foto
+//   POST /instagram/relatorio?enviar=1 (admin) manda agora e grava a foto (vira a base do próximo)
+const RELATORIO_PARA = 'insidestudiosp@gmail.com';
+const F = "'Segoe UI', -apple-system, Helvetica, Arial, sans-serif";
+const dataBr = (iso) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const diaBr = (ms) => new Date(ms).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+const sinal = (n) => (n > 0 ? '+' + n : String(n));
+const resumoLegenda = (t) => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return s ? (s.length > 60 ? s.slice(0, 57) + '...' : s) : '(sem legenda)'; };
+
+async function montarRelatorio(env) {
+    const tk = await tokenAtual(env);
+    if (!tk) return { ok: false, motivo: 'sem_token' };
+    const alvo = igAlvo(env, tk);
+    const conta = await graph(alvo + '?fields=username,followers_count,follows_count,media_count', tk);
+    if (!conta.ok) return { ok: false, motivo: 'conta: ' + (conta.corpo?.error?.message || conta.status) };
+    const posts = [];
+    let pag = await graph(alvo + '/media?fields=id,caption,media_type,media_product_type,timestamp,like_count,comments_count,permalink&limit=50', tk);
+    for (let i = 0; i < 4 && pag.ok; i++) {   // até 200 posts (o suficiente para comparar a semana)
+        posts.push(...(pag.corpo?.data || []));
+        const prox = pag.corpo?.paging?.next;
+        if (!prox) break;
+        const x = await fetch(prox); let c; try { c = await x.json(); } catch { c = null; }
+        pag = { ok: x.ok, corpo: c };
+    }
+    const agora = Date.now(), inicio = agora - 7 * 86400000;
+    let antes = null;
+    try { const r = await env.DB.prepare("SELECT valor FROM ig_config WHERE chave = 'relatorio'").first(); if (r) antes = JSON.parse(r.valor); } catch { /* sem base */ }
+    const c = conta.corpo;
+    const L = [];
+    const H = [];   // o mesmo conteúdo em HTML (cartões e tabelas; src/emailhtml.js põe a moldura e a assinatura)
+    const sec = (t) => H.push(`<div style="font:700 13px ${F};letter-spacing:.8px;color:#6d28d9;text-transform:uppercase;margin:26px 0 10px;padding-bottom:6px;border-bottom:2px solid #e7e4f0">${esc(t)}</div>`);
+    const vazio = (t) => H.push(`<div style="color:#6b6880;font-style:italic;font-size:14px">${esc(t)}</div>`);
+    const lnk = (u, t) => `<a href="${esc(u)}" style="color:#1f1b2e;text-decoration:none">${esc(t)}</a>`;
+    const cartao = (rot, val, extra, cor) => `<td width="25%" style="padding:4px;vertical-align:top"><div style="background:#f5f3ff;border-radius:10px;padding:12px 8px;text-align:center">` +
+        `<div style="font:800 24px ${F};color:#1f1b2e">${esc(val)}</div>` +
+        `<div style="font:12px ${F};color:#6b6880;margin-top:2px">${esc(rot)}</div>` +
+        (extra ? `<div style="font:700 12px ${F};color:${cor || '#6b6880'};margin-top:4px">${esc(extra)}</div>` : '') + '</div></td>';
+    const tabela = (cab, linhas) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font:14px/1.45 ${F}">` +
+        `<tr>${cab.map((x, i) => `<td style="padding:6px 8px;background:#f5f3ff;color:#6b6880;font-size:12px;font-weight:700;${i ? 'text-align:right;white-space:nowrap' : ''}">${x}</td>`).join('')}</tr>` +
+        linhas.map((l) => `<tr>${l.map((x, i) => `<td style="padding:8px;border-bottom:1px solid #eeecf4;vertical-align:top;${i ? 'text-align:right;white-space:nowrap' : ''}">${x}</td>`).join('')}</tr>`).join('') + '</table>';
+    const tipoDe = (p) => p.media_product_type === 'REELS' ? 'Reels' : p.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : p.media_type === 'VIDEO' ? 'Vídeo' : 'Foto';
+    const selo = (t) => `<span style="display:inline-block;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px">${esc(t)}</span>`;
+
+    L.push(`Relatório semanal do Instagram @${c.username}`);
+    L.push(`Semana de ${diaBr(inicio)} a ${diaBr(agora)}`, '');
+    L.push('SEGUIDORES');
+    const segAntes = antes?.seguidores;
+    const varSeg = segAntes != null ? c.followers_count - segAntes : null;
+    L.push(`  ${c.followers_count} seguidores` + (varSeg != null ? ` (${sinal(varSeg)} desde ${diaBr(Date.parse(antes.quando))})` : ' (primeiro relatório: a variação aparece a partir do próximo)'));
+    L.push(`  ${c.media_count} posts no perfil · seguindo ${c.follows_count}`, '');
+
+    const daSemana = posts.filter((p) => Date.parse(p.timestamp) >= inicio)
+        .sort((a, b) => (b.like_count + b.comments_count) - (a.like_count + a.comments_count));
+
+    // robô lido antes para entrar nos cartões do topo
+    const ini = new Date(inicio).toISOString();
+    let pedidos = [], ocultos = 0, erroRobo = '';
+    try {
+        const r = await env.DB.prepare('SELECT palavra, COUNT(*) n, SUM(dm_ok) ok FROM ig_respostas WHERE quando >= ? GROUP BY palavra ORDER BY n DESC').bind(ini).all();
+        const linhas = r.results || [];
+        pedidos = linhas.filter((x) => x.palavra !== '[oculto]');
+        ocultos = linhas.find((x) => x.palavra === '[oculto]')?.n || 0;
+    } catch (e) { erroRobo = e.message; }
+    const totPedidos = pedidos.reduce((s, x) => s + x.n, 0);
+
+    H.push('<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px"><tr>' +
+        cartao('seguidores', c.followers_count.toLocaleString('pt-BR'), varSeg == null ? 'base: 1º relatório' : sinal(varSeg) + ' desde ' + diaBr(Date.parse(antes.quando)),
+               varSeg > 0 ? '#15803d' : varSeg < 0 ? '#b91c1c' : '#6b6880') +
+        cartao('posts na semana', daSemana.length, c.media_count + ' no perfil') +
+        cartao('pedidos de plugin', totPedidos, 'pelo comentário') +
+        cartao('spams ocultados', ocultos, '') + '</tr></table>');
+
+    L.push(`POSTS DA SEMANA (${daSemana.length})`);
+    sec(`Posts da semana (${daSemana.length})`);
+    if (!daSemana.length) { L.push('  Nenhum post nesta semana.'); vazio('Nenhum post nesta semana.'); }
+    const linhasPost = [];
+    for (const p of daSemana) {
+        const tipo = tipoDe(p);
+        L.push(`  ${dataBr(p.timestamp)} · ${tipo} · ${p.like_count ?? '?'} curtidas · ${p.comments_count ?? 0} comentários`);
+        L.push(`    ${resumoLegenda(p.caption)}`, `    ${p.permalink}`);
+        linhasPost.push([`${selo(tipo)} <span style="color:#6b6880;font-size:12px">${esc(dataBr(p.timestamp))}</span><br>${lnk(p.permalink, resumoLegenda(p.caption))}`,
+            '❤ ' + (p.like_count ?? '?'), '💬 ' + (p.comments_count ?? 0)]);
+    }
+    if (linhasPost.length) H.push(tabela(['Post', 'Curtidas', 'Coment.'], linhasPost));
+    L.push('');
+
+    // interação ganha na semana (todos os posts, comparando com a foto anterior)
+    if (antes?.posts) {
+        const ganho = posts.map((p) => {
+            const a = antes.posts[p.id];
+            const base = a ? a[0] + a[1] : (Date.parse(p.timestamp) >= Date.parse(antes.quando) ? 0 : null);
+            return base == null ? null : { p, g: (p.like_count || 0) + (p.comments_count || 0) - base };
+        }).filter((x) => x && x.g > 0).sort((a, b) => b.g - a.g).slice(0, 5);
+        L.push(`O QUE MAIS GANHOU INTERAÇÃO DESDE ${diaBr(Date.parse(antes.quando))} (curtidas + comentários novos)`);
+        sec(`O que mais ganhou interação desde ${diaBr(Date.parse(antes.quando))}`);
+        if (!ganho.length) { L.push('  Nenhum post ganhou interação desde o último relatório.'); vazio('Nenhum post ganhou interação desde o último relatório.'); }
+        for (const { p, g } of ganho) L.push(`  +${g} · ${resumoLegenda(p.caption)} (${diaBr(Date.parse(p.timestamp))})`, `    ${p.permalink}`);
+        if (ganho.length) H.push(tabela(['Post (curtidas + comentários novos)', 'Ganho'],
+            ganho.map(({ p, g }) => [`${lnk(p.permalink, resumoLegenda(p.caption))} <span style="color:#6b6880;font-size:12px">· ${esc(diaBr(Date.parse(p.timestamp)))}</span>`,
+                `<b style="color:#15803d">+${g}</b>`])));
+        L.push('');
+    }
+
+    L.push('ROBÔ DE COMENTÁRIOS');
+    sec('Robô de comentários');
+    if (erroRobo) { L.push('  (não consegui ler: ' + erroRobo + ')', ''); vazio('Não consegui ler: ' + erroRobo); }
+    else {
+        if (!pedidos.length) { L.push('  Ninguém pediu plugin pelo comentário nesta semana.'); vazio('Ninguém pediu plugin pelo comentário nesta semana.'); }
+        for (const x of pedidos) L.push(`  ${x.palavra.toUpperCase()}: ${x.n} pedido(s), ${x.ok || 0} DM(s) entregue(s)` + (x.n - (x.ok || 0) > 0 ? ` · ${x.n - (x.ok || 0)} falhou(aram)` : ''));
+        if (pedidos.length) H.push(tabela(['Palavra', 'Pedidos', 'DM entregue', 'Falhou'], pedidos.map((x) => {
+            const f = x.n - (x.ok || 0);
+            return [selo(x.palavra.toUpperCase()), x.n, x.ok || 0, f > 0 ? `<b style="color:#b91c1c">${f}</b>` : '0'];
+        })));
+        L.push(`  Spam ocultado: ${ocultos}`, '');
+        H.push(`<div style="font-size:14px;color:#6b6880;margin-top:8px">Spam ocultado na semana: <b style="color:#1f1b2e">${ocultos}</b></div>`);
+    }
+
+    try {
+        const fim = new Date(agora + 7 * 86400000).toISOString();
+        const r = await env.DB.prepare("SELECT tipo, quando, estado, legenda, resultado FROM ig_agenda WHERE (quando >= ? AND quando <= ?) OR estado IN ('pendente','processando','erro') AND quando >= ? ORDER BY quando").bind(ini, fim, ini).all();
+        const ag = r.results || [];
+        if (ag.length) {
+            L.push('AGENDA');
+            sec('Agenda');
+            const nome = { pendente: 'agendado', processando: 'processando', publicado: 'publicado', erro: 'ERRO', cancelado: 'cancelado' };
+            for (const a of ag) L.push(`  ${dataBr(a.quando)} · ${a.tipo} · ${nome[a.estado] || a.estado} · ${resumoLegenda(a.legenda)}` + (a.estado === 'erro' ? ` (${String(a.resultado || '').slice(0, 120)})` : ''));
+            H.push(tabela(['Quando · post', 'Situação'], ag.map((a) => [`<span style="color:#6b6880;font-size:12px">${esc(dataBr(a.quando))} · ${esc(a.tipo)}</span><br>${esc(resumoLegenda(a.legenda))}` +
+                (a.estado === 'erro' ? `<br><span style="color:#b91c1c;font-size:12px">${esc(String(a.resultado || '').slice(0, 120))}</span>` : ''),
+                a.estado === 'erro' ? '<b style="color:#b91c1c">ERRO</b>' : esc(nome[a.estado] || a.estado)])));
+            L.push('');
+        }
+    } catch { /* sem agenda */ }
+
+    L.push('Alcance, impressões e salvamentos ficam de fora: precisam da permissão instagram_manage_insights.');
+    H.push('<div style="margin-top:24px;font-size:12px;color:#6b6880">Alcance, impressões e salvamentos ficam de fora: precisam da permissão instagram_manage_insights.</div>');
+    const foto = { quando: new Date(agora).toISOString(), seguidores: c.followers_count, posts: Object.fromEntries(posts.map((p) => [p.id, [p.like_count || 0, p.comments_count || 0]])) };
+    const html = moldura(`Instagram @${c.username}`, `Relatório semanal · ${diaBr(inicio)} a ${diaBr(agora)}`, H.join(''));
+    return { ok: true, assunto: `Instagram @${c.username}: semana de ${diaBr(inicio)} a ${diaBr(agora)}`, texto: L.join('\n'), html, foto };
+}
+
+export async function relatorioSemanal(env, { enviar = true } = {}) {
+    const r = await montarRelatorio(env);
+    if (!r.ok || !enviar) return r;
+    if (!env.RESEND_API_KEY) return { ok: false, motivo: 'email_desligado', texto: r.texto };
+    // direto no Resend (sem a cópia na tabela mensagens: não vira conversa no painel, como a cópia para o Gmail da caixa)
+    const x = await fetch((env.RESEND_URL || 'https://api.resend.com') + '/emails', {
+        method: 'POST',
+        headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({ from: env.EMAIL_DE || 'InsideStudioSP <contato@insidestudiosp.com.br>', to: [RELATORIO_PARA], subject: r.assunto, text: comAssinatura(r.texto), html: r.html }),
+    });
+    if (!x.ok) return { ok: false, motivo: 'resend ' + x.status + ': ' + (await x.text()).slice(0, 200), texto: r.texto };
+    await env.DB.prepare('INSERT INTO ig_config (chave, valor, quando) VALUES (?, ?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor, quando = excluded.quando')
+        .bind('relatorio', JSON.stringify(r.foto), r.foto.quando).run();
+    return { ok: true, enviado_para: RELATORIO_PARA, assunto: r.assunto, texto: r.texto };
+}
+
 // Cron diário: registros de comentário com mais de 90 dias somem (prometido na política de privacidade).
 export async function limparInstagram(env) {
     const corte = new Date(Date.now() - 90 * 86400000).toISOString();
@@ -453,6 +616,12 @@ export async function rotaInstagram(caminho, req, env, url, ctx) {
     if (caminho === '/instagram/agenda/rodar' && req.method === 'POST') {
         if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
         return json(await publicarAgendados(env));
+    }
+    if (caminho === '/instagram/relatorio' && req.method === 'POST') {
+        if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
+        const r = await relatorioSemanal(env, { enviar: url.searchParams.get('enviar') === '1' });
+        delete r.foto;
+        return json(r, r.ok ? 200 : 502);
     }
     if (caminho === '/instagram/renovar' && req.method === 'POST') {
         if (!admin()) return json({ erro: 'nao_autorizado' }, 401);

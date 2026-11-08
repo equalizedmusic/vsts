@@ -5,6 +5,8 @@
 // ••••: o banco nunca guarda token em claro.
 
 // sai de contato@ e a resposta volta para contato@ (caixa de entrada no painel, ver src/caixa.js)
+import { textoParaHtml, comAssinatura } from './emailhtml.js';
+
 export const CONTATO = 'contato@insidestudiosp.com.br';
 const REMETENTE = `InsideStudioSP <${CONTATO}>`;
 export const RESEND_API = 'https://api.resend.com';
@@ -12,15 +14,22 @@ export const RESEND_API = 'https://api.resend.com';
 export const emailLigado = (env) => !!env.RESEND_API_KEY;
 export const resendUrl = (env, caminho) => (env.RESEND_URL || RESEND_API) + caminho;   // RESEND_URL: só para teste local
 
-// texto puro (sem HTML): cai menos em spam e é o mesmo conteúdo do LEIA-ME
+// vai em texto puro (o mesmo conteúdo do LEIA-ME) E em HTML com o layout da marca e a assinatura do Gmail
+// (src/emailhtml.js): o Resend manda multipart e cada cliente mostra o que sabe ler.
+//   html: omitido = gerado do texto (textoParaHtml); string = HTML pronto (o texto já deve vir assinado)
 //   segredos: textos que não podem ir para a cópia no banco (token, link de troca)
 //   cabecalhos: In-Reply-To/References da resposta pelo painel
 // devolve o id do Resend (verdadeiro) ou false
-export async function enviarEmail(env, { para, assunto, texto, segredos = [], cabecalhos, origem = 'automatico' }) {
+export async function enviarEmail(env, { para, assunto, texto, html, segredos = [], cabecalhos, origem = 'automatico' }) {
     if (!emailLigado(env)) return false;
+    if (html == null) {
+        try { html = textoParaHtml(texto); } catch (e) { console.error('email: html', e); html = null; }   // sem HTML o texto segue sozinho
+        texto = comAssinatura(texto);
+    }
     let id;
     try {
         const corpo = { from: env.EMAIL_DE || REMETENTE, reply_to: CONTATO, to: [para], subject: assunto, text: texto };
+        if (html) corpo.html = html;
         if (cabecalhos) corpo.headers = cabecalhos;
         const r = await fetch(resendUrl(env, '/emails'), {
             method: 'POST',

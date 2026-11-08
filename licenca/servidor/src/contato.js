@@ -7,6 +7,7 @@
 // Responde com redirecionamento 303 para as páginas do site: /contato/enviado/, /contato/erro/, /contato/limite/.
 
 import { CONTATO, emailLigado, resendUrl } from './email.js';
+import { internoHtml, mailto, esc } from './emailhtml.js';
 
 const POR_IP_HORA = 5;
 const TOTAL_DIA = 200;
@@ -46,11 +47,17 @@ export async function rotaContato(req, env, url) {
         '—',
         'Responder este e-mail (ou pela Caixa de entrada do painel) vai para o e-mail do visitante.',
     ].join('\n');
+    let html;   // falha no HTML = vai só o texto
+    try {
+        html = internoHtml({ titulo: `Contato pelo site · ${assunto}`, sub: 'Formulário insidestudiosp.com.br/contato',
+            campos: [['Nome', esc(nome)], ['E-mail', mailto(email)], ['Assunto', esc(assunto)]], texto: mensagem,
+            nota: 'Responder este e-mail (ou pela Caixa de entrada do painel) vai para o e-mail do visitante.' });
+    } catch (e) { console.error('contato: html', e); }
     const r = await fetch(resendUrl(env, '/emails'), {
         method: 'POST',
         headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
         body: JSON.stringify({ from: `${nome.replace(/[<>"@]/g, '')} via site <${CONTATO}>`, to: [CONTATO], reply_to: email,
-                               subject: `[Site · ${assunto}] ${nome}`, text: texto }),
+                               subject: `[Site · ${assunto}] ${nome}`, text: texto, ...(html ? { html } : {}) }),
     });
     if (!r.ok) { console.error('contato: resend', r.status, (await r.text()).slice(0, 300)); return ir('erro'); }
     await env.DB.prepare('INSERT INTO eventos (licenca_id, tipo, detalhe, ip, quando) VALUES (NULL, ?, ?, ?, ?)')

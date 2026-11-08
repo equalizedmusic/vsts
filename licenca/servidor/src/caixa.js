@@ -16,6 +16,7 @@
 // Sem a RESEND_API_KEY a aba mostra que o e-mail está desligado; sem a tabela mensagens nada daqui quebra o resto.
 
 import { CONTATO, emailLigado, enviarEmail, resendUrl } from './email.js';
+import { ASSINATURA_TXT, respostaHtml, copiaRecebidoHtml } from './emailhtml.js';
 
 const agora = () => Math.floor(Date.now() / 1000);
 const TOLERANCIA_WEBHOOK = 300;      // s: aviso com horário mais velho que isso é recusado (reenvio forjado)
@@ -51,14 +52,17 @@ export function enderecoDe(s) {
 }
 
 // HTML do e-mail recebido -> texto (só para leitura; nada disso volta a ser HTML)
-export function htmlParaTexto(html) {
+function htmlDecodificado(html) {                                // html_format "data_uri" -> HTML
     let h = String(html || '');
-    if (/^data:/i.test(h)) {                                    // html_format "data_uri"
+    if (/^data:/i.test(h)) {
         const i = h.indexOf(',');
         const cab = h.slice(5, i), dado = h.slice(i + 1);
         try { h = /;base64/i.test(cab) ? new TextDecoder().decode(deB64(dado)) : decodeURIComponent(dado); } catch { h = dado; }
     }
-    return h
+    return h;
+}
+export function htmlParaTexto(html) {
+    return htmlDecodificado(html)
         .replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, '')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/(p|div|tr|li|h[1-6]|blockquote)>/gi, '\n')
@@ -109,7 +113,8 @@ export async function rotaWebhookEntrada(req, env) {
         .bind(id, contato.slice(0, 200), String(m.headers?.from || m.from || '').slice(0, 300), (m.to || []).join(', ').slice(0, 500),
               String(m.subject || '(sem assunto)').slice(0, 300), texto.slice(0, 100000), String(m.message_id || '').slice(0, 300) || null,
               anexos.length ? JSON.stringify(anexos) : null, Math.floor(Date.parse(m.created_at) / 1000) || agora()).run();
-    await copiaParaGmail(env, { de: String(m.headers?.from || m.from || contato), contato, assunto: String(m.subject || '(sem assunto)'), texto, anexos });
+    await copiaParaGmail(env, { de: String(m.headers?.from || m.from || contato), contato, assunto: String(m.subject || '(sem assunto)'), texto, anexos,
+                              html: htmlDecodificado(m.html) });
     return json({ ok: true });
 }
 
@@ -118,7 +123,14 @@ export async function rotaWebhookEntrada(req, env) {
 // uma conversa "insidestudiosp@gmail.com" no painel). Falha aqui não derruba o recebimento.
 // COPIA_PARA (variável opcional) troca o destino; COPIA_PARA = "off" desliga.
 const COPIA_PARA = 'insidestudiosp@gmail.com';
-async function copiaParaGmail(env, { de, contato, assunto, texto, anexos }) {
+// HTML da cópia: o original de quem mandou com a faixa da marca no topo (ou o texto na moldura); falha = só o texto
+function copiaHtml({ de, contato, anexos, html, texto }) {
+    try {
+        return { html: copiaRecebidoHtml({ de, contato, para: CONTATO, anexos: anexos.length,
+                                           htmlOriginal: html && html.length < 400000 ? html : '', texto: texto.slice(0, 90000) }) };
+    } catch (e) { console.error('caixa: html da cópia', e); return {}; }
+}
+async function copiaParaGmail(env, { de, contato, assunto, texto, anexos, html }) {
     const destino = env.COPIA_PARA || COPIA_PARA;
     if (destino === 'off' || !contato || contato === CONTATO || contato === destino.toLowerCase()) return;
     const nome = (de.match(/^\s*"?([^"<]+?)"?\s*</) || [])[1] || contato;
@@ -131,6 +143,7 @@ async function copiaParaGmail(env, { de, contato, assunto, texto, anexos }) {
                 from: `${nome.replace(/[<>"\r\n]/g, '').slice(0, 60)} via InsideStudioSP <${CONTATO}>`,
                 to: [destino], reply_to: contato, subject: assunto.slice(0, 300),
                 text: `De: ${de}\nPara: ${CONTATO}\n\n${texto.slice(0, 90000)}${aviso}`,
+                ...copiaHtml({ de, contato, anexos, html, texto }),
             }),
         });
         if (!r.ok) console.error('caixa: cópia gmail', r.status, (await r.text()).slice(0, 300));
@@ -195,7 +208,8 @@ export async function rotaCaixa(caminho, req, env) {
         }
         if (para.length > 120 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) return erro('Confira o e-mail do destinatário.', 400);
         if (!assunto) return erro('Escreva o assunto.', 400);
-        const id = await enviarEmail(env, { para, assunto, texto: texto + citacao, cabecalhos, origem: 'painel' });
+        const id = await enviarEmail(env, { para, assunto, texto: texto + '\r\n\r\n' + ASSINATURA_TXT.join('\r\n') + citacao,
+                                            html: respostaHtml(texto, citacao), cabecalhos, origem: 'painel' });
         if (!id) return erro('O Resend recusou o envio. Tente de novo em alguns minutos.', 502);
         return json({ ok: true, contato: para });
     }

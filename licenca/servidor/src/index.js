@@ -45,7 +45,7 @@ import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja, vencerPedidos } from './loja.js';
 import { avisarLicenca } from './avisos.js';
 import { rotaContato } from './contato.js';
-import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram } from './instagram.js';
+import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram, relatorioSemanal } from './instagram.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'barebass', 'stompbox', 'maestro', 'magos', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -587,6 +587,9 @@ export default {
         }
         ctx.waitUntil(vencerPedidos(env, agora()));
         ctx.waitUntil(limparInstagram(env).catch((e) => console.error('ig limpar', e)));
+        // segunda-feira (09:00 UTC = 06:00 de Brasília): relatório semanal do Instagram para o Gmail do estúdio
+        if (new Date(evento.scheduledTime || Date.now()).getUTCDay() === 1)
+            ctx.waitUntil(relatorioSemanal(env).then((r) => console.log('ig relatorio', r.ok ? 'enviado' : JSON.stringify(r).slice(0, 300))).catch((e) => console.error('ig relatorio', e)));
         // token do login do Instagram (60 dias): renova todo dia; falha só fica no log
         ctx.waitUntil(renovarTokenInstagram(env).then((r) => { if (!r.ok) console.log('ig renovar', JSON.stringify(r)); }).catch((e) => console.error('ig renovar', e)));
     },
