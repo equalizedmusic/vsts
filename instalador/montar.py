@@ -217,8 +217,9 @@ def distribution(pacote, versao, escolhas):
          f"  <title>{escape(MARCA + ' ' + pacote)}</title>",
          # customize="always": abre direto na lista de plugins, todos marcados
          '  <options customize="always" require-scripts="false" hostArchitectures="x86_64,arm64"/>',
-         # "Instalar para todos os usuários" (/Library) ou "só para mim" (~/Library)
-         '  <domains enable_localSystem="true" enable_currentUserHome="true" enable_anywhere="false"/>',
+         # SÓ /Library (todos os usuários): com a opção "só para mim" o plugin ia para ~/Library e ficavam duas cópias
+         # (a velha numa pasta, a nova na outra) — o DAW carregava o VST3 velho. Sem pergunta de destino.
+         '  <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>',
          '  <allowed-os-versions><os-version min="11.0"/></allowed-os-versions>',
          "  <choices-outline>"]
     L += [f'    <line choice="{e["id"]}"/>' for e in escolhas]
@@ -238,7 +239,8 @@ LEIAME = """{marca} {pacote} {versao}
 
 1. Abra "Instalar {marca} {pacote}.pkg".
 2. Na lista, desmarque os plugins que você não quer e clique em Instalar.
-   No passo "Destino" dá para instalar para todos os usuários (padrão) ou só para você.
+   Ele instala para todos os usuários do Mac (pede a senha de administrador) e apaga cópias antigas
+   que tenham ficado na sua pasta de usuário (~/Library), para o DAW não carregar a versão velha.
 3. Os plugins vão para as pastas padrão do Mac, onde o Ableton e os outros DAWs procuram:
    VST3: /Library/Audio/Plug-Ins/VST3
    AU:   /Library/Audio/Plug-Ins/Components
