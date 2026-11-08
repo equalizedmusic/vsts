@@ -147,7 +147,7 @@ void StompboxEditor::mouseDown (const juce::MouseEvent& e)
             for (int i = 0; i < 6; ++i) tam.addItem (10 + i, juce::String (larguras[i]) + " x " + juce::String (larguras[i] * baseH / baseW), true, getWidth() == larguras[i]);
             m.addSubMenu ("Tamanho da janela", tam);
             m.addItem (2, "Abrir a pasta de presets");
-            m.addItem (4, u8 ("Licen\xc3\xa7a\xe2\x80\xa6"));
+            m.addItem (4, u8 ("Licen\xc3\xa7" "a\xe2\x80\xa6"));
             m.addSeparator();
             m.addItem (3, "Sobre o STOMPBOX");
             juce::Component::SafePointer<StompboxEditor> safe (this);
