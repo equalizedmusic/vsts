@@ -412,6 +412,7 @@ public:
         : juce::Button (text), icon (i), colour (accent) {}
 
     bool hero = false;   // o GERAR CONVERSA: fundo no gradiente da marca
+    float padRight = 0.0f;   // espaço reservado à direita (cadeado por cima do botão): o conteúdo centra no resto
 
     void paintButton (juce::Graphics& g, bool over, bool down) override
     {
@@ -438,7 +439,7 @@ public:
         const float tw = text.isEmpty() ? 0.0f : juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), text);
         const float gap = icon != Icon::none && text.isNotEmpty() ? 8.0f : 0.0f;
         const float iw = icon != Icon::none ? ih : 0.0f;
-        float x = r.getCentreX() - (tw + gap + iw) * 0.5f;
+        float x = r.getCentreX() - padRight * 0.5f - (tw + gap + iw) * 0.5f;
         const RF ir (x, r.getCentreY() - ih * 0.5f, iw, ih);
         drawIcon (g, ir, textCol);
         x += iw + gap;

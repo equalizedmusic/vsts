@@ -166,6 +166,8 @@ void VoiceCard::drawVa (juce::Graphics& g, RF r)
             }
         }
     };
+    const float waveH = r.getHeight() - 12.0f;
+    const float waveMid = r.getY() + 2.0f + waveH * 0.5f, waveAmp = waveH * 0.44f;
     const int N = 320;
     juce::Path p;
     for (int i = 0; i <= N; ++i)
@@ -173,7 +175,7 @@ void VoiceCard::drawVa (juce::Graphics& g, RF r)
         const float ph = 2.0f * (float) i / (float) N;
         const float y = (shape (ph) + lvl2 * shape (ph * mul + 0.25f)) / (1.0f + lvl2);
         const float x = r.getX() + 4.0f + (r.getWidth() - 8.0f) * (float) i / (float) N;
-        const float yy = r.getCentreY() - y * r.getHeight() * 0.36f;
+        const float yy = waveMid - y * waveAmp;   // a onda fica acima da legenda de baixo
         if (i == 0) p.startNewSubPath (x, yy); else p.lineTo (x, yy);
     }
     const auto c = silent ? rs::faint : colour;
@@ -198,6 +200,8 @@ void VoiceCard::drawWave (juce::Graphics& g, RF r)
     const float index = fm * fm * 7.0f;
     const float twoPi = juce::MathConstants<float>::twoPi;
 
+    const float waveH = r.getHeight() - 12.0f;
+    const float waveMid = r.getY() + 2.0f + waveH * 0.5f, waveAmp = waveH * 0.44f;
     const int N = 320;
     const float cycles = 2.0f;
     juce::Path p;
@@ -219,7 +223,7 @@ void VoiceCard::drawWave (juce::Graphics& g, RF r)
             default: y = std::sin (twoPi * phi); break;
         }
         const float x = r.getX() + 4.0f + (r.getWidth() - 8.0f) * (float) i / (float) N;
-        const float yy = r.getCentreY() - y * r.getHeight() * 0.36f;
+        const float yy = waveMid - y * waveAmp;   // a onda fica acima da legenda de baixo
         if (i == 0) p.startNewSubPath (x, yy); else p.lineTo (x, yy);
     }
     const auto c = silent ? rs::faint : colour;
@@ -542,6 +546,7 @@ ResenhaEditor::ResenhaEditor (ResenhaProcessor& p) : AudioProcessorEditor (&p), 
     {
         const int x = 18 + i * 124;
         auto* b = add<NeonButton> ({ x, 556, 118, 40 }, juce::String (parts[i].text), NeonButton::Icon::dice);
+        b->padRight = 26.0f;   // o cadeado fica em x+88..x+112
         const int part = parts[i].part;
         if (parts[i].lockId != nullptr)
         {
@@ -916,7 +921,7 @@ void ResenhaEditor::drawHeader (juce::Graphics& g)
     g.fillRect (x + 6.0f, 28.0f, 1.0f, 30.0f);
     g.setFont (theme::sans (9.5f, true, 0.3f));
     g.setColour (rs::ink.withAlpha (0.85f));
-    g.drawText (juce::String::fromUTF8 ("CALL & RESPONSE · FM"), RF (x + 18.0f, 28.0f, 230.0f, 13.0f), juce::Justification::centredLeft);
+    g.drawText (juce::String::fromUTF8 ("CALL & RESPONSE · FM · VA"), RF (x + 18.0f, 28.0f, 230.0f, 13.0f), juce::Justification::centredLeft);
     g.drawText ("GERADOR DE FRASES E TIMBRES", RF (x + 18.0f, 45.0f, 230.0f, 13.0f), juce::Justification::centredLeft);
     g.setColour (rs::dim);
     g.setFont (theme::sans (8.0f, true, 0.2f));
