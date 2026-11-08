@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 
 // Tela do STOMPBOX (base 1600 × 900, escala junto com a janela), no desenho do esboço aprovado em 07/11/2026.
 // Em cima: presets (◀ visor ▶, SAVE, A/B), SYNC com o BPM do DAW, TUNER e HQ. No meio: o board, 6 pedais à vista com
@@ -33,6 +34,7 @@ public:
     struct Alvo { juce::Rectangle<float> r; TipoAlvo tipo; int slot = -1; int idx = -1; juce::String pid; float def = 5.0f; };
 
 private:
+    isp::TelaAtivacao ativacao;
     void timerCallback() override;
     float escala() const { return (float) getWidth() / (float) baseW; }
     juce::Point<float> base (const juce::MouseEvent& e) const { return e.position / escala(); }

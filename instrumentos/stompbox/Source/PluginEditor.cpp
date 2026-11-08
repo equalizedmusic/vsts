@@ -20,6 +20,7 @@ StompboxEditor::StompboxEditor (StompboxProcessor& p) : AudioProcessorEditor (&p
     const int w = proc.uiW.load() > 0 ? proc.uiW.load() : 1280;
     setSize (w, juce::roundToInt (w * (double) baseH / baseW));
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void StompboxEditor::resized()

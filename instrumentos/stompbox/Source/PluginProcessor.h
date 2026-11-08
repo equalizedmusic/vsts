@@ -4,6 +4,7 @@
 #include "Dsp.h"
 #include "Pedais.h"
 #include "Presets.h"
+#include "IspLicenca.h"
 
 // STOMPBOX: pedalboard de guitarra. Até 10 pedais em série (6 à vista, com rolagem), AMP + CAB no fim, NOISE GATE
 // na entrada. Parâmetros fixos por posição: sN_type / sN_on / sN_k1..k4 / sN_sw (N = 1..10). Trocar a ordem move os
@@ -80,6 +81,7 @@ public:
     std::atomic<int> rolagem { 0 };           // primeira posição à vista
 
 private:
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
     stomp::Board board;
     stomp::BoardCtl ctl;
     double fs = 48000.0; bool hqPreparado = false;

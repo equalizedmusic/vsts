@@ -2,7 +2,7 @@
 vsts_versao(Stompbox.md STOMPBOX_VERSAO)
 
 # STOMPBOX: pedalboard de guitarra (10 pedais em série + AMP/CAB + NOISE GATE). É efeito, mas fica em instrumentos/
-# para ter build, instalador e release próprios, como o ALIGN. Versão de TESTE: ainda sem isp_licenca.
+# para ter build, instalador e release próprios, como o ALIGN. Licença: pacote stompbox (pago, à venda no site).
 juce_add_plugin(Stompbox
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.stompbox
@@ -20,6 +20,8 @@ juce_add_plugin(Stompbox
     COPY_PLUGIN_AFTER_BUILD     FALSE
     VST3_CATEGORIES             Fx Distortion
     AU_MAIN_TYPE                kAudioUnitType_Effect)
+
+isp_licenca(Stompbox stompbox)
 
 target_sources(Stompbox PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/EditorPedal.cpp
                                 Source/EditorPainel.cpp Source/EditorMouse.cpp)

@@ -1,7 +1,7 @@
 # STOMPBOX
 
 Pedalboard de guitarra em plugin (InsideStudioSP). Vai no canal da guitarra (DI). Até 10 pedais em série, AMP + CAB
-no fim e NOISE GATE na entrada. Versão de TESTE: sem ativação por licença e fora do site.
+no fim e NOISE GATE na entrada. Pago (pacote `stompbox` no servidor de licenças), à venda no site; sem ativação o som passa direto.
 
 ## Cadeia
 

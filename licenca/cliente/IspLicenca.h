@@ -62,6 +62,7 @@ public:
         if (p == "mesa") return "MESA";
         if (p == "align") return "ALIGN";
         if (p == "barebass") return "BAREBASS";
+        if (p == "stompbox") return "STOMPBOX";
         return p.toUpperCase();
     }
 

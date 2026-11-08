@@ -117,6 +117,15 @@ export const PACKS = [
         plugins: [['mesa', 'MESA', 'A console no master.', 'The console on the master.'], ['mesa-canal', 'MESA CANAL', 'O canal em cada faixa.', 'The channel strip on every track.']],
     },
     {
+        id: 'stompbox', nome: 'STOMPBOX', cor: '#ef4444', tipo: ['Guitarra · VST3 · AU', 'Guitar · VST3 · AU'],
+        capa: 'stompbox', preco: null,
+        frase: ['O pedalboard de guitarra inteiro dentro do seu DAW.', 'A full guitar pedalboard inside your DAW.'],
+        texto: [
+            'Até 10 pedais em série no board, com emulação dos circuitos clássicos: compressor, overdrives, distorção, fuzz, wah, phaser, chorus, delay de BBD ou fita, reverb e pitch shifter. No fim, 5 amps e caixa com microfone. NOISE GATE e afinador na entrada. 24 presets inspirados em timbres de guitarristas famosos.',
+            'Up to 10 pedals in series on the board, modeled on classic circuits: compressor, overdrives, distortion, fuzz, wah, phaser, chorus, BBD or tape delay, reverb and pitch shifter. Then 5 amps and a miked cab. NOISE GATE and tuner at the input. 24 presets inspired by famous guitar tones.'],
+        plugins: [['stompbox', 'STOMPBOX', 'Arraste os pedais para mudar a ordem; cada amp muda de cor na tela.', 'Drag pedals to change their order; each amp has its own color on screen.']],
+    },
+    {
         id: 'criativo', nome: 'SÉRIE CRIATIVO', cor: '#f97316', tipo: ['10 plugins · VST3 · AU', '10 plugins · VST3 · AU'],
         capa: 'chama', preco: null,
         frase: ['Dez efeitos criativos com cara de pedal boutique.', 'Ten creative effects that look like boutique pedals.'],

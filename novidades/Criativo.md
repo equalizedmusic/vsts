@@ -5,6 +5,10 @@ MIRAGEM, PICOTE). A versão é o primeiro título `## x.y.z` deste arquivo: ela 
 release `criativo-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 1.2.1 — 2026-11-08
+- Instalador do Mac: instala sempre para todos os usuários, em /Library/Audio/Plug-Ins (saiu a pergunta "todos os usuários / só para mim"). Ele também apaga a cópia antiga que tenha ficado na pasta do usuário: com as duas, o DAW podia continuar abrindo a versão velha.
+- As funções, o som e os presets não mudaram.
+
 ## 1.2.0 — 2026-10-27
 - Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até
   2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o plugin passa o som direto,

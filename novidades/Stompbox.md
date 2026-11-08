@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-08
+- Versão oficial, à venda no site (R$ 24,90 na oferta de lançamento).
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até 2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o plugin passa o som direto, sem processar.
+- Menu ≡ MENU > Licença… mostra a licença ativa.
+- O som, os pedais e os presets são os da 0.1.6.
+
 ## 0.1.6 — 2026-11-08
 - Ainda TESTE (sem licença, fora do site).
 - HUMP e CLEARCUT soavam como fuzz quebrado e sujo, e o som ia e voltava entre bom e "downsampler" (o 8x da 0.1.5

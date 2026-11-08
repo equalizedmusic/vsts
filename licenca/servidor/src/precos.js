@@ -15,11 +15,13 @@ export const PRECOS = {
     mercurio:  { brl: 24.90, usd: null },
     resenha:   { brl: 24.90, usd: null },
     groovador: { brl: 24.90, usd: null },
+    // STOMPBOX (08/11/2026): ia para a faixa da MESA; ele pediu preço de promoção como os demais.
+    stompbox:  { brl: 24.90, usd: null },
 };
 
 export const NOMES = {
     mesa: 'MESA', criativo: 'SÉRIE CRIATIVO', mix: 'SÉRIE MIX', knob: 'SÉRIE KNOB', quimera: 'QUIMERA',
-    limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR',
+    limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR', stompbox: 'STOMPBOX',
 };
 
 // Oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.

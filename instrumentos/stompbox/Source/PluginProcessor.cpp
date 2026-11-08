@@ -113,6 +113,11 @@ void StompboxProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     const int nOut = juce::jmin (getTotalNumOutputChannels(), buffer.getNumChannels());
     if (n == 0 || nOut == 0) return;
     if (nIn == 0) buffer.clear();
+    if (! licenca->liberada())   // sem ativação: o som passa direto (mono na entrada vai para os dois lados)
+    {
+        for (int c = juce::jmax (1, nIn); c < nOut; ++c) buffer.copyFrom (c, 0, buffer, 0, 0, n);
+        return;
+    }
 
     if (auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())
