@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths-ignore: ['**.md', 'shots/**', '.github/workflows/shots.yml', 'instrumentos/**', '.github/workflows/build-instrumentos.yml', '.github/workflows/limpar-releases.yml',
                    'divulgacao/**', 'plugins/knob/_comum/tools/**', 'max4live/**', '.github/workflows/release-max4live.yml',
-                   'licenca/servidor/**', 'licenca/admin/**', '.github/workflows/licenca-piloto.yml']
+                   'licenca/servidor/**', 'licenca/admin/**', '.github/workflows/licenca-piloto.yml',
+                   'site/**']   # site: deploy é manual (wrangler), não compila plugin
   workflow_dispatch:
 
 permissions:
