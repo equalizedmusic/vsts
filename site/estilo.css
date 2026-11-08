@@ -16,14 +16,20 @@ section.faixa { margin-top:64px; }
 
 /* topo */
 .topo { position:sticky; top:0; z-index:10; background:rgba(13,11,20,.82); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
-.topo .faixa { display:flex; align-items:center; justify-content:space-between; height:64px; }
-.marca { font:800 20px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.04em; text-decoration:none; }
+.topo .faixa { display:flex; align-items:center; justify-content:space-between; gap:16px; height:72px; }
+.marca { font:800 20px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.04em; text-decoration:none; white-space:nowrap; }
 .marca b { color:var(--pur); }
-nav { display:flex; align-items:center; gap:22px; font-weight:600; }
-nav a { text-decoration:none; color:var(--dim); }
-nav a:hover { color:var(--ink); }
-.idioma { background:none; border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:5px 10px; font-weight:800; cursor:pointer; letter-spacing:.08em; }
-.idioma:hover { border-color:var(--pur); }
+nav { display:flex; align-items:center; gap:8px; }
+/* menus com cara de botão: área de clique própria, fundo no hover e a página atual marcada */
+nav a { display:inline-flex; align-items:center; height:38px; padding:0 16px; border-radius:10px; border:1px solid var(--line); background:rgba(255,255,255,.025);
+        text-decoration:none; color:var(--dim); font:700 13px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.1em; text-transform:uppercase;
+        transition:background-color .15s, color .15s, border-color .15s; }
+nav a:hover { color:var(--ink); background:var(--card2); border-color:#4a4560; }
+nav a.atual { color:var(--ink); background:rgba(167,139,250,.14); border-color:rgba(167,139,250,.45); }
+nav a:focus-visible, .idioma:focus-visible { outline:2px solid var(--pur); outline-offset:2px; }
+.idioma { height:38px; margin-left:10px; padding:0 12px; background:none; border:1px solid var(--line); color:var(--ink); border-radius:10px;
+          font:800 12px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.1em; cursor:pointer; transition:border-color .15s, background-color .15s; }
+.idioma:hover { border-color:var(--pur); background:var(--card2); }
 .previa { background:rgba(255,138,61,.12); color:var(--org); text-align:center; font-size:13px; padding:6px 12px; border-bottom:1px solid rgba(255,138,61,.3); }
 
 /* hero */
@@ -198,8 +204,11 @@ h2.titulo-sec { font-size:clamp(28px, 4vw, 40px); font-weight:800; margin-bottom
   .contatos { text-align:left; }
 }
 @media (max-width:560px) {
-  nav { gap:14px; font-size:14px; }
-  .marca { font-size:17px; }
+  .topo .faixa { height:60px; gap:8px; }
+  nav { gap:2px; }
+  nav a { height:34px; padding:0 9px; font-size:11px; letter-spacing:.06em; }
+  .idioma { height:34px; margin-left:4px; padding:0 8px; font-size:11px; }
+  .marca { font-size:16px; }
   .hero { padding-top:56px; }
   section.faixa { margin-top:48px; }
 }

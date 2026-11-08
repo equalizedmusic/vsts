@@ -9,6 +9,13 @@
     function aplicar(l) { html.lang = l === 'en' ? 'en' : 'pt-BR'; }
 
     document.addEventListener('DOMContentLoaded', function () {
+        // menu: marca a seção aberta (página de pack conta como Loja)
+        var p = location.pathname, secao = p.indexOf('/estudio') === 0 ? 'estudio/' : p.indexOf('/contato') === 0 ? 'contato/' : p.indexOf('/privacidade') === 0 ? null : '';
+        document.querySelectorAll('nav a').forEach(function (a) {
+            var h = a.getAttribute('href').replace(/^\.*\//, '').replace(/^(\.\.\/)+/, '');
+            if (h === secao) { a.classList.add('atual'); a.setAttribute('aria-current', 'page'); }
+        });
+
         var bt = document.querySelector('.idioma');
         if (bt) bt.addEventListener('click', function () {
             var novo = html.lang === 'en' ? 'pt' : 'en';
