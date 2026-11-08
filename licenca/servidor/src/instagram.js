@@ -369,6 +369,18 @@ export async function limparInstagram(env) {
 export async function rotaInstagram(caminho, req, env, url, ctx) {
     if ((req.method === 'GET' || req.method === 'HEAD') && caminho === '/instagram/privacidade') return pagina('Política de privacidade', PRIVACIDADE);
     if ((req.method === 'GET' || req.method === 'HEAD') && caminho === '/instagram/exclusao-dados') return pagina('Exclusão de dados', EXCLUSAO);
+    // mídia pública dos posts agendados (KV MIDIAS; o tipo vem do metadata ou da extensão do nome)
+    if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/instagram/midia/')) {
+        const nome = decodeURIComponent(caminho.slice('/instagram/midia/'.length));
+        if (!env.MIDIAS || !/^[\w.-]{1,120}$/.test(nome)) return new Response('não encontrado', { status: 404 });
+        const { value, metadata } = await env.MIDIAS.getWithMetadata(nome, { type: 'arrayBuffer' });
+        if (!value) return new Response('não encontrado', { status: 404 });
+        const ext = (nome.split('.').pop() || '').toLowerCase();
+        const tipo = (metadata && metadata.tipo) || { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', mp4: 'video/mp4', mov: 'video/quicktime' }[ext] || 'application/octet-stream';
+        return new Response(req.method === 'HEAD' ? null : value, {
+            headers: { 'content-type': tipo, 'content-length': String(value.byteLength), 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff' },
+        });
+    }
     if (caminho === '/instagram/webhook' && req.method === 'GET') {
         const ok = url.searchParams.get('hub.mode') === 'subscribe' && !!env.IG_VERIFY
             && iguais(url.searchParams.get('hub.verify_token') || '', env.IG_VERIFY);

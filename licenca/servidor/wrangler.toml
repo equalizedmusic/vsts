@@ -38,6 +38,13 @@ routes = [
 [triggers]
 crons = ["0 9 * * *", "*/10 * * * *"]
 
+# mídias dos posts agendados do Instagram (a Meta baixa de GET /instagram/midia/<nome>); até 25 MB por arquivo.
+# Subir: npx wrangler kv key put --remote --namespace-id <id> "<nome>" --path <arquivo> --metadata '{"tipo":"image/jpeg"}'
+# (R2 não está ativado na conta; KV não pede cartão)
+[[kv_namespaces]]
+binding = "MIDIAS"
+id = "52ea948ffde341c2bd0e8a94bf02be29"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "isp-licencas"
