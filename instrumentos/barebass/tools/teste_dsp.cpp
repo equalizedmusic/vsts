@@ -292,6 +292,24 @@ int main()
         confere (pk < 1e-6, "tudo desligado = silêncio");
     }
 
+    // 12) VELOCITY (0.3.0): com VELO em 100% a nota fraca sai mais baixa e mais fechada; em 0% toda nota igual
+    {
+        std::printf ("12) VELOCITY\n");
+        auto nivel = [&] (float velo, float v)
+        {
+            Ajustes a = init(); a.velo = velo; a.cutoff = 300; a.envAmt = 0.6f; a.sus = 0.3f;
+            e->reset(); toca (*e, a, 2400, {});
+            e->noteOn (33, a, v);
+            auto r = toca (*e, a, (int) (fs * 0.3), {});
+            double s2 = 0; for (float x : r.s) s2 += (double) x * x;
+            return std::sqrt (s2 / (double) r.s.size());
+        };
+        const double forte = nivel (1.0f, 1.0f), fraca = nivel (1.0f, 0.4f), igual = nivel (0.0f, 0.4f);
+        std::printf ("   VELO 100%%: velocity 127 %.1f dB · velocity ~50 %.1f dB · VELO 0%% com ~50: %.1f dB\n", db (forte), db (fraca), db (igual));
+        confere (db (forte) - db (fraca) > 6.0, "VELO 100%: nota fraca mais baixa (> 6 dB)");
+        confere (std::abs (db (forte) - db (igual)) < 0.1, "VELO 0%: velocity não muda nada");
+    }
+
     std::printf (falhas ? "\n%d FALHA(S)\n" : "\nTUDO OK\n", falhas);
     return falhas ? 1 : 0;
 }

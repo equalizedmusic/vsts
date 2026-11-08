@@ -42,7 +42,7 @@ juce::String nomeNota (int midi)
 {
     static const char* n[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
     if (midi < 0) return u8 ("—");
-    return juce::String (n[midi % 12]) + juce::String (midi / 12 - 1);
+    return juce::String (n[midi % 12]) + juce::String (midi / 12 - 2);   // como no Ableton: nota 60 = C3
 }
 
 void led (juce::Graphics& g, juce::Point<float> c, float r, juce::Colour cor, bool aceso)
@@ -693,8 +693,9 @@ void BarebassEditor::painelMaster (juce::Graphics& g, juce::Rectangle<float> r)
     }
     g.setColour (juce::Colours::black); g.drawRect (juce::Rectangle<float> (r.getX() + 12, r.getY() + 34, bw * 2, 22), 1.0f);
     g.setColour (cBorda); g.drawLine (r.getX() + 12 + bw, r.getY() + 37, r.getX() + 12 + bw, r.getY() + 53, 1.0f);
-    knobRotulado (g, "volume", "VOLUME", { r.getX() + 38, r.getY() + 96 }, 16.0f, cAzul, false, true);
-    knobRotulado (g, "glide", "GLIDE", { r.getX() + 106, r.getY() + 96 }, 13.0f, cRoxo, false);
+    knobRotulado (g, "volume", "VOLUME", { r.getX() + 28, r.getY() + 96 }, 15.0f, cAzul, false, true);
+    knobRotulado (g, "glide", "GLIDE", { r.getX() + 74, r.getY() + 96 }, 12.0f, cRoxo, false);
+    knobRotulado (g, "velo", "VELO", { r.getX() + 118, r.getY() + 96 }, 12.0f, cRoxo, false);
 }
 
 void BarebassEditor::mouseDown (const juce::MouseEvent& e)
@@ -808,6 +809,7 @@ void BarebassEditor::menu()
                                      "unHUNF: depois do filtro, deixa o sub (10 a 50 Hz) bater no começo da nota e some com ele. "
                                      "Quanto mais alto, mais rápido e mais fundo. Em 0 fica desligado.\n\n"
                                      "MONO redispara o envelope a cada nota; LEGATO não redispara quando as notas se encostam. "
-                                     "GLIDE desliza de uma nota para a outra."));
+                                     "GLIDE desliza de uma nota para a outra. VELO: quanto a força da nota (velocity) muda "
+                                     "o volume e o quanto o ENV abre; em 0 toda nota sai igual."));
                      });
 }

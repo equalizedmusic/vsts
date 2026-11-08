@@ -56,7 +56,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<P> (juce::ParameterID { "micpos", 1 }, "Mic Position", dez, 3.0f));
     l.add (std::make_unique<P> (juce::ParameterID { "dist", 1 }, "Mic Distance", dez, 2.0f));
     l.add (std::make_unique<B> (juce::ParameterID { "sync", 1 }, "Sync BPM", false));
-    l.add (std::make_unique<B> (juce::ParameterID { "hq", 1 }, "HQ (oversampling 4x)", false));
+    l.add (std::make_unique<B> (juce::ParameterID { "hq", 1 }, "HQ (oversampling 16x)", false));
     return l;
 }
 

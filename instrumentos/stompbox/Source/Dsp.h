@@ -4,7 +4,7 @@
 // Cadeia: INPUT -> NOISE GATE -> até 10 pedais em série -> AMP -> CAB -> OUTPUT.
 // O sinal entra mono (guitarra). Chorus, delay e reverb abrem para estéreo; daí em diante cada pedal
 // processa os dois lados com estado próprio. Os estágios que distorcem (drives, fuzz, amp) rodam com
-// oversampling 2x (4x com HQ) por meio-banda IIR polifásico, sem latência.
+// oversampling 8x (16x com HQ) por meio-banda IIR polifásico, sem latência.
 
 #include <algorithm>
 #include <array>
@@ -150,25 +150,37 @@ struct Halfband2x
     float down (float x0, float x1) { const float y = 0.5f * (dnA.process (x0) + dnB.process (impar)); impar = x1; return y; }
 };
 
-struct Oversampler   // fator 1, 2 ou 4 para um canal
+struct Oversampler   // fator 1, 2, 4, 8 ou 16 para um canal (estágios de 2x em cascata)
 {
-    Halfband2x a, b; int fator = 2;
-    float buf[maxSub * 4] {}, mid[maxSub * 2] {};
-    void reset() { a.reset(); b.reset(); }
+    Halfband2x st[4]; int fator = 8;
+    float buf[maxSub * 16] {}, tmp[2][maxSub * 8] {};
+    void reset() { for (auto& h : st) h.reset(); }
+    int estagios() const { return fator >= 16 ? 4 : fator >= 8 ? 3 : fator >= 4 ? 2 : fator >= 2 ? 1 : 0; }
     int up (const float* x, int n)
     {
-        if (fator == 1) { std::memcpy (buf, x, sizeof (float) * (size_t) n); return n; }
-        if (fator == 2) { for (int i = 0; i < n; ++i) a.up (x[i], buf[2 * i], buf[2 * i + 1]); return n * 2; }
-        for (int i = 0; i < n; ++i) a.up (x[i], mid[2 * i], mid[2 * i + 1]);
-        for (int i = 0; i < n * 2; ++i) b.up (mid[i], buf[2 * i], buf[2 * i + 1]);
-        return n * 4;
+        const int e = estagios();
+        if (e == 0) { std::memcpy (buf, x, sizeof (float) * (size_t) n); return n; }
+        const float* src = x; int len = n;
+        for (int k = 0; k < e; ++k)
+        {
+            float* dst = k == e - 1 ? buf : tmp[k & 1];
+            for (int i = 0; i < len; ++i) st[k].up (src[i], dst[2 * i], dst[2 * i + 1]);
+            src = dst; len *= 2;
+        }
+        return len;
     }
     void down (float* y, int n)
     {
-        if (fator == 1) { std::memcpy (y, buf, sizeof (float) * (size_t) n); return; }
-        if (fator == 2) { for (int i = 0; i < n; ++i) y[i] = a.down (buf[2 * i], buf[2 * i + 1]); return; }
-        for (int i = 0; i < n * 2; ++i) mid[i] = b.down (buf[2 * i], buf[2 * i + 1]);
-        for (int i = 0; i < n; ++i) y[i] = a.down (mid[2 * i], mid[2 * i + 1]);
+        const int e = estagios();
+        if (e == 0) { std::memcpy (y, buf, sizeof (float) * (size_t) n); return; }
+        const float* src = buf; int len = n << e;
+        for (int k = e - 1; k >= 0; --k)
+        {
+            len /= 2;
+            float* dst = k == 0 ? y : tmp[k & 1];
+            for (int i = 0; i < len; ++i) dst[i] = st[k].down (src[2 * i], src[2 * i + 1]);
+            src = dst;
+        }
     }
 };
 
@@ -1189,7 +1201,7 @@ struct Board
 
     void prepare (double s, bool hq)
     {
-        fs = s; os = hq ? 4 : 2;
+        fs = s; os = hq ? 16 : 8;
         for (auto& sl : slots)
         {
             for (int t = 1; t < numTipos; ++t) { if (! sl.pedais[t]) sl.pedais[t] = criaPedal (t); sl.pedais[t]->prepare (fs, os); }

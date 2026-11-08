@@ -28,7 +28,7 @@ struct Preset { const char* nome; bool baseRolling; std::vector<std::pair<const 
 const std::vector<std::pair<const char*, float>>& rolling()
 {
     static const std::vector<std::pair<const char*, float>> r {
-        { "o1wave", 2 }, { "o1fine", 7 }, { "o1level", 80 }, { "o2wave", 3 }, { "o2oct", -1 }, { "o2fine", -7 }, { "o2level", 45 },
+        { "o1wave", 2 }, { "o1fine", 0 }, { "o1level", 80 }, { "o2wave", 3 }, { "o2oct", -1 }, { "o2fine", -7 }, { "o2level", 45 },
         { "sublevel", 70 }, { "cutoff", 180 }, { "reso", 35 }, { "envamt", 72 }, { "decay", 92 }, { "sustain", 0 }, { "hunf", 50 } };
     return r;
 }
@@ -86,6 +86,8 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<P> (juce::ParameterID { "glide", 1 }, "Glide", faixa (0, 500, 1, 80), 0.0f, A().withLabel ("ms")));
     l.add (std::make_unique<C> (juce::ParameterID { "mode", 1 }, "Mode", juce::StringArray { "MONO", "LEGATO" }, 0));
     l.add (std::make_unique<P> (juce::ParameterID { "volume", 1 }, "Volume", faixa (-36, 6, 0.1f), -3.0f, A().withLabel ("dB")));
+    // 0.3.0: quanto a velocity da nota pesa no volume e na abertura do ENV (0 = toda nota igual, como antes)
+    l.add (std::make_unique<P> (juce::ParameterID { "velo", 1 }, "Velocity", faixa (0, 100, 1), 60.0f, A().withLabel ("%")));
     return l;
 }
 
@@ -161,6 +163,7 @@ barebass::Ajustes BarebassProcessor::ajustes() const
     a.glide = v ("glide") * 0.001f;
     a.legato = iv ("mode") == 1;
     a.volumeDb = v ("volume");
+    a.velo = v ("velo") * 0.01f;
     return a;
 }
 
@@ -181,7 +184,7 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         const int t = juce::jlimit (0, n, meta.samplePosition);
         if (t > pos) { motor->render (out, nch, pos, t - pos, a); pos = t; }
         const auto m = meta.getMessage();
-        if (m.isNoteOn()) motor->noteOn (m.getNoteNumber(), a);
+        if (m.isNoteOn()) motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity());
         else if (m.isNoteOff()) motor->noteOff (m.getNoteNumber(), a);
         else if (m.isPitchWheel()) motor->pitchBend (m.getPitchWheelValue());
         else if (m.isAllNotesOff() || m.isAllSoundOff()) motor->allNotesOff();

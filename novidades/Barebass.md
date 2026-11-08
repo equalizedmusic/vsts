@@ -4,6 +4,21 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.0 — 2026-11-08
+- Afinação: com o unHUNF ligado o grave desafinava. O filtro dele subia de frequência a cada nota e, ao passar
+  pelo sub, deixava um "toque" na frequência do próprio filtro: o grave deslizava até meia oitava acima da nota
+  antes de sumir. Agora o corte do unHUNF fica parado no ponto do knob e o grave só perde VOLUME:
+  - o SUB e os OSC em oitava abaixo (−1/−2) caem em volume conforme a frequência deles, sem filtro no caminho;
+  - os OSC na oitava 0 ou acima passam por um divisor de bandas fixo e só a parte de baixo cai.
+  Medido: o sub fica na nota exata (0 cent de erro) do começo ao fim, com o unHUNF em 0, 50% ou 100%. A força do
+  efeito continua a mesma: num 1/16 a 143 BPM o grave abaixo de 50 Hz cai ~6 dB em 50% e ~30 dB em 100%.
+- Preset ROLLING (e a base dos outros presets): o OSC 1 estava +7 cents acima da nota, e era dele que vinha a altura
+  que se ouve. Agora o OSC 1 fica na nota e só o OSC 2 (uma oitava abaixo) desafina −7 cents. Em projeto já salvo
+  o FINE continua como estava; escolha o preset de novo para pegar o ajuste novo.
+- VELOCITY: knob novo VELO no MASTER (padrão 60%). Quanto a força da nota muda o volume e o quanto o ENV abre o
+  filtro: nota fraca sai mais baixa e mais fechada. Em 0% toda nota sai igual (como antes).
+- A nota na tela segue o Ableton: a nota 60 aparece como C3 (antes aparecia C4, uma oitava acima do piano roll).
+
 ## 0.2.0 — 2026-11-07
 - Primeira versão oficial: grátis, com ativação por licença (e-mail + token, 1 computador), como o ALIGN.
   Página: insidestudiosp.com.br/barebass. Sem ativação o synth fica mudo; menu ≡ > Licença… mostra/desativa.

@@ -162,6 +162,23 @@ def montar_win(a, plugins):
 DESTINO = {"VST3": ("vst3", "/Library/Audio/Plug-Ins/VST3"), "AU": ("component", "/Library/Audio/Plug-Ins/Components")}
 
 
+POSTINSTALL = """#!/bin/bash
+# $2 = pasta onde este plugin acabou de ser instalado (/Library/... ou ~/Library/..., conforme o "Destino")
+B="{bundle}"; SUB="{sub}"
+AQUI="${{2%/}}"
+case "$AQUI" in */"$SUB") ;; *) exit 0;; esac   # $2 inesperado: não apaga nada
+[ -e "$AQUI/$B" ] || exit 0                       # só apaga a outra cópia se esta foi mesmo posta
+U=$(stat -f%Su /dev/console 2>/dev/null)
+H=$(dscl . -read "/Users/$U" NFSHomeDirectory 2>/dev/null | awk '{{print $2}}')
+for d in "/Library/$SUB" "$H/Library/$SUB"; do
+  [ "$d" = "$AQUI" ] && continue
+  [ -e "$d/$B" ] && rm -rf "$d/$B"
+done
+killall -9 AudioComponentRegistrar 2>/dev/null
+exit 0
+"""
+
+
 def pkg_componente(bundle, fmt, ident_pkg, versao, pasta_pkgs, trabalho):
     ext, local = DESTINO[fmt]
     raiz = os.path.join(trabalho, ident_pkg)
@@ -174,10 +191,21 @@ def pkg_componente(bundle, fmt, ident_pkg, versao, pasta_pkgs, trabalho):
     for i in itens:  # sem isso o Installer "segue" uma cópia antiga do bundle e instala em outro lugar
         i["BundleIsRelocatable"] = False
         i["BundleOverwriteAction"] = "upgrade"
+        # o VST3 e o AU têm o MESMO CFBundleIdentifier (JUCE): com a checagem de versão ligada o Installer achava
+        # "a mesma versão já instalada" (o .component recém-posto) e pulava o .vst3 — o VST3 ficava velho
+        i["BundleIsVersionChecked"] = False
+        i["BundleHasStrictIdentifier"] = False
     with open(plist, "wb") as f:
         plistlib.dump(itens, f)
+    # postinstall: apaga a cópia do MESMO plugin no outro lugar (/Library x ~/Library). Com duas cópias o AU pega a
+    # mais nova sozinho, mas o VST3 o DAW carrega a que achar primeiro — e o VST3 ficava na versão velha.
+    scripts = raiz + "-scripts"
+    os.makedirs(scripts)
+    with open(os.path.join(scripts, "postinstall"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(POSTINSTALL.format(bundle=os.path.basename(bundle), sub=local[len("/Library/"):]))
+    os.chmod(os.path.join(scripts, "postinstall"), 0o755)
     arq = f"{ident_pkg}.pkg"
-    rodar("pkgbuild", "--root", raiz, "--component-plist", plist, "--identifier", ident_pkg,
+    rodar("pkgbuild", "--root", raiz, "--component-plist", plist, "--identifier", ident_pkg, "--scripts", scripts,
           "--version", versao, "--install-location", local, os.path.join(pasta_pkgs, arq))
     return arq
 

@@ -4,6 +4,18 @@ Pacote do instalador: `InsideStudioSP-Stompbox`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `stompbox-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.5 — 2026-11-08
+- Ainda TESTE (sem licença, fora do site).
+- Distorção com cara de downsampler (HUMP, CLEARCUT, GRIT, WOOLLY e o AMP): os drives rodavam com oversampling 2x,
+  pouco para o ganho deles, e o que passava de 24 kHz voltava como chiado fora do tom (aliasing). Agora o padrão
+  é 8x e o HQ é 16x (antes 2x e 4x). Medido com o drive no máximo e uma nota de 1,1 kHz: o chiado fora do tom
+  ficava só 27 a 38 dB abaixo do som; agora fica 44 a 51 dB abaixo. O nível dos pedais e dos presets não mudou.
+  Custa mais CPU: nos presets, de 2 a 7% para 3 a 12% de um núcleo. O pior caso (10 drives + amp com HQ) usa ~31%.
+- Instalador do Mac: o VST3 podia ficar na versão velha (só o AU atualizava). Agora o instalador apaga a cópia
+  antiga do mesmo plugin que estiver na outra pasta (/Library ou ~/Library). O DAW carregava essa cópia no lugar
+  da nova, mas o AU escolhe sozinho a mais nova. Ele também não pula mais o VST3 achando que "a mesma versão já
+  está instalada".
+
 ## 0.1.4 — 2026-11-08
 - Ainda TESTE (sem licença, fora do site).
 - Seletor de pedais (adicionar/trocar): os pedais apareciam sem cor, quase transparentes. Agora aparecem inteiros.

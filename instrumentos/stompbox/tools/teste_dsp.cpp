@@ -352,7 +352,8 @@ int main()
         for (size_t o = 0; o < L.size(); o += 256) b.process (&L[o], &R[o], (int) std::min ((size_t) 256, L.size() - o), false, bc);
         const double seg = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();
         std::printf ("  pior caso (10 pedais + IRON HG, HQ): CPU %.2f%% de um núcleo, saída finita: %s\n", 100.0 * seg / 4.0, mede (L).finito ? "sim" : "NÃO");
-        confere (seg / 4.0 < 0.25 && mede (L).finito, "pior caso < 25% de um núcleo");
+        // HQ = 16x desde a 0.1.5 (o som de "downsampler" dos drives em 2x): 10 drives + amp é o caso extremo
+        confere (seg / 4.0 < 0.40 && mede (L).finito, "pior caso < 40% de um núcleo");
     }
 
     std::printf ("\n%s (%d falha%s)\n", falhas ? "FALHOU" : "TUDO OK", falhas, falhas == 1 ? "" : "s");
