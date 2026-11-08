@@ -45,6 +45,7 @@ import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja, vencerPedidos } from './loja.js';
 import { avisarLicenca } from './avisos.js';
 import { rotaContato } from './contato.js';
+import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram } from './instagram.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'barebass', 'stompbox', 'maestro', 'magos', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
@@ -521,10 +522,12 @@ const BAREBASS_OFICIAL = 'https://insidestudiosp.com.br/barebass/';
 const PAINEL_OFICIAL = 'https://insidestudiosp.com.br/painel';
 
 export default {
-    async fetch(req, env) {
+    async fetch(req, env, ctx) {
         const url = new URL(req.url);
         const caminho = url.pathname.replace(/\/+$/, '');
         try {
+            // robô do Instagram (comentário com palavra-chave → DM): ver src/instagram.js
+            if (caminho.startsWith('/instagram/')) return await rotaInstagram(caminho, req, env, url, ctx);
             // link antigo da página do ALIGN (workers.dev) ⇒ endereço oficial no domínio do estúdio.
             // Só GET/HEAD: os POST da página (cadastro, reenvio) continuam funcionando em qualquer host.
             if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
@@ -577,6 +580,14 @@ export default {
     },
     // cron diário (wrangler.toml [triggers]): vence os pedidos da loja abertos há mais de 4 dias
     async scheduled(evento, env, ctx) {
+        // de 10 em 10 min: só a agenda de posts do Instagram
+        if (evento.cron === '*/10 * * * *') {
+            ctx.waitUntil(publicarAgendados(env).then((r) => { if (r.feitos?.length) console.log('ig agenda', JSON.stringify(r)); }).catch((e) => console.error('ig agenda', e)));
+            return;
+        }
         ctx.waitUntil(vencerPedidos(env, agora()));
+        ctx.waitUntil(limparInstagram(env).catch((e) => console.error('ig limpar', e)));
+        // token do login do Instagram (60 dias): renova todo dia; falha só fica no log
+        ctx.waitUntil(renovarTokenInstagram(env).then((r) => { if (!r.ok) console.log('ig renovar', JSON.stringify(r)); }).catch((e) => console.error('ig renovar', e)));
     },
 };

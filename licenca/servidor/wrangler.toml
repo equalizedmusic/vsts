@@ -28,11 +28,15 @@ routes = [
   # loja: formulário de compra do site, volta do checkout e aviso do Mercado Pago (pedido antigo no workers.dev segue valendo)
   { pattern = "insidestudiosp.com.br/loja/*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/loja/*", zone_name = "insidestudiosp.com.br" },
+  # robô do Instagram: webhook da Meta (comentário com palavra-chave → DM) e diagnóstico; ver src/instagram.js
+  { pattern = "insidestudiosp.com.br/instagram/*", zone_name = "insidestudiosp.com.br" },
 ]
 
 # limpeza diária da loja: 09:00 UTC (06:00 de Brasília) marca 'vencido' o pedido aberto há mais de 4 dias
+# (+ renova o token do Instagram e apaga registros de comentário com mais de 90 dias)
+# de 10 em 10 min: publica os posts agendados do Instagram (src/instagram.js, publicarAgendados)
 [triggers]
-crons = ["0 9 * * *"]
+crons = ["0 9 * * *", "*/10 * * * *"]
 
 [[d1_databases]]
 binding = "DB"
