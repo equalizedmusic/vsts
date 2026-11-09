@@ -29,6 +29,12 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_BAIXO
  #define SHOT_BAIXO 0
 #endif
+#ifndef SHOT_MAESTRO
+ #define SHOT_MAESTRO 0
+#endif
+#if SHOT_MAESTRO
+ #include "Dsp.h"   // MAESTRO: o Registry (LEARN / LOCK) das cópias abertas no mesmo programa
+#endif
 // MESA: a foto mostra a CONSOLE cheia, com MESA CANAL (canais e grupos) tocando o mesmo loop; e a janela de um canal
 static std::vector<std::unique_ptr<juce::AudioProcessor>> extras;
 #if SHOT_MESA
@@ -226,6 +232,22 @@ public:
                 midi.addEvent (juce::MidiMessage::controllerEvent (1, 1, juce::jmin (127, blocks / 2)), 0);
             ++blocks;
            #endif
+           #if SHOT_MAESTRO
+            // MAESTRO: cada cópia toca a própria faixa de um drop de psy (as extras na ordem de criação; a principal
+            // é o PAD 02). O LEAD toca sempre, para a foto pegar o PAD cedendo.
+            for (size_t k = 0; k <= extras.size(); ++k)
+            {
+                const int tipo = k < extras.size() ? (int) k : 10;
+                auto* bl = buf.getWritePointer (0); auto* br = buf.getWritePointer (1);
+                const double t0 = t - block / fs;
+                for (int i = 0; i < block; ++i)
+                {
+                    const float v = mae[(size_t) tipo].amostra (t0 + i / fs, tipo, rnd);
+                    bl[i] = v; br[i] = v * (tipo == 2 || tipo == 4 ? 0.8f : 1.0f);
+                }
+                if (k < extras.size()) extras[k]->processBlock (buf, midi);
+            }
+           #endif
            #if SHOT_MESA
             for (size_t k = 0; k < extras.size(); ++k)
             {
@@ -243,6 +265,44 @@ private:
     juce::AudioProcessor& proc;
     ShotPlayHead& head;
     double t = 0.0, kickPh = 0.0, bassPh = 0.0, padPh1 = 0.0, padPh2 = 0.0, aKick = 0.0, ic1 = 0.0, ic2 = 0.0, vozPh = 0.0;
+   #if SHOT_MAESTRO
+    // uma faixa de um drop de psytrance a 145 BPM (0 KICK, 1 BASS, 2 HAT, 3 CLAP, 4 RIDE, 5 LEAD, 6 ACID, 7 FX,
+    // 8 VOX, 9 ATMOS, 10 PAD)
+    struct FaixaMae
+    {
+        double ph = 0, ph2 = 0, ph3 = 0, z1 = 0, z2 = 0, lp = 0;
+        float amostra (double tt, int tipo, juce::Random& rr)
+        {
+            const double pi2 = juce::MathConstants<double>::twoPi;
+            const double beat = tt * bpm / 60.0, tb = (beat - std::floor (beat)) * 60.0 / bpm;
+            const double six = beat * 4.0, t16 = (six - std::floor (six)) * 15.0 / bpm;
+            const int k16 = (int) std::floor (six) % 4, bar = (int) std::floor (beat / 4.0);
+            const double n = rr.nextFloat() * 2.0 - 1.0;
+            switch (tipo)
+            {
+                case 0: if (tb < 1.0 / fs) ph = 0; ph += pi2 * (48.0 + 120.0 * std::exp (-tb * 60.0)) / fs; return (float) (std::sin (ph) * std::exp (-tb * 9.0) * 0.9);
+                case 1: { if (k16 == 0) return 0.0f; ph += 49.0 / fs; const double saw = 2.0 * (ph - std::floor (ph)) - 1.0; lp += 0.06 * (saw - lp); return (float) (lp * std::exp (-t16 * 18.0) * 0.9); }
+                case 2: { const double tt2 = std::fmod (beat, 1.0) >= 0.5 ? std::fmod (beat, 0.5) * 60.0 / bpm : 1.0; const double h = n - z1; z1 = n; return (float) (h * std::exp (-tt2 * 50.0) * 0.25); }
+                case 3: { if ((int) std::floor (beat) % 2 != 1) return 0.0f; z1 += 0.3 * (n - z1); return (float) ((n - z1) * std::exp (-tb * 25.0) * 0.4); }
+                case 4: { const double tt2 = std::fmod (beat, 0.25) * 60.0 / bpm; const double h = n - z1; z1 = n; return (float) (h * std::exp (-tt2 * 20.0) * 0.08); }
+                case 5: { static const double notas[] = { 740, 880, 988, 880, 659, 740, 880, 1109 }; ph += notas[(int) std::floor (six) % 8] / fs;
+                          double s = 0; for (int h = 1; h <= 5; ++h) s += std::sin (pi2 * ph * h) / h; return (float) (s * 0.22); }
+                case 6: { ph += 98.0 / fs; const double saw = 2.0 * (ph - std::floor (ph)) - 1.0; const double fc = 300.0 + 900.0 * (0.5 + 0.5 * std::sin (pi2 * tt * 0.25));
+                          const double g = std::tan (juce::MathConstants<double>::pi * fc / fs), kq = 0.3; const double v1 = (z1 + g * (saw - z2 - kq * z1)) / (1 + g * (g + kq));
+                          const double v2 = z2 + g * v1; z1 = 2 * v1 - z1; z2 = 2 * v2 - z2; return (float) (v2 * (k16 == 0 ? 0.0 : 0.25)); }
+                case 7: { const double u = std::fmod (beat, 16.0) / 16.0; lp += (0.02 + 0.5 * u) * (n - lp); return (float) (lp * u * 0.3); }
+                case 8: { ph += 220.0 / fs; double s = 0; for (int h = 1; h <= 14; ++h) { const double f = 220.0 * h;
+                          s += std::sin (pi2 * ph * h) * (std::exp (-std::pow ((f - 700) / 250, 2)) + 0.6 * std::exp (-std::pow ((f - 1220) / 300, 2))); }
+                          return (float) (s * (bar % 4 == 2 ? 0.12 : 0.0)); }
+                case 9: { lp += 0.01 * (n - lp); z1 += 0.05 * (n - z1); return (float) ((lp * 3.0 + (z1 - lp) * 0.6) * 0.15); }
+                default: { ph += 370.0 / fs; ph2 += 554.0 / fs; ph3 += 740.0 / fs; double s = 0;
+                           for (int h = 1; h <= 6; ++h) s += (std::sin (pi2 * ph * h) + std::sin (pi2 * ph2 * h) + std::sin (pi2 * ph3 * h)) / (h * 1.5);
+                           return (float) (s * 0.09); }
+            }
+        }
+    };
+    std::vector<FaixaMae> mae = std::vector<FaixaMae> (11);
+   #endif
     int blocks = 0;
 };
 
@@ -377,11 +437,57 @@ int main (int argc, char** argv)
     }
    #endif
 
+   #if SHOT_MAESTRO
+    // MAESTRO: 10 cópias a mais no mesmo programa (as faixas do drop); a principal é o PAD 02
+    {
+        const char* nomes[] = { "Kick", "Bass", "Hat", "Clap", "Ride", "Lead 01", "Acid", "FX Riser", "Vox Chop", "Atmos" };
+        for (auto* nm : nomes)
+        {
+            std::unique_ptr<juce::AudioProcessor> q (createPluginFilter());
+            q->setPlayHead (&head);
+            q->setPlayConfigDetails (2, 2, fs, block);
+            q->prepareToPlay (fs, block);
+            juce::AudioProcessor::TrackProperties tp;
+            tp.name = juce::String (nm);
+            q->updateTrackProperties (tp);
+            extras.push_back (std::move (q));
+        }
+        juce::AudioProcessor::TrackProperties tp;
+        tp.name = juce::String ("Pad 02");
+        proc->updateTrackProperties (tp);
+    }
+   #endif
     std::unique_ptr<juce::AudioProcessorEditor> editor (proc->createEditorAndMakeActive());
     editor->setSize (SHOT_W, SHOT_H);   // 200%
 
     AudioThread audio (*proc, head);
     audio.startThread();
+   #if SHOT_MAESTRO
+    // LEARN (foto), LOCK (foto) e FOCUS no LEAD: a foto principal é o PAD 02 cedendo; depois a janela do LEAD
+    {
+        auto fotoDe = [&] (juce::AudioProcessorEditor& ed, const juce::String& nome)
+        {
+            ed.setSize (SHOT_W, SHOT_H);
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (400);
+            const auto img = ed.createComponentSnapshot (ed.getLocalBounds(), true, 1.0f);
+            const auto f = outDir.getChildFile (nome + ".png");
+            f.deleteFile();
+            juce::FileOutputStream os (f);
+            juce::PNGImageFormat png;
+            std::printf ("%s: %s\n", nome.toRawUTF8(), os.openedOk() && png.writeImageToStream (img, os) ? "ok" : "falhou");
+        };
+        auto& R = maestro::Registry::get();
+        R.amount = 0.75f;
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (1500);
+        R.learn (juce::Time::getMillisecondCounterHiRes() / 1000.0 - 14.0);   // o relógio da tela mostra 0:18
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (4000);
+        fotoDe (*editor, "MAESTRO-LEARN");
+        R.lock();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (1500);
+        fotoDe (*editor, "MAESTRO-LOCK");
+        setParam (*extras[5], "focus", 1.0f);   // LEAD 01
+    }
+   #endif
    #if SHOT_ALIGN
     // desligado (ouvindo e aprendendo) e depois ligado
     {
@@ -462,6 +568,22 @@ int main (int argc, char** argv)
         juce::FileOutputStream os2 (f2);
         juce::PNGImageFormat png2;
         std::printf ("MESA-CANAL: %s\n", os2.openedOk() && png2.writeImageToStream (img2, os2) ? "ok" : "falhou");
+    }
+   #endif
+   #if SHOT_MAESTRO
+    // a janela do LEAD 01 (em FOCUS), a 200%
+    {
+        std::unique_ptr<juce::AudioProcessorEditor> ed2 (extras[5]->createEditorAndMakeActive());
+        ed2->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (1200);
+        ed2->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
+        const auto img2 = ed2->createComponentSnapshot (ed2->getLocalBounds(), true, 1.0f);
+        const auto f2 = outDir.getChildFile ("MAESTRO-FOCUS.png");
+        f2.deleteFile();
+        juce::FileOutputStream os2 (f2);
+        juce::PNGImageFormat png2;
+        std::printf ("MAESTRO-FOCUS: %s\n", os2.openedOk() && png2.writeImageToStream (img2, os2) ? "ok" : "falhou");
     }
    #endif
    #if SHOT_GUITARRA
