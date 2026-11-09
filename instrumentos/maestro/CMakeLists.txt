@@ -3,7 +3,7 @@ vsts_versao(Maestro.md MAESTRO_VERSAO)
 
 # MAESTRO — MIX CONDUCTOR: uma instância em cada faixa; as cópias do mesmo binário se enxergam (maestro::Registry,
 # memória estática do binário no processo do DAW). É efeito, mas fica em instrumentos/ para ter build, instalador e
-# release próprios, como o ALIGN e o ONKEY. Versão de TESTE: ainda sem isp_licenca (o servidor não conhece o pacote).
+# release próprios, como o ALIGN e o ONKEY. Licença: pacote maestro (pago, à venda no site).
 juce_add_plugin(Maestro
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.maestro
@@ -21,6 +21,8 @@ juce_add_plugin(Maestro
     COPY_PLUGIN_AFTER_BUILD     FALSE
     VST3_CATEGORIES             Fx EQ Dynamics
     AU_MAIN_TYPE                kAudioUnitType_Effect)
+
+isp_licenca(Maestro maestro)
 
 target_sources(Maestro PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Janela.cpp)
 target_compile_definitions(Maestro PUBLIC

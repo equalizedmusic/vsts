@@ -63,6 +63,7 @@ public:
         if (p == "align") return "ALIGN";
         if (p == "barebass") return "BAREBASS";
         if (p == "stompbox") return "STOMPBOX";
+        if (p == "maestro") return "MAESTRO";
         return p.toUpperCase();
     }
 

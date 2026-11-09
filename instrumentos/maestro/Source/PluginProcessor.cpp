@@ -80,6 +80,7 @@ void MaestroProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     const int nch = juce::jmin (2, getTotalNumInputChannels(), buffer.getNumChannels());
     if (n == 0 || nch == 0) return;
     for (int c = nch; c < buffer.getNumChannels(); ++c) buffer.clear (c, 0, n);
+    if (! licenca->liberada()) return;   // sem ativação: o som passa direto
 
     maestro::Ajustes a;
     a.roleParam = juce::roundToInt (pRole->load()) - 1;

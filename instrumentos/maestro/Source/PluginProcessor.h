@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Dsp.h"
+#include "IspLicenca.h"
 
 namespace maestro { int tituloDaJanela (void* nativo, char* out, int n); }
 
@@ -57,6 +58,8 @@ public:
 
 private:
     void aplicaNome();
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 
     std::unique_ptr<maestro::Engine> motor;
     std::atomic<float>* pRole = nullptr, *pFocus = nullptr, *pTrim = nullptr;

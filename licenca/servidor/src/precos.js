@@ -17,11 +17,13 @@ export const PRECOS = {
     groovador: { brl: 24.90, usd: null },
     // STOMPBOX (08/11/2026): ia para a faixa da MESA; ele pediu preço de promoção como os demais.
     stompbox:  { brl: 24.90, usd: null },
+    // MAESTRO (09/11/2026): faixa da MESA, R$ 79,90 "de" 149,90 (fechado por ele).
+    maestro:   { brl: 79.90, usd: null },
 };
 
 export const NOMES = {
     mesa: 'MESA', criativo: 'SÉRIE CRIATIVO', mix: 'SÉRIE MIX', knob: 'SÉRIE KNOB', quimera: 'QUIMERA',
-    limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR', stompbox: 'STOMPBOX',
+    limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR', stompbox: 'STOMPBOX', maestro: 'MAESTRO',
 };
 
 // Oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.

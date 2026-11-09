@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 #include <functional>
 
 // Tela do MAESTRO (base 1280 × 800, escala junto com a janela), esboço v3 aprovado, paleta do ALIGN / BAREBASS.
@@ -32,6 +33,7 @@ public:
     static constexpr int baseW = 1280, baseH = 800;
 
 private:
+    isp::TelaAtivacao ativacao;
     // uma faixa ligada (cópia do Registry para este quadro)
     struct Faixa
     {

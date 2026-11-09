@@ -184,6 +184,7 @@ MaestroEditor::MaestroEditor (MaestroProcessor& p) : AudioProcessorEditor (p), p
 
     colhe();
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void MaestroEditor::resized() { proc.uiW = getWidth(); }
@@ -1251,6 +1252,7 @@ void MaestroEditor::menuLogo()
 {
     juce::PopupMenu m;
     m.addItem (1, "How it works");
+    m.addItem (2, juce::String::fromUTF8 ("Licenseâ¦"));
     m.addSeparator();
    #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     m.addItem (-1, "MAESTRO " + juce::String (JucePlugin_VersionString), false, false);
