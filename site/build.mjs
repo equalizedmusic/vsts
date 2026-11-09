@@ -120,6 +120,30 @@ function cartaoPack(p, grande = false) {
   </a>`;
 }
 
+// banner de lançamento no topo da loja: o pack com "lancamento" em dados.mjs (só se já tiver preço)
+function bannerLancamento(p) {
+    if (!p || !(temBrl(p) || temUsd(p))) return '';
+    const L = p.lancamento;
+    return `<section class="dl" style="--cor:${p.cor}"><div class="faixa dl-grade">
+  <div class="dl-txt">
+    <p class="dl-selo"><span class="tag">${t('LANÇAMENTO', 'NEW RELEASE')}</span>${p.de && temBrl(p) ? ` <b class="so-oferta">-${off(p)}%</b>` : ''}</p>
+    <h2 class="dl-nome">${esc(p.nome)}</h2>
+    <p class="dl-tit">${t(...L.titulo)}</p>
+    <p class="dl-lead">${t(...L.texto)}</p>
+    <div class="dl-preco">
+      ${p.de && temBrl(p) ? `<span class="dl-de so-oferta">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</span>` : ''}
+      <span class="dl-valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>
+      ${p.de && temBrl(p) ? `<span class="tempo so-oferta">${t('Oferta de lançamento · termina em', 'Launch offer · ends in')} ${contador('forte')}</span>` : ''}
+    </div>
+    <div class="dl-bts">
+      <a class="bt bt-principal" href="/${p.id}/">${t('Quero o ' + p.nome, 'Get ' + p.nome)}</a>
+      <span class="dl-tipo">${t(...p.tipo)} · ${t('Windows e Mac · Pix ou cartão em até 12x', 'Windows and Mac')}</span>
+    </div>
+  </div>
+  <a class="dl-img" href="/${p.id}/"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}"></a>
+</div></section>`;
+}
+
 function loja() {
     const destaques = PACKS.filter((p) => p.destaque);
     const resto = PACKS.filter((p) => !p.destaque);
@@ -127,6 +151,7 @@ function loja() {
         titulo: 'InsideStudioSP — Plugins',
         descricao: 'Plugins VST3/AU e Max for Live feitos em São Paulo: ALIGN, VASSOURA, MESA e mais.',
         corpo: `
+${bannerLancamento(PACKS.find((p) => p.lancamento))}
 <section class="hero"><div class="faixa">
   <p class="sobre">${t('PLUGINS · MAX FOR LIVE · ESTÚDIO', 'PLUGINS · MAX FOR LIVE · STUDIO')}</p>
   <h1>${t('Ferramentas feitas por quem mixa todo dia.', 'Tools made by someone who mixes every day.')}</h1>

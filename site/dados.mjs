@@ -128,6 +128,12 @@ export const PACKS = [
     {
         id: 'maestro', nome: 'MAESTRO', cor: '#8b5cf6', tipo: ['Mixagem · VST3 · AU', 'Mixing · VST3 · AU'],
         capa: 'maestro', preco: null,
+        // banner de lançamento no topo da loja (pedido dele, 09/11): tirar o "lancamento" quando passar a novidade
+        lancamento: {
+            titulo: ['Um clique e a mix se organiza.', 'One click and the mix sorts itself out.'],
+            texto: ['Um MAESTRO em cada grupo: LEARN ouve o drop, LOCK acerta nível e tom, o GUARD abre espaço para kick e baixo e o FOCUS destaca quem você escolher. Um rascunho de mix equilibrado em segundos.',
+                    'One MAESTRO on each group: LEARN listens to the drop, LOCK sets level and tone, GUARD makes room for kick and bass, and FOCUS brings forward whoever you pick. A balanced mix draft in seconds.'],
+        },
         frase: ['Um MAESTRO em cada grupo, e a mix se organiza sozinha.', 'One MAESTRO on each group, and the mix sorts itself out.'],
         texto: [
             'Coloque o MAESTRO nos 8 grupos da sua mix (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX). As cópias conversam entre si, sem sidechain nem roteamento. LEARN ouve o drop, LOCK acerta o nível e o tom de cada grupo pelo STYLE, o LOW-END GUARD abre espaço para o kick e o baixo e o FOCUS destaca o que você escolher com EQ dinâmica. Um rascunho de mix equilibrado em segundos, para você terminar do seu jeito. Latência zero.',
