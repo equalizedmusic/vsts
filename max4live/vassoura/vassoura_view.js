@@ -9,7 +9,8 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "vassoura_data";
-var VERSAO = "0.2.1";
+var VERSAO = "0.2.2";
+var msgNova = "";     // versão nova disponível (vem do motor)
 var NAME_W = 250;
 var HEAD_H = 112;
 var cfg = { threshold: -60, minlen: 1000, pre: 10, post: 100, snap: 0, mode: 0, scope: 0 };
@@ -47,6 +48,11 @@ function status() {
 
 function aviso() {
 	msgAviso = arrayfromargs(arguments).join(" ");
+	mgraphics.redraw();
+}
+
+function nova(v) {
+	msgNova = String(v || "");
 	mgraphics.redraw();
 }
 
@@ -205,7 +211,17 @@ function paint() {
 	var tx = 16 + largura("VASSOURA", 22, true) + 12;
 	rgb(0.55, 0.55, 0.58); texto(VERSAO, tx, 29, 12, false);
 	tx += largura(VERSAO, 12, false) + 18;
-	if (msgStatus) { rgb(0.98, 0.78, 0.35); texto(cabeFim(msgStatus, W - tx - 20, 13), tx, 29, 13, true); }
+	var fimStatus = W - 20;
+	if (msgNova) {
+		// faixa de versão nova: BAIXAR abre o link fixo do zip; O QUE MUDOU abre as novidades
+		var tNova = "NOVA VERSÃO " + msgNova + " · BAIXAR", wNova = largura(tNova, 12, true) + 24;
+		var tMudou = "O QUE MUDOU", wMudou = largura(tMudou, 12, true) + 20;
+		var xMudou = W - 16 - wMudou, xNova = xMudou - 6 - wNova;
+		botao(xNova, 12, wNova, 26, tNova, [0.18, 0.55, 0.30], [1, 1, 1], ["baixar_nova"]);
+		botao(xMudou, 12, wMudou, 26, tMudou, [0.19, 0.19, 0.21], [0.85, 0.85, 0.88], ["novidades"]);
+		fimStatus = xNova - 16;
+	}
+	if (msgStatus) { rgb(0.98, 0.78, 0.35); texto(cabeFim(msgStatus, fimStatus - tx, 13), tx, 29, 13, true); }
 
 	barra(W);
 

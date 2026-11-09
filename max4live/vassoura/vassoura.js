@@ -15,7 +15,9 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela (bang / status)   3:
 var BUF = "vassoura_scan";
 var DICT = "vassoura_data";
 var WIN_MS = 10;
-var VERSAO = "0.2.1";
+var VERSAO = "0.2.2";
+var PAUSA_ARQ = 40;    // ms entre um arquivo e outro (Live respira, memória é liberada)
+var PAUSA_APPLY = 15;  // ms entre um passo do APPLY e outro
 
 var cfg = { threshold: -60, minlen: 1000, pre: 10, post: 100, snap: 0, mode: 0, scope: 0 };
 var SNAP_TXT = ["OFF", "1/16", "BAR"];
@@ -28,6 +30,8 @@ var jobs = [];
 var cur = -1;
 var result = null;
 var peaks = {};       // "t/c" -> Float32Array (pico por bloco de 10 ms)
+var arqs = {};        // arquivo -> { pk: Float32Array do arquivo INTEIRO, winSec } — cada arquivo é lido UMA vez
+var fila_arq = [];    // arquivos a ler: [{ file, sr, jobs: [{t, c}] }]
 var watchdog = null;
 var recalcTask = null;
 var armado = 0;       // CUT pede 2º clique em até 4 s
@@ -35,7 +39,52 @@ var armado = 0;       // CUT pede 2º clique em até 4 s
 function init() {
 	ready = true;
 	status("PRONTO · clique ANALYZE");
+	var t = new Task(checaVersao);
+	t.schedule(4000);  // deixa o set terminar de abrir antes de ir à internet
 }
+
+// ---------------------------------------------------------------- versão nova
+// Pergunta ao servidor de licenças (mesma rota dos VSTs) se há release mais novo. Sem internet, sem XMLHttpRequest
+// ou com qualquer erro: fica quieto (só uma linha no console). O link de download é o fixo do site, não o da resposta.
+var URL_VERSAO = "https://isp-licencas.insidestudiosp.workers.dev/v1/versao";
+var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/vassoura/zip";
+var URL_NOVIDADES = "https://github.com/equalizedmusic/vsts/blob/main/novidades/Vassoura.md";
+var nova = "";
+var versaoChecada = false;
+
+function checaVersao() {
+	if (versaoChecada) return;
+	versaoChecada = true;
+	if (typeof XMLHttpRequest == "undefined") { post("VASSOURA: sem XMLHttpRequest, não confere versão nova\n"); return; }
+	try {
+		var so = (typeof max != "undefined" && String(max.os).indexOf("mac") >= 0) ? "mac" : "win";
+		var x = new XMLHttpRequest();
+		x.open("GET", URL_VERSAO + "?pacote=vassoura&versao=" + VERSAO + "&sistema=" + so);
+		x.onreadystatechange = function () {
+			if (x.readyState != 4) return;
+			try {
+				var r = JSON.parse(x.responseText);
+				var v = r && r.ok && r.atualizacao ? String(r.atualizacao.versao || "") : "";
+				if (!/^\d+\.\d+\.\d+$/.test(v) || comparaVersao(v, VERSAO) <= 0) return;
+				nova = v;
+				post("VASSOURA: versão nova " + v + " disponível · " + URL_BAIXAR + "\n");
+				outlet(2, "nova", v);
+				if (!busy && !result) outlet(1, "set", "NOVA VERSÃO " + v + " · abra a janela (OPEN)");  // só no device
+			} catch (e) { post("VASSOURA: resposta de versão inválida\n"); }
+		};
+		x.send();
+	} catch (e) { post("VASSOURA: não conferiu versão nova (" + e + ")\n"); }
+}
+
+function comparaVersao(a, b) {
+	var pa = a.split("."), pb = b.split(".");
+	for (var i = 0; i < 3; i++) { var d = (parseInt(pa[i], 10) || 0) - (parseInt(pb[i], 10) || 0); if (d) return d; }
+	return 0;
+}
+
+// vindos da janela (botão da faixa de versão nova)
+function baixar_nova() { if (nova) max.launchbrowser(URL_BAIXAR); }
+function novidades() { max.launchbrowser(URL_NOVIDADES); }
 
 // ---------------------------------------------------------------- controles
 function threshold(v) { cfg.threshold = num(v); agendaRecalc(); }
@@ -73,11 +122,13 @@ function clipOf(job) {
 }
 
 // ---------------------------------------------------------------- ANALYZE
-function analyze() {
+// ANALYZE do usuário relê os arquivos; o de depois do APPLY (reuso=1) aproveita o que já foi lido.
+function analyze(reuso) {
 	if (!ready) { status("aguarde o Live terminar de carregar"); return; }
 	if (busy) return;
 	busy = true;
 	armado = 0;
+	if (!reuso) arqs = {};
 
 	var set = new LiveAPI("live_set");
 	var tempo = num(set.get("tempo"));
@@ -134,7 +185,16 @@ function analyze() {
 		result.tracks.push(tr);
 	}
 
-	post("VASSOURA " + VERSAO + ": " + result.tracks.length + " faixas de áudio, " + jobs.length + " clips para ler, tempo " + tempo + "\n");
+	// agrupa por arquivo: vários clips do mesmo arquivo (ex.: depois de um CUT) = uma leitura só
+	fila_arq = [];
+	var porArq = {};
+	for (var q = 0; q < jobs.length; q++) {
+		var cj = clipOf(jobs[q]);
+		if (arqs[cj.file]) { recorta(jobs[q]); continue; }
+		if (!porArq[cj.file]) { porArq[cj.file] = { file: cj.file, sr: cj.sr, jobs: [] }; fila_arq.push(porArq[cj.file]); }
+		porArq[cj.file].jobs.push(jobs[q]);
+	}
+	post("VASSOURA " + VERSAO + ": " + result.tracks.length + " faixas de áudio, " + jobs.length + " clips, " + fila_arq.length + " arquivos para ler, tempo " + tempo + "\n");
 	cur = -1;
 	next();
 }
@@ -161,74 +221,96 @@ function prepara(c, tempo, trName) {
 		c.units = "?";
 		c.fileStart = c.sm;
 	}
-	post("  [" + trName + "] " + c.name + " · pos " + c.s.toFixed(2) + "-" + c.e.toFixed(2) +
+	if (c.units == "?") post("  [" + trName + "] " + c.name + " · pos " + c.s.toFixed(2) + "-" + c.e.toFixed(2) +
 		" beats · markers " + c.sm.toFixed(3) + "-" + c.em.toFixed(3) + " (" + c.units + ") · sr " + c.sr + "\n");
 }
 
 function next() {
 	cur++;
-	if (cur >= jobs.length) { finish(); return; }
-	var c = clipOf(jobs[cur]);
-	status("LENDO " + (cur + 1) + "/" + jobs.length + " · " + result.tracks[jobs[cur].t].name);
+	if (cur >= fila_arq.length) { finish(); return; }
+	var fa = fila_arq[cur];
+	status("LENDO " + (cur + 1) + "/" + fila_arq.length + " · " + result.tracks[fa.jobs[0].t].name);
 	if (watchdog) watchdog.cancel();
 	watchdog = new Task(function () {
-		c.state = "erro ao ler arquivo";
-		post("VASSOURA: não carregou " + c.file + "\n");
-		next();
+		for (var k = 0; k < fa.jobs.length; k++) clipOf(fa.jobs[k]).state = "erro ao ler arquivo";
+		post("VASSOURA: não carregou " + fa.file + "\n");
+		proximoArquivo();
 	});
 	watchdog.schedule(60000);
-	outlet(0, "replace", c.file);
+	outlet(0, "replace", fa.file);
+}
+
+function proximoArquivo() {
+	var t = new Task(next);
+	t.schedule(PAUSA_ARQ);
 }
 
 // bang do buffer~ (arquivo carregado)
 function loaded() {
-	if (!busy || cur < 0 || cur >= jobs.length) return;
+	if (!busy || cur < 0 || cur >= fila_arq.length) return;
 	if (watchdog) { watchdog.cancel(); watchdog = null; }
-	var job = jobs[cur], esse = cur;
+	var fa = fila_arq[cur], esse = cur;
 	var t = new Task(function () {
 		if (!busy || cur != esse) return;  // o watchdog já desistiu deste arquivo
-		try { scan(job); }
-		catch (e) { clipOf(job).state = "erro: " + e; post("VASSOURA erro: " + e + "\n"); }
-		next();
+		try {
+			scanArquivo(fa);
+			for (var k = 0; k < fa.jobs.length; k++) recorta(fa.jobs[k]);
+		}
+		catch (e) {
+			for (var k2 = 0; k2 < fa.jobs.length; k2++) clipOf(fa.jobs[k2]).state = "erro: " + e;
+			post("VASSOURA erro: " + e + "\n");
+		}
+		proximoArquivo();
 	});
 	t.schedule(0);
 }
 
-// Guarda o pico de cada bloco de 10 ms do trecho do arquivo que o clip toca.
-function scan(job) {
-	var c = clipOf(job);
+// Pico de cada bloco de 10 ms do arquivo INTEIRO (fica guardado; os clips recortam dele).
+function scanArquivo(fa) {
 	var buf = new Buffer(BUF);
 	var frames = buf.framecount();
 	var nch = buf.channelcount();
-	var sr = c.sr > 0 ? c.sr : 44100;
+	var sr = fa.sr > 0 ? fa.sr : 44100;
 	var win = Math.max(1, Math.round(sr * WIN_MS / 1000));
-	var startF = Math.max(0, Math.floor(c.fileStart * sr));
-	var endF = Math.min(frames, Math.floor((c.fileStart + c.durSec) * sr));
-	var nWin = Math.max(0, Math.ceil((endF - startF) / win));
-	var pk = new Float32Array(nWin);
-	var chunk = win * 200;
+	var pk = new Float32Array(Math.ceil(frames / win));
+	var chunk = win * 100;
 
-	for (var f = startF; f < endF; f += chunk) {
-		var n = Math.min(chunk, endF - f);
-		var w0 = ((f - startF) / win) | 0;
+	for (var f = 0; f < frames; f += chunk) {
+		var n = Math.min(chunk, frames - f);
+		var w0 = (f / win) | 0;
 		for (var ch = 1; ch <= nch; ch++) {
 			var a = buf.peek(ch, f, n);
-			if (!(a instanceof Array)) a = [a];
+			if (typeof a == "number") a = [a];
 			for (var i = 0; i < a.length; i++) {
 				var v = a[i] < 0 ? -a[i] : a[i];
 				var w = w0 + ((i / win) | 0);
 				if (v > pk[w]) pk[w] = v;
 			}
+			a = null;
 		}
 	}
-	peaks[job.t + "/" + job.c] = pk;
-	c.winSec = win / sr;
+	arqs[fa.file] = { pk: pk, winSec: win / sr };
+}
+
+// Pega do arquivo só o trecho que o clip toca. off = quanto o 1º bloco começa antes do clip.
+function recorta(job) {
+	var c = clipOf(job);
+	var fa = arqs[c.file];
+	var ws = fa.winSec;
+	var w0 = Math.max(0, Math.floor(c.fileStart / ws));
+	var off = Math.max(0, c.fileStart - w0 * ws);
+	var w1 = Math.min(fa.pk.length, w0 + Math.ceil((c.durSec + off) / ws));
+	peaks[job.t + "/" + job.c] = w1 > w0 ? fa.pk.subarray(w0, w1) : new Float32Array(0);
+	c.winSec = ws;
+	c.off = off;
 	c.state = "ok";
 }
 
 function finish() {
 	busy = false;
 	if (watchdog) { watchdog.cancel(); watchdog = null; }
+	if (fila_arq.length) outlet(0, "sizeinsamps", 1);  // devolve a memória do último arquivo
+	fila_arq = [];
 	recalc(false);
 }
 
@@ -293,8 +375,9 @@ function recalc(manterMarcas) {
 				var vazio = w < pk.length && pk[w] < thr;
 				if (vazio) { if (run < 0) run = w; continue; }
 				if (run >= 0 && w - run >= minWins) {
-					var rs = c.s + (run * c.winSec) / spb;
-					var re = c.s + Math.min(w * c.winSec, c.durSec) / spb;
+					var off = c.off || 0;
+					var rs = c.s + Math.max(0, run * c.winSec - off) / spb;
+					var re = c.s + Math.min(w * c.winSec - off, c.durSec) / spb;
 					if (re > c.e) re = c.e;
 					var noIni = rs <= c.s + EPS, noFim = re >= c.e - EPS;
 					// POST = cauda que fica depois do som; PRE = folga antes do próximo som. Borda do clip não precisa.
@@ -396,7 +479,7 @@ function apply() {
 	busy = true;
 	var set = new LiveAPI("live_set");
 	ap = {
-		i: 0, total: total, feitos: 0, falhas: 0, clipsPulados: 0,
+		cx: null, i: 0, total: total, feitos: 0, falhas: 0, clipsPulados: 0,
 		far: Math.ceil((Math.max(num(set.get("song_length")), result.maxBeat) + 64) / 4) * 4,
 		spb: 60 / result.tempo
 	};
@@ -404,46 +487,74 @@ function apply() {
 	passo();
 }
 
+// APPLY em passos pequenos: cada passo faz UMA coisa (preparar a cópia de trabalho de um clip, aplicar UM trecho,
+// ou apagar a cópia) e devolve o controle ao Live por PAUSA_APPLY ms. Antes, um clip inteiro era feito de uma vez
+// e cada busca criava um LiveAPI por clip da faixa — em set grande isso travava o Live.
 function passo() {
-	if (ap.i >= fila.length) { fimApply(); return; }
-	var job = fila[ap.i++];
-	var tr = result.tracks[job.t];
-	status(MODE_TXT[cfg.mode] + " " + ap.i + "/" + fila.length + " · " + tr.name);
-	try { aplicaClip(job); }
-	catch (e) { ap.clipsPulados++; post("VASSOURA erro em " + tr.name + ": " + e + "\n"); }
+	try {
+		if (!ap.cx) {
+			if (ap.i >= fila.length) { fimApply(); return; }
+			var job = fila[ap.i++];
+			status(MODE_TXT[cfg.mode] + " " + ap.i + "/" + fila.length + " · " + result.tracks[job.t].name);
+			preparaClip(job);
+		} else if (ap.cx.r < ap.cx.job.em.length) {
+			aplicaTrecho(ap.cx, ap.cx.job.em[ap.cx.r++]);
+		} else {
+			fechaClip(ap.cx);
+		}
+	} catch (e) {
+		var nome = ap.cx ? result.tracks[ap.cx.job.t].name : "";
+		post("VASSOURA erro " + nome + ": " + e + "\n");
+		if (ap.cx) {
+			ap.falhas += ap.cx.job.em.length - ap.cx.r;
+			ap.clipsPulados++;
+			try { fechaClip(ap.cx); } catch (e2) { ap.cx = null; }
+		}
+	}
 	var t = new Task(passo);
-	t.schedule(1);
+	t.schedule(PAUSA_APPLY);
 }
 
 function perto(a, b) { return Math.abs(a - b) < 0.002; }
 
-// clips do arranjo da faixa: [{api, s, e}]
-function clipsDaFaixa(ti) {
-	var t = new LiveAPI("live_set tracks " + ti);
-	var n = t.getcount("arrangement_clips"), out = [];
-	for (var j = 0; j < n; j++) {
-		var c = new LiveAPI("live_set tracks " + ti + " arrangement_clips " + j);
-		out.push({ api: c, id: c.id, s: num(c.get("start_time")), e: num(c.get("end_time")) });
-	}
-	return out;
+// um LiveAPI só, reaproveitado, para varrer os clips da faixa
+var lapi = null;
+function scratch(path) {
+	if (!lapi) lapi = new LiveAPI(path);
+	else lapi.path = path;
+	return lapi;
 }
 
+function porId(id) {
+	if (!lapi) lapi = new LiveAPI("id " + id);
+	else lapi.id = Number(id);
+	return lapi;
+}
+
+// procura na faixa o clip que começa em s (e termina em e, se dado); devolve { id, s, e } ou null
 function acha(ti, s, e) {
-	var l = clipsDaFaixa(ti);
-	for (var j = 0; j < l.length; j++) if (perto(l[j].s, s) && (e == null || perto(l[j].e, e))) return l[j];
+	var t = scratch("live_set tracks " + ti);
+	var n = t.getcount("arrangement_clips");
+	for (var j = 0; j < n; j++) {
+		var c = scratch("live_set tracks " + ti + " arrangement_clips " + j);
+		var cs = num(c.get("start_time"));
+		if (!perto(cs, s)) continue;
+		var ce = num(c.get("end_time"));
+		if (e == null || perto(ce, e)) return { id: Number(c.id), s: cs, e: ce };
+	}
 	return null;
 }
 
 // chama função da faixa que recebe um clip; o LOM aceita o clip como "id N"
 function chama(ti, fn, clipId, extra) {
-	var t = new LiveAPI("live_set tracks " + ti);
+	var t = scratch("live_set tracks " + ti);
 	if (extra == null) t.call(fn, "id", Number(clipId));
 	else t.call(fn, "id", Number(clipId), extra);
 }
 
 // apara a cópia de trabalho para tocar [a, b] do arquivo (unidade dos markers do clip)
 function apara(c, a, b) {
-	var sm = num(c.get("start_marker")), le = num(c.get("loop_end"));
+	var sm = num(c.get("start_marker"));
 	if (a >= sm) {  // início anda para a direita: fim primeiro (b > a >= início atual, sempre válido)
 		c.set("end_marker", b); c.set("loop_end", b);
 		c.set("start_marker", a); c.set("loop_start", a);
@@ -456,14 +567,19 @@ function apara(c, a, b) {
 	c.set("loop_start", a); c.set("start_marker", a);
 }
 
-function aplicaClip(job) {
-	var ti = result.tracks[job.t].index;
-	var c = result.tracks[job.t].clips[job.c];
-	var tag = "[" + result.tracks[job.t].name + "] " + c.name;
+function preparaClip(job) {
+	var tr = result.tracks[job.t];
+	var c = tr.clips[job.c];
+	var ti = tr.index;
+	var tag = "[" + tr.name + "] " + c.name;
 
 	// o clip ainda está onde estava no ANALYZE?
 	var orig = acha(ti, c.s, c.e);
-	if (!orig || str(orig.api.get("file_path")).replace(/\\/g, "/") != c.file) {
+	if (orig) {
+		var oa = porId(orig.id);
+		if (str(oa.get("file_path")).replace(/\\/g, "/") != c.file) orig = null;
+	}
+	if (!orig) {
 		ap.clipsPulados++; ap.falhas += job.em.length;
 		post("  " + tag + ": mudou desde o ANALYZE, pulado\n");
 		return;
@@ -477,30 +593,37 @@ function aplicaClip(job) {
 		post("  " + tag + ": o Live não criou a cópia de trabalho (faixa congelada?), pulado\n");
 		return;
 	}
-	var k = c.units == "seg" ? ap.spb : 1;  // beats do arranjo -> unidade dos markers
-	tmp.api.set("muted", 1);
+	var api = new LiveAPI("id " + tmp.id);  // LiveAPI próprio: segue a cópia mesmo com clips novos na faixa
+	api.set("muted", 1);
+	ap.cx = { job: job, ti: ti, c: c, tag: tag, tmpId: tmp.id, api: api, r: 0,
+		k: c.units == "seg" ? ap.spb : 1 };  // beats do arranjo -> unidade dos markers
+}
 
-	for (var r = 0; r < job.em.length; r++) {
-		var reg = job.em[r];
-		var a = c.sm + (reg.s - c.s) * k, b = c.sm + (reg.e - c.s) * k;
-		apara(tmp.api, a, b);
-		var ts = num(tmp.api.get("start_time")), te = num(tmp.api.get("end_time"));
-		// trava de segurança: só cola se a cópia ficou exatamente do tamanho do vazio
-		if (!perto(te - ts, reg.e - reg.s) || !perto(num(tmp.api.get("loop_start")), a)) {
-			ap.falhas++;
-			post("  " + tag + ": cópia não aparou certo em " + reg.s.toFixed(2) + " (" + (te - ts).toFixed(3) + " de " + (reg.e - reg.s).toFixed(3) + " beats), trecho pulado\n");
-			continue;
-		}
-		chama(ti, "duplicate_clip_to_arrangement", tmp.id, reg.s);
-		if (cfg.mode == 1) {
-			var peca = acha(ti, reg.s, reg.e);
-			if (peca && num(peca.api.get("muted"))) chama(ti, "delete_clip", peca.id);
-			else { ap.falhas++; post("  " + tag + ": pedaço em " + reg.s.toFixed(2) + " ficou MUTADO (não achei para apagar)\n"); continue; }
-		}
-		ap.feitos++;
+function aplicaTrecho(cx, reg) {
+	var c = cx.c, ti = cx.ti;
+	var a = c.sm + (reg.s - c.s) * cx.k, b = c.sm + (reg.e - c.s) * cx.k;
+	apara(cx.api, a, b);
+	var ts = num(cx.api.get("start_time")), te = num(cx.api.get("end_time"));
+	// trava de segurança: só cola se a cópia ficou exatamente do tamanho do vazio
+	if (!perto(te - ts, reg.e - reg.s) || !perto(num(cx.api.get("loop_start")), a)) {
+		ap.falhas++;
+		post("  " + cx.tag + ": cópia não aparou certo em " + reg.s.toFixed(2) + " (" + (te - ts).toFixed(3) + " de " + (reg.e - reg.s).toFixed(3) + " beats), trecho pulado\n");
+		return;
 	}
-	chama(ti, "delete_clip", tmp.id);
-	if (acha(ti, ap.far, null)) post("  " + tag + ": sobrou a cópia de trabalho no beat " + ap.far + " — apague à mão\n");
+	chama(ti, "duplicate_clip_to_arrangement", cx.tmpId, reg.s);
+	if (cfg.mode == 1) {
+		var peca = acha(ti, reg.s, reg.e);
+		var mutada = peca && num(porId(peca.id).get("muted"));
+		if (mutada) chama(ti, "delete_clip", peca.id);
+		else { ap.falhas++; post("  " + cx.tag + ": pedaço em " + reg.s.toFixed(2) + " ficou MUTADO (não achei para apagar)\n"); return; }
+	}
+	ap.feitos++;
+}
+
+function fechaClip(cx) {
+	ap.cx = null;
+	chama(cx.ti, "delete_clip", cx.tmpId);
+	if (acha(cx.ti, ap.far, null)) post("  " + cx.tag + ": sobrou a cópia de trabalho no beat " + ap.far + " — apague à mão\n");
 }
 
 function fimApply() {
@@ -509,8 +632,8 @@ function fimApply() {
 		(ap.falhas ? " · " + ap.falhas + " pulados (ver console do Max)" : "");
 	post("VASSOURA: " + txt + "\n");
 	status(txt);
-	// relê o set para a janela mostrar como ficou
-	var t = new Task(function () { analyze(); });
+	// relê o set para a janela mostrar como ficou — sem reler os arquivos (os picos já estão guardados)
+	var t = new Task(function () { analyze(1); });
 	t.schedule(300);
 	var t2 = new Task(function () { outlet(2, "aviso", txt); });
 	t2.schedule(400);

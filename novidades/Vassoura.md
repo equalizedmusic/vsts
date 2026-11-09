@@ -5,6 +5,22 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.2.2 — 2026-11-09
+- **Correção de travamento em set grande** (relato: Windows, Live 12.3, mais de 30 faixas no ANALYZE e APPLY em CUT
+  fechando o Live):
+  - O ANALYZE lê **cada arquivo uma vez só**, mesmo que vários clips usem o mesmo arquivo, e faz uma pausa curta entre
+    um arquivo e outro. No fim, a memória do último arquivo é devolvida.
+  - Depois do APPLY a janela é atualizada **sem reler os arquivos**. Antes, depois de um CUT, cada pedaço novo fazia o
+    arquivo inteiro ser lido de novo, o que podia dar centenas de leituras.
+  - O APPLY faz **um trecho por vez** e devolve o controle ao Live entre um trecho e outro. Ele também deixou de criar
+    um objeto do Live para cada clip da faixa a cada busca.
+- O console do Max mostra só os clips com problema, e não mais uma linha por clip.
+- **Aviso de versão nova**: alguns segundos depois de o set abrir, a VASSOURA pergunta ao site se há versão mais nova.
+  Se houver, o device mostra "NOVA VERSÃO x.y.z" e a janela ganha os botões **BAIXAR** (abre o download do zip) e
+  **O QUE MUDOU**. Sem internet, nada aparece e o device funciona normalmente. Nenhum dado do set é enviado; só o
+  número da versão e o sistema (Windows ou Mac).
+- A janela mostrava "0.2.1" no título; agora mostra a versão certa.
+
 ## 0.2.1 — 2026-11-05
 - **LEIA-ME corrigido**: o device vai na **primeira faixa de áudio** do projeto (no master o ANALYZE não lê os clips).
   O funcionamento é o mesmo da 0.2.0.
