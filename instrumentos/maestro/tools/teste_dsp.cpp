@@ -340,6 +340,35 @@ int main()
         if (nan) ++falhas;
     }
 
+    // 7. ROLE AUTO só pelo som (Ableton não manda o nome da faixa ao plugin)
+    {
+        R.reset();
+        std::vector<std::unique_ptr<Faixa>> sem;
+        for (int i = 0; i < 11; ++i)
+        {
+            auto f = std::make_unique<Faixa>();
+            f->nome = nomes[i]; f->role = roles[i];
+            f->g.tipo = i == 10 ? 10 : i;
+            f->g.rnd.seed ((unsigned) (i + 50));
+            f->e = std::make_unique<Engine>();
+            f->e->prepare (fs);
+            sem.push_back (std::move (f));
+        }
+        double t7 = 0;
+        R.learn (0.0);
+        roda (sem, t7, 8.0, [] (size_t, double, float, float, float) {});
+        int certos = 0;
+        std::printf ("7. ROLE AUTO pelo som (sem nome):");
+        for (auto& f : sem)
+        {
+            const int r = f->e->slot().role.load();
+            certos += r == f->role;
+            std::printf (" %s=%s%s", f->nome.c_str(), nomeRole (r), r == f->role ? "" : "(X)");
+        }
+        std::printf ("\n   %d/11 certos\n", certos);
+        R.reset();
+    }
+
     // 6. CPU: 150 faixas
     {
         R.reset();

@@ -39,7 +39,7 @@ private:
         float tela[maestro::NB] {};
         float corte[maestro::NE] {}, tom[maestro::NE] {};
         float ganhoDb = 0, nivelDb = -200;
-        int cedePara = -1;
+        int cedePara = -1, mascaraFoco = 0;
         void* dono = nullptr;
     };
     // um botão-giratório (valor normalizado 0..1)

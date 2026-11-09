@@ -178,6 +178,7 @@ void MaestroEditor::colhe()
         f.ganhoDb = s.ganhoDb.load();
         f.nivelDb = s.nivelDb.load();
         f.cedePara = s.cedePara.load();
+        f.mascaraFoco = s.mascaraFoco.load();
         f.dono = s.dono.load();
         faixas.push_back (std::move (f));
     }
@@ -445,7 +446,6 @@ void MaestroEditor::mapa (juce::Graphics& g, juce::Rectangle<float> r)
         const float dash[] = { 3.0f, 3.0f };
         g.setColour (cApagado.withAlpha (0.6f));
         g.drawDashedLine (juce::Line<float> (gx, y0, gx, yR - 2), dash, 2, 1.0f);
-        desenhaTextoEsp (g, "GUARD", { x0 - 2, yR + 3, 40, 12 }, 8.5f, cApagado.withAlpha (0.8f), juce::Justification::centredLeft, 0.1f, true);
     }
 }
 
@@ -676,9 +676,12 @@ void MaestroEditor::direita (juce::Graphics& g, juce::Rectangle<float> r)
         for (auto& f : faixas)
         {
             if (f.focus) continue;
-            int kMin = 0;
-            for (int k = 1; k < NE; ++k) if (f.corte[k] < f.corte[kMin]) kMin = k;
-            if (f.corte[kMin] < -0.5f) lista.push_back ({ nomeDe (f), f.corte[kMin], freqEq (kMin) });
+            // só o corte que é para a FOCUS (o do KEEP KICK / BASS ON TOP não entra)
+            int kMin = -1;
+            for (int k = 0; k < NE; ++k)
+                if ((f.mascaraFoco >> k) & 1)
+                    if (kMin < 0 || f.corte[k] < f.corte[kMin]) kMin = k;
+            if (kMin >= 0 && f.corte[kMin] < -0.5f) lista.push_back ({ nomeDe (f), f.corte[kMin], freqEq (kMin) });
         }
         std::sort (lista.begin(), lista.end(), [] (const Cede& a, const Cede& b) { return a.corte < b.corte; });
         h = 210;
@@ -769,16 +772,19 @@ void MaestroEditor::direita (juce::Graphics& g, juce::Rectangle<float> r)
         const float h2 = 150;
         painel (g, { x, y, w, h2 });
         titulo ("TONE MATCH", y);
-        const float bx = x + 14, bw = (w - 28) / NE, zero = y + 82;
+        const float bx = x + 14, bw = (w - 28) / NE, zero = y + 84;
         const char* rs[] = { "50", "100", "200", "400", "800", "1.6k", "3.2k", "6.4k", "13k" };
         for (int k = 0; k < NE; ++k)
         {
             const float v = eu != nullptr ? eu->tom[k] : 0.0f;
-            const float hh = std::abs (v) * 9.0f;
+            const float hh = std::min (4.0f, std::abs (v)) * 11.0f;
             g.setColour (corTemp (freqEq (k)).withAlpha (0.85f));
             if (v >= 0) g.fillRect (bx + k * bw + 3, zero - hh, bw - 6, hh);
             else g.fillRect (bx + k * bw + 3, zero, bw - 6, hh);
-            desenhaTextoEsp (g, rs[k], { bx + k * bw - 4, y + 124, bw + 8, 12 }, 8.5f, cApagado, juce::Justification::centred, 0.0f);
+            desenhaTextoEsp (g, rs[k], { bx + k * bw - 4, y + 132, bw + 8, 12 }, 8.5f, cApagado, juce::Justification::centred, 0.0f);
+            if (std::abs (v) >= 0.1f)
+                desenhaTextoEsp (g, (v > 0 ? "+" : "") + juce::String (v, 1), { bx + k * bw - 4, v >= 0 ? zero - hh - 14 : zero + hh + 2, bw + 8, 12 },
+                                 8.5f, cTexto, juce::Justification::centred, 0.0f);
         }
         g.setColour (cBorda); g.drawHorizontalLine ((int) zero, bx, bx + bw * NE);
         y += h2 + 10;

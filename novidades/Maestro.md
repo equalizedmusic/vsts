@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Maestro`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `maestro-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-09
+- ROLE AUTO pelo SOM bem melhor (para o Ableton, que não manda o nome da faixa ao plugin): ataques por segundo
+  (bumbo ~1 por tempo, baixo rolante nas semicolcheias), notas (mudança de espectro), planura dentro de cada banda
+  (ruído × tom, sem depender da inclinação) e variação de nível. Na bancada: 10 de 11 faixas certas só pelo som
+  (antes 5); pelo nome continua 11 de 11.
+- MAKING ROOM e o estado YIELDING contam só o corte pedido pela FOCUS (o do KEEP KICK / BASS ON TOP fica à parte).
+- TONE MATCH com barras maiores e o valor em dB; o rótulo GUARD saiu do eixo do mapa (encavalava com o 50).
+
 ## 0.1.0 — 2026-11-09
 - Primeira versão do MAESTRO (MIX CONDUCTOR), para TESTE (ainda sem ativação por licença e fora do site).
 - Vai em TODAS as faixas do projeto (depois dos efeitos de cada uma). As cópias se enxergam sozinhas, sem sidechain

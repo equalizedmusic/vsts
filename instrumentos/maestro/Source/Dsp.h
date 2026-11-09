@@ -143,6 +143,7 @@ struct Slot
     std::atomic<float> corte[NE];             // corte dinâmico aplicado agora (dB, ≤ 0)
     std::atomic<float> tom[NE];               // TONE MATCH aplicado agora (dB)
     std::atomic<int> cedePara { -1 };         // vaga da FOCUS que mais pesa no corte (−1 = não cede)
+    std::atomic<int> mascaraFoco { 0 };       // bandas de EQ (bits) em que o corte é para a FOCUS
 
     Slot()
     {
@@ -200,7 +201,7 @@ struct Registry
                 for (int b = 0; b < NB; ++b) { s.vivo[b] = 0.0f; s.tela[b] = 0.0f; s.aprPot[b] = 0.0f; }
                 for (int k = 0; k < NE; ++k) { s.corte[k] = 0.0f; s.tom[k] = 0.0f; }
                 s.nivelDb = -200.0f; s.tocando = 0; s.aprNivelDb = -200.0f; s.aprQuadros = 0;
-                s.ganhoDb = 0.0f; s.cedePara = -1; s.focus = 0; s.role = PAD; s.roleAuto = 1; s.dono = nullptr;
+                s.ganhoDb = 0.0f; s.cedePara = -1; s.mascaraFoco = 0; s.focus = 0; s.role = PAD; s.roleAuto = 1; s.dono = nullptr;
                 s.escreveNome ("");
                 s.ordem = proxOrdem.fetch_add (1);
                 s.usado = 1;
@@ -564,7 +565,8 @@ private:
     void zeraAprendido()
     {
         for (int b = 0; b < NB; ++b) somaApr[b] = 0.0;
-        somaNivel = 0.0; nApr = 0; nPerc = 0; nQuadros = 0;
+        somaNivel = 0.0; nApr = 0; nPerc = 0; nQuadros = 0; nNotas = 0; nPlano = 0;
+        somaPlano = somaNiv = somaNiv2 = somaBaixo = 0.0;
         auto& S = slot();
         for (int b = 0; b < NB; ++b) S.aprPot[b] = 0.0f;
         S.aprNivelDb = -200.0f;
@@ -585,17 +587,37 @@ private:
         }
         float banda[NB];
         double total = 0.0;
+        float plano = -1.0f;   // planura dentro das bandas (ruído ≈ 0,56, tom ≈ 0); −1 = não medida
         if (pico < 1e-5f)
             for (int b = 0; b < NB; ++b) banda[b] = 0.0f;
         else
         {
             fft.potencia (quadro.data(), pot.data());
+            float pkBanda = 0.0f;
             for (int b = 0; b < NB; ++b)
             {
                 double s = 0;
                 for (auto& p : pesos[b]) s += (double) pot[(size_t) p.bin] * p.w;
                 banda[b] = (float) (s * normPot);
                 total += banda[b] * kPeso[b];
+                pkBanda = std::max (pkBanda, banda[b]);
+            }
+            if (nQuadros < 3000 && a.roleParam < 0 && nomeRole.load() < 0)   // só enquanto o AUTO precisa (~1 min de som)
+            {
+                // planura DENTRO de cada banda (tom = picos entre os bins), média das bandas a até 40 dB do pico:
+                // não depende da inclinação do espectro (um ruído escuro continua sendo ruído)
+                double soma = 0;
+                int nb = 0;
+                for (int b = 0; b < NB; ++b)
+                {
+                    if (pesos[b].size() < 4 || banda[b] < pkBanda * 1e-4f) continue;
+                    double sl = 0, sp = 0;
+                    for (auto& pp : pesos[b]) { const double v = (double) pot[(size_t) pp.bin] + 1e-20; sl += std::log (v); sp += v; }
+                    const double n = (double) pesos[b].size();
+                    soma += std::exp (sl / n) / (sp / n);
+                    ++nb;
+                }
+                if (nb > 0) plano = (float) (soma / nb);
             }
         }
         const float nivel = dbDe (total);
@@ -608,13 +630,26 @@ private:
         S.nivelDb = dbDe (nivelLento);
         S.tocando = som ? 1 : 0;
 
-        // percussivo? (salto de 6 dB de um quadro para o outro)
-        if (som)
+        // medidas do som para o ROLE AUTO: ataques (salto de nível), notas (mudança de espectro), planura, nível
+        if (som && nQuadros < 3000)
         {
             ++nQuadros;
             if (nivel > nivelAnt + 6.0f) ++nPerc;
+            float fluxo = 0.0f;
+            for (int b = 3; b < NB; ++b)
+            {
+                const float d = dbDe (banda[b] + 1e-12) - dbDe (bandaAnt[b] + 1e-12);
+                if (dbDe (banda[b]) > nivel - 40.0f && d > 6.0f) fluxo += std::min (d, 20.0f);   // ruído oscila menos que 6 dB
+            }
+            if (fluxo > 30.0f) ++nNotas;
+            if (plano >= 0) { somaPlano += plano; ++nPlano; }
+            somaNiv += nivel; somaNiv2 += (double) nivel * nivel;
+            double tt = 0, bx = 0;
+            for (int b = 0; b < NB; ++b) { tt += banda[b]; if (freqBanda (b) < 120.0) bx += banda[b]; }
+            if (tt > 0) somaBaixo += bx / tt;
         }
         nivelAnt = nivel;
+        for (int b = 0; b < NB; ++b) bandaAnt[b] = banda[b];
 
         // LEARN: média de potência nos quadros com som
         if (aprendendo && som)
@@ -650,23 +685,34 @@ private:
         cedeEspaco (a, role);
     }
 
+    // ROLE pelo som (quando o nome da faixa não diz): ataques e notas por segundo, planura, centro do espectro
     int roleDoEspectro() const
     {
-        double tot = 0, baixo = 0, cent = 0;
+        if (nQuadros < 40) return roleSom >= 0 ? roleSom : PAD;
+        double tot = 0, cent = 0;
         for (int b = 0; b < NB; ++b)
         {
             const double p = nApr > 0 ? somaApr[b] / nApr : telaP[b];
             tot += p;
-            if (freqBanda (b) < 120.0) baixo += p;
             cent += p * std::log2 (freqBanda (b));
         }
         if (tot < 1e-12) return PAD;
         const double fc = std::pow (2.0, cent / tot);
-        const bool perc = nQuadros > 20 && nPerc > nQuadros / 8;
-        if (baixo / tot > 0.5) return perc && baixo / tot > 0.6 && nPerc > nQuadros / 4 ? KICK : BASS;
-        if (fc > 3500.0 || perc) return PERC;
-        if (fc < 700.0) return PAD;
-        return LEAD;
+        const double seg = nQuadros * (double) HOP / fs;
+        const double ataques = nPerc / seg, notas = nNotas / seg;
+        const double baixo = somaBaixo / nQuadros;
+        const double plano = nPlano > 0 ? somaPlano / nPlano : 0.0;
+        const double media = somaNiv / nQuadros, desvio = std::sqrt (std::max (0.0, somaNiv2 / nQuadros - media * media));
+        int r;
+        if (baixo > 0.5) r = (ataques > 1.2 && ataques < 4.5) ? KICK : BASS;   // bumbo: ~1 ataque por tempo
+        else if (plano > 0.38)                                                // ruído
+            r = ataques > 2.0 ? PERC : (desvio > 4.0 ? FX : ATMOS);
+        else if (fc > 3500.0 || (ataques > 2.0 && desvio > 8.0 && fc > 1500.0)) r = PERC;
+        else if (ataques > 4.0) r = ACID;                                     // tom com ritmo marcado (semicolcheias)
+        else if (notas > 2.5) r = LEAD;                                       // melodia: o espectro muda a cada nota
+        else r = PAD;
+        roleSom = r;
+        return r;
     }
 
     // FOCUS: quanto esta faixa cede, por banda, para as faixas em FOCUS (e KICK/BASS embaixo, com KEEP ON TOP)
@@ -675,6 +721,7 @@ private:
         auto& R = Registry::get();
         auto& S = slot();
         float corteB[NB];
+        int mascara = 0;   // bandas de EQ em que a FOCUS pediu corte
         for (int b = 0; b < NB; ++b) corteB[b] = 0.0f;
         int quem = -1;
         float quemPeso = 0.0f;
@@ -727,19 +774,21 @@ private:
                 const float imp = clampf ((lf - (pk - 30.0f)) / 18.0f, 0.0f, 1.0f);   // a banda importa para quem tem FOCUS?
                 const float excesso = ly - lf + 3.0f;                                // mascara (até 3 dB abaixo ainda conta)
                 if (excesso <= 0.0f || imp <= 0.0f) continue;
-                corteB[b] = std::min (corteB[b], -std::min (mc, amt * imp * excesso));
+                const float c = -std::min (mc, amt * imp * excesso);
+                corteB[b] = std::min (corteB[b], c);
+                if (g == 0 && c < -0.5f) mascara |= 1 << std::min (NE - 1, b / 3);
             }
         }
         // corte por banda de EQ: metade do pior + metade da média das 3 bandas
-        bool cede = false;
         for (int k = 0; k < NE; ++k)
         {
             float pior = 0.0f, med = 0.0f;
             for (int j = 0; j < 3; ++j) { pior = std::min (pior, corteB[3 * k + j]); med += corteB[3 * k + j] / 3.0f; }
             alvoCorte[k] = 0.5f * pior + 0.5f * med;
-            if (alvoCorte[k] < -0.5f) cede = true;
         }
-        S.cedePara = cede ? quem : -1;
+        // "cede para a FOCUS" só conta o corte pedido pelas faixas em FOCUS (o do KEEP KICK / BASS ON TOP é à parte)
+        S.mascaraFoco = mascara;
+        S.cedePara = mascara != 0 ? quem : -1;
     }
 
     // LOCK: nível do ROLE para o alvo do STYLE; TONE MATCH pela forma do espectro
@@ -848,7 +897,10 @@ private:
     float nivelLento = 0.0f, nivelAnt = -200.0f;
     double somaApr[NB] {};
     double somaNivel = 0.0;
-    int nApr = 0, nPerc = 0, nQuadros = 0;
+    int nApr = 0, nPerc = 0, nQuadros = 0, nNotas = 0, nPlano = 0;
+    double somaPlano = 0, somaNiv = 0, somaNiv2 = 0, somaBaixo = 0;
+    float bandaAnt[NB] {};
+    mutable int roleSom = -1;
     bool aprendendo = false;
     int roleParam = -1;
     std::atomic<int> nomeRole { -1 };
