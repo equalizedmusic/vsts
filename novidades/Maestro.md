@@ -4,6 +4,23 @@ Pacote do instalador: `InsideStudioSP-Maestro`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `maestro-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.3 — 2026-11-09
+- Versão de TESTE com tudo da 0.1.2 (que não chegou a sair) e a tela nova (esboço v3 aprovado), nas cores do ALIGN /
+  BAREBASS.
+- CONSOLE CENTRAL: qualquer janela do MAESTRO mostra os 8 grupos lado a lado e mexe em qualquer um deles (ROLE, TRIM
+  e FOCUS), sem fechar e abrir a janela de outro grupo. Cada tira: de onde veio o grupo (BY NAME / BY SOUND), o nome
+  da faixa, medidor com a marca do alvo do STYLE, GAIN, CUT NOW com a causa (IN FOCUS, TO FOCUS, SHELF, OWNS LOW END),
+  TRIM, FOCUS e ROLE. Embaixo, WHOLE MIX (o que vale para todos): AMOUNT, MAX CUT, SPEED, LOW-END GUARD, KEEP KICK /
+  BASS ON TOP.
+- MAPA DE CONFLITO novo: uma pista por grupo com o espectro em BRANCO; onde ele briga com outro grupo, VERMELHO (como
+  o "collision" de EQs de mixagem). Faixa CLASH no topo, trecho de Hz da briga à direita, ▼ com o corte que está
+  acontecendo agora e o SHELF do GUARD em laranja. Embaixo: a pior briga e quem está em FOCUS.
+- EQ DINÂMICA nova (do grupo clicado): espectro da SOMA da mix atrás, espectro do grupo, FOCUS dos outros grupos
+  tracejados, TONE MATCH (tracejado) e LIVE EQ (verde) separados, os 9 nós com o alcance até MAX CUT, a região do
+  GUARD e o histórico dos cortes dos últimos 8 s.
+- KICK e BASS nunca cedem para FOCUS (são os donos do grave). Na bancada: 0,00 dB de corte neles com LEAD + CLAP
+  em FOCUS.
+
 ## 0.1.2 — 2026-11-09
 - GRUPOS (stems): os papéis agora são os 8 grupos de quem faz pré-mix: KICK, BASS, DRUMS (snare + percs), HATS,
   SYNTHS, AMBIENCE, VOCAL e FX. Põe o MAESTRO em cada grupo e ele reconhece o grupo pelo nome (KICK, Drums, Snare,

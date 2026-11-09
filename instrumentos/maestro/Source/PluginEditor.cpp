@@ -43,7 +43,9 @@ juce::String db1 (float v, bool unidade = true)
 
 juce::String hzCurto (double f)
 {
-    if (f >= 1000.0) return juce::String (f / 1000.0, f >= 10000.0 ? 0 : 1) + "k";
+    // juce::String (double, 0) NÃO arredonda (0 casas = precisão total) — por isso o roundToInt
+    if (f >= 10000.0) return juce::String (juce::roundToInt (f / 1000.0)) + "k";
+    if (f >= 1000.0)  return juce::String (f / 1000.0, 1) + "k";
     return juce::String (juce::roundToInt (f));
 }
 
@@ -772,8 +774,8 @@ void MaestroEditor::painelEq (juce::Graphics& g, juce::Rectangle<float> r)
     const juce::Colour cor = corRole[sel];
 
     // título: grupo + o que está acontecendo com ele
+    float xt = r.getX() + 10;   // fim do título: a legenda à direita não pode passar daqui
     {
-        float xt = r.getX() + 10;
         auto parte = [&] (const juce::String& s, juce::Colour c, bool negrito)
         {
             const auto fo = fonte (10.0f, negrito).withExtraKerningFactor (0.12f);
@@ -790,7 +792,7 @@ void MaestroEditor::painelEq (juce::Graphics& g, juce::Rectangle<float> r)
         if (G.faixas.empty()) parte ("NO TRACK ON THIS GROUP", cApagado, false);
         else if (aprendendo) parte ("LISTENING", cLaranja, true);
         else if (G.focus && ! outros.isEmpty() && sel != KICK && sel != BASS)
-        { parte ("IN FOCUS, SHARES WITH", cApagado, false); parte (outros.joinIntoString (" + "), cRoxoClaro, true); parte ("(MAX 3 dB)", cApagado, false); }
+        { parte (estrela + " FOCUS, SHARES WITH", cRoxoClaro, true); parte (outros.joinIntoString (" + "), cRoxoClaro, true); }
         else if (G.focus) parte (estrela + " IN FOCUS", cRoxoClaro, true);
         else if (! G.cedeGrupos.empty())
         {
@@ -808,6 +810,7 @@ void MaestroEditor::painelEq (juce::Graphics& g, juce::Rectangle<float> r)
         {
             const auto fo = fonte (9.5f).withExtraKerningFactor (0.1f);
             const float wt = largura (fo, t) + 2;
+            if (lx - wt - 29 < xt + 12) { lx = xt; return; }   // sem espaço: some a legenda, nunca encavala no título
             lx -= wt;
             g.setColour (cApagado); g.setFont (fo);
             g.drawText (t, juce::Rectangle<float> (lx, r.getY() + 7, wt, 14), juce::Justification::centredLeft);
