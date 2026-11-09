@@ -19,7 +19,7 @@
 //  FOCUS  (por faixa, quantas quiser): as outras cedem espaço só onde e quando a faixa em FOCUS toca — EQ dinâmica nas mesmas
 //         9 bandas (corte proporcional ao quanto mascaram a FOCUS naquela banda, até MAX CUT). Com KEEP KICK / BASS
 //         ON TOP, KICK e BASS valem como FOCUS abaixo de ~400 Hz. Duas FOCUS que batem na mesma banda cedem um pouco
-//         uma para a outra, por igual (até 3 dB).
+//         uma para a outra, por igual (até 3 dB). KICK e BASS nunca cedem para FOCUS (são os donos do grave).
 //
 // Áudio: só IIR (biquads RBJ de fase mínima): latência ZERO. Sem LOCK e sem FOCUS, a saída é a entrada, idêntica.
 // A análise (FFT de 2048, salto de 1024) roda na própria thread de áudio de cada faixa, sobre a ENTRADA (antes do
@@ -153,6 +153,8 @@ struct Slot
     std::atomic<int> cede[NCEDE];             // todas as FOCUS para as quais cede agora (vagas)
     std::atomic<int> nCede { 0 };
     std::atomic<float> shelf { 0.0f };        // LOW-END GUARD aplicado agora (dB, ≤ 0)
+    std::atomic<float> alvoDb { -200.0f };    // LOCK: nível alvo do ROLE (console: marca no medidor; −200 = sem LOCK)
+    std::atomic<float> antesDb { -200.0f };   // LOCK: nível do ROLE no LEARN
     std::atomic<int> mascaraFoco { 0 };       // bandas de EQ (bits) em que o corte é para a FOCUS
 
     Slot()
@@ -214,7 +216,7 @@ struct Registry
                 for (int k = 0; k < NE; ++k) { s.corte[k] = 0.0f; s.tom[k] = 0.0f; }
                 s.nivelDb = -200.0f; s.tocando = 0; s.aprNivelDb = -200.0f; s.aprQuadros = 0;
                 s.ganhoDb = 0.0f; s.cedePara = -1; s.mascaraFoco = 0; s.focus = 0; s.role = AMBIENCE; s.roleAuto = PELO_SOM; s.dono = nullptr;
-                s.nCede = 0; s.shelf = 0.0f; s.uid = 0;
+                s.nCede = 0; s.shelf = 0.0f; s.uid = 0; s.alvoDb = -200.0f; s.antesDb = -200.0f;
                 s.escreveNome ("");
                 s.ordem = proxOrdem.fetch_add (1);
                 s.usado = 1;
@@ -555,6 +557,8 @@ public:
         S.ganhoDb = (float) (20.0 * std::log10 (std::max (1e-6, ganhoLin)));
         for (int k = 0; k < NE; ++k) { S.corte[k] = corteSuave[k]; S.tom[k] = tomSuave[k]; }
         S.shelf = shelfSuave;
+        S.alvoDb = travado.travado && travado.nivelAntes > -150.0f ? travado.alvoNivel : -200.0f;
+        S.antesDb = travado.travado ? travado.nivelAntes : -200.0f;
     }
 
     double taxa() const { return fs; }
@@ -758,6 +762,8 @@ private:
         int nFocos = 0;
 
         const bool euFoco = a.focus;
+        // KICK e BASS são donos do grave: nunca cedem para FOCUS nenhuma (nem para outra FOCUS, se estiverem em FOCUS)
+        const bool donoGrave = role == KICK || role == BASS;
         const bool topo = ! euFoco && travado.travado && R.topo.load() != 0 && role != KICK && role != BASS;   // só depois do LOCK
         // dois grupos, cada um com a própria referência: as faixas em FOCUS (espectro todo) e KICK/BASS (só embaixo)
         double F[2][NB];
@@ -771,7 +777,7 @@ private:
             const bool fo = o.focus.load() != 0;
             const int ro = o.role.load();
             const bool baixo = topo && (ro == KICK || ro == BASS);
-            if (! fo && ! baixo) continue;
+            if ((! fo || donoGrave) && ! baixo) continue;
             const int g = fo ? 0 : 1;
             float soma = 0.0f;
             for (int b = 0; b < NB; ++b)

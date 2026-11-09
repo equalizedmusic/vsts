@@ -321,10 +321,11 @@ int main()
         lead.aj.focus = true; clap.aj.focus = true;
         roda (fx, t, 1.0, [] (size_t, double, float, float, float) {});
         int maxN = 0; bool viuOsDois = false;
-        float piorLead = 0, piorClap = 0;
+        float piorLead = 0, piorClap = 0, piorKB = 0;
         roda (fx, t, 8.0, [&] (size_t i, double, float, float, float)
         {
             if (i != 6) return;
+            for (int k = 0; k < NE; ++k) piorKB = std::min ({ piorKB, fx[0]->e->slot().corte[k].load(), fx[1]->e->slot().corte[k].load() });
             auto& S = pad.e->slot();
             const int n = S.nCede.load();
             maxN = std::max (maxN, n);
@@ -337,6 +338,8 @@ int main()
         std::printf ("3b. FOCUS em LEAD 01 + CLAP: PAD cede para os dois ao mesmo tempo: %s (ate %d FOCUS)\n", viuOsDois ? "sim" : "NAO", maxN);
         std::printf ("    entre as FOCUS: maior corte no LEAD %+.1f dB, no CLAP %+.1f dB (limite -3) %s\n", piorLead, piorClap, ok ? "OK" : "FALHOU");
         if (! ok) ++falhas;
+        std::printf ("3c. KICK e BASS nao cedem para FOCUS: maior corte %+.2f dB %s\n", piorKB, piorKB == 0.0f ? "OK" : "FALHOU");
+        if (piorKB != 0.0f) ++falhas;
         clap.aj.focus = false; lead.aj.focus = false;
         roda (fx, t, 1.0, [] (size_t, double, float, float, float) {});
     }
