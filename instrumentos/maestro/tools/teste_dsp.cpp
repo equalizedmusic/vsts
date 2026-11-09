@@ -32,8 +32,10 @@ struct Gerador
     float ruido() { return std::uniform_real_distribution<float> (-1.0f, 1.0f) (rnd); }
 
     // t em segundos; devolve a amostra (mono)
+    static inline bool calaGrave = false;   // quebra: KICK e BASS calados (LOW-END GUARD)
     float amostra (double t)
     {
+        if (calaGrave && tipo <= 1) return 0.0f;
         const double beat = t * bpm / 60.0, tb = (beat - std::floor (beat)) * 60.0 / bpm;
         const double six = beat * 4.0, t16 = (six - std::floor (six)) * 15.0 / bpm;
         const int k16 = (int) std::floor (six) % 4, bar = (int) std::floor (beat / 4.0);
@@ -191,7 +193,7 @@ int main()
 {
     auto& R = Registry::get();
     const char* nomes[] = { "Kick", "Bass", "Hat", "Clap", "Lead 01", "Acid", "Pad 02", "FX Riser", "Vox", "Atmos", "Ride" };
-    const int roles[] = { KICK, BASS, PERC, PERC, LEAD, ACID, PAD, FX, VOX, ATMOS, PERC };
+    const int roles[] = { KICK, BASS, HATS, DRUMS, SYNTHS, SYNTHS, AMBIENCE, FX, VOCAL, AMBIENCE, HATS };
     std::vector<std::unique_ptr<Faixa>> fx;
     for (int i = 0; i < 11; ++i)
     {
@@ -225,7 +227,8 @@ int main()
 
     // 2. LEARN 8 s + LOCK
     R.amount = 1.0f;
-    R.topo = 0;   // o nível do LOCK medido sem o KEEP KICK / BASS ON TOP (que é dinâmico)
+    R.topo = 0;   // o nível do LOCK medido sem o KEEP KICK / BASS ON TOP e sem o GUARD (que são dinâmicos)
+    R.guard = 0;
     R.learn (0.0);
     for (auto& f : fx) f->medeIn.zera();
     const double ciclo = 16 * 60.0 / bpm * 2;   // 2 ciclos do riser (16 tempos): a janela não pega o riser pela metade
@@ -307,6 +310,107 @@ int main()
         std::printf ("\n   LEAD (em FOCUS) cortes:");
         for (int k = 0; k < NE; ++k) std::printf (" %+.1f", lead.e->slot().corte[k].load());
         std::printf ("\n");
+    }
+
+    // 3b. FOCUS em DOIS ao mesmo tempo (LEAD 01 e CLAP), sem prioridade: o PAD cede para os dois; os dois cedem um
+    //     pouco um para o outro, por igual (até 3 dB)
+    {
+        auto& lead = *fx[4];
+        auto& clap = *fx[3];
+        auto& pad = *fx[6];
+        lead.aj.focus = true; clap.aj.focus = true;
+        roda (fx, t, 1.0, [] (size_t, double, float, float, float) {});
+        int maxN = 0; bool viuOsDois = false;
+        float piorLead = 0, piorClap = 0;
+        roda (fx, t, 8.0, [&] (size_t i, double, float, float, float)
+        {
+            if (i != 6) return;
+            auto& S = pad.e->slot();
+            const int n = S.nCede.load();
+            maxN = std::max (maxN, n);
+            bool l = false, c = false;
+            for (int k = 0; k < n && k < Slot::NCEDE; ++k) { l = l || S.cede[k].load() == lead.e->indice(); c = c || S.cede[k].load() == clap.e->indice(); }
+            viuOsDois = viuOsDois || (l && c);
+            for (int k = 0; k < NE; ++k) { piorLead = std::min (piorLead, lead.e->slot().corte[k].load()); piorClap = std::min (piorClap, clap.e->slot().corte[k].load()); }
+        });
+        const bool ok = viuOsDois && piorLead >= -3.05f && piorClap >= -3.05f;
+        std::printf ("3b. FOCUS em LEAD 01 + CLAP: PAD cede para os dois ao mesmo tempo: %s (ate %d FOCUS)\n", viuOsDois ? "sim" : "NAO", maxN);
+        std::printf ("    entre as FOCUS: maior corte no LEAD %+.1f dB, no CLAP %+.1f dB (limite -3) %s\n", piorLead, piorClap, ok ? "OK" : "FALHOU");
+        if (! ok) ++falhas;
+        clap.aj.focus = false; lead.aj.focus = false;
+        roda (fx, t, 1.0, [] (size_t, double, float, float, float) {});
+    }
+
+    // 8. LOW-END GUARD (shelf dinâmico < 120 Hz): KICK e BASS nunca cortados; o ATMOS (muito grave) cede embaixo só
+    //    enquanto o KICK / BASS toca
+    {
+        R.guard = 1; R.topo = 0;
+        auto& atm = *fx[9];
+        auto mede = [&] (bool cala)
+        {
+            Gerador::calaGrave = cala;
+            roda (fx, t, 1.5, [] (size_t, double, float, float, float) {});
+            double sh = 0; long n = 0; float shKB = 0;
+            // grave (passa-baixas 80 Hz) entrada x saída do KICK, e o total: só o LEVEL pode mexer (sem passa-altas)
+            Coef lp; { const double w = 2 * kPi * 80.0 / fs, al = std::sin (w) / (2 * 0.707), c = std::cos (w), a0 = 1 + al;
+                       lp.b0 = (1 - c) / 2 / a0; lp.b1 = (1 - c) / a0; lp.b2 = lp.b0; lp.a1 = -2 * c / a0; lp.a2 = (1 - al) / a0; }
+            Biquad li, lo; li.k = lp; lo.k = lp;
+            double gi = 0, go = 0, ti = 0, to = 0;
+            roda (fx, t, 6.0, [&] (size_t i, double, float in, float l, float)
+            {
+                if (i == 9) { sh += atm.e->slot().shelf.load(); ++n; }
+                if (i <= 1) shKB = std::min ({ shKB, fx[i]->e->slot().shelf.load() });
+                if (i == 0) { const float a = li.passa (in, 0), b = lo.passa (l, 0); gi += a * a; go += b * b; ti += in * in; to += (double) l * l; }
+            });
+            Gerador::calaGrave = false;
+            const double dGrave = gi > 0 ? 10 * std::log10 (go / gi) - 10 * std::log10 (to / ti) : 0.0;
+            return std::make_tuple (sh / std::max (1L, n), shKB, dGrave);
+        };
+        const auto [shOn, kbOn, gKick] = mede (false);
+        const auto [shOff, kbOff, gKick2] = mede (true);
+        (void) gKick2;
+        const bool ok = shOn < -3.0 && shOff > -0.5 && kbOn == 0.0f && kbOff == 0.0f && std::abs (gKick) < 0.3;
+        std::printf ("8. LOW-END GUARD: ATMOS shelf 120 Hz medio com KICK/BASS tocando %+.1f dB, com eles calados %+.1f dB\n", shOn, shOff);
+        std::printf ("   KICK/BASS: shelf %+.1f / %+.1f dB; grave do KICK x total do KICK na saida %+.2f dB (sem passa-altas) %s\n",
+                     kbOn, kbOff, gKick, ok ? "OK" : "FALHOU");
+        if (! ok) ++falhas;
+        R.topo = 1;
+    }
+
+    // 9. ROLE trocado DEPOIS do LOCK (o caso do Ableton: o AUTO errou, ele escolhe KICK na mão): o LOCK se refaz
+    {
+        auto& k = *fx[0];
+        const float g0 = k.e->travado.ganhoBruto;
+        k.aj.roleParam = DRUMS;
+        roda (fx, t, 0.5, [] (size_t, double, float, float, float) {});
+        const float gErr = k.e->travado.ganhoBruto, gBassErr = fx[1]->e->travado.ganhoBruto;
+        k.aj.roleParam = KICK;
+        roda (fx, t, 0.5, [] (size_t, double, float, float, float) {});
+        const float g1 = k.e->travado.ganhoBruto;
+        const bool ok = std::abs (g1 - g0) < 0.05f && std::max (std::abs (gErr - g0), std::abs (gBassErr - fx[1]->e->travado.ganhoBruto)) > 1.0f;
+        std::printf ("9. ROLE do KICK trocado depois do LOCK: LEVEL do KICK %+.1f dB -> como DRUMS %+.1f (BASS %+.1f) -> de volta KICK %+.1f %s\n",
+                     g0, gErr, gBassErr, g1, ok ? "OK" : "FALHOU");
+        if (! ok) ++falhas;
+        k.aj.roleParam = -1;
+        roda (fx, t, 0.5, [] (size_t, double, float, float, float) {});
+    }
+
+    // 10. GRUPOS (stems) pelo nome
+    {
+        const char* nn[] = { "KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "AMBIENCE", "VOCAL", "FX",
+                             "Kick Group", "Snare", "Percs", "Hi Hats", "Lead Synth", "Pad", "Vox Chop", "Riser", "Sub Bass", "Ride" };
+        const int rr[] = { KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX,
+                           KICK, DRUMS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX, BASS, HATS };
+        int cert = 0;
+        std::printf ("10. GRUPOS pelo nome:");
+        for (int i = 0; i < 18; ++i)
+        {
+            const int r = roleDoNome (nn[i]);
+            cert += r == rr[i];
+            std::printf (" %s=%s%s", nn[i], nomeRole (r), r == rr[i] ? "" : "(X)");
+        }
+        std::printf ("\n    %d/18 %s\n", cert, cert == 18 ? "OK" : "FALHOU");
+        if (cert != 18) ++falhas;
     }
 
     // 4. B: volta a ser idêntico

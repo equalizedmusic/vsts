@@ -4,6 +4,24 @@ Pacote do instalador: `InsideStudioSP-Maestro`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `maestro-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.2 — 2026-11-09
+- GRUPOS (stems): os papéis agora são os 8 grupos de quem faz pré-mix: KICK, BASS, DRUMS (snare + percs), HATS,
+  SYNTHS, AMBIENCE, VOCAL e FX. Põe o MAESTRO em cada grupo e ele reconhece o grupo pelo nome (KICK, Drums, Snare,
+  Percs, Hats, Ride, Synths, Lead, Ambience, Pad, Vocal, FX…); continua funcionando canal a canal. Alvos de nível de
+  cada STYLE refeitos por grupo. Na bancada: 18/18 nomes certos; LOCK com erro máximo de 0,5 dB por grupo.
+- Nome da faixa: o nome que o DAW manda (o Ableton manda nos plugins VST3) fica guardado no projeto e um nome vazio
+  não apaga mais o bom. Faixa DUPLICADA não herda mais o nome da original.
+- Trocar o ROLE depois do LOCK REFAZ o LOCK do projeto inteiro (antes o KICK escolhido na mão continuava com o nível
+  e o tom calculados para o papel adivinhado errado: era o "continua cortando o kick").
+- LOW-END GUARD sem passa-altas: agora é um shelf DINÂMICO abaixo de 120 Hz nos outros grupos, só enquanto o KICK /
+  BASS toca, e só quanto o grave daquele grupo atrapalha (até −12 dB × AMOUNT). KICK e BASS nunca são cortados por
+  ele; grupo adivinhado pelo som com muito grave também não. Na bancada: ATMOS −3,6 dB embaixo com o KICK/BASS
+  tocando e 0,0 dB com eles calados; KICK sem perda de grave.
+- FOCUS em VÁRIOS ao mesmo tempo, sem prioridade: os outros cedem para todos; duas FOCUS que batem na mesma banda
+  cedem um pouco uma para a outra, por igual (até 3 dB). Tela: "YIELDING TO SYNTHS + DRUMS", MAKING ROOM com quem
+  cede para aquela FOCUS. Na bancada: PAD cedendo para LEAD e CLAP juntos; LEAD −2,5 / CLAP −2,6 dB entre si.
+- Tela: chip ROLE mostra AUTO (veio do nome) ou GUESS (veio do som); corte do GUARD aparece na curva e em LIVE CUTS.
+
 ## 0.1.1 — 2026-11-09
 - ROLE AUTO pelo SOM bem melhor (para o Ableton, que não manda o nome da faixa ao plugin): ataques por segundo
   (bumbo ~1 por tempo, baixo rolante nas semicolcheias), notas (mudança de espectro), planura dentro de cada banda

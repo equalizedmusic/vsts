@@ -3,14 +3,14 @@
 
 const juce::StringArray& MaestroProcessor::nomesRole()
 {
-    static const juce::StringArray n { "AUTO", "KICK", "BASS", "PERC", "LEAD", "ACID", "PAD", "FX", "VOX", "ATMOS" };
+    static const juce::StringArray n { "AUTO", "KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "AMBIENCE", "VOCAL", "FX" };
     return n;
 }
 
 static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout l;
-    l.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "role", 1 }, "Role", MaestroProcessor::nomesRole(), 0));
+    l.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "role", 2 }, "Role", MaestroProcessor::nomesRole(), 0));
     l.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "focus", 1 }, "Focus", false));
     l.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "trim", 1 }, "Trim",
                                                         juce::NormalisableRange<float> (-12.0f, 12.0f, 0.1f), 0.0f,
@@ -28,6 +28,8 @@ MaestroProcessor::MaestroProcessor()
     pRole = apvts.getRawParameterValue ("role");
     pFocus = apvts.getRawParameterValue ("focus");
     pTrim = apvts.getRawParameterValue ("trim");
+    uid = (unsigned) juce::Random::getSystemRandom().nextInt (0x7fffffff) | 1u;
+    motor->slot().uid = uid;
     motor->slot().dono = this;
 }
 
@@ -88,7 +90,8 @@ void MaestroProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
 juce::AudioProcessorEditor* MaestroProcessor::createEditor() { return new MaestroEditor (*this); }
 
-// nome: o do DAW (VST3/AU) vale mais; senão o do título da janela (Ableton)
+// nome: o do DAW vale mais (VST3/AU: o Ableton manda ao abrir o projeto e quando o nome muda); senão o do título da
+// janela do plugin
 void MaestroProcessor::aplicaNome()
 {
     auto nome = nomeHost.isNotEmpty() ? nomeHost : nomeJanela;
@@ -102,7 +105,9 @@ void MaestroProcessor::updateTrackProperties (const TrackProperties& p)
     {
         if (auto* self = safe.get())
         {
+            if (nome.isEmpty() && self->nomeHost.isNotEmpty()) return;   // "" = o DAW não mandou nada novo
             self->nomeHost = nome;
+            self->hostMandou = nome.isNotEmpty();
             self->aplicaNome();
         }
     });
@@ -131,6 +136,8 @@ void MaestroProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto state = apvts.copyState();
     state.setProperty ("uiw", uiW.load(), nullptr);
     state.setProperty ("janela", nomeJanela, nullptr);
+    state.setProperty ("host", nomeHost, nullptr);
+    state.setProperty ("uid", juce::String::toHexString ((int) uid), nullptr);
     const auto& t = motor->travado;
     state.setProperty ("travado", t.travado ? 1 : 0, nullptr);
     state.setProperty ("ganho", t.ganhoBruto, nullptr);
@@ -157,6 +164,19 @@ void MaestroProcessor::setStateInformation (const void* data, int sizeInBytes)
     auto& R = maestro::Registry::get();
     uiW = (int) vt.getProperty ("uiw", 0);
     nomeJanela = vt.getProperty ("janela", "").toString();
+    if (nomeHost.isEmpty()) nomeHost = vt.getProperty ("host", "").toString();
+    // faixa DUPLICADA no DAW: o estado veio de outra cópia que está ligada (mesmo uid). O nome gravado é o da outra
+    // faixa: esquece (o DAW / a janela mandam o certo) e ganha identidade própria
+    {
+        const auto u = (unsigned) vt.getProperty ("uid", "0").toString().getHexValue32();
+        bool copia = false;
+        if (u != 0)
+            for (auto& s : R.slot)
+                if (s.usado.load() && s.dono.load() != this && s.uid.load() == u) copia = true;
+        if (copia) { nomeJanela = {}; if (! hostMandou) nomeHost = {}; }
+        else if (u != 0) uid = u;
+        motor->slot().uid = uid;
+    }
     maestro::Travado t;
     t.travado = (int) vt.getProperty ("travado", 0) != 0;
     t.ganhoBruto = (float) vt.getProperty ("ganho", 0.0f);

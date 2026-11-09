@@ -233,17 +233,20 @@ public:
             ++blocks;
            #endif
            #if SHOT_MAESTRO
-            // MAESTRO: cada cópia toca a própria faixa de um drop de psy (as extras na ordem de criação; a principal
-            // é o PAD 02). O LEAD toca sempre, para a foto pegar o PAD cedendo.
+            // MAESTRO: cada cópia toca o próprio GRUPO (stem) de um drop de psy (as extras na ordem de criação; a
+            // principal é o AMBIENCE). O LEAD toca sempre, para a foto pegar o AMBIENCE cedendo.
             for (size_t k = 0; k <= extras.size(); ++k)
             {
-                const int tipo = k < extras.size() ? (int) k : 10;
+                // KICK, BASS, DRUMS (clap), HATS (hat + ride), SYNTHS (lead + acid), VOCAL, FX, AMBIENCE (pad + atmos)
+                static const int stem[8][2] = { { 0, -1 }, { 1, -1 }, { 3, -1 }, { 2, 4 }, { 5, 6 }, { 8, -1 }, { 7, -1 }, { 10, 9 } };
+                const int st = k < extras.size() ? (int) k : 7;
                 auto* bl = buf.getWritePointer (0); auto* br = buf.getWritePointer (1);
                 const double t0 = t - block / fs;
                 for (int i = 0; i < block; ++i)
                 {
-                    const float v = mae[(size_t) tipo].amostra (t0 + i / fs, tipo, rnd);
-                    bl[i] = v; br[i] = v * (tipo == 2 || tipo == 4 ? 0.8f : 1.0f);
+                    float v = 0.0f;
+                    for (int tipo : stem[st]) if (tipo >= 0) v += mae[(size_t) tipo].amostra (t0 + i / fs, tipo, rnd);
+                    bl[i] = v; br[i] = v * (st == 3 ? 0.8f : 1.0f);
                 }
                 if (k < extras.size()) extras[k]->processBlock (buf, midi);
             }
@@ -438,9 +441,9 @@ int main (int argc, char** argv)
    #endif
 
    #if SHOT_MAESTRO
-    // MAESTRO: 10 cópias a mais no mesmo programa (as faixas do drop); a principal é o PAD 02
+    // MAESTRO: 7 cópias a mais no mesmo programa (os grupos do drop); a principal é o AMBIENCE
     {
-        const char* nomes[] = { "Kick", "Bass", "Hat", "Clap", "Ride", "Lead 01", "Acid", "FX Riser", "Vox Chop", "Atmos" };
+        const char* nomes[] = { "KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "VOCAL", "FX" };
         for (auto* nm : nomes)
         {
             std::unique_ptr<juce::AudioProcessor> q (createPluginFilter());
@@ -453,7 +456,7 @@ int main (int argc, char** argv)
             extras.push_back (std::move (q));
         }
         juce::AudioProcessor::TrackProperties tp;
-        tp.name = juce::String ("Pad 02");
+        tp.name = juce::String ("AMBIENCE");
         proc->updateTrackProperties (tp);
     }
    #endif
@@ -463,7 +466,8 @@ int main (int argc, char** argv)
     AudioThread audio (*proc, head);
     audio.startThread();
    #if SHOT_MAESTRO
-    // LEARN (foto), LOCK (foto) e FOCUS no LEAD: a foto principal é o PAD 02 cedendo; depois a janela do LEAD
+    // LEARN (foto), LOCK (foto) e FOCUS em SYNTHS + DRUMS: a foto principal é o AMBIENCE cedendo para os dois;
+    // depois a janela do SYNTHS
     {
         auto fotoDe = [&] (juce::AudioProcessorEditor& ed, const juce::String& nome)
         {
@@ -485,7 +489,8 @@ int main (int argc, char** argv)
         R.lock();
         juce::MessageManager::getInstance()->runDispatchLoopUntil (1500);
         fotoDe (*editor, "MAESTRO-LOCK");
-        setParam (*extras[5], "focus", 1.0f);   // LEAD 01
+        setParam (*extras[4], "focus", 1.0f);   // SYNTHS
+        setParam (*extras[2], "focus", 1.0f);   // DRUMS
     }
    #endif
    #if SHOT_ALIGN
@@ -571,9 +576,9 @@ int main (int argc, char** argv)
     }
    #endif
    #if SHOT_MAESTRO
-    // a janela do LEAD 01 (em FOCUS), a 200%
+    // a janela do SYNTHS (em FOCUS, junto com o DRUMS), a 200%
     {
-        std::unique_ptr<juce::AudioProcessorEditor> ed2 (extras[5]->createEditorAndMakeActive());
+        std::unique_ptr<juce::AudioProcessorEditor> ed2 (extras[4]->createEditorAndMakeActive());
         ed2->setSize (SHOT_W, SHOT_H);
         juce::MessageManager::getInstance()->runDispatchLoopUntil (1200);
         ed2->setSize (SHOT_W, SHOT_H);

@@ -6,7 +6,7 @@
 namespace maestro { int tituloDaJanela (void* nativo, char* out, int n); }
 
 // MAESTRO — MIX CONDUCTOR. Uma instância em cada faixa do projeto; todas se enxergam (maestro::Registry).
-// Por faixa (parâmetros, automatizáveis): ROLE, FOCUS e TRIM.
+// Por faixa (parâmetros, automatizáveis): ROLE (um dos 8 grupos: KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX), FOCUS e TRIM.
 // Do projeto (valem para todas as faixas, guardados no estado de cada uma): STYLE, AMOUNT, MAX CUT, SPEED,
 // LOW-END GUARD, KEEP KICK / BASS ON TOP, A/B e o LEARN / LOCK.
 // Latência zero. Antes do LOCK e sem FOCUS, o som passa sem nenhuma alteração.
@@ -53,7 +53,7 @@ public:
     void define (const juce::String& id, float valorReal);
     void nomeDaJanela (const juce::String& titulo);   // título da janela do plugin (Ableton)
 
-    static const juce::StringArray& nomesRole();      // "AUTO" + os 9 papéis
+    static const juce::StringArray& nomesRole();      // "AUTO" + os 8 grupos
 
 private:
     void aplicaNome();
@@ -61,6 +61,8 @@ private:
     std::unique_ptr<maestro::Engine> motor;
     std::atomic<float>* pRole = nullptr, *pFocus = nullptr, *pTrim = nullptr;
     juce::String nomeHost, nomeJanela;               // thread da interface
+    bool hostMandou = false;                         // o DAW já mandou o nome nesta sessão
+    unsigned uid = 0;                                // identidade no projeto (faixa duplicada = uid repetido)
 
     JUCE_DECLARE_WEAK_REFERENCEABLE (MaestroProcessor)
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MaestroProcessor)

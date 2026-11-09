@@ -34,12 +34,14 @@ private:
     struct Faixa
     {
         int vaga = -1, ordem = 0, role = 0;
-        bool focus = false, roleAuto = false, tocando = false;
+        bool focus = false, roleAuto = false, rolePeloSom = false, tocando = false;
         juce::String nome;
         float tela[maestro::NB] {};
         float corte[maestro::NE] {}, tom[maestro::NE] {};
         float ganhoDb = 0, nivelDb = -200;
         int cedePara = -1, mascaraFoco = 0;
+        float shelf = 0.0f;                        // LOW-END GUARD agora (dB)
+        std::vector<int> cede;                     // vagas das FOCUS para as quais cede
         void* dono = nullptr;
     };
     // um botão-giratório (valor normalizado 0..1)

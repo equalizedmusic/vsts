@@ -9,9 +9,10 @@ const juce::Colour cFundoA { 0xff1a1b20 }, cFundoB { 0xff121317 }, cTopoA { 0xff
                    cTexto { 0xffe6e6ea }, cApagado { 0xff8a8f99 }, cOuro { 0xfff0b43c }, cVerde { 0xff3ddc84 },
                    cAzul { 0xff2bb3ff }, cMagenta { 0xffff4fd8 }, cBranco { 0xfff5f5f7 }, cRuim { 0xffff5a6e };
 
+// KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX
 const juce::Colour corRole[NR] = { juce::Colour (0xffff8a3d), juce::Colour (0xff2bb3ff), juce::Colour (0xffd9d9de),
-                                   juce::Colour (0xfff0b43c), juce::Colour (0xff5be35b), juce::Colour (0xffb07cff),
-                                   juce::Colour (0xffff5fa2), juce::Colour (0xffffd7a0), juce::Colour (0xff6aa9ff) };
+                                   juce::Colour (0xff6aa9ff), juce::Colour (0xfff0b43c), juce::Colour (0xffb07cff),
+                                   juce::Colour (0xffffd7a0), juce::Colour (0xffff5fa2) };
 
 juce::Font fonte (float h, bool negrito = false)
 {
@@ -167,7 +168,11 @@ void MaestroEditor::colhe()
         f.vaga = i;
         f.ordem = s.ordem.load();
         f.role = juce::jlimit (0, NR - 1, s.role.load());
-        f.roleAuto = s.roleAuto.load() != 0;
+        f.roleAuto = s.roleAuto.load() != MANUAL;
+        f.rolePeloSom = s.roleAuto.load() == PELO_SOM;
+        f.shelf = s.shelf.load();
+        const int nc = juce::jlimit (0, Slot::NCEDE, s.nCede.load());
+        for (int k = 0; k < nc; ++k) if (const int v = s.cede[k].load(); v >= 0) f.cede.push_back (v);
         f.focus = s.focus.load() != 0;
         f.tocando = s.tocando.load() != 0;
         char b[40] {};
@@ -309,7 +314,7 @@ void MaestroEditor::topo (juce::Graphics& g)
     chip ({}, est, cEst, true, false, {});
     chip ("LINKED", juce::String ((int) faixas.size()) + ((int) faixas.size() == 1 ? " TRACK" : " TRACKS"), cVerde, true, false, {});
     juce::String role = eu != nullptr ? juce::String (nomeRole (eu->role)) : juce::String ("?");
-    if (eu != nullptr && eu->roleAuto) role = "AUTO" + ponto + role;
+    if (eu != nullptr && eu->roleAuto) role = (eu->rolePeloSom ? juce::String ("GUESS") : juce::String ("AUTO")) + ponto + role;
     chip ("ROLE", role, {}, false, true, [this] { menuRole(); });
     chip ("TRACK", eu != nullptr ? nomeDe (*eu) : juce::String ("?"), {}, false, false, {});
     chip ("STYLE", nomeStyle (R.style.load()), {}, false, true, [this] { menuStyle(); });
@@ -353,7 +358,7 @@ void MaestroEditor::mapa (juce::Graphics& g, juce::Rectangle<float> r)
     g.setColour (cTela);
     g.fillRoundedRectangle (tela, 3.0f);
 
-    const float x0 = tela.getX() + 96, y0 = tela.getY() + 8, wc = (tela.getRight() - 8 - x0) / NB, hr = 30.0f;
+    const float x0 = tela.getX() + 106, y0 = tela.getY() + 8, wc = (tela.getRight() - 8 - x0) / NB, hr = 34.0f;
     // energia por ROLE e banda (a das faixas em FOCUS, à parte)
     std::vector<double> P ((size_t) (NR * NB), 0.0), PF ((size_t) (NR * NB), 0.0), tot ((size_t) NB, 0.0);
     int nRole[NR] {};
@@ -382,12 +387,12 @@ void MaestroEditor::mapa (juce::Graphics& g, juce::Rectangle<float> r)
     {
         const float y = y0 + ro * (hr + 2.0f);
         // nome do ROLE (clique: as faixas dele, para FOCUS)
-        const juce::Rectangle<float> rl (tela.getX() + 8, y, 86, hr);
+        const juce::Rectangle<float> rl (tela.getX() + 8, y, 96, hr);
         g.setColour (corRole[ro]);
         g.fillRect (rl.getX(), rl.getCentreY() - 4, 8.0f, 8.0f);
-        desenhaTextoEsp (g, nomeRole (ro), { rl.getX() + 14, y, 52, hr }, 11.5f, nRole[ro] > 0 ? cTexto : cApagado.withAlpha (0.5f),
-                         juce::Justification::centredLeft, 0.04f, true);
-        desenhaTextoEsp (g, juce::String (nRole[ro]), { rl.getX() + 60, y, 18, hr }, 10.0f, cApagado, juce::Justification::centredRight, 0.0f);
+        desenhaTextoEsp (g, nomeRole (ro), { rl.getX() + 14, y, 64, hr }, 11.0f, nRole[ro] > 0 ? cTexto : cApagado.withAlpha (0.5f),
+                         juce::Justification::centredLeft, 0.02f, true);
+        desenhaTextoEsp (g, juce::String (nRole[ro]), { rl.getX() + 70, y, 16, hr }, 10.0f, cApagado, juce::Justification::centredRight, 0.0f);
         if (focoRole[ro])
             desenhaTextoEsp (g, estrela.trim(), { rl.getRight() - 8, y, 12, hr }, 11.0f, cOuro, juce::Justification::centred, 0.0f);
         if (nRole[ro] > 0) cliques.push_back ({ rl, [this, ro] { menuFaixasDoRole (ro); } });
@@ -500,11 +505,12 @@ void MaestroEditor::painelEq (juce::Graphics& g, juce::Rectangle<float> r)
         desenhaTextoEsp (g, rsG[i], { X (fsG[i]) - 20, py + ph + 3, 40, 12 }, 9.5f, cApagado, juce::Justification::centred, 0.0f);
     }
 
-    if (proc.engine().guardAgora() > 0.5f)
+    if (proc.engine().guardAgora() < -0.3f)
     {
         g.setColour (juce::Colours::white.withAlpha (0.05f));
         g.fillRect (juce::Rectangle<float> (px, py, X (fGuard) - px, ph));
-        desenhaTextoEsp (g, "HPF 120 Hz (GUARD)", { px + 4, py + 2, 140, 12 }, 9.5f, cApagado, juce::Justification::centredLeft, 0.05f, true);
+        desenhaTextoEsp (g, "LOW SHELF " + db1 (proc.engine().guardAgora()) + " (GUARD)", { px + 4, py + 2, 200, 12 }, 9.5f, cApagado,
+                         juce::Justification::centredLeft, 0.05f, true);
     }
 
     // espectro desta faixa (forma: o pico vai a +8 dB, 48 dB de faixa), cores por temperatura
@@ -565,7 +571,7 @@ void MaestroEditor::painelEq (juce::Graphics& g, juce::Rectangle<float> r)
     curva (true, cBranco.withAlpha (0.9f), 1.6f);
     bool cortando = false;
     if (eu != nullptr) for (int k = 0; k < NE; ++k) cortando = cortando || eu->corte[k] < -0.3f;
-    if (cortando || proc.engine().guardAgora() > 0.01f) curva (false, cMagenta, 2.0f);
+    if (cortando || proc.engine().guardAgora() < -0.01f) curva (false, cMagenta, 2.0f);
     if (eu != nullptr)
         for (int k = 0; k < NE; ++k)
         {
@@ -668,20 +674,25 @@ void MaestroEditor::direita (juce::Graphics& g, juce::Rectangle<float> r)
         titulo ("FOCUS", y);
         g.setColour (cOuro); g.setFont (fonte (28.0f, true));
         g.drawText (estrela + meuNome, juce::Rectangle<float> (x + 14, y + 28, w - 28, 38), juce::Justification::centredLeft, true);
-        texto ("Others open space only while " + meuNome + " is playing.", y + 70, 32);
+        int outros = 0;
+        for (auto& f : faixas) if (f.focus && &f != eu) ++outros;
+        texto (outros > 0 ? "Others open space only while it plays. Shares the spotlight with " + juce::String (outros)
+                                + (outros == 1 ? " other FOCUS." : " other FOCUS tracks.")
+                          : "Others open space only while " + meuNome + " is playing.", y + 70, 32);
         y += h + 10;
 
         struct Cede { juce::String nome; float corte; double f; };
         std::vector<Cede> lista;
         for (auto& f : faixas)
         {
-            if (f.focus) continue;
+            if (&f == eu) continue;
+            if (eu != nullptr && std::find (f.cede.begin(), f.cede.end(), eu->vaga) == f.cede.end()) continue;
             // só o corte que é para a FOCUS (o do KEEP KICK / BASS ON TOP não entra)
             int kMin = -1;
             for (int k = 0; k < NE; ++k)
                 if ((f.mascaraFoco >> k) & 1)
                     if (kMin < 0 || f.corte[k] < f.corte[kMin]) kMin = k;
-            if (kMin >= 0 && f.corte[kMin] < -0.5f) lista.push_back ({ nomeDe (f), f.corte[kMin], freqEq (kMin) });
+            if (kMin >= 0 && f.corte[kMin] < -0.5f) lista.push_back ({ (f.focus ? estrela : juce::String()) + nomeDe (f), f.corte[kMin], freqEq (kMin) });
         }
         std::sort (lista.begin(), lista.end(), [] (const Cede& a, const Cede& b) { return a.corte < b.corte; });
         h = 210;
@@ -721,16 +732,19 @@ void MaestroEditor::direita (juce::Graphics& g, juce::Rectangle<float> r)
 
     if (foco)
     {
-        const Faixa* alvo = nullptr;
-        if (eu != nullptr) for (auto& f : faixas) if (f.vaga == eu->cedePara) alvo = &f;
-        if (alvo == nullptr) for (auto& f : faixas) if (f.focus) { alvo = &f; break; }
-        const bool cedendo = eu != nullptr && eu->cedePara >= 0;
-        const juce::String nomeAlvo = alvo != nullptr ? nomeDe (*alvo) : juce::String ("the FOCUS");
+        juce::StringArray alvos;
+        if (eu != nullptr)
+            for (int v : eu->cede)
+                for (auto& f : faixas) if (f.vaga == v) alvos.add (nomeDe (f));
+        const bool cedendo = ! alvos.isEmpty();
+        if (alvos.isEmpty()) for (auto& f : faixas) if (f.focus) alvos.add (nomeDe (f));
+        const juce::String nomeAlvo = alvos.isEmpty() ? juce::String ("the FOCUS") : alvos.joinIntoString (" + ");
         float h = 120;
         painel (g, { x, y, w, h });
         titulo ("YIELDING TO", y);
         g.setColour (cedendo ? cAzul : cApagado); g.setFont (fonte (28.0f, true));
-        g.drawText (estrela + nomeAlvo, juce::Rectangle<float> (x + 14, y + 28, w - 28, 38), juce::Justification::centredLeft, true);
+        g.setFont (fonte (alvos.size() > 1 ? 20.0f : 28.0f, true));
+        g.drawFittedText (estrela + nomeAlvo, juce::Rectangle<int> ((int) x + 14, (int) y + 28, (int) w - 28, 38), juce::Justification::centredLeft, 1, 0.7f);
         if (cedendo)
             texto (meuNome + " dips only where and when " + nomeAlvo + " plays. Back to normal in "
                    + juce::String (releaseMs (R.speed.load())) + " ms.", y + 70, 44);
@@ -747,6 +761,7 @@ void MaestroEditor::direita (juce::Graphics& g, juce::Rectangle<float> r)
             std::vector<int> ks;
             for (int k = 0; k < NE; ++k) { if (eu->corte[k] < -0.3f) ks.push_back (k); pior = std::min (pior, eu->corte[k]); }
             std::sort (ks.begin(), ks.end(), [eu] (int a, int b) { return eu->corte[a] < eu->corte[b]; });
+            if (eu->shelf < -0.3f) { linha ("< 120 Hz (LOW-END GUARD)", db1 (eu->shelf), cMagenta, y + 32); ++n; pior = std::min (pior, eu->shelf); }
             for (int k : ks)
             {
                 if (n >= 3) break;
@@ -791,18 +806,18 @@ void MaestroEditor::direita (juce::Graphics& g, juce::Rectangle<float> r)
         const float h3 = r.getBottom() - y;
         painel (g, { x, y, w, h3 });
         titulo ("NEXT", y);
-        texto ("Pick the element that must stand out and press FOCUS on its track, or click its ROLE in the map. "
-               "Everything else makes room only while it plays.", y + 32, h3 - 40);
+        texto ("Press FOCUS on the elements that must stand out (as many as you want), or click a group in the map. "
+               "Everything else makes room only while they play.", y + 32, h3 - 40);
         return;
     }
 
     painel (g, { x, y, w, r.getHeight() });
     titulo ("GET STARTED", y);
     const juce::String passos[] = {
-        "Put MAESTRO on every track of the project. " + juce::String ((int) faixas.size()) + ((int) faixas.size() == 1 ? " track" : " tracks") + " linked so far.",
+        "Put MAESTRO on every group (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX) or on every track. " + juce::String ((int) faixas.size()) + ((int) faixas.size() == 1 ? " track" : " tracks") + " linked so far.",
         "Press LEARN and play the drop (20" + traco + "30 s).",
         "Press LOCK: every ROLE goes to the " + juce::String (nomeStyle (R.style.load())) + " level, with a gentle TONE MATCH.",
-        "FOCUS the element that must stand out: the rest opens space only while it plays.",
+        "FOCUS what must stand out (one or more): the rest opens space only while it plays.",
         "A / B compares with the original mix at any time." };
     for (int i = 0; i < 5; ++i)
     {
@@ -854,7 +869,7 @@ void MaestroEditor::base (juce::Graphics& g)
 
     for (auto& k : knobs) desenhaKnob (g, k);
 
-    chave (g, { 612, 632, 190, 24 }, "LOW-END GUARD < 120 Hz", R.guard.load() != 0, [] { auto& RR = Registry::get(); RR.guard = RR.guard.load() ? 0 : 1; });
+    chave (g, { 612, 632, 190, 24 }, "LOW-END GUARD (SHELF)", R.guard.load() != 0, [] { auto& RR = Registry::get(); RR.guard = RR.guard.load() ? 0 : 1; });
     chave (g, { 612, 662, 190, 24 }, "KEEP KICK / BASS ON TOP", R.topo.load() != 0, [] { auto& RR = Registry::get(); RR.topo = RR.topo.load() ? 0 : 1; });
 
     desenhaTextoEsp (g, "ZERO LATENCY", { 814, 640, 110, 14 }, 9.5f, cApagado, juce::Justification::centredLeft, 0.16f);
@@ -1059,16 +1074,18 @@ void MaestroEditor::menuLogo()
     {
         if (r != 1) return;
         juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "MAESTRO" + ponto + "MIX CONDUCTOR",
-            "Put MAESTRO on every track (after your own effects). All copies in the project talk to each other: "
-            "no sidechain, no routing.\n\n"
-            "LEARN: play the drop for 20" + traco + "30 s. Every track measures its level and tone while it plays.\n"
-            "LOCK: each ROLE (KICK, BASS, PERC, LEAD, ACID, PAD, FX, VOX, ATMOS) goes to the level of the chosen STYLE, "
-            "relative to the KICK. Tracks of the same ROLE move together, so your balance inside a ROLE stays. "
-            "A gentle TONE MATCH shapes each track toward its ROLE, and LOW-END GUARD keeps below 120 Hz for KICK and BASS.\n"
-            "FOCUS: the tracks you pick stand out. Everything else dips only in the frequencies where it masks them, "
-            "and only while they play (dynamic EQ, up to MAX CUT). KEEP KICK / BASS ON TOP does the same for the "
-            "low end, under 400 Hz.\n\n"
-            "ROLE is guessed from the track name (Kick, Bass, Hat, Lead, Pad, FX...) or from the sound; set it by hand if needed.\n"
+            "Put MAESTRO on each of your 8 groups (stems): KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX, after your own "
+            "effects. It also works track by track. All copies in the project talk to each other: no sidechain, no routing.\n\n"
+            "LEARN: play the drop for 20" + traco + "30 s. Every group measures its level and tone while it plays.\n"
+            "LOCK: each group goes to the level of the chosen STYLE, relative to the KICK, with a gentle TONE MATCH. "
+            "Changing a ROLE after LOCK re-locks the whole project.\n"
+            "LOW-END GUARD: while KICK and BASS play, the other groups dip below 120 Hz (dynamic low shelf). "
+            "No high-pass anywhere; KICK and BASS are never cut by it.\n"
+            "FOCUS: the tracks you pick (one or more) stand out. Everything else dips only in the frequencies where it masks "
+            "them, and only while they play (dynamic EQ, up to MAX CUT). Two FOCUS tracks that clash share the space, "
+            "a little each. KEEP KICK / BASS ON TOP does the same for the low end, under 400 Hz.\n\n"
+            "ROLE comes from the track or group name (Kick, Bass, Drums, Snare, Percs, Hats, Synths, Lead, Ambience, Pad, "
+            "Vocal, FX...). Without a name it is a GUESS from the sound: set it by hand if needed.\n"
             "AMOUNT scales everything. TRIM is a per-track offset. A / B compares with the original mix.\n\n"
             "Zero latency. Before LOCK and without FOCUS, the sound passes through untouched.\n"
             "Works when the DAW runs plugins in one process (Ableton Live, Logic, FL Studio, Reaper, Studio One, Cubase). "
