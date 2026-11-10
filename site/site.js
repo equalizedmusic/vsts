@@ -62,6 +62,11 @@
             try { visto = parseInt(localStorage.getItem('isp-lanc-ts'), 10) || 0; } catch (e) { /* modo privado */ }
             if (location.search.indexOf('popup') >= 0 || Date.now() - visto > JANELA) setTimeout(function () {
                 if (lanc.showModal) lanc.showModal(); else lanc.setAttribute('open', ''); // navegador antigo sem showModal
+                // o showModal foca o 1º botão e o iPhone rolava a caixa até ele, escondendo a faixa e o ✕: volta para o topo
+                var x = lanc.querySelector('.dl-fechar');
+                try { x.focus({ preventScroll: true }); } catch (e) { /* ignora */ }
+                lanc.scrollTop = 0;
+                requestAnimationFrame(function () { lanc.scrollTop = 0; });
                 try { localStorage.setItem('isp-lanc-ts', String(Date.now())); } catch (e) { /* ignora */ }
             }, 500);
             var fechaLanc = function () { if (lanc.close) lanc.close(); else lanc.removeAttribute('open'); };

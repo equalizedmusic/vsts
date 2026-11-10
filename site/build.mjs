@@ -400,7 +400,7 @@ grava('_headers', `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self'; base-uri 'none'; form-action 'self' https://insidestudiosp.com.br https://www.mercadopago.com.br https://*.mercadopago.com.br; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self' https://static.cloudflareinsights.com; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'self' https://insidestudiosp.com.br https://www.mercadopago.com.br https://*.mercadopago.com.br; frame-ancestors 'none'
 ${PREVIA ? '  X-Robots-Tag: noindex, nofollow\n' : ''}/img/*
   Cache-Control: public, max-age=604800
 `);
