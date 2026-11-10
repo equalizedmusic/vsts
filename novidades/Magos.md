@@ -4,6 +4,15 @@ Pacote do instalador: `InsideStudioSP-Magos`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `magos-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.2 — 2026-11-10
+- TESTE (sem licença e fora do site).
+- LIMITER: o teto agora é −0,3 dBTP (era −1,0). O TARGET, o menu Ceiling, o TRUE PEAK e o aviso de clip seguem o
+  novo teto.
+- LOUDNESS: os avisos (NO CLIPPING, BASS MONO, TARGET TOO LOUD…) quebram linha quando não cabem, em vez de passar da
+  borda do painel.
+- TONAL BALANCE e DYNAMIC EQ: os rótulos dos pontos não ficam mais um por cima do outro (ex.: "HARSH · ONLY ON LOUD
+  HITS" sobre o "DE-ESS") nem por cima da chave AUTO/MANUAL.
+
 ## 0.1.1 — 2026-11-10
 - TESTE (sem licença e fora do site).
 - TONAL BALANCE virou um analisador de verdade, como os de EQ profissional: 10 Hz a 35 kHz, resposta rápida

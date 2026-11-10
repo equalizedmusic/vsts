@@ -668,6 +668,8 @@ void MagosEditor::painelTom (juce::Graphics& g, juce::Rectangle<float> r)
         const int a = juce::jmin (NP - 2, (int) u);
         return suaveOut[a] + (suaveOut[a + 1] - suaveOut[a]) * (float) (u - a);
     };
+    // rótulos dos pontos: medidos pelo texto real e desviando uns dos outros (e do MATCH %, no canto de cima)
+    std::vector<juce::Rectangle<float>> ocupado { { tela.getRight() - 300, tela.getY() + 4, 300, 24 } };
     for (int z = 0; z < NZ; ++z)
     {
         const float v = zonaHold[z];
@@ -680,7 +682,21 @@ void MagosEditor::painelTom (juce::Graphics& g, juce::Rectangle<float> r)
         g.fillEllipse (juce::Rectangle<float> (5, 5).withCentre ({ xx, yy }));
         juce::String rot = Z.nome;
         if (z == 2) rot += ponto + "ONLY ON LOUD HITS";
-        texto (g, rot, { xx - 90, yy - 26, 180, 13 }, 9.5f, cTexto, juce::Justification::centred, 0.16f, true);
+        const float w = largura (fonte (9.5f, true).withExtraKerningFactor (0.16f), rot) + 6.0f, h = 13.0f;
+        const float dentro = juce::jlimit (tela.getX() + 2, juce::jmax (tela.getX() + 2, tela.getRight() - w - 2), xx - w * 0.5f);
+        const float ys[] = { yy - 26, yy + 12, yy - 40, yy + 26, yy - 54, yy + 40 };
+        juce::Rectangle<float> rr;
+        bool achou = false;
+        for (float y0 : ys)
+        {
+            rr = { dentro, juce::jlimit (tela.getY() + 2, tela.getBottom() - h - 2, y0), w, h };
+            bool bate = false;
+            for (auto& o : ocupado) bate = bate || o.intersects (rr);
+            if (! bate) { achou = true; break; }
+        }
+        if (! achou) rr = { dentro, juce::jlimit (tela.getY() + 2, tela.getBottom() - h - 2, yy - 26), w, h };
+        ocupado.push_back (rr.expanded (2.0f, 1.0f));
+        texto (g, rot, rr, 9.5f, cTexto, juce::Justification::centred, 0.16f, true);
     }
     g.restoreState();
 
@@ -739,6 +755,8 @@ void MagosEditor::painelTom (juce::Graphics& g, juce::Rectangle<float> r)
         g.setColour (cGradeF);
         g.fillPath (tr);
     }
+    // rótulos da faixa: à direita da barra; se bater na chave AUTO/MANUAL, no título ou no rótulo vizinho, troca de lado/altura
+    std::vector<juce::Rectangle<float>> ocupadoFx { { fx.getRight() - 126, fx.getY() + 1, 122, 19 }, { fx.getX() + 6, fx.getY() + 1, 130, 15 } };
     for (int z = 0; z < NZ; ++z)
     {
         const auto& Z = zona (z);
@@ -748,8 +766,23 @@ void MagosEditor::painelTom (juce::Graphics& g, juce::Rectangle<float> r)
         g.setColour (std::abs (v) < 0.1f ? cGradeF : c);
         if (v >= 0) g.fillRoundedRectangle (xx - 4, meio - h, 8, h, 2.0f);
         else g.fillRoundedRectangle (xx - 4, meio, 8, h, 2.0f);
-        texto (g, std::abs (v) < 0.1f ? juce::String (Z.nome) : num (v, 1, true), { xx + 8, v >= 0 ? meio - 16 : meio + 2, 80, 13 }, 9.5f,
-               std::abs (v) < 0.1f ? cApagado : c, juce::Justification::centredLeft, 0.1f, std::abs (v) >= 0.1f);
+        const bool ativo = std::abs (v) >= 0.1f;
+        const juce::String t = ativo ? num (v, 1, true) : juce::String (Z.nome);
+        const float w = largura (fonte (9.5f, ativo).withExtraKerningFactor (0.1f), t) + 4.0f;
+        const float yCima = meio - 15, yBaixo = meio + 2;
+        const float yPref = v >= 0 ? yCima : yBaixo, yOutro = v >= 0 ? yBaixo : yCima;
+        const juce::Rectangle<float> cands[] = { { xx + 7, yPref, w, 13 }, { xx - 7 - w, yPref, w, 13 },
+                                                 { xx + 7, yOutro, w, 13 }, { xx - 7 - w, yOutro, w, 13 } };
+        juce::Rectangle<float> rr = cands[0];
+        for (auto& cnd : cands)
+        {
+            if (cnd.getX() < fx.getX() + 2 || cnd.getRight() > fx.getRight() - 2) continue;
+            bool bate = false;
+            for (auto& o : ocupadoFx) bate = bate || o.intersects (cnd);
+            if (! bate) { rr = cnd; break; }
+        }
+        ocupadoFx.push_back (rr.expanded (2.0f, 0.0f));
+        texto (g, t, rr, 9.5f, ativo ? c : cApagado, juce::Justification::centredLeft, 0.1f, ativo);
     }
 }
 
