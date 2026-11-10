@@ -42,5 +42,6 @@
   "ONKEY": ["ONKEY", "afinação automática de voz: acha o tom sozinho e leva ao tom sem mexer no timbre nem no vibrato"],
   "BAREBASS": ["BAREBASS", "synth de baixo simples: 2 osciladores + sub, filtro com envelope e HUNF (decay só no grave)"],
   "STOMPBOX": ["STOMPBOX", "pedalboard de guitarra: 10 pedais em série, AMP + CAB e noise gate, presets de estilos"],
-  "MAESTRO": ["MAESTRO", "mix conductor: vai nos 8 grupos (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX); nivela, TONE MATCH, LOW-END GUARD e FOCUS (EQ dinâmica que abre espaço)"]
+  "MAESTRO": ["MAESTRO", "mix conductor: vai nos 8 grupos (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX); nivela, TONE MATCH, LOW-END GUARD e FOCUS (EQ dinâmica que abre espaço)"],
+  "MASTER-DOS-MAGOS": ["MASTER DOS MAGOS", "masterizador par do MAESTRO: referência, TONE MATCH, EQ dinâmica, multibanda e limitador true peak"]
 }

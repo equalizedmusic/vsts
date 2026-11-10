@@ -35,6 +35,11 @@ MaestroProcessor::MaestroProcessor()
 
 MaestroProcessor::~MaestroProcessor()
 {
+    if (auto* A = maestrolink::area(); A != nullptr && motor->indice() >= 0 && motor->indice() < maestrolink::NSL)
+    {
+        A->vaga[motor->indice()].role = -1;   // o MAGOS para de contar esta faixa já (sem esperar a batida parar)
+        A->vaga[motor->indice()].tocando = 0;
+    }
     motor->slot().dono = nullptr;
 }
 
@@ -87,6 +92,50 @@ void MaestroProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     a.focus = pFocus->load() > 0.5f;
     a.trimDb = pTrim->load();
     motor->process (buffer.getArrayOfWritePointers(), nch, n, a);
+    publicaLink (n);
+}
+
+// MAESTRO LINK: o MASTER DOS MAGOS (outro binário) lê os 8 grupos por aqui. ~10 vezes por segundo: o espectro da
+// faixa DEPOIS do MAESTRO (entrada × LOCK × TONE / FOCUS / GUARD), o nível e o grupo
+void MaestroProcessor::publicaLink (int n)
+{
+    linkConta += n;
+    const double fs = motor->taxa();
+    if (linkConta < (int) (fs * 0.1)) return;
+    linkConta = 0;
+    auto* A = maestrolink::area();
+    const int i = motor->indice();
+    if (A == nullptr || i < 0 || i >= maestrolink::NSL) return;
+    auto& R = maestro::Registry::get();
+    auto& S = motor->slot();
+    const int st = R.style.load();
+    A->style = st;
+    A->travado = R.modo.load() == 2 ? 1 : 0;
+    A->topo = R.topo.load();
+    for (int r = 0; r < maestrolink::NR; ++r) A->alvoRole[r] = maestro::alvoNivel (st, r);
+    std::snprintf (A->nomeStyle, sizeof (A->nomeStyle), "%s", maestro::nomeStyle (st));
+    auto& V = A->vaga[i];
+    const float g = S.ganhoDb.load();
+    float tom[maestro::NE], corte[maestro::NE];
+    for (int k = 0; k < maestro::NE; ++k) { tom[k] = S.tom[k].load(); corte[k] = S.corte[k].load(); }
+    const float sh = S.shelf.load();
+    for (int b = 0; b < maestrolink::NB; ++b)
+    {
+        const double f = maestro::freqBanda (b);
+        double db = g;
+        for (int k = 0; k < maestro::NE; ++k)
+            if (const float e = tom[k] + corte[k]; std::abs (e) > 0.01f)
+                db += maestro::respostaDb (maestro::sino (48000.0, maestro::freqEq (k), maestro::qOitava, e), 48000.0, f);
+        if (sh < -0.01f) db += maestro::respostaDb (maestro::shelfGrave (48000.0, maestro::fGuard, sh), 48000.0, f);
+        V.espectro[b] = (float) (S.tela[b].load() * maestro::potDe (db));
+    }
+    V.role = S.role.load();
+    V.tocando = S.tocando.load();
+    V.focus = S.focus.load();
+    V.nivelDb = S.nivelDb.load() + g;
+    V.trimDb = g;
+    V.batida.fetch_add (1);
+    if (V.batida.load() == 0) V.batida = 1;
 }
 
 juce::AudioProcessorEditor* MaestroProcessor::createEditor() { return new MaestroEditor (*this); }

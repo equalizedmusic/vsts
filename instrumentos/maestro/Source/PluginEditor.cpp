@@ -1252,13 +1252,15 @@ void MaestroEditor::menuLogo()
 {
     juce::PopupMenu m;
     m.addItem (1, "How it works");
-    m.addItem (2, juce::String::fromUTF8 ("Licenseâ¦"));
+    m.addItem (2, juce::String::fromUTF8 ("License\xe2\x80\xa6"));
     m.addSeparator();
    #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     m.addItem (-1, "MAESTRO " + juce::String (JucePlugin_VersionString), false, false);
    #endif
-    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(), [] (int r)
+    juce::Component::SafePointer<MaestroEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(), [safe] (int r)
     {
+        if (r == 2 && safe != nullptr) { safe->ativacao.mostrarInfo(); return; }
         if (r != 1) return;
         juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "MAESTRO" + ponto + "MIX CONDUCTOR",
             "Put MAESTRO on each of your 8 groups (stems): KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX, after your own "

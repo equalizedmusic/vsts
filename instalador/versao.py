@@ -7,7 +7,7 @@
     python3 instalador/versao.py Limao --notas     -> o texto da seção da versão atual (vira a nota do release)
     python3 instalador/versao.py Quimera --arquivo -> Quimera (nome do instalador publicado no release)
 
-<pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Knob, Quimera, Limao, Mercurio, Resenha, MontaMonta, Groovador, Mesa, Align, Onkey, Barebass, Stompbox, Maestro).
+<pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Knob, Quimera, Limao, Mercurio, Resenha, MontaMonta, Groovador, Mesa, Align, Onkey, Barebass, Stompbox, Maestro, Magos).
 O CMake lê a mesma versão (instrumentos/CMakeLists.txt e CMakeLists.txt da raiz), então plugin, instalador e
 release andam juntos: para lançar, basta escrever a seção nova no topo do arquivo de novidades.
 """
@@ -35,6 +35,7 @@ PACOTES = {
     "Barebass":     ("Barebass.md", "barebass", "BAREBASS"),
     "Stompbox":     ("Stompbox.md", "stompbox", "STOMPBOX"),
     "Maestro":      ("Maestro.md", "maestro", "MAESTRO"),
+    "Magos":        ("Magos.md", "magos", "MASTER DOS MAGOS"),
 }
 
 # nome do instalador publicado no release, quando é diferente do pacote (hoje nenhum: até a 0.4.1 a QUIMERA saía

@@ -32,6 +32,12 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_MAESTRO
  #define SHOT_MAESTRO 0
 #endif
+#ifndef SHOT_MAGOS
+ #define SHOT_MAGOS 0
+#endif
+#if SHOT_MAGOS
+ #include "PluginProcessor.h"   // MASTER DOS MAGOS: LISTEN / CAST no motor e um MAESTRO LINK simulado (8 grupos)
+#endif
 #if SHOT_MAESTRO
  #include "Dsp.h"   // MAESTRO: o Registry (LEARN / LOCK) das cópias abertas no mesmo programa
 #endif
@@ -259,6 +265,10 @@ public:
                 extras[k]->processBlock (copy, midi);
             }
            #endif
+           #if SHOT_MAGOS
+            if (auto* A = maestrolink::area())
+                for (int r = 0; r < maestrolink::NR; ++r) A->vaga[r].batida.fetch_add (1);
+           #endif
             proc.processBlock (buf, midi);
             juce::Thread::sleep (10);   // ~tempo real (512 amostras = 10,7 ms)
         }
@@ -465,6 +475,32 @@ int main (int argc, char** argv)
 
     AudioThread audio (*proc, head);
     audio.startThread();
+   #if SHOT_MAGOS
+    // MAESTRO LINK simulado: 8 grupos de um drop de psy (o BASS embola em 240 Hz, o SYNTHS 2 dB acima do STYLE);
+    // LISTEN 6 s (foto), CAST e a foto principal no fim
+    if (auto* A = maestrolink::area())
+    {
+        static const float alvo[8] = { 0.0f, -1.0f, -9.0f, -12.0f, -4.0f, -12.0f, -6.0f, -10.0f };
+        static const float nivel[8] = { -12.0f, -13.0f, -21.0f, -24.5f, -14.0f, -24.0f, -18.5f, -22.0f };
+        static const float centro[8] = { 60.0f, 110.0f, 900.0f, 9000.0f, 2500.0f, 600.0f, 1500.0f, 4000.0f };
+        A->style = 0; A->travado = 1; A->topo = 0;
+        std::snprintf (A->nomeStyle, sizeof (A->nomeStyle), "PSYTRANCE");
+        for (int r = 0; r < 8; ++r)
+        {
+            A->alvoRole[r] = alvo[r];
+            auto& V = A->vaga[r];
+            V.role = r; V.tocando = 1; V.focus = 0; V.nivelDb = nivel[r]; V.trimDb = 0.0f;
+            for (int b = 0; b < maestrolink::NB; ++b)
+            {
+                const double f = 40.0 * std::pow (2.0, b / 3.0), o = std::log2 (f / centro[r]);
+                double db = nivel[r] - 6.0 * o * o;
+                if (r == 1 && std::abs (std::log2 (f / 240.0)) < 0.5) db += 9.0;   // BASS embolando em 240 Hz
+                V.espectro[b] = (float) std::pow (10.0, db / 10.0);
+            }
+            V.batida = 1;
+        }
+    }
+   #endif
    #if SHOT_MAESTRO
     // LEARN (foto), LOCK (foto) e FOCUS em SYNTHS + DRUMS: a foto principal é o AMBIENCE cedendo para os dois;
     // depois a janela do SYNTHS
@@ -491,6 +527,24 @@ int main (int argc, char** argv)
         fotoDe (*editor, "MAESTRO-LOCK");
         setParam (*extras[4], "focus", 1.0f);   // SYNTHS
         setParam (*extras[2], "focus", 1.0f);   // DRUMS
+    }
+   #endif
+   #if SHOT_MAGOS
+    if (auto* mg = dynamic_cast<MagosProcessor*> (proc.get()))
+    {
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (1500);
+        mg->motor.listen();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (7000);
+        editor->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
+        const auto imgL = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+        const auto fL = outDir.getChildFile ("MAGOS-LISTEN.png");
+        fL.deleteFile();
+        juce::FileOutputStream osL (fL);
+        juce::PNGImageFormat pngL;
+        std::printf ("MAGOS-LISTEN: %s\n", osL.openedOk() && pngL.writeImageToStream (imgL, osL) ? "ok" : "falhou");
+        mg->motor.lancaCast();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (9000);
     }
    #endif
    #if SHOT_ALIGN

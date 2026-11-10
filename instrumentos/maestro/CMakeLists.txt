@@ -24,7 +24,7 @@ juce_add_plugin(Maestro
 
 isp_licenca(Maestro maestro)
 
-target_sources(Maestro PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Janela.cpp)
+target_sources(Maestro PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Janela.cpp Source/MaestroLink.cpp)
 target_compile_definitions(Maestro PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

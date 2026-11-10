@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Dsp.h"
+#include "MaestroLink.h"
 #include "IspLicenca.h"
 
 namespace maestro { int tituloDaJanela (void* nativo, char* out, int n); }
@@ -58,6 +59,8 @@ public:
 
 private:
     void aplicaNome();
+    void publicaLink (int n);                        // MAESTRO LINK (MaestroLink.h): o MASTER DOS MAGOS lê os grupos
+    int linkConta = 0;
 
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 
