@@ -35,8 +35,9 @@ const juce::String setaDir = juce::String::fromUTF8 ("\xe2\x86\x92");
 
 juce::String num (float v, int casas = 1, bool sinal = false)
 {
-    if (std::abs (v) < 0.5f * std::pow (10.0f, (float) -casas)) return juce::String (0.0f, casas);
-    juce::String s = juce::String (std::abs (v), casas);
+    // juce::String (x, 0) NÃO arredonda (0 casas = precisão total): sem casas, arredonda à mão
+    if (std::abs (v) < 0.5f * std::pow (10.0f, (float) -casas)) return casas > 0 ? juce::String (0.0f, casas) : juce::String ("0");
+    juce::String s = casas > 0 ? juce::String (std::abs (v), casas) : juce::String (juce::roundToInt (std::abs (v)));
     return (v < 0 ? menos : (sinal ? juce::String ("+") : juce::String())) + s;
 }
 juce::String hz (double f)
@@ -343,7 +344,7 @@ void MagosEditor::topo (juce::Graphics& g)
     x += largura (fd, "DOS") + 10;
     palavra ("AGOS");
     cliques.push_back ({ { 14, 6, x - 10, 44 }, [this] { menuLogo(); } });
-    texto (g, "MASTERING WIZARD", { x + 18, 21, 170, 16 }, 10.0f, cApagado, juce::Justification::centredLeft, 0.3f);
+    const float xMarca = x;
 
     float xd = (float) baseW - 12;
     auto chip = [&] (const juce::String& rot, const juce::String& val, juce::Colour corVal, bool comLed, juce::Colour corLed, bool menu,
@@ -375,12 +376,16 @@ void MagosEditor::topo (juce::Graphics& g)
           [this] { menuAlvo(); });
     chip ("STYLE", nomeStyle (M.style.load()), cBranco, false, {}, true, [this] { menuStyle(); });
     juce::String ref = proc.carregando.load() ? juce::String ("LOADING") + reticencias : proc.nomeReferencia();
-    if (ref.isEmpty()) ref = "NONE" + ponto + "DROP A TRACK";
+    if (ref.isEmpty()) ref = "NONE";
     if (ref.length() > 26) ref = ref.substring (0, 24) + reticencias;
     chip ("REFERENCE", proc.carregando.load() || proc.nomeReferencia().isEmpty() ? ref : "\"" + ref + "\"",
           proc.nomeReferencia().isEmpty() ? cApagado : cOuro, false, {}, true, [this] { menuReferencia(); });
     chip ("MAESTRO", ligado ? "LINKED" + ponto + juce::String (nGrupos) + " GROUP" + (nGrupos == 1 ? "" : "S") : juce::String ("NOT LINKED"),
           ligado ? cBranco : cApagado, true, ligado ? cVerde : cApagado, false, {});
+    // subtítulo só se couber entre a marca e os chips
+    const auto fs = fonte (10.0f).withExtraKerningFactor (0.3f);
+    if (xMarca + 18 + largura (fs, "MASTERING WIZARD") + 10 < xd)
+        texto (g, "MASTERING WIZARD", { xMarca + 18, 21, 180, 16 }, 10.0f, cApagado, juce::Justification::centredLeft, 0.3f);
 }
 
 // ------------------------------------------------------------------------------------------------------------------
@@ -595,7 +600,7 @@ void MagosEditor::painelMulti (juce::Graphics& g, juce::Rectangle<float> r)
         texto (g, faixa[k], { c.getX(), c.getY() + 21, c.getWidth(), 12 }, 9.5f, cApagado, juce::Justification::centred, 0.08f);
 
         // medidores IN / GR / OUT
-        const float mt = c.getY() + 42, mh = 118;
+        const float mt = c.getY() + 42, mh = 104;
         auto barra = [&] (float x, float frac, juce::Colour cor, bool deCima, const juce::String& rot)
         {
             const juce::Rectangle<float> b (x, mt, 12, mh);
@@ -932,12 +937,12 @@ void MagosEditor::base (juce::Graphics& g)
                                                  on ? juce::Colour (0xff2c1e14) : juce::Colour (0xff1e1b28), 0, b.getBottom(), false));
         g.fillRoundedRectangle (b, 6.0f);
         g.setColour (on ? cLaranja.withAlpha (0.7f) : cBorda); g.drawRoundedRectangle (b, 6.0f, 1.0f);
-        led (g, { b.getX() + 16, b.getY() + 16 }, 4.0f, cLaranja, on && pisca);
-        texto (g, "LISTEN", { b.getX(), b.getY() + 14, b.getWidth(), 28 }, 22.0f, on ? cLaranja : cTexto, juce::Justification::centred, 0.3f, true);
+        led (g, { b.getCentreX(), b.getY() + 11 }, 3.5f, cLaranja, on && pisca);
+        texto (g, "LISTEN", { b.getX(), b.getY() + 20, b.getWidth(), 28 }, 22.0f, on ? cLaranja : cTexto, juce::Justification::centred, 0.3f, true);
         const int s = juce::roundToInt (M.aprSegundos.load());
         const juce::String sub = on ? "LISTENING" + ponto + juce::String (s / 60) + ":" + juce::String (s % 60).paddedLeft ('0', 2)
                                     : juce::String ("ANALYZE TRACK + REF");
-        texto (g, sub, { b.getX(), b.getY() + 46, b.getWidth(), 14 }, 9.0f, on ? cLaranja : cApagado, juce::Justification::centred, 0.2f);
+        texto (g, sub, { b.getX(), b.getY() + 50, b.getWidth(), 14 }, 9.0f, on ? cLaranja : cApagado, juce::Justification::centred, 0.2f);
         cliques.push_back ({ b, [this] { proc.motor.listen(); } });
     }
     // CAST
