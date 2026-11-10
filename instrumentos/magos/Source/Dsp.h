@@ -12,7 +12,7 @@
 //               do ganho médio (segura o balanço), PUNCH = ataque, CHARACTER = razão + saturação quente nos graves.
 //               STEREO por banda: graves em MONO abaixo de 120 Hz, WIDTH nas de cima.
 //   DRIVE + LIMITER  ganho até o alvo de loudness e limitador true peak (detector com sobreamostragem 4×, lookahead
-//               1,5 ms, teto −1 dBTP).
+//               1,5 ms, teto −0,3 dBTP).
 // LISTEN mede a música (espectro, LUFS, nível de cada banda). CAST (um clique) calcula tudo e, nos primeiros ~20 s
 // tocando, acerta o DRIVE em malha fechada até o LUFS integrado chegar ao alvo (depois fica fixo).
 // A/B: B = a entrada original atrasada (mesma latência) no MESMO loudness da saída; BYPASS = original sem igualar;
@@ -40,7 +40,7 @@ constexpr int NSTYLE = 6;
 constexpr int NALVO = 8;        // opções de TARGET
 constexpr int FFTN = 2048, HOP = 1024;
 constexpr double kPi = 3.14159265358979323846;
-constexpr float kTeto = -1.0f;  // dBTP
+constexpr float kTeto = -0.3f;  // dBTP
 
 inline double freqBanda (int b) { return 40.0 * std::pow (2.0, b / 3.0); }
 inline double freqEq (int k) { return freqBanda (3 * k + 1); }

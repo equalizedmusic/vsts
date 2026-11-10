@@ -22,7 +22,7 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 - LISTEN: toca o drop 20–30 s. CAST (um clique): TONE MATCH (9 bandas de 1 oitava, até ±6 dB), DYNAMIC EQ (corta
   MUD 240 Hz, HARSH 3,3 kHz e DE-ESS 7,5 kHz só nos picos; realça LOW PUNCH 63 Hz e AIR 12,5 kHz só quando faltam),
   compressor de 4 bandas (120 / 1,2 k / 6,5 kHz) com limiar automático, graves em MONO abaixo de 120 Hz e limitador
-  true peak (−1 dBTP) levando ao TARGET (AUTO = o da referência). Nos primeiros ~20 s o nível se acerta sozinho; se o
+  true peak (−0,3 dBTP) levando ao TARGET (AUTO = o da referência). Nos primeiros ~20 s o nível se acerta sozinho; se o
   limitador precisar tirar mais de 5 dB, ele para antes do alvo e avisa.
 - A/B sempre no MESMO loudness; REF toca a referência no mesmo loudness; BYPASS.
 - Telas: TONAL BALANCE (antes, referência, zona alvo, depois, MATCH %), MULTIBAND COMP, LOUDNESS (integrado, true

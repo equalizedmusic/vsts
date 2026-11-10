@@ -497,7 +497,7 @@ void MagosEditor::topo (juce::Graphics& g)
         if (faz) cliques.push_back ({ c, faz });
         xd -= 8;
     };
-    chip ("TARGET", num (M.feitico.feito ? M.feitico.alvoLufs : M.lufsAlvo(), 1) + " LUFS" + ponto + num (kTeto, 0) + " dBTP", cBranco, false, {}, true,
+    chip ("TARGET", num (M.feitico.feito ? M.feitico.alvoLufs : M.lufsAlvo(), 1) + " LUFS" + ponto + num (kTeto, 1) + " dBTP", cBranco, false, {}, true,
           [this] { menuAlvo(); });
     chip ("STYLE", nomeStyle (M.style.load()), cBranco, false, {}, true, [this] { menuStyle(); });
     juce::String ref = proc.carregando.load() ? juce::String ("LOADING") + reticencias : proc.nomeReferencia();
