@@ -88,8 +88,8 @@ function caixaCompra(p) {
     <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>`;
     return `<form class="compra" method="post" action="${LIC}/loja/pagar">
-    ${p.de && temBrl(p) ? `<div class="oferta so-oferta" data-fim="${p.fim}">${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
-    <div class="tempo so-oferta" data-fim="${p.fim}">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte', p.fim)}</div>
+    ${p.de && temBrl(p) ? `<div class="oferta so-oferta" data-fim="${p.fim}">${p.bf ? t(`PREÇO PROMOCIONAL ATÉ A BLACK FRIDAY (${fimTxt(p.fim)})`, `PROMO PRICE UNTIL BLACK FRIDAY (${fimTxt(p.fim)})`) : t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
+    ${p.bf ? relogio(p.fim) : `<div class="tempo so-oferta" data-fim="${p.fim}">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte', p.fim)}</div>`}
     <div class="preco-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <p class="req">${REQ()}</p>
@@ -120,14 +120,26 @@ function cartaoPack(p, grande = false) {
   </a>`;
 }
 
+// contagem regressiva GRANDE da promoção (pedido dele, 10/11): blocos dias/horas/min/seg que o site.js atualiza a cada segundo
+function relogio(fim) {
+    const r = Math.max(0, Math.floor((Date.parse(fim) - Date.now()) / 1000)), d2 = (n) => String(n).padStart(2, '0');
+    const bloco = (u, v, pt, en) => `<span class="rl-b"><b data-u="${u}">${d2(v)}</b><small>${t(pt, en)}</small></span>`;
+    return `<div class="relogio so-oferta" data-fim="${fim}" role="timer" aria-label="A promoção acaba em / The promo ends in">
+      <p class="rl-tit">${t('A promoção acaba em', 'The promo ends in')}</p>
+      <div class="rl-blocos">${bloco('d', Math.floor(r / 86400), 'dias', 'days')}<i>:</i>${bloco('h', Math.floor(r % 86400 / 3600), 'horas', 'hours')}<i>:</i>${bloco('m', Math.floor(r % 3600 / 60), 'min', 'min')}<i>:</i>${bloco('s', r % 60, 'seg', 'sec')}</div>
+    </div>`;
+}
+
 // popup de lançamento na entrada da loja (pedido dele, 09/11: o banner no topo repetia a "oferta de lançamento" da faixa e confundia).
 // O pack com "lancamento" em dados.mjs (só se já tiver preço). "Quero" leva à página do pack; ✕ / "ver a loja" / Esc / clique fora fecham.
 // site.js abre 1x por sessão do navegador (sessionStorage), para não reabrir a cada volta à home.
 function bannerLancamento(p) {
     if (!p || !(temBrl(p) || temUsd(p))) return '';
     const L = p.lancamento;
-    return `<dialog class="dl" style="--cor:${p.cor}" aria-label="${esc(p.nome)}">
+    const bf = p.bf && p.de && temBrl(p);   // cara de Black Friday enquanto o preço promocional vale
+    return `<dialog class="dl${bf ? ' dl-bf' : ''}" style="--cor:${p.cor}" aria-label="${esc(p.nome)}">
   <button class="dl-fechar" type="button" aria-label="Fechar / Close">✕</button>
+  ${bf ? `<div class="dl-faixa-bf so-oferta" data-fim="${p.fim}"><b>BLACK FRIDAY</b><span>${t(`preço promocional até ${fimTxt(p.fim)}`, `promo price until ${fimTxt(p.fim)}`)}</span></div>` : ''}
   <div class="dl-grade">
   <div class="dl-txt">
     <p class="dl-selo"><span class="tag">${t('LANÇAMENTO', 'NEW RELEASE')}</span>${p.de && temBrl(p) ? ` <b class="so-oferta" data-fim="${p.fim}">-${off(p)}%</b>` : ''}</p>
@@ -137,7 +149,8 @@ function bannerLancamento(p) {
     <div class="dl-preco">
       ${p.de && temBrl(p) ? `<span class="dl-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</span>` : ''}
       <span class="dl-valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>
-      ${p.de && temBrl(p) ? `<span class="tempo so-oferta" data-fim="${p.fim}">${t('Oferta de lançamento · termina em', 'Launch offer · ends in')} ${contador('forte', p.fim)}</span>` : ''}
+      ${p.de && temBrl(p) ? `<span class="tempo so-oferta" data-fim="${p.fim}">${bf ? t(`Preço promocional até a Black Friday (${fimTxt(p.fim)})`, `Promo price until Black Friday (${fimTxt(p.fim)})`) : t('Oferta de lançamento · termina em', 'Launch offer · ends in')} ${bf ? '' : contador('forte', p.fim)}</span>` : ''}
+      ${bf ? relogio(p.fim) : ''}
     </div>
     <div class="dl-bts">
       <a class="bt bt-principal" href="/${p.id}/">${t('Quero o ' + p.nome, 'Get ' + p.nome)}</a>

@@ -47,6 +47,32 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
         background:radial-gradient(700px 420px at 85% 10%, color-mix(in srgb, var(--cor) 26%, transparent), transparent 70%),
                    radial-gradient(500px 320px at 0% 100%, rgba(52,211,153,.10), transparent 70%), var(--bg); }
 .dl[open] { animation:dl-entra .28s ease-out; }
+/* cara de Black Friday (MAESTRO, pedido dele 10/11): preto, faixa amarela listrada no topo, selo de desconto amarelo */
+.dl-bf { --bf:#ffd60a; border-color:color-mix(in srgb, var(--bf) 55%, #000); box-shadow:0 40px 120px -30px color-mix(in srgb, var(--bf) 45%, transparent);
+         background:radial-gradient(640px 400px at 85% 12%, color-mix(in srgb, var(--cor) 24%, transparent), transparent 70%),
+                    radial-gradient(520px 320px at 0% 100%, color-mix(in srgb, var(--bf) 10%, transparent), transparent 70%), #050505; }
+.dl-faixa-bf { margin:-40px -36px 26px; padding:11px 64px 11px 36px; display:flex; flex-wrap:wrap; gap:4px 14px; align-items:baseline;
+               background:repeating-linear-gradient(-45deg, var(--bf) 0 22px, #f5c400 22px 44px); color:#000;
+               font:800 13px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.14em; text-transform:uppercase; }
+.dl-faixa-bf b { font-size:clamp(18px, 2.4vw, 24px); font-weight:900; letter-spacing:.2em; }
+.dl-bf .dl-selo b { background:var(--bf); color:#000; }
+.dl-bf .dl-valor { color:var(--bf); }
+.dl-bf .dl-preco .tempo { color:#fff; }
+/* contagem regressiva grande da promoção (popup e página do pack com bf) */
+.relogio { --bf:#ffd60a; margin:10px 0 4px; }
+.rl-tit { margin:0 0 8px; color:var(--bf); font:800 13px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.18em; text-transform:uppercase; }
+.rl-blocos { display:flex; align-items:flex-start; gap:6px; }
+.rl-blocos i { font:900 clamp(30px, 4vw, 44px)/1.15 Bahnschrift, "Segoe UI", sans-serif; color:var(--bf); font-style:normal; }
+.rl-b { display:flex; flex-direction:column; align-items:center; min-width:clamp(60px, 7vw, 82px); padding:8px 6px 6px; border-radius:12px;
+        background:#000; border:2px solid var(--bf); box-shadow:0 0 24px -8px var(--bf); }
+.rl-b b { font:900 clamp(30px, 4vw, 46px)/1 Bahnschrift, "Segoe UI", sans-serif; color:#fff; font-variant-numeric:tabular-nums; }
+.rl-b small { margin-top:4px; color:var(--bf); font:700 11px "Segoe UI", sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+.compra .rl-blocos { gap:4px; }
+.compra .rl-blocos i { font-size:26px; }
+.compra .rl-b { flex:1; min-width:0; padding:7px 2px 5px; }
+.compra .rl-b b { font-size:clamp(24px, 2.6vw, 32px); }
+.compra .rl-b small { font-size:10px; letter-spacing:.06em; }
+.dl-bf .dl-fechar { z-index:2; background:#000; border-color:#000; color:var(--bf); }
 .dl::backdrop { background:rgba(5,4,9,.78); backdrop-filter:blur(3px); }
 @keyframes dl-entra { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
 .dl-fechar { position:absolute; top:12px; right:12px; width:40px; height:40px; border-radius:10px; border:1px solid var(--line); background:rgba(13,11,20,.7);
@@ -75,7 +101,9 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .dl-img:hover { transform:translateY(-3px); border-color:var(--cor); }
 .dl-img img { display:block; width:100%; height:auto; }
 @media (max-width:860px) { .dl-grade { grid-template-columns:1fr; gap:18px; } .dl-img { order:-1; } .dl { padding:56px 18px 22px; }
-                           .dl-nome { font-size:44px; } .dl-valor { font-size:34px; } }
+                           .dl-nome { font-size:44px; } .dl-valor { font-size:34px; }
+                           .dl-faixa-bf { margin:-56px -18px 18px; padding:12px 60px 12px 18px; }
+                           .dl-bf .dl-lead { display:none; } /* no celular o relógio grande ocupa o lugar: botão de compra sem rolar */ }
 
 /* cartões de pack */
 .grade-destaque { display:grid; grid-template-columns:1fr 1fr; gap:20px; }

@@ -128,6 +128,9 @@ export const PACKS = [
     {
         id: 'maestro', nome: 'MAESTRO', cor: '#8b5cf6', tipo: ['Mixagem · VST3 · AU', 'Mixing · VST3 · AU'],
         capa: 'maestro', preco: null,
+        // bf (pedido dele, 10/11): a oferta é "preço promocional até a Black Friday" — textos explícitos e popup com cara de Black Friday.
+        // Some sozinho com a oferta (so-oferta + data-fim); o rebuild depois de 27/11 já sai sem nada disso (sem p.de).
+        bf: true,
         // banner de lançamento no topo da loja (pedido dele, 09/11): tirar o "lancamento" quando passar a novidade
         lancamento: {
             titulo: ['Um clique e a mix se organiza.', 'One click and the mix sorts itself out.'],

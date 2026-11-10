@@ -25,7 +25,7 @@
 
         // oferta por tempo limitado: cada contador segue a sua data (data-fim: o pack pode terminar antes da oferta geral);
         // ao zerar, some com selo, "de" riscado e faixa daquela data. .so-oferta sem data-fim (páginas do servidor) segue o 1º contador.
-        var conts = document.querySelectorAll('.contador[data-fim]');
+        var conts = document.querySelectorAll('.contador[data-fim], .relogio[data-fim]');
         if (conts.length) {
             var padrao = conts[0].getAttribute('data-fim');
             var d2 = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -38,6 +38,13 @@
                         c.textContent = (r >= 86400 ? Math.floor(r / 86400) + 'd ' : '') + d2(Math.floor(r % 86400 / 3600)) + 'h '
                                       + d2(Math.floor(r % 3600 / 60)) + 'm ' + d2(r % 60) + 's';
                     }
+                });
+                // relógio grande da Black Friday (MAESTRO): dias / horas / min / seg em blocos
+                document.querySelectorAll('.relogio[data-fim]').forEach(function (c) {
+                    var r = Math.max(0, Math.floor((Date.parse(c.getAttribute('data-fim')) - Date.now()) / 1000));
+                    if (r > 0) vivos++;
+                    var v = { d: Math.floor(r / 86400), h: Math.floor(r % 86400 / 3600), m: Math.floor(r % 3600 / 60), s: r % 60 };
+                    c.querySelectorAll('[data-u]').forEach(function (b) { b.textContent = d2(v[b.getAttribute('data-u')]); });
                 });
                 document.querySelectorAll('.so-oferta').forEach(function (el) {
                     if (Date.parse(el.getAttribute('data-fim') || padrao) <= Date.now()) el.remove();
