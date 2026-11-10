@@ -135,9 +135,12 @@ function relogio(fim) {
 // site.js abre 1x por sessão do navegador (sessionStorage), para não reabrir a cada volta à home.
 function bannerLancamento(p) {
     if (!p || !(temBrl(p) || temUsd(p))) return '';
+    // o popup acaba junto com a oferta do pack (decisão dele, 10/11: MAESTRO sai em 28/11 00:00 sem perguntar).
+    // O build depois da data já sai sem ele; o site.js tira o que ainda estiver em cache (data-ate).
+    if (Date.now() >= Date.parse(p.fim)) return '';
     const L = p.lancamento;
     const bf = p.bf && p.de && temBrl(p);   // cara de Black Friday enquanto o preço promocional vale
-    return `<dialog class="dl${bf ? ' dl-bf' : ''}" style="--cor:${p.cor}" aria-label="${esc(p.nome)}">
+    return `<dialog class="dl${bf ? ' dl-bf' : ''}" data-ate="${p.fim}" style="--cor:${p.cor}" aria-label="${esc(p.nome)}">
   <button class="dl-fechar" type="button" aria-label="Fechar / Close">✕</button>
   ${bf ? `<div class="dl-faixa-bf so-oferta" data-fim="${p.fim}"><b>BLACK FRIDAY</b><span>${t(`preço promocional até ${fimTxt(p.fim)}`, `promo price until ${fimTxt(p.fim)}`)}</span></div>` : ''}
   <div class="dl-grade">

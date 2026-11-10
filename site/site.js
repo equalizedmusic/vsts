@@ -57,6 +57,8 @@
         // popup de lançamento na loja: abre de novo a cada 12 h (no celular a "sessão" da aba dura dias, por isso não é sessionStorage);
         // "Quero" segue o link, o resto só fecha (✕, "agora não", Esc, clique fora). ?popup na URL força abrir.
         var lanc = document.querySelector('dialog.dl');
+        // passada a data da oferta (data-ate), o popup não abre mais nem com ?popup
+        if (lanc && Date.parse(lanc.getAttribute('data-ate') || '') <= Date.now()) { lanc.remove(); lanc = null; }
         if (lanc) {
             var visto = 0, JANELA = 12 * 3600 * 1000;
             try { visto = parseInt(localStorage.getItem('isp-lanc-ts'), 10) || 0; } catch (e) { /* modo privado */ }
