@@ -27,8 +27,9 @@ const msg = (text, rect, extra) =>
 const FG = [0.92, 0.92, 0.92, 1];
 
 // áudio passa direto
-const pin = obj('plugin~ 2', 2, 2, [20, 20, 70, 22], { outlettype: ['signal', 'signal'] });
-const pout = obj('plugout~ 2', 2, 0, [20, 400, 70, 22]);
+// sem argumento = estéreo (canais 1 e 2). "plugin~ 2" é UM canal só (o 2): o Max apagava o fio do esquerdo.
+const pin = obj('plugin~', 2, 2, [20, 20, 70, 22], { outlettype: ['signal', 'signal'] });
+const pout = obj('plugout~', 2, 0, [20, 400, 70, 22]);
 line(pin, 0, pout, 0);
 line(pin, 1, pout, 1);
 

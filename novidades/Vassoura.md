@@ -5,6 +5,22 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.2.3 — 2026-11-10
+- **Clips aparados no arranjo agora entram na limpeza.** Quando o stem é uma gravação longa cortada no arranjo, o Live
+  deixa o marcador de fim no fim do arquivo. A VASSOURA lia o trecho errado: os vazios apareciam fora do lugar na
+  janela, o console mostrava "(?)" e o APPLY pulava o trecho ("cópia não aparou certo"). Agora ela usa o trecho que
+  o clip realmente toca. Em clips já exportados inteiros nada muda.
+- **ANALYZE lê uma faixa por vez** e devolve o controle ao Live entre uma e outra. Antes, todas as faixas e clips
+  eram lidos de uma vez só, o que podia fechar o Live em set grande. Faixas e clips são lidos com um objeto só do Live.
+- **ANALYZE e APPLY não param mais no meio.** O Max podia descartar a tarefa agendada para a próxima faixa antes de
+  ela rodar, e o ANALYZE ficava parado (relato: parava na faixa 7, sem erro). Agora a VASSOURA guarda as tarefas e
+  confere a cada segundo se a sequência andou; se ficou parada mais de 3 s, retoma de onde estava e registra no log.
+- **Log em arquivo**: a cada ANALYZE a VASSOURA grava `VASSOURA-log.txt` na pasta do device, com cada faixa, clip e
+  arquivo lido, e o APPLY continua no mesmo arquivo. Se o Live fechar, a última linha mostra onde parou. O console do
+  Max diz onde o log está; se não der para gravar, diz o motivo e manda os detalhes para o próprio console.
+- O áudio da faixa onde o device fica passava só por um canal (aviso "patchcord outlet out of range" no console).
+  Agora passa em estéreo.
+
 ## 0.2.2 — 2026-11-09
 - **Correção de travamento em set grande** (relato: Windows, Live 12.3, mais de 30 faixas no ANALYZE e APPLY em CUT
   fechando o Live):

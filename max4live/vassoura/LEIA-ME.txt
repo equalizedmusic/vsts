@@ -44,5 +44,7 @@ COMO O APPLY EDITA (para entender o console)
 SE DER ERRO
 - Abra o console do Max (no device: botão de editar → Max → Window → Max Console).
 - Linhas "VASSOURA:" mostram cada clip e cada trecho pulado. Mande print delas.
+- A cada ANALYZE a VASSOURA grava o arquivo VASSOURA-log.txt na mesma pasta do device, com cada faixa,
+  clip e arquivo lido. Se o Live fechar, mande esse arquivo: a última linha mostra onde parou.
 - "v8: can't find vassoura.js" = os arquivos não estão na mesma pasta do .amxd.
   Correção: abra o device no editor do Max, clique em FREEZE (ícone de floco de neve) e salve.
