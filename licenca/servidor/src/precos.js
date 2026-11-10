@@ -31,3 +31,7 @@ export const NOMES = {
 // Usado pelo site (site/dados.mjs) e pela vitrine das páginas grátis (gratis.js). Para prorrogar: mudar a data e publicar os dois.
 export const OFERTA_FIM = '2026-12-31T23:59:59-03:00';
 export const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
+// Pack com oferta que termina antes da geral (decisão dele): MAESTRO só até a Black Friday (27/11/2026, sexta).
+// Passada a data, some o "de" riscado do pack e fica só o preço do PRECOS.
+export const OFERTA_FIM_PACK = { maestro: '2026-11-27T23:59:59-03:00' };
+export const fimOferta = (id) => OFERTA_FIM_PACK[id] || OFERTA_FIM;

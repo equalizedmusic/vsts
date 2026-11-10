@@ -27,10 +27,10 @@ const off = (p) => Math.round((1 - p.preco.brl / p.de) * 100);
 // requisitos de sistema (CMakeLists: macOS mínimo 11.0, universal arm64+x86_64; instalador Windows só x64)
 const REQ = () => t('Requisitos: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel)', 'Requirements: Windows 10 or 11 (64-bit) · macOS 11 Big Sur or newer (Apple Silicon and Intel)');
 const ehVst = (p) => !p.direto;   // a VASSOURA é Max for Live: segue o requisito do Ableton, não o dos instaladores
-const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de so-oferta">${brl(p.de)}</s>` : '';
+const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de so-oferta" data-fim="${p.fim}">${brl(p.de)}</s>` : '';
 // contador regressivo (site.js atualiza a cada segundo; sem JS fica a data final)
-const FIM_TXT = new Date(OFERTA_FIM).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
-const contador = (cls = '') => `<span class="contador ${cls}" data-fim="${OFERTA_FIM}">${t('até ' + FIM_TXT, 'until ' + FIM_TXT)}</span>`;
+const fimTxt = (fim) => new Date(fim).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+const contador = (cls = '', fim = OFERTA_FIM) => `<span class="contador ${cls}" data-fim="${fim}">${t('até ' + fimTxt(fim), 'until ' + fimTxt(fim))}</span>`;   // fim do pack (fimOferta) ou a oferta geral
 const maiorOff = Math.max(0, ...PACKS.filter((p) => p.de && temBrl(p)).map((p) => off(p)));
 
 function pagina({ titulo, descricao, corpo, raiz = '' }) {
@@ -55,7 +55,7 @@ ${PREVIA ? '<meta name="robots" content="noindex, nofollow">' : ''}
     <button class="idioma" type="button" aria-label="Idioma / Language"><span class="pt">EN</span><span class="en">PT</span></button>
   </nav>
 </div></header>
-${OFERTA_ATIVA && maiorOff ? `<a class="faixa-oferta so-oferta" href="${raiz}/#packs"><b>${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')}</b> ${t(`até ${maiorOff}% off nos packs`, `up to ${maiorOff}% off all packs`)} <span class="sep">·</span> ${t('termina em', 'ends in')} ${contador()}</a>` : ''}
+${OFERTA_ATIVA && maiorOff ? `<a class="faixa-oferta so-oferta" data-fim="${OFERTA_FIM}" href="${raiz}/#packs"><b>${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')}</b> ${t(`até ${maiorOff}% off nos packs`, `up to ${maiorOff}% off all packs`)} <span class="sep">·</span> ${t('termina em', 'ends in')} ${contador()}</a>` : ''}
 ${PREVIA ? `<div class="previa">${t('Prévia do site novo.', 'Preview of the new site.')}</div>` : ''}
 <main>${corpo}</main>
 <footer id="contato" class="rodape"><div class="faixa">
@@ -88,9 +88,9 @@ function caixaCompra(p) {
     <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>`;
     return `<form class="compra" method="post" action="${LIC}/loja/pagar">
-    ${p.de && temBrl(p) ? `<div class="oferta so-oferta">${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
-    <div class="tempo so-oferta">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte')}</div>
-    <div class="preco-de so-oferta">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
+    ${p.de && temBrl(p) ? `<div class="oferta so-oferta" data-fim="${p.fim}">${t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
+    <div class="tempo so-oferta" data-fim="${p.fim}">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte', p.fim)}</div>
+    <div class="preco-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <p class="req">${REQ()}</p>
     <input type="hidden" name="pacote" value="${p.id}">
@@ -126,14 +126,14 @@ function bannerLancamento(p) {
     const L = p.lancamento;
     return `<section class="dl" style="--cor:${p.cor}"><div class="faixa dl-grade">
   <div class="dl-txt">
-    <p class="dl-selo"><span class="tag">${t('LANÇAMENTO', 'NEW RELEASE')}</span>${p.de && temBrl(p) ? ` <b class="so-oferta">-${off(p)}%</b>` : ''}</p>
+    <p class="dl-selo"><span class="tag">${t('LANÇAMENTO', 'NEW RELEASE')}</span>${p.de && temBrl(p) ? ` <b class="so-oferta" data-fim="${p.fim}">-${off(p)}%</b>` : ''}</p>
     <h2 class="dl-nome">${esc(p.nome)}</h2>
     <p class="dl-tit">${t(...L.titulo)}</p>
     <p class="dl-lead">${t(...L.texto)}</p>
     <div class="dl-preco">
-      ${p.de && temBrl(p) ? `<span class="dl-de so-oferta">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</span>` : ''}
+      ${p.de && temBrl(p) ? `<span class="dl-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</span>` : ''}
       <span class="dl-valor">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</span>
-      ${p.de && temBrl(p) ? `<span class="tempo so-oferta">${t('Oferta de lançamento · termina em', 'Launch offer · ends in')} ${contador('forte')}</span>` : ''}
+      ${p.de && temBrl(p) ? `<span class="tempo so-oferta" data-fim="${p.fim}">${t('Oferta de lançamento · termina em', 'Launch offer · ends in')} ${contador('forte', p.fim)}</span>` : ''}
     </div>
     <div class="dl-bts">
       <a class="bt bt-principal" href="/${p.id}/">${t('Quero o ' + p.nome, 'Get ' + p.nome)}</a>

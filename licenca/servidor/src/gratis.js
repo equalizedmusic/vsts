@@ -21,7 +21,7 @@
 
 import { zipStream } from './zip.js';
 import { emailLigado, enviarEmail, CONTATO } from './email.js';
-import { PRECOS, OFERTA_FIM, DE_BRL } from './precos.js';
+import { PRECOS, OFERTA_FIM, DE_BRL, fimOferta } from './precos.js';
 import { PACKS, SITE } from '../../../site/dados.mjs';   // nome, frase, texto, cor e capa: os mesmos da página de pack do site
 
 const POR_IP_DIA = 8;
@@ -825,9 +825,8 @@ ${of.ativa && of.maior ? `<a class="faixa-oferta so-oferta" href="${SITE_URL}/#p
 
 // vitrine: os packs pagos no cartão do site, com o preço que o servidor cobra
 function vitrine(agora) {
-    const ativa = oferta(agora).ativa;
     const cartoes = PACKS.filter((p) => typeof PRECOS[p.id]?.brl === 'number').map((p) => {
-        const v = PRECOS[p.id].brl, de = ativa && DE_BRL[v];
+        const v = PRECOS[p.id].brl, de = agora < Date.parse(fimOferta(p.id)) && DE_BRL[v];   // MAESTRO termina antes (Black Friday)
         return `<a class="pack" href="${SITE_URL}/${p.id}/" style="--cor:${p.cor}">
     <div class="pack-img"><img src="${SITE_URL}/img/${p.capa}.webp" alt="${esc(p.nome)}" loading="lazy"></div>
     <div class="pack-txt">
