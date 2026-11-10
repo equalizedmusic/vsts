@@ -957,6 +957,7 @@ public:
         quadro.assign (FFTN, 0.0f);
         pot.assign (FFTN / 2 + 1, 0.0f);
         for (int b = 0; b < NB; ++b) { telaIn[b] = 0.0f; telaOut[b] = 0.0f; aprEsp[b] = 0.0f; }
+        for (int i = 0; i < kVizN; ++i) { vizIn[i].store (0.0f, std::memory_order_relaxed); vizOut[i].store (0.0f, std::memory_order_relaxed); }
         for (int z = 0; z < NZ; ++z) zonaDb[z] = 0.0f;
         for (int m = 0; m < NM; ++m) { grBanda[m] = 0.0f; inBanda[m] = -120.0f; outBanda[m] = -120.0f; limiarAgora[m] = 0.0f; largura[m] = 1.0f; }
         prepare (48000.0);
@@ -1023,6 +1024,12 @@ public:
     std::atomic<int> clipou { 0 }, aprQuadros { 0 };
     std::atomic<int> alvoAlto { 0 };                // o CAST parou antes do alvo (limitador já tirava > 5 dB)
 
+    // ANALISADOR da tela (estilo Pro-Q, 10 Hz – 35 kHz): o áudio só grava o mono da ENTRADA e da SAÍDA num anel; a
+    // FFT grande roda na thread da interface (custo zero no áudio). vizPos = próxima posição a escrever.
+    static constexpr int kVizN = 1 << 15;           // cabe a FFT de 32768 (192 kHz)
+    std::unique_ptr<std::atomic<float>[]> vizIn { new std::atomic<float>[kVizN] }, vizOut { new std::atomic<float>[kVizN] };
+    std::atomic<int> vizPosIn { 0 }, vizPosOut { 0 };
+
     // ---------------------------------------------------------------------------------------------------- áudio
     void process (float* const* ch, int nch, int n, const Ajustes& a)
     {
@@ -1047,6 +1054,8 @@ public:
         {
             const float l = L[i], r = R ? R[i] : l;
             anel[(size_t) posAnel] = 0.5f * (l + r);
+            vizIn[vizPI].store (anel[(size_t) posAnel], std::memory_order_relaxed);
+            vizPI = (vizPI + 1) & (kVizN - 1);
             posAnel = (posAnel + 1) % FFTN;
             if (++cheio >= HOP) { cheio = 0; analisaQuadro (true); }
             linhaSeco[0][(size_t) posSeco] = l; linhaSeco[1][(size_t) posSeco] = r;
@@ -1054,6 +1063,7 @@ public:
             seco[0][(size_t) i] = linhaSeco[0][(size_t) posSeco];
             seco[1][(size_t) i] = linhaSeco[1][(size_t) posSeco];
         }
+        vizPosIn.store (vizPI, std::memory_order_release);
 
         // TONE MATCH + TILT + DYNAMIC EQ + crossover, tudo em fase linear (FaseLinear), e o multibanda por amostra
         const bool feito = feitico.feito;
@@ -1408,9 +1418,12 @@ private:
             tpJanela = std::max (tpJanela, tpOut.empurra (l, r, R ? 2 : 1));
             sLL += (double) l * l; sRR += (double) r * r; sLR += (double) l * r;
             anelS[(size_t) posAnelS] = 0.5f * (l + r);
+            vizOut[vizPO].store (anelS[(size_t) posAnelS], std::memory_order_relaxed);
+            vizPO = (vizPO + 1) & (kVizN - 1);
             posAnelS = (posAnelS + 1) % FFTN;
             if (++cheioS >= HOP) { cheioS = 0; analisaQuadro (false); }
         }
+        vizPosOut.store (vizPO, std::memory_order_release);
         if (sLL > 1e-9 && sRR > 1e-9) correlSuave += 0.05f * ((float) (sLR / std::sqrt (sLL * sRR)) - correlSuave);
         correl = correlSuave;
         contaTp += n;
@@ -1504,6 +1517,7 @@ private:
     std::vector<float> jan, anel, anelS, quadro, pot;
     float norma = 1.0f;
     int posAnel = 0, cheio = 0, posAnelS = 0, cheioS = 0;
+    int vizPI = 0, vizPO = 0;
     Loudness ldIn, ldOut;
     double somaApr[NB] {}, somaBanda[NM] {};
     int nAprQ = 0, nAprB = 0;

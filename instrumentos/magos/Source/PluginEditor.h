@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include <juce_dsp/juce_dsp.h>
 #include <functional>
 
 // Tela do MASTER DOS MAGOS (base 1280 × 952, escala junto com a janela), esboço v2 aprovado (10/11/2026), paleta do
@@ -105,6 +106,24 @@ private:
 
     // telas: o que segura e cai devagar
     float zonaHold[magos::NZ] {};
+
+    // ANALISADOR do TONAL BALANCE (estilo Pro-Q 4): FFT de ~170 ms (8192 a 44,1/48 kHz) a 30 quadros/s na thread da
+    // interface, 10 Hz – 35 kHz, média de 1/24 de oitava, inclinação de 4,5 dB/oitava em 1 kHz
+    static constexpr int NP = 480;                  // pontos na tela
+    void analisa (bool entrada);
+    void preparaAnalisador (double fs);
+    std::unique_ptr<juce::dsp::FFT> fftViz;
+    double fsViz = 0.0;
+    int nViz = 0;
+    std::vector<float> janViz, bufViz;
+    struct PontoViz { double f = 0; int k0 = 0, k1 = 0; double kf = 0; bool interp = false, valido = false; };
+    std::vector<PontoViz> pontos;
+    float espIn[NP] {}, espOut[NP] {};             // dB na tela (com a inclinação)
+    float suaveOut[NP] {}, suaveIn[NP] {};         // 1/3 de oitava (sobra vermelha, pontos da DYN EQ, alinhamento)
+    int posVista[2] { -1, -1 };
+    bool temEsp[2] { false, false };
+    float offAlvo = -40.0f;
+    bool offAlvoOk = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MagosEditor)
 };

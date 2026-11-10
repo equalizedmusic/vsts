@@ -84,8 +84,13 @@ juce::Path estrela (juce::Point<float> c, float r)
     return p;
 }
 
-// eixo de frequência: 20 Hz – 20 kHz, log
-constexpr double fMin = 20.0, fMax = 20000.0;
+// eixo de frequência: 10 Hz – 35 kHz, log (o do Pro-Q 4)
+constexpr double fMin = 10.0, fMax = 35000.0;
+// analisador: a escala em dB (0 = senoide a 0 dBFS em 1 kHz) e a inclinação de 4,5 dB/oitava em 1 kHz (a do Pro-Q)
+constexpr float vizTopo = 0.0f, vizBase = -90.0f, vizTilt = 4.5f;
+// as curvas de 1/3 de oitava (alvo / STYLE / REFERÊNCIA) na mesma escala: potência por banda → densidade é −3 dB/oit,
+// mais os 4,5 da inclinação = +1,5 dB/oitava
+constexpr float tiltBandas = vizTilt - 3.0103f;
 float xDeF (double f, juce::Rectangle<float> r) { return r.getX() + r.getWidth() * (float) (std::log (f / fMin) / std::log (fMax / fMin)); }
 
 // dB de uma forma de 27 bandas numa frequência qualquer (interpola na escala das bandas)
@@ -134,8 +139,127 @@ MagosEditor::MagosEditor (MagosProcessor& p) : AudioProcessorEditor (p), proc (p
 
 void MagosEditor::resized() { proc.uiW = getWidth(); }
 
+void MagosEditor::preparaAnalisador (double fs)
+{
+    fsViz = fs;
+    int ordem = 13;                                            // ~170 ms de janela em qualquer taxa
+    while ((double) (1 << ordem) < fs * 0.165 && ordem < 15) ++ordem;
+    nViz = 1 << ordem;
+    fftViz = std::make_unique<juce::dsp::FFT> (ordem);
+    janViz.resize ((size_t) nViz);
+    for (int i = 0; i < nViz; ++i) janViz[(size_t) i] = (float) (0.5 - 0.5 * std::cos (2.0 * juce::MathConstants<double>::pi * i / nViz));
+    bufViz.assign ((size_t) (2 * nViz), 0.0f);
+    const double df = fs / nViz, meia = std::pow (2.0, 1.0 / 48.0);   // média de 1/24 de oitava em volta do ponto
+    pontos.assign (NP, {});
+    for (int j = 0; j < NP; ++j)
+    {
+        auto& P = pontos[(size_t) j];
+        P.f = fMin * std::pow (fMax / fMin, j / (double) (NP - 1));
+        P.valido = P.f < 0.5 * fs * 0.995;
+        P.k0 = juce::jlimit (1, nViz / 2, (int) std::ceil (P.f / meia / df));
+        P.k1 = juce::jlimit (1, nViz / 2, (int) std::floor (P.f * meia / df));
+        P.kf = P.f / df;
+        P.interp = P.k1 - P.k0 < 1;                            // menos de 2 bins na janela (grave): interpola
+    }
+    for (int j = 0; j < NP; ++j) espIn[j] = espOut[j] = suaveIn[j] = suaveOut[j] = -150.0f;
+    temEsp[0] = temEsp[1] = false;
+    posVista[0] = posVista[1] = -1;
+}
+
+void MagosEditor::analisa (bool entrada)
+{
+    auto& M = proc.motor;
+    const int e = entrada ? 0 : 1;
+    const int pos = (entrada ? M.vizPosIn : M.vizPosOut).load (std::memory_order_acquire);
+    const auto* anel = (entrada ? M.vizIn : M.vizOut).get();
+    float* esp = entrada ? espIn : espOut;
+    float* sv = entrada ? suaveIn : suaveOut;
+    const bool parado = pos == posVista[e];                   // sem áudio novo (transporte parado sem processBlock)
+    posVista[e] = pos;
+    if (parado)
+        for (int j = 0; j < NP; ++j) esp[j] = std::max (-150.0f, esp[j] - 1.5f);
+    else
+    {
+        constexpr int mask = Engine::kVizN - 1;
+        for (int i = 0; i < nViz; ++i) bufViz[(size_t) i] = anel[(pos - nViz + i) & mask].load (std::memory_order_relaxed) * janViz[(size_t) i];
+        std::fill (bufViz.begin() + nViz, bufViz.end(), 0.0f);
+        fftViz->performFrequencyOnlyForwardTransform (bufViz.data(), true);
+        // |X| de uma senoide de amplitude A na janela de Hann = A·N/4: potência normalizada (0 dB = 0 dBFS)
+        const float k = 4.0f / (float) nViz;
+        for (int i = 0; i <= nViz / 2; ++i) { const float a = bufViz[(size_t) i] * k; bufViz[(size_t) i] = a * a; }
+        auto dbBin = [&] (int i) { return 10.0f * std::log10 (bufViz[(size_t) juce::jlimit (1, nViz / 2, i)] + 1e-20f); };
+        for (int j = 0; j < NP; ++j)
+        {
+            const auto& P = pontos[(size_t) j];
+            if (! P.valido) { esp[j] = -150.0f; continue; }
+            float d;
+            if (P.interp)
+            {
+                // Catmull-Rom em dB entre os bins: o grave sai em curva, não em degraus
+                const int b = (int) std::floor (P.kf);
+                const float t = (float) (P.kf - b);
+                const float p0 = dbBin (b - 1), p1 = dbBin (b), p2 = dbBin (b + 1), p3 = dbBin (b + 2);
+                d = p1 + 0.5f * t * (p2 - p0 + t * (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3 + t * (3.0f * (p1 - p2) + p3 - p0)));
+            }
+            else
+            {
+                double s = 0;
+                for (int i = P.k0; i <= P.k1; ++i) s += bufViz[(size_t) i];
+                d = 10.0f * (float) std::log10 (s / (P.k1 - P.k0 + 1) + 1e-20);
+            }
+            d += vizTilt * (float) std::log2 (P.f / 1000.0);
+            // balística: sobe rápido, cai em ~0,3 s
+            esp[j] += (d > esp[j] ? 0.7f : 0.2f) * (d - esp[j]);
+            esp[j] = std::max (esp[j], -150.0f);
+        }
+    }
+    // 1/3 de oitava (±1/6 de oitava em volta): sobra vermelha, pontos da DYN EQ e o alinhamento do alvo
+    const int r = juce::roundToInt ((NP - 1) / std::log2 (fMax / fMin) / 6.0);
+    float topo = -200.0f;
+    for (int j = 0; j < NP; ++j)
+    {
+        double s = 0;
+        int c = 0;
+        for (int i = std::max (0, j - r); i <= std::min (NP - 1, j + r); ++i)
+            if (pontos[(size_t) i].valido) { s += std::pow (10.0, esp[i] / 10.0); ++c; }
+        sv[j] = c > 0 ? 10.0f * (float) std::log10 (s / c + 1e-20) : -150.0f;
+        if (pontos[(size_t) j].valido && pontos[(size_t) j].f > 30.0 && pontos[(size_t) j].f < 16000.0) topo = std::max (topo, esp[j]);
+    }
+    temEsp[e] = topo > vizBase;
+}
+
 void MagosEditor::timerCallback()
 {
+    // ANALISADOR: duas FFTs por quadro na thread da interface (o áudio só grava o anel)
+    if (proc.motor.taxa() != fsViz) preparaAnalisador (proc.motor.taxa());
+    analisa (true);
+    analisa (false);
+    {
+        // o alvo (forma de média 0) se encaixa na média do DEPOIS (sem som na saída, na do ANTES) entre 80 Hz e 8 kHz
+        auto& M = proc.motor;
+        float alvo[NB];
+        if (M.feitico.feito) std::copy (M.feitico.alvoForma, M.feitico.alvoForma + NB, alvo);
+        else M.formaAlvo (alvo);
+        const float* base = temEsp[1] ? suaveOut : temEsp[0] ? suaveIn : nullptr;
+        if (base != nullptr)
+        {
+            double s = 0;
+            int c = 0;
+            for (int j = 0; j < NP; ++j)
+            {
+                const double f = pontos[(size_t) j].f;
+                if (f < 80.0 || f > 8000.0 || ! pontos[(size_t) j].valido) continue;
+                s += base[j] - (formaEm (alvo, f) + tiltBandas * (float) std::log2 (f / 1000.0));
+                ++c;
+            }
+            if (c > 0)
+            {
+                const float o = (float) (s / c);
+                offAlvo = offAlvoOk ? offAlvo + 0.06f * (o - offAlvo) : o;
+                offAlvoOk = true;
+            }
+        }
+    }
     leLink();
     // a DYN EQ pisca rápido: a tela segura o maior corte / realce e solta devagar
     for (int z = 0; z < NZ; ++z)
@@ -423,102 +547,132 @@ void MagosEditor::painelTom (juce::Graphics& g, juce::Rectangle<float> r)
     const juce::Rectangle<float> tela (r.getX() + 44, r.getY() + 36, r.getWidth() - 58, 222);
     g.setColour (cTela);
     g.fillRoundedRectangle (tela.expanded (2), 3.0f);
-    constexpr float dbAlto = 12.0f, dbBaixo = -30.0f;
-    auto yDe = [&] (float db) { return tela.getY() + tela.getHeight() * (dbAlto - juce::jlimit (dbBaixo, dbAlto, db)) / (dbAlto - dbBaixo); };
-    // grade
-    for (float d = 12.0f; d >= -30.0f; d -= 6.0f)
+    auto yDe = [&] (float db) { return tela.getY() + tela.getHeight() * (vizTopo - juce::jlimit (vizBase, vizTopo, db)) / (vizTopo - vizBase); };
+    // grade: dB do analisador a cada 12 dB; frequências como no Pro-Q (10 Hz – 35 kHz)
+    for (float d = vizTopo; d >= vizBase + 1.0f; d -= 12.0f)
     {
-        g.setColour (d == 0.0f ? cGradeF : cGrade);
+        g.setColour (d == vizTopo ? cGradeF : cGrade);
         g.drawHorizontalLine ((int) yDe (d), tela.getX(), tela.getRight());
         texto (g, num (d, 0, true), { r.getX() + 4, yDe (d) - 7, 36, 14 }, 9.0f, cApagado, juce::Justification::centredRight, 0.0f);
     }
-    for (double f : { 31.5, 63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0 })
-    {
-        const float xx = xDeF (f, tela);
-        g.setColour (cGrade);
-        g.drawVerticalLine ((int) xx, tela.getY(), tela.getBottom());
-        texto (g, hz (f), { xx - 20, tela.getBottom() + 2, 40, 13 }, 9.0f, cApagado, juce::Justification::centred, 0.0f);
-    }
+    for (double dec : { 10.0, 100.0, 1000.0, 10000.0 })
+        for (int m = 1; m <= 9; ++m)
+        {
+            const double f = dec * m;
+            if (f < fMin || f > fMax) continue;
+            const float xx = xDeF (f, tela);
+            const bool rot = m == 1 || m == 2 || m == 5;
+            g.setColour (rot ? cGrade.brighter (0.25f) : cGrade);
+            g.drawVerticalLine ((int) xx, tela.getY(), tela.getBottom());
+            if (rot && f >= 20.0)
+                texto (g, f >= 1000.0 ? juce::String (juce::roundToInt (f / 1000.0)) + "k" : juce::String (juce::roundToInt (f)),
+                       { xx - 20, tela.getBottom() + 2, 40, 13 }, 9.0f, cApagado, juce::Justification::centred, 0.0f);
+        }
 
-    // formas: antes (LISTEN; sem LISTEN, a entrada ao vivo), depois (saída ao vivo), alvo
-    float antes[NB], depois[NB], alvo[NB], pIn[NB], pOut[NB];
-    const bool temApr = M.aprQuadros.load() > 4;
-    for (int b = 0; b < NB; ++b) { pIn[b] = temApr ? M.aprEsp[b].load() : M.telaIn[b].load(); pOut[b] = M.telaOut[b].load(); }
-    formaDb (pIn, antes);
+    // MATCH %: as formas de 1/3 de oitava do motor (as mesmas do CAST); a tela mostra o analisador
+    float depois[NB], alvo[NB], pOut[NB];
+    for (int b = 0; b < NB; ++b) pOut[b] = M.telaOut[b].load();
     formaDb (pOut, depois);
     if (M.feitico.feito) std::copy (M.feitico.alvoForma, M.feitico.alvoForma + NB, alvo);
     else M.formaAlvo (alvo);
-    double eIn = 0, eOut = 0;
-    for (int b = 0; b < NB; ++b) { eIn += pIn[b]; eOut += pOut[b]; }
-    const bool somIn = dbDe (eIn) > -80.0f, somOut = dbDe (eOut) > -80.0f;
+    const bool pronto = ! pontos.empty();
+    const bool somIn = pronto && temEsp[0], somOut = pronto && temEsp[1];
 
-    auto caminho = [&] (const float* forma)
+    // alvo na escala do analisador (+1,5 dB/oit) e encaixado na média do som; desenhado de 20 Hz a 20 kHz
+    auto alvoEm = [&] (double f) { return formaEm (alvo, f) + tiltBandas * (float) std::log2 (f / 1000.0) + offAlvo; };
+    constexpr double aMin = 20.0, aMax = 20000.0;
+    auto fAlvo = [&] (int i) { return aMin * std::pow (aMax / aMin, i / 200.0); };
+    // espectro: linha e preenchimento até o pé da tela; termina em Nyquist
+    auto espectro = [&] (const float* esp, bool fechado)
     {
         juce::Path p;
-        for (int i = 0; i <= 200; ++i)
+        bool aberto = false;
+        float xUlt = tela.getX();
+        for (int j = 0; j < NP; ++j)
         {
-            const double f = fMin * std::pow (fMax / fMin, i / 200.0);
-            const float xx = xDeF (f, tela), yy = yDe (formaEm (forma, juce::jlimit (40.0, 16000.0, f)));
-            if (i == 0) p.startNewSubPath (xx, yy); else p.lineTo (xx, yy);
+            if (! pontos[(size_t) j].valido) break;
+            const float xx = xDeF (pontos[(size_t) j].f, tela), yy = yDe (esp[j]);
+            if (! aberto) { p.startNewSubPath (xx, fechado ? tela.getBottom() : yy); if (fechado) p.lineTo (xx, yy); aberto = true; }
+            else p.lineTo (xx, yy);
+            xUlt = xx;
         }
+        if (fechado && aberto) { p.lineTo (xUlt, tela.getBottom()); p.closeSubPath(); }
         return p;
     };
     g.saveState();
     g.reduceClipRegion (tela.toNearestInt());
+    // ANTES: preenchimento escuro + linha fina (o "pre" do Pro-Q)
+    if (somIn)
+    {
+        g.setColour (cCinza.withAlpha (0.16f));
+        g.fillPath (espectro (espIn, true));
+        g.setColour (cCinza.withAlpha (0.75f));
+        g.strokePath (espectro (espIn, false), juce::PathStrokeType (1.1f));
+    }
+    // DEPOIS: preenchimento em degradê
+    if (somOut)
+    {
+        g.setGradientFill (juce::ColourGradient (cCiano.withAlpha (0.30f), 0, tela.getY(), cCiano.withAlpha (0.04f), 0, tela.getBottom(), false));
+        g.fillPath (espectro (espOut, true));
+    }
     // zona alvo (±2 dB)
+    if (offAlvoOk)
     {
         juce::Path z;
         for (int i = 0; i <= 200; ++i)
         {
-            const double f = fMin * std::pow (fMax / fMin, i / 200.0);
-            const float xx = xDeF (f, tela), yy = yDe (formaEm (alvo, juce::jlimit (40.0, 16000.0, f)) + 2.0f);
+            const double f = fAlvo (i);
+            const float xx = xDeF (f, tela), yy = yDe (alvoEm (f) + 2.0f);
             if (i == 0) z.startNewSubPath (xx, yy); else z.lineTo (xx, yy);
         }
-        for (int i = 200; i >= 0; --i)
-        {
-            const double f = fMin * std::pow (fMax / fMin, i / 200.0);
-            z.lineTo (xDeF (f, tela), yDe (formaEm (alvo, juce::jlimit (40.0, 16000.0, f)) - 2.0f));
-        }
+        for (int i = 200; i >= 0; --i) z.lineTo (xDeF (fAlvo (i), tela), yDe (alvoEm (fAlvo (i)) - 2.0f));
         z.closeSubPath();
-        g.setColour (cOuro.withAlpha (0.10f));
+        g.setColour (cOuro.withAlpha (0.12f));
         g.fillPath (z);
     }
-    // sobra acima da zona (vermelho) na curva DEPOIS
-    if (somOut)
-        for (int i = 0; i < 200; ++i)
+    // sobra acima da zona (vermelho): o DEPOIS em 1/3 de oitava
+    if (somOut && offAlvoOk)
+        for (int j = 0; j + 1 < NP; ++j)
         {
-            const double f = fMin * std::pow (fMax / fMin, (i + 0.5) / 200.0);
-            const double fc = juce::jlimit (40.0, 16000.0, f);
-            const float sobra = formaEm (depois, fc) - (formaEm (alvo, fc) + 2.0f);
+            const auto& P = pontos[(size_t) j];
+            if (! P.valido || ! pontos[(size_t) (j + 1)].valido) break;
+            if (P.f < 30.0 || P.f > 18000.0) continue;
+            const float teto = alvoEm (P.f) + 2.0f, sobra = suaveOut[j] - teto;
             if (sobra <= 0.0f) continue;
-            const float x0 = xDeF (fMin * std::pow (fMax / fMin, i / 200.0), tela), x1 = xDeF (fMin * std::pow (fMax / fMin, (i + 1) / 200.0), tela);
             g.setColour (cRuim.withAlpha (juce::jlimit (0.15f, 0.55f, sobra * 0.15f)));
-            g.fillRect (juce::Rectangle<float>::leftTopRightBottom (x0, yDe (formaEm (depois, fc)), x1 + 0.5f, yDe (formaEm (alvo, fc) + 2.0f)));
+            g.fillRect (juce::Rectangle<float>::leftTopRightBottom (xDeF (P.f, tela), yDe (suaveOut[j]), xDeF (pontos[(size_t) (j + 1)].f, tela) + 0.5f, yDe (teto)));
         }
-    if (somIn)
+    if (offAlvoOk)
     {
-        g.setColour (cCinza.withAlpha (0.9f));
-        g.strokePath (caminho (antes), juce::PathStrokeType (1.6f));
-    }
-    {
-        juce::Path tr;
+        juce::Path c, tr;
+        for (int i = 0; i <= 200; ++i)
+        {
+            const float xx = xDeF (fAlvo (i), tela), yy = yDe (alvoEm (fAlvo (i)));
+            if (i == 0) c.startNewSubPath (xx, yy); else c.lineTo (xx, yy);
+        }
         const float dash[] = { 6.0f, 4.0f };
-        juce::PathStrokeType (2.0f).createDashedStroke (tr, caminho (alvo), dash, 2);
+        juce::PathStrokeType (2.0f).createDashedStroke (tr, c, dash, 2);
         g.setColour (cOuro);
         g.fillPath (tr);
     }
     if (somOut)
     {
         g.setColour (cCiano);
-        g.strokePath (caminho (depois), juce::PathStrokeType (2.4f));
+        g.strokePath (espectro (espOut, false), juce::PathStrokeType (1.5f));
     }
-    // pontos da DYN EQ na curva DEPOIS
+    // pontos da DYN EQ no DEPOIS (1/3 de oitava)
+    auto suaveEm = [&] (double f)
+    {
+        const double u = juce::jlimit (0.0, (double) (NP - 1), (NP - 1) * std::log (f / fMin) / std::log (fMax / fMin));
+        const int a = juce::jmin (NP - 2, (int) u);
+        return suaveOut[a] + (suaveOut[a + 1] - suaveOut[a]) * (float) (u - a);
+    };
     for (int z = 0; z < NZ; ++z)
     {
         const float v = zonaHold[z];
         if (std::abs (v) < 0.3f || ! somOut) continue;
         const auto& Z = zona (z);
-        const float xx = xDeF (Z.f, tela), yy = yDe (formaEm (depois, juce::jlimit (40.0, 16000.0, Z.f)));
+        const float xx = xDeF (Z.f, tela), yy = yDe (suaveEm (Z.f));
         const auto c = v < 0 ? cRosa : cAzul;
         g.setColour (c);
         g.drawEllipse (juce::Rectangle<float> (14, 14).withCentre ({ xx, yy }), 2.0f);
