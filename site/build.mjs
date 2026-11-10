@@ -8,7 +8,7 @@
 import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SITE, PACKS, LIC, FAQ, OFERTA_FIM, OFERTA_ATIVA } from './dados.mjs';
+import { SITE, PACKS, LIC, FAQ, OFERTA_FIM, OFERTA_ATIVA, SECOES } from './dados.mjs';
 import { ICONES } from './icones.mjs';
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
@@ -162,9 +162,59 @@ function bannerLancamento(p) {
 </div></dialog>`;
 }
 
+// ---- seções da loja (10/11) ----
+const PACK = Object.fromEntries(PACKS.map((p) => [p.id, p]));
+const itensSecao = (s) => s.itens.map((id) => PACK[id]).filter(Boolean);
+const secaoDoPack = (p) => SECOES.find((s) => s.id !== 'gratis' && s.itens.includes(p.id)) || SECOES.find((s) => s.itens.includes(p.id));
+const urlSecao = (s) => `/plugins/${s.id}/`;
+
+// card de uma seção: leque com as capas dos produtos + nomes (cada nome leva direto ao produto) + resumo de preço.
+// O card inteiro leva à página da seção (link "esticado" no título; os nomes ficam por cima dele).
+function cartaoSecao(s, largo = false) {
+    const it = itensSecao(s), n = it.length;
+    const pagos = it.filter((p) => temBrl(p)), gratis = it.filter((p) => p.gratis);
+    const menor = pagos.length ? Math.min(...pagos.map((p) => p.preco.brl)) : 0;
+    const maxOff = Math.max(0, ...pagos.filter((p) => p.de).map((p) => off(p)));
+    const fimOff = pagos.filter((p) => p.de).map((p) => p.fim).sort().pop();
+    const resumo = s.id === 'gratis' ? `<span class="selo-gratis">${t('GRÁTIS', 'FREE')}</span>`
+        : [menor ? `<span class="cat-preco">${t('a partir de ' + brl(menor), 'from ' + brl(menor))}</span>` : '',
+           gratis.length ? `<span class="cat-tem-gratis">${t(`${gratis.length} grátis`, `${gratis.length} free`)}</span>` : '',
+           maxOff ? `<span class="cat-off so-oferta" data-fim="${fimOff}">${t(`até -${maxOff}%`, `up to -${maxOff}%`)}</span>` : ''].join('');
+    // o 1º da lista (o destaque, ex.: MAESTRO no Mix) fica no meio e na frente; os outros abrem para os lados
+    const m = Math.min(n, 6), meio = (m - 1) / 2;
+    const vagas = Array.from({ length: m }, (_, k) => k - meio).sort((a, b) => Math.abs(a) - Math.abs(b) || b - a);
+    const leque = it.slice(0, 6).map((p, i) => [p, vagas[i]]).sort((a, b) => a[1] - b[1]).map(([p, d]) => {
+        return `<img src="/img/${p.capa}.webp" alt="" loading="lazy" style="--i:${d.toFixed(1)};--z:${10 - Math.round(Math.abs(d) * 2)}">`;
+    }).join('');
+    return `<article class="cat${largo ? ' cat-largo' : ''}" style="--cor:${s.cor}">
+    <div class="cat-leque" aria-hidden="true">${leque}</div>
+    <div class="cat-txt">
+      <div class="cat-topo"><h3><a class="cat-link" href="${urlSecao(s)}">${t(...s.nome)}</a></h3><span class="cat-n">${t(`${n} ${n === 1 ? 'produto' : 'produtos'}`, `${n} ${n === 1 ? 'product' : 'products'}`)}</span></div>
+      <p>${t(...s.frase)}</p>
+      <p class="cat-resumo">${resumo}</p>
+      <ul class="cat-itens">${it.map((p) => `<li><a href="/${p.id}/" style="--cor:${p.cor}">${esc(p.nome)}${p.lancamento ? ` <i>${t('NOVO', 'NEW')}</i>` : ''}</a></li>`).join('')}</ul>
+      <span class="cat-ver">${t('Ver a seção', 'See the section')} →</span>
+    </div>
+  </article>`;
+}
+
+function paginaSecao(s) {
+    return pagina({
+        titulo: `${s.nome[0]} — InsideStudioSP`,
+        descricao: s.frase[0],
+        corpo: `
+<section class="hero hero-secao" style="--cor:${s.cor}"><div class="faixa">
+  <a class="voltar" href="/#packs">← ${t('Todas as seções', 'All sections')}</a>
+  <h1>${t(...s.nome)}</h1>
+  <p class="lead">${t(...s.frase)}</p>
+  <nav class="secoes-nav" aria-label="Seções">${SECOES.map((o) => `<a href="${urlSecao(o)}"${o.id === s.id ? ' class="atual" aria-current="page"' : ''}>${t(...o.nome)}</a>`).join('')}</nav>
+</div></section>
+<section class="faixa"><div class="grade">${itensSecao(s).map((p) => cartaoPack(p)).join('')}</div></section>`,
+    });
+}
+
 function loja() {
-    const destaques = PACKS.filter((p) => p.destaque);
-    const resto = PACKS.filter((p) => !p.destaque);
+    const [gratis, ...outras] = SECOES;
     return pagina({
         titulo: 'InsideStudioSP — Plugins',
         descricao: 'Plugins VST3/AU e Max for Live feitos em São Paulo: ALIGN, VASSOURA, MESA e mais.',
@@ -176,11 +226,9 @@ ${bannerLancamento(PACKS.find((p) => p.lancamento))}
   <p class="lead">${t('Plugins para Windows e Mac, pensados no estúdio para resolver problema de verdade, com a tela mostrando o que está acontecendo.',
                       'Plugins for Windows and Mac, built in the studio to solve real problems, with the screen showing what is going on.')}</p>
 </div></section>
-<section class="faixa"><h2 class="secao">${t('Destaques', 'Featured')}</h2>
-  <div class="grade-destaque">${destaques.map((p) => cartaoPack(p, true)).join('')}</div>
-</section>
-<section id="packs" class="faixa"><h2 class="secao">${t('Todos os packs', 'All packs')}</h2>
-  <div class="grade">${resto.map((p) => cartaoPack(p)).join('')}</div>
+<section class="faixa">${cartaoSecao(gratis, true)}</section>
+<section id="packs" class="faixa"><h2 class="secao">${t('Seções', 'Sections')}</h2>
+  <div class="grade-cat">${outras.map((s) => cartaoSecao(s)).join('')}</div>
 </section>
 <section id="instalacao" class="faixa como">
   <p class="sobre">${t('INSTALAÇÃO', 'INSTALLATION')}</p>
@@ -218,7 +266,7 @@ function paginaPack(p) {
         corpo: `
 <section class="pack-hero" style="--cor:${p.cor}"><div class="faixa pack-hero-grade">
   <div>
-    <a class="voltar" href="/#packs">← ${t('Todos os packs', 'All packs')}</a>
+    <a class="voltar" href="${urlSecao(secaoDoPack(p))}">← ${t(...secaoDoPack(p).nome)}</a>
     <h1>${esc(p.nome)}</h1>
     <p class="lead">${t(...p.frase)}</p>
     <p>${t(...p.texto)}</p>
@@ -381,6 +429,8 @@ rmSync(DIST, { recursive: true, force: true });
 const grava = (rel, txt) => { const f = join(DIST, rel); mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, txt); };
 grava('index.html', loja());
 for (const p of PACKS) grava(`${p.id}/index.html`, paginaPack(p));
+for (const s of SECOES) grava(`plugins/${s.id}/index.html`, paginaSecao(s));
+{ const sem = PACKS.filter((p) => !SECOES.some((s) => s.itens.includes(p.id))); if (sem.length) throw new Error('pack fora de seção: ' + sem.map((p) => p.id)); }
 grava('estudio/index.html', estudio());
 grava('contato/index.html', contato());
 grava('privacidade/index.html', privacidade());

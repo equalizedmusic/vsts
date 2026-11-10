@@ -121,6 +121,48 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 /* cartões de pack */
 .grade-destaque { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
 .grade { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:18px; }
+
+/* seções da loja (10/11): um card por seção com o leque de capas */
+.grade-cat { display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; }
+.cat { position:relative; display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-radius:var(--raio); overflow:hidden;
+       transition:transform .18s, border-color .18s, box-shadow .18s; }
+.cat:hover { transform:translateY(-3px); border-color:var(--cor); box-shadow:0 14px 44px -20px var(--cor); }
+.cat-leque { position:relative; z-index:0; height:210px; overflow:hidden;
+             background:radial-gradient(420px 220px at 50% 110%, color-mix(in srgb, var(--cor) 30%, transparent), transparent 70%), #08070c; }
+.cat-leque img { position:absolute; left:50%; bottom:-34px; width:min(56%, 300px); aspect-ratio:16/10; object-fit:cover; object-position:top center;
+                 border-radius:10px; border:1px solid rgba(255,255,255,.12); box-shadow:0 10px 30px -8px rgba(0,0,0,.8); z-index:var(--z);
+                 transform-origin:50% 140%; transform:translateX(calc(-50% + var(--i) * 15%)) rotate(calc(var(--i) * 7deg));
+                 transition:transform .3s cubic-bezier(.2,.8,.2,1); }
+.cat:hover .cat-leque img { transform:translateX(calc(-50% + var(--i) * 22%)) rotate(calc(var(--i) * 10deg)) translateY(-8px); }
+.cat-txt { padding:18px 22px 20px; display:flex; flex-direction:column; gap:8px; flex:1; }
+.cat-topo { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.cat h3 { font-size:28px; letter-spacing:.08em; text-transform:uppercase; }
+.cat-link { color:var(--cor); text-decoration:none; }
+.cat-link::after { content:""; position:absolute; inset:0; z-index:1; }
+.cat-link:focus-visible { outline:none; } .cat:has(.cat-link:focus-visible) { outline:2px solid var(--cor); outline-offset:2px; }
+.cat-n { color:var(--dim); font-size:13px; white-space:nowrap; }
+.cat p { margin:0; }
+.cat-resumo { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:14px; }
+.cat-preco { font-weight:800; }
+.cat-tem-gratis { color:var(--grn); font-weight:700; font-size:13px; }
+.cat-off { background:var(--grn); color:#0b2316; font:800 12px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.06em; padding:2px 8px; border-radius:6px; }
+.cat-itens { list-style:none; margin:4px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px; }
+.cat-itens a { position:relative; z-index:2; display:inline-block; padding:4px 10px; border-radius:8px; border:1px solid var(--line); background:var(--card2);
+               color:var(--ink); text-decoration:none; font:700 12px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.08em; }
+.cat-itens a:hover, .cat-itens a:focus-visible { border-color:var(--cor); color:var(--cor); outline:none; }
+.cat-itens i { font-style:normal; color:var(--grn); font-size:10px; margin-left:2px; }
+.cat-ver { margin-top:auto; padding-top:6px; color:var(--cor); font-weight:700; font-size:14px; }
+.cat-largo { flex-direction:row; }
+.cat-largo .cat-leque { flex:0 0 52%; height:auto; min-height:250px; }
+.cat-largo .cat-leque img { width:min(48%, 280px); }
+.cat-largo .cat-txt { justify-content:center; padding:26px 30px; }
+.cat-largo h3 { font-size:36px; }
+.hero-secao { padding-top:48px; background:radial-gradient(800px 420px at 80% -10%, color-mix(in srgb, var(--cor) 24%, transparent), transparent 70%); }
+.hero-secao h1 { color:var(--cor); text-transform:uppercase; letter-spacing:.06em; }
+.secoes-nav { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.secoes-nav a.atual { color:var(--ink); background:color-mix(in srgb, var(--cor) 18%, transparent); border-color:var(--cor); }
+@media (max-width:860px) { .grade-cat { grid-template-columns:1fr; } .cat-largo { flex-direction:column; } .cat-largo .cat-leque { min-height:200px; flex-basis:auto; height:200px; } }
+@media (max-width:560px) { .cat-leque, .cat-largo .cat-leque { height:170px; min-height:0; } .cat-leque img, .cat-largo .cat-leque img { width:68%; bottom:-24px; } .cat h3, .cat-largo h3 { font-size:24px; } .cat-txt, .cat-largo .cat-txt { padding:16px 18px 18px; } }
 .pack { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-radius:var(--raio); overflow:hidden;
         text-decoration:none; transition:transform .18s, border-color .18s, box-shadow .18s; }
 .pack:hover { transform:translateY(-3px); border-color:var(--cor); box-shadow:0 12px 40px -18px var(--cor); }

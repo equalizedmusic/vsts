@@ -250,6 +250,22 @@ export const PACKS = [
     },
 ];
 
+// Seções da loja (pedido dele, 10/11: a home virou um card por seção, com o leque de produtos dentro, para não rolar demais).
+// Cada seção tem a página /plugins/<id>/ com os cards dos produtos. Um produto pode estar em mais de uma seção
+// (ALIGN e VASSOURA em Grátis e Mix, BAREBASS em Grátis e Synths). O "voltar" da página do pack vai para a 1ª seção paga em que ele aparece.
+export const SECOES = [
+    { id: 'gratis', nome: ['Grátis', 'Free'], cor: '#34d399', itens: ['align', 'barebass', 'vassoura'],
+      frase: ['Baixe e use agora, sem pagar nada.', 'Download and use them now, for free.'] },
+    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'mesa', 'align', 'vassoura'],
+      frase: ['Console, mix automática, fase do grave e limpeza de stems.', 'Console, auto mix, low-end phase and stem cleanup.'] },
+    { id: 'synths', nome: ['Synths', 'Synths'], cor: '#e879f9', itens: ['quimera', 'limao', 'mercurio', 'resenha', 'groovador', 'barebass'],
+      frase: ['Wavetable, ácido, FM, percussão e baixo.', 'Wavetable, acid, FM, percussion and bass.'] },
+    { id: 'pedais', nome: ['Pedais', 'Pedals'], cor: '#ef4444', itens: ['stompbox'],
+      frase: ['Pedalboard de guitarra com amps e caixa.', 'Guitar pedalboard with amps and cab.'] },
+    { id: 'packs', nome: ['Packs', 'Packs'], cor: '#f97316', itens: ['criativo', 'mix', 'knob'],
+      frase: ['Séries de 10 plugins: Criativo, Mix e Knob.', '10-plugin series: Creative, Mix and Knob.'] },
+];
+
 // preço de cada pack = o do servidor (brl/usd null = em breve)
 // (precoAtual: o MAESTRO sai a 149,90 em build feito depois da Black Friday)
 for (const p of PACKS) p.preco = precoAtual(p.id) || null;
