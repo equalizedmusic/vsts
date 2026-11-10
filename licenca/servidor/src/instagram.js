@@ -19,6 +19,7 @@
 // (a Meta reenvia o aviso quando a resposta demora ou falha).
 
 import { moldura, esc, comAssinatura } from './emailhtml.js';
+import { fimOferta } from './precos.js';
 
 const GRAPH_FB = 'https://graph.facebook.com/v23.0';
 const GRAPH_IG = 'https://graph.instagram.com/v23.0';
@@ -82,7 +83,12 @@ const GATILHOS = [
     },
     {
         palavra: 'maestro',
-        dm: 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\nOferta de lançamento até a Black Friday (27/11): de R$ 149,90 por R$ 79,90 👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.',
+        // depois da Black Friday o MAESTRO sobe para 149,90 (precos.js): o texto da oferta sai sozinho
+        get dm() {
+            return Date.now() < Date.parse(fimOferta('maestro'))
+                ? 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\nOferta de lançamento até a Black Friday (27/11): de R$ 149,90 por R$ 79,90 👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.'
+                : 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\nVeja os detalhes e o preço 👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.';
+        },
         publico: PUBLICO,
     },
     {
