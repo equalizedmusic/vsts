@@ -81,6 +81,11 @@ const GATILHOS = [
         publico: PUBLICO,
     },
     {
+        palavra: 'maestro',
+        dm: 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\nOferta de lançamento até a Black Friday (27/11): de R$ 149,90 por R$ 79,90 👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.',
+        publico: PUBLICO,
+    },
+    {
         palavra: 'mesa', curto: true,
         dm: 'Opa! Aqui está a MESA, a console analógica dentro da sua DAW 🎚️\n\nVeja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/mesa/\n\nPix, cartão em até 12x ou boleto.',
         publico: PUBLICO,
