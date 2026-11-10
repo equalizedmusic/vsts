@@ -86,7 +86,7 @@ const GATILHOS = [
         // depois da Black Friday o MAESTRO sobe para 149,90 (precos.js): o texto da oferta sai sozinho
         get dm() {
             return Date.now() < Date.parse(fimOferta('maestro'))
-                ? 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\nOferta de lançamento até a Black Friday (27/11): de R$ 149,90 por R$ 79,90 👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.'
+                ? 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\n🖤 PREÇO PROMOCIONAL ATÉ A BLACK FRIDAY: de R$ 149,90 por R$ 79,90, só até 27/11 (sexta, 23h59). Depois volta para R$ 149,90.\n\n👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.'
                 : 'Opa! Aqui está o MAESTRO, o regente da sua mix 🎼\n\nVeja os detalhes e o preço 👉 https://insidestudiosp.com.br/maestro/\n\nPix ou cartão.';
         },
         publico: PUBLICO,
