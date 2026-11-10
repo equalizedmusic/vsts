@@ -41,11 +41,22 @@ nav a:focus-visible, .idioma:focus-visible { outline:2px solid var(--pur); outli
 h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); margin-bottom:18px; }
 .dim { color:var(--dim); }
 
-/* banner de lançamento no topo da loja */
-.dl { padding:48px 0 44px; border-bottom:1px solid var(--line);
-        background:radial-gradient(900px 480px at 85% 10%, color-mix(in srgb, var(--cor) 30%, transparent), transparent 70%),
-                   radial-gradient(600px 380px at 0% 100%, rgba(52,211,153,.10), transparent 70%); }
-.dl-grade { display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 6fr); gap:40px; align-items:center; }
+/* popup de lançamento na entrada da loja */
+.dl { width:min(1000px, calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; padding:40px 36px 32px; color:var(--ink);
+        border:1px solid color-mix(in srgb, var(--cor) 45%, var(--line)); border-radius:20px; box-shadow:0 40px 120px -30px var(--cor);
+        background:radial-gradient(700px 420px at 85% 10%, color-mix(in srgb, var(--cor) 26%, transparent), transparent 70%),
+                   radial-gradient(500px 320px at 0% 100%, rgba(52,211,153,.10), transparent 70%), var(--bg); }
+.dl[open] { animation:dl-entra .28s ease-out; }
+.dl::backdrop { background:rgba(5,4,9,.78); backdrop-filter:blur(3px); }
+@keyframes dl-entra { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
+.dl-fechar { position:absolute; top:12px; right:12px; width:40px; height:40px; border-radius:10px; border:1px solid var(--line); background:rgba(13,11,20,.7);
+             color:var(--ink); font-size:18px; cursor:pointer; z-index:1; }
+.dl-fechar:hover { border-color:var(--cor); }
+.dl-depois { background:none; border:0; color:var(--dim); font:600 14px "Segoe UI", system-ui, sans-serif; text-decoration:underline; cursor:pointer; padding:8px 4px; }
+.dl-depois:hover { color:var(--ink); }
+.dl-fechar:focus-visible, .dl-depois:focus-visible { outline:2px solid var(--cor); outline-offset:2px; }
+.dl-tipo { margin:12px 0 0; }
+.dl-grade { display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 6fr); gap:36px; align-items:center; }
 .dl-selo { margin:0 0 10px; display:flex; gap:8px; align-items:center; }
 .dl-selo .tag { color:var(--cor); border:1px solid var(--cor); font:800 12px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.18em; padding:3px 9px; border-radius:6px; }
 .dl-selo b { background:var(--grn); color:#0b2316; font:800 12px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.08em; padding:4px 9px; border-radius:6px; }
@@ -63,8 +74,8 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
             box-shadow:0 24px 70px -28px var(--cor); transition:transform .18s, border-color .18s; }
 .dl-img:hover { transform:translateY(-3px); border-color:var(--cor); }
 .dl-img img { display:block; width:100%; height:auto; }
-.dl + .hero { padding-top:52px; }
-@media (max-width:860px) { .dl-grade { grid-template-columns:1fr; gap:24px; } .dl-img { order:-1; } .dl { padding-top:28px; } }
+@media (max-width:860px) { .dl-grade { grid-template-columns:1fr; gap:18px; } .dl-img { order:-1; } .dl { padding:56px 18px 22px; }
+                           .dl-nome { font-size:44px; } .dl-valor { font-size:34px; } }
 
 /* cartões de pack */
 .grade-destaque { display:grid; grid-template-columns:1fr 1fr; gap:20px; }

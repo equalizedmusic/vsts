@@ -120,11 +120,15 @@ function cartaoPack(p, grande = false) {
   </a>`;
 }
 
-// banner de lançamento no topo da loja: o pack com "lancamento" em dados.mjs (só se já tiver preço)
+// popup de lançamento na entrada da loja (pedido dele, 09/11: o banner no topo repetia a "oferta de lançamento" da faixa e confundia).
+// O pack com "lancamento" em dados.mjs (só se já tiver preço). "Quero" leva à página do pack; ✕ / "ver a loja" / Esc / clique fora fecham.
+// site.js abre 1x por sessão do navegador (sessionStorage), para não reabrir a cada volta à home.
 function bannerLancamento(p) {
     if (!p || !(temBrl(p) || temUsd(p))) return '';
     const L = p.lancamento;
-    return `<section class="dl" style="--cor:${p.cor}"><div class="faixa dl-grade">
+    return `<dialog class="dl" style="--cor:${p.cor}" aria-label="${esc(p.nome)}">
+  <button class="dl-fechar" type="button" aria-label="Fechar / Close">✕</button>
+  <div class="dl-grade">
   <div class="dl-txt">
     <p class="dl-selo"><span class="tag">${t('LANÇAMENTO', 'NEW RELEASE')}</span>${p.de && temBrl(p) ? ` <b class="so-oferta" data-fim="${p.fim}">-${off(p)}%</b>` : ''}</p>
     <h2 class="dl-nome">${esc(p.nome)}</h2>
@@ -137,11 +141,12 @@ function bannerLancamento(p) {
     </div>
     <div class="dl-bts">
       <a class="bt bt-principal" href="/${p.id}/">${t('Quero o ' + p.nome, 'Get ' + p.nome)}</a>
-      <span class="dl-tipo">${t(...p.tipo)} · ${t('Windows e Mac · Pix ou cartão em até 12x', 'Windows and Mac')}</span>
+      <button class="dl-depois" type="button">${t('Agora não, ver a loja', 'Not now, see the shop')}</button>
     </div>
+    <p class="dl-tipo">${t(...p.tipo)} · ${t('Windows e Mac · Pix ou cartão em até 12x', 'Windows and Mac')}</p>
   </div>
   <a class="dl-img" href="/${p.id}/"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}"></a>
-</div></section>`;
+</div></dialog>`;
 }
 
 function loja() {

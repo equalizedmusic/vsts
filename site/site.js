@@ -47,6 +47,24 @@
             if (tique()) var iv = setInterval(function () { if (!tique()) clearInterval(iv); }, 1000);
         }
 
+        // popup de lançamento na loja: abre 1x por sessão; "Quero" segue o link, o resto só fecha (✕, "agora não", Esc, clique fora)
+        var lanc = document.querySelector('dialog.dl');
+        if (lanc && lanc.showModal) {
+            var visto = null;
+            try { visto = sessionStorage.getItem('isp-lanc'); } catch (e) { /* modo privado */ }
+            if (!visto) setTimeout(function () {
+                lanc.showModal();
+                try { sessionStorage.setItem('isp-lanc', '1'); } catch (e) { /* ignora */ }
+            }, 500);
+            var fechaLanc = function () { lanc.close(); };
+            lanc.querySelector('.dl-fechar').addEventListener('click', fechaLanc);
+            lanc.querySelector('.dl-depois').addEventListener('click', fechaLanc);
+            lanc.addEventListener('click', function (ev) { // só fora da caixa (o padding do dialog também tem target === lanc)
+                var r = lanc.getBoundingClientRect();
+                if (ev.target === lanc && (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom)) fechaLanc();
+            });
+        }
+
         var dlg = document.querySelector('.zoom');
         if (!dlg || !dlg.showModal) return;
         var img = dlg.querySelector('img');
