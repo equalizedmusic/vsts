@@ -6,7 +6,8 @@
 #include "../../maestro/Source/MaestroLink.h"   // MAESTRO LINK: lê os 8 grupos do MAESTRO (outro binário)
 
 // MASTER DOS MAGOS — MASTERING WIZARD (par do MAESTRO). Vai no master, por último.
-// Parâmetros (automatizáveis): AMOUNT, CHARACTER, PUNCH, WIDTH, TONE TILT, BASS MONO e LISTEN TO (A / B / REF / BYPASS).
+// Parâmetros (automatizáveis): AMOUNT, CHARACTER, PUNCH, WIDTH, TONE TILT, BASS MONO e LISTEN TO (A / B / REF / BYPASS);
+// MANUAL do multibanda (mbman + mb<k>thr/rat/atk/rel/gain) e da DYNAMIC EQ (eqman + eq<z>on/rng/thr).
 // Do plugin (estado): STYLE, TARGET, MATCH TONE / MATCH LOUDNESS, a REFERÊNCIA (análise + caminho do arquivo) e o CAST.
 // O monitor de lugares (PHONE, EARBUDS, CAR, MONO) NÃO é salvo: abre sempre desligado.
 class MagosProcessor : public juce::AudioProcessor
@@ -60,7 +61,9 @@ private:
     void trocaReferencia (std::unique_ptr<magos::Referencia> nova);
 
     std::atomic<float>* pAmount = nullptr, *pChar = nullptr, *pPunch = nullptr, *pWidth = nullptr, *pTilt = nullptr,
-                      *pMono = nullptr, *pOuvir = nullptr;
+                      *pMono = nullptr, *pOuvir = nullptr, *pMbMan = nullptr, *pEqMan = nullptr;
+    std::atomic<float>* pMb[magos::NM][5] {};       // THRESH, RATIO, ATTACK, RELEASE, GAIN
+    std::atomic<float>* pEq[magos::NZ][3] {};       // ON, RANGE, THRESH
     std::vector<std::unique_ptr<magos::Referencia>> refs;   // a atual é a última; as antigas ficam até o fim (o áudio pode estar lendo)
     std::unique_ptr<juce::Thread> leitor;
     double taxa = 48000.0;

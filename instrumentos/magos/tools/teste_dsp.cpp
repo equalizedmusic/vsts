@@ -324,6 +324,41 @@ int main()
         confere (std::abs (ld.integrado - saida) < 1.0f, "B (LUFS) - saída (LUFS)", ld.integrado - saida);
     }
 
+    std::printf ("7) MANUAL sem CAST: multibanda e DYNAMIC EQ obedecem aos valores da tela\n");
+    {
+        auto roda = [&] (Ajustes a, float segundos, Engine& e)
+        {
+            Musica mu (fs, 0.25f);
+            std::vector<float> L (B), R (B);
+            for (int k = 0; k < (int) (fs * segundos / B); ++k) { mu.gera (L.data(), R.data(), B, 0.30f); float* ch[2] = { L.data(), R.data() }; e.process (ch, 2, B, a); }
+        };
+        Ajustes a;
+        a.mbManual = true;
+        a.mbThr[1] = -45.0f; a.mbRat[1] = 8.0f; a.mbAtk[1] = 1.0f;
+        a.mbThr[3] = 0.0f;                           // HIGH: limiar no topo = não comprime
+        a.eqManual = true; a.eqRange[1] = 6.0f; a.eqThr[1] = 0.0f;
+        Engine e; e.prepare (fs);
+        roda (a, 4.0f, e);
+        std::printf ("     GR LOW-MID %.1f dB, GR HIGH %.1f dB, MUD %+.1f dB\n", e.grBanda[1].load(), e.grBanda[3].load(), e.zonaDb[1].load());
+        confere (e.grBanda[1].load() < -3.0f, "LOW-MID com limiar -45 e 8:1 comprime (GR dB)", e.grBanda[1].load());
+        confere (e.grBanda[3].load() > -0.5f, "HIGH com limiar 0 não comprime (GR dB)", e.grBanda[3].load());
+        confere (e.zonaDb[1].load() < -0.5f && e.zonaDb[1].load() >= -6.01f, "MUD manual corta dentro do MAX CUT (dB)", e.zonaDb[1].load());
+
+        Ajustes b = a;
+        b.eqOn[1] = false;
+        b.mbGain[2] = -6.0f;
+        Engine e2; e2.prepare (fs);
+        roda (b, 4.0f, e2);
+        confere (std::abs (e2.zonaDb[1].load()) < 0.01f, "MUD desligado no MANUAL não mexe (dB)", e2.zonaDb[1].load());
+        const float dOut = e2.outBanda[2].load() - (e2.inBanda[2].load() + e2.grBanda[2].load());
+        std::printf ("     HIGH-MID: saída - (entrada + GR) = %.1f dB (GAIN -6 + reposição)\n", dOut);
+
+        Ajustes c;                                   // AUTO sem CAST: nada mexe
+        Engine e3; e3.prepare (fs);
+        roda (c, 3.0f, e3);
+        confere (std::abs (e3.grBanda[1].load()) < 0.01f && std::abs (e3.zonaDb[1].load()) < 0.01f, "AUTO sem CAST continua sem mexer", e3.grBanda[1].load());
+    }
+
     std::printf ("\n%s (%d falha%s)\n", falhas == 0 ? "TUDO OK" : "HÁ FALHAS", falhas, falhas == 1 ? "" : "s");
     return falhas == 0 ? 0 : 1;
 }

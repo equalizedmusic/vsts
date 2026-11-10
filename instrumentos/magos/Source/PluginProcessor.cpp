@@ -17,6 +17,41 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "monobass", 1 }, "Bass mono < 120 Hz", true));
     l.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "listen", 1 }, "Listen to",
                                                          juce::StringArray { "A (master)", "B (original, same loudness)", "REF", "BYPASS" }, 0));
+
+    // MANUAL: multibanda e DYNAMIC EQ por cima do AUTO (ao ligar, a tela copia o que o AUTO fazia)
+    using B = juce::AudioParameterBool;
+    const magos::Ajustes d;
+    auto faixa = [] (float a, float b, float passo, float centro)
+    {
+        juce::NormalisableRange<float> r (a, b, passo);
+        r.setSkewForCentre (centro);
+        return r;
+    };
+    l.add (std::make_unique<B> (juce::ParameterID { "mbman", 1 }, "Multiband manual", false));
+    for (int k = 0; k < magos::NM; ++k)
+    {
+        const juce::String n = magos::nomeBanda (k), id = "mb" + juce::String (k);
+        l.add (std::make_unique<P> (juce::ParameterID { id + "thr", 1 }, n + " threshold", juce::NormalisableRange<float> (-60.0f, 0.0f, 0.1f),
+                                    d.mbThr[k], juce::AudioParameterFloatAttributes().withLabel ("dB")));
+        l.add (std::make_unique<P> (juce::ParameterID { id + "rat", 1 }, n + " ratio", faixa (1.0f, 20.0f, 0.01f, 3.0f), d.mbRat[k],
+                                    juce::AudioParameterFloatAttributes().withLabel (":1")));
+        l.add (std::make_unique<P> (juce::ParameterID { id + "atk", 1 }, n + " attack", faixa (0.1f, 300.0f, 0.1f, 15.0f), d.mbAtk[k],
+                                    juce::AudioParameterFloatAttributes().withLabel ("ms")));
+        l.add (std::make_unique<P> (juce::ParameterID { id + "rel", 1 }, n + " release", faixa (5.0f, 3000.0f, 1.0f, 150.0f), d.mbRel[k],
+                                    juce::AudioParameterFloatAttributes().withLabel ("ms")));
+        l.add (std::make_unique<P> (juce::ParameterID { id + "gain", 1 }, n + " gain", juce::NormalisableRange<float> (-12.0f, 12.0f, 0.1f),
+                                    0.0f, juce::AudioParameterFloatAttributes().withLabel ("dB")));
+    }
+    l.add (std::make_unique<B> (juce::ParameterID { "eqman", 1 }, "Dynamic EQ manual", false));
+    for (int z = 0; z < magos::NZ; ++z)
+    {
+        const juce::String n = magos::zona (z).nome, id = "eq" + juce::String (z);
+        l.add (std::make_unique<B> (juce::ParameterID { id + "on", 1 }, n + " on", true));
+        l.add (std::make_unique<P> (juce::ParameterID { id + "rng", 1 }, n + " range", juce::NormalisableRange<float> (0.0f, 8.0f, 0.1f),
+                                    d.eqRange[z], juce::AudioParameterFloatAttributes().withLabel ("dB")));
+        l.add (std::make_unique<P> (juce::ParameterID { id + "thr", 1 }, n + " threshold", juce::NormalisableRange<float> (0.0f, 12.0f, 0.1f),
+                                    d.eqThr[z], juce::AudioParameterFloatAttributes().withLabel ("dB")));
+    }
     return l;
 }
 
@@ -33,6 +68,24 @@ MagosProcessor::MagosProcessor()
     pTilt = apvts.getRawParameterValue ("tilt");
     pMono = apvts.getRawParameterValue ("monobass");
     pOuvir = apvts.getRawParameterValue ("listen");
+    pMbMan = apvts.getRawParameterValue ("mbman");
+    pEqMan = apvts.getRawParameterValue ("eqman");
+    for (int k = 0; k < magos::NM; ++k)
+    {
+        const juce::String id = "mb" + juce::String (k);
+        pMb[k][0] = apvts.getRawParameterValue (id + "thr");
+        pMb[k][1] = apvts.getRawParameterValue (id + "rat");
+        pMb[k][2] = apvts.getRawParameterValue (id + "atk");
+        pMb[k][3] = apvts.getRawParameterValue (id + "rel");
+        pMb[k][4] = apvts.getRawParameterValue (id + "gain");
+    }
+    for (int z = 0; z < magos::NZ; ++z)
+    {
+        const juce::String id = "eq" + juce::String (z);
+        pEq[z][0] = apvts.getRawParameterValue (id + "on");
+        pEq[z][1] = apvts.getRawParameterValue (id + "rng");
+        pEq[z][2] = apvts.getRawParameterValue (id + "thr");
+    }
     setLatencySamples (motor.latenciaAmostras());
 }
 
@@ -89,6 +142,17 @@ void MagosProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     a.monoBass = pMono->load() > 0.5f;
     a.ouvir = juce::jlimit (0, 3, juce::roundToInt (pOuvir->load()));
     a.sim = sim.load();
+    a.mbManual = pMbMan->load() > 0.5f;
+    a.eqManual = pEqMan->load() > 0.5f;
+    for (int k = 0; k < magos::NM; ++k)
+    {
+        a.mbThr[k] = pMb[k][0]->load(); a.mbRat[k] = pMb[k][1]->load(); a.mbAtk[k] = pMb[k][2]->load();
+        a.mbRel[k] = pMb[k][3]->load(); a.mbGain[k] = pMb[k][4]->load();
+    }
+    for (int z = 0; z < magos::NZ; ++z)
+    {
+        a.eqOn[z] = pEq[z][0]->load() > 0.5f; a.eqRange[z] = pEq[z][1]->load(); a.eqThr[z] = pEq[z][2]->load();
+    }
     motor.process (buffer.getArrayOfWritePointers(), nch, n, a);
 }
 

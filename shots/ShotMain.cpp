@@ -545,6 +545,22 @@ int main (int argc, char** argv)
         std::printf ("MAGOS-LISTEN: %s\n", osL.openedOk() && pngL.writeImageToStream (imgL, osL) ? "ok" : "falhou");
         mg->motor.lancaCast();
         juce::MessageManager::getInstance()->runDispatchLoopUntil (9000);
+        // MANUAL no multibanda e na DYNAMIC EQ (foto à parte); depois volta ao AUTO para a foto principal
+        setParam (*proc, "mbman", 1.0f);
+        setParam (*proc, "eqman", 1.0f);
+        setParam (*proc, "mb1gain", -1.5f);
+        setParam (*proc, "eq3on", 0.0f);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (2500);
+        editor->setSize (SHOT_W, SHOT_H);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
+        const auto imgM = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+        const auto fM = outDir.getChildFile ("MAGOS-MANUAL.png");
+        fM.deleteFile();
+        juce::FileOutputStream osM (fM);
+        juce::PNGImageFormat pngM;
+        std::printf ("MAGOS-MANUAL: %s\n", osM.openedOk() && pngM.writeImageToStream (imgM, osM) ? "ok" : "falhou");
+        setParam (*proc, "mbman", 0.0f);
+        setParam (*proc, "eqman", 0.0f);
     }
    #endif
    #if SHOT_ALIGN

@@ -4,6 +4,17 @@ Pacote do instalador: `InsideStudioSP-Magos`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `magos-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-10
+- TESTE (sem licença e fora do site).
+- TONAL BALANCE virou um analisador de verdade, como os de EQ profissional: 10 Hz a 35 kHz, resposta rápida
+  (o grave mexe junto com a música), resolução fina de 1/24 de oitava e inclinação de 4,5 dB por oitava (o agudo não
+  aparece mais "caindo"). As curvas de alvo e de referência estão na mesma escala.
+- MANUAL no MULTIBAND COMP e na DYNAMIC EQ: clique em MANUAL e arraste os valores emoldurados para cima ou para baixo
+  (SHIFT = ajuste fino, duplo clique = padrão, roda do mouse também). Começa do que o AUTO fazia, então o som não
+  pula. Em cada banda do multibanda: THRESH, RATIO, ATTACK, RELEASE e GAIN. Em cada ponto da DYNAMIC EQ: liga ou
+  desliga (clique no nome), MAX CUT / MAX LIFT e THRESH (quantos dB fora do alvo antes de agir). Funciona com ou sem
+  CAST. AUTO volta ao automático. Tudo fica salvo no projeto e pode ser automatizado no DAW.
+
 ## 0.1.0 — 2026-11-10
 - Primeira versão do MASTER DOS MAGOS (MASTERING WIZARD), o par do MAESTRO, para TESTE (sem licença e fora do site).
 - Vai por último no master. Arraste uma REFERÊNCIA (WAV, AIFF, FLAC, OGG, MP3) para a janela; sem ela, o alvo é a

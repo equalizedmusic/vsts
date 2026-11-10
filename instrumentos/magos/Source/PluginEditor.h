@@ -9,7 +9,8 @@
 //  - topo: marca, MAESTRO LINKED, REFERENCE, STYLE e TARGET;
 //  - TONAL BALANCE: antes (cinza), referência / alvo (amarelo tracejado + zona), depois (ciano), sobra em vermelho,
 //    pontos da DYNAMIC EQ e a faixa DYNAMIC EQ · LIVE;
-//  - MULTIBAND COMP: 4 bandas (IN / GR / OUT, limiar, razão, ataque / soltura), tudo AUTO;
+//  - MULTIBAND COMP: 4 bandas (IN / GR / OUT, limiar, razão, ataque / soltura), AUTO ou MANUAL (arrasta os valores);
+//  - DYNAMIC EQ (faixa embaixo do TONAL BALANCE): AUTO ou MANUAL (liga, RANGE e THRESH de cada ponto);
 //  - LOUDNESS (integrado, true peak, curto, PLR, GR do limitador), STEREO por banda e WHERE IT WILL PLAY (quanto cada
 //    plataforma abaixa + HEAR IT ON: PHONE / EARBUDS / CAR / MONO);
 //  - MAESTRO LINKED: os 8 grupos do MAESTRO no projeto vs o STYLE e cada problema do master com o grupo de onde vem;
@@ -47,6 +48,8 @@ private:
         std::function<juce::String()> texto;
     };
     struct Clique { juce::Rectangle<float> r; std::function<void()> faz; };
+    // valor do MANUAL que se arrasta (para cima / para baixo; SHIFT = fino; duplo clique = padrão; roda)
+    struct Ajuste { juce::Rectangle<float> r; juce::String id; };
 
     // MAESTRO LINK: um grupo neste quadro
     struct GrupoLink
@@ -85,10 +88,23 @@ private:
     void menuLogo();
     void escolheArquivo();
     void apertaCast();
+    // MANUAL: ao ligar, copia o que o AUTO fazia (o som não pula); ao desligar, volta ao AUTO
+    void ligaManualMulti (bool on);
+    void ligaManualEq (bool on);
+    void chaveAutoManual (juce::Graphics&, juce::Rectangle<float>, bool manual, std::function<void (bool)> faz);
+    void valorAjuste (juce::Graphics&, juce::Rectangle<float>, const juce::String& id, const juce::String& val,
+                      const juce::String& rot, juce::Colour cor);
+    juce::RangedAudioParameter* parametro (const juce::String& id) const
+    {
+        return dynamic_cast<juce::RangedAudioParameter*> (proc.apvts.getParameter (id));
+    }
+    const Ajuste* ajusteEm (juce::Point<float>) const;
 
     MagosProcessor& proc;
     std::vector<Knob> knobs;
     std::vector<Clique> cliques;
+    std::vector<Ajuste> ajustes;
+    juce::String idArrasto;                          // Ajuste sendo arrastado
     int arrastando = -1;
     float valorIni = 0, yIni = 0;
     bool arrastandoArquivo = false;

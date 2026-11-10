@@ -415,6 +415,7 @@ void MagosEditor::paint (juce::Graphics& g)
     g.setGradientFill (juce::ColourGradient (cFundoA, 0, 0, cFundoB, 0, (float) baseH, false));
     g.fillRect (0.0f, 0.0f, (float) baseW, (float) baseH);
     cliques.clear();
+    ajustes.clear();
 
     topo (g);
     painelTom (g, { 12, 64, 828, 352 });
@@ -695,10 +696,37 @@ void MagosEditor::painelTom (juce::Graphics& g, juce::Rectangle<float> r)
         texto (g, t, { tela.getRight() - 300, tela.getY() + 8, 290, 18 }, 13.0f, cCiano, juce::Justification::centredRight, 0.14f, true);
     }
 
-    // faixa DYNAMIC EQ · LIVE
+    // faixa DYNAMIC EQ · LIVE (AUTO) ou os controles de cada ponto (MANUAL)
     const juce::Rectangle<float> fx (tela.getX(), tela.getBottom() + 20, tela.getWidth(), 50);
     g.setColour (cTela);
     g.fillRoundedRectangle (fx, 3.0f);
+    const bool eqMan = proc.valor ("eqman") > 0.5f;
+    chaveAutoManual (g, { fx.getRight() - 124, fx.getY() + 3, 118, 15 }, eqMan, [this] (bool on) { ligaManualEq (on); });
+    if (eqMan)
+    {
+        texto (g, "DYNAMIC EQ" + ponto + "MANUAL" + ponto + "DRAG THE VALUES", { fx.getX() + 8, fx.getY() + 3, 400, 14 }, 9.0f, cOuro,
+               juce::Justification::centredLeft, 0.2f, true);
+        const float cw = (fx.getWidth() - 8) / (float) NZ, cy = fx.getY() + 20, ch = 27;
+        for (int z = 0; z < NZ; ++z)
+        {
+            const auto& Z = zona (z);
+            const float x = fx.getX() + 4 + z * cw, v = zonaHold[z];
+            const juce::String id = "eq" + juce::String (z);
+            const bool on = proc.valor (id + "on") > 0.5f;
+            const juce::Rectangle<float> cl (x, cy, 72, ch);
+            led (g, { x + 8, cl.getCentreY() }, 3.5f, std::abs (v) >= 0.3f ? (v < 0 ? cRosa : cAzul) : cVerde, on);
+            texto (g, Z.nome, { x + 15, cy, 58, 15 }, 8.5f, on ? cTexto : cApagado, juce::Justification::centredLeft, 0.1f, true);
+            texto (g, on ? (std::abs (v) >= 0.1f ? num (v, 1, true) + " dB" : juce::String ("IDLE")) : juce::String ("OFF"),
+                   { x + 15, cy + 14, 58, 12 }, 8.0f, on && std::abs (v) >= 0.1f ? (v < 0 ? cRosa : cAzul) : cApagado,
+                   juce::Justification::centredLeft, 0.1f, std::abs (v) >= 0.1f);
+            cliques.push_back ({ cl, [this, id, on] { proc.define (id + "on", on ? 0.0f : 1.0f); } });
+            const auto cor = Z.sinal < 0 ? cRosa : cAzul;
+            valorAjuste (g, { x + 74, cy, 36, ch }, id + "rng", (Z.sinal < 0 ? menos : juce::String ("+")) + juce::String (proc.valor (id + "rng"), 1),
+                         Z.sinal < 0 ? "MAX CUT" : "MAX LIFT", cor);
+            valorAjuste (g, { x + 112, cy, 36, ch }, id + "thr", juce::String (proc.valor (id + "thr"), 1), "THRESH", cor);
+        }
+        return;
+    }
     texto (g, "DYNAMIC EQ" + ponto + "LIVE", { fx.getX() + 8, fx.getY() + 3, 200, 12 }, 9.0f, cApagado, juce::Justification::centredLeft, 0.2f);
     const float meio = fx.getCentreY() + 4;
     {
@@ -732,9 +760,12 @@ void MagosEditor::painelMulti (juce::Graphics& g, juce::Rectangle<float> r)
 {
     auto& M = proc.motor;
     caixa (g, r);
-    titulo (g, r, "MULTIBAND COMP", "4 BANDS" + ponto + (proc.nomeReferencia().isNotEmpty() ? "AUTO FROM THE REFERENCE" : "AUTO FROM YOUR TRACK"));
+    const bool man = proc.valor ("mbman") > 0.5f;
+    titulo (g, r, "MULTIBAND COMP", "4 BANDS" + ponto + (man ? juce::String ("MANUAL") + ponto + "DRAG THE VALUES"
+                                                             : (proc.nomeReferencia().isNotEmpty() ? "AUTO FROM THE REFERENCE" : "AUTO FROM YOUR TRACK")));
     texto (g, "LINEAR PHASE  120" + ponto + "1.2k" + ponto + "6.5k Hz", { r.getRight() - 300, r.getY() + 10, 286, 16 }, 10.0f, cOuro,
            juce::Justification::centredRight, 0.18f, true);
+    chaveAutoManual (g, { r.getRight() - 360, r.getY() + 9, 118, 18 }, man, [this] (bool on) { ligaManualMulti (on); });
     static const char* faixa[NM] = { "20-120 Hz", "120-1.2k Hz", "1.2k-6.5k Hz", "6.5k-20k Hz" };
     static const char* papel[NM] = { "KICK + BASS GLUE", "TAMES THE BOX", "HARSHNESS", "SMOOTH HATS" };
     static const float atqBase[NM] = { 30.0f, 15.0f, 5.0f, 2.0f }, relBase[NM] = { 160.0f, 120.0f, 80.0f, 60.0f };
@@ -772,11 +803,19 @@ void MagosEditor::painelMulti (juce::Graphics& g, juce::Rectangle<float> r)
         barra (c.getX() + 40, -gr / 12.0f, cRosa, true, "GR");
         barra (c.getX() + 64, fr (M.outBanda[k].load()), corBanda[k], false, "OUT");
 
-        // limiar e razão (AUTO: só mostra)
-        const float raz = 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * quente) * (0.4f + 0.6f * amt);
-        auto mostrador = [&] (float cy, float frac, const juce::String& val, const juce::String& rot)
+        // limiar e razão (AUTO: só mostra; MANUAL: arrasta)
+        const juce::String id = "mb" + juce::String (k);
+        const float raz = man ? proc.valor (id + "rat") : 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * quente) * (0.4f + 0.6f * amt);
+        auto mostrador = [&] (float cy, float frac, const juce::String& val, const juce::String& rot, const juce::String& idAj)
         {
             const juce::Point<float> cc (c.getRight() - 46, cy);
+            if (man)
+            {
+                const juce::Rectangle<float> a (cc.x - 32, cy - 18, 64, 59);
+                g.setColour (corBanda[k].withAlpha (0.08f)); g.fillRoundedRectangle (a, 4.0f);
+                g.setColour (corBanda[k].withAlpha (0.45f)); g.drawRoundedRectangle (a, 4.0f, 1.0f);
+                ajustes.push_back ({ a, idAj });
+            }
             const float rr = 14, a0 = juce::MathConstants<float>::pi * 1.25f, a1 = juce::MathConstants<float>::pi * 2.75f;
             juce::Path fundo, arco;
             fundo.addCentredArc (cc.x, cc.y, rr, rr, 0, a0, a1, true);
@@ -789,18 +828,29 @@ void MagosEditor::painelMulti (juce::Graphics& g, juce::Rectangle<float> r)
             texto (g, val, { cc.x - 40, cy + 17, 80, 13 }, 10.0f, cTexto, juce::Justification::centred, 0.0f, true);
             texto (g, rot, { cc.x - 40, cy + 30, 80, 11 }, 8.5f, cApagado, juce::Justification::centred, 0.2f);
         };
-        const float lim = M.limiarAgora[k].load();
-        mostrador (mt + 16, feito ? (lim + 60.0f) / 60.0f : 1.0f, feito ? num (lim, 1) : juce::String ("OFF"), "THRESH");
-        mostrador (mt + 76, (raz - 1.0f) / 4.0f, juce::String (raz, 1) + ":1", "RATIO");
+        const float lim = man ? proc.valor (id + "thr") : M.limiarAgora[k].load();
+        const bool ativo = feito || man;
+        mostrador (mt + 16, ativo ? (lim + 60.0f) / 60.0f : 1.0f, ativo ? num (lim, 1) : juce::String ("OFF"), "THRESH", id + "thr");
+        mostrador (mt + 76, (raz - 1.0f) / (man ? 9.0f : 4.0f), juce::String (raz, 1) + ":1", "RATIO", id + "rat");
 
-        texto (g, "GR " + num (gr, 1) + " dB" + ponto + "ATK/REL " + juce::String (juce::roundToInt (atqBase[k] * fp)) + " / "
-               + juce::String (juce::roundToInt (relBase[k])) + " ms", { c.getX(), c.getBottom() - 46, c.getWidth(), 13 }, 9.5f, cTexto,
-               juce::Justification::centred, 0.04f);
+        if (man)
+        {
+            const float bw = (c.getWidth() - 24) / 3.0f, by = c.getBottom() - 56;
+            auto ms = [] (float v) { return v < 10.0f ? juce::String (v, 1) : juce::String (juce::roundToInt (v)); };
+            valorAjuste (g, { c.getX() + 8, by, bw, 28 }, id + "atk", ms (proc.valor (id + "atk")) + " ms", "ATTACK", corBanda[k]);
+            valorAjuste (g, { c.getX() + 12 + bw, by, bw, 28 }, id + "rel", ms (proc.valor (id + "rel")) + " ms", "RELEASE", corBanda[k]);
+            valorAjuste (g, { c.getX() + 16 + 2 * bw, by, bw, 28 }, id + "gain", num (proc.valor (id + "gain"), 1, true) + " dB", "GAIN", corBanda[k]);
+        }
+        else
+            texto (g, "GR " + num (gr, 1) + " dB" + ponto + "ATK/REL " + juce::String (juce::roundToInt (atqBase[k] * fp)) + " / "
+                   + juce::String (juce::roundToInt (relBase[k])) + " ms", { c.getX(), c.getBottom() - 46, c.getWidth(), 13 }, 9.5f, cTexto,
+                   juce::Justification::centred, 0.04f);
+        const juce::String modoTxt = man ? "MANUAL" : "AUTO";
         const auto fA = fonte (8.5f, true).withExtraKerningFactor (0.2f);
-        const float wA = largura (fA, "AUTO") + 12, wP = largura (fA, papel[k]) + 12, x0 = c.getCentreX() - (wA + wP + 6) * 0.5f;
-        const juce::Rectangle<float> ca (x0, c.getBottom() - 26, wA, 16), cp (x0 + wA + 6, c.getBottom() - 26, wP, 16);
+        const float wA = largura (fA, modoTxt) + 12, wP = largura (fA, papel[k]) + 12, x0 = c.getCentreX() - (wA + wP + 6) * 0.5f;
+        const juce::Rectangle<float> ca (x0, c.getBottom() - 24, wA, 16), cp (x0 + wA + 6, c.getBottom() - 24, wP, 16);
         g.setColour (corBanda[k].withAlpha (0.6f)); g.drawRoundedRectangle (ca, 3.0f, 1.0f);
-        texto (g, "AUTO", ca, 8.5f, corBanda[k], juce::Justification::centred, 0.2f, true);
+        texto (g, modoTxt, ca, 8.5f, corBanda[k], juce::Justification::centred, 0.2f, true);
         g.setColour (cBorda); g.drawRoundedRectangle (cp, 3.0f, 1.0f);
         texto (g, papel[k], cp, 8.5f, cTexto, juce::Justification::centred, 0.2f, true);
     }
@@ -1181,11 +1231,100 @@ void MagosEditor::desenhaKnob (juce::Graphics& g, Knob& k)
 }
 
 // ------------------------------------------------------------------------------------------------------------------
+// MANUAL
+// ------------------------------------------------------------------------------------------------------------------
+void MagosEditor::chaveAutoManual (juce::Graphics& g, juce::Rectangle<float> r, bool manual, std::function<void (bool)> faz)
+{
+    g.setColour (cTela.withAlpha (0.8f)); g.fillRoundedRectangle (r, 3.0f);
+    g.setColour (cBorda); g.drawRoundedRectangle (r, 3.0f, 1.0f);
+    const auto a = r.withWidth (r.getWidth() * 0.42f), m = r.withTrimmedLeft (r.getWidth() * 0.42f);
+    g.setColour (manual ? cOuro : cRoxoClaro);
+    g.fillRoundedRectangle ((manual ? m : a).reduced (1.5f), 2.5f);
+    const auto escuro = juce::Colour (0xff120f1a);
+    texto (g, "AUTO", a, 8.5f, manual ? cApagado : escuro, juce::Justification::centred, 0.2f, true);
+    texto (g, "MANUAL", m, 8.5f, manual ? escuro : cApagado, juce::Justification::centred, 0.2f, true);
+    cliques.push_back ({ a, [faz] { faz (false); } });
+    cliques.push_back ({ m, [faz] { faz (true); } });
+}
+
+void MagosEditor::valorAjuste (juce::Graphics& g, juce::Rectangle<float> r, const juce::String& id, const juce::String& val,
+                               const juce::String& rot, juce::Colour cor)
+{
+    const bool ativo = idArrasto == id;
+    g.setColour (cor.withAlpha (ativo ? 0.22f : 0.08f)); g.fillRoundedRectangle (r, 3.0f);
+    g.setColour (cor.withAlpha (ativo ? 0.9f : 0.45f)); g.drawRoundedRectangle (r, 3.0f, 1.0f);
+    texto (g, val, r.withHeight (r.getHeight() * 0.58f).translated (0, 1), 9.5f, cBranco, juce::Justification::centred, 0.0f, true);
+    texto (g, rot, r.withTrimmedTop (r.getHeight() * 0.56f), 7.0f, cApagado, juce::Justification::centred, 0.05f);
+    ajustes.push_back ({ r, id });
+}
+
+const MagosEditor::Ajuste* MagosEditor::ajusteEm (juce::Point<float> p) const
+{
+    for (auto it = ajustes.rbegin(); it != ajustes.rend(); ++it)
+        if (it->r.contains (p)) return &*it;
+    return nullptr;
+}
+
+void MagosEditor::ligaManualMulti (bool on)
+{
+    if (on == (proc.valor ("mbman") > 0.5f)) return;
+    if (on)
+    {
+        // copia o AUTO de agora (com CAST; sem CAST, os padrões de cada banda)
+        static const float atqBase[NM] = { 30.0f, 15.0f, 5.0f, 2.0f }, relBase[NM] = { 160.0f, 120.0f, 80.0f, 60.0f };
+        static const float razBase[NM] = { 2.0f, 2.5f, 3.0f, 1.6f };
+        auto& M = proc.motor;
+        const bool feito = M.feitico.feito;
+        const float amt = proc.valor ("amount") / 100.0f, quente = proc.valor ("character") / 100.0f;
+        const float fp = std::pow (2.0f, proc.valor ("punch") / 2.5f);
+        for (int k = 0; k < NM; ++k)
+        {
+            const juce::String id = "mb" + juce::String (k);
+            proc.define (id + "thr", feito ? M.limiarAgora[k].load() : -20.0f);
+            proc.define (id + "rat", 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * quente) * (0.4f + 0.6f * amt));
+            proc.define (id + "atk", atqBase[k] * fp);
+            proc.define (id + "rel", relBase[k]);
+            proc.define (id + "gain", 0.0f);
+        }
+    }
+    proc.define ("mbman", on ? 1.0f : 0.0f);
+    repaint();
+}
+
+void MagosEditor::ligaManualEq (bool on)
+{
+    if (on == (proc.valor ("eqman") > 0.5f)) return;
+    if (on)
+    {
+        const float amt = proc.valor ("amount") / 100.0f;
+        for (int z = 0; z < NZ; ++z)
+        {
+            const juce::String id = "eq" + juce::String (z);
+            proc.define (id + "on", 1.0f);
+            proc.define (id + "rng", zona (z).max * amt);
+            proc.define (id + "thr", 1.5f);
+        }
+    }
+    proc.define ("eqman", on ? 1.0f : 0.0f);
+    repaint();
+}
+
+// ------------------------------------------------------------------------------------------------------------------
 // mouse
 // ------------------------------------------------------------------------------------------------------------------
 void MagosEditor::mouseDown (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
+    if (const auto* a = ajusteEm (p))
+        if (auto* prm = parametro (a->id))
+        {
+            idArrasto = a->id;
+            valorIni = prm->getValue();
+            prm->beginChangeGesture();
+            yIni = p.y;
+            repaint();
+            return;
+        }
     for (int i = 0; i < (int) knobs.size(); ++i)
         if (p.getDistanceFrom (knobs[(size_t) i].c) <= knobs[(size_t) i].r + 6)
         {
@@ -1200,9 +1339,15 @@ void MagosEditor::mouseDown (const juce::MouseEvent& e)
 
 void MagosEditor::mouseDrag (const juce::MouseEvent& e)
 {
-    if (arrastando < 0) return;
     const float dy = yIni - e.position.y / escala();
     const float sens = e.mods.isShiftDown() ? 800.0f : 180.0f;
+    if (idArrasto.isNotEmpty())
+    {
+        if (auto* prm = parametro (idArrasto)) prm->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, valorIni + dy / sens));
+        repaint();
+        return;
+    }
+    if (arrastando < 0) return;
     if (auto* prm = proc.apvts.getParameter (knobs[(size_t) arrastando].id))
         prm->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, valorIni + dy / sens));
     repaint();
@@ -1210,6 +1355,12 @@ void MagosEditor::mouseDrag (const juce::MouseEvent& e)
 
 void MagosEditor::mouseUp (const juce::MouseEvent&)
 {
+    if (idArrasto.isNotEmpty())
+    {
+        if (auto* prm = parametro (idArrasto)) prm->endChangeGesture();
+        idArrasto = {};
+        repaint();
+    }
     if (arrastando >= 0)
         if (auto* prm = proc.apvts.getParameter (knobs[(size_t) arrastando].id)) prm->endChangeGesture();
     arrastando = -1;
@@ -1218,6 +1369,15 @@ void MagosEditor::mouseUp (const juce::MouseEvent&)
 void MagosEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
+    if (const auto* a = ajusteEm (p))
+        if (auto* prm = parametro (a->id))
+        {
+            prm->beginChangeGesture();
+            prm->setValueNotifyingHost (prm->getDefaultValue());
+            prm->endChangeGesture();
+            repaint();
+            return;
+        }
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 6)
             if (auto* prm = proc.apvts.getParameter (k.id))
@@ -1233,6 +1393,15 @@ void MagosEditor::mouseDoubleClick (const juce::MouseEvent& e)
 void MagosEditor::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
 {
     const auto p = e.position / escala();
+    if (const auto* a = ajusteEm (p))
+        if (auto* prm = parametro (a->id))
+        {
+            prm->beginChangeGesture();
+            prm->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, prm->getValue() + w.deltaY * 0.05f));
+            prm->endChangeGesture();
+            repaint();
+            return;
+        }
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 6)
             if (auto* prm = proc.apvts.getParameter (k.id))
@@ -1366,6 +1535,10 @@ void MagosEditor::menuLogo()
             "level by itself. If the limiter would need more than 5 dB, it stops before the target and tells you.\n\n"
             "AMOUNT scales everything. CHARACTER: clean to warm. PUNCH: slower attack = more transient. WIDTH: stereo of the "
             "upper bands (lows stay MONO below 120 Hz). TONE TILT: darker / brighter.\n"
+            "MANUAL (MULTIBAND COMP and DYNAMIC EQ): click MANUAL and drag any framed value up / down (SHIFT = fine, "
+            "double click = default, mouse wheel too). It starts from what AUTO was doing. Per band: THRESH, RATIO, ATTACK, "
+            "RELEASE, GAIN. Per DYNAMIC EQ point: click the name to turn it on / off, MAX CUT (or MAX LIFT) and THRESH "
+            "(how many dB away from the target before it acts). AUTO goes back to the automatic settings.\n"
             "A / B: B is your original mix AT THE SAME LOUDNESS (louder " + diferente + " better). REF plays the reference at the "
             "same loudness. BYPASS: the original, untouched.\n"
             "HEAR IT ON: phone, earbuds, car, mono. Monitoring only: turn it off before exporting.\n\n"

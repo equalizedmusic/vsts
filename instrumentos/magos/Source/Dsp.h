@@ -922,6 +922,19 @@ struct Ajustes
     bool monoBass = true;
     int ouvir = 0;             // 0 A (master), 1 B (original no mesmo loudness), 2 REF, 3 BYPASS
     int sim = 0;               // monitor: 0 nada, 1 PHONE, 2 EARBUDS, 3 CAR, 4 MONO
+
+    // MANUAL (por cima do AUTO): o multibanda com limiar / razão / ataque / soltura / ganho de cada banda, e a DYNAMIC EQ
+    // com liga / RANGE (quanto pode mexer) / THRESH (quantos dB fora do alvo antes de agir) de cada ponto. Funciona com
+    // e sem CAST (sem CAST, a DYN EQ mede contra a curva do STYLE / REFERÊNCIA).
+    bool mbManual = false, eqManual = false;
+    float mbThr[NM] { -20.0f, -20.0f, -20.0f, -20.0f };   // dB (envelope de pico da banda)
+    float mbRat[NM] { 2.0f, 2.5f, 3.0f, 1.6f };
+    float mbAtk[NM] { 30.0f, 15.0f, 5.0f, 2.0f };          // ms
+    float mbRel[NM] { 160.0f, 120.0f, 80.0f, 60.0f };      // ms
+    float mbGain[NM] {};                                    // dB
+    bool eqOn[NZ] { true, true, true, true, true };
+    float eqRange[NZ] { 2.5f, 4.0f, 4.0f, 4.0f, 2.5f };    // dB
+    float eqThr[NZ] { 1.5f, 1.5f, 1.5f, 1.5f, 1.5f };      // dB
 };
 
 struct Feitico
@@ -959,7 +972,7 @@ public:
         for (int b = 0; b < NB; ++b) { telaIn[b] = 0.0f; telaOut[b] = 0.0f; aprEsp[b] = 0.0f; }
         for (int i = 0; i < kVizN; ++i) { vizIn[i].store (0.0f, std::memory_order_relaxed); vizOut[i].store (0.0f, std::memory_order_relaxed); }
         for (int z = 0; z < NZ; ++z) zonaDb[z] = 0.0f;
-        for (int m = 0; m < NM; ++m) { grBanda[m] = 0.0f; inBanda[m] = -120.0f; outBanda[m] = -120.0f; limiarAgora[m] = 0.0f; largura[m] = 1.0f; }
+        for (int m = 0; m < NM; ++m) { grBanda[m] = 0.0f; inBanda[m] = -120.0f; outBanda[m] = -120.0f; limiarAgora[m] = 0.0f; largura[m] = 1.0f; razaoAgora[m] = 1.0f; }
         prepare (48000.0);
     }
 
@@ -1016,7 +1029,7 @@ public:
     std::atomic<float> telaIn[NB], telaOut[NB];     // potência lenta
     std::atomic<float> aprEsp[NB];                  // LISTEN: espectro médio (BEFORE)
     std::atomic<float> zonaDb[NZ];                  // DYN EQ agora (dB)
-    std::atomic<float> grBanda[NM], inBanda[NM], outBanda[NM], limiarAgora[NM], largura[NM];
+    std::atomic<float> grBanda[NM], inBanda[NM], outBanda[NM], limiarAgora[NM], largura[NM], razaoAgora[NM];
     std::atomic<float> grLim { 0.0f }, tpOutDb { -200.0f }, tpMaxDb { -200.0f };
     std::atomic<float> lufsIn { -200.0f }, lufsOut { -200.0f }, curtoIn { -200.0f }, curtoOut { -200.0f };
     std::atomic<float> plr { 0.0f }, correl { 1.0f };
@@ -1036,6 +1049,7 @@ public:
         if (n <= 0 || nch <= 0) return;
         amt = clampf (a.amount, 0.0f, 1.0f);
         tiltAlvo = clampf (a.tilt, -3.0f, 3.0f);
+        aj = a;
         if (const int g = genReset.load(); g != genResetVisto) { genResetVisto = g; feitico = Feitico {}; modo = 0; ldOut.zeraIntegrado(); }
         if (const int g = genListen.load(); g != genListenVisto) { genListenVisto = g; zeraAprendido(); modo = 1; }
         if (const int g = genCast.load(); g != genCastVisto) { genCastVisto = g; cast(); }
@@ -1276,17 +1290,28 @@ private:
     void blocoFaseLinear (bool feito)
     {
         recalcEq (false);
+        const bool man = aj.eqManual;
+        // MANUAL sem CAST: a energia de cada ponto na curva alvo (STYLE / REFERÊNCIA), refeita a cada ~0,3 s
+        if (man && ! feito && (contaRelSemCast++ % 32) == 0)
+        {
+            float forma[NB], p[NB];
+            formaAlvo (forma);
+            for (int b = 0; b < NB; ++b) p[b] = (float) potDe (forma[b]);
+            for (int z = 0; z < NZ; ++z) relSemCast[z] = relZona (p, z);
+        }
         for (int z = 0; z < NZ; ++z)
         {
             const auto& Z = zona (z);
             float alvo = 0.0f;
-            if (feito && detTot > 1e-7)
+            if ((feito || man) && detTot > 1e-7 && (! man || aj.eqOn[z]))
             {
-                const float desvio = dbDe (detP[z] / detTot) - feitico.relAlvo[z];   // > 0 sobra, < 0 falta
-                constexpr float tol = 1.5f;
-                if (Z.sinal < 0 && desvio > tol) alvo = -std::min (Z.max, (desvio - tol) * 0.8f);
-                if (Z.sinal > 0 && desvio < -tol && detTot > 1e-5) alvo = std::min (Z.max, (-desvio - tol) * 0.6f);
-                alvo *= amt;
+                const float rel = feito ? feitico.relAlvo[z] : relSemCast[z];
+                const float desvio = dbDe (detP[z] / detTot) - rel;   // > 0 sobra, < 0 falta
+                const float tol = man ? clampf (aj.eqThr[z], 0.0f, 12.0f) : 1.5f;
+                const float mx = man ? clampf (aj.eqRange[z], 0.0f, 8.0f) : Z.max;
+                if (Z.sinal < 0 && desvio > tol) alvo = -std::min (mx, (desvio - tol) * 0.8f);
+                if (Z.sinal > 0 && desvio < -tol && detTot > 1e-5) alvo = std::min (mx, (-desvio - tol) * 0.6f);
+                if (! man) alvo *= amt;
             }
             gZona[z] += (std::abs (alvo) > std::abs (gZona[z]) ? cAtq : cRel) * (alvo - gZona[z]);
             if (std::abs (gZona[z]) < 0.01f && alvo == 0.0f) gZona[z] = 0.0f;
@@ -1309,12 +1334,25 @@ private:
         const float wid = clampf (a.width, 0.0f, 2.0f);
         mbLados[0] = a.monoBass ? 0.0f : 1.0f; mbLados[1] = 1.0f + (wid - 1.0f) * 0.5f; mbLados[2] = wid; mbLados[3] = wid;
         mbQuente = clampf (a.character, 0.0f, 1.0f);
+        mbAtivo = feitico.feito || a.mbManual;
         for (int k = 0; k < NM; ++k)
         {
-            mbCA[k] = 1.0f - std::exp (-1.0f / (atqBase[k] * fp * 0.001f * (float) fs));
-            mbCR[k] = 1.0f - std::exp (-1.0f / (relBase[k] * 0.001f * (float) fs));
-            mbRaz[k] = 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * mbQuente) * (0.4f + 0.6f * amt);
-            mbLim[k] = feitico.limiar[k] + 4.0f - 6.0f * amt;   // AMOUNT baixo = limiar acima do nível médio
+            if (a.mbManual)
+            {
+                mbCA[k] = 1.0f - std::exp (-1.0f / (clampf (a.mbAtk[k], 0.1f, 300.0f) * 0.001f * (float) fs));
+                mbCR[k] = 1.0f - std::exp (-1.0f / (clampf (a.mbRel[k], 5.0f, 3000.0f) * 0.001f * (float) fs));
+                mbRaz[k] = clampf (a.mbRat[k], 1.0f, 20.0f);
+                mbLim[k] = clampf (a.mbThr[k], -60.0f, 0.0f);
+                mbGanho[k] = std::pow (10.0f, clampf (a.mbGain[k], -12.0f, 12.0f) / 20.0f);
+            }
+            else
+            {
+                mbCA[k] = 1.0f - std::exp (-1.0f / (atqBase[k] * fp * 0.001f * (float) fs));
+                mbCR[k] = 1.0f - std::exp (-1.0f / (relBase[k] * 0.001f * (float) fs));
+                mbRaz[k] = 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * mbQuente) * (0.4f + 0.6f * amt);
+                mbLim[k] = feitico.limiar[k] + 4.0f - 6.0f * amt;   // AMOUNT baixo = limiar acima do nível médio
+                mbGanho[k] = 1.0f;
+            }
             mbSLados[k] = 0; mbSMeio[k] = 0;
         }
     }
@@ -1329,7 +1367,7 @@ private:
             const float nivel = dbDe ((double) pk + 1e-20);
             envC[k] += (nivel > envC[k] ? mbCA[k] : mbCR[k]) * (nivel - envC[k]);
             float gr = 0.0f;
-            if (feito)
+            if (mbAtivo)
             {
                 constexpr float joelho = 6.0f;
                 const float acima = envC[k] - mbLim[k];
@@ -1340,7 +1378,7 @@ private:
             }
             grC[k] = gr;
             grMedia[k] += cMedia * (gr - grMedia[k]);   // reposição automática (~4 s): o balanço da banda fica
-            const float g = std::exp ((gr - grMedia[k]) * 0.11512925f);
+            const float g = std::exp ((gr - grMedia[k]) * 0.11512925f) * mbGanho[k];
             float l = bl[k] * g, r = br[k] * g;
             if (feito && mbQuente > 0.02f && k < 2)     // CHARACTER quente: saturação suave nos graves
             {
@@ -1359,8 +1397,9 @@ private:
         {
             grBanda[k] = grC[k];
             inBanda[k] = envC[k];
-            outBanda[k] = envC[k] + grC[k] - grMedia[k];
-            limiarAgora[k] = feitico.feito ? mbLim[k] : 0.0f;
+            outBanda[k] = envC[k] + grC[k] - grMedia[k] + 20.0f * std::log10 (std::max (1e-6f, mbGanho[k]));
+            limiarAgora[k] = mbAtivo ? mbLim[k] : 0.0f;
+            razaoAgora[k] = mbRaz[k];
             if (mbSMeio[k] > 1e-12) largura[k] = largura[k].load() + 0.1f * ((float) std::sqrt (mbSLados[k] / mbSMeio[k]) - largura[k].load());
         }
         if (modo.load() == 1 && ldIn.curto > -50.0f)
@@ -1539,6 +1578,11 @@ private:
 
     float envC[NM] {}, grC[NM] {}, grMedia[NM] {};
     float mbCA[NM] {}, mbCR[NM] {}, mbRaz[NM] {}, mbLim[NM] {}, mbLados[NM] {}, mbQuente = 0.0f;
+    float mbGanho[NM] { 1.0f, 1.0f, 1.0f, 1.0f };
+    bool mbAtivo = false;
+    Ajustes aj;                                  // os do bloco atual (a DYN EQ lê o MANUAL)
+    float relSemCast[NZ] {};
+    unsigned contaRelSemCast = 0;
     double mbSLados[NM] {}, mbSMeio[NM] {};
     double rmsBanda[NM] {};
 
