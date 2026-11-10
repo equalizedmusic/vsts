@@ -54,16 +54,17 @@
             if (tique()) var iv = setInterval(function () { if (!tique()) clearInterval(iv); }, 1000);
         }
 
-        // popup de lançamento na loja: abre 1x por sessão; "Quero" segue o link, o resto só fecha (✕, "agora não", Esc, clique fora)
+        // popup de lançamento na loja: abre de novo a cada 12 h (no celular a "sessão" da aba dura dias, por isso não é sessionStorage);
+        // "Quero" segue o link, o resto só fecha (✕, "agora não", Esc, clique fora). ?popup na URL força abrir.
         var lanc = document.querySelector('dialog.dl');
-        if (lanc && lanc.showModal) {
-            var visto = null;
-            try { visto = sessionStorage.getItem('isp-lanc'); } catch (e) { /* modo privado */ }
-            if (!visto) setTimeout(function () {
-                lanc.showModal();
-                try { sessionStorage.setItem('isp-lanc', '1'); } catch (e) { /* ignora */ }
+        if (lanc) {
+            var visto = 0, JANELA = 12 * 3600 * 1000;
+            try { visto = parseInt(localStorage.getItem('isp-lanc-ts'), 10) || 0; } catch (e) { /* modo privado */ }
+            if (location.search.indexOf('popup') >= 0 || Date.now() - visto > JANELA) setTimeout(function () {
+                if (lanc.showModal) lanc.showModal(); else lanc.setAttribute('open', ''); // navegador antigo sem showModal
+                try { localStorage.setItem('isp-lanc-ts', String(Date.now())); } catch (e) { /* ignora */ }
             }, 500);
-            var fechaLanc = function () { lanc.close(); };
+            var fechaLanc = function () { if (lanc.close) lanc.close(); else lanc.removeAttribute('open'); };
             lanc.querySelector('.dl-fechar').addEventListener('click', fechaLanc);
             lanc.querySelector('.dl-depois').addEventListener('click', fechaLanc);
             lanc.addEventListener('click', function (ev) { // só fora da caixa (o padding do dialog também tem target === lanc)
