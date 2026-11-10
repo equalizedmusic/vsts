@@ -929,21 +929,38 @@ void MagosEditor::painelLoud (juce::Graphics& g, juce::Rectangle<float> r)
         texto (g, juce::String::fromUTF8 ("\xe2\x97\x8f ") + (ok ? "OK" : "SQUASHED"), { x + 58, r.getY() + 178, 70, 12 }, 9.0f,
                ok ? cVerde : cLaranja, juce::Justification::centredLeft, 0.1f, true);
     }
-    // selos
-    float sx = x;
-    auto selo = [&] (const juce::String& t, juce::Colour c)
-    {
-        const auto f = fonte (8.5f, true).withExtraKerningFactor (0.2f);
-        const float w = largura (f, t) + 14;
-        const juce::Rectangle<float> s (sx, r.getBottom() - 30, w, 18);
-        g.setColour (c.withAlpha (0.12f)); g.fillRoundedRectangle (s, 3.0f);
-        g.setColour (c.withAlpha (0.7f)); g.drawRoundedRectangle (s, 3.0f, 1.0f);
-        texto (g, t, s, 8.5f, c, juce::Justification::centred, 0.2f, true);
-        sx += w + 6;
-    };
+    // selos — quebram em linhas para nunca passar da borda do painel; a última linha fica no rodapé
+    struct Selo { juce::String t; juce::Colour c; float w; int linha; };
+    std::vector<Selo> selos;
+    const auto fSelo = fonte (8.5f, true).withExtraKerningFactor (0.2f);
+    auto selo = [&] (const juce::String& t, juce::Colour c) { selos.push_back ({ t, c, largura (fSelo, t) + 14, 0 }); };
     if (M.clipou.load()) selo ("CLIPPED", cRuim); else selo ("NO CLIPPING", cVerde);
     if (proc.valor ("monobass") > 0.5f) selo ("BASS MONO < 120 Hz", cOuro);
     if (M.alvoAlto.load()) selo ("TARGET TOO LOUD FOR THIS MIX", cLaranja);
+    const float limite = r.getRight() - 14;
+    int linhas = 1;
+    {
+        float sx = x;
+        for (auto& s : selos)
+        {
+            if (sx > x && sx + s.w > limite) { ++linhas; sx = x; }
+            s.linha = linhas - 1;
+            sx += s.w + 6;
+        }
+    }
+    {
+        float sx = x; int atual = 0;
+        for (const auto& s : selos)
+        {
+            if (s.linha != atual) { atual = s.linha; sx = x; }
+            const float y = r.getBottom() - 30 - 22.0f * (float) (linhas - 1 - s.linha);
+            const juce::Rectangle<float> q (sx, y, juce::jmin (s.w, limite - sx), 18);
+            g.setColour (s.c.withAlpha (0.12f)); g.fillRoundedRectangle (q, 3.0f);
+            g.setColour (s.c.withAlpha (0.7f)); g.drawRoundedRectangle (q, 3.0f, 1.0f);
+            texto (g, s.t, q, 8.5f, s.c, juce::Justification::centred, 0.2f, true);
+            sx += s.w + 6;
+        }
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------
