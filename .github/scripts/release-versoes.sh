@@ -56,9 +56,15 @@ for pac in "$@"; do
   for f in "$pub/InsideStudioSP-$arq-mac.dmg" "$pub/InsideStudioSP-$arq-win.exe"; do
     python3 -c "import sys,zlib; print('%08x' % (zlib.crc32(open(sys.argv[1],'rb').read()) & 0xffffffff))" "$f" > "$f.crc32"
   done
+  # pacote listado em instalador/pre-release.txt sai como PRÉ-RELEASE de teste: o servidor de licenças ignora
+  # pré-release (download do site e aviso de atualização continuam na versão anterior) e a anterior não é apagada.
+  # Para lançar de verdade depois: tirar o pacote da lista e subir a versão (tag já existente não é refeita).
+  pre=""
+  if grep -qxF "$pac" <(tr -d '\r' < "$src/instalador/pre-release.txt" 2>/dev/null || true); then pre="--prerelease"; fi
   gh release create "$tag" "$pub/InsideStudioSP-$arq-mac.dmg" "$pub/InsideStudioSP-$arq-win.exe" \
     "$pub/InsideStudioSP-$arq-mac.dmg.crc32" "$pub/InsideStudioSP-$arq-win.exe.crc32" \
-    -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$titulo" --notes-file "$notas"
+    -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$titulo" --notes-file "$notas" $pre
+  if [ -n "$pre" ]; then echo "pré-release de teste $tag criado (versões anteriores mantidas)"; continue; fi
   echo "release $tag criado"
   prefixo=${tag%-v*}
   gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' \
