@@ -2,7 +2,7 @@
 // preco: vem de licenca/servidor/src/precos.js (o mesmo que o servidor cobra) — { brl, usd } ou null = selo "EM BREVE". gratis: link da página grátis
 // (direto: true = o link já é o download, sem cadastro nem token — caso da VASSOURA, que não ativa).
 
-import { PRECOS, OFERTA_FIM, DE_BRL, fimOferta } from '../licenca/servidor/src/precos.js';
+import { PRECOS, OFERTA_FIM, DE_BRL, fimOferta, precoAtual } from '../licenca/servidor/src/precos.js';
 
 // servidor de licenças no domínio do estúdio: as rotas /loja/*, /align*, /baixar/* (licenca/servidor/wrangler.toml)
 // valem com e sem www, então os links são relativos (o formulário de compra fica no mesmo endereço da página: form-action 'self')
@@ -248,7 +248,8 @@ export const PACKS = [
 ];
 
 // preço de cada pack = o do servidor (brl/usd null = em breve)
-for (const p of PACKS) p.preco = PRECOS[p.id] || null;
+// (precoAtual: o MAESTRO sai a 149,90 em build feito depois da Black Friday)
+for (const p of PACKS) p.preco = precoAtual(p.id) || null;
 
 // "de" da oferta de lançamento: OFERTA_FIM e DE_BRL vêm de precos.js (a vitrine das páginas grátis usa os mesmos).
 // Depois de OFERTA_FIM o site.js some com a oferta na hora e o próximo build já sai sem ela.

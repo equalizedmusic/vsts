@@ -35,3 +35,12 @@ export const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
 // Passada a data, some o "de" riscado do pack e fica só o preço do PRECOS.
 export const OFERTA_FIM_PACK = { maestro: '2026-11-27T23:59:59-03:00' };
 export const fimOferta = (id) => OFERTA_FIM_PACK[id] || OFERTA_FIM;
+
+// Preço que muda sozinho numa data (decisão dele, 10/11/2026): passada a Black Friday o MAESTRO sobe para R$ 149,90.
+// Cobrança (loja.js) e vitrine das páginas grátis leem precoAtual() NA HORA; o site estático sai com o preço da hora
+// do build (rebuild agendado no dOne para 28/11). Para adiar: mudar 'apos' e publicar servidor e site.
+export const PRECO_DEPOIS = { maestro: { apos: '2026-11-27T23:59:59-03:00', brl: 149.90 } };
+export function precoAtual(id, agora = Date.now()) {
+    const p = PRECOS[id], d = PRECO_DEPOIS[id];
+    return p && d && agora >= Date.parse(d.apos) ? { ...p, brl: d.brl } : p;
+}
