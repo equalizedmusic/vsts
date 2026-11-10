@@ -19,4 +19,8 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
   celular perde) e HEAR IT ON (PHONE, EARBUDS, CAR, MONO; só para ouvir).
 - MAESTRO LINKED: com o MAESTRO nos 8 grupos do mesmo projeto, mostra o nível de cada grupo contra o STYLE e de qual
   grupo vem cada problema do master. Precisa da versão do MAESTRO que publica o link (próxima atualização).
-- Latência: 1,5 ms do lookahead do limitador + o detector de true peak (informada ao DAW).
+- FASE LINEAR em todo o caminho do som: TONE MATCH, TILT, DYNAMIC EQ e o crossover das 4 bandas não giram a fase
+  (o transiente do kick sai inteiro e a soma das bandas é exata). Pouca CPU: tudo numa convolução só, com os ganhos
+  mudando sem redesenhar filtro.
+- Latência: ~55 ms (2640 amostras a 48 kHz: fase linear + lookahead do limitador), informada ao DAW, que compensa
+  sozinho. Só se nota tocando ou gravando AO VIVO pelo master.

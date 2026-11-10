@@ -579,7 +579,7 @@ void MagosEditor::painelMulti (juce::Graphics& g, juce::Rectangle<float> r)
     auto& M = proc.motor;
     caixa (g, r);
     titulo (g, r, "MULTIBAND COMP", "4 BANDS" + ponto + (proc.nomeReferencia().isNotEmpty() ? "AUTO FROM THE REFERENCE" : "AUTO FROM YOUR TRACK"));
-    texto (g, "CROSSOVER  120" + ponto + "1.2k" + ponto + "6.5k Hz", { r.getRight() - 300, r.getY() + 10, 286, 16 }, 10.0f, cOuro,
+    texto (g, "LINEAR PHASE  120" + ponto + "1.2k" + ponto + "6.5k Hz", { r.getRight() - 300, r.getY() + 10, 286, 16 }, 10.0f, cOuro,
            juce::Justification::centredRight, 0.18f, true);
     static const char* faixa[NM] = { "20-120 Hz", "120-1.2k Hz", "1.2k-6.5k Hz", "6.5k-20k Hz" };
     static const char* papel[NM] = { "KICK + BASS GLUE", "TAMES THE BOX", "HARSHNESS", "SMOOTH HATS" };

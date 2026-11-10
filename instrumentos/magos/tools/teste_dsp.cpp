@@ -55,6 +55,91 @@ int main()
     const double fs = 48000.0;
     const int B = 512;
 
+    std::printf ("0) FASE LINEAR: crossover + EQs (impulso pelos filtros, soma das 4 bandas)\n");
+    {
+        FaseLinear fl;
+        fl.prepara (fs, 512, 8);
+        const int lat = fl.latencia(), T = 4 * 2048 + 2 * lat;
+        std::printf ("     %d filtros, latência %d amostras (%.1f ms)\n", fl.numFiltros(), lat, lat * 1000.0 / fs);
+        // impulso; devolve a soma das bandas (L) e a banda pedida
+        auto impulso = [&] (const float* gDb, int banda, std::vector<float>& soma, std::vector<float>& sob)
+        {
+            FaseLinear f2;
+            f2.prepara (fs, 512, 8);
+            float g[NF];
+            for (int i = 0; i < NF; ++i) g[i] = std::pow (10.0f, gDb[i] / 20.0f);
+            soma.assign ((size_t) T, 0.0f); sob.assign ((size_t) T, 0.0f);
+            for (int t = 0; t < T; ++t)
+            {
+                if (f2.cheio()) f2.processaBloco (g);
+                float bl[NM], br[NM], d;
+                const float x = t == 0 ? 1.0f : 0.0f;
+                f2.amostra (x, x, bl, br, d);
+                for (int k = 0; k < NM; ++k) soma[(size_t) t] += bl[k];
+                sob[(size_t) t] = bl[banda];
+            }
+        };
+        auto moduloDb = [&] (const std::vector<float>& h, double f)
+        {
+            std::complex<double> s = 0;
+            for (int t = 0; t < T; ++t) s += (double) h[(size_t) t] * std::polar (1.0, -2 * kPi * f * t / fs);
+            return 20.0 * std::log10 (std::max (1e-12, std::abs (s)));
+        };
+        auto simetria = [&] (const std::vector<float>& h)
+        {
+            double mx = 0, err = 0;
+            for (int m = 0; m < T; ++m) mx = std::max (mx, (double) std::abs (h[(size_t) m]));
+            for (int m = 1; m < lat; ++m) err = std::max (err, (double) std::abs (h[(size_t) (lat + m)] - h[(size_t) (lat - m)]));
+            return err / mx;
+        };
+        std::vector<float> soma, b0;
+        float zero[NF] {};
+        impulso (zero, 0, soma, b0);
+        double resto = 0;
+        for (int t = 0; t < T; ++t) resto = std::max (resto, (double) std::abs (soma[(size_t) t] - (t == lat ? 1.0f : 0.0f)));
+        confere (resto < 1e-4, "ganhos 0: soma das bandas = impulso atrasado (erro máx)", resto);
+        confere (std::abs (moduloDb (b0, 120.0) + 6.02) < 0.3, "banda LOW em 120 Hz (dB, LR4 = -6,0)", moduloDb (b0, 120.0));
+        confere (moduloDb (b0, 480.0) < -40.0, "banda LOW em 480 Hz (dB, LR4 = -48)", moduloDb (b0, 480.0));
+        confere (simetria (b0) < 1e-3, "banda LOW: resposta simétrica (fase linear)", simetria (b0));
+
+        float gDb[NF] {};
+        gDb[0] = 4.0f; gDb[1] = -3.0f; gDb[2] = -4.0f; gDb[5] = 2.5f; gDb[6] = -3.0f; gDb[8] = 3.0f;
+        gDb[kIdxTilt] = -1.0f; gDb[kIdxTilt + 1] = 1.0f;
+        gDb[kIdxDyn + 0] = 2.5f; gDb[kIdxDyn + 1] = -4.0f; gDb[kIdxDyn + 3] = -4.0f;
+        impulso (gDb, 1, soma, b0);
+        double pior = 0, fPior = 0;
+        for (double f = 30.0; f < 18000.0; f *= 1.05)
+        {
+            const double e = std::abs (moduloDb (soma, f) - modeloDb (gDb, fs, f));
+            if (e > pior) { pior = e; fPior = f; }
+        }
+        std::printf ("     maior desvio do modelo em %.0f Hz\n", fPior);
+        confere (pior < 0.25, "EQ (TONE+TILT+DYN) vs curva pedida, 30 Hz-18 kHz (dB)", pior);
+        confere (simetria (soma) < 1e-3, "EQ: resposta simétrica (fase linear)", simetria (soma));
+
+        // custo: 60 s de ruído estéreo com os ganhos mudando a cada bloco (pior caso)
+        std::mt19937 rng (5);
+        std::normal_distribution<float> nd (0.0f, 0.1f);
+        const auto t0 = std::chrono::steady_clock::now();
+        float g[NF], acc = 0;
+        const int tot = (int) (fs * 60);
+        for (int t = 0; t < tot; ++t)
+        {
+            if (fl.cheio())
+            {
+                // TONE / TILT parados (depois do CAST), DYN EQ mexendo o tempo todo
+                for (int i = 0; i < NF; ++i) g[i] = i < kIdxDyn ? 1.0f + 0.1f * (float) std::sin (i) : 1.0f + 0.2f * (float) std::sin (t * 1e-4 + i);
+                fl.processaBloco (g);
+            }
+            float bl[NM], br[NM], d;
+            fl.amostra (nd (rng), nd (rng), bl, br, d);
+            acc += bl[0] + br[3] + d;
+        }
+        const double seg = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();
+        std::printf ("     (soma %g)\n", acc);
+        confere (seg / 60.0 * 100.0 < 2.0, "CPU da fase linear, DYN EQ mexendo sempre (% de 1 núcleo)", seg / 60.0 * 100.0);
+    }
+
     std::printf ("1) LUFS: seno de 997 Hz a -20 dBFS nos 2 canais = -20,0 LUFS (BS.1770: 0 dBFS em 1 canal = -3,01)\n");
     {
         Loudness ld; ld.prepare (fs);
@@ -112,13 +197,28 @@ int main()
     {
         Engine e; e.prepare (fs);
         Ajustes a; a.ouvir = 3;
-        std::vector<float> L (B, 0.0f), R (B, 0.0f);
-        L[10] = R[10] = 0.5f;
-        float* ch[2] = { L.data(), R.data() };
-        e.process (ch, 2, B, a);
-        int onde = -1;
-        for (int i = 0; i < B; ++i) if (std::abs (L[(size_t) i]) > 0.4f) onde = i;
-        confere (onde == 10 + e.latenciaAmostras(), "posição do impulso (amostra)", onde);
+        int onde = -1, ondeMax = -1;
+        float mx = 0;
+        // e o caminho processado (antes do CAST: só fase linear + limitador) sai no MESMO lugar
+        Engine e2; e2.prepare (fs);
+        Ajustes a2;
+        for (int k = 0; k < 8; ++k)
+        {
+            std::vector<float> L (B, 0.0f), R (B, 0.0f);
+            if (k == 0) L[10] = R[10] = 0.5f;
+            std::vector<float> L2 = L, R2 = R;
+            float* ch[2] = { L.data(), R.data() };
+            e.process (ch, 2, B, a);
+            float* ch2[2] = { L2.data(), R2.data() };
+            e2.process (ch2, 2, B, a2);
+            for (int i = 0; i < B; ++i)
+            {
+                if (std::abs (L[(size_t) i]) > 0.4f) onde = k * B + i;
+                if (std::abs (L2[(size_t) i]) > mx) { mx = std::abs (L2[(size_t) i]); ondeMax = k * B + i; }
+            }
+        }
+        confere (onde == 10 + e.latenciaAmostras(), "BYPASS: posição do impulso (amostra)", onde);
+        confere (ondeMax == 10 + e2.latenciaAmostras(), "processado: posição do impulso (amostra)", ondeMax);
     }
 
     std::printf ("5) LISTEN 15 s -> CAST -> 30 s: música a ~-17 LUFS com lama em 250 Hz, STYLE PSYTRANCE\n");
@@ -175,7 +275,7 @@ int main()
         confere (co > ci + 5.0f, "MATCH melhorou (pontos)", co - ci);
         confere (f.tom[2] < -0.5f, "TONE corta a lama (sino de 200 Hz, dB)", f.tom[2]);
         const double rt = 30.0 / seg;
-        confere (rt > 20.0, "velocidade (x tempo real, 1 núcleo)", rt);
+        confere (rt > 15.0, "velocidade (x tempo real, 1 núcleo; motor inteiro, fase linear)", rt);
     }
 
     std::printf ("5b) Mesmo drop com TARGET -9 LUFS: tem de chegar sem o freio\n");

@@ -7,8 +7,8 @@
 //   DYNAMIC EQ  5 pontos que só agem quando o problema aparece: LOW PUNCH 63 Hz (+), MUD 240 Hz (−), HARSH 3,3 kHz (−),
 //               DE-ESS 7,5 kHz (−) e AIR 12,5 kHz (+). Detector = energia da zona relativa à banda toda, comparada com
 //               a mesma conta feita na curva alvo.
-//   MULTIBAND   4 bandas (cortes 120 / 1,2 k / 6,5 kHz, Linkwitz-Riley de 4ª ordem com compensação de fase: a soma
-//               tem módulo plano), compressor por banda com limiar AUTO (o que ouviu no LISTEN), reposição automática
+//   MULTIBAND   4 bandas (cortes 120 / 1,2 k / 6,5 kHz, módulo de Linkwitz-Riley de 4ª ordem em FASE LINEAR: a soma
+//               é a entrada atrasada, exata), compressor por banda com limiar AUTO (o que ouviu no LISTEN), reposição automática
 //               do ganho médio (segura o balanço), PUNCH = ataque, CHARACTER = razão + saturação quente nos graves.
 //               STEREO por banda: graves em MONO abaixo de 120 Hz, WIDTH nas de cima.
 //   DRIVE + LIMITER  ganho até o alvo de loudness e limitador true peak (detector com sobreamostragem 4×, lookahead
@@ -17,7 +17,9 @@
 // tocando, acerta o DRIVE em malha fechada até o LUFS integrado chegar ao alvo (depois fica fixo).
 // A/B: B = a entrada original atrasada (mesma latência) no MESMO loudness da saída; BYPASS = original sem igualar;
 // REF = a referência tocando, também no loudness da saída.
-// Latência = lookahead do limitador + meio filtro do detector de true peak (informada ao DAW).
+// TONE, TILT, DYNAMIC EQ e crossover são UM estágio de FASE LINEAR (classe FaseLinear: convolução particionada).
+// Latência = fase linear (bloco + meio filtro: 2560 amostras a 48 kHz) + lookahead do limitador + meio filtro do
+// detector de true peak (informada ao DAW, que compensa).
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -244,6 +246,374 @@ struct Biquad
 constexpr double qOitava = 1.414;
 constexpr double qBw = 0.70710678118654752;
 constexpr double fTiltG = 300.0, fTiltA = 3000.0;
+
+// ------------------------------------------------------------------------------------------------------------------
+// FASE LINEAR — todo o caminho do áudio (crossover, TONE MATCH, TILT, DYNAMIC EQ) é de fase linear.
+//
+// Os filtros são de fase ZERO (só módulo), janelados em N amostras e atrasados de N/2: nada gira a fase, o transiente
+// sai simétrico e a soma das 4 bandas é a entrada atrasada, EXATA (os módulos das bandas somam 1 em toda frequência).
+// Os ganhos entram em paralelo: E(f) = 1 + Σ (gᵢ − 1)·Sᵢ(f), Sᵢ = a forma (0…1) do sino / shelf. Cada forma é
+// desenhada já multiplicada pela banda do crossover onde cai (Bₖ·Sᵢ), então mexer num ganho NÃO redesenha filtro:
+// só muda o peso com que os espectros se somam. Por isso a DYN EQ pode mudar a cada bloco sem custo e sem clique
+// (quando um ganho muda, a banda sai de duas somas, a velha e a nova, com rampa linear de um bloco).
+//
+// Convolução particionada uniforme (blocos de P, FFT de 2P): UMA FFT de ida por bloco (L e R juntos numa FFT complexa)
+// e UMA de volta por banda (L no real, R no imaginário). Latência = P + N/2 (10,7 ms + 42,7 ms a 48 kHz).
+// ------------------------------------------------------------------------------------------------------------------
+constexpr int NF = NE + 2 + NZ;   // formas de ganho: 9 sinos do TONE, 2 shelves do TILT, 5 pontos da DYN EQ
+constexpr int kIdxTilt = NE, kIdxDyn = NE + 2;
+
+// forma (0…1) do ganho i em f: (|H(+6 dB)| − 1) normalizado — sino e shelf com o mesmo desenho dos RBJ
+inline double forma (int i, double fs, double f)
+{
+    static const double g6 = std::pow (10.0, 6.0 / 20.0);
+    Coef k;
+    if (i < NE) k = sino (fs, freqEq (i), qOitava, 6.0);
+    else if (i < kIdxDyn) k = shelf (fs, i == kIdxTilt ? fTiltG : fTiltA, 6.0, i != kIdxTilt);
+    else { const auto& Z = zona (i - kIdxDyn); k = sino (fs, Z.f, Z.q, 6.0); }
+    return (std::pow (10.0, respostaDb (k, fs, f) / 20.0) - 1.0) / (g6 - 1.0);
+}
+// passa-baixas do crossover (fase zero): módulo de Linkwitz-Riley de 4ª ordem; o passa-altas é 1 − ele (soma exata)
+inline double lpCross (double fc, double f) { const double r = (f / fc) * (f / fc); return 1.0 / (1.0 + r * r); }
+inline double bandaCross (int k, double f)
+{
+    const double de = k == 0 ? 0.0 : lpCross (fCorte[k - 1], f), ate = k == NM - 1 ? 1.0 : lpCross (fCorte[k], f);
+    return ate - de;
+}
+// resposta (dB) do caminho com os ganhos gDb[NF]: 1 + Σ (gᵢ − 1)·Sᵢ(f)
+inline double modeloDb (const float* gDb, double fs, double f)
+{
+    double h = 1.0;
+    for (int i = 0; i < NF; ++i)
+        if (std::abs (gDb[i]) > 1e-4f) h += (std::pow (10.0, gDb[i] / 20.0) - 1.0) * forma (i, fs, f);
+    return 20.0 * std::log10 (std::max (1e-6, h));
+}
+
+// FFT complexa radix-2 (tamanho potência de 2), em lugar; inversa sem a divisão por n. Fatores de rotação guardados
+// contíguos por estágio (o laço de dentro anda em memória seguida e o compilador vetoriza)
+class FftC
+{
+public:
+    void prepara (int n_)
+    {
+        n = n_;
+        int bits = 0;
+        while ((1 << bits) < n) ++bits;
+        rev.assign ((size_t) n, 0);
+        for (int i = 0; i < n; ++i)
+        {
+            int r = 0;
+            for (int b = 0; b < bits; ++b) if (i & (1 << b)) r |= 1 << (bits - 1 - b);
+            rev[(size_t) i] = r;
+        }
+        wr.clear(); wi.clear();
+        for (int len = 2; len <= n; len <<= 1)
+            for (int j = 0; j < len / 2; ++j)
+            {
+                wr.push_back ((float) std::cos (-2.0 * kPi * j / len));
+                wi.push_back ((float) std::sin (-2.0 * kPi * j / len));
+            }
+    }
+    void faz (float* __restrict re, float* __restrict im, bool inversa) const
+    {
+        for (int i = 0; i < n; ++i)
+        {
+            const int j = rev[(size_t) i];
+            if (i < j) { std::swap (re[i], re[j]); std::swap (im[i], im[j]); }
+        }
+        // inversa = troca re ↔ im na entrada e na saída (conj(FFT(conj x)) sem multiplicar nada)
+        float* a = inversa ? im : re;
+        float* b = inversa ? re : im;
+        for (int i = 0; i < n; i += 2)
+        {
+            const float ar = a[i + 1], ai = b[i + 1];
+            a[i + 1] = a[i] - ar; b[i + 1] = b[i] - ai;
+            a[i] += ar; b[i] += ai;
+        }
+        const float* tw = wr.data() + 1;
+        const float* tv = wi.data() + 1;
+        for (int len = 4; len <= n; len <<= 1)
+        {
+            const int meio = len / 2;
+            const float* cr = tw; const float* ci = tv;
+            for (int i = 0; i < n; i += len)
+            {
+                float* __restrict pr = a + i; float* __restrict pi = b + i;
+                float* __restrict qr = a + i + meio; float* __restrict qi = b + i + meio;
+                for (int j = 0; j < meio; ++j)
+                {
+                    const float vr = qr[j] * cr[j] - qi[j] * ci[j], vi = qr[j] * ci[j] + qi[j] * cr[j];
+                    qr[j] = pr[j] - vr; qi[j] = pi[j] - vi;
+                    pr[j] += vr; pi[j] += vi;
+                }
+            }
+            tw += meio; tv += meio;
+        }
+    }
+    int tamanho() const { return n; }
+
+private:
+    int n = 0;
+    std::vector<int> rev;
+    std::vector<float> wr, wi;
+};
+
+class FaseLinear
+{
+public:
+    // P = bloco (amostras), NP = partições: N = P·NP derivações por filtro
+    void prepara (double fs_, int P_, int NP_)
+    {
+        fs = fs_; P = P_; NP = NP_; N = P * NP; M = 2 * P; K = P + 1;
+        fft.prepara (M);
+        desenha();
+        const size_t tamFdl = (size_t) (NP * K);
+        for (auto* v : { &xlr, &xli, &xrr, &xri }) v->assign (tamFdl, 0.0f);
+        for (auto* v : { &zr, &zi }) v->assign ((size_t) M, 0.0f);
+        for (auto* v : { &antL, &antR, &inL, &inR, &det }) v->assign ((size_t) P, 0.0f);
+        for (int k = 0; k < NM; ++k) for (int c = 0; c < 2; ++c) saida[k][c].assign ((size_t) P, 0.0f);
+        for (auto* v : { &yLr, &yLi, &yRr, &yRi }) v->assign ((size_t) K, 0.0f);
+        tmpL.assign ((size_t) P, 0.0f); tmpR = tmpL;
+        // filtros combinados com todos os ganhos em 0 dB: cada banda = a banda pura; detector = a soma delas
+        float g1[NF];
+        for (int i = 0; i < NF; ++i) { gAnt[i] = 1.0f; g1[i] = 1.0f; }
+        GDr.assign ((size_t) (NP * K), 0.0f); GDi = GDr;
+        for (int b = 0; b < NM; ++b)
+        {
+            Gr[b] = GDr; Gi[b] = GDr;
+            combina (b, g1, false, Gr[b], Gi[b]);
+            GrAnt[b] = Gr[b]; GiAnt[b] = Gi[b];
+            combina (b, g1, true, GDr, GDi);
+            formasDa[b].clear();
+            for (const auto& F : filtros) if (F.banda == b && F.forma >= 0) formasDa[b].push_back (F.forma);
+        }
+        fatia = 0; pos = 0;
+    }
+    double alfaJanela = 0.25;   // fração das pontas em cosseno (0,25: medido na bancada, menor erro sem degrau)
+    int latencia() const { return P + N / 2; }
+    int bloco() const { return P; }
+    int numFiltros() const { return (int) filtros.size(); }
+    bool cheio() const { return pos == P; }
+
+    // uma amostra: entra (l, r); sai a amostra de cada banda (já com os ganhos) e o detector (mono, só TONE + TILT)
+    inline void amostra (float l, float r, float* bl, float* br, float& d)
+    {
+        inL[(size_t) pos] = l; inR[(size_t) pos] = r;
+        for (int k = 0; k < NM; ++k) { bl[k] = saida[k][0][(size_t) pos]; br[k] = saida[k][1][(size_t) pos]; }
+        d = det[(size_t) pos];
+        ++pos;
+    }
+
+    // processa o bloco que acabou de encher, com os ganhos novos g[NF] (lineares)
+    void processaBloco (const float* g)
+    {
+        // 1) FFT do segmento [bloco anterior | bloco atual]: L no real, R no imaginário
+        float* re = zr.data(); float* im = zi.data();
+        for (int t = 0; t < P; ++t)
+        {
+            re[t] = antL[(size_t) t]; im[t] = antR[(size_t) t];
+            re[P + t] = inL[(size_t) t]; im[P + t] = inR[(size_t) t];
+        }
+        std::copy (inL.begin(), inL.end(), antL.begin());
+        std::copy (inR.begin(), inR.end(), antR.begin());
+        fft.faz (re, im, false);
+        fatia = (fatia + NP - 1) % NP;
+        {
+            float* aLr = &xlr[(size_t) (fatia * K)]; float* aLi = &xli[(size_t) (fatia * K)];
+            float* aRr = &xrr[(size_t) (fatia * K)]; float* aRi = &xri[(size_t) (fatia * K)];
+            for (int k = 0; k < K; ++k)
+            {
+                const int q = (M - k) % M;
+                const float ar = re[k], ai = im[k], br = re[q], bi = -im[q];   // b = conj(Z[M−k])
+                aLr[k] = 0.5f * (ar + br); aLi[k] = 0.5f * (ai + bi);
+                aRr[k] = 0.5f * (ai - bi); aRi[k] = -0.5f * (ar - br);
+            }
+        }
+        // 2) cada banda: o filtro da banda é a soma dos filtros dela com os pesos (1 a banda pura, g − 1 as formas).
+        //    Só se recombina quando um ganho dela mudou; aí a banda sai das duas somas (velha e nova) com rampa.
+        bool mudouEst = false;
+        for (int i = 0; i < kIdxDyn; ++i) if (std::abs (g[i] - gAnt[i]) > 1e-7f) mudouEst = true;
+        for (int b = 0; b < NM; ++b)
+        {
+            bool mudou = false;
+            for (int i : formasDa[b]) if (std::abs (g[i] - gAnt[i]) > 1e-7f) mudou = true;
+            if (mudou)
+            {
+                std::swap (Gr[b], GrAnt[b]); std::swap (Gi[b], GiAnt[b]);
+                if (mudouEst || ++incrementos[b] >= 64) { combina (b, g, false, Gr[b], Gi[b]); incrementos[b] = 0; }
+                else
+                {
+                    // só a DYN EQ mexeu: o filtro novo = o velho + (g − g_ant)·forma, só das formas que mudaram
+                    std::copy (GrAnt[b].begin(), GrAnt[b].end(), Gr[b].begin());
+                    std::copy (GiAnt[b].begin(), GiAnt[b].end(), Gi[b].begin());
+                    for (const auto& F : filtros)
+                    {
+                        if (F.banda != b || F.forma < 0) continue;
+                        const float w = g[F.forma] - gAnt[F.forma];
+                        if (w == 0.0f) continue;
+                        const size_t nn = (size_t) (NP * K);
+                        const float* hr = F.hr.data(); const float* hi = F.hi.data();
+                        float* gr = Gr[b].data(); float* gi = Gi[b].data();
+                        for (size_t k = 0; k < nn; ++k) { gr[k] += w * hr[k]; gi[k] += w * hi[k]; }
+                    }
+                }
+            }
+            convolui (Gr[b], Gi[b], false);
+            volta (saida[b][0].data(), saida[b][1].data());
+            if (mudou)
+            {
+                convolui (GrAnt[b], GiAnt[b], false);
+                volta (tmpL.data(), tmpR.data());
+                for (int t = 0; t < P; ++t)
+                {
+                    const float w = (float) (t + 1) / (float) P;
+                    saida[b][0][(size_t) t] = tmpL[(size_t) t] + w * (saida[b][0][(size_t) t] - tmpL[(size_t) t]);
+                    saida[b][1][(size_t) t] = tmpR[(size_t) t] + w * (saida[b][1][(size_t) t] - tmpR[(size_t) t]);
+                }
+            }
+        }
+        // 3) detector da DYN EQ: entrada com TONE + TILT (sem a DYN), mono
+        if (mudouEst)
+        {
+            std::fill (GDr.begin(), GDr.end(), 0.0f); std::fill (GDi.begin(), GDi.end(), 0.0f);
+            for (int b = 0; b < NM; ++b) combina (b, g, true, GDr, GDi);
+        }
+        convolui (GDr, GDi, true);
+        volta (det.data(), tmpR.data());
+        for (int i = 0; i < NF; ++i) gAnt[i] = g[i];
+        pos = 0;
+    }
+
+private:
+    struct Filtro { int banda, forma; std::vector<float> hr, hi; };   // forma −1 = a banda pura
+
+    // G (+)= Σ dos filtros da banda b com os pesos; soEstatica = sem a DYN EQ e SOMANDO em G (detector)
+    void combina (int b, const float* g, bool soEstatica, std::vector<float>& Gre, std::vector<float>& Gim)
+    {
+        const size_t n = (size_t) (NP * K);
+        if (! soEstatica) { std::fill (Gre.begin(), Gre.end(), 0.0f); std::fill (Gim.begin(), Gim.end(), 0.0f); }
+        for (const auto& F : filtros)
+        {
+            if (F.banda != b || (soEstatica && F.forma >= kIdxDyn)) continue;
+            const float w = F.forma < 0 ? 1.0f : g[F.forma] - 1.0f;
+            if (w == 0.0f) continue;
+            const float* hr = F.hr.data(); const float* hi = F.hi.data();
+            float* gr = Gre.data(); float* gi = Gim.data();
+            for (size_t k = 0; k < n; ++k) { gr[k] += w * hr[k]; gi[k] += w * hi[k]; }
+        }
+    }
+    // y = Σ_p X(bloco − p)·G_p, de L e R (mono = só (L+R)/2, no lugar do L)
+    void convolui (const std::vector<float>& Gre, const std::vector<float>& Gim, bool mono)
+    {
+        std::fill (yLr.begin(), yLr.end(), 0.0f); std::fill (yLi.begin(), yLi.end(), 0.0f);
+        std::fill (yRr.begin(), yRr.end(), 0.0f); std::fill (yRi.begin(), yRi.end(), 0.0f);
+        float* oLr = yLr.data(); float* oLi = yLi.data(); float* oRr = yRr.data(); float* oRi = yRi.data();
+        for (int p = 0; p < NP; ++p)
+        {
+            const size_t s = (size_t) (((fatia + p) % NP) * K);
+            const float* hr = &Gre[(size_t) (p * K)]; const float* hi = &Gim[(size_t) (p * K)];
+            const float* lr = &xlr[s]; const float* li = &xli[s]; const float* rr = &xrr[s]; const float* ri = &xri[s];
+            if (mono)
+                for (int k = 0; k < K; ++k)
+                {
+                    const float mr = 0.5f * (lr[k] + rr[k]), mi = 0.5f * (li[k] + ri[k]);
+                    oLr[k] += mr * hr[k] - mi * hi[k]; oLi[k] += mr * hi[k] + mi * hr[k];
+                }
+            else
+                for (int k = 0; k < K; ++k)
+                {
+                    oLr[k] += lr[k] * hr[k] - li[k] * hi[k]; oLi[k] += lr[k] * hi[k] + li[k] * hr[k];
+                    oRr[k] += rr[k] * hr[k] - ri[k] * hi[k]; oRi[k] += rr[k] * hi[k] + ri[k] * hr[k];
+                }
+        }
+    }
+    // espectros (0…P) de L e R → tempo (overlap-save: a 2ª metade vale)
+    void volta (float* outL, float* outR)
+    {
+        float* re = zr.data(); float* im = zi.data();
+        for (int k = 0; k < K; ++k) { re[k] = yLr[(size_t) k] - yRi[(size_t) k]; im[k] = yLi[(size_t) k] + yRr[(size_t) k]; }
+        for (int k = K; k < M; ++k)
+        {
+            const int q = M - k;   // L[k] = conj L[q], R[k] = conj R[q]  →  Z = conj(L[q]) + i·conj(R[q])
+            re[k] = yLr[(size_t) q] + yRi[(size_t) q]; im[k] = -yLi[(size_t) q] + yRr[(size_t) q];
+        }
+        fft.faz (re, im, true);
+        const float s = 1.0f / (float) M;
+        for (int t = 0; t < P; ++t) { outL[t] = re[P + t] * s; outR[t] = im[P + t] * s; }
+    }
+
+    // desenho: módulo numa grade fina (8N), fase zero, IFFT, janela de N amostras centrada, partições de P
+    void desenha()
+    {
+        filtros.clear();
+        const int L = 8 * N;
+        FftC grande; grande.prepara (L);
+        std::vector<float> re ((size_t) L), im ((size_t) L), h ((size_t) N);
+        std::vector<double> banda ((size_t) (L / 2 + 1));
+        auto partiu = [&](int b, int fo, const std::vector<double>& mod)
+        {
+            for (int k = 0; k <= L / 2; ++k) { re[(size_t) k] = (float) mod[(size_t) k]; im[(size_t) k] = 0.0f; }
+            for (int k = L / 2 + 1; k < L; ++k) { re[(size_t) k] = re[(size_t) (L - k)]; im[(size_t) k] = 0.0f; }
+            grande.faz (re.data(), im.data(), true);
+            for (int t = 0; t < N; ++t)
+            {
+                const int m = t - N / 2;   // centro em N/2
+                h[(size_t) t] = re[(size_t) ((m + L) % L)] / (float) L * (float) janela (m);
+            }
+            Filtro F { b, fo, std::vector<float> ((size_t) (NP * K)), std::vector<float> ((size_t) (NP * K)) };
+            for (int p = 0; p < NP; ++p)
+            {
+                std::fill (zr.begin(), zr.end(), 0.0f); std::fill (zi.begin(), zi.end(), 0.0f);
+                for (int t = 0; t < P; ++t) zr[(size_t) t] = h[(size_t) (p * P + t)];
+                fft.faz (zr.data(), zi.data(), false);
+                for (int k = 0; k < K; ++k) { F.hr[(size_t) (p * K + k)] = zr[(size_t) k]; F.hi[(size_t) (p * K + k)] = zi[(size_t) k]; }
+            }
+            filtros.push_back (std::move (F));
+        };
+        zr.assign ((size_t) M, 0.0f); zi.assign ((size_t) M, 0.0f);
+        std::vector<double> prod ((size_t) (L / 2 + 1));
+        std::vector<std::vector<double>> formas ((size_t) NF, std::vector<double> ((size_t) (L / 2 + 1)));
+        for (int i = 0; i < NF; ++i)
+            for (int k = 0; k <= L / 2; ++k) formas[(size_t) i][(size_t) k] = forma (i, fs, fs * k / L);
+        for (int b = 0; b < NM; ++b)
+        {
+            for (int k = 0; k <= L / 2; ++k) banda[(size_t) k] = bandaCross (b, fs * k / L);
+            partiu (b, -1, banda);
+            // as formas que caem nesta banda (cada forma é repartida entre as bandas: Σ Bₖ = 1, nada se perde)
+            for (int i = 0; i < NF; ++i)
+            {
+                double mx = 0;
+                for (int k = 0; k <= L / 2; ++k)
+                {
+                    prod[(size_t) k] = banda[(size_t) k] * formas[(size_t) i][(size_t) k];
+                    mx = std::max (mx, std::abs (prod[(size_t) k]));
+                }
+                if (mx > 0.004) partiu (b, i, prod);
+            }
+        }
+    }
+    // janela: plana no miolo e cosseno nas pontas (Tukey) — pouco alarga o grave e mata o degrau das pontas
+    double janela (int m) const
+    {
+        const double x = std::abs ((double) m) / (N / 2.0);   // 0 no centro, 1 na ponta
+        const double a = alfaJanela;
+        return x <= 1.0 - a ? 1.0 : 0.5 * (1.0 + std::cos (kPi * (x - (1.0 - a)) / a));
+    }
+
+    double fs = 48000.0;
+    int P = 512, NP = 8, N = 4096, M = 1024, K = 513;
+    FftC fft;
+    std::vector<Filtro> filtros;
+    std::vector<float> xlr, xli, xrr, xri;           // espectros dos últimos NP blocos (L, R)
+    std::vector<float> Gr[NM], Gi[NM], GrAnt[NM], GiAnt[NM], GDr, GDi;   // filtro combinado de cada banda e do detector
+    std::vector<int> formasDa[NM];
+    int incrementos[NM] {};
+    std::vector<float> yLr, yLi, yRr, yRi, zr, zi;
+    std::vector<float> antL, antR, inL, inR, det, tmpL, tmpR;
+    std::vector<float> saida[NM][2];
+    float gAnt[NF] {};
+    int fatia = 0, pos = 0;
+};
 
 // ------------------------------------------------------------------------------------------------------------------
 // Loudness (BS.1770-4 / EBU R128): ponderação K, blocos de 100 ms; momentâneo 400 ms, curto 3 s, integrado com os
@@ -598,33 +968,29 @@ public:
         pb.calcula (fs);
         ldIn.prepare (fs); ldOut.prepare (fs);
         nLook = std::max (8, (int) std::lround (fs * 0.0015));
-        latencia = nLook + kTpAtraso;
+        // fase linear: bloco de 512 e filtros de 4096 a 44,1/48 kHz (o grave até 30 Hz sai a 0,1 dB da curva; com
+        // 2048 errava 0,6 dB abaixo de 80 Hz); o mesmo TEMPO nas taxas altas
+        int r = 1;
+        while (fs > 70000.0 * r && r < 8) r *= 2;
+        fl.prepara (fs, 512 * r, 8);
+        latLim = nLook + kTpAtraso;
+        latencia = fl.latencia() + latLim;
         for (auto& d : linhaSeco) d.assign ((size_t) (latencia + 1), 0.0f);
-        for (auto& d : linhaLim) d.assign ((size_t) (latencia + 1), 0.0f);
+        for (auto& d : linhaLim) d.assign ((size_t) (latLim + 1), 0.0f);
         posSeco = posLim = 0;
         tpLim.zera(); tpOut.zera();
         reqAnel.assign ((size_t) (nLook + 1), 1.0f);
         boxAnel.assign ((size_t) (nLook + 1), 1.0f);
         posW = 0; boxSoma = (double) (nLook + 1); gSol = 1.0;
-        for (auto& b : eq) b.zera();
-        tiltG.zera(); tiltA.zera();
-        for (int z = 0; z < NZ; ++z) { dyn[z].zera(); det[z].zera(); detP[z] = 0; gZona[z] = 0; det[z].k = passaBanda (fs, zona (z).f, zona (z).q); }
+        for (int z = 0; z < NZ; ++z) { det[z].zera(); detP[z] = 0; gZona[z] = 0; det[z].k = passaBanda (fs, zona (z).f, zona (z).q); }
         detTot = 0;
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 2; ++j)
-            {
-                lp[i][j].zera(); hp[i][j].zera();
-                lp[i][j].k = passaBaixas (fs, fCorte[i], qBw);
-                hp[i][j].k = passaAltas (fs, fCorte[i], qBw);
-            }
-        ap0a.zera(); ap0b.zera(); ap1.zera();
-        ap0a.k = passaTudo (fs, fCorte[1], qBw);
-        ap0b.k = ap1.k = passaTudo (fs, fCorte[2], qBw);
         for (int m = 0; m < NM; ++m) { envC[m] = -120.0f; grC[m] = 0.0f; grMedia[m] = 0.0f; rmsBanda[m] = 0; }
         cDet = 1.0 - std::exp (-1.0 / (0.012 * fs));
-        cAtq = 1.0f - std::exp (-32.0f / (0.010f * (float) fs));
-        cRel = 1.0f - std::exp (-32.0f / (0.150f * (float) fs));
-        cEst = 1.0f - std::exp (-32.0f / (0.050f * (float) fs));
+        // ganhos (TONE, TILT, DYN EQ) andam por bloco da fase linear, com rampa dentro do bloco
+        const float blq = (float) fl.bloco();
+        cAtq = 1.0f - std::exp (-blq / (0.010f * (float) fs));
+        cRel = 1.0f - std::exp (-blq / (0.150f * (float) fs));
+        cEst = 1.0f - std::exp (-blq / (0.050f * (float) fs));
         cMedia = 1.0f - std::exp (-1.0f / (4.0f * (float) fs));
         cRms = 1.0 - std::exp (-1.0 / (0.3 * fs));
         for (auto& s : simF) s.zera();
@@ -689,58 +1055,27 @@ public:
             seco[1][(size_t) i] = linhaSeco[1][(size_t) posSeco];
         }
 
+        // TONE MATCH + TILT + DYNAMIC EQ + crossover, tudo em fase linear (FaseLinear), e o multibanda por amostra
         const bool feito = feitico.feito;
-        constexpr int SUB = 32;
-        for (int i0 = 0; i0 < n; i0 += SUB)
+        prepMultibanda (a);
+        for (int i = 0; i < n; ++i)
         {
-            const int m = std::min (SUB, n - i0);
-            recalcEq (false);
-            // TONE MATCH + TILT
-            for (int c = 0; c < nch && c < 2; ++c)
-            {
-                float* x = ch[c] + i0;
-                for (int k = 0; k < NE; ++k)
-                    if (eqAtiva[k]) for (int i = 0; i < m; ++i) x[i] = eq[k].passa (x[i], c);
-                if (tiltAtivo)
-                    for (int i = 0; i < m; ++i) x[i] = tiltA.passa (tiltG.passa (x[i], c), c);
-            }
-            // DYNAMIC EQ: detectores (mono, depois do TONE) e os sinos das zonas
-            for (int i = 0; i < m; ++i)
-            {
-                const float mm = R ? 0.5f * (L[i0 + i] + R[i0 + i]) : L[i0 + i];
-                detTot += cDet * ((double) mm * mm - detTot);
-                for (int z = 0; z < NZ; ++z)
-                {
-                    const float y = det[z].passa (mm, 0);
-                    detP[z] += cDet * ((double) y * y - detP[z]);
-                }
-            }
+            if (fl.cheio()) blocoFaseLinear (feito);
+            float bl[NM], br[NM], dm;
+            fl.amostra (L[i], R ? R[i] : L[i], bl, br, dm);
+            // detectores da DYN EQ: mono, depois do TONE / TILT e antes da DYN (o ganho novo entra no próximo bloco)
+            detTot += cDet * ((double) dm * dm - detTot);
             for (int z = 0; z < NZ; ++z)
             {
-                const auto& Z = zona (z);
-                float alvo = 0.0f;
-                if (feito && detTot > 1e-7)
-                {
-                    const float desvio = dbDe (detP[z] / detTot) - feitico.relAlvo[z];   // > 0 sobra, < 0 falta
-                    constexpr float tol = 1.5f;
-                    if (Z.sinal < 0 && desvio > tol) alvo = -std::min (Z.max, (desvio - tol) * 0.8f);
-                    if (Z.sinal > 0 && desvio < -tol && detTot > 1e-5) alvo = std::min (Z.max, (-desvio - tol) * 0.6f);
-                    alvo *= amt;
-                }
-                gZona[z] += (std::abs (alvo) > std::abs (gZona[z]) ? cAtq : cRel) * (alvo - gZona[z]);
-                if (std::abs (gZona[z]) < 0.01f && alvo == 0.0f) gZona[z] = 0.0f;
-                if (gZona[z] != 0.0f)
-                {
-                    dyn[z].k = sino (fs, Z.f, Z.q, gZona[z]);
-                    for (int c = 0; c < nch && c < 2; ++c)
-                    {
-                        float* x = ch[c] + i0;
-                        for (int i = 0; i < m; ++i) x[i] = dyn[z].passa (x[i], c);
-                    }
-                }
+                const float y = det[z].passa (dm, 0);
+                detP[z] += cDet * ((double) y * y - detP[z]);
             }
-            multibanda (L + i0, R ? R + i0 : nullptr, m, a, feito);
+            float sl, sr;
+            multibandaAmostra (bl, br, feito, sl, sr);
+            L[i] = sl;
+            if (R) R[i] = sr;
         }
+        fimMultibanda();
         for (int z = 0; z < NZ; ++z) zonaDb[z] = gZona[z];
 
         // DRIVE + LIMITADOR true peak (atrasa `latencia`)
@@ -793,16 +1128,13 @@ public:
     // curva do TONE MATCH + TILT (+ DYN EQ agora), para a tela (dB em f)
     double respostaAgora (double f, bool comDyn) const
     {
-        double db = 0;
-        for (int k = 0; k < NE; ++k)
-            if (std::abs (tomSuave[k]) > 1e-3f) db += respostaDb (sino (fs, freqEq (k), qOitava, tomSuave[k]), fs, f);
-        if (std::abs (tiltSuave) > 1e-3f)
-            db += respostaDb (shelf (fs, fTiltG, -tiltSuave * 0.5, false), fs, f) + respostaDb (shelf (fs, fTiltA, tiltSuave * 0.5, true), fs, f);
-        if (comDyn)
-            for (int z = 0; z < NZ; ++z)
-                if (const float g = zonaDb[z].load(); std::abs (g) > 0.01f) db += respostaDb (sino (fs, zona (z).f, zona (z).q, g), fs, f);
-        return db;
+        float g[NF] {};
+        for (int k = 0; k < NE; ++k) g[k] = tomSuave[k];
+        g[kIdxTilt] = -tiltSuave * 0.5f; g[kIdxTilt + 1] = tiltSuave * 0.5f;
+        if (comDyn) for (int z = 0; z < NZ; ++z) g[kIdxDyn + z] = zonaDb[z].load();
+        return modeloDb (g, fs, f);
     }
+    int numFiltrosFaseLinear() const { return fl.numFiltros(); }
 
     // forma alvo (dB, média 0): a da referência, se há; senão a do STYLE
     void formaAlvo (float* out) const
@@ -874,12 +1206,13 @@ private:
             for (int j = 0; j < 3; ++j) s += f.alvoForma[3 * k + j] - atual[3 * k + j];
             quer[k] = casaTom.load() ? clampf ((float) (s / 3.0) * 0.85f, -6.0f, 6.0f) : 0.0f;
         }
-        for (int it = 0; it < 4; ++it)
+        // a resposta é a do caminho de fase linear (sinos em paralelo), o mesmo modelo que o áudio usa
+        auto soTom = [] (const float* tom, float* g) { for (int i = 0; i < NF; ++i) g[i] = i < NE ? tom[i] : 0.0f; };
+        for (int it = 0; it < 6; ++it)
         {
-            float r[NE] {};
-            for (int k = 0; k < NE; ++k)
-                for (int j = 0; j < NE; ++j)
-                    if (std::abs (f.tom[j]) > 1e-3f) r[k] += (float) respostaDb (sino (48000.0, freqEq (j), qOitava, f.tom[j]), 48000.0, freqEq (k));
+            float g[NF], r[NE];
+            soTom (f.tom, g);
+            for (int k = 0; k < NE; ++k) r[k] = (float) modeloDb (g, 48000.0, freqEq (k));
             for (int k = 0; k < NE; ++k) f.tom[k] = clampf (f.tom[k] + 0.7f * (quer[k] - r[k]), -6.0f, 6.0f);
         }
         for (int b = 0; b < NB; ++b) alvoP[b] = (float) potDe (f.alvoForma[b]);
@@ -889,13 +1222,13 @@ private:
         {
             const double lo = m == 0 ? 0.0 : fCorte[m - 1], hi = m == NM - 1 ? 1e9 : fCorte[m];
             double s = 0, sT = 0;
+            float g[NF];
+            soTom (f.tom, g);
             for (int b = 0; b < NB; ++b)
             {
                 const double fb = freqBanda (b);
                 if (fb < lo || fb >= hi) continue;
-                double eqDb = 0;
-                for (int k = 0; k < NE; ++k)
-                    if (std::abs (f.tom[k]) > 1e-3f) eqDb += respostaDb (sino (48000.0, freqEq (k), qOitava, f.tom[k]), 48000.0, fb);
+                const double eqDb = modeloDb (g, 48000.0, fb);
                 s += potA[b] * potDe (eqDb);
                 sT += potA[b];
             }
@@ -915,106 +1248,110 @@ private:
         modo = 2;
     }
 
+    // TONE e TILT andam suaves (~50 ms) até o alvo; um passo por bloco da fase linear
     void recalcEq (bool ja)
     {
         const float c = ja ? 1.0f : cEst;
         for (int k = 0; k < NE; ++k)
         {
             const float alvo = feitico.feito ? amt * feitico.tom[k] : 0.0f;
-            const float antes = tomSuave[k];
             tomSuave[k] += c * (alvo - tomSuave[k]);
             if (std::abs (tomSuave[k] - alvo) < 0.005f) tomSuave[k] = alvo;
-            eqAtiva[k] = std::abs (tomSuave[k]) > 0.005f;
-            if (eqAtiva[k] && (ja || tomSuave[k] != antes)) eq[k].k = sino (fs, freqEq (k), qOitava, tomSuave[k]);
         }
-        const float antesT = tiltSuave;
         tiltSuave += c * (tiltAlvo - tiltSuave);
         if (std::abs (tiltSuave - tiltAlvo) < 0.005f) tiltSuave = tiltAlvo;
-        tiltAtivo = std::abs (tiltSuave) > 0.005f;
-        if (tiltAtivo && (ja || tiltSuave != antesT))
+    }
+
+    // a cada bloco da fase linear: TONE / TILT suaves, ganho de cada ponto da DYN EQ e os ganhos para os filtros
+    void blocoFaseLinear (bool feito)
+    {
+        recalcEq (false);
+        for (int z = 0; z < NZ; ++z)
         {
-            tiltG.k = shelf (fs, fTiltG, -tiltSuave * 0.5, false);
-            tiltA.k = shelf (fs, fTiltA, tiltSuave * 0.5, true);
+            const auto& Z = zona (z);
+            float alvo = 0.0f;
+            if (feito && detTot > 1e-7)
+            {
+                const float desvio = dbDe (detP[z] / detTot) - feitico.relAlvo[z];   // > 0 sobra, < 0 falta
+                constexpr float tol = 1.5f;
+                if (Z.sinal < 0 && desvio > tol) alvo = -std::min (Z.max, (desvio - tol) * 0.8f);
+                if (Z.sinal > 0 && desvio < -tol && detTot > 1e-5) alvo = std::min (Z.max, (-desvio - tol) * 0.6f);
+                alvo *= amt;
+            }
+            gZona[z] += (std::abs (alvo) > std::abs (gZona[z]) ? cAtq : cRel) * (alvo - gZona[z]);
+            if (std::abs (gZona[z]) < 0.01f && alvo == 0.0f) gZona[z] = 0.0f;
         }
+        float g[NF];
+        for (int k = 0; k < NE; ++k) g[k] = std::pow (10.0f, tomSuave[k] / 20.0f);
+        g[kIdxTilt] = std::pow (10.0f, -tiltSuave * 0.5f / 20.0f);
+        g[kIdxTilt + 1] = std::pow (10.0f, tiltSuave * 0.5f / 20.0f);
+        for (int z = 0; z < NZ; ++z) g[kIdxDyn + z] = std::pow (10.0f, gZona[z] / 20.0f);
+        fl.processaBloco (g);
     }
 
     // ------------------------------------------------------------------------------------------------ multibanda
-    void multibanda (float* L, float* R, int m, const Ajustes& a, bool feito)
+    // as 4 bandas chegam separadas pelo crossover de fase linear (FaseLinear); aqui, compressor e estéreo por banda
+    void prepMultibanda (const Ajustes& a)
     {
-        const int nc = R ? 2 : 1;
         static const float atqBase[NM] = { 30.0f, 15.0f, 5.0f, 2.0f }, relBase[NM] = { 160.0f, 120.0f, 80.0f, 60.0f };
         static const float razBase[NM] = { 2.0f, 2.5f, 3.0f, 1.6f };
         const float fp = std::pow (2.0f, clampf (a.punch, -5.0f, 5.0f) / 2.5f);   // PUNCH > 0 = ataque mais lento
         const float wid = clampf (a.width, 0.0f, 2.0f);
-        const float lados[NM] = { a.monoBass ? 0.0f : 1.0f, 1.0f + (wid - 1.0f) * 0.5f, wid, wid };
-        const float quente = clampf (a.character, 0.0f, 1.0f);
-        float cA[NM], cR[NM], raz[NM], lim[NM];
+        mbLados[0] = a.monoBass ? 0.0f : 1.0f; mbLados[1] = 1.0f + (wid - 1.0f) * 0.5f; mbLados[2] = wid; mbLados[3] = wid;
+        mbQuente = clampf (a.character, 0.0f, 1.0f);
         for (int k = 0; k < NM; ++k)
         {
-            cA[k] = 1.0f - std::exp (-1.0f / (atqBase[k] * fp * 0.001f * (float) fs));
-            cR[k] = 1.0f - std::exp (-1.0f / (relBase[k] * 0.001f * (float) fs));
-            raz[k] = 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * quente) * (0.4f + 0.6f * amt);
-            lim[k] = feitico.limiar[k] + 4.0f - 6.0f * amt;   // AMOUNT baixo = limiar acima do nível médio
+            mbCA[k] = 1.0f - std::exp (-1.0f / (atqBase[k] * fp * 0.001f * (float) fs));
+            mbCR[k] = 1.0f - std::exp (-1.0f / (relBase[k] * 0.001f * (float) fs));
+            mbRaz[k] = 1.0f + (razBase[k] - 1.0f) * (0.6f + 0.8f * mbQuente) * (0.4f + 0.6f * amt);
+            mbLim[k] = feitico.limiar[k] + 4.0f - 6.0f * amt;   // AMOUNT baixo = limiar acima do nível médio
+            mbSLados[k] = 0; mbSMeio[k] = 0;
         }
-        double sLados[NM] {}, sMeio[NM] {};
-        for (int i = 0; i < m; ++i)
+    }
+
+    inline void multibandaAmostra (const float* bl, const float* br, bool feito, float& sl, float& sr)
+    {
+        sl = 0.0f; sr = 0.0f;
+        for (int k = 0; k < NM; ++k)
         {
-            float bl[NM], br[NM];
-            for (int c = 0; c < nc; ++c)
+            const float pk = std::max (bl[k] * bl[k], br[k] * br[k]);
+            rmsBanda[k] += cRms * ((double) pk - rmsBanda[k]);
+            const float nivel = dbDe ((double) pk + 1e-20);
+            envC[k] += (nivel > envC[k] ? mbCA[k] : mbCR[k]) * (nivel - envC[k]);
+            float gr = 0.0f;
+            if (feito)
             {
-                const float x = c == 0 ? L[i] : R[i];
-                const float b0 = lp[0][1].passa (lp[0][0].passa (x, c), c);
-                const float r1 = hp[0][1].passa (hp[0][0].passa (x, c), c);
-                const float b1 = lp[1][1].passa (lp[1][0].passa (r1, c), c);
-                const float r2 = hp[1][1].passa (hp[1][0].passa (r1, c), c);
-                const float b2 = lp[2][1].passa (lp[2][0].passa (r2, c), c);
-                const float b3 = hp[2][1].passa (hp[2][0].passa (r2, c), c);
-                float* d = c == 0 ? bl : br;
-                d[0] = ap0b.passa (ap0a.passa (b0, c), c);   // a banda de baixo leva a fase dos cortes de 1,2 k e 6,5 k
-                d[1] = ap1.passa (b1, c);                    // a LOW-MID, a de 6,5 k
-                d[2] = b2; d[3] = b3;
+                constexpr float joelho = 6.0f;
+                const float acima = envC[k] - mbLim[k];
+                float sobra = 0.0f;
+                if (acima > joelho * 0.5f) sobra = acima;
+                else if (acima > -joelho * 0.5f) sobra = (acima + joelho * 0.5f) * (acima + joelho * 0.5f) / (2.0f * joelho);
+                gr = -sobra * (1.0f - 1.0f / mbRaz[k]);
             }
-            if (nc == 1) for (int k = 0; k < NM; ++k) br[k] = bl[k];
-            float sl = 0.0f, sr = 0.0f;
-            for (int k = 0; k < NM; ++k)
+            grC[k] = gr;
+            grMedia[k] += cMedia * (gr - grMedia[k]);   // reposição automática (~4 s): o balanço da banda fica
+            const float g = std::exp ((gr - grMedia[k]) * 0.11512925f);
+            float l = bl[k] * g, r = br[k] * g;
+            if (feito && mbQuente > 0.02f && k < 2)     // CHARACTER quente: saturação suave nos graves
             {
-                const float pk = std::max (bl[k] * bl[k], br[k] * br[k]);
-                rmsBanda[k] += cRms * ((double) pk - rmsBanda[k]);
-                const float nivel = dbDe ((double) pk + 1e-20);
-                envC[k] += (nivel > envC[k] ? cA[k] : cR[k]) * (nivel - envC[k]);
-                float gr = 0.0f;
-                if (feito)
-                {
-                    constexpr float joelho = 6.0f;
-                    const float acima = envC[k] - lim[k];
-                    float sobra = 0.0f;
-                    if (acima > joelho * 0.5f) sobra = acima;
-                    else if (acima > -joelho * 0.5f) sobra = (acima + joelho * 0.5f) * (acima + joelho * 0.5f) / (2.0f * joelho);
-                    gr = -sobra * (1.0f - 1.0f / raz[k]);
-                }
-                grC[k] = gr;
-                grMedia[k] += cMedia * (gr - grMedia[k]);   // reposição automática (~4 s): o balanço da banda fica
-                const float g = std::exp ((gr - grMedia[k]) * 0.11512925f);
-                float l = bl[k] * g, r = br[k] * g;
-                if (feito && quente > 0.02f && k < 2)       // CHARACTER quente: saturação suave nos graves
-                {
-                    const float dr = 1.0f + 2.0f * quente;
-                    l = std::tanh (l * dr) / dr; r = std::tanh (r * dr) / dr;
-                }
-                const float meio = 0.5f * (l + r), lado = 0.5f * (l - r) * lados[k];
-                sMeio[k] += (double) meio * meio; sLados[k] += (double) lado * lado;
-                sl += meio + lado; sr += meio - lado;
+                const float dr = 1.0f + 2.0f * mbQuente;
+                l = std::tanh (l * dr) / dr; r = std::tanh (r * dr) / dr;
             }
-            L[i] = sl;
-            if (R) R[i] = sr;
+            const float meio = 0.5f * (l + r), lado = 0.5f * (l - r) * mbLados[k];
+            mbSMeio[k] += (double) meio * meio; mbSLados[k] += (double) lado * lado;
+            sl += meio + lado; sr += meio - lado;
         }
+    }
+
+    void fimMultibanda()
+    {
         for (int k = 0; k < NM; ++k)
         {
             grBanda[k] = grC[k];
             inBanda[k] = envC[k];
             outBanda[k] = envC[k] + grC[k] - grMedia[k];
-            limiarAgora[k] = feitico.feito ? lim[k] : 0.0f;
-            if (sMeio[k] > 1e-12) largura[k] = largura[k].load() + 0.1f * ((float) std::sqrt (sLados[k] / sMeio[k]) - largura[k].load());
+            limiarAgora[k] = feitico.feito ? mbLim[k] : 0.0f;
+            if (mbSMeio[k] > 1e-12) largura[k] = largura[k].load() + 0.1f * ((float) std::sqrt (mbSLados[k] / mbSMeio[k]) - largura[k].load());
         }
         if (modo.load() == 1 && ldIn.curto > -50.0f)
         {
@@ -1030,7 +1367,7 @@ private:
     {
         const float g0 = std::pow (10.0f, driveDb / 20.0f);
         const float teto = std::pow (10.0f, kTeto / 20.0f);
-        const int W = nLook + 1, LL = latencia + 1;
+        const int W = nLook + 1, LL = latLim + 1;
         const double cSol = 1.0 - std::exp (-1.0 / ((0.060 + 0.080 * character) * fs));
         float gMin = 1.0f;
         for (int i = 0; i < n; ++i)
@@ -1179,18 +1516,19 @@ private:
     Feitico pendente;
     std::atomic<int> genRestaura { 0 };
 
-    Biquad eq[NE], tiltG, tiltA, dyn[NZ], det[NZ];
-    bool eqAtiva[NE] {}, tiltAtivo = false;
+    FaseLinear fl;
+    Biquad det[NZ];
     float tomSuave[NE] {}, tiltSuave = 0.0f, tiltAlvo = 0.0f;
     double detP[NZ] {}, detTot = 0, cDet = 0.001, cRms = 0.0001;
     float gZona[NZ] {};
     float cAtq = 0.1f, cRel = 0.01f, cEst = 0.05f, cMedia = 1e-5f;
 
-    Biquad lp[3][2], hp[3][2], ap0a, ap0b, ap1;
     float envC[NM] {}, grC[NM] {}, grMedia[NM] {};
+    float mbCA[NM] {}, mbCR[NM] {}, mbRaz[NM] {}, mbLim[NM] {}, mbLados[NM] {}, mbQuente = 0.0f;
+    double mbSLados[NM] {}, mbSMeio[NM] {};
     double rmsBanda[NM] {};
 
-    int nLook = 72, latencia = 80;
+    int nLook = 72, latLim = 80, latencia = 80;
     std::vector<float> linhaSeco[2], linhaLim[2], seco[2];
     int posSeco = 0, posLim = 0;
     TruePeak tpLim, tpOut;
