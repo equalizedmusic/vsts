@@ -222,6 +222,45 @@ async function tratarComentario(env, igId, v) {
         .bind(dm.ok ? 1 : 0, pub && pub.ok ? 1 : 0, JSON.stringify({ dm: dm.tentativas, publico: pub }).slice(0, 1500), comentarioId).run();
 }
 
+// Varredura (cron de 10 em 10 min): a Meta às vezes NÃO manda o aviso do comentário (10/11: "Maestro" do
+// @ronyparedaooficial ficou sem DM). Passa pelos comentários dos posts recentes e trata os que têm palavra-chave
+// pelo mesmo tratarComentario: o INSERT OR IGNORE em ig_respostas garante uma resposta só, mesmo se o aviso chegar junto.
+// Só comentários de até 7 dias (janela da DM privada da Meta) e de depois de 09/11 00:00 UTC (robô já no ar;
+// pega a queda de 09/11 21h–22h50); os de menos de 3 min ficam para o aviso da Meta.
+const VARRER_DESDE = Date.parse('2026-11-09T00:00:00Z');
+export async function varrerComentarios(env) {
+    const tk = await tokenAtual(env);
+    if (!tk) return { ok: false, motivo: 'sem_token' };
+    const igId = env.IG_ID || '17841400749768561';
+    const base = ehIg(tk) ? '/me' : '/' + igId;
+    const agora = Date.now();
+    const corte = Math.max(agora - 7 * 86400000, VARRER_DESDE);
+    const m = await graph(base + '/media?fields=id,timestamp&limit=10', tk);
+    if (!m.ok) return { ok: false, etapa: 'media', status: m.status, erro: m.corpo?.error?.message };
+    let vistos = 0, candidatos = 0;
+    const tratados = [];
+    for (const midia of m.corpo?.data || []) {
+        const c = await graph(`/${midia.id}/comments?fields=id,text,timestamp,username,from{id,username}&limit=50`, tk);
+        if (!c.ok) continue;
+        for (const x of c.corpo?.data || []) {
+            vistos++;
+            const t = Date.parse(x.timestamp || '');
+            if (!(t >= corte) || agora - t < 3 * 60000) continue;
+            const from = x.from || (x.username ? { username: x.username } : null);
+            if (from && from.username === 'equalizedmusic') continue;
+            if (!gatilhoDe(x.text) && !ehSpam(x.text)) continue;
+            candidatos++;
+            const ja = await env.DB.prepare('SELECT 1 FROM ig_respostas WHERE comentario_id = ?').bind(x.id).first();
+            if (ja) continue;
+            try {
+                await tratarComentario(env, igId, { id: x.id, text: x.text, from, media: { id: midia.id } });
+                tratados.push({ comentario: x.id, usuario: from?.username ?? null, texto: String(x.text || '').slice(0, 60) });
+            } catch (e) { console.error('ig varrer', e); }
+        }
+    }
+    return { ok: true, midias: (m.corpo?.data || []).length, vistos, candidatos, tratados };
+}
+
 async function diag(env) {
     const out = { tem_token: !!env.IG_TOKEN, tem_verify: !!env.IG_VERIFY, tem_app_secret: !!env.IG_APP_SECRET };
     const tk = await tokenAtual(env);
@@ -635,6 +674,10 @@ export async function rotaInstagram(caminho, req, env, url, ctx) {
     if (caminho === '/instagram/agenda/rodar' && req.method === 'POST') {
         if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
         return json(await publicarAgendados(env));
+    }
+    if (caminho === '/instagram/varrer' && req.method === 'POST') {   // varredura de comentários agora, sem esperar o cron
+        if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
+        return json(await varrerComentarios(env));
     }
     if (caminho === '/instagram/relatorio' && req.method === 'POST') {
         if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
