@@ -5,6 +5,18 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout l;
     l.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "align", 1 }, "ALIGN", false));
+    // dosagem (0.2.0): o corretor segue automático; os padrões = 0.1.0 (projeto antigo abre igual)
+    l.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "phase", 2 }, "PHASE", true));
+    l.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "polarity", 2 }, "POLARITY", true));
+    l.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "guard", 2 }, "LEVEL GUARD", true));
+    l.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "depth", 2 }, "GUARD DEPTH",
+               juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f), 100.0f,
+               juce::AudioParameterFloatAttributes().withLabel ("%")));
+    l.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "react", 2 }, "REACT",
+               juce::StringArray { "SLOW", "MID", "FAST" }, 1));
+    l.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "xomax", 2 }, "X-OVER MAX",
+               juce::NormalisableRange<float> (60.0f, 150.0f, 1.0f), 110.0f,
+               juce::AudioParameterFloatAttributes().withLabel ("Hz")));
     return l;
 }
 
@@ -16,6 +28,12 @@ AlignProcessor::AlignProcessor()
       apvts (*this, nullptr, "ALIGN", parametros())
 {
     pAlign = apvts.getRawParameterValue ("align");
+    pPhase = apvts.getRawParameterValue ("phase");
+    pPolarity = apvts.getRawParameterValue ("polarity");
+    pGuard = apvts.getRawParameterValue ("guard");
+    pDepth = apvts.getRawParameterValue ("depth");
+    pReact = apvts.getRawParameterValue ("react");
+    pXoMax = apvts.getRawParameterValue ("xomax");
 }
 
 bool AlignProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -34,18 +52,31 @@ bool AlignProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 void AlignProcessor::prepareToPlay (double sampleRate, int)
 {
     fs = sampleRate;
+    aplicaDose();
     engine.prepare (sampleRate);
     setLatencySamples (0);
 }
 
-void AlignProcessor::alterna()
+void AlignProcessor::alterna() { alternaParam ("align"); }
+
+void AlignProcessor::alternaParam (const juce::String& id)
 {
-    if (auto* p = apvts.getParameter ("align"))
+    if (auto* p = apvts.getParameter (id))
     {
         p->beginChangeGesture();
-        p->setValueNotifyingHost (alignLigado() ? 0.0f : 1.0f);
+        p->setValueNotifyingHost (p->getValue() > 0.5f ? 0.0f : 1.0f);
         p->endChangeGesture();
     }
+}
+
+void AlignProcessor::aplicaDose()
+{
+    engine.usaFase = pPhase->load() > 0.5f;
+    engine.usaPolaridade = pPolarity->load() > 0.5f;
+    engine.guard = pGuard->load() > 0.5f;
+    engine.guardDepth = juce::jlimit (0.0, 1.0, pDepth->load() / 100.0);
+    engine.xoMax = juce::jlimit (60.0, 150.0, (double) pXoMax->load());
+    engine.setReact ((int) std::lround (pReact->load()));
 }
 
 void AlignProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -73,6 +104,7 @@ void AlignProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     scLigado = nk > 0;
 
     if (! licenca->liberada()) return;   // sem ativação: o som passa direto
+    aplicaDose();
     engine.process (main.getArrayOfWritePointers(), nch, kick, nk, n, alignLigado());
 }
 

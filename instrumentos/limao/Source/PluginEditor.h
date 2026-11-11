@@ -53,6 +53,22 @@ private:
     float cutoff = 0.0f, accent = 0.0f;
 };
 
+// ---------------- ARRASTAR MIDI: arraste a tecla para o DAW e a linha vira clipe ----------------
+class MidiDragKey : public lim::ActionKey
+{
+public:
+    explicit MidiDragKey (LimaoProcessor& p) : lim::ActionKey ("ARRASTAR MIDI"), proc (p)
+    {
+        setMouseCursor (juce::MouseCursor::DraggingHandCursor);
+    }
+    void mouseDrag (const juce::MouseEvent& e) override;
+    void mouseUp (const juce::MouseEvent& e) override { dragging = false; lim::ActionKey::mouseUp (e); }
+
+private:
+    LimaoProcessor& proc;
+    bool dragging = false;
+};
+
 class LimaoEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:

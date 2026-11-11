@@ -511,9 +511,9 @@ void MidiDragButton::mouseDrag (const juce::MouseEvent& e)
 {
     if (dragging || e.getDistanceFromDragStart() < 6) return;
     dragging = true;
-    const auto file = proc.writeMidiFile();
-    if (file.existsAsFile())
-        juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (file.getFullPathName()), false, this);
+    const auto files = proc.writeMidiFiles();   // uma peça por arquivo
+    if (! files.isEmpty())
+        juce::DragAndDropContainer::performExternalDragDropOfFiles (files, false, this);
 }
 
 // =====================================================================

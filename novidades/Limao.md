@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Limao`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `limao-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.6.0 — 2026-11-11
+- AUTO ALEATÓRIO no sequenciador: ligado, troca a linha inteira (notas, pausas, ligaduras, acentos e slides) sem
+  parar, a cada 4, 8, 16, 32 ou 64 tempos (A CADA). A troca cai sempre na virada do bloco, junto com o compasso,
+  e respeita PASSOS, SCALE e ROOT.
+- ARRASTAR MIDI: arraste a tecla para o DAW e a linha vira clipe MIDI, igual ao RESENHA (com SCALE + ROOT, acento =
+  velocity 127, slide = nota encostando na próxima, swing e andamento no arquivo).
+
 ## 0.5.0 — 2026-10-27
 - Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até
   2 computadores, e desativar num computador libera a vaga para outro. Sem ativar, o instrumento fica mudo.

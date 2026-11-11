@@ -15,6 +15,7 @@ LimaoProcessor::LimaoProcessor()
     pRvOn = raw (id::rvOn);      pRvSize = raw (id::rvSize); pRvMix = raw (id::rvMix);  pVol = raw (id::volume);
     pSeqOn = raw (id::seqOn);    pSeqLen = raw (id::seqLen); pRate = raw (id::seqRate); pSwing = raw (id::swing);
     pScale = raw (id::scale);    pRoot = raw (id::root);
+    pAutoRand = raw (id::autoRand); pRandEvery = raw (id::randEvery);
 
     factory = factoryPresetData();
     refreshBanks();
@@ -23,6 +24,27 @@ LimaoProcessor::LimaoProcessor()
     // abre no "303 Clássico" (o Init é só uma linha de Dó)
     const int start = findPreset (u8 ("303 Clássico"), {});
     loadPreset (start >= 0 ? start : 0);
+    startTimerHz (10);
+}
+
+// AUTO ALEATÓRIO: deixa a próxima linha pronta (com o tamanho, a escala e a tônica de agora)
+void LimaoProcessor::timerCallback()
+{
+    const int len = juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load()));
+    const int sc = scaleNow(), rt = rootNow();
+    int st = nextState.load();
+    if (st == 1 && (len != nextLen || sc != nextScale || rt != nextRoot))
+    {
+        int um = 1;
+        if (! nextState.compare_exchange_strong (um, 0)) return;   // o áudio está copiando: tenta no próximo
+        st = 0;
+    }
+    if (st != 0 || pAutoRand->load() < 0.5f) return;
+    juce::Random rnd;
+    nextPattern.clear();
+    randomize (nextPattern, len, rnd, sc, rt);
+    nextLen = len; nextScale = sc; nextRoot = rt;
+    nextState.store (1);
 }
 
 bool LimaoProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -42,6 +64,7 @@ void LimaoProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     volSm.reset (sampleRate, 0.05);
     volSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (pVol->load()));
     lastAbsStep = -1;
+    lastRandBlock = -1;
     gateOffPpq = -1.0;
     wasRunning = false;
     numHeld = 0;
@@ -148,11 +171,14 @@ void LimaoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     {
         voice.noteOff();
         lastAbsStep = -1;
+        lastRandBlock = -1;
         gateOffPpq = -1.0;
         lastPlayed = -1;
         playStep = -1;
     }
     wasRunning = running;
+    const bool   autoRand = pAutoRand->load() > 0.5f;
+    const double every    = randEveryBeats[juce::jlimit (0, 4, juce::roundToInt (pRandEvery->load()))];
 
     const int    len   = juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load()));
     const double sb    = rateBeats[juce::jlimit (0, 4, juce::roundToInt (pRate->load()))];
@@ -191,6 +217,21 @@ void LimaoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         if (absStep != lastAbsStep)
         {
             flush (i);
+            // AUTO ALEATÓRIO: na virada de cada bloco de N tempos entra a linha nova (já pronta, sem alocar)
+            {
+                const long long blk = (long long) std::floor ((pair * 2.0 * sb + (second ? sb : 0.0)) / every + 1.0e-9);
+                if (autoRand && lastRandBlock >= 0 && blk != lastRandBlock)
+                {
+                    int um = 1;
+                    if (nextState.compare_exchange_strong (um, 2))
+                    {
+                        for (int k = 0; k < maxSteps; ++k) pattern.steps[(size_t) k].store (nextPattern.steps[(size_t) k].load());
+                        nextState.store (0);
+                        ++patternVersion;
+                    }
+                }
+                lastRandBlock = blk;
+            }
             const int  idx = (int) (((absStep % len) + len) % len);
             const bool contiguous = absStep == lastAbsStep + 1;
             const Step st   = pattern.get (idx);
@@ -683,6 +724,62 @@ void LimaoProcessor::transposePattern (int semis)
         pattern.set (i, st);
     }
     ++patternVersion;
+}
+
+// ARRASTAR MIDI (igual ao RESENHA): o padrão como está na tela, com SCALE + ROOT. Acento = velocity 127, senão 90.
+// SLIDE = a nota vai até a próxima (ligadas no DAW); LIGA = segura a nota anterior; PAUSA = nada. Swing e andamento
+// entram no arquivo.
+juce::File LimaoProcessor::writeMidiFile()
+{
+    const int tpq = 960;
+    const int len = juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load()));
+    const double sb = rateBeats[juce::jlimit (0, 4, juce::roundToInt (pRate->load()))];
+    const double sw = (double) pSwing->load() * 0.01 * 0.5 * sb;
+    const int sc = scaleNow(), rt = rootNow();
+    auto inicio = [&] (int k) { return (k * sb + ((k & 1) ? sw : 0.0)) * tpq; };            // em ticks
+    auto duracao = [&] (int k) { return ((k & 1) ? sb - sw : sb + sw) * tpq; };
+
+    juce::MidiMessageSequence seq;
+    seq.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / juce::jmax (20.0f, shownBpm.load()))), 0.0);
+    for (int i = 0; i < len; ++i)
+    {
+        const Step st = pattern.get (i);
+        if (st.mode != Mode::note) continue;
+        int j = i;
+        while (j + 1 < len && pattern.get (j + 1).mode == Mode::tie) ++j;   // ligaduras seguram a nota
+        const int nota = juce::jlimit (0, 127, 36 + scaledPitch (st.pitch, sc, rt));
+        const double on = inicio (i);
+        double off = inicio (j) + duracao (j) * 0.5;
+        const Step ultimo = pattern.get (j);
+        if (ultimo.slide || j > i)
+        {
+            if (j + 1 < len && pattern.get (j + 1).mode == Mode::note)
+            {
+                const int prox = juce::jlimit (0, 127, 36 + scaledPitch (pattern.get (j + 1).pitch, sc, rt));
+                // slide: encosta na próxima (encavala um pouco se a nota muda, como o glide do DAW espera)
+                off = ultimo.slide ? inicio (j + 1) + (prox != nota ? tpq * 0.03 : -1.0) : inicio (j) + duracao (j) * 0.5;
+            }
+            else if (ultimo.slide) off = inicio (j) + duracao (j);
+        }
+        seq.addEvent (juce::MidiMessage::noteOn (1, nota, (juce::uint8) (st.accent ? 127 : 90)), on);
+        seq.addEvent (juce::MidiMessage::noteOff (1, nota), juce::jmax (on + 10.0, off));
+    }
+    seq.addEvent (juce::MidiMessage::endOfTrack(), len * sb * tpq);
+    seq.sort();
+    seq.updateMatchedPairs();
+
+    juce::MidiFile mf;
+    mf.setTicksPerQuarterNote (tpq);
+    mf.addTrack (seq);
+
+    auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("LIMAO");
+    dir.createDirectory();
+    auto name = juce::File::createLegalFileName (presetName.trim());
+    auto file = dir.getChildFile ("LIMAO - " + (name.isEmpty() ? juce::String ("linha") : name) + ".mid");
+    file.deleteFile();
+    juce::FileOutputStream os (file);
+    if (os.openedOk()) mf.writeTo (os);
+    return file;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

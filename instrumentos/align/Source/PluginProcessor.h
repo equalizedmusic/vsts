@@ -47,9 +47,14 @@ public:
 
     bool alignLigado() const { return pAlign->load() > 0.5f; }
     void alterna();                           // o botão ALIGN
+    void alternaParam (const juce::String& id);   // PHASE / POLARITY / LEVEL GUARD
+    bool ligadoParam (const char* id) const { auto* v = apvts.getRawParameterValue (id); return v != nullptr && v->load() > 0.5f; }
+    float valorParam (const char* id) const { auto* v = apvts.getRawParameterValue (id); return v != nullptr ? v->load() : 0.0f; }
 
 private:
     std::atomic<float>* pAlign = nullptr;
+    std::atomic<float> *pPhase = nullptr, *pPolarity = nullptr, *pGuard = nullptr, *pDepth = nullptr, *pReact = nullptr, *pXoMax = nullptr;
+    void aplicaDose();
     double fs = 48000.0;
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 

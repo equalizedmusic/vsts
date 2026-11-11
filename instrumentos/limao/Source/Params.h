@@ -19,6 +19,8 @@ inline const juce::StringArray waveNames  { "SAW", "SQUARE" };
 inline const juce::StringArray driveNames { "TUBE", "PEDAL", "BITCRUSH" };
 inline const juce::StringArray rateNames  { "1/32", "1/16T", "1/16", "1/8T", "1/8" };
 inline constexpr double rateBeats[] = { 0.125, 1.0 / 6.0, 0.25, 1.0 / 3.0, 0.5 };
+inline const juce::StringArray randEveryNames { "4 TEMPOS", "8 TEMPOS", "16 TEMPOS", "32 TEMPOS", "64 TEMPOS" };
+inline constexpr double randEveryBeats[] = { 4.0, 8.0, 16.0, 32.0, 64.0 };
 inline const juce::StringArray delayNames { "1/16", "1/8T", "1/8", "3/16", "1/4", "3/8" };
 inline constexpr double delayBeats[] = { 0.25, 1.0 / 3.0, 0.5, 0.75, 1.0, 1.5 };
 
@@ -31,7 +33,8 @@ inline const juce::String wave = "wave", tune = "tune", cutoff = "cutoff", reso 
                           rvOn = "rvon", rvSize = "rvsize", rvMix = "rvmix",
                           volume = "volume",
                           seqOn = "seqon", seqLen = "seqlen", seqRate = "seqrate", swing = "swing",
-                          scale = "scale", root = "root";
+                          scale = "scale", root = "root",
+                          autoRand = "autorand", randEvery = "randevery";
 }
 
 inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
@@ -99,6 +102,9 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     // SCALE + ROOT: as notas dos passos tocam encaixadas na escala (CHROMATIC = como estão)
     add (new AudioParameterChoice ({ id::scale, 1 }, "Scale", scales::scaleNames, 0));
     add (new AudioParameterChoice ({ id::root, 1 }, "Root", scales::rootNames, 0));
+    // AUTO ALEATÓRIO (0.6.0): ligado, troca a linha inteira (notas e sequência) a cada N tempos, no compasso
+    add (new AudioParameterBool ({ id::autoRand, 2 }, "Auto Random", false));
+    add (new AudioParameterChoice ({ id::randEvery, 2 }, "Random Every", randEveryNames, 2));
 
     return { p.begin(), p.end() };
 }

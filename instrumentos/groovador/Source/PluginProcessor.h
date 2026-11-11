@@ -60,7 +60,7 @@ public:
     void editStep (int inst, int step, grv::Step s);    // clique na grade (entra no DESF.)
     bool canUndo() const { return ! history.empty(); }
     void undo();
-    juce::File writeMidiFile();                         // o groove como .mid (ARRASTAR MIDI)
+    juce::StringArray writeMidiFiles();                 // ARRASTAR MIDI: um .mid por peça que tem nota
 
     // ---- leitura para a tela ----
     int  stepsNow() const;

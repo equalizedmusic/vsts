@@ -4,6 +4,11 @@ Pacote do instalador: `InsideStudioSP-Groovador`. A versão é o primeiro títul
 ela entra no plugin, no instalador e no release `groovador-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-11
+- ARRASTAR MIDI agora solta as peças SEPARADAS: um arquivo por peça que tem nota ("GROOVADOR - preset - SNARE.mid"),
+  cada um com a nota do pad da peça (C1 rim, D1 snare, E1 clap…). No Ableton, segure Ctrl (Windows) ou Cmd (Mac)
+  ao soltar para cada peça ir para uma faixa própria.
+
 ## 0.1.1 — 2026-10-29
 - A etiqueta A/B de cada instrumento desceu para a linha do modelo: antes encostava em "HAT ABERTO".
 - Faixa de timbre em CONVERSA mostra quem está em A e quem está em B em cada trecho (antes dizia "TIMBRE B" em todos).

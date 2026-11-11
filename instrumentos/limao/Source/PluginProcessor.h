@@ -6,11 +6,11 @@
 #include "IspLicenca.h"
 #include "Presets.h"
 
-class LimaoProcessor : public juce::AudioProcessor
+class LimaoProcessor : public juce::AudioProcessor, private juce::Timer
 {
 public:
     LimaoProcessor();
-    ~LimaoProcessor() override = default;
+    ~LimaoProcessor() override { stopTimer(); }
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -65,6 +65,7 @@ public:
     void clearPattern();
     void shiftPattern (int dir);      // gira o padrão um passo para a esquerda (−1) ou direita (+1)
     void transposePattern (int semis);   // com SCALE: anda graus da escala
+    juce::File writeMidiFile();          // ARRASTAR MIDI: o padrão (com SCALE + ROOT) vira um .mid na pasta temporária
     int  scaleNow() const { return juce::roundToInt (pScale->load()); }   // índice em scales::scaleNames (0 = CHROMATIC)
     int  rootNow() const  { return juce::roundToInt (pRoot->load()); }    // 0 = C … 11 = B
 
@@ -164,6 +165,16 @@ private:
     std::atomic<float>* pSwing = nullptr;
     std::atomic<float>* pScale = nullptr;
     std::atomic<float>* pRoot = nullptr;
+    std::atomic<float>* pAutoRand = nullptr;
+    std::atomic<float>* pRandEvery = nullptr;
+
+    // AUTO ALEATÓRIO: a próxima linha é gerada fora do áudio (timer) e trocada no áudio na virada dos N tempos
+    // estado: 0 = vazio (o timer escreve), 1 = pronta, 2 = o áudio está copiando
+    void timerCallback() override;
+    limao::Pattern nextPattern;
+    std::atomic<int> nextState { 0 };
+    int nextLen = -1, nextScale = -1, nextRoot = -1;
+    long long lastRandBlock = -1;
     juce::SmoothedValue<float> volSm;
 
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o instrumento fica mudo

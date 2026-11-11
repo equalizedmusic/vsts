@@ -371,6 +371,12 @@ LimaoEditor::LimaoEditor (LimaoProcessor& p) : AudioProcessorEditor (&p), proc (
     down->onClick  = [this] { proc.transposePattern (-1); };
     up->onClick    = [this] { proc.transposePattern (1); };
     rnd->onClick   = [this] { proc.randomizePattern(); };
+
+    // AUTO ALEATÓRIO + A CADA (linha do título) e ARRASTAR MIDI
+    auto* autoRnd = add<lim::Rocker> ({ 236, 448, 150, 24 }, juce::String::fromUTF8 ("AUTO ALEATÓRIO"), lim::lemon, true);
+    attach (*autoRnd, id::autoRand);
+    add<lim::ParamBox> ({ 446, 448, 96, 22 }, st, id::randEvery, lim::lemon);
+    add<MidiDragKey> ({ 1030, 447, 114, 24 }, proc);
     clr->onClick   = [this] { proc.clearPattern(); };
 
     for (int i = 0; i < maxSteps; ++i)
@@ -390,6 +396,15 @@ LimaoEditor::LimaoEditor (LimaoProcessor& p) : AudioProcessorEditor (&p), proc (
     setScale (openScale);
     startTimerHz (30);
     ativacao.anexar (*this);
+}
+
+void MidiDragKey::mouseDrag (const juce::MouseEvent& e)
+{
+    if (dragging || e.getDistanceFromDragStart() < 6) return;
+    dragging = true;
+    const auto file = proc.writeMidiFile();
+    if (file.existsAsFile())
+        juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (file.getFullPathName()), false, this);
 }
 
 LimaoEditor::~LimaoEditor()
@@ -708,9 +723,10 @@ void LimaoEditor::drawCanvas (juce::Graphics& g)
     real::engraved (g, "SCALE",  { 800.0f, 509.0f, 112.0f, 12.0f }, theme::dim, juce::Justification::centred);
     real::engraved (g, "ROOT",   { 916.0f, 509.0f, 52.0f, 12.0f }, theme::dim, juce::Justification::centred);
     g.setFont (theme::sans (8.0f, false, 0.08f));
-    real::engraved (g, juce::String::fromUTF8 ("ARRASTE NO VISOR = NOTA · DUPLO CLIQUE = PAUSA · TECLADO TRANSPÕE (DÓ 3 = 0) · "
-                                               "SCALE + ROOT ENCAIXAM AS NOTAS NA ESCALA"),
-                    { 270.0f, 452.0f, 874.0f, 18.0f }, theme::dim, juce::Justification::centredRight);
+    real::engraved (g, juce::String::fromUTF8 ("ARRASTE NO VISOR = NOTA · DUPLO CLIQUE = PAUSA · TECLADO TRANSPÕE (DÓ 3 = 0)"),
+                    { 556.0f, 452.0f, 464.0f, 18.0f }, theme::dim, juce::Justification::centredRight);
+    g.setFont (theme::sans (8.5f, true, 0.14f));
+    real::engraved (g, "A CADA", { 388.0f, 448.0f, 54.0f, 22.0f }, theme::dim, juce::Justification::centredRight);
 
     // marcas de tempo (cada 4 passos) embaixo das duas fileiras
     for (int row = 0; row < 2; ++row)

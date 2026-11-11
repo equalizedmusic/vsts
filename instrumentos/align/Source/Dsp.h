@@ -121,6 +121,8 @@ struct Memoria
     double x[numCand] {};   // Σ kick·candidato, médio
     double ek = 0, eb = 0;  // energias médias do grave do kick e do baixo na janela
     int opcao = -1;         // correção guardada (-1 = ainda nenhuma)
+    int opcaoRestrita = -1; // a melhor só entre as opções que a dosagem permite (PHASE/POLARITY desligados)
+    int restricaoDe = -1;   // para qual combinação de PHASE/POLARITY a opcaoRestrita foi escolhida
     int vezes = 0;
 };
 
@@ -176,8 +178,26 @@ class Engine
 public:
     Leitura leitura;
     Scope scope;
-    bool guard = true;      // LEVEL GUARD (só o teste desliga)
+    bool guard = true;      // LEVEL GUARD liga/desliga
     int forcaOpcao = -1;    // teste: aplica esta opção fixa em vez da aprendida
+
+    // DOSAGEM (0.2.0): o ALIGN segue sempre automático; isto só limita o que ele pode fazer.
+    // Os padrões reproduzem a 0.1.0 (projeto antigo abre igual).
+    bool usaFase = true;        // PHASE: rotação do grave (o banco de allpass). Desligado = só o caminho direto
+    bool usaPolaridade = true;  // POLARITY: pode inverter o grave
+    double guardDepth = 1.0;    // LEVEL GUARD DEPTH 0..1: g = 1 − depth·(1 − gNota)
+    int react = 1;              // REACT 0 lento, 1 médio, 2 rápido
+    double xoMax = 110.0;       // X-OVER MAX (60..150 Hz): teto do X-OVER que acompanha a nota
+
+    // o host muda a dosagem bloco a bloco (sem alocar; o REACT ajusta o crossfade)
+    void setReact (int r)
+    {
+        r = std::clamp (r, 0, 2);
+        if (r == react && fadeReact == r) return;
+        react = r; fadeReact = r;
+        static constexpr double ms[3] = { 0.020, 0.010, 0.005 };
+        fade = 1.0 / (ms[r] * fs);
+    }
 
     void prepare (double sampleRate)
     {
@@ -187,8 +207,8 @@ public:
         for (int c = 0; c < maxCh; ++c)
             for (int i = 0; i < numAp; ++i) ap[c][i].set (fs, fcAp[i], qAp);
         for (int i = 0; i < numAp; ++i) apMid[i].set (fs, fcAp[i], qAp);
-        xo = 90.0; xoAlvo = 90.0; aplicaXo();
-        fade = 1.0 / (0.010 * fs);
+        xo = std::min (90.0, xoMax); xoAlvo = xo; aplicaXo();
+        fadeReact = -1; setReact (react);
         wetPasso = 1.0 / (0.020 * fs);
         envA = std::exp (-1.0 / (0.0003 * fs)); envR = std::exp (-1.0 / (0.020 * fs));
         slowC = std::exp (-1.0 / (0.200 * fs));
@@ -278,7 +298,7 @@ public:
             const bool kickSoa = kLowEnv > 0.05 * kLowPicoAnt;
             if (xf >= 1.0 && kickSoa && semKick < (std::int64_t) (2.0 * fs))
             {
-                const int alvo = forcaOpcao >= 0 ? forcaOpcao : mem[notaAplica >= 0 ? notaAplica : semNota].opcao;
+                const int alvo = forcaOpcao >= 0 ? forcaOpcao : opcaoPermitida (mem[notaAplica >= 0 ? notaAplica : semNota]);
                 if (alvo >= 0 && alvo != opAtual) { opAntes = opAtual; opAtual = alvo; xf = 0.0; }
             }
             {
@@ -305,7 +325,7 @@ public:
             eK2 = gEnv * eK2 + (1 - gEnv) * kl * kl;
             eB2 = gEnv * eB2 + (1 - gEnv) * bIn * bIn;
             double gAlvo = 1.0;
-            if (guard && jJunto) gAlvo = gNota;
+            if (guard && jJunto) gAlvo = 1.0 - std::clamp (guardDepth, 0.0, 1.0) * (1.0 - gNota);
             g = gAlvo < g ? gAtk * g + (1 - gAtk) * gAlvo : gRel * g + (1 - gRel) * gAlvo;
 
             // ---- saída ----
@@ -333,6 +353,7 @@ public:
             }
 
             // X-OVER acompanha a nota (devagar, sem degrau)
+            if ((agora & 31) == 0) xoAlvo = std::min (xoAlvo, xoMax);
             if ((agora & 31) == 0 && std::fabs (xoAlvo - xo) > 0.01)
             {
                 xo += (xoAlvo - xo) * xoK;
@@ -343,6 +364,8 @@ public:
         leitura.temKick = semKick < (std::int64_t) (2.0 * fs);
         leitura.temBaixo = bEnv > 1e-4;
         leitura.estado = ! leitura.temKick.load() ? 0 : (mem[notaAplica >= 0 ? notaAplica : semNota].opcao >= 0 ? 2 : 1);
+        // fase e polaridade desligadas juntas: nada a aplicar, volta ao direto (com crossfade, sem clique)
+        if (forcaOpcao < 0 && ! usaFase && ! usaPolaridade && opAtual != 0 && xf >= 1.0) { opAntes = opAtual; opAtual = 0; xf = 0.0; }
         leitura.nota = notaAplica;
         leitura.f0 = (float) f0Agora;
         leitura.xoverHz = (float) xo;
@@ -359,6 +382,31 @@ public:
     double fcDoBanco (int i) const { return fcAp[i]; }
 
 private:
+    int restricao() const { return (usaFase ? 1 : 0) | (usaPolaridade ? 2 : 0); }
+    bool permitida (int o) const { return (usaFase || (o >> 1) == 0) && (usaPolaridade || (o & 1) == 0); }
+
+    int melhorRestrita (const Memoria& m) const
+    {
+        int melhor = 0; double v = -1e300;
+        for (int o = 0; o < numOpc; ++o)
+            if (permitida (o))
+            {
+                const double vo = ((o & 1) ? -1.0 : 1.0) * m.x[o >> 1];
+                if (vo > v) { v = vo; melhor = o; }
+            }
+        return melhor;
+    }
+
+    // a correção que vale para esta nota com a dosagem atual (−1 = ainda nada aprendido)
+    int opcaoPermitida (const Memoria& m) const
+    {
+        if (m.opcao < 0) return -1;
+        if (usaFase && usaPolaridade) return m.opcao;
+        if (! usaFase && ! usaPolaridade) return 0;
+        if (m.restricaoDe == restricao() && m.opcaoRestrita >= 0 && permitida (m.opcaoRestrita)) return m.opcaoRestrita;
+        return melhorRestrita (m);   // a dosagem acabou de mudar: a melhor entre as permitidas (a próxima batida fixa)
+    }
+
     void aplicaXo()
     {
         for (int c = 0; c < maxCh; ++c) split[c].set (fs, xo);
@@ -422,7 +470,8 @@ private:
 
         const int slot = jNota >= 0 ? jNota : semNota;
         Memoria& m = mem[slot];
-        const double a = m.vezes == 0 ? 1.0 : 0.4;
+        static constexpr double aReact[3] = { 0.2, 0.4, 0.7 }, histReact[3] = { 1.5, 1.0, 0.5 };
+        const double a = m.vezes == 0 ? 1.0 : aReact[std::clamp (react, 0, 2)];
         for (int c = 0; c < numCand; ++c) m.x[c] += a * (jx[c] / jn - m.x[c]);
         m.ek += a * (ek - m.ek); m.eb += a * (eb - m.eb);
         ++m.vezes;
@@ -437,7 +486,16 @@ private:
         const double vAtual = ((atual & 1) ? -1.0 : 1.0) * m.x[atual >> 1];
         const double base = m.ek + m.eb;
         const double ganho = 10.0 * std::log10 (std::max (base + 2 * vMelhor, 1e-12 * base) / std::max (base + 2 * vAtual, 1e-12 * base));
-        if (m.opcao < 0 || ganho > 1.0) m.opcao = melhor;
+        if (m.opcao < 0 || ganho > histReact[std::clamp (react, 0, 2)]) m.opcao = melhor;
+        // a correção com fase/polaridade limitadas também troca só acima da histerese (sem ficar pulando)
+        {
+            const int mr = melhorRestrita (m);
+            const int ar = m.opcaoRestrita >= 0 ? m.opcaoRestrita : 0;
+            const double vr = ((mr & 1) ? -1.0 : 1.0) * m.x[mr >> 1], va = ((ar & 1) ? -1.0 : 1.0) * m.x[ar >> 1];
+            const double gr = 10.0 * std::log10 (std::max (base + 2 * vr, 1e-12 * base) / std::max (base + 2 * va, 1e-12 * base));
+            if (m.opcaoRestrita < 0 || ! permitida (ar) || gr > histReact[std::clamp (react, 0, 2)]) m.opcaoRestrita = mr;
+            m.restricaoDe = restricao();
+        }
         if (slot < 128) leitura.notas[slot >> 5].fetch_or (1u << (slot & 31));
     }
 
@@ -460,7 +518,7 @@ private:
                         const double fm = fs / (0.5 * (per + zcPer));
                         const int nt = std::clamp ((int) std::lround (69.0 + 12.0 * std::log2 (fm / 440.0)), 0, 127);
                         notaAgora = nt; notaAplica = nt; f0Agora = fm;
-                        xoAlvo = std::clamp (1.6 * fm, 60.0, 110.0);
+                        xoAlvo = std::clamp (1.6 * fm, 60.0, std::clamp (xoMax, 60.0, 150.0));
                     }
                     zcPer = per;
                 }
@@ -485,6 +543,7 @@ private:
 
     int opAtual = 0, opAntes = 0;
     double xf = 1.0, fade = 0.001, wet = 0.0, wetPasso = 0.001;
+    int fadeReact = -1;
 
     // onset do kick
     double envF = 0, envS = 0, envA = 0, envR = 0, slowC = 0;

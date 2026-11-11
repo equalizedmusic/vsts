@@ -4,6 +4,17 @@ Pacote do instalador: `InsideStudioSP-Align`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `align-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-11
+- DOSE: o ALIGN segue sempre automático (lendo a nota e corrigindo em tempo real), e agora dá para dosar cada parte
+  na faixa nova embaixo do osciloscópio:
+  - PHASE liga/desliga a rotação de fase do grave;
+  - POLARITY liga/desliga a inversão de polaridade (com as duas desligadas o grave passa direto);
+  - LEVEL GUARD liga/desliga o controle de nível, e o GUARD DEPTH (0–100%) dosa quanto ele abaixa;
+  - REACT (SLOW / MID / FAST) é a rapidez com que ele aprende cada nota e troca de correção;
+  - X-OVER MAX (60–150 Hz) é o teto do grave corrigido; o X-OVER continua acompanhando a nota.
+- Duplo clique nas barras volta ao padrão. Projeto antigo abre igual à 0.1.0 (tudo ligado, 100%, MID, 110 Hz).
+- O painel CORRECTION mostra OFF na parte que estiver desligada.
+
 ## 0.1.0 — 2026-10-31
 - Primeira versão do ALIGN: alinha a fase do kick com o baixo, sozinho, com um botão só.
 - Vai no canal do BAIXO; o KICK entra pelo sidechain (no Ableton: Sidechain do ALIGN → faixa do kick).

@@ -16,8 +16,10 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
 
-    static constexpr int baseW = 1000, baseH = 620;
+    static constexpr int baseW = 1000, baseH = 696;
 
 private:
     void timerCallback() override;
@@ -30,6 +32,7 @@ private:
     void painelCorr (juce::Graphics&, juce::Rectangle<float> r);
     void painelCorrecao (juce::Graphics&, juce::Rectangle<float> r);
     void painelNotas (juce::Graphics&, juce::Rectangle<float> r);
+    void dose (juce::Graphics&, juce::Rectangle<float> r);
     void base (juce::Graphics&);
     void menu();
 
@@ -42,7 +45,9 @@ private:
     float escalaScope = 1.0f, escalaZoom = 1.0f;
 
     // alvos de clique (coordenadas da tela base)
-    juce::Rectangle<float> rBotao, rFull, rLow, rMenu;
+    juce::Rectangle<float> rBotao, rFull, rLow, rMenu, rFase, rPol, rGuard, rDepth, rReact, rXo;
+    juce::RangedAudioParameter* arrasto = nullptr;   // DEPTH / X-OVER MAX sendo arrastado
+    juce::Rectangle<float> arrastoR;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AlignEditor)
 };

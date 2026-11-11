@@ -123,7 +123,7 @@ AlignEditor::AlignEditor (AlignProcessor& p) : AudioProcessorEditor (p), proc (p
     if (auto* c = getConstrainer())
     {
         c->setFixedAspectRatio ((double) baseW / baseH);
-        c->setSizeLimits (700, 434, 2000, 1240);
+        c->setSizeLimits (700, 487, 2000, 1392);
     }
     const int w0 = proc.uiW.load();
     const int w = w0 > 0 ? juce::jlimit (700, 2000, w0) : baseW;
@@ -195,6 +195,7 @@ void AlignEditor::paint (juce::Graphics& g)
     painelCorrecao (g, { xl, 240, wl, 118 });
     painelNotas (g, { xl, 368, wl, 146 });
 
+    dose (g, { 16, 524, (float) baseW - 32, 66 });
     base (g);
 }
 
@@ -474,10 +475,10 @@ void AlignEditor::painelCorrecao (juce::Graphics& g, juce::Rectangle<float> r)
     rotulo (g, { r.getX() + 12, r.getY() + 8, 200, 14 }, "CORRECTION (AUTO)");
     const bool ligado = proc.alignLigado(), temAlgo = L.estado.load() == 2;
     const juce::String linhas[4][2] = {
-        { "POLARITY", temAlgo ? (L.invertida.load() ? "INVERT" : "NORMAL") : u8 ("—") },
-        { "ROTATION", temAlgo ? (std::abs (L.rotDeg.load()) < 0.5f ? u8 ("0°") : u8 ("−") + juce::String (juce::roundToInt (-L.rotDeg.load())) + u8 ("°")) : u8 ("—") },
+        { "POLARITY", ! proc.ligadoParam ("polarity") ? juce::String ("OFF") : (temAlgo ? juce::String (L.invertida.load() ? "INVERT" : "NORMAL") : u8 ("—")) },
+        { "ROTATION", ! proc.ligadoParam ("phase") ? juce::String ("OFF") : (temAlgo ? (std::abs (L.rotDeg.load()) < 0.5f ? u8 ("0°") : u8 ("−") + juce::String (juce::roundToInt (-L.rotDeg.load())) + u8 ("°")) : u8 ("—")) },
         { "X-OVER", juce::String (juce::roundToInt (L.xoverHz.load())) + " Hz" },
-        { "LOW DUCK", ligado ? db (L.duckDb.load()) : u8 ("—") } };
+        { "LOW DUCK", ! proc.ligadoParam ("guard") ? juce::String ("OFF") : (ligado ? db (L.duckDb.load()) : u8 ("—")) } };
     for (int i = 0; i < 4; ++i)
     {
         const float y = r.getY() + 28 + i * 21.0f;
@@ -523,9 +524,69 @@ void AlignEditor::painelNotas (juce::Graphics& g, juce::Rectangle<float> r)
     }
 }
 
+// DOSE: o corretor segue automático; cada parte pode ser desligada ou dosada
+void AlignEditor::dose (juce::Graphics& g, juce::Rectangle<float> r)
+{
+    chapa (g, r);
+    const float yl = r.getY() + 8, yc = r.getY() + 28, hc = 28;
+    auto chave = [&] (juce::Rectangle<float> c, const juce::String& t, bool on)
+    {
+        g.setColour (on ? juce::Colour (0xff1d3a2c) : juce::Colour (0xff141119)); g.fillRoundedRectangle (c, 3.0f);
+        g.setColour (on ? cVerde.withAlpha (0.7f) : cBorda); g.drawRoundedRectangle (c, 3.0f, 1.0f);
+        led (g, { c.getX() + 13, c.getCentreY() }, 4.0f, cVerde, on);
+        g.setColour (on ? cTexto : cApagado); g.setFont (fonte (11.0f, on).withExtraKerningFactor (0.12f));
+        g.drawText (t, c.withTrimmedLeft (24), juce::Justification::centredLeft);
+    };
+    auto barra = [&] (juce::Rectangle<float> c, float frac, bool ativo, const juce::String& valor)
+    {
+        g.setColour (cTela); g.fillRoundedRectangle (c, 3.0f);
+        g.setColour (cBorda); g.drawRoundedRectangle (c, 3.0f, 1.0f);
+        const auto f = c.reduced (3).withWidth (juce::jmax (0.0f, (c.getWidth() - 6) * juce::jlimit (0.0f, 1.0f, frac)));
+        g.setColour ((ativo ? cRoxo : cApagado).withAlpha (ativo ? 0.85f : 0.3f)); g.fillRoundedRectangle (f, 2.0f);
+        g.setColour (ativo ? cSoma : cApagado); g.setFont (fonte (11.5f, true));
+        g.drawText (valor, c.reduced (8, 0), juce::Justification::centredRight);
+    };
+
+    rotulo (g, { r.getX() + 12, yl, 300, 14 }, u8 ("CORRECTIONS · ALWAYS AUTO"));
+    rFase = { r.getX() + 12, yc, 100, hc };
+    rPol  = { rFase.getRight() + 8, yc, 116, hc };
+    rGuard = { rPol.getRight() + 8, yc, 134, hc };
+    chave (rFase, "PHASE", proc.ligadoParam ("phase"));
+    chave (rPol, "POLARITY", proc.ligadoParam ("polarity"));
+    chave (rGuard, "LEVEL GUARD", proc.ligadoParam ("guard"));
+
+    const bool guardOn = proc.ligadoParam ("guard");
+    rDepth = { rGuard.getRight() + 22, yc, 168, hc };
+    rotulo (g, { rDepth.getX(), yl, rDepth.getWidth(), 14 }, "GUARD DEPTH");
+    const float dep = proc.valorParam ("depth");
+    barra (rDepth, dep / 100.0f, guardOn, juce::String (juce::roundToInt (dep)) + "%");
+
+    rReact = { rDepth.getRight() + 22, yc, 186, hc };
+    rotulo (g, { rReact.getX(), yl, rReact.getWidth(), 14 }, "REACT");
+    {
+        const int rv = (int) std::lround (proc.valorParam ("react"));
+        const char* nomes[3] = { "SLOW", "MID", "FAST" };
+        const float w = rReact.getWidth() / 3.0f;
+        for (int i = 0; i < 3; ++i)
+        {
+            const juce::Rectangle<float> c (rReact.getX() + i * w, yc, w, hc);
+            const bool sel = i == rv;
+            g.setColour (sel ? cRoxo : juce::Colour (0xff141119)); g.fillRect (c);
+            g.setColour (sel ? cRoxo : cBorda); g.drawRect (c, 1.0f);
+            g.setColour (sel ? juce::Colour (0xff120f1a) : cApagado); g.setFont (fonte (11.0f, sel).withExtraKerningFactor (0.12f));
+            g.drawText (nomes[i], c, juce::Justification::centred);
+        }
+    }
+
+    rXo = { rReact.getRight() + 22, yc, r.getRight() - 12 - (rReact.getRight() + 22), hc };
+    rotulo (g, { rXo.getX(), yl, rXo.getWidth(), 14 }, "X-OVER MAX");
+    const float xm = proc.valorParam ("xomax");
+    barra (rXo, (xm - 60.0f) / 90.0f, true, juce::String (juce::roundToInt (xm)) + " Hz");
+}
+
 void AlignEditor::base (juce::Graphics& g)
 {
-    const juce::Rectangle<float> r (0, 528, (float) baseW, 92);
+    const juce::Rectangle<float> r (0, 604, (float) baseW, 92);
     g.setGradientFill (juce::ColourGradient (cTopoB, 0, r.getY(), juce::Colour (0xff0f0d15), 0, r.getBottom(), false));
     g.fillRect (r);
     g.setColour (juce::Colours::black); g.drawLine (0, r.getY(), (float) baseW, r.getY(), 1.0f);
@@ -585,9 +646,50 @@ void AlignEditor::mouseDown (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
     if (rBotao.contains (p)) { proc.alterna(); repaint(); return; }
+    if (rFase.contains (p))  { proc.alternaParam ("phase"); repaint(); return; }
+    if (rPol.contains (p))   { proc.alternaParam ("polarity"); repaint(); return; }
+    if (rGuard.contains (p)) { proc.alternaParam ("guard"); repaint(); return; }
+    if (rReact.contains (p))
+    {
+        const int i = juce::jlimit (0, 2, (int) ((p.x - rReact.getX()) / (rReact.getWidth() / 3.0f)));
+        if (auto* pr = proc.apvts.getParameter ("react"))
+        {
+            pr->beginChangeGesture();
+            pr->setValueNotifyingHost (pr->convertTo0to1 ((float) i));
+            pr->endChangeGesture();
+        }
+        repaint(); return;
+    }
+    const std::pair<juce::Rectangle<float>, const char*> barras[] = { { rDepth, "depth" }, { rXo, "xomax" } };
+    for (const auto& b : barras)
+        if (b.first.contains (p))
+        {
+            if (auto* pr = proc.apvts.getParameter (b.second))
+            {
+                arrasto = pr; arrastoR = b.first;
+                pr->beginChangeGesture();
+                if (e.getNumberOfClicks() > 1) pr->setValueNotifyingHost (pr->getDefaultValue());
+                else pr->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, (p.x - b.first.getX() - 3) / (b.first.getWidth() - 6)));
+            }
+            repaint(); return;
+        }
     if (rFull.contains (p)) { proc.verGrave = false; repaint(); return; }
     if (rLow.contains (p)) { proc.verGrave = true; repaint(); return; }
     if (rMenu.contains (p) || e.mods.isPopupMenu()) menu();
+}
+
+void AlignEditor::mouseDrag (const juce::MouseEvent& e)
+{
+    if (arrasto == nullptr) return;
+    const auto p = e.position / escala();
+    arrasto->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, (p.x - arrastoR.getX() - 3) / (arrastoR.getWidth() - 6)));
+    repaint();
+}
+
+void AlignEditor::mouseUp (const juce::MouseEvent&)
+{
+    if (arrasto != nullptr) arrasto->endChangeGesture();
+    arrasto = nullptr;
 }
 
 void AlignEditor::menu()
@@ -612,6 +714,10 @@ void AlignEditor::menu()
                                      "grave do baixo que faz kick e baixo somarem sem cancelar, e guarda a correção por nota. "
                                      "O LEVEL GUARD abaixa o grave do baixo só onde os dois se cruzam, para a soma não passar "
                                      "da relação original (nem buraco, nem embolar).\n\n"
+                                     "DOSE: o corretor segue automático. PHASE e POLARITY ligam/desligam cada tipo de "
+                                     "correção, LEVEL GUARD liga/desliga o controle de nível e o GUARD DEPTH dosa quanto ele "
+                                     "abaixa. REACT é a rapidez com que aprende cada nota. X-OVER MAX é o teto do grave "
+                                     "corrigido (duplo clique na barra volta ao padrão).\n\n"
                                      "Latência zero. Desligado, o som passa sem nenhuma alteração."));
                      });
 }

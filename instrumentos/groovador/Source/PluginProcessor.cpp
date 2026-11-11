@@ -743,15 +743,29 @@ void GroovadorProcessor::editStep (int inst, int step, Step s)
 }
 
 // o groove como .mid: canal 10, cada instrumento na nota do PADS (C1 rim, D1 snare…), roll em batidas separadas
-juce::File GroovadorProcessor::writeMidiFile()
+// ARRASTAR MIDI (0.2.0): sai SEPARADO, um arquivo por peça que tem nota ("GROOVADOR - preset - SNARE.mid"), cada
+// um com a nota do pad da peça (C1 rim, D1 snare…). No Ableton, Ctrl (Win) / Cmd (Mac) ao soltar = uma faixa por peça.
+juce::StringArray GroovadorProcessor::writeMidiFiles()
 {
     const int tpq = 960;
     const double stepTicks = rateBeats[juce::jlimit (0, 2, choice (pRate))] * tpq;
     const int steps = stepsNow();
 
-    juce::MidiMessageSequence seq;
-    seq.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / juce::jmax (20.0f, shownBpm.load()))), 0.0);
+    auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("GROOVADOR");
+    dir.createDirectory();
+    for (const auto& velho : dir.findChildFiles (juce::File::findFiles, false, "*.mid"))   // não sobra peça de antes
+        velho.deleteFile();
+    auto name = juce::File::createLegalFileName (presetName.trim());
+    if (name.isEmpty()) name = "groove";
+
+    juce::StringArray files;
     for (int k = 0; k < numInst; ++k)
+    {
+        juce::MidiMessageSequence seq;
+        seq.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / juce::jmax (20.0f, shownBpm.load()))), 0.0);
+        const auto peca = juce::String (instParam[k]).toUpperCase();
+        seq.addEvent (juce::MidiMessage::textMetaEvent (3, peca), 0.0);   // nome da faixa
+        int notas = 0;
         for (int i = 0; i < steps; ++i)
         {
             const auto s = pattern.get (k, i);
@@ -763,23 +777,22 @@ juce::File GroovadorProcessor::writeMidiFile()
                 const auto vel = (juce::uint8) juce::jlimit (1, 127, juce::roundToInt (s.gain() * 127.0f));
                 seq.addEvent (juce::MidiMessage::noteOn (10, padNotes[k], vel), on);
                 seq.addEvent (juce::MidiMessage::noteOff (10, padNotes[k]), on + stepTicks / hits * 0.5);
+                ++notas;
             }
         }
-    seq.addEvent (juce::MidiMessage::endOfTrack(), steps * stepTicks);
-    seq.updateMatchedPairs();
+        if (notas == 0) continue;   // peça sem nota não vira arquivo
+        seq.addEvent (juce::MidiMessage::endOfTrack(), steps * stepTicks);
+        seq.updateMatchedPairs();
 
-    juce::MidiFile mf;
-    mf.setTicksPerQuarterNote (tpq);
-    mf.addTrack (seq);
-
-    auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("GROOVADOR");
-    dir.createDirectory();
-    auto name = juce::File::createLegalFileName (presetName.trim());
-    auto file = dir.getChildFile ("GROOVADOR - " + (name.isEmpty() ? juce::String ("groove") : name) + ".mid");
-    file.deleteFile();
-    juce::FileOutputStream os (file);
-    if (os.openedOk()) mf.writeTo (os);
-    return file;
+        juce::MidiFile mf;
+        mf.setTicksPerQuarterNote (tpq);
+        mf.addTrack (seq);
+        auto file = dir.getChildFile ("GROOVADOR - " + name + " - " + juce::File::createLegalFileName (peca) + ".mid");
+        file.deleteFile();
+        juce::FileOutputStream os (file);
+        if (os.openedOk() && mf.writeTo (os)) files.add (file.getFullPathName());
+    }
+    return files;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
