@@ -91,6 +91,7 @@ function caixaCompra(p) {
     ${p.de && temBrl(p) ? `<div class="oferta so-oferta" data-fim="${p.fim}">${p.bf ? t(`PREÇO PROMOCIONAL ATÉ A BLACK FRIDAY (${fimTxt(p.fim)})`, `PROMO PRICE UNTIL BLACK FRIDAY (${fimTxt(p.fim)})`) : t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
     ${p.bf ? relogio(p.fim) : `<div class="tempo so-oferta" data-fim="${p.fim}">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte', p.fim)}</div>`}
     <div class="preco-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
+    ${p.soma && temBrl(p) && p.soma > p.preco.brl ? `<div class="preco-de">${t('separados', 'separately')} <s class="de">${brl(p.soma)}</s> ${t('juntos por', 'together for')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <p class="req">${REQ()}</p>
     <input type="hidden" name="pacote" value="${p.id}">
@@ -159,10 +160,19 @@ function bannerLancamento(p) {
       <a class="bt bt-principal" href="/${p.id}/">${t('Quero o ' + p.nome, 'Get ' + p.nome)}</a>
       <button class="dl-depois" type="button">${t('Agora não, ver a loja', 'Not now, see the shop')}</button>
     </div>
+    ${comboDoBanner(L)}
     <p class="dl-tipo">${t(...p.tipo)} · ${t('Windows e Mac · Pix ou cartão em até 12x', 'Windows and Mac')}</p>
   </div>
   <a class="dl-img" href="/${p.id}/"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}"></a>
 </div></dialog>`;
+}
+
+// linha do combo no popup (11/11): "Leve junto o MASTER DOS MAGOS: os dois por R$ 179,90"
+function comboDoBanner(L) {
+    const c = L.combo && PACKS.find((x) => x.id === L.combo);
+    if (!c || !temBrl(c)) return '';
+    const outro = c.combo.map((id) => PACKS.find((x) => x.id === id)).filter((x) => x && !x.lancamento).map((x) => x.nome).join(' + ');
+    return `<p class="dl-combo"><a href="/${c.id}/">${t(`Combo com o ${outro}: os dois por ${brl(c.preco.brl)}`, `Bundle with ${outro}: both for ${brl(c.preco.brl)}`)}&nbsp;→</a></p>`;
 }
 
 // ---- seções da loja (10/11) ----

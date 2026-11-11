@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Magos`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `magos-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-11
+- Versão oficial, à venda no site: R$ 149,90, ou R$ 179,90 no combo com o MAESTRO.
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até 2
+  computadores, e desativar num computador libera a vaga para outro. Sem ativar, o plugin passa o som direto, sem
+  processar (com a mesma latência, para o projeto não desalinhar).
+- Menu do logo > License… mostra a licença ativa.
+- O som e a tela são os da 0.1.2 (aprovada no teste com o MAESTRO).
+
 ## 0.1.2 — 2026-11-10
 - TESTE (sem licença e fora do site).
 - LIMITER: o teto agora é −0,3 dBTP (era −1,0). O TARGET, o menu Ceiling, o TRUE PEAK e o aviso de clip seguem o

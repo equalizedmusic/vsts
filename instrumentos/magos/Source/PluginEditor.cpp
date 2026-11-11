@@ -135,6 +135,7 @@ MagosEditor::MagosEditor (MagosProcessor& p) : AudioProcessorEditor (p), proc (p
     k ("TONE TILT", "tilt", 684, cAzul, true, [&P] { return num (P.valor ("tilt"), 1, true) + " dB"; });
 
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void MagosEditor::resized() { proc.uiW = getWidth(); }
@@ -1565,15 +1566,17 @@ void MagosEditor::menuLogo()
     juce::PopupMenu m;
     m.addItem (1, "How it works");
     m.addItem (2, "Reset (clear the CAST)", proc.motor.feitico.feito);
+    m.addItem (3, juce::String ("License") + reticencias);
     m.addSeparator();
    #ifdef JucePlugin_VersionString
-    m.addItem (-1, "MASTER DOS MAGOS " + juce::String (JucePlugin_VersionString) + "  (TEST)", false, false);
+    m.addItem (-1, "MASTER DOS MAGOS " + juce::String (JucePlugin_VersionString), false, false);
    #endif
     juce::Component::SafePointer<MagosEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(), [safe] (int r)
     {
         if (safe == nullptr) return;
         if (r == 2) { safe->proc.motor.reset(); return; }
+        if (r == 3) { safe->ativacao.mostrarInfo(); return; }
         if (r != 1) return;
         juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "MASTER DOS MAGOS" + ponto + "MASTERING WIZARD",
             "Put it LAST on your master.\n\n"

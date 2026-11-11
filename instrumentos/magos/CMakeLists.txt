@@ -4,7 +4,7 @@ vsts_versao(Magos.md MAGOS_VERSAO)
 # MASTER DOS MAGOS — MASTERING WIZARD: masterizador "par do MAESTRO" (referência, TONE MATCH, DYNAMIC EQ, multibanda,
 # limitador true peak). Vai no master. Lê os 8 grupos do MAESTRO pelo MAESTRO LINK (memória compartilhada do processo,
 # Source/Link.cpp). É efeito, mas fica em instrumentos/ para ter build, instalador e release próprios, como o MAESTRO.
-# TESTE: sem licença ainda.
+# Licença: pacote magos (pago, à venda no site; também no combo MAESTRO + MAGOS).
 juce_add_plugin(Magos
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.masterdosmagos
@@ -22,6 +22,8 @@ juce_add_plugin(Magos
     COPY_PLUGIN_AFTER_BUILD     FALSE
     VST3_CATEGORIES             Fx Mastering Dynamics EQ
     AU_MAIN_TYPE                kAudioUnitType_Effect)
+
+isp_licenca(Magos magos)
 
 target_sources(Magos PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Link.cpp)
 target_compile_definitions(Magos PUBLIC

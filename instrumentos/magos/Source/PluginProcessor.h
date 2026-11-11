@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_formats/juce_audio_formats.h>
 #include "Dsp.h"
+#include "IspLicenca.h"
 #include "../../maestro/Source/MaestroLink.h"   // MAESTRO LINK: lê os 8 grupos do MAESTRO (outro binário)
 
 // MASTER DOS MAGOS — MASTERING WIZARD (par do MAESTRO). Vai no master, por último.
@@ -59,6 +60,10 @@ public:
 
 private:
     void trocaReferencia (std::unique_ptr<magos::Referencia> nova);
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto (com o mesmo atraso)
+    juce::AudioBuffer<float> atraso;                      // linha de atraso do som direto = latência anunciada
+    int atrasoPos = 0;
 
     std::atomic<float>* pAmount = nullptr, *pChar = nullptr, *pPunch = nullptr, *pWidth = nullptr, *pTilt = nullptr,
                       *pMono = nullptr, *pOuvir = nullptr, *pMbMan = nullptr, *pEqMan = nullptr;

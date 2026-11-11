@@ -133,6 +133,7 @@ export const PACKS = [
         bf: true,
         // banner de lançamento no topo da loja (pedido dele, 09/11): tirar o "lancamento" quando passar a novidade
         lancamento: {
+            combo: 'maestromagos',   // 11/11: o popup também oferece o combo com o MASTER DOS MAGOS
             titulo: ['Um clique e a mix se organiza.', 'One click and the mix sorts itself out.'],
             texto: ['Um MAESTRO em cada grupo: LEARN ouve o drop, LOCK acerta nível e tom, o GUARD abre espaço para kick e baixo e o FOCUS destaca quem você escolher. Um rascunho de mix equilibrado em segundos.',
                     'One MAESTRO on each group: LEARN listens to the drop, LOCK sets level and tone, GUARD makes room for kick and bass, and FOCUS brings forward whoever you pick. A balanced mix draft in seconds.'],
@@ -142,6 +143,27 @@ export const PACKS = [
             'Coloque o MAESTRO nos 8 grupos da sua mix (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX). As cópias conversam entre si, sem sidechain nem roteamento. LEARN ouve o drop, LOCK acerta o nível e o tom de cada grupo pelo STYLE, o LOW-END GUARD abre espaço para o kick e o baixo e o FOCUS destaca o que você escolher com EQ dinâmica. Um rascunho de mix equilibrado em segundos, para você terminar do seu jeito. Latência zero.',
             'Put MAESTRO on the 8 groups of your mix (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX). The copies talk to each other, no sidechain, no routing. LEARN listens to the drop, LOCK sets each group level and tone by STYLE, LOW-END GUARD makes room for kick and bass, and FOCUS brings forward what you pick with dynamic EQ. A balanced mix draft in seconds, for you to finish your way. Zero latency.'],
         plugins: [['maestro', 'MAESTRO', 'Qualquer janela é a console dos 8 grupos, com o mapa de conflito e a EQ dinâmica.', 'Any window is the console for all 8 groups, with the conflict map and the dynamic EQ.']],
+    },
+    {
+        // MASTER DOS MAGOS (11/11/2026, aprovado no teste dele): par do MAESTRO, R$ 149,90 sem promoção
+        id: 'magos', nome: 'MASTER DOS MAGOS', cor: '#d4a72c', tipo: ['Masterização · VST3 · AU', 'Mastering · VST3 · AU'],
+        capa: 'magos', preco: null,
+        frase: ['O master da sua faixa num clique, com o ouvido na referência.', 'Your track mastered in one click, with an ear on the reference.'],
+        texto: [
+            'Vai por último no master. Solte uma faixa de referência (ou use a curva do STYLE), aperte LISTEN no drop e depois CAST: o MASTER DOS MAGOS acerta o balanço tonal (TONE MATCH), ajusta o compressor multibanda de 4 bandas, liga a EQ dinâmica (corta embolado, aspereza e sibilância só nos picos e realça o punch do grave e o ar quando faltam) e leva o limiter true peak até o loudness alvo, com teto de −0,3 dBTP. Tudo em fase linear. A/B com volume igualado, simulador de plataformas e alto-falantes, e modo MANUAL para ajustar cada banda e cada ponto da EQ. Com o MAESTRO no projeto, ele mostra de qual grupo da mix vem cada problema.',
+            'It goes last on the master. Drop a reference track (or use the STYLE curve), press LISTEN on the drop, then CAST: MASTER DOS MAGOS matches the tonal balance (TONE MATCH), sets the 4-band multiband compressor, turns on the dynamic EQ (cuts mud, harshness and sibilance only on the peaks, and lifts low punch and air when they are missing) and drives the true peak limiter to the target loudness, with a −0.3 dBTP ceiling. All in linear phase. Loudness-matched A/B, platform and speaker simulator, and a MANUAL mode to adjust every band and every EQ point. With MAESTRO in the project, it shows which group of the mix each problem comes from.'],
+        plugins: [['magos', 'MASTER DOS MAGOS', 'MAESTRO LINKED: cada problema do master apontado no grupo da mix que causa.', 'MAESTRO LINKED: each master problem traced to the mix group that causes it.']],
+    },
+    {
+        // combo (11/11/2026): MAESTRO + MASTER DOS MAGOS por R$ 179,90; o servidor cria as duas licenças (precos.js COMBOS)
+        id: 'maestromagos', nome: 'MAESTRO + MASTER DOS MAGOS', cor: '#a78bfa', tipo: ['Combo · 2 plugins · VST3 · AU', 'Bundle · 2 plugins · VST3 · AU'],
+        capa: 'maestromagos', preco: null, combo: ['maestro', 'magos'],
+        frase: ['Do mix ao master: os dois juntos, por menos.', 'From mix to master: both together, for less.'],
+        texto: [
+            'O MAESTRO organiza a mix nos 8 grupos e o MASTER DOS MAGOS fecha o master. Juntos, eles conversam: o MAGOS lê os grupos do MAESTRO e diz em qual grupo corrigir cada problema, em vez de remendar no master. Uma compra, as duas licenças no mesmo token.',
+            'MAESTRO organizes the mix across 8 groups and MASTER DOS MAGOS finishes the master. Together they talk: MAGOS reads the MAESTRO groups and tells you which group to fix each problem in, instead of patching it on the master. One purchase, both licenses on the same token.'],
+        plugins: [['maestro', 'MAESTRO', 'A mix: console dos 8 grupos.', 'The mix: console for all 8 groups.'],
+                  ['magos', 'MASTER DOS MAGOS', 'O master, ligado aos grupos do MAESTRO.', 'The master, linked to the MAESTRO groups.']],
     },
     {
         id: 'criativo', nome: 'SÉRIE CRIATIVO', cor: '#f97316', tipo: ['10 plugins · VST3 · AU', '10 plugins · VST3 · AU'],
@@ -256,7 +278,7 @@ export const PACKS = [
 export const SECOES = [
     { id: 'gratis', nome: ['Grátis', 'Free'], cor: '#34d399', itens: ['align', 'barebass', 'vassoura'],
       frase: ['Baixe e use agora, sem pagar nada.', 'Download and use them now, for free.'] },
-    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'mesa', 'align', 'vassoura'],
+    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'magos', 'maestromagos', 'mesa', 'align', 'vassoura'],
       frase: ['Console, mix automática, fase do grave e limpeza de stems.', 'Console, auto mix, low-end phase and stem cleanup.'] },
     { id: 'synths', nome: ['Synths', 'Synths'], cor: '#e879f9', itens: ['quimera', 'limao', 'mercurio', 'resenha', 'groovador', 'barebass'],
       frase: ['Wavetable, ácido, FM, percussão e baixo.', 'Wavetable, acid, FM, percussion and bass.'] },
@@ -269,6 +291,8 @@ export const SECOES = [
 // preço de cada pack = o do servidor (brl/usd null = em breve)
 // (precoAtual: o MAESTRO sai a 149,90 em build feito depois da Black Friday)
 for (const p of PACKS) p.preco = precoAtual(p.id) || null;
+// combo: soma dos preços avulsos de hoje (mostrada como "separados" na página do combo)
+for (const p of PACKS) if (p.combo) p.soma = p.combo.reduce((s, id) => s + (precoAtual(id)?.brl || 0), 0);
 
 // "de" da oferta de lançamento: OFERTA_FIM e DE_BRL vêm de precos.js (a vitrine das páginas grátis usa os mesmos).
 // Depois de OFERTA_FIM o site.js some com a oferta na hora e o próximo build já sai sem ela.

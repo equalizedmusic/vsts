@@ -19,11 +19,19 @@ export const PRECOS = {
     stompbox:  { brl: 24.90, usd: null },
     // MAESTRO (09/11/2026): faixa da MESA, R$ 79,90 "de" 149,90 (fechado por ele).
     maestro:   { brl: 79.90, usd: null },
+    // MASTER DOS MAGOS (11/11/2026, aprovado no teste dele): R$ 149,90 SEM promoção (decisão dele, 10/11).
+    magos:     { brl: 149.90, usd: null },
+    // COMBO MAESTRO + MASTER DOS MAGOS: R$ 179,90 (abaixo da soma). Uma compra cria as DUAS licenças (COMBOS abaixo).
+    maestromagos: { brl: 179.90, usd: null },
 };
+
+// combo = um pedido que libera vários pacotes (loja.js concluir() cria uma licença para cada um)
+export const COMBOS = { maestromagos: ['maestro', 'magos'] };
 
 export const NOMES = {
     mesa: 'MESA', criativo: 'SÉRIE CRIATIVO', mix: 'SÉRIE MIX', knob: 'SÉRIE KNOB', quimera: 'QUIMERA',
     limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR', stompbox: 'STOMPBOX', maestro: 'MAESTRO',
+    magos: 'MASTER DOS MAGOS', maestromagos: 'MAESTRO + MASTER DOS MAGOS',
 };
 
 // Oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.

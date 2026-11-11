@@ -108,6 +108,9 @@ void MagosProcessor::prepareToPlay (double sampleRate, int)
     taxa = sampleRate;
     motor.prepare (sampleRate);
     setLatencySamples (motor.latenciaAmostras());
+    atraso.setSize (2, juce::jmax (1, motor.latenciaAmostras()));
+    atraso.clear();
+    atrasoPos = 0;
     // o trecho da referência para ouvir está na taxa antiga: lê de novo
     if (mudou && arquivoReferencia.existsAsFile())
         juce::MessageManager::callAsync ([safe = juce::WeakReference<MagosProcessor> (this)]
@@ -133,6 +136,24 @@ void MagosProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     const int nch = juce::jmin (2, getTotalNumInputChannels(), buffer.getNumChannels());
     if (n == 0 || nch == 0) return;
     for (int c = nch; c < buffer.getNumChannels(); ++c) buffer.clear (c, 0, n);
+    if (! licenca->liberada())
+    {
+        // sem ativação: o som passa direto, atrasado pela mesma latência anunciada ao DAW (o projeto não desalinha)
+        const int L = atraso.getNumSamples();
+        if (L <= 1 || getLatencySamples() == 0) return;
+        for (int i = 0; i < n; ++i)
+        {
+            for (int c = 0; c < nch; ++c)
+            {
+                float* d = atraso.getWritePointer (c);
+                const float x = buffer.getSample (c, i);
+                buffer.setSample (c, i, d[atrasoPos]);
+                d[atrasoPos] = x;
+            }
+            if (++atrasoPos >= L) atrasoPos = 0;
+        }
+        return;
+    }
     magos::Ajustes a;
     a.amount = pAmount->load() / 100.0f;
     a.character = pChar->load() / 100.0f;

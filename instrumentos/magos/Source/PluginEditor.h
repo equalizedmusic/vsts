@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 #include <juce_dsp/juce_dsp.h>
 #include <functional>
 
@@ -37,6 +38,7 @@ public:
     static constexpr int baseW = 1280, baseH = 952;
 
 private:
+    isp::TelaAtivacao ativacao;
     struct Knob
     {
         juce::String rotulo, id;

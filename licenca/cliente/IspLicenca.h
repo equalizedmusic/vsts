@@ -64,6 +64,7 @@ public:
         if (p == "barebass") return "BAREBASS";
         if (p == "stompbox") return "STOMPBOX";
         if (p == "maestro") return "MAESTRO";
+        if (p == "magos") return "MASTER DOS MAGOS";
         return p.toUpperCase();
     }
 
