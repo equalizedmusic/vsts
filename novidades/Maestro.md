@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Maestro`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `maestro-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.2 — 2026-11-11
+- Versão oficial: é a 0.2.1 (que saiu só como TESTE) liberada para os clientes, sem mudar nada. Aprovada no teste
+  junto com o MASTER DOS MAGOS.
+- MAESTRO LINK: o MAESTRO passa a enviar os 8 grupos (nível e espectro) para o MASTER DOS MAGOS no master do mesmo
+  projeto, que mostra de qual grupo vem cada problema da mix (MAESTRO LINKED). Não muda nada no som do MAESTRO.
+- Corrigido: o item "License…" do menu do logo aparecia com o texto quebrado e não abria nada; agora mostra a
+  licença ativa.
+
 ## 0.2.1 — 2026-11-10
 - Pré-lançamento de TESTE (ainda não vai para os clientes): para testar o MAESTRO junto com o MASTER DOS MAGOS.
 - MAESTRO LINK: o MAESTRO passa a enviar os 8 grupos (nível e espectro) para o MASTER DOS MAGOS no master do mesmo
