@@ -68,6 +68,10 @@ target_link_libraries(ResenhaScan
 if(WIN32)
     target_link_libraries(ResenhaScan PRIVATE shell32)
 endif()
+if(APPLE)
+    # O host de AU usa AUGenericView (CoreAudioKit); o JUCE só liga esse framework em alvo de plugin, não em console app.
+    target_link_libraries(ResenhaScan PRIVATE "-framework CoreAudioKit")
+endif()
 
 foreach(fmt VST3 AU)
     if(TARGET Resenha_${fmt})
