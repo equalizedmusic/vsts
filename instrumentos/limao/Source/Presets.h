@@ -141,4 +141,79 @@ inline void randomize (Pattern& pat, int len, juce::Random& rnd, int scaleIdx = 
         pat.set (i, s);
     }
 }
+
+// AUTO ALEATÓRIO: linha nova com a MESMA proporção da linha de referência (a que está tocando): as mesmas notas e o
+// mesmo número de pausas, ligaduras, accents e slides nos primeiros len passos, só que em outra ordem.
+// Assim uma linha com poucas notas e muitas pausas/slides continua assim, em vez de virar uma linha cheia.
+// Referência sem nenhuma nota (só pausas) = linha aleatória normal (senão o AUTO ficaria mudo para sempre).
+inline void randomizeLike (Pattern& pat, const Pattern& ref, int len, juce::Random& rnd, int scaleIdx = 0, int rootNote = 0)
+{
+    int nRest = 0, nTie = 0, nNote = 0, nAcc = 0, nSld = 0;
+    for (int i = 0; i < len; ++i)
+    {
+        const Step s = ref.get (i);
+        if (s.mode == Mode::rest) { ++nRest; continue; }
+        if (s.mode == Mode::tie) ++nTie; else ++nNote;
+        if (s.accent) ++nAcc;
+        if (s.slide)  ++nSld;
+    }
+    if (nNote == 0) { randomize (pat, len, rnd, scaleIdx, rootNote); return; }
+
+    // NOTAS: as mesmas da linha de referência, só em outra ordem (não sorteia nota nova: SCALE, ROOT e o
+    // desenho melódico que o usuário escolheu ficam; o que muda é onde cada nota cai)
+    std::vector<int> pitchPool;
+    for (int i = 0; i < len; ++i)
+        if (ref.get (i).mode == Mode::note) pitchPool.push_back (ref.get (i).pitch);
+    for (int i = (int) pitchPool.size() - 1; i > 0; --i)
+        std::swap (pitchPool[(size_t) i], pitchPool[(size_t) rnd.nextInt (i + 1)]);
+
+    // baralho de modos: notas e pausas embaralhadas (passo 0 sempre nota); cada ligadura entra logo depois de uma
+    // nota ou de outra ligadura, nunca depois de pausa (lá ela ficaria muda e a linha perderia nota)
+    std::vector<Mode> best;
+    best.insert (best.end(), (size_t) (nNote - 1), Mode::note);
+    best.insert (best.end(), (size_t) nRest, Mode::rest);
+    for (int i = (int) best.size() - 1; i > 0; --i)
+        std::swap (best[(size_t) i], best[(size_t) rnd.nextInt (i + 1)]);
+    best.insert (best.begin(), Mode::note);
+    for (int k = 0; k < nTie; ++k)
+    {
+        std::vector<int> after;
+        for (int i = 0; i < (int) best.size(); ++i)
+            if (best[(size_t) i] != Mode::rest) after.push_back (i);
+        const int at = after[(size_t) rnd.nextInt ((int) after.size())];
+        best.insert (best.begin() + at + 1, Mode::tie);
+    }
+
+    // accents e slides: mesma quantidade, espalhados entre os passos que soam (nota ou ligadura)
+    std::vector<int> sounding;
+    for (int i = 0; i < len; ++i)
+        if (best[(size_t) i] != Mode::rest) sounding.push_back (i);
+    auto pick = [&] (int count)
+    {
+        std::vector<bool> on ((size_t) len, false);
+        std::vector<int> pool = sounding;
+        for (int k = 0; k < count && ! pool.empty(); ++k)
+        {
+            const int j = rnd.nextInt ((int) pool.size());
+            on[(size_t) pool[(size_t) j]] = true;
+            pool.erase (pool.begin() + j);
+        }
+        return on;
+    };
+    const auto acc = pick (nAcc);
+    const auto sld = pick (nSld);
+
+    int lastPitch = pitchPool[0];
+    size_t nextNote = 0;
+    for (int i = 0; i < len; ++i)
+    {
+        Step s;
+        s.mode = best[(size_t) i];
+        if (s.mode == Mode::note) lastPitch = pitchPool[nextNote++];
+        s.pitch  = lastPitch;
+        s.accent = acc[(size_t) i];
+        s.slide  = sld[(size_t) i];
+        pat.set (i, s);
+    }
+}
 } // namespace limao

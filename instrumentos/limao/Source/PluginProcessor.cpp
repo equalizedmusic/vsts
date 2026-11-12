@@ -27,13 +27,17 @@ LimaoProcessor::LimaoProcessor()
     startTimerHz (10);
 }
 
-// AUTO ALEATÓRIO: deixa a próxima linha pronta (com o tamanho, a escala e a tônica de agora)
+// AUTO ALEATÓRIO: deixa a próxima linha pronta — as MESMAS notas, pausas, ligaduras, accents e slides da linha
+// que está tocando, em outra ordem (randomizeLike). Escala e tônica não mudam. Se o usuário editar a linha (ou mudar
+// PASSOS/SCALE/ROOT) antes da troca, a próxima é refeita a partir da edição.
 void LimaoProcessor::timerCallback()
 {
     const int len = juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load()));
     const int sc = scaleNow(), rt = rootNow();
+    juce::uint64 sig = (juce::uint64) len;
+    for (int i = 0; i < len; ++i) sig = sig * 1000003u + (juce::uint64) pattern.steps[(size_t) i].load();
     int st = nextState.load();
-    if (st == 1 && (len != nextLen || sc != nextScale || rt != nextRoot))
+    if (st == 1 && (len != nextLen || sc != nextScale || rt != nextRoot || sig != nextRefSig))
     {
         int um = 1;
         if (! nextState.compare_exchange_strong (um, 0)) return;   // o áudio está copiando: tenta no próximo
@@ -42,8 +46,8 @@ void LimaoProcessor::timerCallback()
     if (st != 0 || pAutoRand->load() < 0.5f) return;
     juce::Random rnd;
     nextPattern.clear();
-    randomize (nextPattern, len, rnd, sc, rt);
-    nextLen = len; nextScale = sc; nextRoot = rt;
+    randomizeLike (nextPattern, pattern, len, rnd, sc, rt);
+    nextLen = len; nextScale = sc; nextRoot = rt; nextRefSig = sig;
     nextState.store (1);
 }
 

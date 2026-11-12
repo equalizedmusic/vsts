@@ -174,6 +174,7 @@ private:
     limao::Pattern nextPattern;
     std::atomic<int> nextState { 0 };
     int nextLen = -1, nextScale = -1, nextRoot = -1;
+    juce::uint64 nextRefSig = 0;                       // assinatura da linha que serviu de base (editou = refaz)
     long long lastRandBlock = -1;
     juce::SmoothedValue<float> volSm;
 

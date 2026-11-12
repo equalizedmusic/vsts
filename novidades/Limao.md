@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Limao`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `limao-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.6.1 — 2026-11-12
+- Pré-lançamento de TESTE (ainda não vai para os clientes).
+- AUTO ALEATÓRIO respeita a linha que você montou: usa as MESMAS notas e a mesma quantidade de pausas, ligaduras,
+  accents e slides, só que em outra ordem. Uma linha com poucas notas e muitas pausas e slides continua assim, sem
+  virar uma linha cheia. SCALE e ROOT não mudam, e nenhuma nota nova é sorteada. Se você editar a linha com o AUTO
+  ligado, a próxima troca já parte da edição. A tecla ALEATORIZAR continua sorteando uma linha nova inteira.
+
 ## 0.6.0 — 2026-11-11
 - AUTO ALEATÓRIO no sequenciador: ligado, troca a linha inteira (notas, pausas, ligaduras, acentos e slides) sem
   parar, a cada 4, 8, 16, 32 ou 64 tempos (A CADA). A troca cai sempre na virada do bloco, junto com o compasso,
