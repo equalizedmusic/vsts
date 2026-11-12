@@ -255,11 +255,12 @@ export const PACKS = [
     {
         id: 'resenha', nome: 'RESENHA', cor: '#fb7185', tipo: ['Instrumento · VST3 · AU', 'Instrument · VST3 · AU'],
         capa: 'resenha', preco: null,
-        frase: ['Call & response FM: quatro timbres que conversam.', 'FM call & response: four voices in conversation.'],
+        // 0.6.0 (12/11/2026): HUB — cada slot INTERNO ou PLUGIN (synth do cliente)
+        frase: ['Call & response: os seus synths conversando.', 'Call & response: your own synths talking to each other.'],
         texto: [
-            'Gerador de frase na escala, troca de timbre a cada N notas, UNISON, filtro VOWEL (o lead "fala") e MOVE no tempo. 108 presets.',
-            'In-scale phrase generator, voice switching every N notes, UNISON, VOWEL filter (the lead "talks") and tempo-synced MOVE. 108 presets.'],
-        plugins: [['resenha', 'RESENHA', '', '']],
+            '4 slots que conversam: cada um usa o timbre INTERNO do RESENHA ou carrega um synth seu (VST3, e Audio Unit no Mac), com os presets dele: Serum num slot, Sylenth1 no outro. A busca lê só instrumentos e pula plugin que trava. Gerador de frase na escala, troca de timbre a cada N notas, OITAVA por slot, ARRASTAR MIDI para o DAW e 108 presets.',
+            '4 slots that talk to each other: each one uses RESENHA\'s INTERNAL sound or loads one of your synths (VST3, and Audio Unit on Mac) with its own presets: Serum in one slot, Sylenth1 in another. The scan reads instruments only and skips plugins that hang. In-scale phrase generator, voice switching every N notes, per-slot OCTAVE, DRAG MIDI into your DAW and 108 presets.'],
+        plugins: [['resenha', 'RESENHA', 'HUB: Serum, Sylenth1 ou o synth que você quiser em cada slot, conversando na escala.', 'HUB: Serum, Sylenth1 or any synth you like in each slot, talking in key.']],
     },
     {
         id: 'groovador', nome: 'GROOVADOR', cor: '#2dd4bf', tipo: ['Instrumento · VST3 · AU', 'Instrument · VST3 · AU'],
