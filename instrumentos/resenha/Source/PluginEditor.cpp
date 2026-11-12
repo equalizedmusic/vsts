@@ -568,9 +568,8 @@ PluginPicker::PluginPicker (ResenhaProcessor& p) : proc (p)
     allBtn.setBounds (a.getX() + 458, a.getY() + 54, 90, 26);
     favBtn.setBounds (a.getX() + 562, a.getY() + 54, 96, 26);
     azBtn.setBounds (a.getX() + 658, a.getY() + 54, 82, 26);
-    for (auto* b : { &instBtn, &allBtn, &favBtn, &azBtn }) addAndMakeVisible (*b);
+    for (auto* b : { &instBtn, &favBtn, &azBtn }) addAndMakeVisible (*b);   // TODOS saiu: a busca só guarda instrumentos
     instBtn.onClick = [this] { instrumentsOnly = true;  rebuild(); };
-    allBtn.onClick  = [this] { instrumentsOnly = false; rebuild(); };
     favBtn.onClick  = [this] { favFirst = true;  rebuild(); };
     azBtn.onClick   = [this] { favFirst = false; rebuild(); };
 
@@ -631,7 +630,7 @@ void PluginPicker::rebuild()
     seenVersion = proc.catalog->version.load();
     const auto q = search.getText().trim();
     rows.clear();
-    for (const auto& d : proc.catalog->list (instrumentsOnly))
+    for (const auto& d : proc.catalog->list())
         if (q.isEmpty() || d.name.containsIgnoreCase (q) || d.manufacturerName.containsIgnoreCase (q))
             rows.push_back ({ d, false, {} });
     auto& cat = *proc.catalog;
@@ -803,7 +802,7 @@ void PluginPicker::paint (juce::Graphics& g)
     else
     {
         g.setColour (rs::dim);
-        g.drawFittedText (rs::u8 ("Busca nas pastas padrão do VST3 (Windows) e do AU/VST3 (Mac). A 1ª busca pode levar alguns minutos; "
+        g.drawFittedText (rs::u8 ("Busca nas pastas padrão do VST3 (Windows) e do AU/VST3 (Mac). Só entram instrumentos: os efeitos são descartados sem abrir e não são lidos de novo. A 1ª busca pode levar alguns minutos; "
                                   "depois a lista fica guardada. Clique na estrela para favoritar."),
                           info.toNearestInt(), juce::Justification::centredLeft, 3, 0.8f);
     }

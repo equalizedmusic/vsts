@@ -19,6 +19,9 @@ namespace resenha
 // a busca segue no próximo. O DAW nunca fica preso num plugin. A lista é gravada em disco durante a busca: se ela for
 // interrompida, a próxima continua de onde parou. Só se o ResenhaScan não existir ou não abrir (instalação antiga, Mac
 // que barrou o programa) a busca volta a abrir os plugins dentro do DAW, como na 0.5.0.
+// SÓ INSTRUMENTOS: efeito é descartado antes de abrir sempre que dá — AU pelo tipo (aumu), VST3 pelo moduleinfo.json do
+// bundle. VST3 sem moduleinfo vai ao ResenhaScan, que lê só a categoria na fábrica (sai com 5 se for efeito). Todo
+// efeito descartado fica em efeitos.txt (com a data do arquivo) e não é relido nas próximas buscas.
 class PluginCatalog : private juce::Thread, private juce::AsyncUpdater
 {
 public:
@@ -30,9 +33,12 @@ public:
         dir().createDirectory();
         if (auto xml = juce::parseXML (listFile()))
             known.recreateFromXml (*xml);
+        for (const auto& d : known.getTypes())   // listas da 0.5.0/0.5.1 guardavam os efeitos também
+            if (! d.isInstrument) known.removeType (d);
         juce::PluginDirectoryScanner::applyBlacklistingsFromDeadMansPedal (known, pedalFile());
         loadFavourites();
         loadReasons();
+        loadEffects();
         known.setCustomScanner (std::make_unique<ChildScanner> (*this));
     }
 
@@ -86,14 +92,14 @@ public:
         startThread (juce::Thread::Priority::low);
     }
 
-    // lista para a janela: instrumentos (ou todos), sem o próprio RESENHA
-    juce::Array<juce::PluginDescription> list (bool instrumentsOnly) const
+    // lista para a janela: só instrumentos, sem o próprio RESENHA
+    juce::Array<juce::PluginDescription> list() const
     {
         juce::Array<juce::PluginDescription> out;
         for (const auto& d : known.getTypes())
         {
             if (d.name.equalsIgnoreCase ("RESENHA") && d.manufacturerName.containsIgnoreCase ("InsideStudioSP")) continue;
-            if (instrumentsOnly && ! d.isInstrument) continue;
+            if (! d.isInstrument) continue;
             out.add (d);
         }
         return out;
@@ -128,6 +134,100 @@ private:
     static juce::File favFile()     { return dir().getChildFile ("favoritos.txt"); }
     static juce::File reasonsFile() { return dir().getChildFile ("bloqueados-motivo.txt"); }
     static juce::File resultFile()  { return dir().getChildFile ("busca-resultado.xml"); }
+    static juce::File effectsFile() { return dir().getChildFile ("efeitos.txt"); }
+
+    // data do arquivo/bundle: se o plugin for atualizado, ele é lido de novo
+    static juce::String stamp (const juce::AudioPluginFormat& format, const juce::String& id)
+    {
+        if (format.getName() == "AudioUnit") return "0";
+        return juce::String (juce::File::createFileWithoutCheckingPath (id).getLastModificationTime().toMilliseconds());
+    }
+
+    bool isKnownEffect (const juce::AudioPluginFormat& format, const juce::String& id) const
+    {
+        const auto st = stamp (format, id);
+        const juce::ScopedLock sl (nameLock);
+        return effects.contains (id) && effects[id] == st;
+    }
+
+    // efeito descartado: grava em lote (a cada 200 e no fim da busca), não a cada arquivo
+    void rememberEffect (const juce::AudioPluginFormat& format, const juce::String& id)
+    {
+        const auto st = stamp (format, id);
+        const juce::ScopedLock sl (nameLock);
+        effects.set (id, st);
+        if (++effectsDirty >= 200) saveEffectsLocked();
+    }
+
+    void saveEffectsLocked()
+    {
+        juce::String txt;
+        for (auto it = effects.begin(); it != effects.end(); ++it)
+            txt << it.getKey() << "\t" << it.getValue() << "\n";
+        effectsFile().replaceWithText (txt);
+        effectsDirty = 0;
+    }
+
+    void loadEffects()
+    {
+        juce::StringArray lines;
+        lines.addLines (effectsFile().loadFileAsString());
+        const juce::ScopedLock sl (nameLock);
+        for (const auto& l : lines)
+            if (l.contains ("\t"))
+                effects.set (l.upToLastOccurrenceOf ("\t", false, false), l.fromLastOccurrenceOf ("\t", false, false));
+    }
+
+    // VST3: o moduleinfo.json do bundle diz a categoria de cada classe sem carregar o plugin.
+    // 1 = tem instrumento, 0 = só efeitos, -1 = sem moduleinfo (ou ilegível): o ResenhaScan decide
+    static int moduleInfoKind (const juce::String& id)
+    {
+        const auto bundle = juce::File::createFileWithoutCheckingPath (id);
+        for (const auto& mi : { bundle.getChildFile ("Contents/Resources/moduleinfo.json"), bundle.getChildFile ("Contents/moduleinfo.json") })
+        {
+            if (! mi.existsAsFile()) continue;
+            const auto v = juce::JSON::parse (mi.loadFileAsString());
+            const auto* classes = v.getProperty ("Classes", {}).getArray();
+            if (classes == nullptr) continue;
+            bool anyAudio = false;
+            for (const auto& c : *classes)
+            {
+                if (c.getProperty ("Category", {}).toString() != "Audio Module Class") continue;
+                anyAudio = true;
+                const auto sub = c.getProperty ("Sub Categories", {});
+                if (const auto* arr = sub.getArray())
+                {
+                    for (const auto& x : *arr)
+                        if (x.toString().containsIgnoreCase ("Instrument")) return 1;
+                }
+                else if (sub.toString().containsIgnoreCase ("Instrument")) return 1;
+            }
+            if (anyAudio) return 0;
+        }
+        return -1;
+    }
+
+    // descarta sem abrir: true = é efeito (não vai ao ResenhaScan)
+    bool skipWithoutOpening (const juce::AudioPluginFormat& format, const juce::String& id)
+    {
+        if (format.getName() == "AudioUnit")   // o identificador do AU traz o tipo: aumu = instrumento
+            return ! id.containsIgnoreCase ("/aumu,");
+        if (isKnownEffect (format, id)) return true;
+        if (format.getName() == "VST3" && moduleInfoKind (id) == 0)
+        {
+            rememberEffect (format, id);
+            return true;
+        }
+        return false;
+    }
+
+    // tira os efeitos do resultado; se não sobrar instrumento, lembra o arquivo como efeito
+    void keepInstruments (const juce::AudioPluginFormat& format, const juce::String& id, juce::OwnedArray<juce::PluginDescription>& result)
+    {
+        for (int i = result.size(); --i >= 0;)
+            if (! result[i]->isInstrument) result.remove (i);
+        if (result.isEmpty()) rememberEffect (format, id);
+    }
 
     // o ResenhaScan mora no bundle do próprio RESENHA: <bundle>/Contents/Resources/ResenhaScan(.exe). O binário do
     // plugin fica em Contents/x86_64-win (VST3 Windows) ou Contents/MacOS (VST3/AU Mac): sobe dois níveis até Contents.
@@ -157,6 +257,7 @@ private:
 
     bool scanOne (juce::AudioPluginFormat& format, juce::OwnedArray<juce::PluginDescription>& result, const juce::String& id)
     {
+        if (skipWithoutOpening (format, id)) return true;   // efeito: fica fora da lista e não é aberto
         const auto exe = scannerExe();
         const auto out = resultFile();
         out.deleteFile();
@@ -166,6 +267,7 @@ private:
         {
             unprotected = true;
             format.findAllTypesForFile (result, id);   // sem o ResenhaScan: abre no DAW, como na 0.5.0
+            keepInstruments (format, id, result);
             return true;
         }
 
@@ -198,9 +300,10 @@ private:
                     if (d->loadFromXml (*item)) result.add (std::move (d));
                 }
             out.deleteFile();
-            if (! result.isEmpty()) return true;
-            // 0/4 = o plugin abriu mas não entregou nenhum instrumento/efeito; o resto = o ResenhaScan caiu
             const auto code = child.getExitCode();
+            if (code == 5) { result.clear(); rememberEffect (format, id); return true; }   // só efeitos
+            if (! result.isEmpty()) { keepInstruments (format, id, result); return true; }
+            // 0/4 = o plugin abriu mas não entregou nenhum plugin; o resto = o ResenhaScan caiu
             why = (code == 0 || code == 4) ? juce::String::fromUTF8 ("não abriu") : juce::String ("fechou");
         }
         out.deleteFile();
@@ -257,7 +360,7 @@ private:
         scannerOk = scannerRuns();
         unprotected = ! scannerOk;
         const auto all = formats.getFormats();
-        int sinceSave = 0;
+        int savedCount = known.getNumTypes();
         for (int f = 0; f < all.size() && ! threadShouldExit(); ++f)
         {
             auto* format = all[f];
@@ -275,7 +378,7 @@ private:
                 const bool more = scanner.scanNextFile (true, name);
                 progress = ((float) f + scanner.getProgress()) / (float) juce::jmax (1, all.size());
                 ++version;
-                if (++sinceSave >= 5) { saveList(); sinceSave = 0; }   // interrompida, a próxima busca continua daqui
+                if (known.getNumTypes() != savedCount) { saveList(); savedCount = known.getNumTypes(); }   // interrompida, continua daqui
                 if (! more) break;
             }
         }
@@ -283,6 +386,7 @@ private:
         {
             const juce::ScopedLock sl (nameLock);
             currentName.clear();
+            saveEffectsLocked();
         }
         scanning = false;
         progress = 1.0f;
@@ -296,6 +400,8 @@ private:
     juce::CriticalSection nameLock;
     juce::String currentName;
     juce::HashMap<juce::String, juce::String> reasons;   // bloqueado → motivo (protegido por nameLock)
+    juce::HashMap<juce::String, juce::String> effects;   // efeito descartado → data do arquivo (protegido por nameLock)
+    int effectsDirty = 0;
     std::atomic<bool> skipRequested { false };
     bool scannerOk = false;   // só a thread da busca usa
 };

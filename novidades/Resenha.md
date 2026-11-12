@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.2 — 2026-11-12
+- Pré-lançamento de TESTE (ainda não vai para os clientes).
+- BUSCA SÓ DE INSTRUMENTOS: os efeitos ficam fora da busca e não são abertos. No Mac o AU é separado pelo tipo; no VST3 o RESENHA lê a ficha do plugin (moduleinfo.json) sem carregar nada. VST3 antigo, sem ficha, é aberto só o bastante para ler a categoria — se for efeito, sai na hora, sem iniciar o plugin.
+- Efeito descartado fica lembrado: as próximas buscas nem passam por ele (só se o arquivo do plugin mudar).
+- A lista da 0.5.0/0.5.1 perde os efeitos ao abrir; o filtro TODOS saiu da janela de escolha.
+
 ## 0.5.1 — 2026-11-12
 - Pré-lançamento de TESTE (ainda não vai para os clientes).
 - BUSCA DE PLUGINS SEM TRAVAR O DAW: cada plugin é lido fora do DAW, pelo leitor do RESENHA (ResenhaScan, instalado junto). Plugin que trava (30 s sem responder), fecha ou não abre é pulado e vai para os bloqueados com o motivo (travou / fechou / não abriu), e a busca segue no próximo. O DAW não fica mais preso.

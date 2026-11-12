@@ -65,6 +65,17 @@ target_link_libraries(ResenhaScan
         juce::juce_gui_basics
     PUBLIC
         juce::juce_recommended_config_flags)
+# Cabeçalhos do SDK VST3 que vem dentro do JUCE: o ResenhaScan lê a categoria (instrumento/efeito) na fábrica do plugin.
+set(RESENHA_VST3_SDK "")
+foreach(m juce_audio_processors_headless juce_audio_processors)
+    if(NOT RESENHA_VST3_SDK AND EXISTS "${juce_SOURCE_DIR}/modules/${m}/format_types/VST3_SDK/pluginterfaces/base/ipluginbase.h")
+        set(RESENHA_VST3_SDK "${juce_SOURCE_DIR}/modules/${m}/format_types/VST3_SDK")
+    endif()
+endforeach()
+if(NOT RESENHA_VST3_SDK)
+    message(FATAL_ERROR "ResenhaScan: SDK VST3 do JUCE não encontrado em ${juce_SOURCE_DIR}")
+endif()
+target_include_directories(ResenhaScan PRIVATE "${RESENHA_VST3_SDK}")
 if(WIN32)
     target_link_libraries(ResenhaScan PRIVATE shell32)
 endif()
