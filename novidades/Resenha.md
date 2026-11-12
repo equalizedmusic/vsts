@@ -10,6 +10,7 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 - PULAR ESTE PLUGIN: durante a busca, o botão encerra na hora o plugin que está sendo lido.
 - A lista é guardada durante a busca: se ela for interrompida, a próxima continua de onde parou.
 - BUSCAR PLUGINS DE NOVO dá outra chance aos bloqueados.
+- O instalador do Mac e o do Windows trazem o leitor conferido: no build, ele lê o próprio RESENHA nos dois sistemas.
 
 ## 0.5.0 — 2026-11-12
 - Pré-lançamento de TESTE (ainda não vai para os clientes).
