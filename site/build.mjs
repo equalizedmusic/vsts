@@ -156,23 +156,25 @@ function bannerLancamento(p) {
       ${p.de && temBrl(p) ? `<span class="tempo so-oferta" data-fim="${p.fim}">${bf ? t(`Preço promocional até a Black Friday (${fimTxt(p.fim)})`, `Promo price until Black Friday (${fimTxt(p.fim)})`) : t('Oferta de lançamento · termina em', 'Launch offer · ends in')} ${bf ? '' : contador('forte', p.fim)}</span>` : ''}
       ${bf ? relogio(p.fim) : ''}
     </div>
+    ${comboDoBanner(L)}
     <div class="dl-bts">
       <a class="bt bt-principal" href="/${p.id}/">${t('Quero o ' + p.nome, 'Get ' + p.nome)}</a>
       <button class="dl-depois" type="button">${t('Agora não, ver a loja', 'Not now, see the shop')}</button>
     </div>
-    ${comboDoBanner(L)}
     <p class="dl-tipo">${t(...p.tipo)} · ${t('Windows e Mac · Pix ou cartão em até 12x', 'Windows and Mac')}</p>
   </div>
   <a class="dl-img" href="/${p.id}/"><img src="/img/${p.capa}.webp" alt="${esc(p.nome)}"></a>
 </div></dialog>`;
 }
 
-// linha do combo no popup (11/11): "Leve junto o MASTER DOS MAGOS: os dois por R$ 179,90"
+// caixa do combo no popup (11/11; 11/11 noite, pedido dele: no celular a linha ficava abaixo do "Agora não" e sumia —
+// virou caixa em destaque ENTRE o preço e o botão de compra, visível sem rolar)
 function comboDoBanner(L) {
     const c = L.combo && PACKS.find((x) => x.id === L.combo);
     if (!c || !temBrl(c)) return '';
-    const outro = c.combo.map((id) => PACKS.find((x) => x.id === id)).filter((x) => x && !x.lancamento).map((x) => x.nome).join(' + ');
-    return `<p class="dl-combo"><a href="/${c.id}/">${t(`Combo com o ${outro}: os dois por ${brl(c.preco.brl)}`, `Bundle with ${outro}: both for ${brl(c.preco.brl)}`)}&nbsp;→</a></p>`;
+    const nomes = c.combo.map((id) => PACKS.find((x) => x.id === id)).filter(Boolean).map((x) => x.nome).join(' + ');
+    const soma = c.soma > c.preco.brl ? `<s>${brl(c.soma)}</s> ` : '';
+    return `<a class="dl-combo" href="/${c.id}/"><span class="dl-combo-tag">COMBO</span><span class="dl-combo-txt"><b>${esc(nomes)}</b><span>${t('os dois por', 'both for')} ${soma}<strong>${brl(c.preco.brl)}</strong></span></span><span class="dl-combo-seta">→</span></a>`;
 }
 
 // ---- seções da loja (10/11) ----

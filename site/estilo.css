@@ -96,7 +96,17 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .dl-preco .tempo { margin-top:2px; }
 .dl-bts { display:flex; flex-wrap:wrap; gap:12px 16px; align-items:center; }
 .dl-tipo { color:var(--dim); font-size:13px; }
-.dl-combo { margin:14px 0 0; font-size:14px; } .dl-combo a { color:#d4a72c; font-weight:700; text-decoration:none; } .dl-combo a:hover { text-decoration:underline; }
+/* combo em destaque entre o preço e o botão (pedido dele 11/11: no celular a linha sumia abaixo do "Agora não") */
+.dl-combo { --bf:#ffd60a; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:10px 14px; border-radius:12px; text-decoration:none; color:var(--ink);
+            border:2px dashed var(--bf); background:color-mix(in srgb, var(--bf) 10%, #000); transition:background .15s, transform .15s; }
+.dl-combo:hover { background:color-mix(in srgb, var(--bf) 18%, #000); transform:translateY(-1px); }
+.dl-combo:focus-visible { outline:2px solid var(--bf); outline-offset:2px; }
+.dl-combo-tag { flex:none; background:var(--bf); color:#000; font:900 12px Bahnschrift, "Segoe UI", sans-serif; letter-spacing:.14em; padding:5px 8px; border-radius:6px; }
+.dl-combo-txt { display:flex; flex-direction:column; gap:1px; min-width:0; font-size:14px; line-height:1.25; }
+.dl-combo-txt b { font-weight:800; }
+.dl-combo-txt s { color:var(--dim); }
+.dl-combo-txt strong { color:var(--bf); font-size:18px; font-weight:900; }
+.dl-combo-seta { margin-left:auto; flex:none; color:var(--bf); font-size:22px; font-weight:900; }
 .dl-img { display:block; border-radius:var(--raio); overflow:hidden; border:1px solid var(--line); background:#08070c;
             box-shadow:0 24px 70px -28px var(--cor); transition:transform .18s, border-color .18s; }
 .dl-img:hover { transform:translateY(-3px); border-color:var(--cor); }
@@ -117,7 +127,15 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
                            .dl .relogio { margin:6px 0 2px; } .dl .rl-tit { margin-bottom:6px; font-size:12px; }
                            .dl .rl-blocos { gap:4px; } .dl .rl-blocos i { font-size:24px; }
                            .dl .rl-b { flex:1; min-width:0; padding:6px 2px 5px; } .dl .rl-b b { font-size:28px; } .dl .rl-b small { font-size:10px; letter-spacing:.06em; }
-                           .dl-bts { gap:6px 12px; } }
+                           .dl-bts { gap:6px 12px; }
+                           /* 11/11 noite: entrou a caixa do combo — foto menor e rodapé fora, p/ caber combo + botão sem rolar */
+                           .dl-img img { max-height:min(16dvh, 120px); }
+                           .dl-tipo { display:none; }
+                           .dl-combo { margin-bottom:10px; padding:8px 10px; gap:10px; }
+                           .dl-combo-txt { font-size:13px; } .dl-combo-txt strong { font-size:16px; }
+                           .dl-combo-tag { font-size:11px; padding:4px 6px; letter-spacing:.1em; }
+                           .dl-bf .dl-tit, .dl-bf .dl-preco .tempo { display:none; } /* a faixa amarela já diz "até 27/11" */ }
+@media (max-width:860px) and (max-height:600px) { .dl-img { display:none; } } /* tela baixa (iPhone com barras do Safari): foto sai, combo + botão ficam à vista */
 
 /* cartões de pack */
 .grade-destaque { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
