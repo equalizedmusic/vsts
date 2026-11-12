@@ -1,33 +1,49 @@
 name: shots
 
-# Fotos das interfaces (para divulgação). Roda sozinho quando shots/ muda, ou à mão.
+# Fotos das interfaces (para divulgação/site). Roda sozinho só quando o push muda algo VISUAL de um plugin (tela,
+# desenho, tema, peças, imagens) e refaz só a foto DAQUELE plugin; as fotos dos outros ficam como estão no branch shots.
+# Mudança só de som, licença ou instalador não roda. À mão (Run workflow): escrever quais plugins ("limao f1" ou "todos").
 on:
   push:
     branches: [main, 'visual-*']   # visual-*: prévia de visual antes de ir para o main (não gera instalador)
-    paths: ['shots/**']   # fotos não rodam a cada plugin atualizado: só quando shots/ muda ou à mão (Run workflow)
+    paths: ['instrumentos/*/Source/**', 'plugins/*/*/Source/**', 'plugins/*/*/assets/**', 'plugins/knob/_comum/assets/**']
   workflow_dispatch:
+    inputs:
+      plugins:
+        description: 'Plugins a fotografar (nome da pasta: "limao f1"), ou "todos"'
+        required: true
+        default: todos
 
 permissions:
   contents: write
 
 concurrency:
   group: shots
-  cancel-in-progress: true
+  cancel-in-progress: false   # um push não cancela a foto do outro (cada um refaz só a dele)
 
 jobs:
   shots:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Quais fotos
+        id: quais
+        run: |
+          bash .github/scripts/fotos-alteradas.sh "${{ github.event.before }}" "${{ github.sha }}" "${{ github.event.inputs.plugins }}" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
 
       - name: Compilar
+        if: steps.quais.outputs.plugins != ''
         run: |
           set -o pipefail
-          cmake -S shots -B build -DCMAKE_BUILD_TYPE=Release 2>&1 | tee build.log
+          cmake -S shots -B build -DCMAKE_BUILD_TYPE=Release "-DSHOT_SO=${{ steps.quais.outputs.so }}" 2>&1 | tee build.log
           cmake --build build --config Release -j 4 -- -k 2>&1 | tee -a build.log || true
 
       - name: Fotos
-        if: always()
+        if: always() && steps.quais.outputs.plugins != ''
         run: |
           mkdir -p out
           for app in $(find build -type f -perm +111 -name 'shot_*' ! -path '*.dSYM*'); do
@@ -37,14 +53,13 @@ jobs:
           ls -l out | tee -a shots.log
 
       - name: Publicar (branch shots)
-        if: always()
+        if: always() && steps.quais.outputs.plugins != ''
         run: |
-          mkdir -p pub
+          # parte das fotos que já estão no branch shots e troca só as refeitas agora
+          git clone -q --depth 1 --branch shots "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" pub 2>/dev/null || { mkdir -p pub; git -C pub init -q; git -C pub checkout -q -b shots; }
           cp out/*.png pub/ 2>/dev/null || true
           cp build.log shots.log pub/ 2>/dev/null || true
           cd pub
-          git init -q
-          git checkout -q -b shots
           git add -A
-          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "shots ${GITHUB_SHA::7}"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" shots
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "shots ${GITHUB_SHA::7}: ${{ steps.quais.outputs.plugins }}" || { echo "nada mudou"; exit 0; }
+          git push -q "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" shots
