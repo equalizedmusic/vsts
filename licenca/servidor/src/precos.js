@@ -55,17 +55,20 @@ export const NOMES = {
 // Oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.
 // Preço "de" por faixa de preço real; pack sem entrada aqui mostra só o preço. Termina em OFERTA_FIM (Brasília).
 // Usado pelo site (site/dados.mjs) e pela vitrine das páginas grátis (gratis.js). Para prorrogar: mudar a data e publicar os dois.
-export const OFERTA_FIM = '2026-12-31T23:59:59-03:00';
+// 12/11/2026 (decisão dele): TODAS as ofertas terminam no fim da Black Friday (27/11/2026, sexta, 23:59 de Brasília).
+export const OFERTA_FIM = '2026-11-27T23:59:59-03:00';
 export const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
-// Pack com oferta que termina antes da geral (decisão dele): MAESTRO só até a Black Friday (27/11/2026, sexta).
-// Passada a data, some o "de" riscado do pack e fica só o preço do PRECOS.
-export const OFERTA_FIM_PACK = { maestro: '2026-11-27T23:59:59-03:00' };
+// Pack com oferta que termina em outra data (vazio hoje: todos acabam em OFERTA_FIM).
+export const OFERTA_FIM_PACK = {};
 export const fimOferta = (id) => OFERTA_FIM_PACK[id] || OFERTA_FIM;
 
-// Preço que muda sozinho numa data (decisão dele, 10/11/2026): passada a Black Friday o MAESTRO sobe para R$ 149,90.
+// Preço que muda sozinho na data (decisão dele): acabada a oferta, cada pack em promoção passa a custar o preço "de"
+// (79,90 -> 149,90; 24,90 -> 49,90). MAGOS (sem promoção) e o combo MAESTRO + MAGOS (179,90) não mudam.
 // Cobrança (loja.js) e vitrine das páginas grátis leem precoAtual() NA HORA; o site estático sai com o preço da hora
-// do build (rebuild agendado no dOne para 28/11). Para adiar: mudar 'apos' e publicar servidor e site.
-export const PRECO_DEPOIS = { maestro: { apos: '2026-11-27T23:59:59-03:00', brl: 149.90 } };
+// do build (rebuild agendado no dOne para 28/11 00:02). Para adiar: mudar OFERTA_FIM e publicar servidor e site.
+export const PRECO_DEPOIS = Object.fromEntries(Object.entries(PRECOS)
+    .filter(([, p]) => DE_BRL[p.brl])
+    .map(([id, p]) => [id, { apos: fimOferta(id), brl: DE_BRL[p.brl] }]));
 export function precoAtual(id, agora = Date.now()) {
     const p = PRECOS[id], d = PRECO_DEPOIS[id];
     return p && d && agora >= Date.parse(d.apos) ? { ...p, brl: d.brl } : p;
