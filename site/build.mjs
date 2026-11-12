@@ -33,6 +33,8 @@ const fimTxt = (fim) => new Date(fim).toLocaleDateString('pt-BR', { timeZone: 'A
 const contador = (cls = '', fim = OFERTA_FIM) => `<span class="contador ${cls}" data-fim="${fim}">${t('até ' + fimTxt(fim), 'until ' + fimTxt(fim))}</span>`;   // fim do pack (fimOferta) ou a oferta geral
 const maiorOff = Math.max(0, ...PACKS.filter((p) => p.de && temBrl(p)).map((p) => off(p)));
 
+const ICONE_CARRINHO = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5.2 4l.6 2H21l-2.4 8.4a2 2 0 0 1-1.9 1.6H8.4a2 2 0 0 1-1.9-1.4L3.7 4H1V2h4.2l1 2z"/></svg>';
+
 function pagina({ titulo, descricao, corpo, raiz = '' }) {
     return `<!doctype html>
 <html lang="pt-BR"><head>
@@ -52,6 +54,7 @@ ${PREVIA ? '<meta name="robots" content="noindex, nofollow">' : ''}
     <a href="${raiz}/">${t('Loja', 'Shop')}</a>
     <a href="${raiz}/estudio/">${t('Estúdio', 'Studio')}</a>
     <a href="${raiz}/contato/">${t('Contato', 'Contact')}</a>
+    <a class="nav-carrinho" href="${raiz}/carrinho/" hidden aria-label="Carrinho / Cart">${ICONE_CARRINHO}<b class="carrinho-n">0</b></a>
     <button class="idioma" type="button" aria-label="Idioma / Language"><span class="pt">EN</span><span class="en">PT</span></button>
   </nav>
 </div></header>
@@ -69,6 +72,7 @@ ${PREVIA ? `<div class="previa">${t('Prévia do site novo.', 'Preview of the new
   </div>
   <small>© ${new Date().getFullYear()} InsideStudioSP · <a href="${raiz}/privacidade/">${t('Privacidade e cookies', 'Privacy and cookies')}</a></small>
 </div></footer>
+<a class="nav-carrinho carrinho-flutuante" href="${raiz}/carrinho/" hidden aria-label="Carrinho / Cart">${ICONE_CARRINHO}<b class="carrinho-n">0</b></a>
 <dialog class="zoom"><button class="fechar" type="button" aria-label="Fechar / Close">✕</button><img alt=""></dialog>
 </body></html>`;
 }
@@ -99,12 +103,68 @@ function caixaCompra(p) {
       <input name="nome" required minlength="3" maxlength="80" autocomplete="name" placeholder="Nome e sobrenome · Full name"></label>
     <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}
       <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
+    ${campoCupom(p.preco.brl)}
     ${temBrl(p) ? `<button class="bt bt-principal" name="metodo" value="mp">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>` : ''}
     ${temUsd(p) ? `<button class="bt bt-sec" name="metodo" value="paypal">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>` : ''}
+    <button class="bt bt-sec bt-carrinho" type="button" data-add="${p.id}" hidden>${t('+ Adicionar ao carrinho', '+ Add to cart')}</button>
+    <a class="bt bt-sec bt-ver-carrinho" href="/carrinho/" hidden>${t('No carrinho ✓ · ver carrinho', 'In your cart ✓ · view cart')}</a>
     <p class="nota">${t('Pagamento aprovado: você recebe no e-mail o token de ativação, o link de download e as instruções. O token vale em 2 computadores.',
                         'Once the payment is approved you get the activation token, the download link and the instructions by e-mail. The token works on 2 computers.')}</p>
     <p class="nota">${t('Nome e e-mail são usados só para a licença e o suporte.', 'Your name and e-mail are used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
   </form>`;
+}
+
+// cupom de desconto (12/11): o site.js confere em /loja/cupom e mostra o total com desconto; quem cobra é o servidor.
+// data-total = valor em reais sem desconto (no carrinho o site.js atualiza ao mudar os itens).
+function campoCupom(total) {
+    return `<div class="cupom" data-total="${typeof total === 'number' ? total : ''}">
+      <label class="campo">${t('Cupom de desconto (opcional)', 'Discount coupon (optional)')}
+        <span class="cupom-linha"><input name="cupom" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="#CUPOM"><button class="bt bt-sec cupom-aplicar" type="button" hidden>${t('Aplicar', 'Apply')}</button></span></label>
+      <p class="cupom-msg" aria-live="polite"></p>
+    </div>`;
+}
+
+// página do carrinho (12/11): a lista vive no navegador (localStorage, site.js); o formulário manda um "pacote" por item
+// para o mesmo /loja/pagar, que cobra o total (com cupom) num pagamento só e cria uma licença por pack.
+function carrinho() {
+    const catalogo = Object.fromEntries(PACKS.filter((p) => temBrl(p)).map((p) => [p.id, {
+        nome: p.nome, brl: p.preco.brl, de: p.de && OFERTA_ATIVA ? p.de : null, fim: p.fim || null, capa: p.capa, cor: p.cor,
+        combo: p.combo || null, tipo: p.tipo }]));
+    return pagina({
+        titulo: 'Carrinho — InsideStudioSP',
+        descricao: 'Seu carrinho na loja InsideStudioSP.',
+        corpo: `
+<section class="hero hero-curto"><div class="faixa">
+  <p class="sobre">${t('CARRINHO', 'CART')}</p>
+  <h1>${t('Seu carrinho', 'Your cart')}</h1>
+  <p class="lead">${t('Junte os packs que quiser e pague tudo de uma vez, com Pix ou cartão em até 12x. Cada pack chega com a licença no seu e-mail.',
+                      'Pick the packs you want and pay for everything at once. Each pack comes with its license in your e-mail.')}</p>
+</div></section>
+<section class="faixa carrinho-grade">
+  <div class="carrinho-lista" id="carrinho-lista">
+    <noscript><p>${t('O carrinho precisa de JavaScript ligado. Sem ele, compre cada pack pela página dele.', 'The cart needs JavaScript. Without it, buy each pack from its own page.')}</p></noscript>
+  </div>
+  <form class="compra carrinho-form" id="carrinho-form" method="post" action="${LIC}/loja/pagar" hidden>
+    <input type="hidden" name="carrinho" value="1">
+    <div class="carrinho-itens"></div>
+    <dl class="carrinho-resumo">
+      <dt>${t('Subtotal', 'Subtotal')}</dt><dd class="cr-sub"></dd>
+      <dt class="cr-desc" hidden>${t('Cupom', 'Coupon')} <span class="cr-cod"></span></dt><dd class="cr-desc cr-desc-v" hidden></dd>
+      <dt class="cr-total-t">${t('Total', 'Total')}</dt><dd class="cr-total"></dd>
+    </dl>
+    <label class="campo">${t('Nome completo', 'Full name')}
+      <input name="nome" required minlength="3" maxlength="80" autocomplete="name" placeholder="Nome e sobrenome · Full name"></label>
+    <label class="campo">${t('Seu e-mail (as licenças chegam nele)', 'Your e-mail (the licenses are sent to it)')}
+      <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
+    ${campoCupom(null)}
+    <button class="bt bt-principal" name="metodo" value="mp">${t('Pagar com Pix ou cartão em até 12x', 'Pay with Pix or card (Brazil)')}</button>
+    <p class="nota">${t('Pagamento aprovado: chega no seu e-mail um token de ativação que vale para todos os packs, os links de download de cada um e as instruções. O token vale em 2 computadores.',
+                        'Once the payment is approved you get one activation token for all the packs, the download links for each one and the instructions by e-mail. The token works on 2 computers.')}</p>
+    <p class="nota">${t('Nome e e-mail são usados só para a licença e o suporte.', 'Your name and e-mail are used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
+  </form>
+</section>
+<script type="application/json" id="catalogo">${JSON.stringify(catalogo).replace(/</g, '\\u003c')}</script>`,
+    });
 }
 
 function cartaoPack(p, grande = false) {
@@ -448,6 +508,7 @@ for (const s of SECOES) grava(`plugins/${s.id}/index.html`, paginaSecao(s));
 { const sem = PACKS.filter((p) => !SECOES.some((s) => s.itens.includes(p.id))); if (sem.length) throw new Error('pack fora de seção: ' + sem.map((p) => p.id)); }
 grava('estudio/index.html', estudio());
 grava('contato/index.html', contato());
+grava('carrinho/index.html', carrinho());
 grava('privacidade/index.html', privacidade());
 grava('contato/enviado/index.html', paginaAviso('Mensagem enviada', 'Recebemos sua mensagem. A resposta chega no e-mail que você informou.', 'We got your message. The reply will go to the e-mail you entered.'));
 grava('contato/erro/index.html', paginaAviso('Erro', 'Confira o nome, o e-mail e a mensagem e tente de novo. Se continuar, escreva para contato@insidestudiosp.com.br.', 'Check your name, e-mail and message and try again. If it keeps failing, write to contato@insidestudiosp.com.br.'));

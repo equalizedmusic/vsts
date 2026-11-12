@@ -88,6 +88,10 @@ CREATE TABLE IF NOT EXISTS pedidos (
     email_enviado  INTEGER NOT NULL DEFAULT 0,
     ip             TEXT,
     criado_em      INTEGER NOT NULL,
-    pago_em        INTEGER
+    pago_em        INTEGER,
+    cupom          TEXT,                              -- cupom usado (precos.js CUPONS), minúsculo sem "#"
+    desconto_centavos INTEGER NOT NULL DEFAULT 0,     -- quanto o cupom tirou do total
+    posvenda_em    INTEGER                            -- e-mail de pós-venda (3 dias depois; -1 = falhou)
 );
 CREATE INDEX IF NOT EXISTS pedidos_ip ON pedidos (ip, criado_em);
+CREATE INDEX IF NOT EXISTS pedidos_cupom ON pedidos (cupom, email);

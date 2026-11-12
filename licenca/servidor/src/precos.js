@@ -28,6 +28,24 @@ export const PRECOS = {
 // combo = um pedido que libera vários pacotes (loja.js concluir() cria uma licença para cada um)
 export const COMBOS = { maestromagos: ['maestro', 'magos'] };
 
+// Cupom de desconto (12/11/2026, decisão dele): % sobre o TOTAL do pedido (carrinho ou pack avulso), vale também
+// sobre o preço de oferta e o combo. umaPorEmail: cada comprador (e-mail) usa uma vez só — conta pedido pago,
+// em processamento ou devolvido. O cliente digita com ou sem "#", maiúscula ou minúscula. ate: opcional (ISO).
+export const CUPONS = {
+    atwork10: { pct: 10, umaPorEmail: true },
+};
+export const normCupom = (c) => String(c || '').trim().toLowerCase().replace(/^#+/, '').replace(/\s+/g, '').slice(0, 40);
+export function cupomValido(c, agora = Date.now()) {
+    const codigo = normCupom(c), x = CUPONS[codigo];
+    return x && !(x.ate && agora > Date.parse(x.ate)) ? { codigo, ...x } : null;
+}
+
+// pedido do carrinho: os pacotes vão juntos em pedidos.pacote, separados por "+" (ex.: "limao+resenha+maestromagos")
+export const itensPedido = (pacote) => String(pacote || '').split('+').filter(Boolean);
+// pacotes que viram licença (o combo abre nos dele)
+export const licencasPedido = (pacote) => itensPedido(pacote).flatMap((p) => COMBOS[p] || [p]);
+export const nomePedido = (pacote) => itensPedido(pacote).map((p) => NOMES[p] || p.toUpperCase()).join(' + ');
+
 export const NOMES = {
     mesa: 'MESA', criativo: 'SÉRIE CRIATIVO', mix: 'SÉRIE MIX', knob: 'SÉRIE KNOB', quimera: 'QUIMERA',
     limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR', stompbox: 'STOMPBOX', maestro: 'MAESTRO',

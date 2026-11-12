@@ -92,6 +92,12 @@ const GATILHOS = [
         publico: PUBLICO,
     },
     {
+        // 12/11/2026: Reels do RESENHA 0.6 (HUB). "resenha" é palavra comum (conversa): só em comentário curto
+        palavra: 'resenha', curto: true,
+        dm: 'Opa! Aqui está o RESENHA, os seus synths conversando entre si 🎹💬\n\nSerum, Sylenth1 ou qualquer VST3/AU nos slots, com frases de pergunta e resposta no tom. Veja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/resenha/\n\nPix, cartão em até 12x ou boleto.',
+        publico: PUBLICO,
+    },
+    {
         palavra: 'mesa', curto: true,
         dm: 'Opa! Aqui está a MESA, a console analógica dentro da sua DAW 🎚️\n\nVeja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/mesa/\n\nPix, cartão em até 12x ou boleto.',
         publico: PUBLICO,

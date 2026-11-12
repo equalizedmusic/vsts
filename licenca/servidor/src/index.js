@@ -42,7 +42,7 @@
 import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 import { rotaGratis, rotaZipVst, rotaTokenVst, PACOTES_GRATIS, VST_GRATIS } from './gratis.js';
 import { rotaWebhookEntrada } from './caixa.js';
-import { rotaLoja, vencerPedidos } from './loja.js';
+import { rotaLoja, vencerPedidos, posVenda } from './loja.js';
 import { avisarLicenca } from './avisos.js';
 import { rotaContato } from './contato.js';
 import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram, relatorioSemanal, varrerComentarios }from './instagram.js';
@@ -583,6 +583,8 @@ export default {
         // de 10 em 10 min: agenda de posts do Instagram + varredura de comentários sem aviso da Meta
         if (evento.cron === '*/10 * * * *') {
             ctx.waitUntil(publicarAgendados(env).then((r) => { if (r.feitos?.length) console.log('ig agenda', JSON.stringify(r)); }).catch((e) => console.error('ig agenda', e)));
+            // pós-venda da loja: e-mail 3 dias depois do pagamento (só 10h-19h de Brasília, ver loja.js)
+            ctx.waitUntil(posVenda(env, agora()).catch((e) => console.error('loja posvenda', e)));
             ctx.waitUntil(varrerComentarios(env).then((r) => { if (!r.ok || r.tratados?.length) console.log('ig varrer', JSON.stringify(r)); }).catch((e) => console.error('ig varrer', e)));
             return;
         }

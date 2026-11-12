@@ -8,7 +8,7 @@
 // O mês é o de São Paulo (UTC-3, sem horário de verão). 'devolvido' não volta a 'pago': as consultas da loja só mexem
 // em pedido criado/pendente/recusado/vencido/processando.
 
-import { NOMES } from './precos.js';
+import { nomePedido } from './precos.js';
 
 const agora = () => Math.floor(Date.now() / 1000);
 const FUSO = 3 * 3600;   // São Paulo = UTC-3
@@ -35,7 +35,7 @@ export async function rotaVendas(caminho, req, env) {
         if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) mes = mesAtual();
         const [ini, fim] = intervalo(mes);
         const { results: pedidos } = await env.DB.prepare(
-            'SELECT id, pacote, nome, email, metodo, valor_centavos, moeda, status, forma, email_enviado, licenca_id, criado_em, pago_em ' +
+            'SELECT id, pacote, nome, email, metodo, valor_centavos, moeda, status, forma, cupom, desconto_centavos, email_enviado, licenca_id, criado_em, pago_em ' +
             'FROM pedidos WHERE COALESCE(pago_em, criado_em) >= ? AND COALESCE(pago_em, criado_em) < ? ORDER BY COALESCE(pago_em, criado_em) DESC')
             .bind(ini, fim).all();
         const { results: meses } = await env.DB.prepare(
@@ -44,7 +44,7 @@ export async function rotaVendas(caminho, req, env) {
         const resumo = {};   // por moeda: { pagas, total, devolvidas, devolvido }
         let abertos = 0;
         for (const p of pedidos) {
-            p.pacote_nome = NOMES[p.pacote] || p.pacote;
+            p.pacote_nome = nomePedido(p.pacote) + (p.cupom ? ' · cupom ' + String(p.cupom).toUpperCase() : '');
             const r = resumo[p.moeda] || (resumo[p.moeda] = { pagas: 0, total: 0, devolvidas: 0, devolvido: 0 });
             if (p.status === 'pago' || p.status === 'processando') { r.pagas++; r.total += p.valor_centavos; }
             else if (p.status === 'devolvido') { r.devolvidas++; r.devolvido += p.valor_centavos; }
@@ -77,8 +77,9 @@ export async function rotaVendas(caminho, req, env) {
         await env.DB.prepare("UPDATE pedidos SET status = 'devolvido' WHERE id = ? AND status = 'pago'").bind(id).run();
         let cancelou = false;
         if (p.licenca_id) {
-            const r = await env.DB.prepare("UPDATE licencas SET status = 'revogada', revogada_em = ? WHERE id = ? AND status = 'ativa'")
-                .bind(agora(), p.licenca_id).run();
+            // carrinho/combo: cancela todas as licenças criadas por este pedido (licencas.pedido), não só a 1ª
+            const r = await env.DB.prepare("UPDATE licencas SET status = 'revogada', revogada_em = ? WHERE (id = ? OR pedido = ?) AND status = 'ativa'")
+                .bind(agora(), p.licenca_id, id).run();
             cancelou = !!r.meta.changes;
         }
         await env.DB.prepare('INSERT INTO eventos (licenca_id, tipo, detalhe, ip, quando) VALUES (?, ?, ?, ?, ?)')
