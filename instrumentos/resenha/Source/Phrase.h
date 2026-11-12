@@ -163,6 +163,36 @@ inline void applyTalk (const PhraseParams& p, Phrase& out)
     }
 }
 
+// FAIXA DA CONVERSA: as frases ficam entre a oitava 1 e a 3 (Dó 1 = 36 até Si 3 = 71, com Dó 3 = 60). Primeiro a frase
+// inteira desce/sobe de oitava para caber (o desenho da melodia não muda); o que ainda sobrar fora dobra de oitava.
+// Quem quiser mais agudo/grave usa a OITAVA do slot (ou a nota segurada, que transpõe).
+constexpr int rangeLo = 36, rangeHi = 71;
+
+inline void fitToRange (Phrase& out)
+{
+    if (out.count == 0) return;
+    int bestShift = 0, bestOut = 1 << 30, bestDist = 1 << 30;
+    for (int k = -4; k <= 3; ++k)
+    {
+        int outside = 0, lo = 999, hi = -999;
+        for (int j = 0; j < out.count; ++j)
+        {
+            const int n = out.notes[(size_t) j].note + 12 * k;
+            if (n < rangeLo || n > rangeHi) ++outside;
+            lo = juce::jmin (lo, n); hi = juce::jmax (hi, n);
+        }
+        const int dist = std::abs ((lo + hi) - (rangeLo + rangeHi));     // empate: a frase mais no meio da faixa
+        if (outside < bestOut || (outside == bestOut && dist < bestDist)) { bestShift = k; bestOut = outside; bestDist = dist; }
+    }
+    for (int j = 0; j < out.count; ++j)
+    {
+        int n = out.notes[(size_t) j].note + 12 * bestShift;
+        while (n > rangeHi) n -= 12;
+        while (n < rangeLo) n += 12;
+        out.notes[(size_t) j].note = n;
+    }
+}
+
 inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
 {
     out.count = 0;
@@ -262,6 +292,7 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
         pn.note = juce::jlimit (24, 108, note);
     }
 
+    fitToRange (out);
     applyTalk (p, out);
 }
 

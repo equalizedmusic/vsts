@@ -4,31 +4,20 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
-## 0.5.2 — 2026-11-12
-- Pré-lançamento de TESTE (ainda não vai para os clientes).
-- BUSCA SÓ DE INSTRUMENTOS: os efeitos ficam fora da busca e não são abertos. No Mac o AU é separado pelo tipo; no VST3 o RESENHA lê a ficha do plugin (moduleinfo.json) sem carregar nada. VST3 antigo, sem ficha, é aberto só o bastante para ler a categoria — se for efeito, sai na hora, sem iniciar o plugin.
-- Efeito descartado fica lembrado: as próximas buscas nem passam por ele (só se o arquivo do plugin mudar).
-- A lista da 0.5.0/0.5.1 perde os efeitos ao abrir; o filtro TODOS saiu da janela de escolha.
-
-## 0.5.1 — 2026-11-12
-- Pré-lançamento de TESTE (ainda não vai para os clientes).
-- BUSCA DE PLUGINS SEM TRAVAR O DAW: cada plugin é lido fora do DAW, pelo leitor do RESENHA (ResenhaScan, instalado junto). Plugin que trava (30 s sem responder), fecha ou não abre é pulado e vai para os bloqueados com o motivo (travou / fechou / não abriu), e a busca segue no próximo. O DAW não fica mais preso.
-- PULAR ESTE PLUGIN: durante a busca, o botão encerra na hora o plugin que está sendo lido.
-- A lista é guardada durante a busca: se ela for interrompida, a próxima continua de onde parou.
-- BUSCAR PLUGINS DE NOVO dá outra chance aos bloqueados.
-- O instalador do Mac e o do Windows trazem o leitor conferido: no build, ele lê o próprio RESENHA nos dois sistemas.
-
-## 0.5.0 — 2026-11-12
-- Pré-lançamento de TESTE (ainda não vai para os clientes).
+## 0.6.0 — 2026-11-12
 - RESENHA HUB: cada um dos 4 slots pode ser INTERNO (o FM/VA do RESENHA, como antes) ou PLUGIN, um instrumento seu (Serum, Sylenth1, Vital, Diva...). No slot PLUGIN o RESENHA manda só a conversa em MIDI; o som e os presets são do próprio plugin.
-- ESCOLHER PLUGIN: lista dos instrumentos instalados (VST3 no Windows; AU e VST3 no Mac), com busca pelo nome ou fabricante, INSTRUMENTOS/TODOS, favoritos com estrela e BUSCAR PLUGINS DE NOVO. A 1ª busca pode levar alguns minutos; depois a lista fica guardada. Plugin que trava na busca vai para os bloqueados e não derruba o DAW de novo.
-- Cartão do slot PLUGIN: nome, fabricante, preset atual e CPU do plugin; ABRIR (janela do próprio plugin), TROCAR e BYP.
+- ESCOLHER PLUGIN: lista dos instrumentos instalados (VST3 no Windows; AU e VST3 no Mac), com busca pelo nome ou fabricante, favoritos com estrela e BUSCAR PLUGINS DE NOVO.
+- BUSCA SÓ DE INSTRUMENTOS: os efeitos ficam fora da busca e não são abertos; efeito descartado fica lembrado e as próximas buscas nem passam por ele.
+- BUSCA SEM TRAVAR O DAW: cada plugin é lido fora do DAW, pelo leitor do RESENHA (ResenhaScan, instalado junto). Plugin que trava (30 s), fecha ou não abre é pulado e vai para os bloqueados com o motivo; a busca segue no próximo. PULAR ESTE PLUGIN encerra na hora o plugin que está sendo lido. Busca interrompida continua de onde parou.
+- Cartão do slot PLUGIN: nome, fabricante, preset atual e CPU do plugin; ABRIR (janela do próprio plugin), TROCAR e BYP (cala o slot e deixa o silêncio na vez dele).
 - KNOBS LIGADOS AO PLUGIN: 4 knobs por slot. Em + LIGAR, mexa um controle na janela do plugin (ou escolha da lista) e o knob passa a movê-lo; dá para automatizar no DAW.
 - NA CONVERSA, por slot: OITAVA, VELOC. (accent sai em 127), BEND (pitch bend na nota que fecha a fala) e NÍVEL.
+- FAIXA DA CONVERSA: as frases agora ficam entre a oitava 1 e a 3 (Dó 1 a Si 3, com Dó 3 = nota 60). Para subir ou descer um slot, use a OITAVA do slot; a nota segurada continua transpondo a frase.
 - O dado do slot e o TIMBRES sorteiam um preset do próprio plugin, quando ele mostra a lista de presets.
 - O projeto do DAW guarda o plugin, o som dele e os ajustes de cada slot. Se o plugin não estiver instalado na máquina, o slot avisa e o som dele não se perde ao salvar.
 - Os presets do RESENHA não trocam o plugin dos slots; os 120 presets de fábrica continuam nos slots INTERNO.
 - Atualização automática: no aviso de versão nova, o botão ATUALIZAR baixa e instala a versão nova sozinho (Windows e Mac).
+
 ## 0.4.0 — 2026-11-08
 - Oscilador novo: ENGINE VA por timbre (analógico virtual, no molde dos leads e arps de psy feitos em synth de subtração). Serra, quadrada e pulso 25%/12% com até 8 vozes desafinadas abertas no estéreo, 2º oscilador (uníssono, oitava ou quinta) e filtro de 24 dB (LP, BP ou HP) com drive e envelope curto no corte: a nota "fala" no ataque. O FM continua como opção (ENGINE = FM) para os timbres metálicos.
 - No VA os knobs da 1ª fileira mudam de papel: RATIO = intervalo do OSC 2, FM = nível do OSC 2, FEEDBACK = DETUNE, FM DEC = tempo do envelope do filtro; UNISON = número de vozes.

@@ -28,11 +28,6 @@ juce_add_binary_data(ResenhaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOUR
 
 isp_licenca(Resenha resenha ATUALIZAR)
 
-# SÓ NO BUILD DE TESTE da atualização automática (0.5.0 pré-lançamento): o plugin diz ao servidor que é a 0.4.0 e
-# pede também os pré-lançamentos ⇒ ele mesmo se oferece como "versão nova" e o ATUALIZAR pode ser testado de ponta
-# a ponta num build só. TIRAR estas duas linhas na versão oficial.
-target_compile_definitions(Resenha PRIVATE ISP_CANAL_TESTE=1 ISP_VERSAO_ATUAL="0.4.0")
-
 target_compile_definitions(Resenha PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
