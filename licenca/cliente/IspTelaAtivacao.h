@@ -12,18 +12,24 @@
 namespace isp
 {
 // faixa "versão nova" no pé da janela do plugin; a TelaAtivacao cuida de pôr e tirar
+// Com ISP_ATUALIZAR e instalador assinado: ATUALIZAR (baixa, confere e instala sozinho) + BAIXAR (navegador) + Agora não.
 class AvisoVersao : public juce::Component
+                  #if ISP_ATUALIZAR
+                  , private juce::ChangeListener
+                  #endif
 {
 public:
     AvisoVersao()
     {
-        for (auto* b : { &baixar, &depois })
+        for (auto* b : { &atualizar, &baixar, &depois })
         {
-            addAndMakeVisible (b);
+            addChildComponent (b);
             b->setColour (juce::TextButton::textColourOffId, texto);
         }
+        atualizar.setColour (juce::TextButton::buttonColourId, destaque.darker (0.35f));
         baixar.setColour (juce::TextButton::buttonColourId, destaque.darker (0.35f));
         depois.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2a2d33));
+        atualizar.setButtonText (utf8 ("ATUALIZAR"));
         baixar.setButtonText (utf8 ("BAIXAR"));
         depois.setButtonText (utf8 ("Agora não"));
         baixar.onClick = [this]
@@ -31,12 +37,22 @@ public:
             if (juce::URL (licenca->linkVersaoNova()).launchInDefaultBrowser())
             {
                 baixou = true;
-                baixar.setVisible (false);
-                depois.setButtonText (utf8 ("Fechar"));
-                repaint();
+                arrumar();
             }
         };
         depois.onClick = [this] { licenca->dispensarAviso(); };
+       #if ISP_ATUALIZAR
+        atualizar.onClick = [this] { if (auto* a = licenca->atualizador()) a->iniciar(); };
+        licenca->motorAtualizacao().addChangeListener (this);
+       #endif
+        arrumar();
+    }
+
+    ~AvisoVersao() override
+    {
+       #if ISP_ATUALIZAR
+        licenca->motorAtualizacao().removeChangeListener (this);
+       #endif
     }
 
     void paint (juce::Graphics& g) override
@@ -47,30 +63,94 @@ public:
         g.setColour (destaque);
         g.drawRoundedRectangle (c, 8.0f, 1.0f);
 
-        auto r = getLocalBounds().reduced (14, 0).withRight (depois.getX() - 10);
-        if (baixar.isVisible()) r.setRight (baixar.getX() - 10);
+        auto r = getLocalBounds().reduced (14, 0).withRight (primeiroBotao() - 10);
         juce::String t;
-        if (baixou)
-            t << utf8 ("Baixando pelo navegador. Feche o DAW antes de rodar o instalador.");
-        else
-            t << utf8 ("Versão nova do pacote ") << Licenca::nomePacote() << ": " << licenca->versaoNova()
-              << utf8 (" (você tem ") << Licenca::versaoAtual() << ")";
+        float prog = -1.0f;
+        const auto nova = licenca->versaoNova();
+       #if ISP_ATUALIZAR
+        using E = Atualizador::Estado;
+        const auto& a = licenca->motorAtualizacao();
+        switch (a.estado())
+        {
+            case E::baixando:     t << utf8 ("Baixando a versão ") << a.versao() << utf8 ("…"); prog = a.progresso(); break;
+            case E::conferindo:   t << utf8 ("Conferindo o arquivo baixado…"); break;
+            case E::instalando:   t << utf8 ("Instalando: digite a senha do Mac na janela que abriu."); break;
+            case E::esperaFechar: t << utf8 ("Pronto para instalar a ") << a.versao()
+                                    << utf8 (". Feche o DAW: o instalador roda sozinho (o Windows pede permissão). Depois abra o DAW de novo.");
+                                  break;
+            case E::pronto:       t << utf8 ("Atualizado para a ") << a.versao() << utf8 (". Feche e abra o DAW para usar a versão nova."); break;
+            case E::erro:         t << a.mensagem(); break;
+            case E::parado:       break;
+        }
+       #endif
+        if (t.isEmpty())
+        {
+            if (baixou)
+                t << utf8 ("Baixando pelo navegador. Feche o DAW antes de rodar o instalador.");
+            else
+                t << utf8 ("Versão nova do pacote ") << Licenca::nomePacote() << ": " << nova
+                  << utf8 (" (você tem ") << Licenca::versaoAtual() << ")";
+        }
         g.setColour (texto);
-        g.setFont (juce::FontOptions (14.5f));
-        g.drawFittedText (t, r, juce::Justification::centredLeft, 2, 0.85f);
+        g.setFont (juce::FontOptions (14.0f));
+        if (prog >= 0.0f)
+        {
+            auto barra = r.removeFromBottom (getHeight() / 2).withSizeKeepingCentre (r.getWidth(), 6).toFloat();
+            g.setColour (juce::Colour (0xff2a2d33));
+            g.fillRoundedRectangle (barra, 3.0f);
+            g.setColour (destaque);
+            g.fillRoundedRectangle (barra.withWidth (juce::jmax (6.0f, barra.getWidth() * prog)), 3.0f);
+            g.setColour (texto);
+            t << "  " << juce::String (juce::roundToInt (prog * 100.0f)) << "%";
+        }
+        g.drawFittedText (t, r, juce::Justification::centredLeft, 2, 0.8f);
     }
 
     void resized() override
     {
         auto r = getLocalBounds().reduced (8);
-        depois.setBounds (r.removeFromRight (100));
-        r.removeFromRight (8);
-        baixar.setBounds (r.removeFromRight (96));
+        for (auto* b : { &depois, &baixar, &atualizar })
+        {
+            if (! b->isVisible()) continue;
+            b->setBounds (r.removeFromRight (b == &atualizar ? 104 : (b == &baixar ? 84 : 96)));
+            r.removeFromRight (6);
+        }
+    }
+
+    // a TelaAtivacao chama quando a licença muda (chegou o aviso, dispensou…)
+    void arrumar()
+    {
+        bool podeAtualizar = false, ocupado = false, fim = false;
+       #if ISP_ATUALIZAR
+        using E = Atualizador::Estado;
+        const auto e = licenca->motorAtualizacao().estado();
+        podeAtualizar = licenca->atualizador() != nullptr && (e == E::parado || e == E::erro) && ! baixou;
+        ocupado = e == E::baixando || e == E::conferindo || e == E::instalando;
+        fim = e == E::esperaFechar || e == E::pronto;
+       #endif
+        atualizar.setVisible (podeAtualizar);
+        baixar.setVisible (! baixou && ! ocupado && ! fim);
+        depois.setVisible (! ocupado);
+        depois.setButtonText (utf8 (baixou || fim ? "Fechar" : "Agora não"));
+        resized();
+        repaint();
     }
 
 private:
+    int primeiroBotao() const
+    {
+        int x = getWidth() - 8;
+        for (auto* b : { &atualizar, &baixar, &depois })
+            if (b->isVisible()) x = juce::jmin (x, b->getX());
+        return x;
+    }
+
+   #if ISP_ATUALIZAR
+    void changeListenerCallback (juce::ChangeBroadcaster*) override { arrumar(); }
+   #endif
+
     juce::SharedResourcePointer<Licenca> licenca;
-    juce::TextButton baixar, depois;
+    juce::TextButton atualizar, baixar, depois;
     bool baixou = false;
     const juce::Colour texto { 0xffe9e4da }, destaque { 0xffe8a33d };
 
@@ -230,7 +310,11 @@ private:
     {
         if (dono == nullptr) return;
         const auto r = dono->getLocalBounds();
+       #if ISP_ATUALIZAR   // três botões e textos mais longos
+        const int w = juce::jmin (720, r.getWidth() - 24), h = 50;
+       #else
         const int w = juce::jmin (620, r.getWidth() - 24), h = 46;
+       #endif
         aviso.setBounds (r.getCentreX() - w / 2, r.getBottom() - h - 14, w, h);
     }
 
@@ -238,7 +322,7 @@ private:
     {
         const bool ativa = licenca->liberada();
         aviso.setVisible (ativa && ! modoInfo && licenca->versaoNova().isNotEmpty());
-        if (aviso.isVisible()) aviso.toFront (false);
+        if (aviso.isVisible()) { aviso.arrumar(); aviso.toFront (false); }
         if (! ativa) modoInfo = false;
         const bool mostrar = ! ativa || modoInfo;
         setVisible (mostrar);

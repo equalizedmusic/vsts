@@ -239,19 +239,34 @@ async function rotaVersao(url, env) {
     if (!PACOTES.includes(pacote)) return falha('pacote_invalido');
     if (partesVersao(versao).length !== 3) return falha('pedido_invalido');
 
-    const maior = releaseDoPacote(await releases(env), pacote);
+    // teste=1: build de teste do plugin ⇒ os pré-lançamentos do pacote também contam
+    const teste = url.searchParams.get('teste') === '1';
+    const maior = releaseDoPacote(await releases(env), pacote, teste);
     if (!maior || compararVersao(maior.versao, versao) <= 0) return resposta({ ok: true, atualizacao: null });
     const ext = sistema === 'mac' ? '.dmg' : '.exe';
     const instalador = maior.arquivos.find((a) => a.toLowerCase().endsWith(ext));
     // repo privado: o link do GitHub dá 404 para o cliente ⇒ sempre o /baixar do domínio (ele pede o link assinado com o token)
-    const link = instalador ? `https://insidestudiosp.com.br/baixar/${pacote}/${sistema}` : 'https://insidestudiosp.com.br/';
-    return resposta({ ok: true, atualizacao: { versao: maior.versao, url: link, notas: maior.notas } });
+    const exato = `${url.origin}/baixar/${pacote}/${sistema}?tag=${encodeURIComponent(maior.tag)}`;
+    const link = !instalador ? 'https://insidestudiosp.com.br/' : maior.pre ? exato : `https://insidestudiosp.com.br/baixar/${pacote}/${sistema}`;
+    const atualizacao = { versao: maior.versao, url: link, notas: maior.notas };
+    // atualização automática (plugins com ISP_ATUALIZAR): dados do instalador assinados com a chave das licenças;
+    // o plugin confere a assinatura e o SHA-256 do arquivo baixado antes de rodar
+    const i = indiceInstalador(maior, pacote, sistema);
+    const sha = i >= 0 ? String(maior.digests?.[i] || '') : '';
+    if (i >= 0 && /^[0-9a-f]{64}$/.test(sha) && env.SIGN_KEY) {
+        const dados = new TextEncoder().encode(JSON.stringify({
+            v: 1, tipo: 'instalador', pacote, sistema, versao: maior.versao, sha256: sha, tamanho: maior.tamanhos?.[i] || 0, url: exato,
+        }));
+        const assinatura = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, await chaveAssinatura(env), dados));
+        atualizacao.instalador = { dados: b64(dados), assinatura: b64(assinatura) };
+    }
+    return resposta({ ok: true, atualizacao });
 }
 
-function releaseDoPacote(lista, pacote) {
+function releaseDoPacote(lista, pacote, comPre = false) {
     let maior = null;
     for (const rel of lista) {
-        const m = !rel.pre && rel.tag.match(new RegExp(`^${pacote}-v(\\d+\\.\\d+\\.\\d+)$`));
+        const m = (comPre || !rel.pre) && rel.tag.match(new RegExp(`^${pacote}-v(\\d+\\.\\d+\\.\\d+)$`));
         if (m && (!maior || compararVersao(m[1], maior.versao) > 0)) maior = { ...rel, versao: m[1] };
     }
     return maior;
@@ -274,16 +289,21 @@ function paginaSimples(titulo, texto, status) {
 
 const nomeArquivo = (url) => decodeURIComponent(url.split('/').pop());
 
-function acharInstalador(lista, pacote, sistema) {
+// tag (opcional): release exato, inclusive pré-lançamento (link assinado da atualização automática)
+function acharInstalador(lista, pacote, sistema, tag = null) {
+    const rel = tag ? lista.find((r) => r.tag === tag)
+        : (pacote !== 'vassoura' && lista.find((r) => r.tag === 'licenca-teste')) || releaseDoPacote(lista, pacote);
+    return { rel, i: rel ? indiceInstalador(rel, pacote, sistema) : -1 };
+}
+
+function indiceInstalador(rel, pacote, sistema) {
     const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
-    const rel = (pacote !== 'vassoura' && lista.find((r) => r.tag === 'licenca-teste')) || releaseDoPacote(lista, pacote);
-    const i = rel ? rel.arquivos.findIndex((a) => {
+    return rel.arquivos.findIndex((a) => {
         const nome = nomeArquivo(a);
         // VASSOURA (Max for Live): um zip só, igual no Windows e no Mac
         if (pacote === 'vassoura') return /^Vassoura-.*\.zip$/.test(nome);
-        return INSTALADOR[pacote].some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
-    }) : -1;
-    return { rel, i };
+        return (INSTALADOR[pacote] || []).some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
+    });
 }
 
 // link para baixar o arquivo i do release; repo privado: o GitHub devolve um link temporário assinado
@@ -325,7 +345,7 @@ async function instalador(env, pacote, sistema) {
              link, crc };
 }
 
-async function rotaBaixar(caminho, env) {
+async function rotaBaixar(caminho, env, url) {
     const [, , pacote, sistema] = caminho.split('/');
     // VASSOURA: /baixar/vassoura sozinho (link antigo do site, posts, painel) abre a página de cadastro;
     // o arquivo sai por /baixar/vassoura/zip (win/mac continuam valendo para os links já enviados)
@@ -335,15 +355,19 @@ async function rotaBaixar(caminho, env) {
         return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
     const indisponivel = () => paginaSimples('Download indisponível',
         'Este instalador não está disponível agora. Tente de novo mais tarde ou responda o e-mail da licença.', 404);
-    let { rel, i } = acharInstalador(await releases(env), pacote, sistema);
+    // ?tag=<pacote>-vX.Y.Z: a versão exata (o link que vai assinado na atualização automática)
+    const tag = url?.searchParams.get('tag') || null;
+    if (tag && !/^[a-z]+-v\d+\.\d+\.\d+$/.test(tag)) return indisponivel();
+    if (tag && !tag.startsWith(pacote + '-v')) return indisponivel();
+    let { rel, i } = acharInstalador(await releases(env), pacote, sistema, tag);
     // a lista guardada pode ser de antes do release novo (ou de um release ainda subindo os arquivos)
-    if (i < 0) ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema));
+    if (i < 0) ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema, tag));
     if (i < 0) return indisponivel();
     // repo privado: link temporário assinado; o download não passa pelo Worker
     let destino = await linkArquivo(env, rel, i);
     // sem link: o release da lista guardada foi apagado (ex.: o pré-release licenca-teste) ⇒ lista nova e outra tentativa
     if (!destino) {
-        ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema));
+        ({ rel, i } = acharInstalador(await releases(env, true), pacote, sistema, tag));
         if (i < 0) return indisponivel();
         destino = await linkArquivo(env, rel, i);
     }
@@ -522,7 +546,7 @@ export default {
             if (req.method === 'POST' && caminho === '/v1/desativar') return await rotaPlugin('desativar', req, env);
             if (req.method === 'GET' && caminho === '/v1/versao') return await rotaVersao(url, env);
             // HEAD também: prévia de link (WhatsApp, Instagram) consulta antes de baixar
-            if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env);
+            if ((req.method === 'GET' || req.method === 'HEAD') && caminho.startsWith('/baixar/')) return await rotaBaixar(caminho.replace(/\/+$/, ''), env, url);
             if (caminho.startsWith('/admin/')) return await rotaAdmin(caminho, req, env, url);
             if (caminho === '/contato/enviar') return await rotaContato(req, env, url);
             if (caminho === '/email/entrada') return await rotaWebhookEntrada(req, env);

@@ -10,6 +10,11 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
   accents e slides, só que em outra ordem. Uma linha com poucas notas e muitas pausas e slides continua assim, sem
   virar uma linha cheia. SCALE e ROOT não mudam, e nenhuma nota nova é sorteada. Se você editar a linha com o AUTO
   ligado, a próxima troca já parte da edição. A tecla ALEATORIZAR continua sorteando uma linha nova inteira.
+- ATUALIZAR no aviso de versão nova: o plugin baixa o instalador, confere o arquivo e instala sozinho. No Windows
+  ele espera você fechar o DAW e roda o instalador (o Windows pede permissão); no Mac pede a senha e instala na
+  hora. Depois é só abrir o DAW de novo. O BAIXAR pelo navegador continua lá.
+- (Só neste teste: o plugin se apresenta como 0.6.0, então ele mesmo aparece como "versão nova" para testar o
+  ATUALIZAR. Depois de atualizar, o aviso volta a aparecer; na versão oficial isso não acontece.)
 
 ## 0.6.0 — 2026-11-11
 - AUTO ALEATÓRIO no sequenciador: ligado, troca a linha inteira (notas, pausas, ligaduras, acentos e slides) sem

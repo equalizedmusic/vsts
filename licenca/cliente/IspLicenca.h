@@ -15,6 +15,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "IspEd25519.h"
+#if ISP_ATUALIZAR
+ #include "IspAtualizacao.h"
+#endif
 
 // ISP_LICENCA_FOTO: só o workflow shots, que compila a tela como programa comum (sem JucePlugin_*, sem isp_licenca())
 #ifdef ISP_LICENCA_FOTO
@@ -100,6 +103,14 @@ public:
     juce::String linkVersaoNova() const { return urlNova; }
     // "Agora não": some em todos os plugins do pacote abertos; volta na próxima vez que o DAW carregar o plugin
     void dispensarAviso() { dispensada = novaVersao; sendChangeMessage(); }
+
+    // atualização automática: só nos plugins com ISP_ATUALIZAR e quando o servidor mandou o instalador assinado
+   #if ISP_ATUALIZAR
+    Atualizador* atualizador() { return atualiza.disponivel() ? &atualiza : nullptr; }
+    Atualizador& motorAtualizacao() { return atualiza; }   // para ouvir as mudanças (addChangeListener)
+   #else
+    void* atualizador() { return nullptr; }
+   #endif
 
     // "1.10.0" > "1.9.2"
     static int compararVersao (const juce::String& a, const juce::String& b)
@@ -191,6 +202,29 @@ private:
         sendChangeMessage();
     }
 
+    static void chavePublica (std::uint8_t pk[32])
+    {
+        const juce::String chave (ISP_LICENCA_CHAVE);
+        for (int i = 0; i < 32; ++i)
+            pk[i] = (std::uint8_t) chave.substring (i * 2, i * 2 + 2).getHexValue32();
+    }
+
+    // { dados, assinatura } do instalador vindo do /v1/versao: devolve os dados só se a assinatura confere
+    static juce::var instaladorAssinado (const juce::var& inst)
+    {
+        juce::MemoryOutputStream dados, assinatura;
+        if (! inst.isObject()
+            || ! juce::Base64::convertFromBase64 (dados, inst["dados"].toString())
+            || ! juce::Base64::convertFromBase64 (assinatura, inst["assinatura"].toString())
+            || assinatura.getDataSize() != 64)
+            return {};
+        std::uint8_t pk[32];
+        chavePublica (pk);
+        if (! ed25519::verificar (pk, static_cast<const std::uint8_t*> (assinatura.getData()), dados.getData(), dados.getDataSize()))
+            return {};
+        return juce::JSON::parse (dados.toUTF8());
+    }
+
     bool conferir (const juce::var& lido, juce::String& erro)
     {
         if (! lido.isObject()) return false;
@@ -204,9 +238,7 @@ private:
         }
 
         std::uint8_t pk[32];
-        const juce::String chave (ISP_LICENCA_CHAVE);
-        for (int i = 0; i < 32; ++i)
-            pk[i] = (std::uint8_t) chave.substring (i * 2, i * 2 + 2).getHexValue32();
+        chavePublica (pk);
 
         if (! ed25519::verificar (pk, static_cast<const std::uint8_t*> (assinatura.getData()), dados.getData(), dados.getDataSize()))
         {
@@ -284,10 +316,14 @@ private:
         const auto url = juce::URL (juce::String (ISP_LICENCA_URL) + "/v1/versao")
                              .withParameter ("pacote", pacote)
                              .withParameter ("versao", versaoAtual())
-                             .withParameter ("sistema", sistema);
+                             .withParameter ("sistema", sistema)
+                            #if ISP_CANAL_TESTE   // build de teste: o servidor também oferece os pré-lançamentos
+                             .withParameter ("teste", "1")
+                            #endif
+                             ;
 
         juce::WeakReference<Licenca> eu (this);
-        pool.addJob ([eu, url]
+        pool.addJob ([eu, url, sistema]
         {
             juce::String texto;
             auto opcoes = juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)
@@ -296,7 +332,7 @@ private:
                 texto = in->readEntireStreamAsString();
             const auto resp = juce::JSON::parse (texto);
 
-            juce::MessageManager::callAsync ([eu, resp]
+            juce::MessageManager::callAsync ([eu, resp, sistema]
             {
                 auto* l = eu.get();
                 const auto nova = resp["atualizacao"];
@@ -305,6 +341,18 @@ private:
                 if (compararVersao (v, versaoAtual()) <= 0 || ! link.startsWithIgnoreCase ("https://")) return;
                 l->novaVersao = v;
                 l->urlNova = link;
+               #if ISP_ATUALIZAR
+                // instalador assinado pelo servidor: só vale se é deste pacote, deste sistema e desta versão
+                const auto d = instaladorAssinado (nova["instalador"]);
+                const auto sha = d["sha256"].toString(), baixar = d["url"].toString();
+                if ((int) d["v"] == 1 && d["tipo"].toString() == "instalador" && d["pacote"].toString() == pacote
+                    && d["sistema"].toString() == sistema && d["versao"].toString() == v
+                    && sha.length() == 64 && sha.containsOnly ("0123456789abcdef")
+                    && baixar.startsWithIgnoreCase ("https://"))
+                    l->atualiza.preparar (pacote, nomePacote(), v, baixar, sha, (juce::int64) d["tamanho"]);
+               #else
+                juce::ignoreUnused (sistema);
+               #endif
                 l->sendChangeMessage();
             });
         });
@@ -381,6 +429,9 @@ private:
     juce::int64 emitidaSeg = 0, validaAteSeg = 0;
     juce::Time ultimaData;
     juce::ThreadPool pool { 1 };
+   #if ISP_ATUALIZAR
+    Atualizador atualiza;
+   #endif
 
     JUCE_DECLARE_WEAK_REFERENCEABLE (Licenca)
     JUCE_DECLARE_NON_COPYABLE (Licenca)
