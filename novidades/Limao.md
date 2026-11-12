@@ -4,6 +4,18 @@ Pacote do instalador: `InsideStudioSP-Limao`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `limao-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.6.2 — 2026-11-12
+- Versão oficial do que foi testado na 0.6.1.
+- AUTO ALEATÓRIO cria linhas NOVAS a partir da que você montou, sem mexer em SCALE e ROOT: as notas novas ficam
+  na escala e na tônica, entre a nota mais grave e a mais aguda da sua linha, e os graus que você usou aparecem
+  mais. O som evolui aos poucos: cada linha nasce da anterior e só 1 ou 2 passos do ritmo trocam de lugar.
+- A proporção da sua linha é mantida: mesma quantidade de notas, pausas, ligaduras, accents e slides.
+- A referência é sempre a sua linha: editar, carregar um preset, apertar ALEATORIZAR ou mudar PASSOS com o AUTO
+  ligado faz a próxima troca partir dela.
+- ATUALIZAR no aviso de versão nova: o plugin baixa o instalador, confere o arquivo e instala sozinho. No Windows
+  ele espera você fechar o DAW e roda o instalador (o Windows pede permissão); no Mac pede a senha e instala na
+  hora. Depois é só abrir o DAW de novo. O BAIXAR pelo navegador continua lá.
+
 ## 0.6.1 — 2026-11-12
 - Pré-lançamento de TESTE (ainda não vai para os clientes).
 - AUTO ALEATÓRIO cria linhas NOVAS a partir da que você montou, sem mexer em SCALE e ROOT: as notas novas ficam
