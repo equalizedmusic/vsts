@@ -93,12 +93,22 @@ inline juce::String lockVoice (int voice) { return "lk" + juce::String::charToSt
 inline const juce::String drvType = "drvtype", drive = "drive", tone = "tone",
                           dlOn = "dlon", dlDiv = "dldiv", dlFb = "dlfb", dlMix = "dlmix",
                           rvOn = "rvon", rvSize = "rvsize", rvMix = "rvmix", duck = "duck", volume = "volume";
+// HUB: slot com plugin (prefixo a/b/c/d + "h"): OITAVA, VELOC., BEND (pitch bend MIDI na nota que fecha a fala),
+// NÍVEL e os 4 knobs ligados a parâmetros do plugin (m1..m4)
+inline const juce::String hOct = "hoct", hVel = "hvel", hBend = "hbend", hLvl = "hlvl";
+inline juce::String hMacro (int k) { return "hm" + juce::String (k + 1); }
 }
 
-// o que o preset não muda (performance): travas e o modo de tocar
+// slot com plugin: os ajustes são do slot, não do timbre — preset nenhum mexe
+inline bool isHubParam (const juce::String& pid)
+{
+    return pid.length() > 2 && pid[0] >= 'a' && pid[0] <= 'd' && pid[1] == 'h';
+}
+
+// o que o preset não muda (performance): travas, o modo de tocar e os ajustes do slot com plugin
 inline bool isPerformanceParam (const juce::String& pid)
 {
-    return pid.startsWith ("lk") || pid == id::play;
+    return pid.startsWith ("lk") || pid == id::play || isHubParam (pid);
 }
 
 // timbre padrão de cada voz (Init): A seno brilhante, B serra, C quadrada, D triângulo.
@@ -236,6 +246,27 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (new AudioParameterFloat ({ id::volume, 1 }, "Volume", NormalisableRange<float> (-36.0f, 6.0f, 0.1f), -6.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction ([] (float v, int)
                                   { return String (v, 1) + " dB"; })));
+
+    // ---- HUB: slot com plugin (no fim da lista: projetos antigos abrem iguais) ----
+    for (int v = 0; v < numVoices; ++v)
+    {
+        const String n = String ("Slot ") + vn[v] + " ";
+        add (new AudioParameterInt ({ id::v (v, id::hOct), 1 }, n + "Octave", -3, 3, 0,
+                                    AudioParameterIntAttributes().withStringFromValueFunction ([] (int x, int)
+                                    { return (x > 0 ? "+" : "") + String (x); })));
+        add (new AudioParameterInt ({ id::v (v, id::hVel), 1 }, n + "Velocity", 1, 127, 100));
+        add (new AudioParameterFloat ({ id::v (v, id::hBend), 1 }, n + "Bend", NormalisableRange<float> (-100.0f, 100.0f, 1.0f), 0.0f,
+                                      AudioParameterFloatAttributes().withStringFromValueFunction ([] (float x, int)
+                                      { const int i = roundToInt (x); return (i > 0 ? "+" : "") + String (i) + "%"; })));
+        add (new AudioParameterFloat ({ id::v (v, id::hLvl), 1 }, n + "Level", NormalisableRange<float> (-36.0f, 6.0f, 0.1f), 0.0f,
+                                      AudioParameterFloatAttributes().withStringFromValueFunction ([] (float x, int)
+                                      { return String (x, 1) + " dB"; })));
+        for (int k = 0; k < 4; ++k)
+            add (new AudioParameterFloat ({ id::v (v, id::hMacro (k)), 1 }, n + "Knob " + String (k + 1),
+                                          NormalisableRange<float> (0.0f, 1.0f), 0.5f,
+                                          AudioParameterFloatAttributes().withStringFromValueFunction ([] (float x, int)
+                                          { return String (roundToInt (x * 100.0f)) + "%"; })));
+    }
 
     return { p.begin(), p.end() };
 }

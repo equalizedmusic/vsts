@@ -7,7 +7,58 @@
 #include "IspTelaAtivacao.h"
 #include "ResenhaUi.h"
 
-// ---------------- cartão de um timbre: nome, papel na conversa, trava, dado, forma de onda e os 11 knobs ----------------
+// ---------------- botão pequeno de texto (ABRIR, TROCAR, BYP, INTERNO|PLUGIN) ----------------
+class PillButton : public juce::Button
+{
+public:
+    PillButton (const juce::String& text, juce::Colour c) : juce::Button (text), colour (c) {}
+    bool lit = false;          // aceso (BYP ligado, lado escolhido da chave)
+    bool filled = false;       // aceso com fundo cheio na cor
+    void paintButton (juce::Graphics& g, bool over, bool down) override;
+private:
+    juce::Colour colour;
+};
+
+// ---------------- knob ligado a um parâmetro do plugin (+ LIGAR) ----------------
+class MacroKnob : public juce::Component
+{
+public:
+    MacroKnob (ResenhaProcessor& p, int voiceIndex, int knobIndex, juce::Colour c);
+    void refresh();
+    void paint (juce::Graphics& g) override;
+    void resized() override { knob.setBounds (getLocalBounds()); }
+    void mouseDown (const juce::MouseEvent& e) override;
+private:
+    void showMenu();
+    ResenhaProcessor& proc;
+    int v, k;
+    juce::Colour colour;
+    rs::NeonKnob knob;
+    int shownIdx = -2;
+    const void* shownInst = nullptr;   // plugin trocado: o texto do knob aponta para o parâmetro do plugin novo
+    bool learning = false;
+};
+
+// ---------------- slot PLUGIN: o plugin, o preset dele, ABRIR / TROCAR / BYP, knobs ligados e os ajustes na conversa ----------------
+class PluginPanel : public juce::Component
+{
+public:
+    PluginPanel (ResenhaProcessor& p, int voiceIndex, juce::Colour c);
+    std::function<void()> onChoose;
+    void refresh();
+    void paint (juce::Graphics& g) override;
+private:
+    ResenhaProcessor& proc;
+    int v;
+    juce::Colour colour;
+    PillButton openBtn { "ABRIR", juce::Colours::white }, swapBtn { "TROCAR", juce::Colours::white }, bypBtn { "BYP", rs::amber };
+    std::vector<std::unique_ptr<MacroKnob>> macros;
+    std::vector<std::unique_ptr<rs::NeonKnob>> knobs;
+    juce::String shownName, shownMaker, shownPreset;
+    float shownCpu = -1.0f;
+};
+
+// ---------------- cartão de um slot: nome, papel na conversa, trava, dado, INTERNO|PLUGIN e o conteúdo de cada um ----------------
 class VoiceCard : public juce::Component
 {
 public:
@@ -19,8 +70,15 @@ public:
     void setTalk (float level);          // acende a borda enquanto o timbre fala
     void setSilent (bool silent);        // fora da conversa (VOZES menor que o timbre): apagado
     void setRole (const juce::String& r) { if (r != role) { role = r; repaint (0, 0, getWidth(), 36); } }
+    void refresh();                      // 30 Hz: INTERNO x PLUGIN e o cartão do plugin
+    std::function<void (int)> onChoosePlugin;
 
 private:
+    void showSource (bool plugin);
+    PillButton srcInt { "INTERNO", juce::Colours::white }, srcPlug { "PLUGIN", juce::Colours::white };
+    std::unique_ptr<PluginPanel> panel;
+    bool shownPlugin = false;
+
     void drawWave (juce::Graphics& g, rs::RF r);
     void drawVa (juce::Graphics& g, rs::RF r);
     void applyEngine();                  // FM x VA: os knobs da 1ª fileira e o UNISON mudam de nome e de texto
@@ -77,6 +135,42 @@ private:
     ResenhaProcessor& proc;
 };
 
+// ---------------- ESCOLHER PLUGIN: a lista dos plugins instalados, por cima da tela ----------------
+class PluginPicker : public juce::Component, private juce::ListBoxModel, private juce::Timer
+{
+public:
+    explicit PluginPicker (ResenhaProcessor& p);
+    void open (int voiceIndex);
+    void close();
+    std::function<void (const juce::String& title, const juce::String& text)> onError;
+
+    void paint (juce::Graphics& g) override;
+    void resized() override;
+    void mouseDown (const juce::MouseEvent& e) override;
+
+private:
+    struct Row { juce::PluginDescription d; bool blocked = false; juce::String file; };
+    int  getNumRows() override { return (int) rows.size(); }
+    void paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected) override;
+    void listBoxItemClicked (int row, const juce::MouseEvent& e) override;
+    void listBoxItemDoubleClicked (int row, const juce::MouseEvent&) override;
+    void timerCallback() override;
+    void rebuild();
+    void load();
+
+    ResenhaProcessor& proc;
+    int v = 0;
+    juce::Rectangle<int> panelArea { 220, 96, 760, 560 };
+    juce::TextEditor search;
+    PillButton instBtn { "INSTRUMENTOS", rs::lime }, allBtn { "TODOS", rs::lime },
+               favBtn { juce::String::fromUTF8 ("★ FAVORITOS"), rs::lime }, azBtn { "A-Z", rs::lime };
+    rs::NeonButton rescanBtn { "BUSCAR PLUGINS DE NOVO" }, cancelBtn { "CANCELAR" }, loadBtn { "CARREGAR", rs::NeonButton::Icon::none, rs::lime };
+    juce::ListBox listBox;
+    std::vector<Row> rows;
+    bool instrumentsOnly = true, favFirst = true;
+    int seenVersion = -1;
+};
+
 class ResenhaEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
@@ -127,6 +221,7 @@ private:
 
     PresetDialog dialog;
     std::unique_ptr<juce::FileChooser> chooser;
+    std::unique_ptr<PluginPicker> picker;
 
     float level = 0.0f, shownLevel = -1.0f;
     float lastBpm = 0.0f;

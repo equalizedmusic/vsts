@@ -23,6 +23,15 @@ ResenhaProcessor::ResenhaProcessor()
     pRvMix = raw (id::rvMix);       pVol = raw (id::volume);
     pContour = raw (id::contour);   pDuck = raw (id::duck);         pTalk = raw (id::talk);
 
+    for (int v = 0; v < numVoices; ++v)
+    {
+        const auto vi = (size_t) v;
+        slots[vi] = std::make_unique<HostSlot>();
+        pHOct[vi] = raw (id::v (v, id::hOct));    pHVel[vi] = raw (id::v (v, id::hVel));
+        pHBend[vi] = raw (id::v (v, id::hBend));  pHLvl[vi] = raw (id::v (v, id::hLvl));
+        for (int k = 0; k < 4; ++k) pHMacro[vi][(size_t) k] = raw (id::v (v, id::hMacro (k)));
+    }
+
     factory = factoryPresetData();
     refreshBanks();
     refreshUserPresets();
@@ -31,6 +40,25 @@ ResenhaProcessor::ResenhaProcessor()
     const int start = findPreset (u8 ("Boca Aberta"), {});
     loadPreset (start >= 0 ? start : 0);
     history.clear();
+}
+
+ResenhaProcessor::~ResenhaProcessor()
+{
+    cancelPendingUpdate();
+    for (auto& s : slots) s->unload();   // janelas e plugins antes do resto
+}
+
+void ResenhaProcessor::releaseResources()
+{
+    for (auto& s : slots)
+        if (auto* inst = s->get()) inst->releaseResources();
+}
+
+void ResenhaProcessor::setNonRealtime (bool isNonRealtime) noexcept
+{
+    AudioProcessor::setNonRealtime (isNonRealtime);
+    for (auto& s : slots)
+        if (auto* inst = s->get()) inst->setNonRealtime (isNonRealtime);
 }
 
 bool ResenhaProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -43,8 +71,15 @@ void ResenhaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentRate = sampleRate;
     const int n = juce::jmax (1, samplesPerBlock);
+    currentBlock = n;
     bufL.assign ((size_t) n, 0.0f);
     bufR.assign ((size_t) n, 0.0f);
+    for (auto& s : slots)
+    {
+        if (auto* inst = s->get()) prepareSlot (*inst);
+        s->midi.ensureSize (2048);
+        s->buf.setSize (2, n, false, true, true);
+    }
     engine.prepare (sampleRate);
     fx.prepare (sampleRate, n);
     readSettings();
@@ -177,6 +212,8 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     readSettings();
     s.bpm = bpm;
+    for (int v = 0; v < numVoices; ++v)
+        plugNow[(size_t) v] = slots[(size_t) v]->usePlugin.load() && slots[(size_t) v]->loaded.load();
 
     const auto pp = phraseParams();
     buildPhrase (pattern, pp, phrase);
@@ -195,13 +232,14 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             s.ppq = (hostRun ? ppq0 : freeBase) + pps * (double) rendered;     // fase do MOVE
             s.ppqPerSample = pps;
             engine.render (bufL.data() + rendered, bufR.data() + rendered, upTo - rendered, s);
+            rampBends (rendered, upTo);
             rendered = upTo;
         }
     };
 
-    auto stopAll = [&]
+    auto stopAll = [&] (int at)
     {
-        engine.allOff();
+        allVoicesOff (at);
         lastAbsStep = -1;
         gateOffPpq.fill (-1.0);
         pendNote.fill (-1);
@@ -228,7 +266,7 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         const bool run = hostRun ? (always || numHeld > 0) : numHeld > 0;
         if (run != wasRunning)
         {
-            if (! run) { flush (i); stopAll(); }
+            if (! run) { flush (i); stopAll (i); }
             wasRunning = run;
         }
         if (! run) continue;
@@ -271,9 +309,8 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 const auto& pn = phrase.notes[(size_t) juce::jlimit (0, maxSteps - 1, pendNote[vi])];
                 const auto& tb = s.t[vi];
                 const double lenBeats = pendEnd[vi] - pendPpq[vi];
-                const float  bendSt = pn.last ? tb.bend : 0.0f;    // o mergulho só na nota que fecha a fala
                 const int    bendLen = (int) (lenBeats * 60.0 / bpm * currentRate);
-                engine.noteOn (pn.voice, pn.note + transpose, pn.accent, tb.glideMs, bendSt, bendLen);
+                voiceOn (pn.voice, i, pn.note + transpose, pn.accent, tb.glideMs, pn.last, bendLen);
                 gateOffPpq[vi] = pendEnd[vi];
                 pendNote[vi] = -1;
             }
@@ -282,11 +319,12 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             if (gateOffPpq[(size_t) v] >= 0.0 && p >= gateOffPpq[(size_t) v])
             {
                 flush (i);
-                engine.noteOff (v);
+                voiceOff (v, i);
                 gateOffPpq[(size_t) v] = -1.0;
             }
     }
     flush (n);
+    renderSlots (n);   // os slots com plugin tocam o MIDI do bloco e somam antes dos efeitos
     for (; it != midi.cend(); ++it)
         handleMidi ((*it).getMessage());
     freePpq = freeBase + pps * (double) n;
@@ -319,6 +357,374 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     meterOut.store (juce::jmax (meterOut.load(), peak));
 }
 
+// =====================================================================
+// HUB: o slot com plugin recebe o MIDI da conversa
+// =====================================================================
+
+// nota nova no timbre v: no slot INTERNO vai para o FM/VA; no slot PLUGIN vira MIDI no canal 1 do plugin.
+// Legato: a nota nova entra ANTES de soltar a anterior (synth mono com glide desliza); BEND = pitch bend que vai do
+// centro até o valor do knob durante a nota que fecha a fala.
+void ResenhaProcessor::voiceOn (int v, int sample, int midiNote, bool accent, float glideMs, bool lastOfTalk, int bendSamples)
+{
+    const auto vi = (size_t) v;
+    if (! plugNow[vi])
+    {
+        const float bendSt = lastOfTalk ? s.t[vi].bend : 0.0f;    // o mergulho só na nota que fecha a fala
+        engine.noteOn (v, midiNote, accent, glideMs, bendSt, bendSamples);
+        return;
+    }
+    auto& sl = *slots[vi];
+    const int note = juce::jlimit (0, 127, midiNote + 12 * juce::roundToInt (pHOct[vi]->load()));
+    const int vel  = accent ? 127 : juce::jlimit (1, 127, juce::roundToInt (pHVel[vi]->load()));
+    if (sl.bendSent)
+    {
+        sl.midi.addEvent (juce::MidiMessage::pitchWheel (1, 8192), sample);
+        sl.bendSent = false;
+    }
+    sl.bendOn = false;
+    if (sl.heldNote == note)
+    {
+        sl.midi.addEvent (juce::MidiMessage::noteOff (1, note), sample);
+        sl.heldNote = -1;
+    }
+    sl.midi.addEvent (juce::MidiMessage::noteOn (1, note, (juce::uint8) vel), sample);
+    if (sl.heldNote >= 0)
+        sl.midi.addEvent (juce::MidiMessage::noteOff (1, sl.heldNote), sample);
+    sl.heldNote = note;
+
+    const float bend = pHBend[vi]->load() * 0.01f;
+    if (lastOfTalk && std::abs (bend) > 0.005f && bendSamples > 0)
+    {
+        sl.bendOn  = true;
+        sl.bendPos = -(sample);   // a rampa começa na amostra da nota (rampBends conta a partir do início do bloco)
+        sl.bendLen = bendSamples;
+        sl.bendTo  = bend;
+    }
+}
+
+void ResenhaProcessor::voiceOff (int v, int sample)
+{
+    const auto vi = (size_t) v;
+    if (! plugNow[vi]) { engine.noteOff (v); return; }
+    auto& sl = *slots[vi];
+    if (sl.heldNote >= 0)
+    {
+        sl.midi.addEvent (juce::MidiMessage::noteOff (1, sl.heldNote), sample);
+        sl.heldNote = -1;
+    }
+}
+
+void ResenhaProcessor::allVoicesOff (int sample)
+{
+    engine.allOff();
+    for (int v = 0; v < numVoices; ++v)
+    {
+        auto& sl = *slots[(size_t) v];
+        if (sl.heldNote >= 0) sl.midi.addEvent (juce::MidiMessage::noteOff (1, sl.heldNote), sample);
+        sl.heldNote = -1;
+        sl.bendOn = false;
+    }
+}
+
+// pitch bend em degraus de 64 amostras (bastante para o ouvido; não enche o buffer de MIDI)
+void ResenhaProcessor::rampBends (int from, int to)
+{
+    for (int v = 0; v < numVoices; ++v)
+    {
+        auto& sl = *slots[(size_t) v];
+        if (! plugNow[(size_t) v] || ! sl.bendOn) continue;
+        for (int k = from; k < to; ++k)
+        {
+            const int pos = sl.bendPos + k;
+            if (pos < 0 || (pos % 64) != 0) continue;
+            const float t = juce::jlimit (0.0f, 1.0f, (float) pos / (float) juce::jmax (1, sl.bendLen));
+            const float shape = t * t * (3.0f - 2.0f * t);   // devagar no começo, cai no fim (o "mergulho")
+            const int wheel = juce::jlimit (0, 16383, 8192 + juce::roundToInt (sl.bendTo * shape * 8191.0f));
+            sl.midi.addEvent (juce::MidiMessage::pitchWheel (1, wheel), k);
+            sl.bendSent = true;
+            if (t >= 1.0f) { sl.bendOn = false; break; }
+        }
+    }
+}
+
+void ResenhaProcessor::renderSlots (int n)
+{
+    for (int v = 0; v < numVoices; ++v)
+    {
+        const auto vi = (size_t) v;
+        auto& sl = *slots[vi];
+        if (sl.bendOn) sl.bendPos += n;   // a rampa anda com o bloco (rampBends já mandou as deste)
+
+        const juce::SpinLock::ScopedTryLockType tl (sl.lock);
+        auto* inst = tl.isLocked() ? sl.get() : nullptr;
+        if (inst == nullptr) { sl.midi.clear(); sl.level = 0.0f; continue; }
+
+        // slot voltou para INTERNO (ou o plugin acabou de entrar): solta o que estava tocando e para
+        const bool active = plugNow[vi];
+        if (! active && sl.heldNote < 0 && ! sl.needReset) { sl.midi.clear(); sl.level = 0.0f; continue; }
+        if (! active || sl.needReset)
+        {
+            sl.midi.addEvent (juce::MidiMessage::allNotesOff (1), 0);
+            sl.midi.addEvent (juce::MidiMessage::pitchWheel (1, 8192), 0);
+            sl.heldNote = -1;
+            sl.bendSent = false;
+            sl.needReset = false;
+        }
+
+        const bool byp = sl.bypass.load();
+        if (byp && sl.wasBypassed) { sl.midi.clear(); sl.level = 0.0f; sl.cpu = 0.0f; continue; }
+        if (byp)
+        {
+            sl.midi.clear();
+            sl.midi.addEvent (juce::MidiMessage::allNotesOff (1), 0);
+            sl.heldNote = -1;
+        }
+        sl.wasBypassed = byp;
+
+        // os 4 knobs ligados: só manda quando o knob mexe (o plugin continua livre para mexer pela janela dele)
+        const auto& prms = inst->getParameters();
+        for (int k = 0; k < 4; ++k)
+        {
+            const int idx = sl.macroIdx[(size_t) k].load();
+            if (idx < 0 || idx >= prms.size()) continue;
+            const float val = pHMacro[vi][(size_t) k]->load();
+            if (std::abs (val - sl.macroLast[(size_t) k]) > 1.0e-5f)
+            {
+                prms[idx]->setValue (val);
+                sl.macroLast[(size_t) k] = val;
+            }
+        }
+
+        const int chans = juce::jmax (2, inst->getTotalNumInputChannels(), inst->getTotalNumOutputChannels());
+        sl.buf.setSize (chans, n, false, false, true);
+        sl.buf.clear();
+        inst->setPlayHead (getPlayHead());
+        const auto t0 = juce::Time::getHighResolutionTicks();
+        inst->processBlock (sl.buf, sl.midi);
+        const double took = juce::Time::highResolutionTicksToSeconds (juce::Time::getHighResolutionTicks() - t0);
+        sl.cpu = sl.cpu.load() * 0.9f + 0.1f * (float) (took / juce::jmax (1.0e-6, (double) n / currentRate));
+        sl.midi.clear();
+        if (byp) { sl.level = 0.0f; continue; }
+
+        const int outs = inst->getTotalNumOutputChannels();
+        const float g = juce::Decibels::decibelsToGain (pHLvl[vi]->load(), -60.0f);
+        const auto* l = sl.buf.getReadPointer (0);
+        const auto* r = sl.buf.getReadPointer (outs > 1 ? 1 : 0);
+        float peak = 0.0f;
+        for (int i = 0; i < n; ++i)
+        {
+            const float a = l[i] * g, b = r[i] * g;
+            bufL[(size_t) i] += a;
+            bufR[(size_t) i] += b;
+            peak = juce::jmax (peak, std::abs (a), std::abs (b));
+        }
+        sl.level = peak;
+    }
+}
+
+// plugin novo no slot: saída estéreo, sem entrada, no sample rate e bloco do DAW
+void ResenhaProcessor::prepareSlot (juce::AudioPluginInstance& inst)
+{
+    inst.enableAllBuses();
+    for (int b = 0; b < inst.getBusCount (true); ++b)
+        if (auto* bus = inst.getBus (true, b)) bus->enable (false);
+    if (auto* out = inst.getBus (false, 0))
+        if (out->getCurrentLayout() != juce::AudioChannelSet::stereo())
+            out->setCurrentLayout (juce::AudioChannelSet::stereo());
+    inst.setRateAndBufferSizeDetails (currentRate, currentBlock);
+    inst.setNonRealtime (isNonRealtime());
+    inst.prepareToPlay (currentRate, currentBlock);
+}
+
+void ResenhaProcessor::setSlotUsesPlugin (int v, bool usePlugin)
+{
+    slots[(size_t) v]->usePlugin = usePlugin;
+}
+
+juce::String ResenhaProcessor::loadSlotPlugin (int v, const juce::PluginDescription& d, const juce::MemoryBlock* state)
+{
+    auto& sl = *slots[(size_t) v];
+    juce::String err;
+    auto inst = catalog->formats.createPluginInstance (d, currentRate, currentBlock, err);
+    if (inst == nullptr)
+        return err.isNotEmpty() ? err : u8 ("O plugin não abriu.");
+    if (state != nullptr && state->getSize() > 0)
+        inst->setStateInformation (state->getData(), (int) state->getSize());
+    prepareSlot (*inst);
+    sl.setInstance (std::move (inst));
+    sl.desc = d;
+    sl.missing.clear();
+    sl.missingState.reset();
+    sl.usePlugin = true;
+    for (auto& m : sl.macroIdx) m = -1;
+    sl.learnMacro = -1;
+    return {};
+}
+
+void ResenhaProcessor::clearSlotPlugin (int v)
+{
+    auto& sl = *slots[(size_t) v];
+    sl.unload();
+    sl.desc = {};
+    sl.missing.clear();
+    sl.missingState.reset();
+    for (auto& m : sl.macroIdx) m = -1;
+    sl.learnMacro = -1;
+}
+
+void ResenhaProcessor::openSlotWindow (int v)
+{
+    auto& sl = *slots[(size_t) v];
+    if (sl.get() == nullptr) return;
+    sl.openWindow ("RESENHA · SLOT " + juce::String::charToString ((juce::juce_wchar) ('A' + v)) + " · " + sl.desc.name,
+                   juce::Colours::white);
+}
+
+void ResenhaProcessor::closeSlotWindows()
+{
+    for (auto& s : slots) s->closeWindow();
+}
+
+bool ResenhaProcessor::randomSlotPreset (int v)
+{
+    auto* inst = slots[(size_t) v]->get();
+    if (inst == nullptr) return false;
+    const int num = inst->getNumPrograms();
+    if (num <= 1) return false;
+    int pick = rnd.nextInt (num);
+    if (pick == inst->getCurrentProgram()) pick = (pick + 1 + rnd.nextInt (num - 1)) % num;
+    inst->setCurrentProgram (pick);
+    return true;
+}
+
+juce::String ResenhaProcessor::slotPresetName (int v) const
+{
+    auto* inst = slots[(size_t) v]->get();
+    if (inst == nullptr || inst->getNumPrograms() <= 1) return {};
+    return inst->getProgramName (inst->getCurrentProgram()).trim();
+}
+
+void ResenhaProcessor::startLearn (int v, int knob)
+{
+    auto& sl = *slots[(size_t) v];
+    sl.learned = -1;
+    sl.learnMacro = knob;
+}
+
+void ResenhaProcessor::cancelLearn (int v)
+{
+    slots[(size_t) v]->learnMacro = -1;
+}
+
+void ResenhaProcessor::linkMacro (int v, int knob, int paramIndex)
+{
+    auto& sl = *slots[(size_t) v];
+    auto* inst = sl.get();
+    if (knob < 0 || knob > 3) return;
+    sl.macroIdx[(size_t) knob] = paramIndex;
+    // o knob começa onde o controle do plugin está (não dá pulo no som)
+    if (inst != nullptr && paramIndex >= 0 && paramIndex < inst->getParameters().size())
+    {
+        const float now = inst->getParameters()[paramIndex]->getValue();
+        sl.macroLast[(size_t) knob] = now;
+        setParam (id::v (v, id::hMacro (knob)), now);
+    }
+}
+
+void ResenhaProcessor::pollLearn()
+{
+    for (int v = 0; v < numVoices; ++v)
+    {
+        auto& sl = *slots[(size_t) v];
+        const int knob = sl.learnMacro.load();
+        const int idx = sl.learned.load();
+        if (knob < 0 || idx < 0) continue;
+        sl.learnMacro = -1;
+        sl.learned = -1;
+        linkMacro (v, knob, idx);
+    }
+}
+
+// ---- o HUB no projeto: plugin (descrição + estado), INTERNO/PLUGIN, BYP e os knobs ligados ----
+std::unique_ptr<juce::XmlElement> ResenhaProcessor::hubToXml() const
+{
+    {
+        const juce::ScopedLock sl (pendingLock);
+        if (pendingHub != nullptr) return std::make_unique<juce::XmlElement> (*pendingHub);   // ainda não restaurado
+    }
+    auto hub = std::make_unique<juce::XmlElement> ("HUB");
+    for (int v = 0; v < numVoices; ++v)
+    {
+        const auto& sl = *slots[(size_t) v];
+        auto* e = hub->createNewChildElement ("SLOT");
+        e->setAttribute ("index", v);
+        e->setAttribute ("plugin", sl.usePlugin.load() ? 1 : 0);
+        e->setAttribute ("bypass", sl.bypass.load() ? 1 : 0);
+        juce::StringArray links;
+        for (auto& m : sl.macroIdx) links.add (juce::String (m.load()));
+        e->setAttribute ("knobs", links.joinIntoString (","));
+        if (sl.desc.fileOrIdentifier.isNotEmpty())
+            e->addChildElement (sl.desc.createXml().release());
+        if (auto* inst = sl.get())
+        {
+            juce::MemoryBlock mb;
+            inst->getStateInformation (mb);
+            e->createNewChildElement ("STATE")->addTextElement (mb.toBase64Encoding());
+        }
+        else if (sl.missingState.getSize() > 0)   // plugin que não abriu nesta máquina: o som dele não se perde ao salvar
+            e->createNewChildElement ("STATE")->addTextElement (sl.missingState.toBase64Encoding());
+    }
+    return hub;
+}
+
+void ResenhaProcessor::restoreHub (const juce::XmlElement& hub)
+{
+    for (int v = 0; v < numVoices; ++v)   // o que o projeto não traz volta a INTERNO, sem plugin
+    {
+        clearSlotPlugin (v);
+        slots[(size_t) v]->usePlugin = false;
+        slots[(size_t) v]->bypass = false;
+    }
+    for (auto* e : hub.getChildWithTagNameIterator ("SLOT"))
+    {
+        const int v = e->getIntAttribute ("index", -1);
+        if (v < 0 || v >= numVoices) continue;
+        auto& sl = *slots[(size_t) v];
+        if (auto* de = e->getChildByName ("PLUGIN"))
+        {
+            juce::PluginDescription d;
+            if (d.loadFromXml (*de))
+            {
+                juce::MemoryBlock mb;
+                if (auto* st = e->getChildByName ("STATE"))
+                    mb.fromBase64Encoding (st->getAllSubText().trim());
+                const auto err = loadSlotPlugin (v, d, &mb);
+                if (err.isNotEmpty())
+                {
+                    sl.desc = d;   // fica o nome, para a tela dizer qual plugin falta
+                    sl.missing = err;
+                    sl.missingState = mb;
+                }
+            }
+        }
+        sl.usePlugin = e->getIntAttribute ("plugin", 0) != 0;
+        sl.bypass    = e->getIntAttribute ("bypass", 0) != 0;
+        const auto links = juce::StringArray::fromTokens (e->getStringAttribute ("knobs"), ",", "");
+        for (int k = 0; k < 4; ++k)
+            sl.macroIdx[(size_t) k] = k < links.size() && links[k].isNotEmpty() ? links[k].getIntValue() : -1;
+    }
+}
+
+void ResenhaProcessor::handleAsyncUpdate()
+{
+    std::unique_ptr<juce::XmlElement> hub;
+    {
+        const juce::ScopedLock sl (pendingLock);
+        hub = std::move (pendingHub);
+    }
+    if (hub != nullptr) restoreHub (*hub);
+}
+
 juce::AudioProcessorEditor* ResenhaProcessor::createEditor()
 {
     return new ResenhaEditor (*this);
@@ -334,7 +740,10 @@ void ResenhaProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty ("presetBank", presetBank, nullptr);
     state.setProperty ("uiScale", uiScale.load(), nullptr);
     if (auto xml = state.createXml())
+    {
+        xml->addChildElement (hubToXml().release());
         copyXmlToBinary (*xml, destData);
+    }
 }
 
 void ResenhaProcessor::setStateInformation (const void* data, int sizeInBytes)
@@ -342,6 +751,22 @@ void ResenhaProcessor::setStateInformation (const void* data, int sizeInBytes)
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
         {
+            // HUB: os plugins só podem ser abertos na thread da interface
+            std::unique_ptr<juce::XmlElement> hub;
+            if (auto* h = xml->getChildByName ("HUB"))
+            {
+                hub = std::make_unique<juce::XmlElement> (*h);
+                xml->removeChildElement (h, true);
+            }
+            else
+                hub = std::make_unique<juce::XmlElement> ("HUB");   // projeto sem HUB: os 4 slots voltam a INTERNO
+            {
+                const juce::ScopedLock sl (pendingLock);
+                pendingHub = std::move (hub);
+            }
+            if (juce::MessageManager::existsAndIsCurrentThread()) handleAsyncUpdate();
+            else triggerAsyncUpdate();
+
             auto tree = juce::ValueTree::fromXml (*xml);
             apvts.replaceState (tree);
             if (tree.hasProperty ("pattern"))
@@ -811,14 +1236,20 @@ void ResenhaProcessor::generate (int parts, bool respectLocks)
         generateGate (pattern, maxSteps, pGate->load() * 0.01f, pGateVar->load() * 0.01f, rnd);
     if ((parts & partTimbres) != 0)
         for (int v = 0; v < numVoices; ++v)
-            if (! locked (id::lockVoice (v))) randomizeTimbre (v);
+            if (! locked (id::lockVoice (v)))
+            {
+                if (slotUsesPlugin (v)) randomSlotPreset (v);   // slot PLUGIN: um preset do próprio plugin
+                else randomizeTimbre (v);
+            }
     ++patternVersion;
 }
 
 void ResenhaProcessor::randomizeVoice (int voice)
 {
+    voice = juce::jlimit (0, numVoices - 1, voice);
+    if (slotUsesPlugin (voice)) { randomSlotPreset (voice); return; }
     pushHistory();
-    randomizeTimbre (juce::jlimit (0, numVoices - 1, voice));
+    randomizeTimbre (voice);
 }
 
 // a frase como .mid: um canal por timbre (A = 1 … D = 4), na altura escrita (Dó 3 = 60)

@@ -6,15 +6,17 @@
 #include "Phrase.h"
 #include "IspLicenca.h"
 #include "Presets.h"
+#include "Hub.h"
 
-class ResenhaProcessor : public juce::AudioProcessor
+class ResenhaProcessor : public juce::AudioProcessor, private juce::AsyncUpdater
 {
 public:
     ResenhaProcessor();
-    ~ResenhaProcessor() override = default;
+    ~ResenhaProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override {}
+    void releaseResources() override;
+    void setNonRealtime (bool isNonRealtime) noexcept override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     using AudioProcessor::processBlock;
@@ -63,6 +65,22 @@ public:
     bool canUndo() const { return ! history.empty(); }
     void undo();
     juce::File writeMidiFile();                        // a frase como .mid (ARRASTAR MIDI)
+
+    // ---- HUB: slot INTERNO ou PLUGIN (thread da interface) ----
+    bool slotUsesPlugin (int v) const { return slots[(size_t) v]->usePlugin.load(); }
+    void setSlotUsesPlugin (int v, bool usePlugin);
+    juce::String loadSlotPlugin (int v, const juce::PluginDescription& d, const juce::MemoryBlock* state = nullptr);   // erro ou vazio
+    void clearSlotPlugin (int v);
+    void openSlotWindow (int v);
+    void closeSlotWindows();
+    bool randomSlotPreset (int v);            // sorteia um preset do próprio plugin (se ele mostra a lista)
+    juce::String slotPresetName (int v) const;
+    void startLearn (int v, int knob);        // o knob espera o "mexa um controle na janela do plugin"
+    void cancelLearn (int v);
+    void linkMacro (int v, int knob, int paramIndex);   // −1 = desliga
+    void pollLearn();                          // a tela chama a 30 Hz: fecha o aprender quando o plugin avisa
+    resenha::HostSlot& slot (int v) { return *slots[(size_t) v]; }
+    juce::SharedResourcePointer<resenha::PluginCatalog> catalog;
 
     // ---- leitura para a tela ----
     resenha::PhraseParams phraseParams() const;
@@ -160,6 +178,25 @@ private:
     float duckGain = 1.0f;
     juce::SmoothedValue<float> volSm;
     std::vector<float> bufL, bufR;
+
+    // ---- HUB ----
+    std::array<std::unique_ptr<resenha::HostSlot>, resenha::numVoices> slots;
+    std::array<bool, resenha::numVoices> plugNow {};      // neste bloco, o slot toca pelo plugin
+    std::array<std::atomic<float>*, resenha::numVoices> pHOct {}, pHVel {}, pHBend {}, pHLvl {};
+    std::array<std::array<std::atomic<float>*, 4>, resenha::numVoices> pHMacro {};
+    int currentBlock = 512;
+    std::unique_ptr<juce::XmlElement> pendingHub;          // HUB do projeto esperando a thread da interface
+    juce::CriticalSection pendingLock;
+
+    void prepareSlot (juce::AudioPluginInstance& inst);
+    void voiceOn (int v, int sample, int midiNote, bool accent, float glideMs, bool lastOfTalk, int bendSamples);
+    void voiceOff (int v, int sample);
+    void allVoicesOff (int sample);
+    void rampBends (int from, int to);
+    void renderSlots (int n);
+    std::unique_ptr<juce::XmlElement> hubToXml() const;
+    void restoreHub (const juce::XmlElement& hub);
+    void handleAsyncUpdate() override;
 
     juce::SharedResourcePointer<isp::Licenca> licenca;
 

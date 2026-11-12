@@ -26,12 +26,20 @@ target_sources(Resenha PRIVATE
 file(GLOB resenha_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(ResenhaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${resenha_img})
 
-isp_licenca(Resenha resenha)
+isp_licenca(Resenha resenha ATUALIZAR)
+
+# SÓ NO BUILD DE TESTE da atualização automática (0.5.0 pré-lançamento): o plugin diz ao servidor que é a 0.4.0 e
+# pede também os pré-lançamentos ⇒ ele mesmo se oferece como "versão nova" e o ATUALIZAR pode ser testado de ponta
+# a ponta num build só. TIRAR estas duas linhas na versão oficial.
+target_compile_definitions(Resenha PRIVATE ISP_CANAL_TESTE=1 ISP_VERSAO_ATUAL="0.4.0")
 
 target_compile_definitions(Resenha PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0)
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    # HUB: os slots PLUGIN hospedam instrumentos VST3 (Windows e Mac) e AU (Mac)
+    JUCE_PLUGINHOST_VST3=1
+    JUCE_PLUGINHOST_AU=1)
 
 target_link_libraries(Resenha
     PRIVATE

@@ -4,6 +4,17 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.0 — 2026-11-12
+- Pré-lançamento de TESTE (ainda não vai para os clientes).
+- RESENHA HUB: cada um dos 4 slots pode ser INTERNO (o FM/VA do RESENHA, como antes) ou PLUGIN, um instrumento seu (Serum, Sylenth1, Vital, Diva...). No slot PLUGIN o RESENHA manda só a conversa em MIDI; o som e os presets são do próprio plugin.
+- ESCOLHER PLUGIN: lista dos instrumentos instalados (VST3 no Windows; AU e VST3 no Mac), com busca pelo nome ou fabricante, INSTRUMENTOS/TODOS, favoritos com estrela e BUSCAR PLUGINS DE NOVO. A 1ª busca pode levar alguns minutos; depois a lista fica guardada. Plugin que trava na busca vai para os bloqueados e não derruba o DAW de novo.
+- Cartão do slot PLUGIN: nome, fabricante, preset atual e CPU do plugin; ABRIR (janela do próprio plugin), TROCAR e BYP.
+- KNOBS LIGADOS AO PLUGIN: 4 knobs por slot. Em + LIGAR, mexa um controle na janela do plugin (ou escolha da lista) e o knob passa a movê-lo; dá para automatizar no DAW.
+- NA CONVERSA, por slot: OITAVA, VELOC. (accent sai em 127), BEND (pitch bend na nota que fecha a fala) e NÍVEL.
+- O dado do slot e o TIMBRES sorteiam um preset do próprio plugin, quando ele mostra a lista de presets.
+- O projeto do DAW guarda o plugin, o som dele e os ajustes de cada slot. Se o plugin não estiver instalado na máquina, o slot avisa e o som dele não se perde ao salvar.
+- Os presets do RESENHA não trocam o plugin dos slots; os 120 presets de fábrica continuam nos slots INTERNO.
+- Atualização automática: no aviso de versão nova, o botão ATUALIZAR baixa e instala a versão nova sozinho (Windows e Mac).
 ## 0.4.0 — 2026-11-08
 - Oscilador novo: ENGINE VA por timbre (analógico virtual, no molde dos leads e arps de psy feitos em synth de subtração). Serra, quadrada e pulso 25%/12% com até 8 vozes desafinadas abertas no estéreo, 2º oscilador (uníssono, oitava ou quinta) e filtro de 24 dB (LP, BP ou HP) com drive e envelope curto no corte: a nota "fala" no ataque. O FM continua como opção (ENGINE = FM) para os timbres metálicos.
 - No VA os knobs da 1ª fileira mudam de papel: RATIO = intervalo do OSC 2, FM = nível do OSC 2, FEEDBACK = DETUNE, FM DEC = tempo do envelope do filtro; UNISON = número de vozes.
