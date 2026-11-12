@@ -1,0 +1,1100 @@
+-- Building for: Visual Studio 18 2026
+-- The C compiler identification is MSVC 19.51.36260.0
+-- The CXX compiler identification is MSVC 19.51.36260.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- VST2 SDK ausente (sdk/vst2): gerando só VST3/AU
+-- Configuring done (127.1s)
+-- Generating done (1.9s)
+-- Build files have been written to: D:/a/vsts/vsts/build
+MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+
+  Checking File Globs
+  1>Checking Build System
+  Building VST3 manifest helper for Barragem
+  Building VST3 manifest helper for Caleido
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  Building VST3 manifest helper for Avesso
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  Building VST3 manifest helper for Chama
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info - done
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.8s)
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.9s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Caleido
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Barragem
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.9s)
+  -- Generating done (0.0s)
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Avesso
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (2.9s)
+    1>Checking Build System
+    1>Checking Build System
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Chama
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    1>Checking Build System
+  
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    juce_VST3ManifestHelper.cpp
+    juce_VST3ManifestHelper.cpp
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Barragem\vst3_helper.exe
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Caleido\vst3_helper.exe
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Avesso\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/avesso/CMakeLists.txt
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Chama\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/avesso/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  Building VST3 manifest helper for ConsoleIsp
+  ConsoleIsp_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\console\ConsoleIsp_rc_lib.dir\Release\ConsoleIsp_rc_lib.lib
+  Avesso_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\avesso\Avesso_rc_lib.dir\Release\Avesso_rc_lib.lib
+  Chama_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\chama\Chama_rc_lib.dir\Release\Chama_rc_lib.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/eco/CMakeLists.txt
+  Building VST3 manifest helper for Eco
+  Barragem_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\barragem\Barragem_rc_lib.dir\Release\Barragem_rc_lib.lib
+  Eco_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\eco\Eco_rc_lib.dir\Release\Eco_rc_lib.lib
+  Caleido_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido_rc_lib.dir\Release\Caleido_rc_lib.lib
+  Generating juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_BarragemImg/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/escada/CMakeLists.txt
+  BinaryData1.cpp
+  Building VST3 manifest helper for Escada
+  Escada_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\escada\Escada_rc_lib.dir\Release\Escada_rc_lib.lib
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  BinaryData5.cpp
+  -- Detecting CXX compiler ABI info
+  BinaryData6.cpp
+  BinaryData7.cpp
+  Espiral_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral_rc_lib.dir\Release\Espiral_rc_lib.lib
+  BinaryData8.cpp
+  BinaryData9.cpp
+  Building VST3 manifest helper for Espiral
+  BinaryData10.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  BinaryData11.cpp
+  -- Detecting CXX compiler ABI info
+  BinaryData12.cpp
+  BinaryData13.cpp
+  BinaryData14.cpp
+  BinaryData15.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  BinaryData16.cpp
+  -- Configuring done (3.1s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/ConsoleIsp
+  BinaryData17.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  BinaryData18.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  
+  -- Detecting CXX compiler ABI info
+  BinaryData19.cpp
+  BinaryData20.cpp
+  Generating Code...
+    1>Checking Build System
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  Compiling...
+  BinaryData21.cpp
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (3.3s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Eco
+  BinaryData22.cpp
+  BinaryData23.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Generating Code...
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  
+  -- Detecting CXX compiler ABI info
+    juce_VST3ManifestHelper.cpp
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (3.3s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Escada
+    1>Checking Build System
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  
+    juce_VST3ManifestHelper.cpp
+  -- Detecting CXX compiler ABI info - done
+    1>Checking Build System
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (3.0s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Espiral
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    juce_VST3ManifestHelper.cpp
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\ConsoleIsp\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  Generating juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_ChamaImg/JuceLibraryCode/PluginImg.h
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Eco\vst3_helper.exe
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  BinaryData1.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/eco/CMakeLists.txt
+  BinaryData2.cpp
+  BinaryData3.cpp
+  Generating juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData42.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData43.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData44.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData45.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData46.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData47.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData48.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData49.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData50.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData51.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData52.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData53.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData54.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData55.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData56.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData57.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData58.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData59.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData60.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData61.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData62.cpp, juce_binarydata_SerieKnobData/JuceLibraryCode/BinaryData_SerieKnob.h
+  BinaryData4.cpp
+  BinaryData5.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/_comum/CMakeLists.txt
+  Generating juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_CaleidoImg/JuceLibraryCode/PluginImg.h
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Escada\vst3_helper.exe
+  BinaryData6.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  BinaryData1.cpp
+  BinaryData7.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  BinaryData4.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/escada/CMakeLists.txt
+  BinaryData8.cpp
+  BinaryData5.cpp
+  BinaryData1.cpp
+  BinaryData9.cpp
+  BinaryData6.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Espiral\vst3_helper.exe
+  BinaryData10.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  BinaryData7.cpp
+  BarragemImg.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\barragem\Release\BarragemImg.lib
+  BinaryData4.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  BinaryData5.cpp
+  BinaryData11.cpp
+  BinaryData8.cpp
+  BinaryData6.cpp
+  Generating juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_ConsoleImg/JuceLibraryCode/PluginImg.h
+  BinaryData12.cpp
+  BinaryData9.cpp
+  F1_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\f1\F1_rc_lib.dir\Release\F1_rc_lib.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  BinaryData7.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  Building VST3 manifest helper for F1
+  BinaryData13.cpp
+  BinaryData10.cpp
+  BinaryData8.cpp
+  BinaryData1.cpp
+  BinaryData14.cpp
+  BinaryData11.cpp
+  BinaryData2.cpp
+  BinaryData9.cpp
+  BinaryData3.cpp
+  BinaryData15.cpp
+  BinaryData12.cpp
+  BinaryData10.cpp
+  BinaryData4.cpp
+  BinaryData13.cpp
+  BinaryData16.cpp
+  BinaryData5.cpp
+  BinaryData11.cpp
+  BinaryData6.cpp
+  BinaryData17.cpp
+  Generating juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_EspiralImg/JuceLibraryCode/PluginImg.h
+  BinaryData14.cpp
+  BinaryData7.cpp
+  BinaryData12.cpp
+  BinaryData8.cpp
+  BinaryData18.cpp
+  BinaryData15.cpp
+  BinaryData9.cpp
+  BinaryData13.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  BinaryData19.cpp
+  BinaryData16.cpp
+  BinaryData10.cpp
+  BinaryData14.cpp
+  BinaryData20.cpp
+  BinaryData11.cpp
+  BinaryData17.cpp
+  BinaryData12.cpp
+  BinaryData15.cpp
+  Generating Code...
+  BinaryData18.cpp
+  BinaryData13.cpp
+  BinaryData14.cpp
+  BinaryData16.cpp
+  BinaryData19.cpp
+  BinaryData15.cpp
+  BinaryData17.cpp
+  BinaryData20.cpp
+  BinaryData1.cpp
+  BinaryData16.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  BinaryData5.cpp
+  Compiling...
+  BinaryData17.cpp
+  BinaryData21.cpp
+  Generating Code...
+  BinaryData18.cpp
+  BinaryData18.cpp
+  BinaryData6.cpp
+  BinaryData19.cpp
+  BinaryData22.cpp
+  BinaryData20.cpp
+  BinaryData19.cpp
+  Generating Code...
+  BinaryData7.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData20.cpp
+  BinaryData8.cpp
+  BinaryData25.cpp
+  Compiling...
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  Compiling...
+  BinaryData21.cpp
+  BinaryData21.cpp
+  -- Detecting CXX compiler ABI info
+  BinaryData26.cpp
+  BinaryData22.cpp
+  BinaryData22.cpp
+  Generating Code...
+  BinaryData27.cpp
+  BinaryData23.cpp
+  BinaryData9.cpp
+  BinaryData28.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData29.cpp
+  BinaryData25.cpp
+  BinaryData30.cpp
+  Generating Code...
+  BinaryData26.cpp
+  BinaryData10.cpp
+  BinaryData31.cpp
+  BinaryData27.cpp
+  BinaryData32.cpp
+  BinaryData28.cpp
+  BinaryData33.cpp
+  BinaryData29.cpp
+  BinaryData11.cpp
+  BinaryData34.cpp
+  ConsoleImg.vcxproj -> D:\a\vsts\vsts\build\plugins\mix\console\Release\ConsoleImg.lib
+  BinaryData30.cpp
+  BinaryData35.cpp
+  Compiling...
+  BinaryData21.cpp
+  BinaryData31.cpp
+  BinaryData12.cpp
+  BinaryData22.cpp
+  BinaryData13.cpp
+  BinaryData36.cpp
+  BinaryData32.cpp
+  BinaryData37.cpp
+  BinaryData33.cpp
+  BinaryData38.cpp
+  BinaryData34.cpp
+  BinaryData39.cpp
+  BinaryData35.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData36.cpp
+  BinaryData14.cpp
+  BinaryData25.cpp
+  BinaryData40.cpp
+  BinaryData26.cpp
+  BinaryData27.cpp
+  BinaryData15.cpp
+  BinaryData28.cpp
+  BinaryData29.cpp
+  BinaryData37.cpp
+  Generating Code...
+  BinaryData38.cpp
+  Compiling...
+  BinaryData41.cpp
+  BinaryData39.cpp
+  Generating Code...
+  BinaryData40.cpp
+  -- Detecting CXX compiler ABI info - done
+  BinaryData30.cpp
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  BinaryData16.cpp
+  -- Configuring done (4.9s)
+  BinaryData31.cpp
+  -- Generating done (0.0s)
+  Building VST3 manifest helper for Fita
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/F1
+  BinaryData32.cpp
+  BinaryData33.cpp
+  BinaryData34.cpp
+  BinaryData17.cpp
+  Generating Code...
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+  Compiling...
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  BinaryData41.cpp
+  BinaryData35.cpp
+  BinaryData42.cpp
+  
+  BinaryData36.cpp
+  BinaryData18.cpp
+  BinaryData37.cpp
+  BinaryData38.cpp
+  BinaryData39.cpp
+  BinaryData43.cpp
+  BinaryData19.cpp
+  BinaryData44.cpp
+  BinaryData45.cpp
+  BinaryData40.cpp
+  Generating Code...
+  BinaryData20.cpp
+  BinaryData46.cpp
+  BinaryData47.cpp
+  BinaryData48.cpp
+    1>Checking Build System
+  BinaryData49.cpp
+  Compiling...
+  BinaryData41.cpp
+  BinaryData50.cpp
+  Generating Code...
+  Fita_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\fita\Fita_rc_lib.dir\Release\Fita_rc_lib.lib
+  BinaryData51.cpp
+  Generating Code...
+  BinaryData52.cpp
+  BinaryData53.cpp
+  ChamaImg.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\chama\Release\ChamaImg.lib
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  BinaryData54.cpp
+  BinaryData55.cpp
+  BinaryData56.cpp
+  BinaryData57.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/chama/CMakeLists.txt
+  BinaryData58.cpp
+    juce_VST3ManifestHelper.cpp
+  BinaryData59.cpp
+  Compiling...
+  BinaryData21.cpp
+  BinaryData60.cpp
+  Generating Code...
+  Compiling...
+  BinaryData61.cpp
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  BinaryData62.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  Generating Code...
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (5.8s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Fita
+  SerieKnobData.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\_comum\Release\SerieKnobData.lib
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  BinaryData22.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData25.cpp
+  BinaryData26.cpp
+  BinaryData27.cpp
+  BinaryData28.cpp
+  BinaryData29.cpp
+  BinaryData30.cpp
+  BinaryData31.cpp
+  BinaryData32.cpp
+  BinaryData33.cpp
+  BinaryData34.cpp
+  BinaryData35.cpp
+  BinaryData36.cpp
+  BinaryData37.cpp
+  BinaryData38.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\F1\vst3_helper.exe
+  BinaryData39.cpp
+  
+  BinaryData40.cpp
+  Generating Code...
+  Compiling...
+  BinaryData41.cpp
+  Generating Code...
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/fole/CMakeLists.txt
+    1>Checking Build System
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  Fole_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\fole\Fole_rc_lib.dir\Release\Fole_rc_lib.lib
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+  (compiling source file '../../../../plugins/criativo/chama/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(62,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(60,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'chama::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\chama\Chama.vcxproj]
+  (compiling source file '../../../../plugins/criativo/chama/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(62,43):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\chama\Source\Params.h(60,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'chama::factoryPresets'
+  
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/escada/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+  CaleidoImg.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\caleido\Release\CaleidoImg.lib
+  EspiralImg.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\espiral\Release\EspiralImg.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/avesso/CMakeLists.txt
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Fita\vst3_helper.exe
+  KnobProcessor.cpp
+  KnobEditor.cpp
+  Pedal.cpp
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics_5.cpp
+  Generating juce_binarydata_F1Img/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_F1Img/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_F1Img/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  KnobProcessor.cpp
+  KnobEditor.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+  Pedal.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  PluginProcessor.cpp
+  juce_graphics.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/eco/CMakeLists.txt
+  BinaryData1.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  juce_gui_basics.cpp
+  BinaryData5.cpp
+  juce_gui_basics_2.cpp
+  BinaryData6.cpp
+  juce_graphics_Harfbuzz.cpp
+  KnobProcessor.cpp
+  BinaryData7.cpp
+  KnobEditor.cpp
+  Pedal.cpp
+  juce_audio_processors.cpp
+  BinaryData8.cpp
+  BinaryData9.cpp
+  BinaryData10.cpp
+  BinaryData11.cpp
+  juce_gui_extra.cpp
+  BinaryData12.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+  BinaryData13.cpp
+  (compiling source file '../../../../plugins/criativo/espiral/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(91,40):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(89,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'espiral::factoryPresets'
+  
+  BinaryData14.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral.vcxproj]
+  BinaryData15.cpp
+  (compiling source file '../../../../plugins/criativo/espiral/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(91,40):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\espiral\Source\Params.h(89,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'espiral::factoryPresets'
+  
+  BinaryData16.cpp
+  juce_gui_basics_3.cpp
+  BinaryData17.cpp
+  juce_gui_basics_4.cpp
+  BinaryData18.cpp
+  BinaryData19.cpp
+  juce_events.cpp
+  BinaryData20.cpp
+  juce_core.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  BinaryData22.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics.cpp
+  BinaryData25.cpp
+  juce_gui_basics_2.cpp
+  BinaryData26.cpp
+  juce_gui_basics_2.cpp
+  BinaryData27.cpp
+  BinaryData28.cpp
+  BinaryData29.cpp
+  BinaryData30.cpp
+  juce_gui_basics_3.cpp
+  BinaryData31.cpp
+  BinaryData32.cpp
+  BinaryData33.cpp
+  BinaryData34.cpp
+  BinaryData35.cpp
+  BinaryData36.cpp
+  juce_gui_basics_4.cpp
+  BinaryData37.cpp
+  BinaryData38.cpp
+  BinaryData39.cpp
+  BinaryData40.cpp
+  juce_gui_basics_3.cpp
+  Generating Code...
+  juce_gui_basics_4.cpp
+  Compiling...
+  BinaryData41.cpp
+  Generating Code...
+  juce_gui_basics_5.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  F1Img.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\f1\Release\F1Img.lib
+  juce_audio_processors_headless.cpp
+  juce_graphics.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_5.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_graphics.cpp
+  juce_graphics.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_graphics.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_events.cpp
+  juce_audio_devices.cpp
+  juce_core.cpp
+  juce_audio_utils.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_core_CompilationTime.cpp
+  juce_audio_basics.cpp
+  juce_data_structures.cpp
+  juce_dsp.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_audio_utils.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_utils.cpp
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_audio_formats.cpp
+  juce_dsp.cpp
+  juce_audio_devices.cpp
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/f1/CMakeLists.txt
+  juce_dsp.cpp
+  juce_dsp.cpp
+  Chama.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\chama\Chama_artefacts\Release\CHAMA_SharedCode.lib
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_dsp.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+  juce_graphics_Sheenbidi.c
+  (compiling source file '../../../../plugins/criativo/f1/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(99,46):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(97,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'f1::factoryPresets'
+  
+  juce_graphics_libjpg_1.c
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\f1\F1.vcxproj]
+  juce_graphics_libjpg_2.c
+  (compiling source file '../../../../plugins/criativo/f1/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(99,46):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\f1\Source\Params.h(97,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'f1::factoryPresets'
+  
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Building VST3 manifest helper for Fole
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_audio_formats_opusfile.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  juce_gui_basics.cpp
+  Espiral.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\espiral\Espiral_artefacts\Release\ESPIRAL_SharedCode.lib
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Generating juce_binarydata_FitaImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_FitaImg/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_FitaImg/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/fita/CMakeLists.txt
+  juce_gui_basics_5.cpp
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  BinaryData1.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  BinaryData5.cpp
+  BinaryData6.cpp
+  BinaryData7.cpp
+  BinaryData8.cpp
+  juce_graphics.cpp
+  BinaryData9.cpp
+  BinaryData10.cpp
+  BinaryData11.cpp
+  BinaryData12.cpp
+  BinaryData13.cpp
+  Avesso.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\avesso\Avesso_artefacts\Release\AVESSO_SharedCode.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/espiral/CMakeLists.txt
+  BinaryData14.cpp
+  -- Detecting CXX compiler ABI info - done
+  BinaryData15.cpp
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  BinaryData16.cpp
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (12.4s)
+  juce_audio_plugin_client_ARA.cpp
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Fole
+  juce_audio_plugin_client_LV2.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  BinaryData17.cpp
+  juce_audio_plugin_client_VST3.cpp
+  BinaryData18.cpp
+  BinaryData19.cpp
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+  BinaryData20.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  juce_events.cpp
+  BinaryData22.cpp
+  juce_core.cpp
+  BinaryData23.cpp
+  BinaryData24.cpp
+  BinaryData25.cpp
+  BinaryData26.cpp
+  BinaryData27.cpp
+  BinaryData28.cpp
+    1>Checking Build System
+  BinaryData29.cpp
+  BinaryData30.cpp
+  BinaryData31.cpp
+  BinaryData32.cpp
+  BinaryData33.cpp
+  BinaryData34.cpp
+  BinaryData35.cpp
+  BinaryData36.cpp
+  BinaryData37.cpp
+  BinaryData38.cpp
+  BinaryData39.cpp
+  BinaryData40.cpp
+  Generating Code...
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Compiling...
+  BinaryData41.cpp
+  Generating Code...
+    juce_VST3ManifestHelper.cpp
+  Escada.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\escada\Escada_artefacts\Release\ESCADA_SharedCode.lib
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/console/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/freio/CMakeLists.txt
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  FitaImg.vcxproj -> D:\a\vsts\vsts\build\plugins\criativo\fita\Release\FitaImg.lib
+  Freio_rc_lib.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\freio\Freio_rc_lib.dir\Release\Freio_rc_lib.lib
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Fole\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/criativo/caleido/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/plugins/knob/fole/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+     Creating library D:/a/vsts/vsts/build/plugins/criativo/espiral/Espiral_artefacts/Release/VST3/ESPIRAL.lib and object D:/a/vsts/vsts/build/plugins/criativo/espiral/Espiral_artefacts/Release/VST3/ESPIRAL.exp
+  Generating code
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_audio_utils.cpp
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  Building Custom Rule D:/a/vsts/vsts/plugins/mix/barragem/CMakeLists.txt
+  juce_audio_formats.cpp
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_devices.cpp
+  juce_audio_formats_opusfile.c
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+  (compiling source file '../../../../plugins/criativo/caleido/Source/PluginProcessor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(86,45):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(85,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'caleido::factoryPresets'
+  
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244: 'initializing': conversion from '_Ty' to '_Ty2', possible loss of data [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         with [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty=int [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         and [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         [ [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:             _Ty2=float [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54): warning C4244:         ] [D:\a\vsts\vsts\build\plugins\criativo\caleido\Caleido.vcxproj]
+  (compiling source file '../../../../plugins/criativo/caleido/Source/PluginEditor.cpp')
+      C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\utility(277,54):
+      the template instantiation context (the oldest one first) is
+          D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(86,45):
+          see reference to function template instantiation 'std::pair<const char *,float>::pair<const char*const &,int,0>(_Other1,_Other2 &&) noexcept' being compiled
+          with
+          [
+              _Other1=const char *const &,
+              _Other2=int
+          ]
+              D:\a\vsts\vsts\plugins\criativo\caleido\Source\Params.h(85,5):
+              see the first reference to 'std::pair<const char *,float>::pair' in 'caleido::factoryPresets'
+  
+  juce_gui_basics.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  Eco.vcxproj -> D:\a\vsts\vsts\build\plugins\knob\eco\Eco_artefacts\Release\ECO_SharedCode.lib
+  Building VST3 manifest helper for Freio
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (27.2s)
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Freio
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
