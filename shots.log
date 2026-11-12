@@ -1,44 +1,4 @@
-== build/shot_montamonta_artefacts/Release/shot_montamonta
-MONTAMONTA: ok
-== build/shot_mesa_artefacts/Release/shot_mesa
-MESA-ZOOM: ok
-MESA-CANAL: ok
-MESA: ok
-== build/shot_align_artefacts/Release/shot_align
-ALIGN: layout ok, entradas 4, sidechain ligado
-ALIGN-OFF: ok
-ALIGN: ok
-== build/shot_magos_artefacts/Release/shot_magos
-MAGOS-LISTEN: ok
-MAGOS-MANUAL: ok
-MAGOS: ok
-== build/shot_barebass_artefacts/Release/shot_barebass
-BAREBASS: ok
-== build/shot_maestro_artefacts/Release/shot_maestro
-MAESTRO-LEARN: ok
-MAESTRO-LOCK: ok
-MAESTRO-FOCUS: ok
-MAESTRO: ok
-== build/shot_groovador_artefacts/Release/shot_groovador
-GROOVADOR: ok
-== build/shot_onkey_artefacts/Release/shot_onkey
-ONKEY-FINO: ok
-ONKEY: ok
-total 27416
--rw-r--r--  1 runner  staff   500297 Nov 12 08:54 ALIGN-OFF.png
--rw-r--r--  1 runner  staff   522620 Nov 12 08:54 ALIGN.png
--rw-r--r--  1 runner  staff   410688 Nov 12 08:55 BAREBASS.png
--rw-r--r--  1 runner  staff   771794 Nov 12 08:55 GROOVADOR.png
--rw-r--r--  1 runner  staff   632660 Nov 12 08:55 MAESTRO-FOCUS.png
--rw-r--r--  1 runner  staff   522745 Nov 12 08:55 MAESTRO-LEARN.png
--rw-r--r--  1 runner  staff   573902 Nov 12 08:55 MAESTRO-LOCK.png
--rw-r--r--  1 runner  staff   645185 Nov 12 08:55 MAESTRO.png
--rw-r--r--  1 runner  staff   630991 Nov 12 08:55 MAGOS-LISTEN.png
--rw-r--r--  1 runner  staff   782571 Nov 12 08:55 MAGOS-MANUAL.png
--rw-r--r--  1 runner  staff   708860 Nov 12 08:55 MAGOS.png
--rw-r--r--  1 runner  staff   645045 Nov 12 08:54 MESA-CANAL.png
--rw-r--r--  1 runner  staff  2661842 Nov 12 08:54 MESA-ZOOM.png
--rw-r--r--  1 runner  staff  1849624 Nov 12 08:54 MESA.png
--rw-r--r--  1 runner  staff   577617 Nov 12 08:54 MONTAMONTA.png
--rw-r--r--  1 runner  staff   308088 Nov 12 08:56 ONKEY-FINO.png
--rw-r--r--  1 runner  staff   242175 Nov 12 08:56 ONKEY.png
+== build/shot_resenha_artefacts/Release/shot_resenha
+RESENHA: ok
+total 2008
+-rw-r--r--  1 runner  staff  1027067 Nov 12 14:18 RESENHA.png
