@@ -184,7 +184,7 @@ jobs:
           if [ -d dist-magos/VST3 ]; then
             $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Magos --origem dist-magos --versao "$(versao Magos)" --saida .
           fi
-          { find dist -maxdepth 2; find dist-limao dist-mercurio dist-resenha dist-montamonta dist-groovador dist-mesa dist-align dist-onkey dist-barebass dist-stompbox dist-maestro dist-magos -maxdepth 2 2>/dev/null; ls -l InsideStudioSP-*; } | tee pack.log
+          { find dist -maxdepth 2; find dist-limao dist-mercurio dist-resenha dist-montamonta dist-groovador dist-mesa dist-align dist-onkey dist-barebass dist-stompbox dist-maestro dist-magos -maxdepth 2 2>/dev/null || true; ls -l InsideStudioSP-*; } | tee pack.log
 
       - name: pluginval
         id: pluginval
