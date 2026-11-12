@@ -175,6 +175,9 @@ private:
     std::atomic<int> nextState { 0 };
     int nextLen = -1, nextScale = -1, nextRoot = -1;
     juce::uint64 nextRefSig = 0;                       // assinatura da linha que serviu de base (editou = refaz)
+    juce::uint64 nextMadeSig = 0;                      // assinatura da linha que o AUTO gerou (tocando ela = não é do usuário)
+    limao::Pattern anchorPattern;                      // a linha do USUÁRIO: faixa, graus e proporção que o AUTO respeita
+    int anchorLen = -1;
     long long lastRandBlock = -1;
     juce::SmoothedValue<float> volSm;
 

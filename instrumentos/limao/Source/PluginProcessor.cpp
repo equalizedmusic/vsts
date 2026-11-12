@@ -27,9 +27,10 @@ LimaoProcessor::LimaoProcessor()
     startTimerHz (10);
 }
 
-// AUTO ALEATÓRIO: deixa a próxima linha pronta — as MESMAS notas, pausas, ligaduras, accents e slides da linha
-// que está tocando, em outra ordem (randomizeLike). Escala e tônica não mudam. Se o usuário editar a linha (ou mudar
-// PASSOS/SCALE/ROOT) antes da troca, a próxima é refeita a partir da edição.
+// AUTO ALEATÓRIO: deixa a próxima linha pronta — linha NOVA que evolui a partir da que está tocando, na escala e
+// tônica, dentro da faixa e dos graus da linha do usuário e com a mesma proporção de notas/pausas/ligaduras/accents/
+// slides dela (randomizeLike). Se o usuário editar a linha (ou mudar PASSOS/SCALE/ROOT) antes da troca, a próxima é
+// refeita a partir da edição.
 void LimaoProcessor::timerCallback()
 {
     const int len = juce::jlimit (1, maxSteps, juce::roundToInt (pSeqLen->load()));
@@ -44,10 +45,19 @@ void LimaoProcessor::timerCallback()
         st = 0;
     }
     if (st != 0 || pAutoRand->load() < 0.5f) return;
+    // a linha que está tocando é do usuário (editou, carregou preset, ALEATORIZAR, mudou PASSOS) se não é a última
+    // que o AUTO gerou: vira a âncora. Linha gerada pelo AUTO não muda a âncora (senão o som deriva).
+    if (anchorLen != len || sig != nextMadeSig)
+    {
+        for (int k = 0; k < maxSteps; ++k) anchorPattern.steps[(size_t) k].store (pattern.steps[(size_t) k].load());
+        anchorLen = len;
+    }
     juce::Random rnd;
     nextPattern.clear();
-    randomizeLike (nextPattern, pattern, len, rnd, sc, rt);
-    nextLen = len; nextScale = sc; nextRoot = rt; nextRefSig = sig;
+    randomizeLike (nextPattern, pattern, anchorPattern, len, rnd, sc, rt);
+    juce::uint64 made = (juce::uint64) len;
+    for (int i = 0; i < len; ++i) made = made * 1000003u + (juce::uint64) nextPattern.steps[(size_t) i].load();
+    nextLen = len; nextScale = sc; nextRoot = rt; nextRefSig = sig; nextMadeSig = made;
     nextState.store (1);
 }
 
