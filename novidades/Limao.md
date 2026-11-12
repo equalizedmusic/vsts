@@ -6,10 +6,14 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 
 ## 0.6.1 — 2026-11-12
 - Pré-lançamento de TESTE (ainda não vai para os clientes).
-- AUTO ALEATÓRIO respeita a linha que você montou: usa as MESMAS notas e a mesma quantidade de pausas, ligaduras,
-  accents e slides, só que em outra ordem. Uma linha com poucas notas e muitas pausas e slides continua assim, sem
-  virar uma linha cheia. SCALE e ROOT não mudam, e nenhuma nota nova é sorteada. Se você editar a linha com o AUTO
-  ligado, a próxima troca já parte da edição. A tecla ALEATORIZAR continua sorteando uma linha nova inteira.
+- AUTO ALEATÓRIO cria linhas NOVAS a partir da que você montou, sem mexer em SCALE e ROOT: as notas novas ficam
+  na escala e na tônica, entre a nota mais grave e a mais aguda da sua linha, e os graus que você usou aparecem
+  mais. O som evolui aos poucos: cada linha nasce da anterior (a nota fica, anda um grau ou volta a um grau da
+  sua linha) e só 1 ou 2 passos do ritmo trocam de lugar.
+- A proporção da sua linha é mantida: mesma quantidade de notas, pausas, ligaduras, accents e slides. Uma linha
+  com poucas notas e muitas pausas e slides continua assim, sem virar uma linha cheia.
+- A referência é sempre a sua linha: editar, carregar um preset, apertar ALEATORIZAR ou mudar PASSOS com o AUTO
+  ligado faz a próxima troca partir dela.
 - ATUALIZAR no aviso de versão nova: o plugin baixa o instalador, confere o arquivo e instala sozinho. No Windows
   ele espera você fechar o DAW e roda o instalador (o Windows pede permissão); no Mac pede a senha e instala na
   hora. Depois é só abrir o DAW de novo. O BAIXAR pelo navegador continua lá.

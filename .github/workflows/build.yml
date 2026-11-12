@@ -3,11 +3,14 @@ name: build
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'shots/**', '.github/workflows/shots.yml', 'instrumentos/**', '.github/workflows/build-instrumentos.yml', '.github/workflows/limpar-releases.yml',
-                   'divulgacao/**', 'plugins/knob/_comum/tools/**', 'max4live/**', '.github/workflows/release-max4live.yml',
-                   'licenca/servidor/**', 'licenca/admin/**', '.github/workflows/licenca-piloto.yml',
-                   'site/**']   # site: deploy é manual (wrangler), não compila plugin
+    # só as pastas das linhas e o novidades de cada uma; o job detectar escolhe QUAIS linhas compilam (só as
+    # atualizadas). Compartilhado (licenca/cliente, instalador/, CMakeLists.txt da raiz) entra no próximo build da linha.
+    paths: ['plugins/**', '!plugins/**/*.md', '!plugins/knob/_comum/tools/**', 'novidades/Criativo.md', 'novidades/Mix.md', 'novidades/Knob.md']
   workflow_dispatch:
+    inputs:
+      pacotes:
+        description: 'Linhas a compilar, separadas por espaço (ex.: Mix Knob) ou "todos"'
+        required: true
 
 permissions:
   contents: write
@@ -17,7 +20,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Só compila o que foi atualizado neste push (ver .github/scripts/pacotes-alterados.sh)
+  detectar:
+    runs-on: ubuntu-latest
+    outputs:
+      dirs: ${{ steps.d.outputs.dirs }}
+      pacotes: ${{ steps.d.outputs.pacotes }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: d
+        env:
+          BASE: ${{ github.event.before }}
+          ESCOLHA: ${{ github.event.inputs.pacotes }}
+        run: bash .github/scripts/pacotes-alterados.sh efeitos "$BASE" "$GITHUB_SHA" "$ESCOLHA" | tee -a "$GITHUB_OUTPUT"
+
   build:
+    needs: detectar
+    if: needs.detectar.outputs.pacotes != ''
     strategy:
       fail-fast: false
       matrix:
@@ -33,13 +54,15 @@ jobs:
 
       - name: Compilar
         id: build
+        env:
+          VSTS_SO: ${{ needs.detectar.outputs.dirs }}
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" "-DVSTS_SO=$VSTS_SO" 2>&1 | tee build.log
             cmake --build build --config Release -j 4 2>&1 | tee -a build.log
           else
-            cmake -S . -B build -A x64 2>&1 | tee build.log
+            cmake -S . -B build -A x64 "-DVSTS_SO=$VSTS_SO" 2>&1 | tee build.log
             cmake --build build --config Release --parallel 2>&1 | tee -a build.log
           fi
 
@@ -114,8 +137,8 @@ jobs:
           path: report/
 
   publish:
-    needs: build
-    if: always()
+    needs: [detectar, build]
+    if: always() && needs.detectar.outputs.pacotes != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5   # só para ler novidades/ e instalador/versao.py
@@ -153,7 +176,7 @@ jobs:
         if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
-        run: bash src/.github/scripts/release-versoes.sh pacotes report src Criativo Mix Knob
+        run: bash src/.github/scripts/release-versoes.sh pacotes report src ${{ needs.detectar.outputs.pacotes }}
 
       # o pré-release "licenca-teste" (instaladores do teste da ativação) sai quando as versões oficiais dos três
       # pacotes estão publicadas: até lá os links /baixar do servidor de licenças continuam entregando ele

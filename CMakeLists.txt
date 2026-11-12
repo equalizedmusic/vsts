@@ -53,11 +53,17 @@ vsts_versao(Knob.md VSTS_VERSAO_knob)
 
 # Cada pasta em plugins/<linha>/ com CMakeLists.txt é um plugin (linhas: criativo, mix, knob).
 # Na knob, plugins/knob/_comum entra primeiro (ordem alfabética) e define o serie_knob_pedal() que os pedais usam.
+# VSTS_SO (lista de linhas, ex.: "mix;knob") restringe o build a elas: o workflow passa só as linhas atualizadas
+# no push. Vazio = todas.
+set(VSTS_SO "" CACHE STRING "linhas de plugins/ a compilar (vazio = todas)")
 file(GLOB plugin_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*/*")
 foreach(dir ${plugin_dirs})
     if(EXISTS "${dir}/CMakeLists.txt")
         get_filename_component(linha_dir "${dir}" DIRECTORY)
         get_filename_component(linha "${linha_dir}" NAME)
+        if(VSTS_SO AND NOT linha IN_LIST VSTS_SO)
+            continue()
+        endif()
         set(VSTS_VERSAO "${VSTS_VERSAO_${linha}}")
         if(NOT VSTS_VERSAO)
             message(FATAL_ERROR "linha '${linha}' sem arquivo em novidades/")

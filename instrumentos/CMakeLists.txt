@@ -65,9 +65,15 @@ function(vsts_versao arquivo saida)
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${md}")
 endfunction()
 
-# cada pasta em instrumentos/ com CMakeLists.txt é um instrumento
+# cada pasta em instrumentos/ com CMakeLists.txt é um instrumento. VSTS_SO (lista de pastas, ex.: "limao;maestro")
+# restringe o build a elas: o workflow passa só os instrumentos atualizados no push. Vazio = todos.
+set(VSTS_SO "" CACHE STRING "pastas de instrumentos/ a compilar (vazio = todas)")
 file(GLOB inst_dirs LIST_DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/*")
 foreach(dir ${inst_dirs})
+    get_filename_component(inst_nome "${dir}" NAME)
+    if(VSTS_SO AND NOT inst_nome IN_LIST VSTS_SO)
+        continue()
+    endif()
     if(IS_DIRECTORY "${dir}" AND EXISTS "${dir}/CMakeLists.txt")
         add_subdirectory("${dir}")
     endif()
