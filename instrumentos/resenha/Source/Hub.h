@@ -13,13 +13,17 @@
 namespace resenha
 {
 // ---------------- catálogo: plugins instalados ----------------
-// A busca roda numa thread própria e carrega cada plugin para saber o que ele é. Um plugin que derruba o DAW na busca
-// fica anotado no arquivo "busca-em-andamento" (dead man's pedal do JUCE) e, na próxima busca, vai para a lista de
-// bloqueados em vez de derrubar de novo. O resultado fica guardado em disco: a busca só roda na 1ª vez ou quando a
-// pessoa pede BUSCAR PLUGINS DE NOVO.
+// A busca roda numa thread própria, mas NÃO abre os plugins dentro do DAW: cada arquivo é aberto pelo ResenhaScan
+// (programa à parte que vai dentro do bundle do RESENHA, em Contents/Resources). Se o plugin travar (passou do tempo),
+// fechar o ResenhaScan (crash) ou não abrir, o ResenhaScan é encerrado, o plugin vai para os bloqueados com o motivo e
+// a busca segue no próximo. O DAW nunca fica preso num plugin. A lista é gravada em disco durante a busca: se ela for
+// interrompida, a próxima continua de onde parou. Só se o ResenhaScan não existir ou não abrir (instalação antiga, Mac
+// que barrou o programa) a busca volta a abrir os plugins dentro do DAW, como na 0.5.0.
 class PluginCatalog : private juce::Thread, private juce::AsyncUpdater
 {
 public:
+    static constexpr int timeoutMs = 30000;   // tempo máximo para um plugin abrir na busca
+
     PluginCatalog() : juce::Thread ("RESENHA busca de plugins")
     {
         juce::addDefaultFormatsToManager (formats);
@@ -28,14 +32,28 @@ public:
             known.recreateFromXml (*xml);
         juce::PluginDirectoryScanner::applyBlacklistingsFromDeadMansPedal (known, pedalFile());
         loadFavourites();
+        loadReasons();
+        known.setCustomScanner (std::make_unique<ChildScanner> (*this));
     }
 
     ~PluginCatalog() override
     {
         cancelPendingUpdate();
         signalThreadShouldExit();
-        stopThread (8000);
+        stopThread (timeoutMs + 5000);
     }
+
+    // PULAR: encerra o plugin que está sendo lido agora (vai para os bloqueados) e a busca segue
+    void skipCurrent() { skipRequested = true; }
+
+    // motivo do bloqueio ("travou", "fechou", "não abriu", "pulado"); vazio = bloqueado por versão antiga da busca
+    juce::String reasonFor (const juce::String& fileOrId) const
+    {
+        const juce::ScopedLock sl (nameLock);
+        return reasons[fileOrId];
+    }
+
+    std::atomic<bool> unprotected { false };   // o ResenhaScan não abriu: a busca está abrindo os plugins no DAW
 
     juce::AudioPluginFormatManager formats;
     juce::KnownPluginList known;
@@ -54,7 +72,15 @@ public:
     void startScan (bool fromScratch)
     {
         if (isThreadRunning()) return;
-        if (fromScratch) known.clear();
+        if (fromScratch)
+        {
+            known.clear();
+            known.clearBlacklistedFiles();   // os bloqueados ganham outra chance (agora com tempo limite)
+            const juce::ScopedLock sl (nameLock);
+            reasons.clear();
+            reasonsFile().deleteFile();
+        }
+        skipRequested = false;
         scanning = true;
         progress = 0.0f;
         startThread (juce::Thread::Priority::low);
@@ -97,9 +123,127 @@ public:
     }
 
 private:
-    static juce::File listFile()  { return dir().getChildFile ("plugins.xml"); }
-    static juce::File pedalFile() { return dir().getChildFile ("busca-em-andamento.txt"); }
-    static juce::File favFile()   { return dir().getChildFile ("favoritos.txt"); }
+    static juce::File listFile()    { return dir().getChildFile ("plugins.xml"); }
+    static juce::File pedalFile()   { return dir().getChildFile ("busca-em-andamento.txt"); }
+    static juce::File favFile()     { return dir().getChildFile ("favoritos.txt"); }
+    static juce::File reasonsFile() { return dir().getChildFile ("bloqueados-motivo.txt"); }
+    static juce::File resultFile()  { return dir().getChildFile ("busca-resultado.xml"); }
+
+    // o ResenhaScan mora no bundle do próprio RESENHA: <bundle>/Contents/Resources/ResenhaScan(.exe). O binário do
+    // plugin fica em Contents/x86_64-win (VST3 Windows) ou Contents/MacOS (VST3/AU Mac): sobe dois níveis até Contents.
+    static juce::File scannerExe()
+    {
+        const auto bin = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+       #if JUCE_WINDOWS
+        return bin.getParentDirectory().getParentDirectory().getChildFile ("Resources/ResenhaScan.exe");
+       #else
+        return bin.getParentDirectory().getParentDirectory().getChildFile ("Resources/ResenhaScan");
+       #endif
+    }
+
+    // a busca do JUCE (PluginDirectoryScanner) chama isto para cada arquivo; false = vai para os bloqueados
+    class ChildScanner : public juce::KnownPluginList::CustomScanner
+    {
+    public:
+        explicit ChildScanner (PluginCatalog& c) : cat (c) {}
+        bool findPluginTypesFor (juce::AudioPluginFormat& format, juce::OwnedArray<juce::PluginDescription>& result,
+                                 const juce::String& fileOrIdentifier) override
+        {
+            return cat.scanOne (format, result, fileOrIdentifier);
+        }
+    private:
+        PluginCatalog& cat;
+    };
+
+    bool scanOne (juce::AudioPluginFormat& format, juce::OwnedArray<juce::PluginDescription>& result, const juce::String& id)
+    {
+        const auto exe = scannerExe();
+        const auto out = resultFile();
+        out.deleteFile();
+        juce::ChildProcess child;
+        if (! scannerOk
+            || ! child.start (juce::StringArray { exe.getFullPathName(), format.getName(), id, out.getFullPathName() }, 0))
+        {
+            unprotected = true;
+            format.findAllTypesForFile (result, id);   // sem o ResenhaScan: abre no DAW, como na 0.5.0
+            return true;
+        }
+
+        const auto t0 = juce::Time::getMillisecondCounter();
+        juce::String why;
+        for (;;)
+        {
+            if (child.waitForProcessToFinish (100)) break;
+            if (threadShouldExit())                  // DAW fechando: encerra sem marcar o plugin como bloqueado
+            {
+                child.kill();
+                return true;
+            }
+            if (skipRequested.exchange (false)) { why = "pulado"; break; }
+            if (juce::Time::getMillisecondCounter() - t0 > (juce::uint32) timeoutMs) { why = "travou"; break; }
+        }
+
+        if (why.isNotEmpty())
+        {
+            child.kill();
+            child.waitForProcessToFinish (3000);
+        }
+        else
+        {
+            // vale o que o ResenhaScan gravou, mesmo que ele tenha caído depois
+            if (auto xml = juce::parseXML (out))
+                for (const auto* item : xml->getChildIterator())
+                {
+                    auto d = std::make_unique<juce::PluginDescription>();
+                    if (d->loadFromXml (*item)) result.add (std::move (d));
+                }
+            out.deleteFile();
+            if (! result.isEmpty()) return true;
+            // 0/4 = o plugin abriu mas não entregou nenhum instrumento/efeito; o resto = o ResenhaScan caiu
+            const auto code = child.getExitCode();
+            why = (code == 0 || code == 4) ? juce::String::fromUTF8 ("não abriu") : juce::String ("fechou");
+        }
+        out.deleteFile();
+        setReason (id, why);
+        return false;
+    }
+
+    // antes da busca: o ResenhaScan existe e o sistema deixa ele rodar? (no Mac, um binário barrado pelo Gatekeeper
+    // morreria em todo plugin e bloquearia a lista inteira; aí a busca volta a ser no DAW, com o aviso na janela)
+    static bool scannerRuns()
+    {
+        const auto exe = scannerExe();
+        if (! exe.existsAsFile()) return false;
+        juce::ChildProcess child;
+        if (! child.start (juce::StringArray { exe.getFullPathName(), "--teste" }, 0)) return false;
+        if (! child.waitForProcessToFinish (15000)) { child.kill(); return false; }
+        return child.getExitCode() == 0;
+    }
+
+    void setReason (const juce::String& id, const juce::String& why)
+    {
+        const juce::ScopedLock sl (nameLock);
+        reasons.set (id, why);
+        juce::String txt;
+        for (auto it = reasons.begin(); it != reasons.end(); ++it)   // juce::HashMap: chave\tmotivo por linha
+            txt << it.getKey() << "\t" << it.getValue() << "\n";
+        reasonsFile().replaceWithText (txt);
+    }
+
+    void loadReasons()
+    {
+        juce::StringArray lines;
+        lines.addLines (reasonsFile().loadFileAsString());
+        for (const auto& l : lines)
+            if (l.contains ("\t"))
+                reasons.set (l.upToLastOccurrenceOf ("\t", false, false), l.fromLastOccurrenceOf ("\t", false, false));
+    }
+
+    void saveList()
+    {
+        if (auto xml = known.createXml())
+            xml->writeTo (listFile());
+    }
 
     void loadFavourites()
     {
@@ -110,7 +254,10 @@ private:
 
     void run() override
     {
+        scannerOk = scannerRuns();
+        unprotected = ! scannerOk;
         const auto all = formats.getFormats();
+        int sinceSave = 0;
         for (int f = 0; f < all.size() && ! threadShouldExit(); ++f)
         {
             auto* format = all[f];
@@ -121,17 +268,18 @@ private:
                 if (threadShouldExit()) break;
                 {
                     const juce::ScopedLock sl (nameLock);
-                    currentName = juce::File::createFileWithoutCheckingPath (scanner.getNextPluginFileThatWillBeScanned())
-                                      .getFileNameWithoutExtension();
+                    const auto next = scanner.getNextPluginFileThatWillBeScanned();
+                    currentName = format->getName() == "AudioUnit" ? format->getNameOfPluginFromIdentifier (next)
+                                                                   : juce::File::createFileWithoutCheckingPath (next).getFileNameWithoutExtension();
                 }
                 const bool more = scanner.scanNextFile (true, name);
                 progress = ((float) f + scanner.getProgress()) / (float) juce::jmax (1, all.size());
                 ++version;
+                if (++sinceSave >= 5) { saveList(); sinceSave = 0; }   // interrompida, a próxima busca continua daqui
                 if (! more) break;
             }
         }
-        if (auto xml = known.createXml())
-            xml->writeTo (listFile());
+        saveList();
         {
             const juce::ScopedLock sl (nameLock);
             currentName.clear();
@@ -147,6 +295,9 @@ private:
     juce::StringArray favourites;
     juce::CriticalSection nameLock;
     juce::String currentName;
+    juce::HashMap<juce::String, juce::String> reasons;   // bloqueado → motivo (protegido por nameLock)
+    std::atomic<bool> skipRequested { false };
+    bool scannerOk = false;   // só a thread da busca usa
 };
 
 // ---------------- janela do plugin hospedado (ABRIR) ----------------

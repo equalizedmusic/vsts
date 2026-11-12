@@ -49,3 +49,32 @@ target_link_libraries(Resenha
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags)
+
+# ResenhaScan: lê cada plugin da busca do HUB FORA do DAW (plugin que trava ou cai não leva o DAW junto).
+# Vai dentro do bundle do RESENHA (VST3 e AU), em Contents/Resources — o instalador copia o bundle inteiro.
+juce_add_console_app(ResenhaScan PRODUCT_NAME "ResenhaScan")
+target_sources(ResenhaScan PRIVATE Scanner/ScanMain.cpp)
+target_compile_definitions(ResenhaScan PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_PLUGINHOST_VST3=1
+    JUCE_PLUGINHOST_AU=1)
+target_link_libraries(ResenhaScan
+    PRIVATE
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+    PUBLIC
+        juce::juce_recommended_config_flags)
+if(WIN32)
+    target_link_libraries(ResenhaScan PRIVATE shell32)
+endif()
+
+foreach(fmt VST3 AU)
+    if(TARGET Resenha_${fmt})
+        add_dependencies(Resenha_${fmt} ResenhaScan)
+        add_custom_command(TARGET Resenha_${fmt} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "$<GENEX_EVAL:$<TARGET_PROPERTY:Resenha_${fmt},JUCE_PLUGIN_ARTEFACT_FILE>>/Contents/Resources"
+            COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:ResenhaScan>" "$<GENEX_EVAL:$<TARGET_PROPERTY:Resenha_${fmt},JUCE_PLUGIN_ARTEFACT_FILE>>/Contents/Resources/"
+            VERBATIM)
+    endif()
+endforeach()

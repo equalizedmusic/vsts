@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.1 — 2026-11-12
+- Pré-lançamento de TESTE (ainda não vai para os clientes).
+- BUSCA DE PLUGINS SEM TRAVAR O DAW: cada plugin é lido fora do DAW, pelo leitor do RESENHA (ResenhaScan, instalado junto). Plugin que trava (30 s sem responder), fecha ou não abre é pulado e vai para os bloqueados com o motivo (travou / fechou / não abriu), e a busca segue no próximo. O DAW não fica mais preso.
+- PULAR ESTE PLUGIN: durante a busca, o botão encerra na hora o plugin que está sendo lido.
+- A lista é guardada durante a busca: se ela for interrompida, a próxima continua de onde parou.
+- BUSCAR PLUGINS DE NOVO dá outra chance aos bloqueados.
+
 ## 0.5.0 — 2026-11-12
 - Pré-lançamento de TESTE (ainda não vai para os clientes).
 - RESENHA HUB: cada um dos 4 slots pode ser INTERNO (o FM/VA do RESENHA, como antes) ou PLUGIN, um instrumento seu (Serum, Sylenth1, Vital, Diva...). No slot PLUGIN o RESENHA manda só a conversa em MIDI; o som e os presets são do próprio plugin.

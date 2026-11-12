@@ -586,7 +586,13 @@ PluginPicker::PluginPicker (ResenhaProcessor& p) : proc (p)
     cancelBtn.setBounds (a.getRight() - 220, a.getY() + 470, 96, 34);
     loadBtn.setBounds (a.getRight() - 116, a.getY() + 470, 96, 34);
     for (auto* b : { &rescanBtn, &cancelBtn, &loadBtn }) addAndMakeVisible (*b);
-    rescanBtn.onClick = [this] { proc.catalog->startScan (true); rebuild(); };
+    // durante a busca o botão vira PULAR ESTE PLUGIN: encerra o que está sendo lido (vai para os bloqueados) e segue
+    rescanBtn.onClick = [this]
+    {
+        if (proc.catalog->scanning.load()) proc.catalog->skipCurrent();
+        else proc.catalog->startScan (true);
+        rebuild();
+    };
     cancelBtn.onClick = [this] { close(); };
     loadBtn.onClick   = [this] { load(); };
 }
@@ -615,6 +621,8 @@ void PluginPicker::timerCallback()
 {
     const int ver = proc.catalog->version.load();
     if (ver != seenVersion) rebuild();
+    const auto label = proc.catalog->scanning.load() ? juce::String ("PULAR ESTE PLUGIN") : juce::String ("BUSCAR PLUGINS DE NOVO");
+    if (rescanBtn.getButtonText() != label) rescanBtn.setButtonText (label);
     if (proc.catalog->scanning.load()) repaint (panelArea.getX(), panelArea.getY() + 460, panelArea.getWidth(), 100);
 }
 
@@ -707,8 +715,13 @@ void PluginPicker::paintListBoxItem (int row, juce::Graphics& g, int w, int h, b
     g.drawText (r.blocked ? juce::String() : (r.d.isInstrument ? juce::String ("Instrumento") : juce::String ("Efeito")), 545, 0, 90, h,
                 juce::Justification::centredLeft, false);
     g.setColour (r.blocked ? juce::Colour (0xffff4d5e) : rs::lime);
-    g.drawText (r.blocked ? juce::String::fromUTF8 ("✗ bloqueado") : juce::String::fromUTF8 ("✓ ok"), 640, 0, w - 640, h,
-                juce::Justification::centredLeft, false);
+    juce::String sit = juce::String::fromUTF8 ("✓ ok");
+    if (r.blocked)
+    {
+        const auto why = proc.catalog->reasonFor (r.file);   // travou / fechou / não abriu / pulado
+        sit = juce::String::fromUTF8 ("✗ ") + (why.isNotEmpty() ? why : juce::String ("bloqueado"));
+    }
+    g.drawFittedText (sit, 640, 0, w - 644, h, juce::Justification::centredLeft, 1, 0.7f);
 }
 
 void PluginPicker::listBoxItemClicked (int row, const juce::MouseEvent& e)
@@ -796,7 +809,10 @@ void PluginPicker::paint (juce::Graphics& g)
     }
     g.setFont (theme::sans (9.0f, false, 0.02f));
     g.setColour (rs::dim);
-    g.drawFittedText (rs::u8 ("Plugin que trava na busca vai para a lista de bloqueados e não derruba o DAW de novo. O RESENHA não aparece na própria lista."),
+    g.drawFittedText (cat.unprotected.load()
+                          ? rs::u8 ("ATENÇÃO: o leitor de plugins do RESENHA (ResenhaScan) não rodou nesta máquina; a busca está abrindo os plugins dentro do DAW e um plugin que travar pode prender o DAW.")
+                          : rs::u8 ("Cada plugin é lido fora do DAW: se travar (30 s), fechar ou não abrir, vai para os bloqueados e a busca segue. "
+                                    "PULAR ESTE PLUGIN encerra o atual na hora. O RESENHA não aparece na própria lista."),
                       juce::Rectangle<int> ((int) a.getX() + 20, (int) a.getY() + 516, (int) a.getWidth() - 40, 30),
                       juce::Justification::centredLeft, 2, 0.8f);
 }

@@ -217,6 +217,21 @@ jobs:
               fi
             done
           done
+          # RESENHA HUB: o ResenhaScan (leitor de plugins fora do DAW) tem que estar no bundle e ler o próprio RESENHA.
+          # Se não ler, o RESENHA fica sem release (como reprovado no pluginval).
+          for p in dist-resenha/VST3/RESENHA.vst3; do
+            [ -e "$p" ] || continue
+            if [ "${{ matrix.name }}" = mac ]; then SC="$p/Contents/Resources/ResenhaScan"; ALVO="$PWD/$p"; OUT="$PWD/scan.xml"
+            else SC="$p/Contents/Resources/ResenhaScan.exe"; ALVO=$(cygpath -w "$PWD/$p"); OUT=$(cygpath -w "$PWD/scan.xml"); fi
+            rm -f scan.xml
+            code=0; timeout 120 "$SC" VST3 "$ALVO" "$OUT" || code=$?
+            { echo "== ResenhaScan (${{ matrix.name }}): saida $code"; cat scan.xml 2>/dev/null; echo; } | tee -a pluginval.log
+            if [ "$code" != 0 ] || ! grep -q 'name="RESENHA"' scan.xml 2>/dev/null; then
+              echo "Resenha" >> pv-falhou.txt
+              echo "::warning::ResenhaScan nao leu o RESENHA (${{ matrix.name }})"
+              falha=1
+            fi
+          done
           echo fim > pv-fim.txt
           exit $falha
 
