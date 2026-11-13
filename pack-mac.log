@@ -1,0 +1,9 @@
+dist
+dist/VST3
+dist/AU
+dist-resenha
+dist-resenha/VST3
+dist-resenha/VST3/RESENHA.vst3
+dist-resenha/AU
+dist-resenha/AU/RESENHA.component
+-rw-r--r--@ 1 runner  staff  29799663 Nov 13 17:03 InsideStudioSP-Resenha-mac.dmg

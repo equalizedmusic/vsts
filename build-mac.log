@@ -1,0 +1,180 @@
+-- The C compiler identification is AppleClang 21.0.0.21000101
+-- The CXX compiler identification is AppleClang 21.0.0.21000101
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- MESA: invólucro VST3 lendo o índice da faixa
+-- Configuring done (40.8s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/runner/work/vsts/vsts/build
+[  1%] Generating juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/PluginImg.h
+[  2%] Building VST3 manifest helper for Resenha
+[  3%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/Scanner/ScanMain.cpp.o
+[  3%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors.mm.o
+-- The CXX compiler identification is AppleClang 21.0.0.21000101
+[  4%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData1.cpp.o
+-- Detecting CXX compiler ABI info
+[  5%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData2.cpp.o
+[  5%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData3.cpp.o
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/runner/work/vsts/vsts/build/vst3_helpers/Resenha
+make[3]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+[  6%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData4.cpp.o
+[ 50%] Building CXX object CMakeFiles/vst3_helper.dir/Users/runner/work/vsts/vsts/build/_deps/juce-src/modules/juce_audio_plugin_client/VST3/juce_VST3ManifestHelper.cpp.o
+[  7%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData5.cpp.o
+[  8%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData6.cpp.o
+[  8%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData7.cpp.o
+[  9%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData8.cpp.o
+[ 10%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData9.cpp.o
+[ 10%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData10.cpp.o
+[100%] Linking CXX executable vst3_helper
+[ 11%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData11.cpp.o
+[100%] Built target vst3_helper
+[ 11%] Built target Resenha_vst3_helper
+[ 12%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_gui_extra/juce_gui_extra.mm.o
+[ 13%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData12.cpp.o
+[ 14%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData13.cpp.o
+[ 14%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData14.cpp.o
+[ 15%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData15.cpp.o
+[ 16%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData16.cpp.o
+[ 17%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData17.cpp.o
+[ 17%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData18.cpp.o
+[ 18%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData19.cpp.o
+[ 19%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData20.cpp.o
+[ 20%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData21.cpp.o
+[ 20%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData22.cpp.o
+[ 21%] Building CXX object resenha/CMakeFiles/ResenhaImg.dir/juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData23.cpp.o
+[ 22%] Linking CXX static library libResenhaImg.a
+[ 23%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_2.cpp.o
+[ 23%] Built target ResenhaImg
+[ 24%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_3.cpp.o
+[ 24%] Building CXX object resenha/CMakeFiles/Resenha.dir/Source/PluginProcessor.cpp.o
+[ 25%] Building CXX object resenha/CMakeFiles/Resenha.dir/Source/PluginEditor.cpp.o
+[ 26%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors.mm.o
+[ 26%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_4.cpp.o
+[ 26%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_gui_extra/juce_gui_extra.mm.o
+[ 27%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_5.cpp.o
+[ 28%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics.mm.o
+[ 29%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_2.cpp.o
+[ 30%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_3.cpp.o
+[ 31%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_4.cpp.o
+[ 31%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics_5.cpp.o
+[ 32%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o
+[ 32%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_Sheenbidi.c.o
+[ 33%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics.mm.o
+[ 34%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o
+[ 35%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_Sheenbidi.c.o
+[ 36%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libjpg_1.c.o
+[ 36%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libjpg_1.c.o
+[ 37%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libjpg_2.c.o
+[ 38%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libjpg_2.c.o
+[ 39%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libjpg_3.c.o
+[ 40%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libpng.c.o
+[ 40%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dec.c.o
+[ 40%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libjpg_3.c.o
+[ 41%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_dec.c.o
+[ 42%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_dec_avx2.c.o
+[ 43%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_dec_sse41.c.o
+[ 44%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libpng.c.o
+[ 44%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_enc.c.o
+[ 45%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dec.c.o
+[ 46%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_enc_avx2.c.o
+[ 47%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_enc_sse41.c.o
+[ 48%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_enc.c.o
+[ 49%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_dec.c.o
+[ 49%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_dec_avx2.c.o
+[ 49%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_sharpyuv.c.o
+[ 50%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_utils.c.o
+[ 51%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_dec_sse41.c.o
+[ 52%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_lunasvg.c.o
+[ 53%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics.mm.o
+[ 54%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_enc.c.o
+[ 54%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_events/juce_events.mm.o
+[ 55%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_enc_avx2.c.o
+[ 56%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_core/juce_core_CompilationTime.cpp.o
+[ 56%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_dsp_enc_sse41.c.o
+[ 57%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_core/juce_core_zlib.c.o
+[ 58%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_enc.c.o
+[ 58%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_core/juce_core.mm.o
+[ 59%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_data_structures/juce_data_structures.mm.o
+[ 60%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_processors_headless/juce_audio_processors_headless_ara.cpp.o
+[ 61%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_processors_headless/juce_audio_processors_headless_lv2_libs.cpp.o
+[ 62%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_sharpyuv.c.o
+[ 62%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_processors_headless/juce_audio_processors_headless.mm.o
+[ 63%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_libwebp_utils.c.o
+[ 63%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics_lunasvg.c.o
+[ 64%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_graphics/juce_graphics.mm.o
+[ 65%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_basics/juce_audio_basics.mm.o
+[ 66%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_cryptography/juce_cryptography.mm.o
+[ 67%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_events/juce_events.mm.o
+[ 68%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_utils/juce_audio_utils.mm.o
+[ 69%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_core/juce_core_CompilationTime.cpp.o
+[ 69%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats_flac_1.c.o
+[ 69%] Building C object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_core/juce_core_zlib.c.o
+[ 70%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats_flac_2.c.o
+[ 71%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_core/juce_core.mm.o
+[ 72%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats_ogg.c.o
+[ 73%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats_opus.c.o
+[ 73%] Building C object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats_opusfile.c.o
+[ 74%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_data_structures/juce_data_structures.mm.o
+[ 75%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats.mm.o
+[ 76%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_audio_devices/juce_audio_devices.mm.o
+[ 77%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_audio_processors_headless/juce_audio_processors_headless_ara.cpp.o
+[ 77%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_audio_processors_headless/juce_audio_processors_headless_lv2_libs.cpp.o
+[ 78%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_audio_processors_headless/juce_audio_processors_headless.mm.o
+[ 79%] Building CXX object resenha/CMakeFiles/Resenha.dir/__/_deps/juce-src/modules/juce_dsp/juce_dsp.mm.o
+[ 80%] Building CXX object resenha/CMakeFiles/ResenhaScan.dir/__/_deps/juce-src/modules/juce_audio_basics/juce_audio_basics.mm.o
+[ 80%] Linking CXX static library Resenha_artefacts/Release/libRESENHA_SharedCode.a
+[ 80%] Built target Resenha
+[ 81%] Linking CXX executable ResenhaScan_artefacts/Release/ResenhaScan
+[ 81%] Built target ResenhaScan
+[ 81%] Generating Resenha_artefacts/JuceLibraryCode/Resenha_AU/PkgInfo
+[ 82%] Generating Resenha_artefacts/JuceLibraryCode/Resenha_VST3/PkgInfo
+[ 82%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_ARA.cpp.o
+[ 83%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX_utils.cpp.o
+[ 84%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX_utils.cpp.o
+[ 85%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_ARA.cpp.o
+[ 85%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_Standalone.cpp.o
+[ 86%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_Standalone.cpp.o
+[ 87%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_Unity.cpp.o
+[ 88%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_Unity.cpp.o
+[ 89%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX.mm.o
+[ 90%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AU_1.mm.o
+[ 91%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AU_1.mm.o
+[ 91%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX.mm.o
+[ 92%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AU_2.mm.o
+[ 93%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AUv3.mm.o
+[ 93%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AU_2.mm.o
+[ 94%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_LV2.mm.o
+[ 94%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST2.mm.o
+[ 95%] Building CXX object resenha/CMakeFiles/Resenha_VST3.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.mm.o
+[ 96%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_AUv3.mm.o
+[ 97%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_LV2.mm.o
+[ 98%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST2.mm.o
+[ 98%] Building CXX object resenha/CMakeFiles/Resenha_AU.dir/__/_deps/juce-src/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.mm.o
+[ 99%] Linking CXX CFBundle shared module Resenha_artefacts/Release/AU/RESENHA.component/Contents/MacOS/RESENHA
+[100%] Linking CXX CFBundle shared module Resenha_artefacts/Release/VST3/RESENHA.vst3/Contents/MacOS/RESENHA
+[100%] Built target Resenha_AU
+/Users/runner/work/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.vst3: code object is not signed at all
+-- Replacing invalid signature with ad-hoc signature
+/Users/runner/work/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/runner/work/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.vst3/Contents/Resources/moduleinfo.json
+[100%] Built target Resenha_VST3

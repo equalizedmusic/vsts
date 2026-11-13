@@ -1,0 +1,178 @@
+-- Building for: Visual Studio 18 2026
+-- The C compiler identification is MSVC 19.51.36260.0
+-- The CXX compiler identification is MSVC 19.51.36260.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- MESA: invólucro VST3 lendo o índice da faixa
+-- Configuring done (99.8s)
+-- Generating done (0.1s)
+-- Build files have been written to: D:/a/vsts/vsts/build
+MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+
+  Checking File Globs
+  1>Checking Build System
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  Building VST3 manifest helper for Resenha
+  ResenhaScan_rc_lib.vcxproj -> D:\a\vsts\vsts\build\resenha\ResenhaScan_rc_lib.dir\Release\ResenhaScan_rc_lib.lib
+  Resenha_rc_lib.vcxproj -> D:\a\vsts\vsts\build\resenha\Resenha_rc_lib.dir\Release\Resenha_rc_lib.lib
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+  -- Detecting CXX compiler ABI info
+  -- Detecting CXX compiler ABI info - done
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+  -- Detecting CXX compile features
+  -- Detecting CXX compile features - done
+  -- Configuring done (1.5s)
+  -- Generating done (0.0s)
+  -- Build files have been written to: D:/a/vsts/vsts/build/vst3_helpers/Resenha
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  
+    1>Checking Build System
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+    juce_VST3ManifestHelper.cpp
+    vst3_helper.vcxproj -> D:\a\vsts\vsts\build\vst3_helpers\Resenha\vst3_helper.exe
+    Building Custom Rule D:/a/vsts/vsts/build/_deps/juce-src/extras/Build/CMake/juce_vst3_helper/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  Generating juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_ResenhaImg/JuceLibraryCode/PluginImg.h
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  ScanMain.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics.cpp
+  BinaryData1.cpp
+  BinaryData2.cpp
+  BinaryData3.cpp
+  BinaryData4.cpp
+  BinaryData5.cpp
+  BinaryData6.cpp
+  BinaryData7.cpp
+  BinaryData8.cpp
+  BinaryData9.cpp
+  BinaryData10.cpp
+  BinaryData11.cpp
+  BinaryData12.cpp
+  BinaryData13.cpp
+  BinaryData14.cpp
+  BinaryData15.cpp
+  BinaryData16.cpp
+  BinaryData17.cpp
+  BinaryData18.cpp
+  BinaryData19.cpp
+  BinaryData20.cpp
+  Generating Code...
+  Compiling...
+  BinaryData21.cpp
+  BinaryData22.cpp
+  BinaryData23.cpp
+  Generating Code...
+  ResenhaImg.vcxproj -> D:\a\vsts\vsts\build\resenha\Release\ResenhaImg.lib
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  PluginProcessor.cpp
+  PluginEditor.cpp
+  juce_audio_processors.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_2.cpp
+  juce_gui_basics_5.cpp
+  juce_gui_basics_3.cpp
+  juce_gui_basics_4.cpp
+  juce_gui_basics_5.cpp
+  juce_graphics.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_core.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_cryptography.cpp
+  juce_audio_utils.cpp
+  juce_audio_processors_headless_ara.cpp
+  juce_audio_processors_headless_lv2_libs.cpp
+  juce_audio_basics.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  juce_audio_formats_flac_1.c
+  juce_audio_formats_flac_2.c
+  juce_audio_formats_ogg.c
+  juce_audio_formats_opus.c
+  juce_audio_formats_opusfile.c
+  Resenha.vcxproj -> D:\a\vsts\vsts\build\resenha\Resenha_artefacts\Release\RESENHA_SharedCode.lib
+  juce_graphics_Sheenbidi.c
+  juce_graphics_libjpg_1.c
+  juce_graphics_libjpg_2.c
+  juce_graphics_libjpg_3.c
+  juce_graphics_libpng.c
+  juce_graphics_libwebp_dec.c
+  juce_graphics_libwebp_dsp_dec.c
+  juce_graphics_libwebp_dsp_dec_avx2.c
+  juce_graphics_libwebp_dsp_dec_sse41.c
+  juce_graphics_libwebp_dsp_enc.c
+  juce_graphics_libwebp_dsp_enc_avx2.c
+  juce_graphics_libwebp_dsp_enc_sse41.c
+  juce_graphics_libwebp_enc.c
+  juce_graphics_libwebp_sharpyuv.c
+  juce_graphics_libwebp_utils.c
+  juce_graphics_lunasvg.c
+  juce_core_zlib.c
+  ResenhaScan.vcxproj -> D:\a\vsts\vsts\build\resenha\ResenhaScan_artefacts\Release\ResenhaScan.exe
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/resenha/CMakeLists.txt
+  juce_audio_plugin_client_AAX.cpp
+  juce_audio_plugin_client_AAX_utils.cpp
+  juce_audio_plugin_client_ARA.cpp
+  juce_audio_plugin_client_LV2.cpp
+  juce_audio_plugin_client_Standalone.cpp
+  juce_audio_plugin_client_Unity.cpp
+  juce_audio_plugin_client_VST2.cpp
+  juce_audio_plugin_client_VST3.cpp
+     Creating library D:/a/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.lib and object D:/a/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.exp
+  Generating code
+  Finished generating code
+  Resenha_VST3.vcxproj -> D:\a\vsts\vsts\build\resenha\Resenha_artefacts\Release\VST3\RESENHA.vst3\Contents\x86_64-win\RESENHA.vst3
+  removing moduleinfo.json
+  creating D:/a/vsts/vsts/build/resenha/Resenha_artefacts/Release/VST3/RESENHA.vst3/Contents/Resources/moduleinfo.json
+  Building Custom Rule D:/a/vsts/vsts/instrumentos/CMakeLists.txt

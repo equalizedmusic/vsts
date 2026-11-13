@@ -1,0 +1,17 @@
+commit=9b3dc4134e35128f90c8cf789397b9a423e62cd7
+run=https://github.com/equalizedmusic/vsts/actions/runs/43464397379
+mac: build=success pacote=success pluginval=success
+win: build=success pacote=success pluginval=success
+versao QUIMERA 0.5.0
+versao LIMÃO 0.6.2
+versao MERCÚRIO 0.6.0
+versao RESENHA 0.7.0
+versao MONTA-MONTA 0.1.1
+versao GROOVADOR 0.2.0
+versao MESA 0.5.1
+versao ALIGN 0.2.0
+versao ONKEY 0.1.0
+versao BAREBASS 0.3.0
+versao STOMPBOX 0.2.0
+versao MAESTRO 0.2.2
+versao MASTER DOS MAGOS 0.2.0
