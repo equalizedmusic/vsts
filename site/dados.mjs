@@ -256,10 +256,11 @@ export const PACKS = [
         id: 'resenha', nome: 'RESENHA', cor: '#fb7185', tipo: ['Instrumento · VST3 · AU', 'Instrument · VST3 · AU'],
         capa: 'resenha', preco: null,
         // 0.6.0 (12/11/2026): HUB — cada slot INTERNO ou PLUGIN (synth do cliente)
+        // 0.7.0 (13/11/2026): PLAY em modo NOTAS (toca as notas do clipe, canal 1-4 = timbre A-D) e CONTORNO RETA
         frase: ['Call & response: os seus synths conversando.', 'Call & response: your own synths talking to each other.'],
         texto: [
-            '4 slots que conversam: cada um usa o timbre INTERNO do RESENHA ou carrega um synth seu (VST3, e Audio Unit no Mac), com os presets dele: Serum num slot, Sylenth1 no outro. A busca lê só instrumentos e pula plugin que trava. Gerador de frase na escala, troca de timbre a cada N notas, OITAVA por slot, ARRASTAR MIDI para o DAW e 108 presets.',
-            '4 slots that talk to each other: each one uses RESENHA\'s INTERNAL sound or loads one of your synths (VST3, and Audio Unit on Mac) with its own presets: Serum in one slot, Sylenth1 in another. The scan reads instruments only and skips plugins that hang. In-scale phrase generator, voice switching every N notes, per-slot OCTAVE, DRAG MIDI into your DAW and 108 presets.'],
+            '4 slots que conversam: cada um usa o timbre INTERNO do RESENHA ou carrega um synth seu (VST3, e Audio Unit no Mac), com os presets dele: Serum num slot, Sylenth1 no outro. A busca lê só instrumentos e pula plugin que trava. Gerador de frase na escala, troca de timbre a cada N notas, OITAVA por slot, ARRASTAR MIDI para o DAW e 108 presets. No modo NOTAS ele toca as notas do seu clipe (o canal escolhe o timbre), e o CONTORNO RETA prende a frase na tônica.',
+            '4 slots that talk to each other: each one uses RESENHA\'s INTERNAL sound or loads one of your synths (VST3, and Audio Unit on Mac) with its own presets: Serum in one slot, Sylenth1 in another. The scan reads instruments only and skips plugins that hang. In-scale phrase generator, voice switching every N notes, per-slot OCTAVE, DRAG MIDI into your DAW and 108 presets. In NOTAS (notes) mode it plays the notes from your clip (the MIDI channel picks the voice), and the RETA (flat) contour locks the phrase to the root.'],
         plugins: [['resenha', 'RESENHA', 'HUB: Serum, Sylenth1 ou o synth que você quiser em cada slot, conversando na escala.', 'HUB: Serum, Sylenth1 or any synth you like in each slot, talking in key.']],
     },
     {
