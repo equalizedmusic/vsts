@@ -246,6 +246,7 @@ const HTML = `<!doctype html>
           </select>
         </div>
       </div>
+      <div id="vendasSaldo" class="resumo"></div>
       <div id="vendasResumo" class="resumo"></div>
       <div id="vendasLista"></div>
       <p class="det" id="vendasConta"></p>
@@ -505,6 +506,9 @@ html { -webkit-text-size-adjust:100%; }
 .st { font-size:12px; padding:1px 8px; border-radius:10px; border:1px solid var(--borda); color:var(--fraco); white-space:nowrap; }
 .st.pago { border-color:var(--ok); color:var(--ok); } .st.devolvido { border-color:var(--ruim); color:var(--ruim); }
 .st.pendente, .st.processando { border-color:var(--acento); color:var(--acento); }
+.marcas { display:flex; flex-wrap:wrap; gap:4px; margin-top:3px; }
+.marca { font-size:11px; font-weight:600; padding:1px 7px; border-radius:10px; border:1px solid var(--acento); color:var(--acento); white-space:nowrap; }
+.marca.carrinho { border-color:var(--borda); color:var(--fraco); }
 .tabela td.valor { white-space:nowrap; text-align:right; font-weight:600; } .tabela th.valor { text-align:right; }
 .tabela tr.devolvido td.valor { text-decoration:line-through; color:var(--fraco); }
 .tabela td.quando { white-space:nowrap; color:var(--fraco); font-size:13px; }
@@ -655,12 +659,22 @@ function carregarVendas() {
     var res = $('vendasResumo'); res.textContent = '';
     var moedas = Object.keys(j.resumo); if (!moedas.length) moedas = ['BRL'];
     moedas.forEach(function (m) {
-      var r = j.resumo[m] || { pagas: 0, total: 0, devolvidas: 0, devolvido: 0 };
-      res.appendChild(el('div', { classe: 'box total' }, [ el('b', { texto: dinheiro(r.total, m) }), el('span', { texto: 'recebido no mês' + (moedas.length > 1 ? ' (' + m + ')' : '') }) ]));
+      var r = j.resumo[m] || { pagas: 0, total: 0, liquido: 0, taxas: 0, sem_liquido: 0, devolvidas: 0, devolvido: 0, cupons: 0, desconto: 0, carrinhos: 0 };
+      var sufixo = moedas.length > 1 ? ' (' + m + ')' : '';
+      res.appendChild(el('div', { classe: 'box total' }, [ el('b', { texto: dinheiro(r.total, m) }), el('span', { texto: 'vendido no mês' + sufixo }) ]));
+      if (r.pagas && r.pagas > r.sem_liquido)
+        res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: dinheiro(r.liquido, m) }),
+          el('span', { texto: 'líquido no mês (taxa ' + dinheiro(r.taxas, m) + ')' + (r.sem_liquido ? ' · ' + r.sem_liquido + ' sem dado do MP' : '') }) ]));
       res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: String(r.pagas) }), el('span', { texto: r.pagas === 1 ? 'venda paga' : 'vendas pagas' }) ]));
+      if (r.cupons) res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: String(r.cupons) }), el('span', { texto: (r.cupons === 1 ? 'venda com cupom' : 'vendas com cupom') + ' (−' + dinheiro(r.desconto, m) + ')' }) ]));
+      if (r.carrinhos) res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: String(r.carrinhos) }), el('span', { texto: r.carrinhos === 1 ? 'compra com vários itens' : 'compras com vários itens' }) ]));
       if (r.devolvidas) res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: dinheiro(r.devolvido, m) }), el('span', { texto: r.devolvidas + (r.devolvidas === 1 ? ' devolvida' : ' devolvidas') }) ]));
     });
     if (j.abertos) res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: String(j.abertos) }), el('span', { texto: 'pedidos sem pagamento' }) ]));
+    (j.geral || []).forEach(function (g) {
+      res.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: dinheiro(g.total, g.moeda) }),
+        el('span', { texto: 'vendido desde o início (' + g.pagas + (g.pagas === 1 ? ' venda' : ' vendas') + ')' }) ]));
+    });
     desenharVendas();
   });
 }
@@ -677,7 +691,10 @@ function desenharVendas() {
     var abrir = function () { abrirVenda(p.id); };
     corpo.appendChild(el('tr', { tabindex: '0', classe: p.status, onclick: abrir, onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } }, [
       el('td', { classe: 'quem' }, [ el('div', { classe: 'cli-email', texto: p.nome || p.email }), p.nome ? el('div', { classe: 'det', texto: p.email }) : null ]),
-      el('td', { texto: p.pacote_nome }),
+      el('td', {}, [ el('div', { texto: p.pacote_nome }), (p.cupom || p.itens > 1) ? el('div', { classe: 'marcas' }, [
+        p.cupom ? el('span', { classe: 'marca cupom', title: 'Usou cupom de desconto', texto: 'CUPOM ' + String(p.cupom).toUpperCase() + (p.desconto_centavos ? ' −' + dinheiro(p.desconto_centavos, p.moeda) : '') }) : null,
+        p.itens > 1 ? el('span', { classe: 'marca carrinho', title: 'Uma compra só com vários itens', texto: p.itens + ' itens numa compra' }) : null
+      ]) : null ]),
       el('td', {}, [ el('span', { classe: 'st ' + p.status, texto: ST[p.status] || p.status }) ]),
       el('td', { classe: 'quando', texto: data(p.pago_em || p.criado_em) }),
       el('td', { classe: 'valor', texto: dinheiro(p.valor_centavos, p.moeda) })
@@ -698,6 +715,10 @@ function abrirVenda(id) {
   var d = $('vendaDados'); d.textContent = '';
   [['Cliente', p.nome || '-'], ['E-mail', p.email], ['Situação', ST[p.status] || p.status],
    ['Pagamento', (p.metodo === 'mp' ? 'Mercado Pago' : p.metodo === 'paypal' ? 'PayPal' : p.metodo) + (p.forma ? ' · ' + p.forma : '')],
+   ['Cupom', p.cupom ? String(p.cupom).toUpperCase() + ' (−' + dinheiro(p.desconto_centavos || 0, p.moeda) + ')' : '-'],
+   ['Itens', p.itens > 1 ? p.itens + ' numa compra só' : '1'],
+   ['Taxa do Mercado Pago', p.taxa_centavos != null ? dinheiro(p.taxa_centavos, p.moeda) : '-'],
+   ['Líquido', p.liquido_centavos != null ? dinheiro(p.liquido_centavos, p.moeda) + (p.libera_em ? ' · libera em ' + data(p.libera_em) : '') : '-'],
    ['Pedido em', data(p.criado_em)], ['Pago em', data(p.pago_em)],
    ['E-mail da licença', p.status === 'pago' || p.status === 'devolvido' ? (p.email_enviado ? 'enviado' : 'NÃO saiu: mande pelo cliente (Gerar token novo)') : '-'],
    ['Código do pedido', p.id]
@@ -713,7 +734,18 @@ function carregarConta() {
   api('GET', '/painel/vendas/conta').then(function (j) {
     if (!j.ok) return;
     vendas.conta = true;
-    var c = j.conta;
+    var c = j.conta, s = j.saldo, box = $('vendasSaldo');
+    box.textContent = '';
+    if (s && s.erro == null && s.disponivel != null) {
+      box.appendChild(el('div', { classe: 'box total' }, [ el('b', { texto: dinheiro(s.disponivel, s.moeda) }), el('span', { texto: 'disponível agora na conta do Mercado Pago' }) ]));
+      if (s.a_liberar != null) box.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: dinheiro(s.a_liberar, s.moeda) }), el('span', { texto: 'a liberar no Mercado Pago' }) ]));
+    } else if (s && s.estimado) {
+      box.appendChild(el('div', { classe: 'box total' }, [ el('b', { texto: dinheiro(s.liberado, s.moeda) }), el('span', { texto: 'líquido das vendas já liberado no Mercado Pago' }) ]));
+      box.appendChild(el('div', { classe: 'box' }, [ el('b', { texto: dinheiro(s.a_liberar, s.moeda) }),
+        el('span', { texto: 'a liberar' + (s.proxima ? ' (próxima liberação ' + data(s.proxima) + ')' : '') }) ]));
+      box.appendChild(el('p', { classe: 'det', texto: 'Soma das vendas da loja, já sem a taxa. Não é o saldo da conta: não desconta saques nem conta dinheiro de fora da loja (o Mercado Pago não libera a leitura do saldo para esta chave).' +
+        (s.lidos < s.total_vendas ? ' ' + (s.total_vendas - s.lidos) + ' venda(s) sem resposta do Mercado Pago.' : '') }));
+    } else if (s && s.erro) box.appendChild(el('p', { classe: 'det', texto: 'Saldo do Mercado Pago: não consegui ler (' + s.erro + ').' }));
     $('vendasConta').textContent = c ? 'Conta do Mercado Pago que recebe: ' + (c.email || c.apelido || c.id) + (c.apelido && c.email ? ' (' + c.apelido + ')' : '') + (c.teste ? ' · chave de TESTE' : '')
                                      : (j.erro ? 'Conta do Mercado Pago: não consegui ler (' + j.erro + ').' : 'Mercado Pago não configurado.');
   });

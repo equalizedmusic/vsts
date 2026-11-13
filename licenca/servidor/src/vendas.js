@@ -8,10 +8,44 @@
 // O mês é o de São Paulo (UTC-3, sem horário de verão). 'devolvido' não volta a 'pago': as consultas da loja só mexem
 // em pedido criado/pendente/recusado/vencido/processando.
 
-import { nomePedido } from './precos.js';
+import { nomePedido, itensPedido } from './precos.js';
 
 const agora = () => Math.floor(Date.now() / 1000);
 const FUSO = 3 * 3600;   // São Paulo = UTC-3
+const MAX_CONSULTAS = 40;          // consultas ao Mercado Pago por abertura da aba (limite de subrequests do Worker)
+const CACHE_PAGAMENTO = 6 * 3600;  // taxa/líquido de um pagamento quase não muda: guarda 6 h no cache do Worker
+
+// taxa e líquido de um pagamento do Mercado Pago (GET /v1/payments/{id}); null se não deu para ler
+async function pagamentoMp(env, id) {
+    if (!env.MP_ACCESS_TOKEN || !/^\d{1,20}$/.test(String(id))) return null;
+    const chave = new Request('https://cache.interno/mp-pagamento/' + id);
+    const cache = typeof caches !== 'undefined' ? caches.default : null;
+    if (cache) { const c = await cache.match(chave); if (c) return c.json(); }
+    let d = null;
+    try {
+        const r = await fetch('https://api.mercadopago.com/v1/payments/' + id, { headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN } });
+        if (!r.ok) return null;
+        const p = await r.json();
+        const td = p.transaction_details || {};
+        const bruto = Math.round(Number(p.transaction_amount || 0) * 100);
+        const liquido = td.net_received_amount != null ? Math.round(Number(td.net_received_amount) * 100) : null;
+        if (liquido == null) return null;
+        d = { liquido, taxa: Math.max(0, bruto - liquido), libera_em: p.money_release_date ? Math.floor(Date.parse(p.money_release_date) / 1000) : null };
+    } catch { return null; }
+    if (cache) await cache.put(chave, new Response(JSON.stringify(d), { headers: { 'cache-control': 'max-age=' + CACHE_PAGAMENTO } }));
+    return d;
+}
+
+// saldo da conta do Mercado Pago (disponível / a liberar); null se a API não liberar
+async function saldoMp(env, userId) {
+    try {
+        const r = await fetch(`https://api.mercadopago.com/users/${userId}/mercadopago_account/balance`, { headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN } });
+        if (!r.ok) return { erro: 'Mercado Pago respondeu ' + r.status };
+        const s = await r.json();
+        const c = (v) => (v == null ? null : Math.round(Number(v) * 100));
+        return { disponivel: c(s.available_balance), a_liberar: c(s.unavailable_balance), total: c(s.total_amount), moeda: s.currency_id || 'BRL' };
+    } catch (e) { return { erro: String(e.message || e) }; }
+}
 
 function json(obj, status = 200) {
     return new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -35,25 +69,42 @@ export async function rotaVendas(caminho, req, env) {
         if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) mes = mesAtual();
         const [ini, fim] = intervalo(mes);
         const { results: pedidos } = await env.DB.prepare(
-            'SELECT id, pacote, nome, email, metodo, valor_centavos, moeda, status, forma, cupom, desconto_centavos, email_enviado, licenca_id, criado_em, pago_em ' +
+            'SELECT id, pacote, nome, email, metodo, valor_centavos, moeda, status, forma, cupom, desconto_centavos, email_enviado, licenca_id, criado_em, pago_em, pagamento_id ' +
             'FROM pedidos WHERE COALESCE(pago_em, criado_em) >= ? AND COALESCE(pago_em, criado_em) < ? ORDER BY COALESCE(pago_em, criado_em) DESC')
             .bind(ini, fim).all();
         const { results: meses } = await env.DB.prepare(
             "SELECT DISTINCT strftime('%Y-%m', COALESCE(pago_em, criado_em) - ?, 'unixepoch') AS mes FROM pedidos ORDER BY mes DESC")
             .bind(FUSO).all();
-        const resumo = {};   // por moeda: { pagas, total, devolvidas, devolvido }
+        // taxa e líquido de cada venda paga no Mercado Pago (o que de fato cai na conta)
+        await Promise.all(pedidos.filter((p) => p.metodo === 'mp' && p.pagamento_id && (p.status === 'pago' || p.status === 'processando'))
+            .slice(0, MAX_CONSULTAS).map(async (p) => {
+                const d = await pagamentoMp(env, p.pagamento_id);
+                if (d) { p.liquido_centavos = d.liquido; p.taxa_centavos = d.taxa; p.libera_em = d.libera_em; }
+            }));
+        const resumo = {};   // por moeda: { pagas, total, liquido, taxas, sem_liquido, devolvidas, devolvido, cupons, desconto, carrinhos }
         let abertos = 0;
         for (const p of pedidos) {
-            p.pacote_nome = nomePedido(p.pacote) + (p.cupom ? ' · cupom ' + String(p.cupom).toUpperCase() : '');
-            const r = resumo[p.moeda] || (resumo[p.moeda] = { pagas: 0, total: 0, devolvidas: 0, devolvido: 0 });
-            if (p.status === 'pago' || p.status === 'processando') { r.pagas++; r.total += p.valor_centavos; }
+            p.itens = itensPedido(p.pacote).length;
+            p.pacote_nome = nomePedido(p.pacote);
+            delete p.pagamento_id;
+            const r = resumo[p.moeda] || (resumo[p.moeda] = { pagas: 0, total: 0, liquido: 0, taxas: 0, sem_liquido: 0, devolvidas: 0, devolvido: 0,
+                                                                cupons: 0, desconto: 0, carrinhos: 0 });
+            if (p.status === 'pago' || p.status === 'processando') {
+                r.pagas++; r.total += p.valor_centavos;
+                if (p.liquido_centavos != null) { r.liquido += p.liquido_centavos; r.taxas += p.taxa_centavos; } else r.sem_liquido++;
+                if (p.cupom) { r.cupons++; r.desconto += p.desconto_centavos || 0; }
+                if (p.itens > 1) r.carrinhos++;
+            }
             else if (p.status === 'devolvido') { r.devolvidas++; r.devolvido += p.valor_centavos; }
             else abertos++;
         }
+        // desde a primeira venda (todas as datas)
+        const { results: geral } = await env.DB.prepare(
+            "SELECT moeda, COUNT(*) AS pagas, SUM(valor_centavos) AS total FROM pedidos WHERE status IN ('pago', 'processando') GROUP BY moeda").all();
         const lista = meses.map((m) => m.mes);
         if (!lista.includes(mesAtual())) lista.unshift(mesAtual());
         if (!lista.includes(mes)) lista.push(mes);
-        return json({ ok: true, mes, meses: lista, pedidos, resumo, abertos });
+        return json({ ok: true, mes, meses: lista, pedidos, resumo, abertos, geral });
     }
 
     // de quem é a conta do Mercado Pago que recebe (a chave fica só no segredo do Worker)
@@ -62,7 +113,23 @@ export async function rotaVendas(caminho, req, env) {
         const r = await fetch('https://api.mercadopago.com/users/me', { headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN } });
         if (!r.ok) return json({ ok: true, conta: null, erro: 'Mercado Pago respondeu ' + r.status });
         const u = await r.json();
-        return json({ ok: true, conta: { email: u.email || null, apelido: u.nickname || null, nome: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+        let saldo = u.id ? await saldoMp(env, u.id) : null;
+        if (!saldo || saldo.erro) {
+            // a API de saldo é fechada para esta conta (403): soma o líquido das vendas da loja, liberado ou a liberar.
+            // Não é o saldo da conta: não conta saques, devoluções feitas lá nem dinheiro de fora da loja.
+            const { results: pagos } = await env.DB.prepare(
+                "SELECT pagamento_id FROM pedidos WHERE metodo = 'mp' AND status IN ('pago', 'processando') AND pagamento_id IS NOT NULL ORDER BY pago_em DESC LIMIT ?")
+                .bind(MAX_CONSULTAS).all();
+            let liberado = 0, aLiberar = 0, proxima = null, lidos = 0;
+            for (const d of await Promise.all(pagos.map((p) => pagamentoMp(env, p.pagamento_id)))) {
+                if (!d) continue;
+                lidos++;
+                if (d.libera_em && d.libera_em > agora()) { aLiberar += d.liquido; if (!proxima || d.libera_em < proxima) proxima = d.libera_em; }
+                else liberado += d.liquido;
+            }
+            saldo = { estimado: true, liberado, a_liberar: aLiberar, proxima, lidos, total_vendas: pagos.length, moeda: 'BRL', erro_api: saldo && saldo.erro };
+        }
+        return json({ ok: true, saldo, conta: { email: u.email || null, apelido: u.nickname || null, nome: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
                                          id: u.id || null, teste: String(env.MP_ACCESS_TOKEN).startsWith('TEST-') } });
     }
 
