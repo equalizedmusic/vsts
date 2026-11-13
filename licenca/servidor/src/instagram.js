@@ -409,6 +409,8 @@ async function passoAgenda(env, tk, a) {
     }
     const s = await status(c.principal);
     if (s === 'ERROR' || s === 'EXPIRED') return { estado: 'erro', resultado: 'contêiner ' + s };
+    // PUBLISHED: outra rodada (cron x /agenda/rodar ao mesmo tempo) já publicou e a gravação dela se perdeu; não ficar preso em "processando"
+    if (s === 'PUBLISHED') return { estado: 'publicado', conteiner: c, resultado: JSON.stringify({ midia: null, link: null, obs: 'contêiner já publicado (rodada concorrente)' }) };
     if (s !== 'FINISHED') return { estado: 'processando', conteiner: c };
     const p = await graph(alvo + '/media_publish', tk, form({ creation_id: c.principal }));
     if (!p.ok || !p.corpo?.id) return { estado: 'erro', resultado: erro(p) };
