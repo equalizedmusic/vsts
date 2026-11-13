@@ -27,6 +27,10 @@ export const PRECOS = {
 
 // combo = um pedido que libera vários pacotes (loja.js concluir() cria uma licença para cada um)
 export const COMBOS = { maestromagos: ['maestro', 'magos'] };
+// Completar o combo (12/11/2026, decisão dele): quem já comprou UM plugin do combo e compra o outro avulso (mesmo e-mail)
+// paga só o que falta para fechar o preço do combo. O que já pagou = preço de tabela daquele plugin na data do pagamento,
+// com o cupom daquele pedido descontado na mesma proporção (loja.js creditosCombo). Vale enquanto o combo existir.
+export const COMBO_DE = Object.fromEntries(Object.entries(COMBOS).flatMap(([c, ps]) => ps.map((p) => [p, c])));
 
 // Cupom de desconto (12/11/2026, decisão dele): % sobre o TOTAL do pedido (carrinho ou pack avulso), vale também
 // sobre o preço de oferta e o combo. umaPorEmail: cada comprador (e-mail) usa uma vez só — conta pedido pago,

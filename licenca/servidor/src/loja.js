@@ -11,7 +11,7 @@
 // Sem RESEND_API_KEY a loja inteira recusa (a licença só chega por e-mail).
 // Variáveis opcionais: SITE_URL (volta para o site), MP_URL / PAYPAL_URL (teste: sandbox ou simulador local).
 
-import { precoAtual, NOMES, COMBOS, cupomValido, normCupom, licencasPedido, itensPedido, nomePedido } from './precos.js';
+import { precoAtual, NOMES, COMBOS, COMBO_DE, cupomValido, normCupom, licencasPedido, itensPedido, nomePedido } from './precos.js';
 import { enviarEmail, emailLigado, CONTATO } from './email.js';
 
 const MP_API = 'https://api.mercadopago.com';
@@ -52,6 +52,24 @@ async function cupomJaUsado(env, codigo, email) {
     const { results } = await env.DB.prepare("SELECT email FROM pedidos WHERE cupom = ? AND status IN ('pago', 'processando', 'devolvido')").bind(codigo).all();
     const k = chaveEmail(email);
     return results.some((r) => chaveEmail(r.email) === k);
+}
+
+// Completar o combo (precos.js COMBO_DE): quanto este e-mail já pagou por cada plugin de combo, em centavos.
+// Só conta pedido PAGO com a licença ainda ativa. Plugin que veio dentro do próprio combo não gera crédito.
+// Pedido com cupom ou carrinho: preço de tabela do plugin na data do pagamento × (pago ÷ total antes do cupom).
+async function creditosCombo(env, email) {
+    const { results } = await env.DB.prepare("SELECT pacote, valor_centavos, desconto_centavos, pago_em FROM pedidos WHERE email = ? AND status = 'pago'").bind(email).all();
+    const ativas = new Set((await env.DB.prepare("SELECT pacote FROM licencas WHERE email = ? AND status = 'ativa'").bind(email).all()).results.map((r) => r.pacote));
+    const cred = {};
+    for (const p of results) {
+        const fator = p.valor_centavos / (p.valor_centavos + (p.desconto_centavos || 0) || 1);
+        for (const it of itensPedido(p.pacote)) {
+            if (!COMBO_DE[it] || !ativas.has(it)) continue;
+            const tabela = precoAtual(it, (p.pago_em || 0) * 1000)?.brl;
+            if (typeof tabela === 'number') cred[it] = Math.max(cred[it] || 0, Math.round(tabela * 100 * fator));
+        }
+    }
+    return { cred, ativas };
 }
 
 // GET /loja/cupom?c=CODIGO -> { ok, codigo, pct } (o site mostra o desconto antes; quem cobra é o /loja/pagar)
@@ -102,6 +120,28 @@ async function pagar(req, env, url, h) {
         return erro('Este pagamento ainda não está disponível. Fale com a gente: ' + CONTATO,
                     'This payment option is not available yet. Contact us: ' + CONTATO, 503);
 
+    // completar o combo (precos.js COMBO_DE): já tem um plugin do combo e leva o outro avulso = paga só o que falta
+    // para o preço do combo. Combo com um dos plugins já no e-mail = recusa e aponta o avulso (sairia licença repetida).
+    const completa = [];
+    if (metodo === 'mp' && itens.some((p) => COMBO_DE[p] || COMBOS[p])) {
+        const { cred, ativas } = await creditosCombo(env, email);
+        for (const [i, it] of itens.entries()) {
+            if (COMBOS[it]) {
+                const tem = COMBOS[it].filter((x) => ativas.has(x)), falta = COMBOS[it].filter((x) => !ativas.has(x));
+                if (!tem.length) continue;
+                if (!falta.length) return erro(`Este e-mail já tem o ${nomePedido(it)}. Não precisa comprar de novo.`, `This e-mail already owns ${nomePedido(it)}.`, 409);
+                return erro(`Este e-mail já tem o ${nomePedido(tem.join('+'))}. Compre só o ${nomePedido(falta.join('+'))} com o mesmo e-mail: o preço já sai abatido para fechar o valor do combo.`,
+                            `This e-mail already owns ${nomePedido(tem.join('+'))}. Buy only ${nomePedido(falta.join('+'))} with the same e-mail: the price drops to complete the bundle price.`, 409);
+            }
+            const c = COMBO_DE[it];
+            if (!c || itens.includes(c) || ativas.has(it)) continue;
+            const outro = COMBOS[c].find((x) => x !== it);
+            if (!cred[outro]) continue;
+            const falta = Math.max(100, Math.round(precoAtual(c).brl * 100) - cred[outro]);   // nunca abaixo de R$ 1
+            if (falta < Math.round(valores[i] * 100)) { valores[i] = falta / 100; completa.push(it); }
+        }
+    }
+
     // cupom: % sobre o total; cada e-mail usa uma vez (pedido pago, em processamento ou devolvido)
     const cupomTxt = normCupom(f.get('cupom'));
     const cupom = cupomTxt ? cupomValido(cupomTxt) : null;
@@ -119,7 +159,7 @@ async function pagar(req, env, url, h) {
 
     const id = 'P' + [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
     const pedido = { id, pacote, nome, email, metodo, valor_centavos: bruto - desconto, moeda: metodo === 'mp' ? 'BRL' : 'USD', criado_em: h.agora(),
-                     cupom: cupom ? cupom.codigo : null, desconto_centavos: desconto };
+                     cupom: cupom ? cupom.codigo : null, desconto_centavos: desconto, completa };
     await env.DB.prepare('INSERT INTO pedidos (id, pacote, nome, email, metodo, valor_centavos, moeda, status, ip, criado_em, cupom, desconto_centavos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(id, pacote, nome, email, metodo, pedido.valor_centavos, pedido.moeda, 'criado', ip, pedido.criado_em, pedido.cupom, desconto).run();
 
@@ -143,7 +183,7 @@ async function cobrancaMp(env, url, p) {
         headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN, 'content-type': 'application/json', 'x-idempotency-key': p.id },
         body: JSON.stringify({
             // carrinho e cupom: um item só com o total (o Mercado Pago não aceita item de desconto negativo)
-            items: [{ id: p.pacote.slice(0, 250), title: `${nomePedido(p.pacote)} — InsideStudioSP (licença digital)${p.cupom ? ` · cupom ${p.cupom.toUpperCase()}` : ''}`.slice(0, 250), category_id: 'others',
+            items: [{ id: p.pacote.slice(0, 250), title: `${nomePedido(p.pacote)} — InsideStudioSP (licença digital)${p.completa?.length ? ' · completa o combo' : ''}${p.cupom ? ` · cupom ${p.cupom.toUpperCase()}` : ''}`.slice(0, 250), category_id: 'others',
                       quantity: 1, currency_id: 'BRL', unit_price: p.valor_centavos / 100 }],
             payer: { email: p.email, ...partesNome(p.nome) },
             external_reference: p.id,

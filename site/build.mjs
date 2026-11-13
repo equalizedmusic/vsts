@@ -104,6 +104,7 @@ function caixaCompra(p) {
     <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}
       <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
     ${campoCupom(p.preco.brl)}
+    ${avisoCompletaCombo(p)}
     ${temBrl(p) ? `<button class="bt bt-principal" name="metodo" value="mp">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>` : ''}
     ${temUsd(p) ? `<button class="bt bt-sec" name="metodo" value="paypal">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>` : ''}
     <button class="bt bt-sec bt-carrinho" type="button" data-add="${p.id}" hidden>${t('+ Adicionar ao carrinho', '+ Add to cart')}</button>
@@ -112,6 +113,16 @@ function caixaCompra(p) {
                         'Once the payment is approved you get the activation token, the download link and the instructions by e-mail. The token works on 2 computers.')}</p>
     <p class="nota">${t('Nome e e-mail são usados só para a licença e o suporte.', 'Your name and e-mail are used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
   </form>`;
+}
+
+// completar o combo (12/11): quem já comprou o outro plugin do combo paga só o que falta (servidor: loja.js creditosCombo)
+function avisoCompletaCombo(p) {
+    const c = PACKS.find((x) => x.combo?.includes(p.id) && temBrl(x));
+    if (!c) return '';
+    const outro = PACKS.find((x) => x.id === c.combo.find((y) => y !== p.id));
+    if (!outro) return '';
+    return `<p class="nota nota-combo">${t(`Já comprou o ${outro.nome}? Use o mesmo e-mail da compra: o ${p.nome} sai só pelo que falta para fechar o combo dos dois (${brl(c.preco.brl)}). O valor com o abatimento aparece no Mercado Pago, antes de você pagar.`,
+        `Already bought ${outro.nome}? Use the same e-mail: ${p.nome} costs only what is left to reach the bundle price (${brl(c.preco.brl)}). The reduced amount shows on Mercado Pago before you pay.`)}</p>`;
 }
 
 // cupom de desconto (12/11): o site.js confere em /loja/cupom e mostra o total com desconto; quem cobra é o servidor.
