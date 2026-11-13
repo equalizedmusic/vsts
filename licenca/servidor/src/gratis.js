@@ -120,7 +120,8 @@ export async function rotaGratis(req, env, url, h, PACOTE = 'montamonta') {
     if ((n?.ip || 0) >= POR_IP_DIA || (n?.total || 0) >= TOTAL_DIA)
         return json({ ok: false, mensagem: 'Muitos pedidos agora. Tente de novo amanhã ou chame a gente no direct.' }, 429);
 
-    const doEmail = await env.DB.prepare('SELECT pacote, token_hash, status FROM licencas WHERE email = ?').bind(email).all();
+    // licença de TESTE (token próprio, ver index.js criarLicenca) não conta aqui: nem como pacote, nem como token do e-mail
+    const doEmail = await env.DB.prepare("SELECT pacote, token_hash, status FROM licencas WHERE email = ? AND origem <> 'teste'").bind(email).all();
     const lista = doEmail.results || [];
     if (lista.some((l) => l.pacote === PACOTE)) {
         await h.evento(env, null, 'gratis_ja', email, ip);
@@ -358,7 +359,8 @@ export async function rotaTokenVst(req, env, url, h, acao, pacote) {
 
     await h.evento(env, lic.id, 'reenvio_usado', hc, ip);
     const token = h.novoToken();
-    await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await h.sha256Hex('ISP' + h.normToken(token)), lic.email).run();
+    // licença de TESTE tem token próprio (index.js criarLicenca): fica de fora
+    await env.DB.prepare("UPDATE licencas SET token_hash = ? WHERE email = ? AND origem <> 'teste'").bind(await h.sha256Hex('ISP' + h.normToken(token)), lic.email).run();
     await h.evento(env, lic.id, 'novo_token', 'pelo e-mail (perdi meu token)', ip);
     const sistema = /Mac$/.test(lic.nota || '') ? 'mac' : 'win';
     await emailVst(env, url, h, { pacote, email: lic.email, token, sistema, assunto: `Seu novo token do ${V.nome} · Your new ${V.nome} token`,

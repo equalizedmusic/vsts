@@ -17,6 +17,7 @@
 
 import { rotaCaixa } from './caixa.js';
 import { rotaVendas } from './vendas.js';
+import { PRECOS } from './precos.js';
 
 const SESSAO_HORAS = 12;
 const ITERACOES = 100000;          // máximo que o Workers aceita no PBKDF2
@@ -325,7 +326,7 @@ const HTML = `<!doctype html>
       <div class="pacotes"><label><input type="checkbox" name="avisar" checked> Enviar ao cliente um e-mail por pacote, com o download e o passo a passo de cada um</label></div>
       <div class="linha">
         <label>Origem
-          <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (teste grátis)</option></select>
+          <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (grátis, sem prazo)</option><option value="teste">Teste de 7 dias (vence 7 dias após ativar)</option></select>
         </label>
         <label>Pedido / Pix (opcional) <input name="pedido" autocomplete="off"></label>
         <label>Computadores <input name="maquinas" type="number" min="1" max="10" value="2"></label>
@@ -358,7 +359,7 @@ const HTML = `<!doctype html>
       <div class="pacotes"><label><input type="checkbox" name="avisar" checked> Enviar ao cliente um e-mail por pacote, com o download e o passo a passo de cada um</label></div>
       <div class="linha">
         <label>Origem
-          <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (teste grátis)</option></select>
+          <select name="origem"><option value="venda">Venda</option><option value="cortesia">Cortesia (grátis, sem prazo)</option><option value="teste">Teste de 7 dias (vence 7 dias após ativar)</option></select>
         </label>
         <label>Pedido / Pix (opcional) <input name="pedido" autocomplete="off"></label>
         <label>Computadores <input name="maquinas" type="number" min="1" max="10" value="2"></label>
@@ -466,6 +467,7 @@ pre { background:#111214; border:1px solid var(--borda); border-radius:6px; padd
 .tabela tbody tr { cursor:pointer; } .tabela tbody tr:hover, .tabela tbody tr:focus { background:#26272c; outline:none; }
 .tabela td.num { white-space:nowrap; color:var(--fraco); font-size:13px; }
 .chip { display:inline-block; font-size:12px; padding:1px 8px; margin:1px 3px 1px 0; border-radius:10px; border:1px solid var(--ok); color:var(--ok); }
+.chip.teste { border-color:var(--acento); color:var(--acento); } .status-teste { color:var(--acento); }
 .chip.revogada { border-color:var(--borda); color:var(--fraco); text-decoration:line-through; }
 .cli-email { font-weight:600; word-break:break-all; }
 dialog.largo { width:min(760px, 94vw); padding:16px 22px; }
@@ -585,6 +587,8 @@ const JS = `
 'use strict';
 var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa'],['align','Align'],['barebass','Barebass'],['stompbox','Stompbox'],['maestro','Maestro'],['magos','Master dos Magos'],['vassoura','Vassoura']];
 var NOME = {}; PACOTES.forEach(function (p) { NOME[p[0]] = p[1]; });
+// licença de TESTE (7 dias): só para pacote pago (precos.js), 1 computador, token próprio
+var PAGOS = ${JSON.stringify(Object.keys(PRECOS))};
 var $ = function (id) { return document.getElementById(id); };
 
 function el(tag, attrs, filhos) {
@@ -841,20 +845,22 @@ function enviarCaixa(corpo, msgId, botao, depois) {
 }
 
 // sistemas: ['win'], ['mac'] ou os dois; só entram na mensagem os links dos sistemas marcados
-function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
-  maquinas = maquinas || 2;
+function mensagemCliente(email, pacotes, token, sistemas, maquinas, teste) {
+  maquinas = teste ? 1 : maquinas || 2;
   sistemas = sistemas && sistemas.length ? sistemas : ['win', 'mac'];
   var nomes = pacotes.map(function (p) { return NOME[p]; }).join(', ');
   var linhas = [
     'Olá!',
     '',
-    'Obrigado por escolher a InsideStudioSP. Seguem os dados para ativar seus plugins:',
+    teste ? 'Liberamos para você um TESTE de 7 dias. Seguem os dados para ativar:' : 'Obrigado por escolher a InsideStudioSP. Seguem os dados para ativar seus plugins:',
     '',
     'Pacote' + (pacotes.length > 1 ? 's' : '') + ': ' + nomes,
     'E-mail: ' + email
   ];
-  if (token) linhas.push('Token: ' + token);
+  if (token) linhas.push('Token' + (teste ? ' de teste' : '') + ': ' + token);
+  else if (teste) linhas.push('Token: o mesmo token de TESTE que você já recebeu (ele é diferente do token de compra).');
   else linhas.push('Token: o mesmo que você já recebeu da InsideStudioSP (ele vale para todos os seus pacotes).');
+  if (teste) linhas.push('', 'O teste vale para 1 computador e dura 7 dias a partir da ativação. Depois disso o plugin para de funcionar; para continuar, é só comprar em https://insidestudiosp.com.br com este mesmo e-mail.');
   linhas.push('', 'Downloads:');
   pacotes.forEach(function (p) {
     var base = location.origin + '/baixar/' + p + '/';
@@ -876,13 +882,14 @@ function mensagemCliente(email, pacotes, token, sistemas, maquinas) {
   return linhas.join('\\n');
 }
 
-function mostrarResultado(email, pacotes, token, extra, sistemas, maquinas, titulo) {
-  var texto = mensagemCliente(email, pacotes, token, sistemas, maquinas);
+function mostrarResultado(email, pacotes, token, extra, sistemas, maquinas, titulo, teste) {
+  var texto = mensagemCliente(email, pacotes, token, sistemas, maquinas, teste);
   $('resTitulo').textContent = titulo || 'Licença gerada';
   $('resResumo').textContent = email + ' · ' + pacotes.map(function (p) { return NOME[p]; }).join(', ') +
-    (token ? ' · token novo: ' + token : ' · mesmo token que este e-mail já tem') + (extra ? ' · ' + extra : '');
+    (teste ? (token ? ' · token de TESTE novo: ' + token : ' · mesmo token de teste que este e-mail já tem')
+           : (token ? ' · token novo: ' + token : ' · mesmo token que este e-mail já tem')) + (extra ? ' · ' + extra : '');
   $('resMensagem').textContent = texto;
-  $('btEmail').href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Sua licença InsideStudioSP') +
+  $('btEmail').href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(teste ? 'Seu teste de 7 dias InsideStudioSP' : 'Sua licença InsideStudioSP') +
     '&body=' + encodeURIComponent(texto);
   if (!$('dResultado').open) $('dResultado').showModal();
 }
@@ -899,16 +906,19 @@ function gerar(f, email, msgId, titulo, depois) {
   if (!sistemas.length) { msg(msgId, 'Marque Windows, Mac ou os dois.'); return; }
   var bt = f.querySelector('button[type=submit]'); bt.disabled = true; msg(msgId, 'Gerando…', true);
   var token = null, feitos = [], erros = [], aviso = '', avisar = f.avisar.checked, comEmail = [], semEmail = [];
+  var teste = f.origem.value === 'teste';
+  if (teste) titulo = 'Licença de teste gerada (7 dias)';
   var seq = Promise.resolve();
   // um pacote por vez: o primeiro de um e-mail novo gera o token (vai no e-mail dele); os outros usam o mesmo
   pacotes.forEach(function (p) {
     seq = seq.then(function () {
       return api('POST', '/admin/licencas', {
         email: email, pacote: p, origem: f.origem.value, pedido: f.pedido.value.trim(), nota: f.nota.value.trim(),
-        max_maquinas: Number(f.maquinas.value) || 2, avisar: avisar, sistemas: sistemas
+        max_maquinas: teste ? 1 : Number(f.maquinas.value) || 2, avisar: avisar, sistemas: sistemas
       }).then(function (j) {
         if (j.ok) {
           feitos.push(p); if (j.token) token = j.token; if (j.token_trocado) aviso = 'o token da página grátis foi trocado por este';
+          if (j.era_teste) aviso = [aviso, NOME[p] + ': a licença de teste foi trocada pela normal'].filter(Boolean).join(' · ');
           if (avisar) (j.email_enviado ? comEmail : semEmail).push(NOME[p]);
         }
         else erros.push(NOME[p] + ': ' + (j.mensagem || 'erro'));
@@ -923,34 +933,53 @@ function gerar(f, email, msgId, titulo, depois) {
       comEmail.length ? 'e-mail enviado ao cliente: ' + comEmail.join(', ') : '',
       semEmail.length ? 'e-mail NÃO saiu (mande a mensagem abaixo): ' + semEmail.join(', ') : ''].filter(Boolean).join(' · ');
     else aviso = [aviso, 'sem e-mail ao cliente (mande a mensagem abaixo)'].filter(Boolean).join(' · ');
-    var maquinas = Number(f.maquinas.value) || 2;
+    var maquinas = teste ? 1 : Number(f.maquinas.value) || 2;
     carregar().then(function () {
       if (depois) depois();
-      mostrarResultado(email, feitos, token, aviso, sistemas, maquinas, titulo);
+      mostrarResultado(email, feitos, token, aviso, sistemas, maquinas, titulo, teste);
     });
   });
 }
 
-// caixas dos pacotes; no cliente, os que ele já tem ficam marcados e travados
-function desenharPacotes(caixa, lics) {
-  var tem = {};
-  (lics || []).forEach(function (l) { tem[l.pacote] = l.status; });
+// caixas dos pacotes; no cliente, os que ele já tem ficam marcados e travados.
+// teste = formulário com origem "Teste de 7 dias": pacote grátis fica travado. Fora do teste, pacote que está EM TESTE
+// fica livre: a licença de teste é trocada pela normal (servidor, criarLicenca)
+function desenharPacotes(caixa, lics, teste) {
+  var tem = {}, emTeste = {};
+  (lics || []).forEach(function (l) { tem[l.pacote] = l.status; if (l.origem === 'teste') emTeste[l.pacote] = 1; });
   caixa.textContent = '';
   PACOTES.forEach(function (p) {
     var st = tem[p[0]];
-    var rotulo = el('label', { classe: st ? 'tem' + (st === 'ativa' ? '' : ' cancelada') : '' }, [
-      el('input', st ? { type: 'checkbox', name: 'pacote', value: p[0], checked: '', disabled: '' } : { type: 'checkbox', name: 'pacote', value: p[0] }),
+    if (st && emTeste[p[0]] && !teste) st = null;
+    var gratis = teste && !st && PAGOS.indexOf(p[0]) < 0;
+    var rotulo = el('label', { classe: st ? 'tem' + (st === 'ativa' ? '' : ' cancelada') : gratis ? 'tem' : '' }, [
+      el('input', st ? { type: 'checkbox', name: 'pacote', value: p[0], checked: '', disabled: '' }
+                : gratis ? { type: 'checkbox', name: 'pacote', value: p[0], disabled: '' } : { type: 'checkbox', name: 'pacote', value: p[0] }),
       p[1],
-      st ? el('small', { texto: st === 'ativa' ? '(já tem)' : '(cancelada: use Reativar acima)' }) : null
+      st ? el('small', { texto: st === 'ativa' ? (emTeste[p[0]] ? '(em teste)' : '(já tem)') : '(cancelada: use Reativar acima)' })
+         : gratis ? el('small', { texto: '(grátis: sem teste)' })
+         : emTeste[p[0]] ? el('small', { texto: '(em teste: vira licença normal)' }) : null
     ]);
     caixa.appendChild(rotulo);
   });
 }
 
+// origem "Teste de 7 dias": 1 computador fixo e só pacote pago; volta ao normal ao trocar a origem
+function ajustarOrigem(f, lics) {
+  var teste = f.origem.value === 'teste';
+  if (teste && !f.maquinas.disabled) f.setAttribute('data-maq', f.maquinas.value);
+  if (teste) f.maquinas.value = 1;
+  else if (f.maquinas.disabled) f.maquinas.value = f.getAttribute('data-maq') || 2;
+  f.maquinas.disabled = teste;
+  var marcadosAntes = marcados(f, 'pacote');
+  desenharPacotes(f.querySelector('[data-pacotes]'), lics, teste);
+  marcadosAntes.forEach(function (p) { var c = f.querySelector('input[name=pacote][value="' + p + '"]:not(:disabled)'); if (c) c.checked = true; });
+}
+
 function abrirNovo() {
   var f = $('fNova');
-  f.reset(); f.maquinas.value = 2; msg('msgNova', '');
-  desenharPacotes(f.querySelector('[data-pacotes]'), null);
+  f.reset(); f.maquinas.disabled = false; f.maquinas.value = 2; msg('msgNova', '');
+  ajustarOrigem(f, null);
   $('novoJaExiste').hidden = true;
   $('dNovo').showModal();
   f.email.focus();
@@ -962,15 +991,16 @@ function conferirEmailNovo() {
   var email = f.email.value.trim().toLowerCase();
   var lics = ultimaLista[email];
   $('novoJaExiste').hidden = !lics;
-  desenharPacotes(f.querySelector('[data-pacotes]'), lics);
+  ajustarOrigem(f, lics);
 }
 
 function abrirAdicionar() {
   var email = clienteAberto, lics = ultimaLista[email] || [];
   var f = $('fAdicionar');
   f.reset(); msg('msgAdicionar', '');
-  f.maquinas.value = lics.reduce(function (n, l) { return Math.max(n, l.max_maquinas); }, 0) || 2;
-  desenharPacotes(f.querySelector('[data-pacotes]'), lics);
+  f.maquinas.disabled = false;
+  f.maquinas.value = lics.reduce(function (n, l) { return l.origem === 'teste' ? n : Math.max(n, l.max_maquinas); }, 0) || 2;
+  ajustarOrigem(f, lics);
   f.hidden = false; $('cliRodape').hidden = true;
   f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   var c = f.querySelector('input[name=pacote]:not(:disabled)'); if (c) c.focus();
@@ -984,11 +1014,12 @@ function acao(caminho, corpo, pergunta, depois) {
   api('POST', caminho, corpo).then(function (j) {
     if (!j.ok) { msg('msgCliente', j.mensagem || 'Erro.'); return; }
     if (j.token) {
-      var ativasCli = (ultimaLista[j.email] || []).filter(function (l) { return l.status === 'ativa'; });
+      // token de teste e token de compra são separados: a mensagem fala só dos pacotes do lado que trocou
+      var ativasCli = (ultimaLista[j.email] || []).filter(function (l) { return l.status === 'ativa' && (l.origem === 'teste') === !!j.teste; });
       var pacs = ativasCli.map(function (l) { return l.pacote; });
       var maqs = ativasCli.reduce(function (n, l) { return Math.max(n, l.max_maquinas); }, 0);
       $('dCliente').close();
-      mostrarResultado(j.email, pacs.length ? pacs : [j.pacote], j.token, 'o token antigo parou de valer', null, maqs);
+      mostrarResultado(j.email, pacs.length ? pacs : [j.pacote], j.token, 'o token antigo parou de valer', null, maqs, j.teste ? 'Token de teste novo' : null, !!j.teste);
     }
     carregar().then(function () {
       if (depois) depois();
@@ -1036,7 +1067,8 @@ function desenharLista() {
     var abrir = function () { abrirCliente(email); };
     corpo.appendChild(el('tr', { tabindex: '0', onclick: abrir, onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } } }, [
       el('td', { classe: 'cli-email', texto: email }),
-      el('td', {}, lics.map(function (l) { return el('span', { classe: 'chip' + (l.status === 'ativa' ? '' : ' revogada'), texto: NOME[l.pacote] || l.pacote }); })),
+      el('td', {}, lics.map(function (l) { return el('span', { classe: 'chip' + (l.status === 'ativa' ? '' : ' revogada') + (l.origem === 'teste' ? ' teste' : ''),
+        texto: (NOME[l.pacote] || l.pacote) + (l.origem === 'teste' ? ' · teste' : '') }); })),
       el('td', { classe: 'num', texto: limite ? maq + ' de ' + limite : String(maq) }),
       el('td', { classe: 'num col-opc', texto: visto ? data(visto) : '-' }),
       el('td', { classe: 'num col-opc', texto: data(desde) })
@@ -1075,7 +1107,9 @@ function abrirCliente(email) {
             'Liberar o computador "' + (m.nome_maquina || '') + '" desta licença? Ele para de funcionar na próxima conferência e a vaga fica livre.'); } })
       ]));
     });
-    var info = [ l.origem === 'venda' ? 'venda' : l.origem === 'gratis' ? 'página grátis' : 'cortesia', 'criada ' + data(l.criada_em) ];
+    var info = [ l.origem === 'venda' ? 'venda' : l.origem === 'gratis' ? 'página grátis' : l.origem === 'teste' ? 'TESTE 7 dias (token próprio)' : 'cortesia', 'criada ' + data(l.criada_em) ];
+    if (l.origem === 'teste') info.push(!l.teste_inicio ? 'ainda não ativou: os 7 dias começam na ativação'
+      : (l.teste_fim * 1000 > Date.now() ? 'começou ' : 'VENCEU · começou ') + data(l.teste_inicio) + ' · acaba ' + data(l.teste_fim));
     if (l.pedido) info.push('pedido ' + l.pedido);
     if (l.nota) info.push(l.nota);
     caixa.appendChild(el('div', { classe: 'lic' }, [
@@ -1090,7 +1124,7 @@ function abrirCliente(email) {
     ]));
   });
   // área de adicionar aberta: refaz as caixas com a situação nova (ex.: depois de Reativar)
-  if (!$('fAdicionar').hidden) desenharPacotes($('fAdicionar').querySelector('[data-pacotes]'), lics);
+  if (!$('fAdicionar').hidden) ajustarOrigem($('fAdicionar'), lics);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1157,6 +1191,8 @@ document.addEventListener('DOMContentLoaded', function () {
   $('btNovo').addEventListener('click', abrirNovo);
   $('btNovoFechar').addEventListener('click', function () { $('dNovo').close(); });
   $('fNova').email.addEventListener('input', conferirEmailNovo);
+  $('fNova').origem.addEventListener('change', conferirEmailNovo);
+  $('fAdicionar').origem.addEventListener('change', function () { ajustarOrigem($('fAdicionar'), ultimaLista[clienteAberto] || []); });
   $('btNovoAbrirCli').addEventListener('click', function () {
     var email = $('fNova').email.value.trim().toLowerCase();
     $('dNovo').close(); abrirCliente(email); abrirAdicionar();
@@ -1184,7 +1220,9 @@ document.addEventListener('DOMContentLoaded', function () {
   $('btCliPacote').addEventListener('click', abrirAdicionar);
   $('btCliToken').addEventListener('click', function () {
     var email = clienteAberto, lics = ultimaLista[email] || [];
-    if (lics.length) acao('/admin/novo-token', { id: lics[0].id },
+    // token de compra (o de teste é separado e só troca se o cliente só tiver teste)
+    var alvo = lics.filter(function (l) { return l.origem !== 'teste'; })[0] || lics[0];
+    if (alvo) acao('/admin/novo-token', { id: alvo.id },
       'Gerar um token novo para ' + email + '?\\n\\nO token atual para de valer em todos os pacotes deste e-mail. Os computadores já ativados continuam até a próxima conferência com o servidor (em até 3 dias) e aí pedem o token novo.');
   });
   $('btCliRevogar').addEventListener('click', function () {

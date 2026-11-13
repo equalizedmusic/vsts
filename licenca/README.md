@@ -34,6 +34,21 @@ Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
 
 Isso segura o repasse casual de instalador + token; não segura quem quiser craquear o binário.
 
+## Licença de teste (7 dias) — sem divulgar, só pelo painel
+
+Painel → Novo cliente / Adicionar pacote → Origem **Teste de 7 dias**. Regras (servidor, `index.js` `criarLicenca` e `rotaPlugin`):
+- só pacote **pago** (`precos.js` PRECOS); **1 computador**; origem `teste`.
+- **token próprio**, diferente do token de compra do e-mail (todos os testes do e-mail dividem o mesmo token de teste).
+  "Gerar token novo" e "perdi meu token" trocam só o lado da compra.
+- os 7 dias contam da **1ª ativação** (evento `ativou` mais antigo da licença): desativar e ativar noutro PC não zera.
+- **o plugin não mudou**: a licença assinada sai com `valida_ate` = fim do teste, então o plugin trava sozinho nessa
+  hora, mesmo offline. Depois disso `/v1/ativar` e `/v1/validar` respondem `teste_expirado` (evento `teste_vencido`, não
+  conta como recusa para o bloqueio por IP). Quem atrasar o relógio do PC engana a trava local; ao confirmar pela internet
+  o servidor recusa.
+- comprou o pacote (loja ou painel): a licença de teste é **apagada** e entra a normal, com o token de compra
+  (evento `teste_substituido`). Teste não dá crédito de "completar o combo" nem bloqueia o combo.
+- e-mail próprio ("Seu teste de 7 dias: …", `textoLicenca({ teste })`).
+
 ## Pastas
 
 - Página grátis do MONTA-MONTA: `/gratis/montamonta` (e-mail → token na tela + download, origem `gratis`; ver `servidor/src/gratis.js`). Venda/cortesia num e-mail que só tem licença grátis troca o token.

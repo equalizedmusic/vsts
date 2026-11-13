@@ -59,7 +59,8 @@ async function cupomJaUsado(env, codigo, email) {
 // Pedido com cupom ou carrinho: preço de tabela do plugin na data do pagamento × (pago ÷ total antes do cupom).
 async function creditosCombo(env, email) {
     const { results } = await env.DB.prepare("SELECT pacote, valor_centavos, desconto_centavos, pago_em FROM pedidos WHERE email = ? AND status = 'pago'").bind(email).all();
-    const ativas = new Set((await env.DB.prepare("SELECT pacote FROM licencas WHERE email = ? AND status = 'ativa'").bind(email).all()).results.map((r) => r.pacote));
+    // licença de TESTE não é compra: não dá crédito nem bloqueia o combo
+    const ativas = new Set((await env.DB.prepare("SELECT pacote FROM licencas WHERE email = ? AND status = 'ativa' AND origem <> 'teste'").bind(email).all()).results.map((r) => r.pacote));
     const cred = {};
     for (const p of results) {
         const fator = p.valor_centavos / (p.valor_centavos + (p.desconto_centavos || 0) || 1);
@@ -468,7 +469,7 @@ function emailVenda({ url, pedido, conf, token, jaTinha }) {
 }
 
 export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha = false, pedido = null, conf = null, maquinas = 2,
-                               sistemas = ['win', 'mac'], trocado = false, downloads = null }) {
+                               sistemas = ['win', 'mac'], trocado = false, downloads = null, teste = 0 }) {
     const nome = nomePacote(pacote);
     const ola = primeiroNome(cliente);
     const W = sistemas.includes('win') || !sistemas.includes('mac'), M = sistemas.includes('mac') || !W;
@@ -490,13 +491,20 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
             ...so(pedido.cupom, `  Cupom:      ${String(pedido.cupom).toUpperCase()} (desconto de ${descontoTxt(pedido)} já aplicado)`),
             `  Pagamento:  ${meio} nº ${conf.pagamento}`,
             `  Data:       ${data}`, '',
-        ] : [`Acesso liberado: ${nome}. Abaixo estão os dados de ativação, o download e o passo a passo.`, '']),
+        ] : teste ? [`Liberamos para você um TESTE de ${teste} dias do ${nome}. Abaixo estão os dados de ativação, o download e o passo a passo.`, '']
+          : [`Acesso liberado: ${nome}. Abaixo estão os dados de ativação, o download e o passo a passo.`, '']),
         'SEUS DADOS DE ATIVAÇÃO',
         `  E-mail: ${email}`,
-        token ? `  Token:  ${token}` : '  Token:  o mesmo que você já recebeu da InsideStudioSP para este e-mail (um token vale para todos os seus packs).',
+        token ? `  Token:  ${token}`
+            : teste ? '  Token:  o mesmo token de TESTE que você já recebeu da InsideStudioSP (ele é diferente do token de compra).'
+            : '  Token:  o mesmo que você já recebeu da InsideStudioSP para este e-mail (um token vale para todos os seus packs).',
         ...so(token && trocado, '  Este token substitui o que apareceu na página de cadastro grátis: o anterior não vale mais.'),
         ...so(jaTinha, '  Este e-mail já tinha o ' + (typeof jaTinha === 'string' ? jaTinha : nome) + '. Vamos conferir o pedido e te responder.'),
-        `  Licença para ${maqPt}. Guarde este e-mail.`, '',
+        ...(teste ? [
+            `  Licença de TESTE para 1 computador. Os ${teste} dias contam a partir da ativação no seu computador.`,
+            `  Terminado o teste, o plugin para de funcionar. Para continuar usando, compre o ${nome} em ${base}`,
+            '  com este mesmo e-mail. Guarde este e-mail.', '',
+        ] : [`  Licença para ${maqPt}. Guarde este e-mail.`, '']),
         '1. BAIXAR',
         ...(W ? baixar('win') : []),
         ...(M ? baixar('mac') : []), '',
@@ -534,13 +542,20 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
             ...so(pedido.cupom, `  Coupon:     ${String(pedido.cupom).toUpperCase()} (${descontoTxt(pedido)} off, already applied)`),
             `  Payment:    ${meio} #${conf.pagamento}`,
             `  Date:       ${data} (Brasília time)`, '',
-        ] : [`Access granted: ${nome}. Below are your activation data, the download and the steps.`, '']),
+        ] : teste ? [`You have a ${teste}-day TRIAL of ${nome}. Below are your activation data, the download and the steps.`, '']
+          : [`Access granted: ${nome}. Below are your activation data, the download and the steps.`, '']),
         'YOUR ACTIVATION DATA',
         `  E-mail: ${email}`,
-        token ? `  Token:  ${token}` : '  Token:  the same one you already received from InsideStudioSP for this e-mail (one token works for all your packs).',
+        token ? `  Token:  ${token}`
+            : teste ? '  Token:  the same TRIAL token you already received from InsideStudioSP (it is different from the purchase token).'
+            : '  Token:  the same one you already received from InsideStudioSP for this e-mail (one token works for all your packs).',
         ...so(token && trocado, '  This token replaces the one shown on the free sign-up page: the old one no longer works.'),
         ...so(jaTinha, '  This e-mail already had ' + (typeof jaTinha === 'string' ? jaTinha : nome) + '. We will check the order and get back to you.'),
-        `  License for ${maqEn}. Keep this e-mail.`, '',
+        ...(teste ? [
+            `  TRIAL license for 1 computer. The ${teste} days start when you activate it on your computer.`,
+            `  When the trial ends, the plugin stops working. To keep using it, buy ${nome} at ${base}`,
+            '  with this same e-mail. Keep this e-mail.', '',
+        ] : [`  License for ${maqEn}. Keep this e-mail.`, '']),
         '1. DOWNLOAD',
         ...(W ? baixar('win') : []),
         ...(M ? baixar('mac') : []), '',

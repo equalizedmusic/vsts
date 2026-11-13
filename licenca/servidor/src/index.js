@@ -45,10 +45,18 @@ import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja, vencerPedidos, posVenda } from './loja.js';
 import { avisarLicenca } from './avisos.js';
 import { rotaContato } from './contato.js';
+import { PRECOS } from './precos.js';
 import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram, relatorioSemanal, varrerComentarios }from './instagram.js';
 
 const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'barebass', 'stompbox', 'maestro', 'magos', 'vassoura'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
+// Licença de TESTE (13/11/2026, pedido dele; sem divulgar: só o painel cria). origem 'teste', 1 computador, token
+// PRÓPRIO (diferente do token de compra do e-mail; todos os testes do e-mail dividem o mesmo token de teste).
+// Vale TESTE_DIAS a partir da 1ª ativação (evento 'ativou' mais antigo da licença: desativar e ativar em outro PC
+// não zera a contagem). O plugin não muda: a licença assinada sai com valida_ate = fim do teste e, vencida, o
+// /v1/validar responde 'teste_expirado'. Comprar o pacote (loja ou painel) apaga a licença de teste e cria a normal.
+const TESTE_DIAS = 7;
+const pacotePago = (p) => !!PRECOS[p];
 const TENTATIVAS_POR_IP = 20;      // recusas em 15 min antes de bloquear o IP
 const JANELA_TENTATIVAS = 15 * 60;
 // versão mais nova de cada pacote = o release <pacote>-vX.Y.Z mais alto do GitHub (repo precisa estar público,
@@ -68,6 +76,8 @@ const MENSAGENS = {
     nao_autorizado: 'Não autorizado.',
     ja_existe: 'Já existe licença deste pacote para este e-mail.',
     erro_interno: 'Erro no servidor de licenças. Tente de novo em alguns minutos.',
+    teste_expirado: 'O teste de 7 dias deste pacote terminou. Para continuar usando, compre em insidestudiosp.com.br com este mesmo e-mail.',
+    teste_so_pago: 'Licença de teste só para pacote pago.',
 };
 
 const agora = () => Math.floor(Date.now() / 1000);
@@ -117,13 +127,21 @@ async function chaveAssinatura(env) {
     return chaveCache;
 }
 
-async function emitir(env, lic, maquina) {
+// fimTeste: licença de teste ⇒ a assinada não passa do fim do teste (o plugin trava sozinho nessa hora, mesmo offline)
+async function emitir(env, lic, maquina, fimTeste = null) {
     const t = agora();
+    const valida = t + VALIDADE_DIAS * 86400;
     const dados = new TextEncoder().encode(JSON.stringify({
-        v: 1, pacote: lic.pacote, email: lic.email, maquina, emitida: t, valida_ate: t + VALIDADE_DIAS * 86400,
+        v: 1, pacote: lic.pacote, email: lic.email, maquina, emitida: t, valida_ate: fimTeste ? Math.min(valida, fimTeste) : valida,
     }));
     const assinatura = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, await chaveAssinatura(env), dados));
     return { dados: b64(dados), assinatura: b64(assinatura) };
+}
+
+// início do teste = 1ª ativação da licença (null = ainda não ativou)
+async function inicioTeste(env, licId) {
+    const r = await env.DB.prepare("SELECT MIN(quando) AS t FROM eventos WHERE licenca_id = ? AND tipo = 'ativou'").bind(licId).first();
+    return r?.t || null;
 }
 
 async function evento(env, licencaId, tipo, detalhe, ip) {
@@ -171,6 +189,17 @@ async function rotaPlugin(acao, req, env) {
     const atual = await env.DB.prepare('SELECT * FROM ativacoes WHERE licenca_id = ? AND maquina = ?')
         .bind(lic.id, maquina).first();
 
+    // teste: conta da 1ª ativação; vencido não ativa nem renova (desativar continua livre). Não entra como 'recusou'
+    // para não somar no bloqueio por IP (o plugin vencido pergunta de novo cada vez que o DAW abre).
+    let fimTeste = null;
+    if (lic.origem === 'teste' && acao !== 'desativar') {
+        fimTeste = ((await inicioTeste(env, lic.id)) || agora()) + TESTE_DIAS * 86400;
+        if (agora() >= fimTeste) {
+            await evento(env, lic.id, 'teste_vencido', `${acao} ${String(corpo.nome_maquina || atual?.nome_maquina || '').slice(0, 80)}`.trim(), ip);
+            return falha('teste_expirado', 403);
+        }
+    }
+
     if (acao === 'desativar') {
         if (atual) await env.DB.prepare('DELETE FROM ativacoes WHERE id = ?').bind(atual.id).run();
         await evento(env, lic.id, 'desativou', atual?.nome_maquina || maquina, ip);
@@ -181,7 +210,7 @@ async function rotaPlugin(acao, req, env) {
         if (!atual) return recusa('maquina_nao_ativada', lic.id);
         await env.DB.prepare('UPDATE ativacoes SET visto_em = ? WHERE id = ?').bind(agora(), atual.id).run();
         await evento(env, lic.id, 'validou', `${atual.nome_maquina || ''} ${corpo.versao || ''}`.trim(), ip);
-        return resposta({ ok: true, licenca: await emitir(env, lic, maquina) });
+        return resposta({ ok: true, licenca: await emitir(env, lic, maquina, fimTeste) });
     }
 
     // ativar
@@ -198,7 +227,7 @@ async function rotaPlugin(acao, req, env) {
             .bind(lic.id, maquina, nome, agora(), agora()).run();
     }
     await evento(env, lic.id, 'ativou', `${nome} ${corpo.versao || ''}`.trim(), ip);
-    return resposta({ ok: true, licenca: await emitir(env, lic, maquina) });
+    return resposta({ ok: true, licenca: await emitir(env, lic, maquina, fimTeste) });
 }
 
 // ---------------- aviso de versão nova ----------------
@@ -392,17 +421,41 @@ async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, orige
     const pacote = String(pacoteBruto || '');
     if (!PACOTES.includes(pacote)) return { erro: 'pacote_invalido' };
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { erro: 'pedido_invalido' };
-    const existe = await env.DB.prepare('SELECT id FROM licencas WHERE email = ? AND pacote = ?').bind(email, pacote).first();
-    if (existe) return { erro: 'ja_existe', id: existe.id };
-    // cadastro da página da VASSOURA não tem token (token_hash vazio): não serve de "mesmo token"
-    let doEmail = await env.DB.prepare("SELECT token_hash FROM licencas WHERE email = ? AND token_hash <> '' LIMIT 1").bind(email).first();
+    const teste = origem === 'teste';
+    if (teste && !pacotePago(pacote)) return { erro: 'teste_so_pago' };
+    const existe = await env.DB.prepare('SELECT id, origem FROM licencas WHERE email = ? AND pacote = ?').bind(email, pacote).first();
+    if (existe && (teste || existe.origem !== 'teste')) return { erro: 'ja_existe', id: existe.id };
+    // comprou (ou ganhou) o pacote que estava em teste: a licença de teste sai e entra a normal, com o token de compra
+    let eraTeste = false;
+    if (existe) {
+        await env.DB.batch([
+            env.DB.prepare('DELETE FROM ativacoes WHERE licenca_id = ?').bind(existe.id),
+            env.DB.prepare('DELETE FROM licencas WHERE id = ?').bind(existe.id),
+        ]);
+        await evento(env, existe.id, 'teste_substituido', `${origem || 'cortesia'} ${pedido || ''}`.trim(), null);
+        eraTeste = true;
+    }
+    if (teste) {
+        // token de teste: um por e-mail, separado do token de compra
+        const doTeste = await env.DB.prepare("SELECT token_hash FROM licencas WHERE email = ? AND origem = 'teste' LIMIT 1").bind(email).first();
+        const token = doTeste ? null : novoToken();
+        const r = await env.DB.prepare(
+            "INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, 1, 'teste', ?, ?, ?)")
+            .bind(email, pacote, doTeste ? doTeste.token_hash : await sha256Hex('ISP' + normToken(token)), pedido || null, nota || null, agora())
+            .run();
+        const id = r.meta.last_row_id;
+        await evento(env, id, 'criou', `teste ${TESTE_DIAS} dias`, null);
+        return { id, email, pacote, token, mesmo_token: !!doTeste, token_trocado: false, teste: true, teste_dias: TESTE_DIAS };
+    }
+    // cadastro da página da VASSOURA não tem token (token_hash vazio): não serve de "mesmo token". O token de teste também não.
+    let doEmail = await env.DB.prepare("SELECT token_hash FROM licencas WHERE email = ? AND token_hash <> '' AND origem <> 'teste' LIMIT 1").bind(email).first();
     // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
     // ter cadastrado), então licença dada por aqui troca o token do e-mail inteiro e o novo vai para o cliente
-    const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem <> 'gratis' LIMIT 1").bind(email).first());
+    const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem NOT IN ('gratis', 'teste') LIMIT 1").bind(email).first());
     if (soGratis) doEmail = null;
     const token = doEmail ? null : novoToken();
     if (soGratis)
-        await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?').bind(await sha256Hex('ISP' + normToken(token)), email).run();
+        await env.DB.prepare("UPDATE licencas SET token_hash = ? WHERE email = ? AND origem <> 'teste'").bind(await sha256Hex('ISP' + normToken(token)), email).run();
     const r = await env.DB.prepare(
         'INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(email, pacote, doEmail ? doEmail.token_hash : await sha256Hex('ISP' + normToken(token)),
@@ -410,9 +463,9 @@ async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, orige
             pedido || null, nota || null, agora())
         .run();
     const id = r.meta.last_row_id;
-    await evento(env, id, 'criou', origem || 'cortesia', null);
+    await evento(env, id, 'criou', (origem || 'cortesia') + (eraTeste ? ' (era teste)' : ''), null);
     if (soGratis) await evento(env, id, 'novo_token', 'tinha só a licença grátis', null);
-    return { id, email, pacote, token, mesmo_token: !!doEmail, token_trocado: !!soGratis };
+    return { id, email, pacote, token, mesmo_token: !!doEmail, token_trocado: !!soGratis, era_teste: eraTeste };
 }
 
 async function rotaAdmin(caminho, req, env, url) {
@@ -442,9 +495,14 @@ async function rotaAdmin(caminho, req, env, url) {
         const ativ = await env.DB.prepare('SELECT * FROM ativacoes ORDER BY id').all();
         const porLic = {};
         for (const a of ativ.results) (porLic[a.licenca_id] ||= []).push(a);
+        // teste: quando começou (1ª ativação) e quando acaba
+        const ini = await env.DB.prepare("SELECT e.licenca_id, MIN(e.quando) AS t FROM eventos e JOIN licencas l ON l.id = e.licenca_id " +
+            "WHERE l.origem = 'teste' AND e.tipo = 'ativou' GROUP BY e.licenca_id").all();
+        const inicio = Object.fromEntries(ini.results.map((r) => [r.licenca_id, r.t]));
         return resposta({
-            ok: true,
-            licencas: lics.results.map(({ token_hash, ...l }) => ({ ...l, maquinas: porLic[l.id] || [] })),
+            ok: true, teste_dias: TESTE_DIAS,
+            licencas: lics.results.map(({ token_hash, ...l }) => ({ ...l, maquinas: porLic[l.id] || [],
+                ...(l.origem === 'teste' ? { teste_inicio: inicio[l.id] || null, teste_fim: inicio[l.id] ? inicio[l.id] + TESTE_DIAS * 86400 : null } : {}) })),
         });
     }
 
@@ -528,12 +586,14 @@ async function rotaAdmin(caminho, req, env, url) {
         return resposta({ ok: true });
     }
     if (caminho === '/admin/novo-token') {
-        // troca o token do e-mail inteiro (todos os pacotes dele)
+        // troca o token do e-mail inteiro (todos os pacotes dele). Teste e compra têm tokens separados: troca só o lado
+        // da licença clicada
         const token = novoToken();
-        await env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE email = ?')
+        const teste = lic.origem === 'teste';
+        await env.DB.prepare(`UPDATE licencas SET token_hash = ? WHERE email = ? AND origem ${teste ? '=' : '<>'} 'teste'`)
             .bind(await sha256Hex('ISP' + normToken(token)), lic.email).run();
-        await evento(env, id, 'novo_token', lic.email, null);
-        return resposta({ ok: true, id, email: lic.email, pacote: lic.pacote, token });
+        await evento(env, id, 'novo_token', lic.email + (teste ? ' (teste)' : ''), null);
+        return resposta({ ok: true, id, email: lic.email, pacote: lic.pacote, token, teste });
     }
     return falha('pedido_invalido', 404);
 }

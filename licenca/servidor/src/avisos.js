@@ -22,8 +22,11 @@ export async function avisarLicenca(env, url, h, lic, { sistemas, maquinas } = {
             assunto: 'Acesso liberado: VASSOURA · Access granted — InsideStudioSP',
             aberturaPt: 'Seu acesso à VASSOURA foi liberado!', aberturaEn: 'You now have access to VASSOURA!', origem: 'painel',
         });
+    // licença de TESTE (lic.teste_dias): texto e assunto próprios, 1 computador
+    const teste = lic.teste ? Number(lic.teste_dias) || 7 : 0;
     const texto = textoLicenca({ base: DOMINIO, pacote: lic.pacote, email: lic.email, token: lic.token, trocado: !!lic.token_trocado,
-                                 maquinas: Number(maquinas) || 2, sistemas: sis.length ? sis : ['win', 'mac'] });
-    return enviarEmail(env, { para: lic.email, assunto: `Acesso liberado: ${nome} · Access granted — InsideStudioSP`,
+                                 maquinas: teste ? 1 : Number(maquinas) || 2, sistemas: sis.length ? sis : ['win', 'mac'], teste });
+    return enviarEmail(env, { para: lic.email, assunto: teste ? `Seu teste de ${teste} dias: ${nome} · Your ${teste}-day trial — InsideStudioSP`
+                                                           : `Acesso liberado: ${nome} · Access granted — InsideStudioSP`,
                               texto: texto.join('\r\n'), segredos: [lic.token], origem: 'painel' });
 }
