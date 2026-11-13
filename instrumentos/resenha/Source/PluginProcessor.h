@@ -96,7 +96,8 @@ public:
     std::atomic<float> uiScale { 1.0f };
     std::atomic<float> shownBpm { 120.0f };
     std::atomic<bool>  synced { false };
-    std::atomic<bool>  waitingKey { false };        // COM NOTA, host tocando, nenhuma tecla: a frase espera
+    std::atomic<bool>  waitingKey { false };
+    std::atomic<bool>  notesMode { false };         // PLAY = NOTAS: o MIDI do clipe toca o RESENHA (sem sequenciador)        // COM NOTA, host tocando, nenhuma tecla: a frase espera
     std::atomic<int>   patternVersion { 0 };
 
 private:
@@ -134,6 +135,7 @@ private:
 
     void readSettings();
     void handleMidi (const juce::MidiMessage& m);
+    void playLive (const juce::MidiMessage& m, int sample);
     void randomizeTimbre (int voice);
     void randomizeConversation();
     int  choice (std::atomic<float>* p) const { return juce::roundToInt (p->load()); }
@@ -150,6 +152,10 @@ private:
     std::array<double, resenha::numVoices> pendPpq {}, pendEnd {};
     bool   wasRunning = false;
     double freePpq = 0.0;
+
+    // PLAY = NOTAS: a nota do clipe que cada timbre está tocando (−1 = nenhuma); o sequenciador fica parado
+    std::array<int, resenha::numVoices> liveNote {};
+    bool wasNotes = false;
 
     std::array<int, 16> held {};
     int numHeld = 0;
@@ -189,7 +195,7 @@ private:
     juce::CriticalSection pendingLock;
 
     void prepareSlot (juce::AudioPluginInstance& inst);
-    void voiceOn (int v, int sample, int midiNote, bool accent, float glideMs, bool lastOfTalk, int bendSamples);
+    void voiceOn (int v, int sample, int midiNote, bool accent, float glideMs, bool lastOfTalk, int bendSamples, int velocity = -1);
     void voiceOff (int v, int sample);
     void allVoicesOff (int sample);
     void rampBends (int from, int to);

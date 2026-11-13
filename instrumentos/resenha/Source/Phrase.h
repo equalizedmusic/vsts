@@ -30,6 +30,7 @@ struct PhraseParams
     Response response = Response::echo;
     int interval = 1;
     float talk = 0.0f;      // PAPO 0..1
+    bool straight = false;  // CONTORNO = RETA: toda nota na tônica
 };
 
 struct PhraseNote
@@ -254,8 +255,9 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
         auto& pn = out.notes[(size_t) j];
         const int ps = posOf[(size_t) j];
         pn.last = j + 1 >= out.count || turnOf[(size_t) j + 1] != turnOf[(size_t) j];
-        int d = deg[(size_t) j];
-        if (! pn.response)
+        int d = p.straight ? 0 : deg[(size_t) j];
+        if (p.straight) {}   // RETA: pergunta e resposta na tônica (só a ALTURA DA RESPOSTA muda a oitava)
+        else if (! pn.response)
         {
             if (ps == 0) callCount = 0;
             if (ps < (int) callDeg.size()) { callDeg[(size_t) ps] = d; callCount = ps + 1; }
@@ -275,7 +277,7 @@ inline void buildPhrase (const Pattern& pat, const PhraseParams& p, Phrase& out)
                 }
             }
             // a resposta conclui: a última nota da fala cai na tônica mais perto (o mergulho do BEND sai dela)
-            if (pn.last && p.response != Response::free && turnOf[(size_t) j] > 0)
+            if (! p.straight && pn.last && p.response != Response::free && turnOf[(size_t) j] > 0)
             {
                 const int n = sm.n;
                 const int lo = (int) std::floor ((double) d / (double) n) * n;
@@ -420,6 +422,9 @@ inline void generateNotes (Pattern& pat, int steps, int scale, int octaves, juce
         const int oct = d >= 0 ? d / 7 : -((-d + 6) / 7);
         return oct * 12 + minorSemis[d - oct * 7];
     };
+    // RETA não muda a melodia escrita (a frase toca na tônica pelo buildPhrase): o dado sorteia um motivo, que aparece
+    // quando a pessoa voltar para outro contorno
+    if (contour == Contour::straight) contour = Contour::motif;
     if (contour == Contour::pedal)
     {
         // PEDAL: passo sim, passo não, a nota fixa (tônica embaixo ou a oitava); nos outros uma linha de 4 notas

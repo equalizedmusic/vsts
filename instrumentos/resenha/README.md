@@ -29,7 +29,8 @@ SCALE e ROOT, tamanho de 1, 2 ou 4 compassos, RATE (1/32 a 1/8, com tercinas), O
 e SWING (no máximo 64 passos). CONTORNO DAS NOTAS: **MOTIVO** repete um desenho curto com variações; **CORRIDA** sobe em
 escada (de grau em grau ou em arpejo) e recomeça embaixo; **QUEDA** desce; **ONDA** sobe e volta; **PEDAL** alterna uma
 nota fixa (a tônica) com uma linha que anda. O RITMO sorteado é um riff que se repete (células por compasso ou "rolando"
-3+3+3+3+4), com virada a cada 2 compassos. Os dados NOTAS, RITMO, GATE e TIMBRES sorteiam só aquela parte; o cadeado faz o
+3+3+3+3+4), com virada a cada 2 compassos. **RETA** põe todas as notas na tônica da ROOT (o ritmo, o gate e a troca de timbre
+seguem; a melodia escrita fica guardada para quando voltar a outro contorno; o GERAR CONVERSA não sorteia a RETA). Os dados NOTAS, RITMO, GATE e TIMBRES sorteiam só aquela parte; o cadeado faz o
 GERAR CONVERSA pular a parte (TIMBRES respeita o cadeado do cartão de cada timbre).
 
 ## Conversa
@@ -44,7 +45,9 @@ a resposta conclui). A tela mostra quem fala cada nota.
 ## Tocar
 
 **COM NOTA**: a frase só toca enquanto há nota segurada, transposta por ela (Dó 3 = como está escrita). **SEMPRE**:
-toca com o play do DAW, e a nota só transpõe. ARRASTAR MIDI leva a frase para o DAW como `.mid`, um canal por timbre
+toca com o play do DAW, e a nota só transpõe. **NOTAS**: o sequenciador desliga e o RESENHA toca as notas do clipe como
+um synth comum (canal 1 a 4 = timbre A a D, os outros canais tocam o A; cada timbre é monofônico, com o GLIDE dele;
+no slot INTERNO velocity ≥ 112 = accent, no slot PLUGIN vai a velocity do clipe). ARRASTAR MIDI leva a frase para o DAW como `.mid`, um canal por timbre
 (A = 1 … D = 4).
 
 ## Efeitos

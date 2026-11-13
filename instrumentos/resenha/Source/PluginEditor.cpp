@@ -978,6 +978,22 @@ void ConversationView::paint (juce::Graphics& g)
     g.setColour (rs::ink.withAlpha (0.8f));
     g.drawFittedText (desc, juce::Rectangle<int> (14, (int) lane.getBottom() + 6, (int) all.getWidth() - 28, 16),
                       juce::Justification::centredLeft, 1, 0.7f);
+
+    // PLAY = NOTAS: a frase fica guardada, mas quem toca é o MIDI do clipe
+    if (proc.notesMode.load())
+    {
+        g.setColour (rs::bg0.withAlpha (0.78f));
+        g.fillRoundedRectangle (roll, 3.0f);
+        const RF msg = roll.reduced (14.0f, 0.0f).withSizeKeepingCentre (roll.getWidth() - 28.0f, 64.0f);
+        g.setColour (rs::cyan);
+        g.setFont (theme::sans (12.0f, true, 0.16f));
+        g.drawFittedText ("MODO NOTAS", msg.withHeight (18.0f).toNearestInt(), juce::Justification::centred, 1, 0.8f);
+        g.setColour (rs::ink.withAlpha (0.9f));
+        g.setFont (theme::sans (9.5f, true, 0.06f));
+        g.drawFittedText (juce::String::fromUTF8 ("O sequenciador está desligado: o RESENHA toca as notas do clipe.\n"
+                                                  "Canal 1 a 4 = timbre A a D (os outros canais tocam o A)."),
+                          msg.withTrimmedTop (22.0f).toNearestInt(), juce::Justification::centredTop, 3, 0.8f);
+    }
 }
 
 // =====================================================================
@@ -1363,7 +1379,7 @@ void ResenhaEditor::timerCallback()
     presetName->set (proc.getPresetName(), proc.getPresetIndex(), proc.getNumPresets());
 
     const float bpm = proc.shownBpm.load();
-    const int state = proc.synced.load() ? (proc.waitingKey.load() ? 2 : 1) : 0;
+    const int state = proc.notesMode.load() ? 3 : proc.synced.load() ? (proc.waitingKey.load() ? 2 : 1) : 0;
     if (std::abs (bpm - lastBpm) > 0.05f || state != lastState)
     {
         lastBpm = bpm;
@@ -1493,12 +1509,14 @@ void ResenhaEditor::drawHeader (juce::Graphics& g)
     {
         const bool syn = proc.synced.load();
         const bool waiting = proc.waitingKey.load();
-        const juce::String state = ! syn ? "LIVRE" : waiting ? "SEGURE UMA NOTA" : "SYNC";   // LIVRE: sem play, a nota segurada toca no relógio próprio
+        const bool live = proc.notesMode.load();
+        // LIVRE: sem play, a nota segurada toca no relógio próprio; NOTAS: o RESENHA toca o MIDI do clipe
+        const juce::String state = live ? "NOTAS DO CLIPE" : ! syn ? "LIVRE" : waiting ? "SEGURE UMA NOTA" : "SYNC";
         g.setFont (theme::mono (13.0f));
         g.setColour (rs::cyan);
         g.drawText (juce::String (proc.shownBpm.load(), 1) + " BPM", RF (560.0f, 26.0f, 130.0f, 16.0f), juce::Justification::centredRight);
         g.setFont (theme::sans (9.5f, true, 0.14f));
-        g.setColour (syn && ! waiting ? rs::lime : rs::amber);
+        g.setColour (live ? rs::cyan : syn && ! waiting ? rs::lime : rs::amber);
         g.drawFittedText (state, juce::Rectangle<int> (560, 46, 130, 14), juce::Justification::centredRight, 1, 0.8f);
     }
 

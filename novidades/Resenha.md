@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.7.0 — 2026-11-13
+- PLAY ganhou o modo NOTAS: o sequenciador desliga e o RESENHA toca as notas do clipe como um synth comum. O canal da nota escolhe o timbre (canal 1 a 4 = A a D; os outros canais tocam o A). Cada timbre toca uma nota por vez, com o GLIDE dele. No slot INTERNO, velocity 112 ou mais vira accent; no slot PLUGIN a nota vai com a velocity do clipe e a OITAVA do slot.
+- Dica: arraste a conversa com ARRASTAR MIDI para o clipe (ela já sai com um canal por timbre), mude o PLAY para NOTAS e edite as notas no DAW.
+- CONTORNO ganhou a opção RETA: todas as notas ficam na tônica da ROOT. O ritmo, o gate, o PAPO e a troca de timbre continuam iguais. A ALTURA DA RESPOSTA ainda vale (em MESMA a resposta fica na mesma nota; em +OITAVA, na tônica de cima). A melodia escrita fica guardada: voltar para outro contorno devolve a frase.
+- O GERAR CONVERSA não sorteia a RETA; ela só entra quando você escolhe.
+- Os presets e projetos de antes abrem iguais.
+
 ## 0.6.0 — 2026-11-12
 - RESENHA HUB: cada um dos 4 slots pode ser INTERNO (o FM/VA do RESENHA, como antes) ou PLUGIN, um instrumento seu (Serum, Sylenth1, Vital, Diva...). No slot PLUGIN o RESENHA manda só a conversa em MIDI; o som e os presets são do próprio plugin.
 - ESCOLHER PLUGIN: lista dos instrumentos instalados (VST3 no Windows; AU e VST3 no Mac), com busca pelo nome ou fabricante, favoritos com estrela e BUSCAR PLUGINS DE NOVO.

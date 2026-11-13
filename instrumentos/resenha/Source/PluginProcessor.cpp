@@ -88,6 +88,8 @@ void ResenhaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     lastAbsStep = -1;
     gateOffPpq.fill (-1.0);
     pendNote.fill (-1);
+    liveNote.fill (-1);
+    wasNotes = false;
     wasRunning = false;
     freePpq = 0.0;
     numHeld = 0;
@@ -146,6 +148,7 @@ PhraseParams ResenhaProcessor::phraseParams() const
     p.response = (Response) juce::jlimit (0, 3, choice (pResp));
     p.interval = choice (pInterval);
     p.talk     = pTalk->load() * 0.01f;
+    p.straight = choice (pContour) == (int) Contour::straight;
     return p;
 }
 
@@ -184,6 +187,39 @@ void ResenhaProcessor::handleMidi (const juce::MidiMessage& m)
     }
 }
 
+// PLAY = NOTAS: o RESENHA vira um synth comum. O canal da nota escolhe o timbre (1 a 4 = A a D, como o ARRASTAR MIDI
+// exporta; os outros canais tocam o A). Cada timbre é monofônico (a nota nova toma o lugar, com o GLIDE do timbre).
+// Slot INTERNO: velocity 112 ou mais = accent. Slot PLUGIN: a nota vai com a velocity do clipe e a OITAVA do slot.
+void ResenhaProcessor::playLive (const juce::MidiMessage& m, int sample)
+{
+    auto voiceOf = [] (const juce::MidiMessage& msg)
+    {
+        const int ch = msg.getChannel();
+        return ch >= 1 && ch <= numVoices ? ch - 1 : 0;
+    };
+    if (m.isNoteOn())
+    {
+        const int v = voiceOf (m);
+        const int vel = m.getVelocity();
+        voiceOn (v, sample, m.getNoteNumber(), vel >= 112, s.t[(size_t) v].glideMs, false, 0, juce::jlimit (1, 127, vel));
+        liveNote[(size_t) v] = m.getNoteNumber();
+    }
+    else if (m.isNoteOff())
+    {
+        const int v = voiceOf (m);
+        if (liveNote[(size_t) v] == m.getNoteNumber())     // soltar uma nota que já foi trocada não cala a nova
+        {
+            voiceOff (v, sample);
+            liveNote[(size_t) v] = -1;
+        }
+    }
+    else if (m.isAllNotesOff() || m.isAllSoundOff())
+    {
+        allVoicesOff (sample);
+        liveNote.fill (-1);
+    }
+}
+
 void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -217,7 +253,17 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     const auto pp = phraseParams();
     buildPhrase (pattern, pp, phrase);
-    const bool   always = choice (pPlay) == 1;
+    const int    playMode = choice (pPlay);
+    const bool   always = playMode == (int) PlayMode::always;
+    const bool   notes  = playMode == (int) PlayMode::notes;     // NOTAS: o MIDI do clipe toca direto, sem a frase
+    notesMode.store (notes);
+    if (notes != wasNotes)
+    {
+        // trocou de modo: o que estava soando (frase ou notas do clipe) para
+        allVoicesOff (0);
+        liveNote.fill (-1);
+        wasNotes = notes;
+    }
     const int    steps  = phrase.steps;
     const double sb     = rateBeats[juce::jlimit (0, 4, choice (pRate))];
     const double sw     = (double) pSwing->load() * 0.01 * 0.5 * sb;     // atraso dos passos pares
@@ -254,6 +300,7 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             flush (i);
             const int before = numHeld;
             handleMidi ((*it).getMessage());
+            if (notes) playLive ((*it).getMessage(), i);
             // host parado: a primeira tecla começa a frase do início, no relógio próprio
             if (! hostRun && before == 0 && numHeld > 0)
             {
@@ -263,7 +310,7 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             ++it;
         }
 
-        const bool run = hostRun ? (always || numHeld > 0) : numHeld > 0;
+        const bool run = ! notes && (hostRun ? (always || numHeld > 0) : numHeld > 0);
         if (run != wasRunning)
         {
             if (! run) { flush (i); stopAll (i); }
@@ -324,11 +371,14 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             }
     }
     flush (n);
-    renderSlots (n);   // os slots com plugin tocam o MIDI do bloco e somam antes dos efeitos
     for (; it != midi.cend(); ++it)
+    {
         handleMidi ((*it).getMessage());
+        if (notes) playLive ((*it).getMessage(), n - 1);
+    }
+    renderSlots (n);   // os slots com plugin tocam o MIDI do bloco e somam antes dos efeitos
     freePpq = freeBase + pps * (double) n;
-    waitingKey.store (hostRun && ! always && numHeld == 0);
+    waitingKey.store (hostRun && ! always && ! notes && numHeld == 0);
 
     // efeitos e volume; DUCK = o lead abaixa a cada tempo e volta em meio tempo (o "sidechain" do bumbo do psy)
     fx.process (bufL.data(), bufR.data(), n, s);
@@ -364,7 +414,8 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 // nota nova no timbre v: no slot INTERNO vai para o FM/VA; no slot PLUGIN vira MIDI no canal 1 do plugin.
 // Legato: a nota nova entra ANTES de soltar a anterior (synth mono com glide desliza); BEND = pitch bend que vai do
 // centro até o valor do knob durante a nota que fecha a fala.
-void ResenhaProcessor::voiceOn (int v, int sample, int midiNote, bool accent, float glideMs, bool lastOfTalk, int bendSamples)
+void ResenhaProcessor::voiceOn (int v, int sample, int midiNote, bool accent, float glideMs, bool lastOfTalk, int bendSamples,
+                                 int velocity)
 {
     const auto vi = (size_t) v;
     if (! plugNow[vi])
@@ -375,7 +426,8 @@ void ResenhaProcessor::voiceOn (int v, int sample, int midiNote, bool accent, fl
     }
     auto& sl = *slots[vi];
     const int note = juce::jlimit (0, 127, midiNote + 12 * juce::roundToInt (pHOct[vi]->load()));
-    const int vel  = accent ? 127 : juce::jlimit (1, 127, juce::roundToInt (pHVel[vi]->load()));
+    const int vel  = velocity > 0 ? velocity          // NOTAS: a velocity do clipe
+                   : accent ? 127 : juce::jlimit (1, 127, juce::roundToInt (pHVel[vi]->load()));
     if (sl.bendSent)
     {
         sl.midi.addEvent (juce::MidiMessage::pitchWheel (1, 8192), sample);
@@ -1210,7 +1262,7 @@ void ResenhaProcessor::randomizeConversation()
     setParam (id::response, (float) resp[rnd.nextInt (6)]);
     setParam (id::interval, (float) itv[rnd.nextInt (5)]);
     setParam (id::order,    (float) rnd.nextInt (3));
-    setParam (id::contour,  (float) rnd.nextInt (numContours));
+    setParam (id::contour,  (float) rnd.nextInt (numMelodicContours));     // a RETA só por escolha da pessoa
     setParam (id::talk,     35.0f + rnd.nextFloat() * 50.0f);
 }
 

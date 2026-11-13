@@ -43,13 +43,19 @@ enum class Order { sequence = 0, pingPong = 1, random = 2 };
 inline const juce::StringArray responseNames { "LIVRE", "ECO", "VARIA", "INVERTE" };
 enum class Response { free = 0, echo = 1, vary = 2, invert = 3 };
 inline const juce::StringArray intervalNames { "MESMA", "+OITAVA", juce::String::fromUTF8 ("+5ª"), juce::String::fromUTF8 ("−OITAVA") };
-inline const juce::StringArray playNames  { "COM NOTA", "SEMPRE" };
+// PLAY: COM NOTA = a frase toca enquanto há nota segurada; SEMPRE = toca com o play do DAW; NOTAS = o sequenciador
+// desliga e o RESENHA toca o MIDI do clipe como um synth comum (canal 1 a 4 = timbre A a D; os outros canais = A)
+inline const juce::StringArray playNames  { "COM NOTA", "SEMPRE", "NOTAS" };
+enum class PlayMode { withNote = 0, always = 1, notes = 2 };
 // CONTORNO do gerador de notas: MOTIVO repete um desenho curto; CORRIDA sobe em escada (arpejo de psy) e
 // recomeça embaixo; QUEDA desce; ONDA sobe e desce; PEDAL alterna uma nota fixa (a tônica) com uma linha que anda
-// (o "0 5 0 6 0 7" do full on)
-inline const juce::StringArray contourNames { "MOTIVO", "CORRIDA", "QUEDA", "ONDA", "PEDAL" };
-enum class Contour { motif = 0, run = 1, fall = 2, wave = 3, pedal = 4 };
-inline constexpr int numContours = 5;
+// (o "0 5 0 6 0 7" do full on); RETA = todas as notas na tônica da ROOT (o ritmo, o gate e a troca de timbre seguem;
+// a ALTURA DA RESPOSTA ainda vale, então +OITAVA responde na tônica de cima). A melodia escrita fica guardada: voltar
+// para outro contorno devolve a frase como estava.
+inline const juce::StringArray contourNames { "MOTIVO", "CORRIDA", "QUEDA", "ONDA", "PEDAL", "RETA" };
+enum class Contour { motif = 0, run = 1, fall = 2, wave = 3, pedal = 4, straight = 5 };
+inline constexpr int numContours = 6;
+inline constexpr int numMelodicContours = 5;     // o sorteio do GERAR CONVERSA não cai na RETA
 // FILTRO de cada timbre: LP (passa-baixas), BP (passa-banda, mais nasal) e VOWEL (dois formantes: o lead "fala"
 // a-e-i-o-u; o CUTOFF escolhe a vogal, o F.ENV abre a boca no ataque e o MOVE faz a vogal andar) e HP (passa-altas).
 // No VA, LP/BP/HP são de 24 dB (dois estágios), como nos leads de psy de referência (a maioria em BP 24).
