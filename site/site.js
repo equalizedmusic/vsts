@@ -144,34 +144,31 @@
         inp.addEventListener('change', conferir);
         inp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); conferir(); } });
     }
-    // linha "Total com o cupom" na caixa de compra do pack (o total do carrinho é tratado em montarCarrinho)
-    function totalComCupom(box) {
-        var out = box.querySelector('.cupom-total');
-        var total = parseFloat(box.getAttribute('data-total'));
-        if (!box.cupom || !(total > 0)) { if (out) out.remove(); return; }
-        if (!out) { out = document.createElement('p'); out.className = 'cupom-total'; box.appendChild(out); }
-        var c = centavos(total), d = Math.round(c * box.cupom.pct / 100);
-        out.innerHTML = tt('Total com o cupom: ', 'Total with the coupon: ') + '<s>' + reais(c / 100) + '</s> <b>' + reais((c - d) / 100) + '</b>';
-    }
-
     function carrinhoLoja() {
         atualizarContador();
         window.addEventListener('storage', function (ev) { if (ev.key === CHAVE) atualizarContador(); });
 
-        // botão "adicionar ao carrinho" na página do pack
+        // botão "adicionar ao carrinho" na página do pack (13/11: a página do pack só adiciona; os dados ficam no carrinho).
+        // É um link para /carrinho/?add=<id>: com JS adiciona sem sair da página e troca por "Finalizar compra".
         document.querySelectorAll('.bt-carrinho[data-add]').forEach(function (bt) {
-            var id = bt.getAttribute('data-add'), ver = bt.parentNode.querySelector('.bt-ver-carrinho');
-            var mostrar = function () { var tem = lerCarrinho().indexOf(id) >= 0; bt.hidden = tem; if (ver) ver.hidden = !tem; };
+            var id = bt.getAttribute('data-add'), ja = bt.parentNode.querySelector('.no-carrinho');
+            var mostrar = function () { var tem = lerCarrinho().indexOf(id) >= 0; bt.hidden = tem; if (ja) ja.hidden = !tem; };
             mostrar();
-            bt.addEventListener('click', function () {
+            bt.addEventListener('click', function (ev) {
+                ev.preventDefault();
                 var l = lerCarrinho();
                 if (l.indexOf(id) < 0) l.push(id);
                 gravarCarrinho(l); mostrar(); atualizarContador();
+                var fin = ja && ja.querySelector('.bt-principal');
+                if (fin) try { fin.focus({ preventScroll: true }); } catch (e) { /* ignora */ }
             });
         });
-        // cupom na caixa de compra do pack
-        document.querySelectorAll('form.compra:not(.carrinho-form) .cupom').forEach(function (box) {
-            ligarCupom(box, function () { totalComCupom(box); });
+        window.addEventListener('storage', function (ev) {
+            if (ev.key !== CHAVE) return;
+            document.querySelectorAll('.bt-carrinho[data-add]').forEach(function (bt) {
+                var tem = lerCarrinho().indexOf(bt.getAttribute('data-add')) >= 0, ja = bt.parentNode.querySelector('.no-carrinho');
+                bt.hidden = tem; if (ja) ja.hidden = !tem;
+            });
         });
 
         var lista = document.getElementById('carrinho-lista');
@@ -181,6 +178,13 @@
         var form = document.getElementById('carrinho-form');
         var box = form.querySelector('.cupom');
         if (/[?&]pago=1/.test(location.search)) { gravarCarrinho([]); history.replaceState(null, '', location.pathname); }
+        // vindo do botão do pack sem JS lá (ou link direto): /carrinho/?add=<id> põe o pack e limpa a URL
+        var add = /[?&]add=([a-z0-9_-]{1,40})/i.exec(location.search);
+        if (add) {
+            var la = lerCarrinho();
+            if (cat[add[1]] && la.indexOf(add[1]) < 0) { la.push(add[1]); gravarCarrinho(la); }
+            history.replaceState(null, '', location.pathname);
+        }
 
         var aviso = '';
         // combo + avulso do mesmo plugin: o combo fica e o avulso sai (o servidor recusa licença repetida)

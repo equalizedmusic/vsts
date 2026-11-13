@@ -423,6 +423,17 @@ async function rotaAdmin(caminho, req, env, url) {
     if (!porChave && !porPainel) return falha('nao_autorizado', 401);
     if (caminho === '/admin/painel-senha' && !porChave) return falha('nao_autorizado', 401);
 
+    // devoluções já feitas no pagamento de um pedido (confere reembolso parcial). Só com a ADMIN_KEY.
+    if (caminho === '/admin/pagamento' && req.method === 'GET') {
+        if (!porChave) return falha('nao_autorizado', 401);
+        const ped = await env.DB.prepare('SELECT pagamento_id FROM pedidos WHERE id = ?').bind(String(url.searchParams.get('pedido') || '')).first();
+        if (!ped || !/^\d{1,20}$/.test(String(ped.pagamento_id || '')) || !env.MP_ACCESS_TOKEN) return falha('nao_encontrada', 404);
+        const r = await fetch('https://api.mercadopago.com/v1/payments/' + ped.pagamento_id, { headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN } });
+        const p = await r.json().catch(() => ({}));
+        return resposta({ ok: r.ok, status: p.status, valor: p.transaction_amount, devolvido: p.transaction_amount_refunded,
+                          devolucoes: (p.refunds || []).map((d) => ({ id: d.id, valor: d.amount, status: d.status, em: d.date_created })) });
+    }
+
     if (caminho === '/admin/licencas' && req.method === 'GET') {
         const email = normEmail(url.searchParams.get('email'));
         const lics = email
@@ -445,6 +456,24 @@ async function rotaAdmin(caminho, req, env, url) {
         if (!/^[a-z0-9._-]{3,40}$/.test(usuario) || String(corpo.senha || '').length < 10) return falha('pedido_invalido');
         await gravarSenhaPainel(env, usuario, String(corpo.senha));
         return resposta({ ok: true, usuario });
+    }
+
+    // 13/11: devolução PARCIAL no Mercado Pago (ex.: diferença de cupom). Só com a ADMIN_KEY; não mexe no pedido nem na licença.
+    //   POST /admin/reembolso-parcial { pedido, centavos, nota? }
+    if (caminho === '/admin/reembolso-parcial') {
+        if (!porChave) return falha('nao_autorizado', 401);
+        const ped = await env.DB.prepare('SELECT id, metodo, status, valor_centavos, pagamento_id FROM pedidos WHERE id = ?').bind(String(corpo.pedido || '')).first();
+        const c = Math.round(Number(corpo.centavos));
+        if (!ped || ped.metodo !== 'mp' || ped.status !== 'pago' || !/^\d{1,20}$/.test(String(ped.pagamento_id || ''))) return falha('nao_encontrada', 404);
+        if (!(c >= 1 && c < ped.valor_centavos) || !env.MP_ACCESS_TOKEN) return falha('pedido_invalido');
+        const r = await fetch(`https://api.mercadopago.com/v1/payments/${ped.pagamento_id}/refunds`, {
+            method: 'POST',
+            headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN, 'content-type': 'application/json', 'x-idempotency-key': `parcial-${ped.id}-${c}` },
+            body: JSON.stringify({ amount: c / 100 }) });
+        const txt = await r.text();
+        let j = {}; try { j = JSON.parse(txt); } catch { j = { message: txt.slice(0, 300) }; }
+        await evento(env, null, 'reembolso_parcial', `${ped.id} ${c} ${r.status} ${String(corpo.nota || '').slice(0, 120)}`, null);
+        return resposta({ ok: r.ok, http: r.status, id: j.id ?? null, status: j.status ?? null, amount: j.amount ?? null, erro: r.ok ? null : (j.message || j.error || null) }, r.ok ? 200 : 502);
     }
 
     if (caminho === '/admin/licencas' && req.method === 'POST') {

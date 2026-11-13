@@ -36,8 +36,8 @@ const dolares = (c) => 'US$ ' + (c / 100).toFixed(2);
 const valorTxt = (p) => (p.moeda === 'BRL' ? reais(p.valor_centavos) : dolares(p.valor_centavos));
 const descontoTxt = (p) => (p.moeda === 'BRL' ? reais(p.desconto_centavos || 0) : dolares(p.desconto_centavos || 0));
 const MAX_ITENS = 20;   // carrinho: no máximo 20 packs num pedido
-// página de volta do pedido: carrinho (vários packs) ou a página do pack
-const voltaPedido = (env, p) => (itensPedido(p.pacote).length > 1 ? `${siteUrl(env)}/carrinho/` : `${siteUrl(env)}/${p.pacote}/`);
+// 13/11: toda compra sai do carrinho (a página do pack só adiciona), então a volta é sempre o carrinho
+const voltaPedido = (env) => `${siteUrl(env)}/carrinho/`;
 
 // "uma vez por comprador": compara o e-mail sem pontos/"+apelido" no Gmail e sem "+apelido" nos outros,
 // para joao.silva+1@gmail.com não contar como outra pessoa
@@ -422,9 +422,8 @@ async function retorno(req, env, url, h) {
     }
     const mascara = pedido.email.replace(/^(.)(.*)(@.*)$/, (_, a, b, c) => a + '•'.repeat(Math.min(b.length, 6)) + c);
     const nome = nomePedido(pedido.pacote);
-    // carrinho pago: a volta limpa o carrinho do navegador (/carrinho/?pago=1, site.js)
-    const carrinho = itensPedido(pedido.pacote).length > 1;
-    if (status === 'pago') return paginaLoja(env, { titulo: 'Pagamento aprovado! · Payment approved!', link: carrinho ? siteUrl(env) + '/carrinho/?pago=1' : '',
+    // pago: a volta limpa o carrinho do navegador (/carrinho/?pago=1, site.js)
+    if (status === 'pago') return paginaLoja(env, { titulo: 'Pagamento aprovado! · Payment approved!', link: siteUrl(env) + '/carrinho/?pago=1',
         pt: `Obrigado pela compra do ${nome}. Mandamos para ${mascara} o token de ativação, os links de download e as instruções. Não chegou em 10 minutos? Olhe o spam e a aba Promoções, ou escreva para ${CONTATO} com o pedido ${pedido.id}.`,
         en: `Thanks for buying ${nome}. We sent the activation token, the download links and the instructions to ${mascara}. Nothing after 10 minutes? Check spam/Promotions, or write to ${CONTATO} with order ${pedido.id}.` });
     if (status === 'vencido') return paginaLoja(env, { titulo: 'Pedido vencido · Order expired', link: voltaPedido(env, pedido),

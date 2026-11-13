@@ -91,28 +91,27 @@ function caixaCompra(p) {
     <p class="nota">${t('Lançamento em breve. Siga o estúdio no Instagram para saber quando chegar.', 'Launching soon. Follow the studio on Instagram to know when it lands.')}</p>
     <a class="bt bt-sec" href="${SITE.instagram}" rel="noopener" target="_blank">Instagram @equalizedmusic</a>
   </div>`;
-    return `<form class="compra" method="post" action="${LIC}/loja/pagar">
+    // 13/11 (pedido dele): a página do pack só põe no carrinho; nome, e-mail e cupom ficam na página do carrinho.
+    // O botão é link para /carrinho/?add=<id> (funciona mesmo se o site.js não carregar); com JS, adiciona sem sair da página.
+    return `<div class="compra">
     ${p.de && temBrl(p) ? `<div class="oferta so-oferta" data-fim="${p.fim}">${p.bf ? t(`PREÇO PROMOCIONAL ATÉ A BLACK FRIDAY (${fimTxt(p.fim)})`, `PROMO PRICE UNTIL BLACK FRIDAY (${fimTxt(p.fim)})`) : t('OFERTA DE LANÇAMENTO', 'LAUNCH OFFER')} <b>-${off(p)}%</b></div>
     ${p.bf ? relogio(p.fim) : `<div class="tempo so-oferta" data-fim="${p.fim}">${t('Tempo limitado · termina em', 'Limited time · ends in')} ${contador('forte', p.fim)}</div>`}
     <div class="preco-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     ${p.soma && temBrl(p) && p.soma > p.preco.brl ? `<div class="preco-de">${t('separados', 'separately')} <s class="de">${brl(p.soma)}</s> ${t('juntos por', 'together for')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
     <p class="req">${REQ()}</p>
-    <input type="hidden" name="pacote" value="${p.id}">
-    <label class="campo">${t('Nome completo', 'Full name')}
-      <input name="nome" required minlength="3" maxlength="80" autocomplete="name" placeholder="Nome e sobrenome · Full name"></label>
-    <label class="campo">${t('Seu e-mail (a licença chega nele)', 'Your e-mail (the license is sent to it)')}
-      <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="voce@email.com"></label>
-    ${campoCupom(p.preco.brl)}
+    <a class="bt bt-principal bt-carrinho" href="/carrinho/?add=${p.id}" data-add="${p.id}">${t('+ Adicionar ao carrinho', '+ Add to cart')}</a>
+    <div class="no-carrinho" hidden>
+      <p class="no-carrinho-ok">${t('✓ ' + p.nome + ' está no seu carrinho', '✓ ' + p.nome + ' is in your cart')}</p>
+      <a class="bt bt-principal" href="/carrinho/">${t('Finalizar compra →', 'Checkout →')}</a>
+      <a class="bt bt-sec" href="/#packs">${t('Continuar comprando', 'Keep shopping')}</a>
+    </div>
     ${avisoCompletaCombo(p)}
-    ${temBrl(p) ? `<button class="bt bt-principal" name="metodo" value="mp">${t('Pix ou cartão em até 12x', 'Pix or card (Brazil)')}</button>` : ''}
-    ${temUsd(p) ? `<button class="bt bt-sec" name="metodo" value="paypal">${t('PayPal (fora do Brasil)', 'PayPal (international)')}</button>` : ''}
-    <button class="bt bt-sec bt-carrinho" type="button" data-add="${p.id}" hidden>${t('+ Adicionar ao carrinho', '+ Add to cart')}</button>
-    <a class="bt bt-sec bt-ver-carrinho" href="/carrinho/" hidden>${t('No carrinho ✓ · ver carrinho', 'In your cart ✓ · view cart')}</a>
+    <p class="nota">${t('Pix ou cartão em até 12x. Nome, e-mail e cupom de desconto você informa no carrinho, e pode juntar vários packs num pagamento só.',
+                        'Pix or card. You enter your name, e-mail and discount coupon in the cart, and you can put several packs in one payment.')}</p>
     <p class="nota">${t('Pagamento aprovado: você recebe no e-mail o token de ativação, o link de download e as instruções. O token vale em 2 computadores.',
                         'Once the payment is approved you get the activation token, the download link and the instructions by e-mail. The token works on 2 computers.')}</p>
-    <p class="nota">${t('Nome e e-mail são usados só para a licença e o suporte.', 'Your name and e-mail are used only for the license and support.')} <a href="/privacidade/">${t('Privacidade', 'Privacy')}</a></p>
-  </form>`;
+  </div>`;
 }
 
 // completar o combo (12/11): quem já comprou o outro plugin do combo paga só o que falta (servidor: loja.js creditosCombo)
@@ -121,8 +120,8 @@ function avisoCompletaCombo(p) {
     if (!c) return '';
     const outro = PACKS.find((x) => x.id === c.combo.find((y) => y !== p.id));
     if (!outro) return '';
-    return `<p class="nota nota-combo">${t(`Já comprou o ${outro.nome}? Use o mesmo e-mail da compra: o ${p.nome} sai só pelo que falta para fechar o combo dos dois (${brl(c.preco.brl)}). O valor com o abatimento aparece no Mercado Pago, antes de você pagar.`,
-        `Already bought ${outro.nome}? Use the same e-mail: ${p.nome} costs only what is left to reach the bundle price (${brl(c.preco.brl)}). The reduced amount shows on Mercado Pago before you pay.`)}</p>`;
+    return `<p class="nota nota-combo">${t(`Já comprou o ${outro.nome}? No carrinho, use o mesmo e-mail da compra: o ${p.nome} sai só pelo que falta para fechar o combo dos dois (${brl(c.preco.brl)}). O valor com o abatimento aparece no Mercado Pago, antes de você pagar.`,
+        `Already bought ${outro.nome}? In the cart, use the same e-mail:${p.nome} costs only what is left to reach the bundle price (${brl(c.preco.brl)}). The reduced amount shows on Mercado Pago before you pay.`)}</p>`;
 }
 
 // cupom de desconto (12/11): o site.js confere em /loja/cupom e mostra o total com desconto; quem cobra é o servidor.
