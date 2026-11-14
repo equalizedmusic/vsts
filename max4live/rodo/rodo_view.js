@@ -1,7 +1,7 @@
 // RODO — janela flutuante (jsui). Desenha "rodo_data" (faixas, picos, ganhos) e "rodo_env" (contorno das ondas).
 // Escala das ondas = raiz da amplitude (0 dBFS = linha cheia); linha tracejada laranja = TARGET.
-// Clique no nome da faixa: tira/põe a faixa na normalização. Barra de cima: TARGET (arrastar), MODE, SCOPE,
-// ANALYZE, APPLY, RESET (mandam para o motor pela saída do jsui).
+// Clique no nome da faixa: tira/põe a faixa na normalização. Barra de cima (2 linhas): SENSOR (PEAK/RMS/LUFS),
+// TARGET do SENSOR (arrastar), PEAK GUARD; MODE, SCOPE; ANALYZE, APPLY, RESET (mandam para o motor pela saída do jsui).
 // APPLY: o motor ajusta os clips da esquerda para a direita e avisa cada um ("progresso"); o rodo anda atrás
 // do último clip feito (nunca na frente do motor) e, atrás dele, as ondas já aparecem no nível novo.
 
@@ -11,14 +11,19 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "rodo_data", DICT_ENV = "rodo_env";
-var VERSAO = "0.2.1";
+var VERSAO = "0.3.0";
 var msgNova = "";
 var W0 = 1360, H0 = 840;
-var HEAD_H = 72, BAR_H = 50, RULER_Y = 124, TOP = 152, FOOT_H = 40, SB_W = 14;
+var HEAD_H = 72, BAR_H = 86, RULER_Y = 160, TOP = 188, FOOT_H = 40, SB_W = 14;
 var X0 = 340;
 var LANE_MIN = 18, LANE_MAX = 30;
-var AC = [0.96, 0.65, 0.14], OK = [0.37, 0.75, 0.48], WARN = [0.88, 0.33, 0.31], WATER = [0.61, 0.85, 1];
-var cfg = { target: -6, mode: 1, scope: 0 };
+var AC = [0.96, 0.65, 0.14], OK = [0.37, 0.75, 0.48], WARN = [0.88, 0.33, 0.31], WATER = [0.61, 0.85, 1], GUARDC = [0.95, 0.80, 0.35];
+var SENS = ["PEAK", "RMS", "LUFS"], UNID = ["dB", "dB RMS", "LUFS"], FAIXA = [[-12, -0.3], [-36, -6], [-36, -6]];
+var GUARD_DB = -0.3;
+var cfg = { target: -6, mode: 1, scope: 0, sensor: 0, guard: 1, trms: -18, tlufs: -18 };
+function alvo() { return cfg.sensor == 1 ? cfg.trms : cfg.sensor == 2 ? cfg.tlufs : cfg.target; }
+function poeAlvo(v) { if (cfg.sensor == 1) cfg.trms = v; else if (cfg.sensor == 2) cfg.tlufs = v; else cfg.target = v; }
+function cfgOk(c) { c.sensor = c.sensor | 0; if (c.guard == null) c.guard = 1; if (c.trms == null) c.trms = -18; if (c.tlufs == null) c.tlufs = -18; return c; }
 var data = null, env = null;
 var msgStatus = "", msgAviso = "";
 var hits = [];
@@ -35,7 +40,7 @@ function load() {
 	try { data = JSON.parse(d.stringify()); } catch (e) { data = null; }
 	if (data && !data.tracks) data = null;
 	if (data) { data.tracks = arr(data.tracks); for (var i = 0; i < data.tracks.length; i++) data.tracks[i].clips = arr(data.tracks[i].clips); }
-	if (data && data.cfg && !arrastaTarget) cfg = data.cfg;
+	if (data && data.cfg && !arrastaTarget) cfg = cfgOk(data.cfg);
 }
 function loadEnv() {
 	var d = new Dict(DICT_ENV);
@@ -58,7 +63,11 @@ function varre(total, b0, b1) {
 function progresso(i, total, s) { if (!anim) return; anim.feitos = i; anim.total = total; if (s > anim.alvo) anim.alvo = s; }
 function fim() { if (anim) anim.motorFim = 1; }
 // valores atuais do motor (a janela pode abrir antes do 1º ANALYZE)
-function valores(t, m, s) { if (arrastaTarget) return; cfg = { target: Number(t), mode: m | 0, scope: s | 0 }; if (!anim) mgraphics.redraw(); }
+function valores(t, m, s, sen, g, trms, tlufs) {
+	if (arrastaTarget) return;
+	cfg = cfgOk({ target: Number(t), mode: m | 0, scope: s | 0, sensor: sen, guard: g, trms: trms == null ? null : Number(trms), tlufs: tlufs == null ? null : Number(tlufs) });
+	if (!anim) mgraphics.redraw();
+}
 function nova(v) { msgNova = String(v || ""); if (!anim) mgraphics.redraw(); }
 
 // ---------------------------------------------------------------- desenho (helpers)
@@ -130,11 +139,11 @@ function paint() {
 	if (!licPronta() || licInfo) { licPinta(W, H, HEAD_H, "RODO", AC, hits); return; }
 
 	if (data) {
-		var resumo = tracks.length + " FAIXAS · " + data.nClips + " CLIPS · PICO VAI A " + f1(cfg.target) + " dB";
+		var resumo = tracks.length + " FAIXAS · " + data.nClips + " CLIPS · " + ["PICO", "RMS", "LOUDNESS"][cfg.sensor] + " VAI A " + f1(alvo()) + " " + UNID[cfg.sensor];
 		rgb(0.91, 0.91, 0.91); texto(resumo, 16, 58, 14, true);
 		var rx = 16 + largura(resumo, 14, true) + 16;
 		rgb(0.55, 0.55, 0.58);
-		texto("MODE " + ["CLIP", "TRACK", "ALL"][cfg.mode] + " · SCOPE " + ["ALL", "SELECTED"][cfg.scope] +
+		texto("SENSOR " + SENS[cfg.sensor] + (cfg.sensor && cfg.guard ? " + PEAK GUARD" : "") + " · MODE " + ["CLIP", "TRACK", "ALL"][cfg.mode] + " · SCOPE " + ["ALL", "SELECTED"][cfg.scope] +
 			(data.nClips ? " · ajuste de " + f1(data.dmin) + " a " + f1(data.dmax) + " dB" : ""), rx, 58, 12, false);
 	}
 	// legenda
@@ -142,7 +151,7 @@ function paint() {
 	rgbv(AC); mgraphics.set_line_width(1.5);
 	for (var dx = 0; dx < 26; dx += 7) { mgraphics.move_to(gx + dx, 54); mgraphics.line_to(gx + Math.min(26, dx + 4), 54); }
 	mgraphics.stroke();
-	rgb(0.55, 0.55, 0.58); texto("TARGET", gx + 32, 58, 12, false);
+	rgb(0.55, 0.55, 0.58); texto(cfg.sensor ? "−0.3 PK" : "TARGET", gx + 32, 58, 12, false);
 	caixa(gx + 100, 47, 14, 14, 0.48, 0.65, 1); rgb(0.55, 0.55, 0.58); texto("CLIP, cor da faixa", gx + 120, 58, 12, false);
 	caixa(gx + 242, 47, 14, 14, WARN[0], WARN[1], WARN[2]); rgb(0.55, 0.55, 0.58); texto("TETO", gx + 262, 58, 12, false);
 
@@ -178,7 +187,7 @@ function paint() {
 
 	// régua
 	rgb(0.55, 0.55, 0.58);
-	texto("TRACK", 40, RULER_Y + 18, 10, true); textoD("PEAK", 238, RULER_Y + 18, 10, true); textoD("GAIN", 318, RULER_Y + 18, 10, true);
+	texto("TRACK", 40, RULER_Y + 18, 10, true); textoD(SENS[cfg.sensor], 238, RULER_Y + 18, 10, true); textoD("GAIN", 318, RULER_Y + 18, 10, true);
 	var bars = (maxBeat - minBeat) / sig;
 	var step = Math.max(1, Math.pow(2, Math.ceil(Math.log(Math.max(1, bars) / 16) / Math.LN2)));
 	for (var bar = 0; bar <= bars; bar += step) {
@@ -188,7 +197,8 @@ function paint() {
 		caixa(xr, TOP, 1, fundo - TOP, 0.17, 0.17, 0.19);
 	}
 
-	var thT = altura(cfg.target);
+	// linha tracejada: PEAK = TARGET; RMS/LUFS = o teto do PEAK GUARD (as ondas são desenhadas pelo pico)
+	var thT = altura(cfg.sensor ? GUARD_DB : cfg.target), linhaT = !cfg.sensor || cfg.guard;
 	for (var i = first; i < last; i++) {
 		var tr = tracks[i];
 		var y = TOP + (i - first) * laneH, cy = y + laneH / 2, hh = laneH / 2 - 2;
@@ -199,7 +209,7 @@ function paint() {
 		else caixa(0, y, W - SB_W - 4, laneH - 1, i % 2 ? 0.15 : 0.135, i % 2 ? 0.15 : 0.137, i % 2 ? 0.17 : 0.15);
 
 		// pico e ganho da faixa
-		var pkAntes = -1e9, pkDepois = -1e9, dmin = 1e9, dmax = -1e9, falta = 0, fimFaixa = -1e9, nOk = 0;
+		var pkAntes = -1e9, pkDepois = -1e9, dmin = 1e9, dmax = -1e9, falta = 0, gdb = 0, fimFaixa = -1e9, nOk = 0;
 		for (var j = 0; j < clips.length; j++) {
 			var c = clips[j];
 			if (c.state != "ok") continue;
@@ -209,6 +219,7 @@ function paint() {
 			if (c.delta < dmin) dmin = c.delta;
 			if (c.delta > dmax) dmax = c.delta;
 			if (c.falta > falta) falta = c.falta;
+			if (c.guardDb > gdb) gdb = c.guardDb;
 			if (c.e > fimFaixa) fimFaixa = c.e;
 		}
 		var pronta = !off && nOk && rodoX > bx(fimFaixa);
@@ -221,24 +232,27 @@ function paint() {
 		rgb(cinza, cinza, cinza);
 		texto(cabe(tr.name, 150, fs - 1, true), 36, cy + fs / 2 - 2, fs - 1, true);
 		hits.push({ x: 0, y: y, w: 170, h: laneH, tipo: "faixa", t: i });
+		// RMS/LUFS: o motor manda o nível da faixa inteira (antes = out, depois = out1)
+		if (cfg.sensor) { pkAntes = tr.out == null ? -1e9 : tr.out; pkDepois = tr.out1 == null ? -1e9 : tr.out1; }
 		if (nOk) {
 			var pk = pronta ? pkDepois : pkAntes;
 			if (pronta) rgbv(falta > 0.06 ? WARN : OK); else rgb(0.55, 0.55, 0.58);
-			textoD(f1(pk), 238, cy + 4, 12, true);
+			textoD(pk > -1e8 ? f1(pk) : "—", 238, cy + 4, 12, true);
 			var gt;
 			if (off) { gt = "—"; rgb(0.42, 0.42, 0.44); }
 			else if (falta > 0.06 && pronta) { gt = "faltou " + falta.toFixed(1); rgbv(WARN); }
+			else if (gdb > 0.06 && pronta) { gt = "guard −" + gdb.toFixed(1); rgbv(GUARDC); }
 			else {
 				gt = Math.abs(dmax - dmin) < 0.05 ? f1(dmax) : f1(dmin) + "…" + f1(dmax);
-				if (falta > 0.06) { gt += " !"; rgbv(WARN); } else if (pronta) rgb(0.55, 0.55, 0.58); else rgbv(AC);
+				if (falta > 0.06) { gt += " !"; rgbv(WARN); } else if (gdb > 0.06) { gt += " ▲"; rgbv(GUARDC); } else if (pronta) rgb(0.55, 0.55, 0.58); else rgbv(AC);
 			}
 			textoD(cabeFim(gt, 92, 12, true), 318, cy + 4, 12, true);
 		}
 
 		// TARGET tracejado
-		if (!off) {
+		if (!off && linhaT) {
 			var th = thT * hh;
-			rgbv(AC, 0.35); mgraphics.set_line_width(1);
+			rgbv(cfg.sensor ? GUARDC : AC, 0.35); mgraphics.set_line_width(1);
 			for (var xd = X0; xd < x1; xd += 7) {
 				mgraphics.move_to(xd, cy - th + 0.5); mgraphics.line_to(Math.min(x1, xd + 4), cy - th + 0.5);
 				mgraphics.move_to(xd, cy + th - 0.5); mgraphics.line_to(Math.min(x1, xd + 4), cy + th - 0.5);
@@ -314,29 +328,47 @@ function botaoP(x, y, w, h, txt, cmd, cor) {
 function barra(W, varrendo, feito) {
 	caixa(0, HEAD_H, W, BAR_H, 0.10, 0.11, 0.12);
 	caixa(0, HEAD_H + BAR_H - 1, W, 1, 0.22, 0.23, 0.25);
-	var y = HEAD_H + 25;
-	rgb(0.55, 0.55, 0.58); texto("TARGET", 16, y + 4, 11, true);
-	var sx0 = 72, sx1 = 330, sv = (cfg.target + 12) / 11.7, skx = sx0 + sv * (sx1 - sx0);
+	// linha 1: SENSOR · TARGET (do SENSOR) · PEAK GUARD
+	var y = HEAD_H + 24;
+	rgb(0.55, 0.55, 0.58); texto("SENSOR", 16, y + 4, 11, true);
+	var x = 72;
+	for (var k = 0; k < 3; k++) { botao(x, y - 13, 58, 26, SENS[k], k == cfg.sensor, AC, ["ui_sensor", k]); x += 60; }
+	x += 22;
+	rgb(0.55, 0.55, 0.58); texto("TARGET", x, y + 4, 11, true);
+	var fx = FAIXA[cfg.sensor], sx0 = x + 56, sx1 = sx0 + 258, sv = (alvo() - fx[0]) / (fx[1] - fx[0]), skx = sx0 + sv * (sx1 - sx0);
 	caixaR(sx0, y - 4, sx1 - sx0, 8, 4, [0.20, 0.21, 0.23]);
 	caixaR(sx0, y - 4, Math.max(8, skx - sx0), 8, 4, AC);
 	rgb(0.93, 0.93, 0.93); mgraphics.ellipse(skx - 8, y - 8, 16, 16); mgraphics.fill();
-	rgb(0.55, 0.55, 0.58); texto("−12", sx0, y + 19, 9, false); textoD("−0.3", sx1, y + 19, 9, false);
-	hits.push({ x: sx0 - 10, y: y - 14, w: sx1 - sx0 + 20, h: 28, tipo: "target", x0: sx0, x1: sx1 });
-	rgbv(AC); texto(f1(cfg.target) + " dB", 344, y + 6, 16, true);
+	rgb(0.55, 0.55, 0.58); texto(f1(fx[0]), sx0, y + 19, 9, false); textoD(f1(fx[1]), sx1, y + 19, 9, false);
+	hits.push({ x: sx0 - 10, y: y - 14, w: sx1 - sx0 + 20, h: 28, tipo: "target", x0: sx0, x1: sx1, v0: fx[0], v1: fx[1] });
+	rgbv(AC); texto(f1(alvo()) + " " + UNID[cfg.sensor], sx1 + 14, y + 6, 16, true);
+	x = sx1 + 140;
+	// PEAK GUARD só vale em RMS/LUFS (no PEAK o TARGET já é o pico)
+	var gOn = cfg.sensor != 0;
+	rgb(gOn ? 0.55 : 0.32, gOn ? 0.55 : 0.32, gOn ? 0.58 : 0.34); texto("PEAK GUARD", x, y + 4, 11, true); x += 80;
+	if (gOn) {
+		botao(x, y - 13, 50, 26, "ON", cfg.guard == 1, GUARDC, ["ui_guard", 1]); x += 52;
+		botao(x, y - 13, 50, 26, "OFF", cfg.guard == 0, [0.55, 0.55, 0.58], ["ui_guard", 0]); x += 60;
+		rgb(0.55, 0.55, 0.58); texto(cfg.guard ? "o ganho para quando o pico chega a −0.3 dB" : "sem trava: o pico pode passar de 0 dB", x, y + 4, 11, false);
+	} else { rgb(0.32, 0.32, 0.34); texto("só em RMS e LUFS", x, y + 4, 11, false); }
 
-	var x = 448;
-	rgb(0.55, 0.55, 0.58); texto("MODE", x, y + 4, 11, true); x += 42;
+	// linha 2: MODE · SCOPE
+	y = HEAD_H + 62;
+	x = 16;
+	rgb(0.55, 0.55, 0.58); texto("MODE", x, y + 4, 11, true); x = 72;
 	var modos = ["CLIP", "TRACK", "ALL"];
-	for (var m = 0; m < 3; m++) { botao(x, y - 13, 60, 26, modos[m], m == cfg.mode, AC, ["ui_mode", m]); x += 62; }
-	x += 28;
-	rgb(0.55, 0.55, 0.58); texto("SCOPE", x, y + 4, 11, true); x += 46;
+	for (var m = 0; m < 3; m++) { botao(x, y - 13, 58, 26, modos[m], m == cfg.mode, AC, ["ui_mode", m]); x += 60; }
+	x += 22;
+	rgb(0.55, 0.55, 0.58); texto("SCOPE", x, y + 4, 11, true); x += 56;
 	botao(x, y - 13, 78, 26, "ALL", cfg.scope == 0, AC, ["ui_scope", 0]); x += 82;
 	botao(x, y - 13, 86, 26, "SELECTED", cfg.scope == 1, AC, ["ui_scope", 1]);
 
+	// ações: à direita da linha 2
+	var yb = y;
 	var wR = 98, wAp = 128, wAn = 100, xR = W - 18 - wR, xAp = xR - 8 - wAp, xAn = xAp - 8 - wAn;
-	botao(xAn, y - 15, wAn, 30, "ANALYZE", false, AC, anim ? null : ["analyze"]);
-	botao(xAp, y - 15, wAp, 30, feito ? "APPLIED ✓" : varrendo ? "APPLYING…" : "APPLY", true, feito ? OK : AC, anim ? null : ["apply"], varrendo || feito);
-	botao(xR, y - 15, wR, 30, "RESET", false, AC, anim ? null : ["reset"]);
+	botao(xAn, yb - 15, wAn, 30, "ANALYZE", false, AC, anim ? null : ["analyze"]);
+	botao(xAp, yb - 15, wAp, 30, feito ? "APPLIED ✓" : varrendo ? "APPLYING…" : "APPLY", true, feito ? OK : AC, anim ? null : ["apply"], varrendo || feito);
+	botao(xR, yb - 15, wR, 30, "RESET", false, AC, anim ? null : ["reset"]);
 }
 
 function rodape(W, H, tracks, varrendo, feito) {
@@ -358,13 +390,15 @@ function rodape(W, H, tracks, varrendo, feito) {
 		for (var j = 0; j < tr.clips.length; j++) { if (tr.clips[j].state == "ok") n++; else est[tr.clips[j].state] = (est[tr.clips[j].state] || 0) + 1; }
 		var fora = []; for (var k in est) if (est.hasOwnProperty(k)) fora.push(est[k] + " " + k);
 		rgb(0.62, 0.62, 0.65);
-		textoD(n + " clips" + (fora.length ? " · fora: " + fora.join(", ") : "") + (tr.skip ? " · FORA DA NORMALIZAÇÃO" : ""), W - 16, y, 12, false);
+		var lim = 0; for (var j3 = 0; j3 < tr.clips.length; j3++) if (tr.clips[j3].state == "ok" && tr.clips[j3].guardDb > lim) lim = tr.clips[j3].guardDb;
+		textoD(n + " clips" + (lim > 0.06 && cfg.sensor && cfg.guard ? " · PEAK GUARD segurou " + lim.toFixed(1) + " dB" : "") + (fora.length ? " · fora: " + fora.join(", ") : "") + (tr.skip ? " · FORA DA NORMALIZAÇÃO" : ""), W - 16, y, 12, false);
 		return;
 	}
 	rgb(0.91, 0.91, 0.91);
 	var t = data.nClips ? "ANALYZE OK · ajuste de " + f1(data.dmin) + " a " + f1(data.dmax) + " dB · nada muda no set até o APPLY" : "nenhum clip para normalizar";
 	texto(t, 16, y, 13, true);
 	if (data.nTeto) { rgbv(WARN); textoD(data.nTeto + (data.nTeto > 1 ? " faixas vão" : " faixa vai") + " bater no teto do Clip Gain", W - 16, y, 12, true); }
+	else if (data.nGuard && cfg.sensor && cfg.guard) { rgbv(GUARDC); textoD(data.nGuard + (data.nGuard > 1 ? " faixas param" : " faixa para") + " antes do TARGET: PEAK GUARD (pico em −0.3 dB)", W - 16, y, 12, true); }
 	else if (lay && lay.maxFirst > 0) { rgb(0.55, 0.55, 0.58); textoD("FAIXAS " + (first + 1) + "–" + Math.min(tracks.length, first + lay.vis) + " DE " + tracks.length + " · role pela barra ou pela roda do mouse", W - 16, y, 12, false); }
 }
 
@@ -449,11 +483,11 @@ function rolar(n) {
 }
 var ultimoEnvio = 0;
 function mexeTarget(x, h, final) {
-	var v = -12 + 11.7 * Math.max(0, Math.min(1, (x - h.x0) / (h.x1 - h.x0)));
+	var v = h.v0 + (h.v1 - h.v0) * Math.max(0, Math.min(1, (x - h.x0) / (h.x1 - h.x0)));
 	v = Math.round(v * 10) / 10;
-	if (v != cfg.target) { cfg.target = v; mgraphics.redraw(); }
+	if (v != alvo()) { poeAlvo(v); mgraphics.redraw(); }
 	var t = new Date().getTime();
-	if (final || t - ultimoEnvio > 60) { ultimoEnvio = t; outlet(0, "ui_target", cfg.target); }
+	if (final || t - ultimoEnvio > 60) { ultimoEnvio = t; outlet(0, "ui_target", alvo()); }
 }
 
 function onclick(x, y) {
@@ -467,6 +501,8 @@ function onclick(x, y) {
 		if (licCliqueLocal(m)) return;
 		if (m[0] == "ui_mode") cfg.mode = m[1];
 		else if (m[0] == "ui_scope") cfg.scope = m[1];
+		else if (m[0] == "ui_sensor") cfg.sensor = m[1];
+		else if (m[0] == "ui_guard") cfg.guard = m[1];
 		if (m[0] == "apply" || m[0] == "analyze" || m[0] == "reset") msgAviso = "";
 		outlet(0, m);
 		mgraphics.redraw();

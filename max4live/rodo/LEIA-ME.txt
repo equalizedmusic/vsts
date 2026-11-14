@@ -1,6 +1,6 @@
 RODO — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
 Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/rodo/
-Normaliza o PICO dos clips de áudio do Arrangement pelo Clip Gain. Par da VASSOURA.
+Nivela os clips de áudio do Arrangement pelo Clip Gain, medindo por PICO, RMS ou LUFS (SENSOR). Par da VASSOURA.
 
 INSTALAR
 1. Copie a pasta inteira (Rodo-<versão>) para:
@@ -20,17 +20,25 @@ ATIVAR (1ª vez)
 USAR
 1. No device fica só o botão OPEN THE MAGIC: todos os controles estão na janela.
    Clique ANALYZE na janela.
-   O RODO lê o arquivo de cada clip e mede o pico do trecho que o clip toca.
+   O RODO lê o arquivo de cada clip e mede, do trecho que o clip toca, o pico, o RMS e o LUFS.
 2. Ajuste (a janela redesenha na hora, sem reler os arquivos):
-   - TARGET (-12 a -0.3 dB, padrão -6): onde o pico vai parar
+   - SENSOR o que o RODO nivela:
+           PEAK = o pico (sample peak) — PADRÃO, igual às versões anteriores
+           RMS  = a energia média (seno de 0 dBFS = -3 dB RMS); o silêncio (abaixo de -60 dB) fica fora da média
+           LUFS = o loudness da norma ITU-R BS.1770 / EBU R128 (ponderação K, gates de -70 LUFS e -10 LU)
+   - TARGET onde o nível vai parar. Cada SENSOR guarda o seu:
+           PEAK -12 a -0.3 dB (padrão -6) · RMS -36 a -6 dB (padrão -18) · LUFS -36 a -6 LUFS (padrão -18)
+   - PEAK GUARD (só em RMS e LUFS, vem LIGADO): o ganho para quando o pico do clip chega a -0.3 dB,
+     para nivelar por RMS/LUFS sem clipar. A faixa segurada mostra ▲ no GAIN e, depois do APPLY,
+     "guard -X" (quanto faltou para o TARGET). Desligado, o pico pode passar de 0 dB.
    - MODE  CLIP  = cada clip vai ao TARGET
-           TRACK = o clip mais alto da faixa vai ao TARGET e a faixa toda recebe o mesmo ajuste
-                   (mantém a dinâmica entre os clips da faixa) — PADRÃO
-           ALL   = o clip mais alto do set vai ao TARGET e tudo recebe o mesmo ajuste
+           TRACK = a faixa vai ao TARGET e toda ela recebe o mesmo ajuste (mantém a dinâmica entre os
+                   clips da faixa) — PADRÃO. Em PEAK vale o clip mais alto; em RMS/LUFS, a faixa medida inteira
+           ALL   = a faixa mais alta do set vai ao TARGET e tudo recebe o mesmo ajuste
                    (mantém o balanço entre as faixas)
    - SCOPE ALL (todas as faixas) / SELECTED (só a faixa selecionada; clique ANALYZE de novo)
    Na janela, clique no nome da faixa para deixá-la FORA da normalização.
-   PEAK = pico que sai da faixa hoje · GAIN = ajuste que ela vai receber.
+   PEAK/RMS/LUFS = nível que sai da faixa hoje, no SENSOR escolhido · GAIN = ajuste que ela vai receber.
 3. APPLY. O rodo passa da esquerda para a direita junto com o ajuste real: atrás dele os
    clips já estão no nível novo. No fim, o RODO relê o set e a janela mostra como ficou.
 4. RESET volta o Clip Gain que cada clip tinha antes do primeiro APPLY.
@@ -44,6 +52,8 @@ LIMITES
 - Clips MUTADOS ficam fora. Clip com WARP: o pico é medido pelo mapa dos warp markers;
   se o Live não entregar o mapa, mede o arquivo inteiro (aparece "warp (arquivo inteiro)").
 - O pico medido é o das amostras do arquivo (sample peak), não o "true peak".
+- RMS e LUFS medem o arquivo do clip (antes de plugins e do volume da faixa). Clip mono conta como
+  os dois lados iguais, que é como o Live toca um clip mono numa faixa estéreo.
 
 SE DER ERRO
 - Abra o console do Max (no device: botão de editar → Max → Window → Max Console).

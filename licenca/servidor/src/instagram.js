@@ -88,7 +88,7 @@ const GATILHOS = [
         palavra: 'rodo', curto: true,
         get dm() {
             const oferta = Date.now() < Date.parse(fimOferta('rodo'));
-            return 'Opa! Aqui está o RODO 🧽\n\nNormaliza o pico de todos os clips de áudio do Ableton Live (12.2 ou mais novo) num clique, com o TARGET que você escolher.\n\n'
+            return 'Opa! Aqui está o RODO 🧽\n\nNivela todos os clips de áudio do Ableton Live (12.2 ou mais novo) num clique: por pico, RMS ou LUFS, com o TARGET que você escolher e o PEAK GUARD para nada clipar.\n\n'
                 + (oferta ? 'Preço de lançamento: R$ 24,90 até 27/11 (sexta, 23h59). Com a VASSOURA, os dois saem por R$ 39,90.\n\n' : '')
                 + '👉 https://insidestudiosp.com.br/rodo/\n\nCombo VASSOURA + RODO 👉 https://insidestudiosp.com.br/vassourarodo/\n\n'
                 + 'Comprou a VASSOURA? Levando o RODO você paga só a diferença do combo. Pix ou cartão.';

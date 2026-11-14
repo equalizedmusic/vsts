@@ -117,15 +117,15 @@ const TODOS_PACKS = [
                      'Already have VASSOURA? The update is free: your license was sent to the e-mail you signed up with. Didn\'t get it? Write to contato@insidestudiosp.com.br'],
     },
     {
-        // RODO (14/11/2026): par da VASSOURA, normaliza o pico dos clips pelo Clip Gain. 24,90 na oferta -> 49,90
+        // RODO (14/11/2026): par da VASSOURA, nivela os clips pelo Clip Gain. 24,90 na oferta -> 49,90. 0.3.0: SENSOR PEAK/RMS/LUFS + PEAK GUARD
         id: 'rodo', nome: 'RODO', cor: '#f5a524', tipo: ['Max for Live · Ableton Live 12.2+', 'Max for Live · Ableton Live 12.2+'], m4l: true,
         capa: 'rodo', preco: null,
-        frase: ['Todos os clips no mesmo pico, num clique.', 'Every clip at the same peak, in one click.'],
+        frase: ['Todos os clips no mesmo nível, num clique: pico, RMS ou LUFS.', 'Every clip at the same level, in one click: peak, RMS or LUFS.'],
         texto: [
-            'Lê todos os clips de áudio do set e normaliza o pico pelo Clip Gain, sem renderizar nada. TARGET de −12 a −0.3 dB. MODE CLIP leva cada clip ao TARGET; TRACK usa o mesmo ganho na faixa toda e mantém a dinâmica dela; ALL usa o mesmo ganho no set inteiro e mantém o balanço entre os stems. SCOPE ALL ou SELECTED, ANALYZE mostra antes o ganho de cada faixa, e o RESET volta os ganhos de antes. No APPLY, o rodo passa nas faixas e as ondas ficam no nível novo atrás dele.',
-            'Reads every audio clip in the set and normalizes the peak with Clip Gain, without rendering anything. TARGET from −12 to −0.3 dB. MODE CLIP takes each clip to the TARGET; TRACK uses the same gain across the whole track and keeps its dynamics; ALL uses the same gain across the whole set and keeps the balance between stems. SCOPE ALL or SELECTED, ANALYZE shows each track gain first, and RESET brings the old gains back. On APPLY, the squeegee sweeps across the tracks and the waves land at the new level behind it.'],
-        plugins: [['rodo', 'RODO', 'A janela mostra o PEAK e o GAIN de cada faixa, com o TARGET tracejado.', 'The window shows each track PEAK and GAIN, with the TARGET as a dashed line.']],
-        fotos: [['rodo-janela', 'A janela: TARGET, MODE, SCOPE e cada faixa do set', 'The window: TARGET, MODE, SCOPE and every track in the set'],
+            'Lê todos os clips de áudio do set e nivela o volume pelo Clip Gain, sem renderizar nada. O SENSOR escolhe o que nivelar: PEAK (pico, TARGET de −12 a −0.3 dB), RMS ou LUFS (norma EBU R128, TARGET de −36 a −6). Em RMS e LUFS, o PEAK GUARD segura o ganho quando o pico chega a −0.3 dB, para nada clipar. MODE CLIP leva cada clip ao TARGET; TRACK usa o mesmo ganho na faixa toda e mantém a dinâmica dela; ALL usa o mesmo ganho no set inteiro e mantém o balanço entre os stems. SCOPE ALL ou SELECTED, ANALYZE mostra antes o ganho de cada faixa, e o RESET volta os ganhos de antes. No APPLY, o rodo passa nas faixas e as ondas ficam no nível novo atrás dele.',
+            'Reads every audio clip in the set and levels the volume with Clip Gain, without rendering anything. The SENSOR picks what to level: PEAK (TARGET from −12 to −0.3 dB), RMS or LUFS (EBU R128, TARGET from −36 to −6). In RMS and LUFS, PEAK GUARD holds the gain when the peak reaches −0.3 dB, so nothing clips. MODE CLIP takes each clip to the TARGET; TRACK uses the same gain across the whole track and keeps its dynamics; ALL uses the same gain across the whole set and keeps the balance between stems. SCOPE ALL or SELECTED, ANALYZE shows each track gain first, and RESET brings the old gains back. On APPLY, the squeegee sweeps across the tracks and the waves land at the new level behind it.'],
+        plugins: [['rodo', 'RODO', 'A janela mostra o nível (PEAK, RMS ou LUFS) e o GAIN de cada faixa; o PEAK GUARD marca quem para antes de clipar.', 'The window shows each track level (PEAK, RMS or LUFS) and GAIN; PEAK GUARD flags the tracks held back before clipping.']],
+        fotos: [['rodo-janela', 'A janela: SENSOR, TARGET, PEAK GUARD, MODE, SCOPE e cada faixa do set', 'The window: SENSOR, TARGET, PEAK GUARD, MODE, SCOPE and every track in the set'],
                 ['rodo-device', 'O device na faixa: só o botão OPEN', 'The device on the track: just the OPEN button']],
     },
     {
@@ -134,10 +134,10 @@ const TODOS_PACKS = [
         capa: 'vassourarodo', preco: null, combo: ['vassoura', 'rodo'],
         frase: ['Limpa e nivela os stems: os dois juntos, por menos.', 'Clean and level your stems: both together, for less.'],
         texto: [
-            'A VASSOURA tira o silêncio dos clips e o RODO deixa todos no mesmo pico. Juntos, preparam um set de stems para a mix em segundos, direto no arranjo do Ableton Live. Uma compra, as duas licenças no mesmo token.',
-            'VASSOURA removes the silence from the clips and RODO brings them all to the same peak. Together they get a set of stems ready for the mix in seconds, right in the Ableton Live arrangement. One purchase, both licenses on the same token.'],
+            'A VASSOURA tira o silêncio dos clips e o RODO deixa todos no mesmo nível (pico, RMS ou LUFS). Juntos, preparam um set de stems para a mix em segundos, direto no arranjo do Ableton Live. Uma compra, as duas licenças no mesmo token.',
+            'VASSOURA removes the silence from the clips and RODO brings them all to the same level (peak, RMS or LUFS). Together they get a set of stems ready for the mix in seconds, right in the Ableton Live arrangement. One purchase, both licenses on the same token.'],
         plugins: [['vassoura', 'VASSOURA', 'Muta ou apaga os trechos vazios dos clips.', 'Mutes or deletes the empty parts of the clips.'],
-                  ['rodo', 'RODO', 'Normaliza o pico dos clips pelo Clip Gain.', 'Normalizes the clip peaks with Clip Gain.']],
+                  ['rodo', 'RODO', 'Nivela os clips pelo Clip Gain, por pico, RMS ou LUFS.', 'Levels the clips with Clip Gain, by peak, RMS or LUFS.']],
     },
     {
         id: 'mesa', nome: 'MESA', cor: '#f59e0b', tipo: ['VST3 · AU', 'VST3 · AU'], oculto: true,

@@ -51,7 +51,8 @@ line(buf, 1, mLoaded, 0);
 line(mLoaded, 0, v8, 0);
 
 // eco da janela para os controles do device
-const rEco = obj('route target mode scope', 1, 4, [200, 300, 150, 22]);
+// 0.3.0: SENSOR, GUARD e um TARGET por SENSOR (RMS, LUFS); o TARGET antigo segue sendo o do PEAK (sets antigos abrem iguais)
+const rEco = obj('route target mode scope sensor guard trms tlufs', 1, 8, [200, 300, 300, 22]);
 line(v8, 3, rEco, 0);
 
 // controles do Live (ESCONDIDOS: sem presentation). Só guardam os valores no set; a janela mexe neles pelo eco do motor.
@@ -88,6 +89,26 @@ function tab(varname, longname, opcoes, inicial, msgName, outRoute) {
 }
 tab('mode', 'Mode', ['CLIP', 'TRACK', 'ALL'], 1, 'mode', 1);
 tab('scope', 'Scope', ['ALL', 'SELECTED'], 0, 'scope', 2);
+tab('sensor', 'Sensor', ['PEAK', 'RMS', 'LUFS'], 0, 'sensor', 3);
+tab('guard', 'Peak Guard', ['OFF', 'ON'], 1, 'guard', 4);
+
+// TARGET de RMS e de LUFS (escondidos, como o TARGET)
+function dial2(varname, longname, shortname, mmin, mmax, inicial, msgName, outRoute, x) {
+  const d = box({ maxclass: 'live.dial', varname, numinlets: 1, numoutlets: 2,
+    outlettype: ['', 'float'], parameter_enable: 1, patching_rect: [x, 400, 44, 48],
+    saved_attribute_attributes: { valueof: { parameter_longname: longname, parameter_shortname: shortname,
+      parameter_type: 0, parameter_mmin: mmin, parameter_mmax: mmax, parameter_initial_enable: 1,
+      parameter_initial: [inicial], parameter_unitstyle: 4 } } });
+  const p = obj('prepend ' + msgName, 1, 1, [x, 460, 110, 22]);
+  line(d, 0, p, 0);
+  line(p, 0, v8, 0);
+  line(tDev, 1, d, 0);
+  const st = obj('prepend set', 1, 1, [x + 60, 430, 80, 22]);
+  line(rEco, outRoute, st, 0);
+  line(st, 0, d, 0);
+}
+dial2('trms', 'Target RMS', 'TGT RMS', -36.0, -6.0, -18.0, 'target_rms', 5, 500);
+dial2('tlufs', 'Target LUFS', 'TGT LUFS', -36.0, -6.0, -18.0, 'target_lufs', 6, 650);
 
 const send = obj('s ---rodo_ref', 1, 0, [370, 290, 110, 22]);
 line(v8, 2, send, 0);
@@ -120,5 +141,5 @@ const patcher = {
 };
 
 const r = comum.escrever(out, __dirname, 'rodo', 'Rodo', patcher,
-  { nome: 'RODO', tipo: 'rodo', cor: [0.96, 0.65, 0.14], frase: 'normaliza o pico dos clips' });
+  { nome: 'RODO', tipo: 'rodo', cor: [0.96, 0.65, 0.14], frase: 'nivela os clips · PEAK RMS LUFS' });
 console.log('ok', out, r.bytes, 'bytes', 'v' + r.versao);

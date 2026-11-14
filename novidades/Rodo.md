@@ -4,7 +4,18 @@ Device Max for Live (pasta `max4live/rodo`), par da VASSOURA. A versão é o pri
 ela vira o release `rodo-vx.y.z` do GitHub (zip `Rodo-x.y.z.zip`), publicado pelo workflow `release-max4live.yml`.
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
-## 0.2.1 — 2026-11-15
+## 0.3.0 — 2026-11-14
+- **SENSOR: nivela por PEAK, RMS ou LUFS.** O ANALYZE lê cada arquivo uma vez só e mede os três; trocar de SENSOR
+  muda a janela na hora, sem reler. RMS ignora o silêncio (abaixo de −60 dB); LUFS segue a ITU-R BS.1770 / EBU R128
+  (ponderação K e gates de −70 LUFS e −10 LU). Cada SENSOR tem o seu TARGET: PEAK −12 a −0.3 dB, RMS −36 a −6 dB e
+  LUFS −36 a −6 LUFS (os dois com padrão −18).
+- **PEAK GUARD** (em RMS e LUFS, vem ligado): o ganho para quando o pico do clip chega a −0.3 dB, para nivelar pelo
+  volume sem clipar. A faixa segurada aparece com ▲ e, depois do APPLY, com "guard −X" (o que faltou).
+- Em RMS e LUFS, o MODE TRACK mede a faixa inteira junta (não só o clip mais alto) e o ALL leva a faixa mais alta ao TARGET.
+- Janela com a barra em duas linhas: SENSOR, TARGET e PEAK GUARD em cima; MODE, SCOPE e ANALYZE/APPLY/RESET embaixo.
+- PEAK continua o padrão e funciona igual à 0.2.1: sets salvos abrem como estavam. Atualização grátis, mesma licença.
+
+## 0.2.1 — 2026-11-14
 - **Corrigido: o RODO pedia e-mail e token de novo toda vez que abria.** Em alguns computadores (biblioteca do
   Ableton fora da pasta do usuário, por exemplo em outro disco) a licença não ficava gravada. Agora ela é gravada na
   pasta do usuário achada de outros jeitos e conferida na hora; se mesmo assim o Max não conseguir gravar, a janela avisa.

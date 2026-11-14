@@ -1,4 +1,8 @@
-// RODO 0.1 — normaliza o PICO dos clips de áudio do arranjo pelo Clip Gain (par da VASSOURA).
+// RODO 0.3 — nivela os clips de áudio do arranjo pelo Clip Gain, medindo por PEAK, RMS ou LUFS (SENSOR)
+// (par da VASSOURA). Até a 0.2 só PEAK; a 0.3 traz SENSOR RMS/LUFS e o PEAK GUARD (o ganho para antes do pico
+// passar de −0.3 dB).
+//
+// Antes: normaliza o PICO dos clips de áudio do arranjo pelo Clip Gain (par da VASSOURA).
 // Roda no objeto [v8] (Max 9 / Live 12.2+). ANALYZE lê o arquivo de cada clip no buffer~ (uma vez por arquivo),
 // guarda o pico em blocos de 10 ms e mede o pico do trecho que o clip toca. Com o Clip Gain atual de cada clip
 // (lido em dB do próprio Live, gain_display_string), sabe o pico que SAI de cada clip. TARGET e MODE recalculam na
@@ -21,7 +25,7 @@ var BUF = "rodo_scan";
 var DICT = "rodo_data";   // leve: faixas, clips, picos e ganhos (republicado a cada mudança de TARGET/MODE)
 var DICT_ENV = "rodo_env"; // pesado: contorno das ondas (só depois do ANALYZE)
 var WIN_MS = 10;
-var VERSAO = "0.2.1";
+var VERSAO = "0.3.0";
 var BUILD = "";           // marca do pacote de teste no log ("teste"...); vazio na versão publicada
 var LIC_PACOTE = "rodo", LIC_NOME = "RODO";   // licença: bloco LICENÇA no fim (colado pelo build-rodo.js)
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/rodo/zip";
@@ -35,14 +39,23 @@ var TETO_PADRAO = 24;     // até medir o teto do Clip Gain (valor 1), a prévia
 var ENV_PONTOS = 1100;    // pontos do contorno no set inteiro (a janela tem ~1000 px de largura útil)
 var PATCHER = (typeof this != "undefined" && this && this.patcher) ? this.patcher : null;
 
-var cfg = { target: -6, mode: 1, scope: 0 };
+var cfg = { target: -6, mode: 1, scope: 0, sensor: 0, guard: 1, trms: -18, tlufs: -18 };
 var MODE_TXT = ["CLIP", "TRACK", "ALL"];
+var SENSOR_TXT = ["PEAK", "RMS", "LUFS"];
+var UNID = ["dB", "dB RMS", "LUFS"];
+// faixa do TARGET por SENSOR (cada SENSOR guarda o seu: trocar de SENSOR não estraga o TARGET do outro)
+var FAIXA = [[-12, -0.3], [-36, -6], [-36, -6]];
+var GUARD_DB = -0.3;      // PEAK GUARD: em RMS/LUFS o ganho para quando o pico do clip chega aqui
+var GATE_RMS = -60;       // RMS: blocos de 400 ms abaixo disso (silêncio) não entram na média
+var GATE_ABS = -70, GATE_REL = -10;   // LUFS: gates da ITU-R BS.1770-4 / EBU R128
+var BLOCO = 40, PASSO_B = 10;          // bloco de 400 ms andando 100 ms (em janelas de 10 ms)
 
 var ready = false;
 var busy = false;
 var jobs = [];
 var cur = -1;
 var result = null;
+var blocosDe = {};    // id do clip -> { r: blocos RMS, k: blocos LUFS } (fora do dict: só o motor usa)
 var peaks = {};       // "t/c" -> Float32Array (pico por bloco de 10 ms do trecho que o clip toca)
 var arqs = {};        // arquivo -> { pk, winSec }
 var fila_arq = [];
@@ -115,16 +128,29 @@ function licMudou() {
 	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
 }
 // valores atuais para a janela (ela pode abrir antes do 1º ANALYZE)
-function enviaCfg() { outlet(2, "valores", cfg.target, cfg.mode, cfg.scope); }
+function enviaCfg() { outlet(2, "valores", cfg.target, cfg.mode, cfg.scope, cfg.sensor, cfg.guard, cfg.trms, cfg.tlufs); }
 function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
 
 // ---------------------------------------------------------------- controles
-function target(v) { cfg.target = Math.max(-12, Math.min(-0.3, num(v))); agendaRecalc(); }
+function limT(s, v) { return Math.max(FAIXA[s][0], Math.min(FAIXA[s][1], num(v))); }
+function target(v) { cfg.target = limT(0, v); agendaRecalc(); }
+function target_rms(v) { cfg.trms = limT(1, v); agendaRecalc(); }
+function target_lufs(v) { cfg.tlufs = limT(2, v); agendaRecalc(); }
+function sensor(v) { cfg.sensor = Math.max(0, Math.min(2, num(v) | 0)); agendaRecalc(); }
+function guard(v) { cfg.guard = num(v) ? 1 : 0; agendaRecalc(); }
+function alvo() { return cfg.sensor == 1 ? cfg.trms : cfg.sensor == 2 ? cfg.tlufs : cfg.target; }
 function mode(v) { cfg.mode = Math.max(0, Math.min(2, num(v) | 0)); agendaRecalc(); }
 function scope(v) { cfg.scope = num(v) ? 1 : 0; if (result) status("SCOPE mudou · clique ANALYZE de novo"); }
 
 // vindos da janela: mudam o valor e devolvem para o controle do device (sem eco de volta)
-function ui_target(v) { target(v); outlet(3, "target", cfg.target); }
+// ui_target mexe no TARGET do SENSOR ativo
+function ui_target(v) {
+	if (cfg.sensor == 1) { target_rms(v); outlet(3, "trms", cfg.trms); }
+	else if (cfg.sensor == 2) { target_lufs(v); outlet(3, "tlufs", cfg.tlufs); }
+	else { target(v); outlet(3, "target", cfg.target); }
+}
+function ui_sensor(v) { sensor(v); outlet(3, "sensor", cfg.sensor); enviaCfg(); }
+function ui_guard(v) { guard(v); outlet(3, "guard", cfg.guard); enviaCfg(); }
 function ui_mode(v) { mode(v); outlet(3, "mode", cfg.mode); enviaCfg(); }
 function ui_scope(v) { scope(v); outlet(3, "scope", cfg.scope); enviaCfg(); }
 
@@ -292,6 +318,7 @@ function analyze(reuso) {
 	};
 	jobs = [];
 	peaks = {};
+	blocosDe = {};
 
 	var selId = -1;
 	if (cfg.scope == 1) selId = Number(new LiveAPI("live_set view selected_track").id);
@@ -461,6 +488,10 @@ function loaded() {
 	}, 0);
 }
 
+// Uma leitura do arquivo dá os três SENSORES, por janela de 10 ms:
+//  pk = pico (maior |amostra| entre os canais) · pw = potência média (média dos canais) para o RMS ·
+//  kw = potência com a ponderação K da BS.1770 (soma dos canais; mono conta como 2 canais iguais, que é como o
+//  Live toca um clip mono numa faixa estéreo) para o LUFS.
 function scanArquivo(fa) {
 	var buf = new Buffer(BUF);
 	var frames = buf.framecount();
@@ -468,26 +499,96 @@ function scanArquivo(fa) {
 	var sr = fa.sr > 0 ? fa.sr : 44100;
 	var win = Math.max(1, Math.round(sr * WIN_MS / 1000));
 	log("    " + frames + " amostras · " + nch + " canais · " + (frames / sr / 60).toFixed(1) + " min\n", 1);
-	var pk = new Float32Array(Math.ceil(frames / win));
+	var nw = Math.ceil(frames / win);
+	var pk = new Float32Array(nw), pw = new Float64Array(nw), kw = new Float64Array(nw);
+	var K = filtroK(sr);
+	var b0 = K.b0, b1 = K.b1, b2 = K.b2, a1 = K.a1, a2 = K.a2, c1 = K.c1, c2 = K.c2;
 	var chunk = win * 100;
+	var zs = [];
+	for (var c0 = 0; c0 < nch; c0++) zs.push([0, 0, 0, 0]);
 	for (var f = 0; f < frames; f += chunk) {
 		var n = Math.min(chunk, frames - f);
 		var w0 = (f / win) | 0;
 		for (var ch = 1; ch <= nch; ch++) {
 			var a = buf.peek(ch, f, n);
 			if (typeof a == "number") a = [a];
+			var z = zs[ch - 1], s1 = z[0], s2 = z[1], h1 = z[2], h2 = z[3];
 			for (var i = 0; i < a.length; i++) {
-				var v = a[i] < 0 ? -a[i] : a[i];
+				var x = a[i];
+				var v = x < 0 ? -x : x;
 				var w = w0 + ((i / win) | 0);
 				if (v > pk[w]) pk[w] = v;
+				pw[w] += x * x;
+				// ponderação K = prateleira alta (+4 dB acima de ~1.7 kHz) e passa-altas (~38 Hz), forma direta II transposta
+				var y = b0 * x + s1; s1 = b1 * x - a1 * y + s2; s2 = b2 * x - a2 * y;
+				var o = y + h1; h1 = -2 * y - c1 * o + h2; h2 = y - c2 * o;
+				kw[w] += o * o;
 			}
+			z[0] = s1; z[1] = s2; z[2] = h1; z[3] = h2;
 			a = null;
 		}
 	}
-	arqs[fa.file] = { pk: pk, winSec: win / sr };
+	// soma -> potência média da janela
+	for (var q = 0; q < nw; q++) {
+		var nq = Math.min(win, frames - q * win);
+		if (nq <= 0) continue;
+		pw[q] = pw[q] / (nq * nch);
+		kw[q] = kw[q] / nq * (nch == 1 ? 2 : 1);
+	}
+	arqs[fa.file] = { pk: pk, pw: pw, kw: kw, winSec: win / sr };
 }
 
-// pico (dB) do trecho que o clip toca
+// coeficientes da ponderação K para qualquer taxa (fórmulas da BS.1770; em 48 kHz batem com a tabela da norma)
+function filtroK(fs) {
+	var f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196;
+	var K = Math.tan(Math.PI * f0 / fs), Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416);
+	var a0 = 1 + K / Q + K * K;
+	var r = {
+		b0: (Vh + Vb * K / Q + K * K) / a0, b1: 2 * (K * K - Vh) / a0, b2: (Vh - Vb * K / Q + K * K) / a0,
+		a1: 2 * (K * K - 1) / a0, a2: (1 - K / Q + K * K) / a0
+	};
+	var f1_ = 38.13547087602444, Q2 = 0.5003270373238773, K2 = Math.tan(Math.PI * f1_ / fs), d = 1 + K2 / Q2 + K2 * K2;
+	r.c1 = 2 * (K2 * K2 - 1) / d; r.c2 = (1 - K2 / Q2 + K2 * K2) / d;
+	return r;
+}
+
+// blocos de 400 ms (passo de 100 ms) do trecho w0..w1 de um vetor de potência por janela
+function blocos(p, w0, w1) {
+	var n = w1 - w0;
+	if (n <= 0) return new Float32Array(0);
+	var acum = new Float64Array(n + 1);
+	for (var i = 0; i < n; i++) acum[i + 1] = acum[i] + p[w0 + i];
+	if (n <= BLOCO) { var um = new Float32Array(1); um[0] = acum[n] / n; return um; }
+	var nb = Math.floor((n - BLOCO) / PASSO_B) + 1, out = new Float32Array(nb);
+	for (var b = 0; b < nb; b++) out[b] = (acum[b * PASSO_B + BLOCO] - acum[b * PASSO_B]) / BLOCO;
+	return out;
+}
+function dbPot(p) { return p > 0 ? 10 * Math.log(p) / Math.LN10 : -Infinity; }
+
+// nível (dB) de uma lista de { b: blocos, g: ganho em dB } — RMS (tipo 1) ou LUFS (tipo 2), com os gates.
+// Junta os blocos de vários clips: é assim que sai o nível da FAIXA inteira (TRACK/ALL).
+function nivel(lst, tipo) {
+	var soma = 0, n = 0, i, k, p, abs = Math.pow(10, (tipo == 2 ? GATE_ABS + 0.691 : GATE_RMS) / 10);
+	for (i = 0; i < lst.length; i++) {
+		var m = Math.pow(10, lst[i].g / 10), b = lst[i].b;
+		for (k = 0; k < b.length; k++) { p = b[k] * m; if (p > abs) { soma += p; n++; } }
+	}
+	if (!n) return null;
+	if (tipo == 2) {
+		// gate relativo: −10 LU abaixo do nível com o gate absoluto
+		var rel = soma / n * Math.pow(10, GATE_REL / 10);
+		soma = 0; n = 0;
+		for (i = 0; i < lst.length; i++) {
+			var m2 = Math.pow(10, lst[i].g / 10), b2 = lst[i].b;
+			for (k = 0; k < b2.length; k++) { p = b2[k] * m2; if (p > abs && p > rel) { soma += p; n++; } }
+		}
+		if (!n) return null;
+		return -0.691 + dbPot(soma / n);
+	}
+	return dbPot(soma / n);
+}
+
+// pico (dB) do trecho que o clip toca + blocos de RMS e LUFS do mesmo trecho
 function recorta(job) {
 	var c = clipOf(job);
 	var fa = arqs[c.file];
@@ -500,6 +601,10 @@ function recorta(job) {
 	for (var i = 0; i < sub.length; i++) if (sub[i] > m) m = sub[i];
 	if (m <= 0.0000001) { c.state = "silêncio"; return; }
 	c.pk = 20 * Math.log(m) / Math.LN10;
+	blocosDe[c.id] = { r: blocos(fa.pw, w0, w1), k: blocos(fa.kw, w0, w1) };
+	var b = blocosDe[c.id];
+	c.rms = nivel([{ b: b.r, g: 0 }], 1);
+	c.lufs = nivel([{ b: b.k, g: 0 }], 2);
 	c.state = "ok";
 }
 
@@ -559,55 +664,102 @@ function lerMarcas() {
 	for (var i = 0; i < tr.length && i < result.tracks.length; i++) result.tracks[i].skip = tr[i].skip ? 1 : 0;
 }
 
+// nível (no SENSOR ativo) que sai de um clip com o ganho g; PEAK = pico do arquivo + g
+function nivelClip(c, g) {
+	if (cfg.sensor == 0) return c.pk + g;
+	var v = cfg.sensor == 1 ? c.rms : c.lufs;
+	return v == null ? null : v + g;
+}
+// nível que sai da faixa: PEAK = clip mais alto (como sempre foi); RMS/LUFS = a faixa inteira medida junta
+function nivelFaixa(tr, campoG) {
+	var i, c;
+	if (cfg.sensor == 0) {
+		var m = -1e9;
+		for (i = 0; i < tr.clips.length; i++) { c = tr.clips[i]; if (c.state == "ok" && c.pk + c[campoG] > m) m = c.pk + c[campoG]; }
+		return m > -1e9 ? m : null;
+	}
+	var lst = [];
+	for (i = 0; i < tr.clips.length; i++) {
+		c = tr.clips[i];
+		var b = blocosDe[c.id];
+		if (c.state == "ok" && b) lst.push({ b: cfg.sensor == 1 ? b.r : b.k, g: c[campoG] });
+	}
+	return lst.length ? nivel(lst, cfg.sensor) : null;
+}
+
 function recalc() {
 	if (!result) return;
-	var T0 = cfg.target, gmax = -1e9, i, j, c, tr;
-	// pico que SAI de cada clip hoje = pico do arquivo + Clip Gain atual
+	var T0 = alvo(), gmax = -1e9, pmax = -1e9, i, j, c, tr;
+	var protege = cfg.sensor != 0 && cfg.guard;
+	// o que SAI de cada clip/faixa hoje (com o Clip Gain atual)
 	for (i = 0; i < result.tracks.length; i++) {
-		tr = result.tracks[i]; tr.out = -1e9;
+		tr = result.tracks[i]; tr.pkOut = -1e9;
 		for (j = 0; j < tr.clips.length; j++) {
 			c = tr.clips[j];
 			if (c.state != "ok") continue;
-			c.out = c.pk + c.g0;
-			if (c.out > tr.out) tr.out = c.out;
+			c.out = nivelClip(c, c.g0);
+			if (c.pk + c.g0 > tr.pkOut) tr.pkOut = c.pk + c.g0;
 		}
-		if (!tr.skip && tr.out > gmax) gmax = tr.out;
+		tr.out = nivelFaixa(tr, "g0");
+		if (!tr.skip && tr.out != null && tr.out > gmax) gmax = tr.out;
+		if (!tr.skip && tr.pkOut > pmax) pmax = tr.pkOut;
 	}
-	var nOk = 0, dmin = 1e9, dmax = -1e9, nTeto = 0;
+	var nOk = 0, dmin = 1e9, dmax = -1e9, nTeto = 0, nGuard = 0;
 	for (i = 0; i < result.tracks.length; i++) {
-		tr = result.tracks[i]; tr.delta = null; tr.falta = 0;
+		tr = result.tracks[i]; tr.delta = null; tr.falta = 0; tr.guardDb = 0;
+		// ajuste comum da faixa (TRACK) ou do set (ALL), já com o PEAK GUARD
+		var dComum = null, gComum = 0;
+		if (cfg.mode == 1 && tr.out != null) dComum = T0 - tr.out;
+		if (cfg.mode == 2 && gmax > -1e9) dComum = T0 - gmax;
+		if (dComum != null && protege) {
+			var lim = GUARD_DB - (cfg.mode == 1 ? tr.pkOut : pmax);
+			if (dComum > lim) { gComum = dComum - lim; dComum = lim; }
+		}
 		for (j = 0; j < tr.clips.length; j++) {
 			c = tr.clips[j];
 			if (c.state != "ok") continue;
-			var d = cfg.mode == 0 ? T0 - c.out : cfg.mode == 1 ? T0 - tr.out : T0 - gmax;
+			var d, gd = 0;
+			if (cfg.mode == 0) {
+				d = c.out == null ? 0 : T0 - c.out;   // clip abaixo do gate (quase silêncio): não mexe
+				if (protege && d > GUARD_DB - (c.pk + c.g0)) { gd = d - (GUARD_DB - (c.pk + c.g0)); d -= gd; }
+			} else { d = dComum == null ? 0 : dComum; gd = gComum; }
 			var quer = c.g0 + d;
 			c.g1 = quer;
 			c.falta = 0;
+			c.guardDb = gd;
 			var teto = tetoDb != null ? tetoDb : TETO_PADRAO;
 			if (quer > teto) { c.g1 = teto; c.falta = quer - teto; }
 			c.delta = c.g1 - c.g0;
+			c.out1 = nivelClip(c, c.g1);
 			if (c.falta > tr.falta) tr.falta = c.falta;
+			if (gd > tr.guardDb) tr.guardDb = gd;
 			if (tr.skip) continue;
 			nOk++;
 			if (cfg.mode != 0 && tr.delta == null) tr.delta = d;
 			if (c.delta < dmin) dmin = c.delta;
 			if (c.delta > dmax) dmax = c.delta;
 		}
+		tr.out1 = nivelFaixa(tr, "g1");
 		if (tr.falta > 0 && !tr.skip) nTeto++;
+		if (tr.guardDb > 0.05 && !tr.skip) nGuard++;
 	}
 	result.nClips = nOk;
 	result.dmin = nOk ? dmin : 0;
 	result.dmax = nOk ? dmax : 0;
 	result.nTeto = nTeto;
+	result.nGuard = nGuard;
 	result.teto = tetoDb;
 	result.cfg = cfg;
 	result.nOrig = nOrig;
 	var d2 = new Dict(DICT);
-	d2.parse(JSON.stringify(result));
+	d2.parse(JSON.stringify(result, semInfinito));
 	outlet(2, "bang");
-	if (!busy) status(nOk ? nOk + " clips · TARGET " + cfg.target.toFixed(1) + " dB · " + MODE_TXT[cfg.mode] + " · ajuste de " + f1(result.dmin) + " a " + f1(result.dmax) + " dB" + (nTeto ? " · " + nTeto + " no teto" : "")
+	if (!busy) status(nOk ? nOk + " clips · " + SENSOR_TXT[cfg.sensor] + " · TARGET " + T0.toFixed(1) + " " + UNID[cfg.sensor] + " · " + MODE_TXT[cfg.mode] + " · ajuste de " + f1(result.dmin) + " a " + f1(result.dmax) + " dB" +
+		(nTeto ? " · " + nTeto + " no teto" : "") + (nGuard ? " · " + nGuard + " no PEAK GUARD" : "")
 		: "nenhum clip de áudio para normalizar (WARP/LOOP/MUTE ficam fora? ver console)");
 }
+// o JSON não tem -Infinity/NaN: vira null
+function semInfinito(k, v) { return typeof v == "number" && !isFinite(v) ? null : v; }
 
 // janela: clique no nome da faixa tira/põe a faixa
 function marcas() {
@@ -640,7 +792,7 @@ function apply() {
 	fila.sort(function (a, b) { return a.s - b.s || a.t - b.t; });  // ordem do rodo: da esquerda para a direita
 	busy = true;
 	ap = { i: 0, feitos: 0, iguais: 0, falhas: 0, teto: 0, aprox: 0, inicio: agora() };
-	log("RODO: APPLY " + MODE_TXT[cfg.mode] + " · TARGET " + cfg.target + " dB · " + fila.length + " clips\n");
+	log("RODO: APPLY " + SENSOR_TXT[cfg.sensor] + (cfg.sensor && cfg.guard ? " (PEAK GUARD)" : "") + " · " + MODE_TXT[cfg.mode] + " · TARGET " + alvo() + " " + UNID[cfg.sensor] + " · " + fila.length + " clips\n");
 	outlet(2, "varre", fila.length, result.minBeat, result.maxBeat);
 	vigiaLiga();
 	passoApply();
