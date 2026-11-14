@@ -11,7 +11,7 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "rodo_data", DICT_ENV = "rodo_env";
-var VERSAO = "0.2.0";
+var VERSAO = "0.2.1";
 var msgNova = "";
 var W0 = 1360, H0 = 840;
 var HEAD_H = 72, BAR_H = 50, RULER_Y = 124, TOP = 152, FOOT_H = 40, SB_W = 14;

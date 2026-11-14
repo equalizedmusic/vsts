@@ -9,7 +9,7 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "vassoura_data";
-var VERSAO = "0.3.0";
+var VERSAO = "0.3.1";
 var msgNova = "";     // versão nova disponível (vem do motor)
 var NAME_W = 250;
 var HEAD_H = 150;

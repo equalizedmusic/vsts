@@ -375,7 +375,7 @@ const HTML = `<!doctype html>
 
     <div class="linha rodape" id="cliRodape">
       <button type="button" id="btCliPacote">+ Adicionar pacote</button>
-      <button type="button" id="btCliToken" class="discreto">Gerar token novo</button>
+      <button type="button" id="btCliToken" class="discreto" title="Um token só para todos os plugins comprados deste e-mail">Token novo p/ todos</button>
       <span class="espaco"></span>
       <button type="button" id="btCliRevogar" class="perigo">Cancelar todas</button>
       <button type="button" id="btCliExcluir" class="perigo">Excluir cliente</button>
@@ -395,6 +395,27 @@ const HTML = `<!doctype html>
       <a id="btEmail" class="botao" href="#">Abrir no e-mail</a>
     </div>
     <p></p>
+  </dialog>
+
+  <dialog id="dToken">
+    <form id="fToken" method="dialog" class="estreito">
+      <div class="linha topo">
+        <h2 id="tokTitulo">Novo token</h2>
+        <button type="button" id="btTokenFechar" class="discreto pequeno" aria-label="Fechar">✕</button>
+      </div>
+      <p id="tokInfo" class="det"></p>
+      <div id="tokOpcoes" class="opcoes-token">
+        <label><input type="radio" name="escopo" value="so_este" checked> <span id="tokSoEste"></span></label>
+        <label id="tokGrupoRot"><input type="radio" name="escopo" value="grupo"> <span id="tokGrupo"></span></label>
+      </div>
+      <label class="check"><input type="checkbox" name="avisar" checked> Mandar o token novo por e-mail ao cliente</label>
+      <p class="det">O token antigo para de valer nos plugins escolhidos. Os computadores já ativados seguem até a próxima conferência com o servidor e aí pedem o token novo.</p>
+      <div class="linha">
+        <span class="espaco"></span>
+        <button type="button" id="btTokenCancelar" class="discreto">Cancelar</button>
+        <button type="submit" id="btTokenGerar">Gerar token novo</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog id="dVenda" class="largo">
@@ -475,6 +496,9 @@ dialog.largo { width:min(760px, 94vw); padding:16px 22px; }
 .lic { display:grid; grid-template-columns:120px 1fr auto; gap:6px 14px; align-items:start; padding:12px 0; border-top:1px solid var(--borda); }
 .lic:first-child { border-top:0; }
 .pac { font-weight:600; } .status-ativa { color:var(--ok); } .status-revogada { color:var(--ruim); }
+.opcoes-token { display:flex; flex-direction:column; gap:8px; margin:10px 0; } .opcoes-token label, label.check { display:flex; flex-direction:row; gap:8px; align-items:flex-start; font-weight:400; }
+.opcoes-token input, label.check input { width:auto; flex:none; margin:3px 0 0; }
+.lic-acoes { display:flex; flex-direction:column; gap:6px; align-items:stretch; }
 .det { color:var(--fraco); font-size:13px; } .maq { display:flex; gap:8px; align-items:center; margin-top:3px; color:var(--texto); }
 .vazio { color:var(--fraco); }
 h3 { margin:0 0 6px; font-size:16px; }
@@ -569,7 +593,7 @@ html { -webkit-text-size-adjust:100%; }
   .lic { grid-template-columns:1fr auto; gap:6px 12px; }
   .lic > div:first-child { display:flex; gap:10px; align-items:baseline; }
   .lic > div:nth-child(2) { grid-column:1 / -1; grid-row:2; }
-  .lic > button { grid-column:2; grid-row:1; }
+  .lic > button, .lic > .lic-acoes { grid-column:2; grid-row:1; }
   .maq { flex-wrap:wrap; justify-content:space-between; padding:6px 0; }
   .adicionar { padding:12px; }
   pre { font-size:12px; }
@@ -1007,6 +1031,30 @@ function abrirAdicionar() {
 }
 function fecharAdicionar() { $('fAdicionar').hidden = true; $('cliRodape').hidden = false; }
 
+// as outras licenças do e-mail que usam o MESMO token desta (mesma letra de grupo)
+function companheiros(lics, l) {
+  return l.token_grupo ? lics.filter(function (x) { return x.id !== l.id && x.token_grupo === l.token_grupo; }) : [];
+}
+
+// Novo token por plugin: só este (token próprio) ou todos os que usam o mesmo token
+var tokenAlvo = null;
+function abrirToken(l) {
+  tokenAlvo = l;
+  var f = $('fToken'), nome = NOME[l.pacote] || l.pacote;
+  var mesmo = companheiros(ultimaLista[l.email] || [], l);
+  var nomes = mesmo.map(function (x) { return NOME[x.pacote] || x.pacote; });
+  f.reset();
+  $('tokTitulo').textContent = 'Novo token · ' + nome;
+  $('tokInfo').textContent = mesmo.length
+    ? 'O token do ' + nome + ' é o mesmo de: ' + nomes.join(', ') + '.'
+    : 'O ' + nome + ' tem token próprio: só ele muda.';
+  $('tokSoEste').textContent = mesmo.length ? 'Só o ' + nome + ' (ganha um token próprio; os outros seguem com o token de hoje)' : 'Só o ' + nome;
+  $('tokGrupo').textContent = 'O ' + nome + ' e os outros ' + mesmo.length + ' que usam o mesmo token (' + nomes.join(', ') + ')';
+  $('tokGrupoRot').hidden = !mesmo.length;
+  msg('msgCliente', '');
+  $('dToken').showModal();
+}
+
 // ação sobre o cliente aberto no modal: refaz a lista e o modal com o resultado
 function acao(caminho, corpo, pergunta, depois) {
   if (pergunta && !confirm(pergunta)) return;
@@ -1014,12 +1062,12 @@ function acao(caminho, corpo, pergunta, depois) {
   api('POST', caminho, corpo).then(function (j) {
     if (!j.ok) { msg('msgCliente', j.mensagem || 'Erro.'); return; }
     if (j.token) {
-      // token de teste e token de compra são separados: a mensagem fala só dos pacotes do lado que trocou
-      var ativasCli = (ultimaLista[j.email] || []).filter(function (l) { return l.status === 'ativa' && (l.origem === 'teste') === !!j.teste; });
-      var pacs = ativasCli.map(function (l) { return l.pacote; });
-      var maqs = ativasCli.reduce(function (n, l) { return Math.max(n, l.max_maquinas); }, 0);
+      // a mensagem fala só dos plugins em que o token novo vale (o servidor devolve a lista)
+      var pacs = j.pacotes && j.pacotes.length ? j.pacotes : [j.pacote];
+      var extra = 'o token antigo parou de valer em: ' + pacs.map(function (p) { return NOME[p] || p; }).join(', ') +
+        (j.email_enviado === true ? ' · e-mail enviado ao cliente' : j.email_enviado === false ? ' · e-mail NÃO saiu (mande a mensagem abaixo)' : '');
       $('dCliente').close();
-      mostrarResultado(j.email, pacs.length ? pacs : [j.pacote], j.token, 'o token antigo parou de valer', null, maqs, j.teste ? 'Token de teste novo' : null, !!j.teste);
+      mostrarResultado(j.email, pacs, j.token, extra, null, j.maquinas || 2, j.teste ? 'Token de teste novo' : 'Token novo', !!j.teste);
     }
     carregar().then(function () {
       if (depois) depois();
@@ -1112,15 +1160,22 @@ function abrirCliente(email) {
       : (l.teste_fim * 1000 > Date.now() ? 'começou ' : 'VENCEU · começou ') + data(l.teste_inicio) + ' · acaba ' + data(l.teste_fim));
     if (l.pedido) info.push('pedido ' + l.pedido);
     if (l.nota) info.push(l.nota);
+    // token: letra do grupo (mesma letra = mesmo token) e com quem ele é dividido
+    var mesmo = companheiros(lics, l);
+    info.push(!l.token_grupo ? 'sem token' : 'token ' + l.token_grupo + (mesmo.length ? ' (mesmo de ' + mesmo.map(function (x) { return NOME[x.pacote] || x.pacote; }).join(', ') + ')' : ' (próprio)'));
     caixa.appendChild(el('div', { classe: 'lic' }, [
       el('div', {}, [ el('div', { classe: 'pac', texto: NOME[l.pacote] || l.pacote }),
                       el('div', { classe: 'status-' + l.status, texto: l.status === 'ativa' ? 'ativa' : 'cancelada' }) ]),
       el('div', {}, [ el('div', { classe: 'det', texto: info.join(' · ') }), maquinas ]),
-      l.status === 'ativa'
-        ? el('button', { type: 'button', classe: 'perigo pequeno', texto: 'Cancelar',
-            onclick: function () { acao('/admin/revogar', { id: l.id }, 'Cancelar a licença ' + (NOME[l.pacote] || l.pacote) + ' de ' + email + '? Os plugins desse pacote travam na próxima conferência.'); } })
-        : el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Reativar',
-            onclick: function () { acao('/admin/reativar', { id: l.id }); } })
+      el('div', { classe: 'lic-acoes' }, [
+        l.status === 'ativa'
+          ? el('button', { type: 'button', classe: 'perigo pequeno', texto: 'Cancelar',
+              onclick: function () { acao('/admin/revogar', { id: l.id }, 'Cancelar a licença ' + (NOME[l.pacote] || l.pacote) + ' de ' + email + '? Os plugins desse pacote travam na próxima conferência.'); } })
+          : el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Reativar',
+              onclick: function () { acao('/admin/reativar', { id: l.id }); } }),
+        l.status === 'ativa' ? el('button', { type: 'button', classe: 'discreto pequeno', texto: 'Novo token',
+            title: 'Gerar token novo só para este plugin (ou para os que usam o mesmo token)', onclick: function () { abrirToken(l); } }) : null
+      ])
     ]));
   });
   // área de adicionar aberta: refaz as caixas com a situação nova (ex.: depois de Reativar)
@@ -1222,8 +1277,18 @@ document.addEventListener('DOMContentLoaded', function () {
     var email = clienteAberto, lics = ultimaLista[email] || [];
     // token de compra (o de teste é separado e só troca se o cliente só tiver teste)
     var alvo = lics.filter(function (l) { return l.origem !== 'teste'; })[0] || lics[0];
-    if (alvo) acao('/admin/novo-token', { id: alvo.id },
-      'Gerar um token novo para ' + email + '?\\n\\nO token atual para de valer em todos os pacotes deste e-mail. Os computadores já ativados continuam até a próxima conferência com o servidor (em até 3 dias) e aí pedem o token novo.');
+    if (alvo) acao('/admin/novo-token', { id: alvo.id, escopo: 'todos' },
+      'Gerar UM token novo para TODOS os plugins comprados de ' + email + '?\\n\\nOs tokens atuais (inclusive os próprios de cada plugin) param de valer e todos passam a usar o mesmo token novo. Para trocar só um plugin, use "Novo token" na linha dele.\\n\\nOs computadores já ativados continuam até a próxima conferência com o servidor (em até 3 dias) e aí pedem o token novo.');
+  });
+  // Novo token por plugin
+  $('btTokenFechar').addEventListener('click', function () { $('dToken').close(); });
+  $('btTokenCancelar').addEventListener('click', function () { $('dToken').close(); });
+  $('fToken').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var f = ev.target, l = tokenAlvo; if (!l) return;
+    var escopo = (f.querySelector('input[name=escopo]:checked') || {}).value || 'so_este';
+    $('dToken').close();
+    acao('/admin/novo-token', { id: l.id, escopo: escopo, avisar: f.avisar.checked });
   });
   $('btCliRevogar').addEventListener('click', function () {
     var email = clienteAberto;

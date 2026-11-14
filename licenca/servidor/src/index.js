@@ -26,7 +26,8 @@
 //   POST /admin/revogar           { id }
 //   POST /admin/reativar          { id }
 //   POST /admin/liberar-maquina   { id, maquina }
-//   POST /admin/novo-token        { id }   gera outro token para a mesma licença (o antigo para de valer)
+//   POST /admin/novo-token        { id, escopo?, avisar? }   token novo: escopo 'grupo' (padrão: quem usa o mesmo token
+//                                 desta licença), 'so_este' (só esta licença, token próprio) ou 'todos' (o e-mail inteiro)
 //   POST /admin/revogar-cliente   { email }   cancela todas as licenças do e-mail
 //   POST /admin/excluir-cliente   { email }   apaga licenças e computadores do e-mail (só com tudo cancelado)
 //
@@ -43,7 +44,7 @@ import { rotaPainel, sessaoPainel, gravarSenhaPainel } from './painel.js';
 import { rotaGratis, rotaZipVst, rotaTokenVst, PACOTES_GRATIS, VST_GRATIS } from './gratis.js';
 import { rotaWebhookEntrada } from './caixa.js';
 import { rotaLoja, vencerPedidos, posVenda } from './loja.js';
-import { avisarLicenca } from './avisos.js';
+import { avisarLicenca, avisarNovoToken } from './avisos.js';
 import { rotaContato } from './contato.js';
 import { PRECOS } from './precos.js';
 import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram, relatorioSemanal, varrerComentarios }from './instagram.js';
@@ -462,7 +463,9 @@ async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, orige
     // cadastro da página da VASSOURA não tem token (token_hash vazio): não serve de "mesmo token". O token de teste também não.
     // 14/11/2026: quem já tinha a VASSOURA ganhou um token PRÓPRIO dela (migração da 0.3.0) ⇒ o token principal do e-mail
     // é o de outro pacote quando existir (a VASSOURA só serve de "mesmo token" se for o único)
-    let doEmail = await env.DB.prepare("SELECT token_hash, origem FROM licencas WHERE email = ? AND token_hash <> '' AND origem <> 'teste' ORDER BY (pacote = 'vassoura'), id LIMIT 1").bind(email).first();
+    // 15/11: com token por plugin (painel), o "principal" é o do grupo com mais licenças (M4L de token próprio por último)
+    let doEmail = await env.DB.prepare("SELECT token_hash, origem FROM licencas l WHERE email = ? AND token_hash <> '' AND origem <> 'teste' " +
+        "ORDER BY (pacote IN ('vassoura', 'rodo')), (SELECT COUNT(*) FROM licencas x WHERE x.email = l.email AND x.token_hash = l.token_hash) DESC, id LIMIT 1").bind(email).first();
     // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
     // ter cadastrado), então licença dada por aqui troca o token do e-mail e o novo vai para o cliente.
     // A cortesia da VASSOURA (migração 14/11) não conta como compra verificada.
@@ -517,9 +520,18 @@ async function rotaAdmin(caminho, req, env, url) {
         const ini = await env.DB.prepare("SELECT e.licenca_id, MIN(e.quando) AS t FROM eventos e JOIN licencas l ON l.id = e.licenca_id " +
             "WHERE l.origem = 'teste' AND e.tipo = 'ativou' GROUP BY e.licenca_id").all();
         const inicio = Object.fromEntries(ini.results.map((r) => [r.licenca_id, r.t]));
+        // 15/11: grupo de token por e-mail (A, B, C… na ordem da 1ª licença): licenças com a mesma letra usam o MESMO token.
+        // O painel mostra a letra e o "Novo token" de um plugin troca só o grupo dele (ou só ele). O hash não sai daqui.
+        const grupos = {};
+        for (const l of [...lics.results].sort((a, b) => a.id - b.id)) {
+            if (!l.token_hash) continue;
+            const g = (grupos[l.email] ||= {});
+            if (!g[l.token_hash]) g[l.token_hash] = String.fromCharCode(65 + Object.keys(g).length);
+        }
         return resposta({
             ok: true, teste_dias: TESTE_DIAS,
             licencas: lics.results.map(({ token_hash, ...l }) => ({ ...l, maquinas: porLic[l.id] || [],
+                token_grupo: token_hash ? grupos[l.email][token_hash] : null,
                 ...(l.origem === 'teste' ? { teste_inicio: inicio[l.id] || null, teste_fim: inicio[l.id] ? inicio[l.id] + TESTE_DIAS * 86400 : null } : {}) })),
         });
     }
@@ -604,14 +616,32 @@ async function rotaAdmin(caminho, req, env, url) {
         return resposta({ ok: true });
     }
     if (caminho === '/admin/novo-token') {
-        // troca o token do e-mail inteiro (todos os pacotes dele). Teste e compra têm tokens separados: troca só o lado
-        // da licença clicada
+        // 15/11: por plugin. escopo:
+        //   'grupo' (padrão) = as licenças que usam o MESMO token desta (ex.: os VSTs do e-mail); as de token próprio
+        //                      (VASSOURA/RODO) ficam como estão
+        //   'so_este'        = só esta licença (ganha um token próprio; as outras seguem com o de antes)
+        //   'todos'          = todas as licenças de compra do e-mail num token só (o comportamento antigo). Teste fica de fora.
+        // avisar: true manda ao cliente o e-mail com o token novo e os plugins em que ele vale
         const token = novoToken();
         const teste = lic.origem === 'teste';
-        await env.DB.prepare(`UPDATE licencas SET token_hash = ? WHERE email = ? AND origem ${teste ? '=' : '<>'} 'teste'`)
-            .bind(await sha256Hex('ISP' + normToken(token)), lic.email).run();
-        await evento(env, id, 'novo_token', lic.email + (teste ? ' (teste)' : ''), null);
-        return resposta({ ok: true, id, email: lic.email, pacote: lic.pacote, token, teste });
+        const escopo = ['so_este', 'todos'].includes(corpo.escopo) ? corpo.escopo : 'grupo';
+        const hashNovo = await sha256Hex('ISP' + normToken(token));
+        const alvo = escopo === 'so_este' || !lic.token_hash
+            ? await env.DB.prepare('SELECT id, pacote, max_maquinas FROM licencas WHERE id = ?').bind(id).all()
+            : escopo === 'todos'
+                ? await env.DB.prepare(`SELECT id, pacote, max_maquinas FROM licencas WHERE email = ? AND origem ${teste ? '=' : '<>'} 'teste' ORDER BY id`).bind(lic.email).all()
+                : await env.DB.prepare('SELECT id, pacote, max_maquinas FROM licencas WHERE email = ? AND token_hash = ? ORDER BY id').bind(lic.email, lic.token_hash).all();
+        const ids = alvo.results.map((r) => r.id);
+        await env.DB.batch(ids.map((x) => env.DB.prepare('UPDATE licencas SET token_hash = ? WHERE id = ?').bind(hashNovo, x)));
+        const pacotes = alvo.results.map((r) => r.pacote);
+        await evento(env, id, 'novo_token', `${lic.email} ${escopo}: ${pacotes.join(',')}${teste ? ' (teste)' : ''}`, null);
+        let email_enviado = null;
+        if (corpo.avisar) {
+            email_enviado = !!(await avisarNovoToken(env, { email: lic.email, token, pacotes, teste }));
+            await evento(env, id, email_enviado ? 'email' : 'email_falhou', 'novo token', null);
+        }
+        return resposta({ ok: true, id, email: lic.email, pacote: lic.pacote, token, teste, escopo, pacotes,
+                          maquinas: Math.max(...alvo.results.map((r) => r.max_maquinas || 0)), email_enviado });
     }
     return falha('pedido_invalido', 404);
 }

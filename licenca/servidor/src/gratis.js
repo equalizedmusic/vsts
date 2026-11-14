@@ -364,7 +364,9 @@ export async function rotaTokenVst(req, env, url, h, acao, pacote) {
     await h.evento(env, lic.id, 'reenvio_usado', hc, ip);
     const token = h.novoToken();
     // licença de TESTE tem token próprio (index.js criarLicenca): fica de fora
-    await env.DB.prepare("UPDATE licencas SET token_hash = ? WHERE email = ? AND origem <> 'teste'").bind(await h.sha256Hex('ISP' + h.normToken(token)), lic.email).run();
+    // 15/11: só as licenças que usavam o MESMO token desta (VASSOURA/RODO com token próprio ficam como estão)
+    await env.DB.prepare("UPDATE licencas SET token_hash = ? WHERE email = ? AND origem <> 'teste' AND token_hash = (SELECT token_hash FROM licencas WHERE id = ?)")
+        .bind(await h.sha256Hex('ISP' + h.normToken(token)), lic.email, lic.id).run();
     await h.evento(env, lic.id, 'novo_token', 'pelo e-mail (perdi meu token)', ip);
     const sistema = /Mac$/.test(lic.nota || '') ? 'mac' : 'win';
     await emailVst(env, url, h, { pacote, email: lic.email, token, sistema, assunto: `Seu novo token do ${V.nome} · Your new ${V.nome} token`,

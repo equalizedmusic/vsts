@@ -5,6 +5,13 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.1 — 2026-11-15
+- **Corrigido: a VASSOURA pedia e-mail e token de novo toda vez que abria.** Em alguns computadores (biblioteca do
+  Ableton fora da pasta do usuário, por exemplo em outro disco) a licença não ficava gravada. Agora ela é gravada na
+  pasta do usuário achada de outros jeitos e conferida na hora; se mesmo assim o Max não conseguir gravar, a janela avisa.
+- Corrigido: e-mail e token digitados chegavam ao servidor com a palavra "symbol" na frente e não ativavam.
+- Quem já usa a 0.3.0 só precisa trocar os arquivos da pasta e ativar uma vez.
+
 ## 0.3.0 — 2026-11-14
 - **Visual novo.** O device no Live virou uma faixa com a arte da VASSOURA e um botão só: **OPEN THE MAGIC**. Todos
   os controles ficam na janela: THRESHOLD, MIN LENGTH, PRE e POST viraram sliders na barra de cima, junto de MODE,

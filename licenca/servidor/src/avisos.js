@@ -12,6 +12,43 @@ import { textoLicenca, nomePacote } from './loja.js';
 
 const DOMINIO = 'https://insidestudiosp.com.br';   // links sempre no domínio (o painel/CLI pode estar no workers.dev)
 
+// 15/11: token novo pelo painel (por plugin). pacotes = onde o token novo vale; os outros plugins do e-mail não mudam.
+export async function avisarNovoToken(env, { email, token, pacotes, teste }) {
+    if (!emailLigado(env)) return false;
+    const nomes = pacotes.map(nomePacote);
+    const lista = nomes.join(', ');
+    const m4l = pacotes.filter((p) => p === 'vassoura' || p === 'rodo'), vst = pacotes.filter((p) => p !== 'vassoura' && p !== 'rodo');
+    const texto = [
+        `Seu token novo · InsideStudioSP`, '', '(English below)', '',
+        '==================================== PORTUGUÊS ====================================', '',
+        `Geramos um token novo para: ${lista}.`, '',
+        'SEUS DADOS DE ATIVAÇÃO',
+        `  E-mail: ${email}`,
+        `  Token:  ${token}`,
+        `  Vale para: ${lista}${teste ? ' (licença de TESTE)' : ''}`, '',
+        `  O token anterior destes plugins parou de valer. Se você tem outros plugins da InsideStudioSP, eles continuam com o token de antes.`, '',
+        'COMO ATIVAR',
+        ...(vst.length ? ['  Plugins VST/AU: se o plugin pedir ativação, digite o e-mail e o token acima e clique em ATIVAR.'] : []),
+        ...(m4l.length ? [`  ${m4l.map(nomePacote).join(' e ')} (Max for Live): clique em OPEN THE MAGIC; se a janela pedir, digite o e-mail e o token acima e clique em ACTIVATE.`] : []),
+        '  Guarde este e-mail.', '',
+        `  Dúvidas? Responda este e-mail. Instagram: @equalizedmusic`, '', '',
+        '===================================== ENGLISH =====================================', '',
+        `We generated a new token for: ${lista}.`, '',
+        'YOUR ACTIVATION DATA',
+        `  E-mail: ${email}`,
+        `  Token:  ${token}`,
+        `  Works for: ${lista}${teste ? ' (TRIAL license)' : ''}`, '',
+        '  The previous token of these plugins no longer works. Other InsideStudioSP plugins you own keep their current token.', '',
+        'HOW TO ACTIVATE',
+        ...(vst.length ? ['  VST/AU plugins: if the plugin asks for activation, type the e-mail and token above and click ATIVAR.'] : []),
+        ...(m4l.length ? [`  ${m4l.map(nomePacote).join(' and ')} (Max for Live): click OPEN THE MAGIC; if the window asks, type the e-mail and token above and click ACTIVATE.`] : []),
+        '  Keep this e-mail.', '',
+        '  Questions? Just reply to this e-mail.',
+    ];
+    return enviarEmail(env, { para: email, assunto: `Seu token novo: ${lista} · Your new token — InsideStudioSP`,
+                              texto: texto.join('\r\n'), segredos: [token], origem: 'painel' });
+}
+
 // lic = retorno do criarLicenca ({ id, email, pacote, token, token_trocado }); devolve o id do Resend ou false
 export async function avisarLicenca(env, url, h, lic, { sistemas, maquinas } = {}) {
     if (!emailLigado(env)) return false;

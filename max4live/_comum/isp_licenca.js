@@ -24,13 +24,71 @@ function licHome() {
 	return m ? m[1] : "";
 }
 function licMac() { try { return String(max.os).toLowerCase().indexOf("mac") >= 0; } catch (e) { return false; } }
-function licPasta() {
-	var h = licHome();
-	if (h) return h + (licMac() ? "/Library/Application Support/" : "/AppData/Roaming/");
-	return pastaDoDevice();
+function licSub() { return licMac() ? "/Library/Application Support/" : "/AppData/Roaming/"; }
+
+// 15/11 (cliente real): o caminho do device nem sempre tem /Users/<nome>/ (biblioteca em outro disco, ou filepath vazio):
+// a licença caía na pasta do device (ou em lugar nenhum), não gravava, e cada abertura gerava um id de PC novo
+// ⇒ pedia o token de novo e estourava o limite de computadores. Agora: várias pastas candidatas, cada uma testada
+// gravando de verdade; a licença e o id vão para TODAS as que aceitam e são lidos da primeira que tiver.
+var licPastasCache = null, licHomeAchada = "";
+function licTestaPasta(p) {
+	var t = p + "InsideStudioSP-teste.tmp";
+	if (!licGrava(t, "ok")) return false;
+	return licLe(t) == "ok";
 }
-function licArquivo() { return licPasta() + "InsideStudioSP-" + LIC_PACOTE + ".lic"; }
-function licArquivoId() { return licPasta() + "InsideStudioSP-m4l.id"; }
+function licHomesDoDisco() {
+	// pastas de usuário do disco (C:/Users no Windows, /Users no Mac); só a do usuário atual aceita gravação
+	var raizes = [];
+	if (licMac()) raizes.push("/Users");
+	else {
+		var drv = ["C:"];
+		try { var m = /^([A-Za-z]:)/.exec(String(max.apppath || "")); if (m && m[1].toUpperCase() != "C:") drv.push(m[1].toUpperCase()); } catch (e) { }
+		for (var d = 0; d < drv.length; d++) raizes.push(drv[d] + "/Users");
+	}
+	var fora = { "public": 1, "default": 1, "default user": 1, "all users": 1, "shared": 1, "guest": 1, "defaultapppool": 1 };
+	var homes = [];
+	for (var r = 0; r < raizes.length; r++) {
+		try {
+			if (typeof Folder == "undefined") break;
+			var f = new Folder(raizes[r]);
+			while (!f.end) {
+				var n = String(f.filename || "");
+				if (n && f.filetype == "fold" && !fora[n.toLowerCase()] && n.charAt(0) != ".") homes.push(raizes[r] + "/" + n);
+				f.next();
+			}
+			f.close();
+		} catch (e) { }
+	}
+	return homes;
+}
+function licPastas() {
+	if (licPastasCache) return licPastasCache;
+	var cand = [], vistos = {};
+	function poe(p, home) { if (p && !vistos[p.toLowerCase()]) { vistos[p.toLowerCase()] = 1; cand.push({ p: p, home: home || "" }); } }
+	var h = licHome();
+	if (h) poe(h + licSub(), h);
+	var hs = licHomesDoDisco();
+	for (var i = 0; i < hs.length; i++) poe(hs[i] + licSub(), hs[i]);
+	var dev = pastaDoDevice();
+	if (dev) poe(dev, "");
+	var ok = [];
+	for (var j = 0; j < cand.length; j++) if (licTestaPasta(cand[j].p)) { ok.push(cand[j].p); if (!licHomeAchada && cand[j].home) licHomeAchada = cand[j].home; }
+	try { log(LIC_NOME + ": pastas da licença " + (ok.length ? ok.join(" | ") : "NENHUMA gravou (testei " + cand.map(function (c) { return c.p; }).join(" | ") + ")") + "\n"); } catch (e) { }
+	licPastasCache = ok;
+	return ok;
+}
+function licLeDeAlguma(nome) {
+	var ps = licPastas();
+	for (var i = 0; i < ps.length; i++) { var s = licLe(ps[i] + nome); if (s) return s; }
+	return "";
+}
+function licGravaEmTodas(nome, texto) {
+	var ps = licPastas(), n = 0;
+	for (var i = 0; i < ps.length; i++) if (licGrava(ps[i] + nome, texto) && licLe(ps[i] + nome) == texto) n++;
+	return n > 0;
+}
+function licNomeArq() { return "InsideStudioSP-" + LIC_PACOTE + ".lic"; }
+function licArquivo() { var ps = licPastas(); return (ps[0] || "") + licNomeArq(); }   // só para mensagens
 
 function licLe(caminho) {
 	try {
@@ -63,25 +121,27 @@ function licApaga(caminho) { licGrava(caminho, ""); }
 var licMaqCache = "";
 function licMaquina() {
 	if (licMaqCache) return licMaqCache;
-	var id = licLe(licArquivoId()).replace(/[^0-9a-f]/g, "");
+	var id = licLeDeAlguma("InsideStudioSP-m4l.id").replace(/[^0-9a-f]/g, "");
 	if (id.length < 32) {
 		id = "";
 		for (var i = 0; i < 40; i++) id += Math.floor(Math.random() * 16).toString(16);
 		id += (new Date().getTime()).toString(16);
-		licGrava(licArquivoId(), id);
 	}
+	// regrava em todas as pastas que aceitam (a que faltava passa a ter o mesmo id)
+	licGravaEmTodas("InsideStudioSP-m4l.id", id);
 	licMaqCache = hexDe(sha512(utf8("InsideStudioSP|m4l|" + id)).slice(0, 32));
 	return licMaqCache;
 }
 function licNomeMaquina() {
-	var h = licHome();
+	licPastas();
+	var h = licHome() || licHomeAchada;
 	var u = h ? h.replace(/^.*\//, "") : "";
 	return (licMac() ? "Mac" : "Windows") + (u ? " · " + u : "") + " · Max for Live";
 }
 
 // ---- carregar / conferir
 function licCarrega() {
-	var txt = licLe(licArquivo());
+	var txt = licLeDeAlguma(licNomeArq());
 	var lido = null;
 	try { lido = txt ? JSON.parse(txt) : null; } catch (e) { lido = null; }
 	lic.ok = false;
@@ -152,7 +212,7 @@ function licResposta(acao, email, token, r, mostrarErro) {
 	}
 	if (r.ok) {
 		if (acao == "desativar") {
-			licApaga(licArquivo());
+			licGravaEmTodas(licNomeArq(), "");
 			lic.ok = false; lic.email = ""; lic.token = "";
 			lic.msg = "Este computador foi desativado. A vaga ficou livre para outro.";
 			log(LIC_NOME + ": licença desativada neste computador\n");
@@ -163,9 +223,11 @@ function licResposta(acao, email, token, r, mostrarErro) {
 		var obj = { email: email, token: token, dados: lid.dados, assinatura: lid.assinatura };
 		var erro = licConfere(obj);
 		if (erro) { lic.ok = false; lic.msg = acao == "ativar" ? "A resposta do servidor não conferiu: " + erro : erro; licMudou(); return; }
-		if (!licGrava(licArquivo(), JSON.stringify(obj))) log(LIC_NOME + ": não consegui gravar " + licArquivo() + " (vale até fechar o set)\n");
+		var gravou = licGravaEmTodas(licNomeArq(), JSON.stringify(obj));
+		if (!gravou) log(LIC_NOME + ": não consegui gravar a licença em nenhuma pasta (vale até fechar o set)\n");
 		lic.ok = true; lic.email = email; lic.token = token;
-		lic.msg = acao == "ativar" ? "Ativado. Bom trabalho!" : "";
+		lic.msg = !gravou ? "Ativado, mas o Max não conseguiu gravar a licença neste computador: ao reabrir vai pedir de novo. Mande um print do console do Max para contato@insidestudiosp.com.br."
+			: acao == "ativar" ? "Ativado. Bom trabalho!" : "";
 		log(LIC_NOME + ": licença " + (acao == "ativar" ? "ativada" : "confirmada") + " (" + email + ")\n");
 		licMudou();
 		return;
@@ -173,7 +235,7 @@ function licResposta(acao, email, token, r, mostrarErro) {
 	var erroS = String(r.erro || "");
 	lic.msg = String(r.mensagem || erroS || "Recusado pelo servidor.");
 	if (acao == "validar" && (erroS == "revogada" || erroS == "nao_encontrada" || erroS == "maquina_nao_ativada" || erroS == "teste_expirado")) {
-		licApaga(licArquivo());
+		licGravaEmTodas(licNomeArq(), "");
 		lic.ok = false;
 	}
 	licMudou();
