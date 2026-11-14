@@ -79,7 +79,9 @@ export const FAQ = [
      'Yes, within 7 days of purchase, as guaranteed by Brazilian consumer law. Write to contato@insidestudiosp.com.br with the e-mail you used to buy. The amount is refunded through Mercado Pago and the license is cancelled.'],
 ];
 
-export const PACKS = [
+// oculto: true = fora do site (sem página, fora das seções e da vitrine das páginas grátis). Licença, painel,
+// /baixar/<id> e manual em PDF seguem funcionando. MESA oculta desde 14/11/2026 (pedido dele).
+const TODOS_PACKS = [
     {
         id: 'align', nome: 'ALIGN', cor: '#a78bfa', tipo: ['VST3 · AU', 'VST3 · AU'], destaque: true,
         capa: 'align', preco: null, gratis: `${LIC}/align`,
@@ -108,7 +110,7 @@ export const PACKS = [
         plugins: [['vassoura', 'VASSOURA', 'A janela mostra cada faixa: som na cor da faixa, vazio tracejado.', 'The window shows every track: sound in the track color, gaps hatched.']],
     },
     {
-        id: 'mesa', nome: 'MESA', cor: '#f59e0b', tipo: ['VST3 · AU', 'VST3 · AU'],
+        id: 'mesa', nome: 'MESA', cor: '#f59e0b', tipo: ['VST3 · AU', 'VST3 · AU'], oculto: true,
         capa: 'mesa', preco: null,
         frase: ['A console analógica inteira dentro do seu DAW.', 'A full analog console inside your DAW.'],
         texto: [
@@ -273,6 +275,7 @@ export const PACKS = [
         plugins: [['groovador', 'GROOVADOR', '', '']],
     },
 ];
+export const PACKS = TODOS_PACKS.filter((p) => !p.oculto);
 
 // Seções da loja (pedido dele, 10/11: a home virou um card por seção, com o leque de produtos dentro, para não rolar demais).
 // Cada seção tem a página /plugins/<id>/ com os cards dos produtos. Um produto pode estar em mais de uma seção
@@ -280,8 +283,8 @@ export const PACKS = [
 export const SECOES = [
     { id: 'gratis', nome: ['Grátis', 'Free'], cor: '#34d399', itens: ['align', 'barebass', 'vassoura'],
       frase: ['Baixe e use agora, sem pagar nada.', 'Download and use them now, for free.'] },
-    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'magos', 'maestromagos', 'mesa', 'align', 'vassoura'],
-      frase: ['Console, mix automática, fase do grave e limpeza de stems.', 'Console, auto mix, low-end phase and stem cleanup.'] },
+    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'magos', 'maestromagos', 'align', 'vassoura'],   // 'mesa' fora do site desde 14/11
+      frase: ['Mix automática, masterização, fase do grave e limpeza de stems.', 'Auto mix, mastering, low-end phase and stem cleanup.'] },
     { id: 'synths', nome: ['Synths', 'Synths'], cor: '#e879f9', itens: ['quimera', 'limao', 'mercurio', 'resenha', 'groovador', 'barebass'],
       frase: ['Wavetable, ácido, FM, percussão e baixo.', 'Wavetable, acid, FM, percussion and bass.'] },
     { id: 'pedais', nome: ['Pedais', 'Pedals'], cor: '#ef4444', itens: ['stompbox'],

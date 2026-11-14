@@ -302,7 +302,7 @@ function loja() {
     const [gratis, ...outras] = SECOES;
     return pagina({
         titulo: 'InsideStudioSP — Plugins',
-        descricao: 'Plugins VST3/AU e Max for Live feitos em São Paulo: ALIGN, VASSOURA, MESA e mais.',
+        descricao: 'Plugins VST3/AU e Max for Live feitos em São Paulo: ALIGN, VASSOURA, MAESTRO e mais.',
         corpo: `
 ${bannerLancamento(PACKS.find((p) => p.lancamento))}
 <section class="hero"><div class="faixa">

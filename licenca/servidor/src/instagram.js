@@ -97,11 +97,13 @@ const GATILHOS = [
         dm: 'Opa! Aqui está o RESENHA, os seus synths conversando entre si 🎹💬\n\nSerum, Sylenth1 ou qualquer VST3/AU nos slots, com frases de pergunta e resposta no tom. Veja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/resenha/\n\nPix, cartão em até 12x ou boleto.',
         publico: PUBLICO,
     },
-    {
-        palavra: 'mesa', curto: true,
-        dm: 'Opa! Aqui está a MESA, a console analógica dentro da sua DAW 🎚️\n\nVeja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/mesa/\n\nPix, cartão em até 12x ou boleto.',
-        publico: PUBLICO,
-    },
+    // 14/11/2026: MESA saiu do site (pedido dele) ⇒ gatilho "mesa" desligado (o link /mesa/ não existe mais).
+    // Para voltar: tirar o oculto da MESA em site/dados.mjs e descomentar.
+    // {
+    //     palavra: 'mesa', curto: true,
+    //     dm: 'Opa! Aqui está a MESA, a console analógica dentro da sua DAW 🎚️\n\nVeja os detalhes e o preço de lançamento 👉 https://insidestudiosp.com.br/mesa/\n\nPix, cartão em até 12x ou boleto.',
+    //     publico: PUBLICO,
+    // },
 ];
 
 // Moderação: comentário de terceiro com cara de golpe/spam é OCULTADO (não apagado; dá para reexibir no app).
