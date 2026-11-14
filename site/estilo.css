@@ -231,6 +231,9 @@ h2.secao { font-size:14px; letter-spacing:.2em; text-transform:uppercase; color:
 .compra .nota { color:var(--dim); font-size:13px; margin:4px 0 0; }
 .req { color:var(--dim); font-size:13px; line-height:1.45; margin:6px 0 0; }
 .compra .req { margin:0 0 4px; }
+.manual { margin:14px 0 0; font-size:14px; font-weight:600; color:var(--dim); }
+.manual a { color:var(--pur); text-decoration:none; border-bottom:1px solid currentColor; }
+.manual a:hover { color:var(--ink); }
 .compra .campo { display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--dim); }
 .compra .campo input { font:inherit; font-size:15px; color:var(--ink); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:11px 12px; }
 .compra .campo select, .compra .campo textarea { font:inherit; font-size:15px; color:var(--ink); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:11px 12px; }

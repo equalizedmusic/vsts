@@ -463,6 +463,14 @@ const NOME_EXTRA = { align: 'ALIGN', barebass: 'BAREBASS', vassoura: 'VASSOURA',
 export const nomePacote = (p) => (String(p).includes('+') ? String(p).split('+').map(nomePacote).join(' + ')
     : NOMES[p] || NOME_EXTRA[p] || String(p).toUpperCase());
 
+// Manual em PDF no site (site/manuais, publicado em /manuais/). Combo/carrinho = um link por produto.
+const SITE_MANUAIS = 'https://insidestudiosp.com.br/manuais/';
+const ARQ_MANUAL = { align: 'ALIGN', barebass: 'BAREBASS', vassoura: 'VASSOURA', mesa: 'MESA', stompbox: 'STOMPBOX', maestro: 'MAESTRO',
+    magos: 'MAGOS', criativo: 'SERIE-CRIATIVO', mix: 'SERIE-MIX', knob: 'SERIE-KNOB', quimera: 'QUIMERA', limao: 'LIMAO', mercurio: 'MERCURIO',
+    resenha: 'RESENHA', groovador: 'GROOVADOR' };
+export const linksManual = (pacote) => [...new Set(String(pacote).split('+').flatMap((p) => (p === 'maestromagos' ? ['maestro', 'magos'] : [p])))]
+    .filter((p) => ARQ_MANUAL[p]).map((p) => `  ${nomePacote(p)}: ${SITE_MANUAIS}${ARQ_MANUAL[p]}-Manual.pdf`);
+
 function emailVenda({ url, pedido, conf, token, jaTinha }) {
     return textoLicenca({ base: url.origin, pacote: pedido.pacote, email: pedido.email, cliente: pedido.nome, token, jaTinha, pedido, conf,
                          downloads: licencasPedido(pedido.pacote).length > 1 ? licencasPedido(pedido.pacote) : null });
@@ -478,6 +486,7 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
     const data = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     const meio = pedido && (pedido.metodo === 'mp' ? 'Mercado Pago' : 'PayPal');
     const so = (cond, ...linhas) => (cond ? linhas : []);
+    const manuais = linksManual(pacote);
     const maqPt = maquinas > 1 ? maquinas + ' computadores' : '1 computador', maqEn = maquinas > 1 ? maquinas + ' computers' : '1 computer';
     return [
         `${nome} · InsideStudioSP`, '', '(English below)', '',
@@ -531,6 +540,7 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
             '  a) "A Apple não pode verificá-lo" / "desenvolvedor não identificado": OK > Ajustes do Sistema > Privacidade e',
             '     Segurança > "Abrir Mesmo Assim" e confirme com a senha. (macOS 14 ou anterior: Control + clique > Abrir.)',
             '  b) "Está danificado": no Terminal, rode  xattr -dr com.apple.quarantine ~/Downloads/<nome do arquivo>'), '',
+        ...so(manuais.length, 'MANUAL EM PDF (passo a passo de cada controle)', ...manuais, ''),
         `  Dúvidas ou dificuldade? Responda este e-mail ou escreva para ${CONTATO}. Instagram: @equalizedmusic`, '', '',
         '===================================== ENGLISH =====================================', '',
         ...(pedido ? [
@@ -582,6 +592,7 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
             '  a) "Apple cannot check it" / "unidentified developer": OK > System Settings > Privacy & Security >',
             '     "Open Anyway" and confirm with your password. (macOS 14 or older: Control-click > Open.)',
             '  b) "Is damaged": in Terminal, run  xattr -dr com.apple.quarantine ~/Downloads/<file name>'), '',
+        ...so(manuais.length, 'PDF MANUAL (step-by-step guide to every control, in Portuguese)', ...manuais, ''),
         `  Questions or trouble? Reply to this e-mail or write to ${CONTATO}. Instagram: @equalizedmusic`, '',
         'InsideStudioSP',
     ];

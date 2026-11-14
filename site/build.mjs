@@ -339,6 +339,20 @@ ${bannerLancamento(PACKS.find((p) => p.lancamento))}
     });
 }
 
+// Manual em PDF de cada pack (arquivos em site/manuais/, copiados para /manuais/). Combo = os dois manuais.
+const MANUAIS = {
+    align: ['ALIGN'], barebass: ['BAREBASS'], vassoura: ['VASSOURA'], mesa: ['MESA'], stompbox: ['STOMPBOX'],
+    maestro: ['MAESTRO'], magos: ['MAGOS'], maestromagos: ['MAESTRO', 'MAGOS'], criativo: ['SERIE-CRIATIVO'],
+    mix: ['SERIE-MIX'], knob: ['SERIE-KNOB'], quimera: ['QUIMERA'], limao: ['LIMAO'], mercurio: ['MERCURIO'],
+    resenha: ['RESENHA'], groovador: ['GROOVADOR'],
+};
+const NOME_MANUAL = { MAGOS: 'MASTER DOS MAGOS', LIMAO: 'LIMÃO', MERCURIO: 'MERCÚRIO', 'SERIE-CRIATIVO': 'SÉRIE CRIATIVO', 'SERIE-MIX': 'SÉRIE MIX', 'SERIE-KNOB': 'SÉRIE KNOB' };
+const linkManual = (p) => {
+    const m = MANUAIS[p.id];
+    if (!m) return '';
+    return `<p class="manual">${m.map((f) => `<a href="/manuais/${f}-Manual.pdf" target="_blank" rel="noopener">${t('Manual em PDF', 'PDF manual')}${m.length > 1 ? ` · ${esc(NOME_MANUAL[f] || f)}` : ''} ↗</a>`).join(' · ')}</p>`;
+};
+
 function paginaPack(p) {
     const galeria = p.plugins.length > 1
         ? `<section class="faixa"><h2 class="secao">${t(`Os ${p.plugins.length} plugins`, `The ${p.plugins.length} plugins`)}</h2>
@@ -358,6 +372,7 @@ function paginaPack(p) {
     <p class="tipo">${t(...p.tipo)} · Windows · macOS</p>
     ${ehVst(p) ? `<p class="req">${REQ()}</p>` : ''}
     ${p.plugins.length === 1 && p.plugins[0][2] ? `<p class="dim">${t(p.plugins[0][2], p.plugins[0][3])}</p>` : ''}
+    ${linkManual(p)}
   </div>
   ${caixaCompra(p)}
 </div>
@@ -526,6 +541,9 @@ grava('contato/limite/index.html', paginaAviso('Erro', 'Muitas mensagens seguida
 grava('404.html', pagina({ titulo: 'InsideStudioSP', descricao: '', corpo: `<section class="hero"><div class="faixa"><h1>404</h1><p class="lead">${t('Página não encontrada.', 'Page not found.')} <a href="/">${t('Voltar para a loja', 'Back to the shop')}</a></p></div></section>` }));
 mkdirSync(join(DIST, 'img'), { recursive: true });
 for (const f of readdirSync(join(RAIZ, 'img'))) copyFileSync(join(RAIZ, 'img', f), join(DIST, 'img', f));
+mkdirSync(join(DIST, 'manuais'), { recursive: true });
+for (const f of readdirSync(join(RAIZ, 'manuais'))) copyFileSync(join(RAIZ, 'manuais', f), join(DIST, 'manuais', f));
+{ const falta = Object.values(MANUAIS).flat().filter((f) => !readdirSync(join(RAIZ, 'manuais')).includes(`${f}-Manual.pdf`)); if (falta.length) throw new Error('manual faltando: ' + falta); }
 for (const f of ['estilo.css', 'site.js']) copyFileSync(join(RAIZ, f), join(DIST, f));
 grava('favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0d0b14"/><path d="M10 34c6-16 10-16 14 0s8 16 14 0 10-16 16 0" fill="none" stroke="#a78bfa" stroke-width="6" stroke-linecap="round"/></svg>');
 grava('robots.txt', PREVIA ? 'User-agent: *\nDisallow: /\n' : 'User-agent: *\nAllow: /\n');
@@ -539,5 +557,9 @@ grava('_headers', `/*
   Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self' https://static.cloudflareinsights.com; frame-src https://open.spotify.com https://www.youtube-nocookie.com; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'self' https://insidestudiosp.com.br https://www.mercadopago.com.br https://*.mercadopago.com.br; frame-ancestors 'none'
 ${PREVIA ? '  X-Robots-Tag: noindex, nofollow\n' : ''}/img/*
   Cache-Control: public, max-age=604800
+/manuais/*
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Cache-Control: public, max-age=86400
 `);
 console.log(`site gerado em ${DIST} (${PACKS.length} packs${PREVIA ? ', prévia noindex' : ''})`);
