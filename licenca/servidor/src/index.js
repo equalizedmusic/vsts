@@ -92,7 +92,9 @@ const falha = (erro, status = 400) => resposta({ ok: false, erro, mensagem: MENS
 
 const normEmail = (s) => String(s || '').trim().toLowerCase();
 // token: ignora espaços, hífens, caixa e o prefixo ISP (o cliente pode colar "isp-abcd-..." de qualquer jeito)
-const normToken = (s) => String(s || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/^ISP/, '');
+// ^SYMBOL: o [dialog] do Max for Live (RODO 0.2.0 / VASSOURA 0.3.0) manda "symbol <texto>" e o device juntava os dois.
+// Token de verdade nunca começa assim (o alfabeto não tem O nem L), então tirar é seguro.
+const normToken = (s) => String(s || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/^SYMBOL/, '').replace(/^ISP/, '');
 
 async function sha256Hex(texto) {
     const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
@@ -163,7 +165,7 @@ async function rotaPlugin(acao, req, env) {
     try { corpo = await req.json(); } catch { return falha('pedido_invalido'); }
 
     const pacote = String(corpo.pacote || '');
-    const email = normEmail(corpo.email);
+    let email = normEmail(corpo.email);
     const token = normToken(corpo.token);
     const maquina = String(corpo.maquina || '');
     if (!PACOTES.includes(pacote)) return falha('pacote_invalido');
@@ -177,8 +179,14 @@ async function rotaPlugin(acao, req, env) {
     };
 
     const hash = await sha256Hex('ISP' + token);   // o token guardado já normalizado (sem "-")
-    const lic = await env.DB.prepare('SELECT * FROM licencas WHERE token_hash = ? AND email = ? AND pacote = ?')
+    let lic = await env.DB.prepare('SELECT * FROM licencas WHERE token_hash = ? AND email = ? AND pacote = ?')
         .bind(hash, email, pacote).first();
+    // Max for Live 14/11: o e-mail chegava como "symbol" + e-mail (prefixo do [dialog]). Só tenta sem o prefixo se não achou.
+    if (!lic && email.startsWith('symbol') && email.length > 6) {
+        lic = await env.DB.prepare('SELECT * FROM licencas WHERE token_hash = ? AND email = ? AND pacote = ?')
+            .bind(hash, email.slice(6), pacote).first();
+        if (lic) email = email.slice(6);
+    }
     if (!lic) {
         // e-mail e token certos, mas sem licença deste pacote: diz isso em vez de "não conferem"
         const outro = await env.DB.prepare('SELECT id FROM licencas WHERE token_hash = ? AND email = ? LIMIT 1').bind(hash, email).first();

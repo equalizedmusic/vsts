@@ -180,8 +180,10 @@ function licResposta(acao, email, token, r, mostrarErro) {
 }
 
 // ---- vindos da janela
-function lic_email() { licEmailDigitado = str(arrayfromargs(arguments)).replace(/\s+/g, "").toLowerCase(); licMudou(); }
-function lic_token() { licTokenDigitado = str(arrayfromargs(arguments)).replace(/\s+/g, "").toUpperCase(); licMudou(); }
+// o [dialog] manda "symbol <texto>": sem tirar o seletor o e-mail virava "symbolfulano@..." (cliente real, 14/11)
+function licTextoDialog(args) { var a = arrayfromargs(args); if (a.length > 1 && String(a[0]) == "symbol") a.shift(); return str(a); }
+function lic_email() { licEmailDigitado = licTextoDialog(arguments).replace(/\s+/g, "").toLowerCase(); licMudou(); }
+function lic_token() { licTokenDigitado = licTextoDialog(arguments).replace(/\s+/g, "").replace(/^symbol/i, "").toUpperCase(); licMudou(); }
 function lic_ativar() {
 	if (lic.ocupado) return;
 	var e = licEmailDigitado || lic.email, t = licTokenDigitado || lic.token;
