@@ -1,0 +1,43 @@
+RODO — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
+Normaliza o PICO dos clips de áudio do Arrangement pelo Clip Gain. Par da VASSOURA.
+
+INSTALAR
+1. Copie a pasta inteira (Rodo-<versão>) para:
+   Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
+   Os 3 arquivos (Rodo.amxd, rodo.js e rodo_view.js) PRECISAM ficar juntos.
+2. No Live, arraste o Rodo.amxd para a PRIMEIRA faixa de áudio do projeto.
+   No MASTER ele não funciona: o ANALYZE não lê os clips.
+
+USAR
+1. Clique ANALYZE (no device ou na janela). Clique OPEN para ver a janela.
+   O RODO lê o arquivo de cada clip e mede o pico do trecho que o clip toca.
+2. Ajuste (a janela redesenha na hora, sem reler os arquivos):
+   - TARGET (-12 a -0.3 dB, padrão -6): onde o pico vai parar
+   - MODE  CLIP  = cada clip vai ao TARGET
+           TRACK = o clip mais alto da faixa vai ao TARGET e a faixa toda recebe o mesmo ajuste
+                   (mantém a dinâmica entre os clips da faixa) — PADRÃO
+           ALL   = o clip mais alto do set vai ao TARGET e tudo recebe o mesmo ajuste
+                   (mantém o balanço entre as faixas)
+   - SCOPE ALL (todas as faixas) / SELECTED (só a faixa selecionada; clique ANALYZE de novo)
+   Na janela, clique no nome da faixa para deixá-la FORA da normalização.
+   PEAK = pico que sai da faixa hoje · GAIN = ajuste que ela vai receber.
+3. APPLY. O rodo passa da esquerda para a direita junto com o ajuste real: atrás dele os
+   clips já estão no nível novo. No fim, o RODO relê o set e a janela mostra como ficou.
+4. RESET volta o Clip Gain que cada clip tinha antes do primeiro APPLY.
+   O RESET vale enquanto o device estiver aberto (fechar o set ou tirar o device esquece).
+   Fora isso, cada clip ajustado é um Ctrl+Z no Live.
+
+LIMITES
+- Só o Clip Gain é mexido: volume da faixa, automação e plugins ficam como estão.
+- O Clip Gain do Live tem teto. Clip muito baixo pode não chegar ao TARGET: a faixa fica
+  vermelha com "faltou X dB" (o clip fica no ganho máximo).
+- Clips MUTADOS ficam fora. Clip com WARP: o pico é medido pelo mapa dos warp markers;
+  se o Live não entregar o mapa, mede o arquivo inteiro (aparece "warp (arquivo inteiro)").
+- O pico medido é o das amostras do arquivo (sample peak), não o "true peak".
+
+SE DER ERRO
+- Abra o console do Max (no device: botão de editar → Max → Window → Max Console).
+- Linhas "RODO:" mostram cada clip, cada ajuste e o que foi pulado. Mande print delas.
+- A cada ANALYZE o RODO grava o arquivo RODO-log.txt na mesma pasta do device.
+  Se o Live fechar, mande esse arquivo: a última linha mostra onde parou.
+- "v8: can't find rodo.js" = os arquivos não estão na mesma pasta do .amxd.
