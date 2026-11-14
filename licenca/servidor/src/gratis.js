@@ -22,6 +22,7 @@
 import { zipStream } from './zip.js';
 import { emailLigado, enviarEmail, CONTATO } from './email.js';
 import { PRECOS, OFERTA_FIM, DE_BRL, fimOferta, precoAtual } from './precos.js';
+import { linksManual } from './loja.js';
 import { PACKS, SITE } from '../../../site/dados.mjs';   // nome, frase, texto, cor e capa: os mesmos da página de pack do site
 
 const POR_IP_DIA = 8;
@@ -240,6 +241,8 @@ export async function emailVassoura(env, url, h, email, sistema, { assunto, aber
         '  Outro erro: abra o console do Max (editar o device > Max > Window > Max Console) e mande um print',
         '  das linhas "VASSOURA:" respondendo este e-mail ou para ' + CONTATO + '.',
         '',
+        'MANUAL EM PDF (passo a passo de cada controle)', ...linksManual('vassoura'),
+        '',
         '  Não pediu? Ignore este e-mail.',
         '',
         '',
@@ -284,6 +287,8 @@ export async function emailVassoura(env, url, h, email, sistema, { assunto, aber
         '  "v8: can\'t find vassoura.js" = the 3 files are not in the same folder as Vassoura.amxd.',
         '  Other errors: open the Max console (edit the device > Max > Window > Max Console) and send a screenshot',
         '  of the "VASSOURA:" lines by replying to this e-mail or writing to ' + CONTATO + '.',
+        '',
+        'PDF MANUAL (step-by-step guide to every control)', ...linksManual('vassoura', true),
         '',
         '  Did not ask for it? Just ignore this e-mail.',
         '',
@@ -526,6 +531,8 @@ function leiaMe(pacote, { email, token, sistema, nome, versao, sha256, porEmail 
         mac ? '     No Terminal: shasum -a 256 ~/Downloads/' + nome
             : '     No PowerShell, na pasta do arquivo: Get-FileHash .\\' + nome,
     );
+    const manPt = linksManual(pacote), manEn = linksManual(pacote, true);
+    if (manPt.length) L.push('', 'MANUAL EM PDF (passo a passo de cada controle)', ...manPt);
     L.push(
         '',
         '  Dúvidas ou dificuldade? ' + (porEmail ? 'Responda este e-mail ou escreva' : 'Escreva') + ' para ' + CONTATO + '.',
@@ -606,6 +613,7 @@ function leiaMe(pacote, { email, token, sistema, nome, versao, sha256, porEmail 
         mac ? '     In Terminal: shasum -a 256 ~/Downloads/' + nome
             : '     In PowerShell, in the file folder: Get-FileHash .\\' + nome,
     );
+    if (manEn.length) L.push('', 'PDF MANUAL (step-by-step guide to every control)', ...manEn);
     L.push('', '  Questions or trouble? ' + (porEmail ? 'Reply to this e-mail or write' : 'Write') + ' to ' + CONTATO + '.',
         ...(porEmail ? ['  Did not ask for this license? Just ignore this e-mail.'] : []), '');
     return L;

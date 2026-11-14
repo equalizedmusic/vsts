@@ -350,7 +350,9 @@ const NOME_MANUAL = { MAGOS: 'MASTER DOS MAGOS', LIMAO: 'LIMÃO', MERCURIO: 'MER
 const linkManual = (p) => {
     const m = MANUAIS[p.id];
     if (!m) return '';
-    return `<p class="manual">${m.map((f) => `<a href="/manuais/${f}-Manual.pdf" target="_blank" rel="noopener">${t('Manual em PDF', 'PDF manual')}${m.length > 1 ? ` · ${esc(NOME_MANUAL[f] || f)}` : ''} ↗</a>`).join(' · ')}</p>`;
+    // um link por idioma: PT abre <NOME>-Manual.pdf, EN abre <NOME>-Manual-EN.pdf (a classe pt/en esconde o outro)
+    const a = (f, en) => `<a class="${en ? 'en' : 'pt'}"${en ? ' lang="en"' : ''} href="/manuais/${f}-Manual${en ? '-EN' : ''}.pdf" target="_blank" rel="noopener">${en ? 'PDF manual' : 'Manual em PDF'}${m.length > 1 ? ` · ${esc(NOME_MANUAL[f] || f)}` : ''} ↗</a>`;
+    return `<p class="manual">${m.map((f) => a(f, false) + a(f, true)).join('<span> · </span>')}</p>`;
 };
 
 function paginaPack(p) {
