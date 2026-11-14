@@ -15,7 +15,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela (bang / status)   3:
 var BUF = "vassoura_scan";
 var DICT = "vassoura_data";
 var WIN_MS = 10;
-var VERSAO = "0.2.3";
+var VERSAO = "0.3.0";
 var BUILD = "";  // marca de pacote de teste no log ("teste2"...); vazio na versão publicada
 var PAUSA_ARQ = 40;    // ms entre um arquivo e outro (Live respira, memória é liberada)
 var PAUSA_APPLY = 15;  // ms entre um passo do APPLY e outro
@@ -83,53 +83,34 @@ function ondeEstou() { return onde; }
 
 function init() {
 	ready = true;
-	status("PRONTO · clique ANALYZE");
+	licCarrega();
+	status(licLiberada() ? "PRONTO · clique ANALYZE" : "ATIVE A LICENÇA · clique OPEN");
+	enviaCfg();
 	depois("versao", checaVersao, 4000);  // deixa o set terminar de abrir antes de ir à internet
 }
 
-// ---------------------------------------------------------------- versão nova
-// Pergunta ao servidor de licenças (mesma rota dos VSTs) se há release mais novo. Sem internet, sem XMLHttpRequest
-// ou com qualquer erro: fica quieto (só uma linha no console). O link de download é o fixo do site, não o da resposta.
-var URL_VERSAO = "https://isp-licencas.insidestudiosp.workers.dev/v1/versao";
+// versão nova e licença: bloco LICENÇA no fim (colado pelo build-vassoura.js)
+var LIC_PACOTE = "vassoura", LIC_NOME = "VASSOURA";
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/vassoura/zip";
-var URL_NOVIDADES = "https://github.com/equalizedmusic/vsts/blob/main/novidades/Vassoura.md";
-var nova = "";
-var versaoChecada = false;
+var URL_NOVIDADES = "https://insidestudiosp.com.br/vassoura/";
 
-function checaVersao() {
-	if (versaoChecada) return;
-	versaoChecada = true;
-	if (typeof XMLHttpRequest == "undefined") { log("VASSOURA: sem XMLHttpRequest, não confere versão nova\n"); return; }
-	try {
-		var so = (typeof max != "undefined" && String(max.os).indexOf("mac") >= 0) ? "mac" : "win";
-		var x = new XMLHttpRequest(); T.xhr = x;  // referência guardada (ver "tarefas")
-		x.open("GET", URL_VERSAO + "?pacote=vassoura&versao=" + VERSAO + "&sistema=" + so);
-		x.onreadystatechange = function () {
-			if (x.readyState != 4) return;
-			try {
-				var r = JSON.parse(x.responseText);
-				var v = r && r.ok && r.atualizacao ? String(r.atualizacao.versao || "") : "";
-				if (!/^\d+\.\d+\.\d+$/.test(v) || comparaVersao(v, VERSAO) <= 0) return;
-				nova = v;
-				log("VASSOURA: versão nova " + v + " disponível · " + URL_BAIXAR + "\n");
-				outlet(2, "nova", v);
-				if (!busy && !result) outlet(1, "set", "NOVA VERSÃO " + v + " · abra a janela (OPEN)");  // só no device
-			} catch (e) { log("VASSOURA: resposta de versão inválida\n"); }
-		};
-		x.send();
-	} catch (e) { log("VASSOURA: não conferiu versão nova (" + e + ")\n"); }
+// sem licença: nada lê nem mexe no set; a janela mostra a tela de ativação
+function travado() {
+	if (licLiberada()) return false;
+	status("ATIVE A LICENÇA · clique OPEN");
+	outlet(2, "lic", licEstado());
+	return true;
 }
-
-function comparaVersao(a, b) {
-	var pa = a.split("."), pb = b.split(".");
-	for (var i = 0; i < 3; i++) { var d = (parseInt(pa[i], 10) || 0) - (parseInt(pb[i], 10) || 0); if (d) return d; }
-	return 0;
+function licMudou() {
+	outlet(2, "lic", licEstado());
+	outlet(1, "lic", lic.ok ? 1 : 0);
+	if (!ready) return;
+	if (lic.ok && !busy && !result) status("PRONTO · clique ANALYZE");
+	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
 }
-
-// vindos da janela (botão da faixa de versão nova)
-function baixar_nova() { if (nova) max.launchbrowser(URL_BAIXAR); }
-function novidades() { max.launchbrowser(URL_NOVIDADES); }
-
+// valores atuais para a janela (ela pode abrir antes do 1º ANALYZE)
+function enviaCfg() { outlet(2, "valores", cfg.threshold, cfg.minlen, cfg.pre, cfg.post, cfg.snap, cfg.mode, cfg.scope); }
+function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
 // ---------------------------------------------------------------- controles
 function threshold(v) { cfg.threshold = num(v); agendaRecalc(); }
 function minlength(v) { cfg.minlen = num(v); agendaRecalc(); }
@@ -141,9 +122,14 @@ function mode(v) { cfg.mode = num(v) ? 1 : 0; armado = 0; agendaRecalc(); }
 function scope(v) { cfg.scope = num(v) ? 1 : 0; if (result) status("SCOPE mudou · clique ANALYZE de novo"); agendaRecalc(); }
 
 // vindos da janela: mudam o valor e devolvem para o controle do device (sem eco de volta)
-function ui_mode(v) { mode(v); outlet(3, "mode", cfg.mode); }
-function ui_snap(v) { snap(v); outlet(3, "snap", cfg.snap); }
-function ui_scope(v) { scope(v); outlet(3, "scope", cfg.scope); }
+// (os controles do device ficaram escondidos, só para o Live guardar os valores no set)
+function ui_mode(v) { mode(v); outlet(3, "mode", cfg.mode); enviaCfg(); }
+function ui_snap(v) { snap(v); outlet(3, "snap", cfg.snap); enviaCfg(); }
+function ui_scope(v) { scope(v); outlet(3, "scope", cfg.scope); enviaCfg(); }
+function ui_threshold(v) { threshold(Math.max(-90, Math.min(-20, num(v)))); outlet(3, "threshold", cfg.threshold); }
+function ui_minlength(v) { minlength(Math.max(100, Math.min(10000, num(v)))); outlet(3, "minlength", cfg.minlen); }
+function ui_pre(v) { prems(Math.max(0, Math.min(1000, num(v)))); outlet(3, "pre", cfg.pre); }
+function ui_post(v) { postms(Math.max(0, Math.min(2000, num(v)))); outlet(3, "post", cfg.post); }
 
 function num(v) {
 	if (v instanceof Array) v = v[0];
@@ -157,7 +143,7 @@ function str(v) {
 }
 
 function status(txt) {
-	outlet(1, "set", txt);
+	outlet(1, "status", txt);
 	outlet(2, "status", txt);
 }
 
@@ -247,7 +233,7 @@ function clipOf(job) {
 // ANALYZE do usuário relê os arquivos; o de depois do APPLY (reuso=1) aproveita o que já foi lido.
 function analyze(reuso) {
 	if (!ready) { status("aguarde o Live terminar de carregar"); return; }
-	if (busy) return;
+	if (busy || travado()) return;
 	busy = true;
 	armado = 0;
 	if (!reuso) arqs = {};
@@ -608,7 +594,7 @@ var fila = [];
 var ap = null;
 
 function apply() {
-	if (busy) return;
+	if (busy || travado()) return;
 	if (!result) { status("clique ANALYZE antes do APPLY"); return; }
 	lerMarcas();
 
@@ -647,6 +633,7 @@ function apply() {
 		far: Math.ceil((Math.max(num(set.get("song_length")), result.maxBeat) + 64) / 4) * 4,
 		spb: 60 / result.tempo
 	};
+	outlet(2, "varre", total);
 	log("VASSOURA: APPLY " + MODE_TXT[cfg.mode] + " · " + total + " trechos em " + fila.length + " clips · cópia de trabalho no beat " + ap.far + "\n");
 	vigiaLiga();
 	passo();
@@ -765,6 +752,7 @@ function aplicaTrecho(cx, reg) {
 		return;
 	}
 	chama(ti, "duplicate_clip_to_arrangement", cx.tmpId, reg.s);
+	outlet(2, "progresso", ap.feitos + ap.falhas + 1, ap.total);
 	if (cfg.mode == 1) {
 		var peca = acha(ti, reg.s, reg.e);
 		var mutada = peca && num(porId(peca.id).get("muted"));
@@ -788,6 +776,7 @@ function fimApply() {
 		(ap.falhas ? " · " + ap.falhas + " pulados (ver console do Max)" : "");
 	log("VASSOURA: " + txt + "\n");
 	status(txt);
+	outlet(2, "fim");
 	// relê o set para a janela mostrar como ficou — sem reler os arquivos (os picos já estão guardados)
 	depois("reanalisa", function () { analyze(1); }, 300);
 	depois("aviso", function () { outlet(2, "aviso", txt); }, 400);

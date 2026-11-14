@@ -392,4 +392,5 @@ h2.titulo-sec { font-size:clamp(28px, 4vw, 40px); font-weight:800; margin-bottom
                            .topo nav a.nav-carrinho { display:none; } .carrinho-flutuante { display:inline-flex; } }
 .carrinho-flutuante { display:none; position:fixed; right:14px; bottom:14px; z-index:20; align-items:center; gap:6px; height:52px; padding:0 16px; border-radius:26px;
                       background:var(--pur); color:#140d26; text-decoration:none; box-shadow:0 10px 30px -8px rgba(0,0,0,.7); }
-@media (max-width:560px) { .carrinho-flutuante { display:inline-flex; } }
+@media (max-width:560px) { .carrinho-flutuante { display:inline-flex; } }/* 14/11/2026: aviso na caixa de compra (VASSOURA: atualização grátis para quem já tinha) */
+.aviso-preco { margin:12px 0 4px; padding:10px 12px; border-radius:10px; background:rgba(52,211,153,.10); border-left:3px solid var(--grn); color:var(--ink); font-size:14px; line-height:1.45; }

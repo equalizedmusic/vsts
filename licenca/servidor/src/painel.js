@@ -585,7 +585,7 @@ html { -webkit-text-size-adjust:100%; }
 // JS do navegador. Tudo que vem do banco (e-mail, nome da máquina, nota) entra por textContent, nunca por innerHTML.
 const JS = `
 'use strict';
-var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa'],['align','Align'],['barebass','Barebass'],['stompbox','Stompbox'],['maestro','Maestro'],['magos','Master dos Magos'],['vassoura','Vassoura']];
+var PACOTES = [['mix','Mix'],['criativo','Criativo'],['knob','Knob'],['quimera','Quimera'],['limao','Limão'],['mercurio','Mercúrio'],['resenha','Resenha'],['montamonta','Monta-Monta'],['groovador','Groovador'],['mesa','Mesa'],['align','Align'],['barebass','Barebass'],['stompbox','Stompbox'],['maestro','Maestro'],['magos','Master dos Magos'],['vassoura','Vassoura'],['rodo','Rodo']];
 var NOME = {}; PACOTES.forEach(function (p) { NOME[p[0]] = p[1]; });
 // licença de TESTE (7 dias): só para pacote pago (precos.js), 1 computador, token próprio
 var PAGOS = ${JSON.stringify(Object.keys(PRECOS))};
@@ -864,8 +864,8 @@ function mensagemCliente(email, pacotes, token, sistemas, maquinas, teste) {
   linhas.push('', 'Downloads:');
   pacotes.forEach(function (p) {
     var base = location.origin + '/baixar/' + p + '/';
-    // VASSOURA = Max for Live: um zip só para Windows e Mac
-    if (p === 'vassoura') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12 no Windows e no Mac): ' + location.origin + '/baixar/vassoura/zip'); return; }
+    // VASSOURA e RODO = Max for Live: um zip só para Windows e Mac
+    if (p === 'vassoura' || p === 'rodo') { linhas.push(NOME[p] + ' (Max for Live, Ableton Live 12.2+ no Windows e no Mac): ' + location.origin + '/baixar/' + p + '/zip'); return; }
     if (sistemas.indexOf('win') >= 0) linhas.push(NOME[p] + ' para Windows: ' + base + 'win');
     if (sistemas.indexOf('mac') >= 0) linhas.push(NOME[p] + ' para Mac: ' + base + 'mac');
   });
@@ -1098,7 +1098,7 @@ function abrirCliente(email) {
   $('btCliPacote').title = lics.length >= PACOTES.length ? 'Este cliente já tem todos os pacotes.' : '';
   if (!$('dCliente').open) { msg('msgCliente', ''); fecharAdicionar(); $('dCliente').showModal(); }
   lics.forEach(function (l) {
-    var maquinas = el('div', { classe: 'det' }, [ l.pacote === 'vassoura' && !l.max_maquinas ? 'Max for Live: sem ativação (cadastro da página)' : l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
+    var maquinas = el('div', { classe: 'det' }, [ l.pacote === 'vassoura' && !l.max_maquinas ? 'Max for Live: cadastro antigo sem ativação' : l.maquinas.length + ' de ' + l.max_maquinas + ' computadores' ]);
     l.maquinas.forEach(function (m) {
       maquinas.appendChild(el('div', { classe: 'maq' }, [
         el('span', { texto: (m.nome_maquina || '(sem nome)') + ' · ativado ' + data(m.criada_em) + ' · visto ' + data(m.visto_em) }),

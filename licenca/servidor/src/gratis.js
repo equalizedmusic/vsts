@@ -2,7 +2,7 @@
 // É o link mandado no direct do Instagram para quem comenta a palavra do reel (QUERO, ALIGN…).
 //
 //   GET  /gratis/montamonta   MONTA-MONTA (2 computadores, links Windows e Mac)
-//   GET  /gratis/vassoura     VASSOURA (só o e-mail: cadastro sem token, e-mail com o link do zip e o passo a passo)
+//   (VASSOURA: página grátis desativada em 14/11/2026 — virou paga; emailVassoura/paginaVassoura ficaram só de histórico)
 //   GET  /gratis/align        ALIGN (1 computador; a pessoa escolhe Windows ou Mac e recebe só aquele link)
 //   GET  /gratis/barebass     BAREBASS (igual ao ALIGN; config em VST_GRATIS)
 //   POST /gratis/<pacote>     { email, sistema?, site }   (site = campo escondido; robô que preenche leva "ok" falso)
@@ -31,9 +31,8 @@ const PAGINAS = {
     montamonta: { maquinas: 2, sistema: false, nota: 'página grátis' },
     align: { maquinas: 1, sistema: true, nota: 'página ALIGN' },
     barebass: { maquinas: 1, sistema: true, nota: 'página BAREBASS' },
-    // VASSOURA (Max for Live) não ativa: o cadastro só guarda o e-mail (token_hash vazio, nenhum token vale nele)
-    // e manda por e-mail o link do zip e o passo a passo daquele sistema (o zip é o mesmo; muda a pasta e os atalhos)
-    vassoura: { maquinas: 0, sistema: true, nota: 'página VASSOURA', semToken: true },
+    // VASSOURA saiu daqui em 14/11/2026: virou paga (com ativação), vendida no site; /gratis/vassoura só redireciona (index.js).
+    // Os cadastros antigos (token_hash vazio) ganharam token próprio na migração da 0.3.0 (_envio_vassoura/envia030.mjs).
 };
 export const PACOTES_GRATIS = Object.keys(PAGINAS);
 

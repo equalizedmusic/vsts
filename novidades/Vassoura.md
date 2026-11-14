@@ -5,6 +5,16 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.0 — 2026-11-14
+- **Visual novo.** O device no Live virou uma faixa com a arte da VASSOURA e um botão só: **OPEN THE MAGIC**. Todos
+  os controles ficam na janela: THRESHOLD, MIN LENGTH, PRE e POST viraram sliders na barra de cima, junto de MODE,
+  SNAP, SCOPE, ANALYZE e APPLY. Os valores continuam salvos no set.
+- **Animação no APPLY:** uma vassoura atravessa as faixas junto com o trabalho real; atrás dela os trechos vazios
+  já saíram (MUTE apaga, CUT some). No fim, "APPLIED ✓".
+- **Licença.** A partir desta versão a VASSOURA é paga e pede ativação na 1ª vez (e-mail + token, até 2
+  computadores, 45 dias sem internet). **Quem já tinha a VASSOURA recebe a atualização grátis**: o token foi enviado
+  para o e-mail do cadastro. LICENSE, no canto da janela, mostra a licença e libera o computador.
+- Aviso de versão nova agora na janela e no device (botão NEW VERSION · DOWNLOAD).
 ## 0.2.3 — 2026-11-10
 - **Clips aparados no arranjo agora entram na limpeza.** Quando o stem é uma gravação longa cortada no arranjo, o Live
   deixa o marcador de fim no fim do arquivo. A VASSOURA lia o trecho errado: os vazios apareciam fora do lugar na

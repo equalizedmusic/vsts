@@ -21,8 +21,11 @@ var BUF = "rodo_scan";
 var DICT = "rodo_data";   // leve: faixas, clips, picos e ganhos (republicado a cada mudança de TARGET/MODE)
 var DICT_ENV = "rodo_env"; // pesado: contorno das ondas (só depois do ANALYZE)
 var WIN_MS = 10;
-var VERSAO = "0.1.0";
-var BUILD = "teste";      // marca do pacote de teste no log; vazio na versão publicada
+var VERSAO = "0.2.0";
+var BUILD = "";           // marca do pacote de teste no log ("teste"...); vazio na versão publicada
+var LIC_PACOTE = "rodo", LIC_NOME = "RODO";   // licença: bloco LICENÇA no fim (colado pelo build-rodo.js)
+var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/rodo/zip";
+var URL_NOVIDADES = "https://insidestudiosp.com.br/rodo/";
 var PAUSA_ARQ = 40;
 var PAUSA_FAIXA = 10;
 var PAUSA_APPLY = 12;
@@ -90,8 +93,30 @@ var onde = "";
 
 function init() {
 	ready = true;
-	status("PRONTO · clique ANALYZE");
+	licCarrega();
+	status(licLiberada() ? "PRONTO · clique ANALYZE" : "ATIVE A LICENÇA · clique OPEN");
+	enviaCfg();
+	depois("versao", checaVersao, 4000);
 }
+
+// sem licença: nada lê nem mexe no set; a janela mostra a tela de ativação
+function travado() {
+	if (licLiberada()) return false;
+	status("ATIVE A LICENÇA · clique OPEN");
+	outlet(2, "lic", licEstado());
+	return true;
+}
+// a licença mudou (ativou, desativou, venceu): janela e device ficam sabendo
+function licMudou() {
+	outlet(2, "lic", licEstado());
+	outlet(1, "lic", lic.ok ? 1 : 0);
+	if (!ready) return;
+	if (lic.ok && !busy && !result) status("PRONTO · clique ANALYZE");
+	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
+}
+// valores atuais para a janela (ela pode abrir antes do 1º ANALYZE)
+function enviaCfg() { outlet(2, "valores", cfg.target, cfg.mode, cfg.scope); }
+function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
 
 // ---------------------------------------------------------------- controles
 function target(v) { cfg.target = Math.max(-12, Math.min(-0.3, num(v))); agendaRecalc(); }
@@ -100,8 +125,8 @@ function scope(v) { cfg.scope = num(v) ? 1 : 0; if (result) status("SCOPE mudou 
 
 // vindos da janela: mudam o valor e devolvem para o controle do device (sem eco de volta)
 function ui_target(v) { target(v); outlet(3, "target", cfg.target); }
-function ui_mode(v) { mode(v); outlet(3, "mode", cfg.mode); }
-function ui_scope(v) { scope(v); outlet(3, "scope", cfg.scope); }
+function ui_mode(v) { mode(v); outlet(3, "mode", cfg.mode); enviaCfg(); }
+function ui_scope(v) { scope(v); outlet(3, "scope", cfg.scope); enviaCfg(); }
 
 function num(v) {
 	if (v instanceof Array) v = v[0];
@@ -113,7 +138,7 @@ function str(v) {
 	return v == null ? "" : String(v);
 }
 function status(txt) {
-	outlet(1, "set", txt);
+	outlet(1, "status", txt);
 	outlet(2, "status", txt);
 }
 function f1(v) { return (v > 0.05 ? "+" : v < -0.05 ? "-" : "") + Math.abs(v).toFixed(1); }
@@ -250,7 +275,7 @@ function ajustaGanho(api, querDb) {
 // ---------------------------------------------------------------- ANALYZE
 function analyze(reuso) {
 	if (!ready) { status("aguarde o Live terminar de carregar"); return; }
-	if (busy) return;
+	if (busy || travado()) return;
 	busy = true;
 	if (!reuso) arqs = {};
 	// faixa tirada na janela continua fora depois do APPLY/RESET (releitura automática)
@@ -597,7 +622,7 @@ var ap = null;
 var posApply = "";
 
 function apply() {
-	if (busy) return;
+	if (busy || travado()) return;
 	if (!result) { status("clique ANALYZE antes do APPLY"); return; }
 	lerMarcas();
 	recalc();
@@ -680,7 +705,7 @@ function fimApply() {
 // ---------------------------------------------------------------- RESET (volta o ganho de antes do 1º APPLY)
 var filaReset = [];
 function reset() {
-	if (busy) return;
+	if (busy || travado()) return;
 	filaReset = [];
 	for (var id in orig) if (orig.hasOwnProperty(id)) filaReset.push(id);
 	if (!filaReset.length) { status("RESET: nada para voltar (nenhum APPLY nesta sessão do device)"); return; }

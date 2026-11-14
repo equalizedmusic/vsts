@@ -1,20 +1,29 @@
-VASSOURA — Max for Live (Live Suite 12.4)
-Versão e novidades: ver o release no GitHub (equalizedmusic/vsts, releases vassoura-v...).
+VASSOURA — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
+Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/vassoura/
 
 INSTALAR
 1. Copie a pasta inteira (Vassoura-<versão>) para:
    Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
-   Os 3 arquivos (Vassoura.amxd, vassoura.js e vassoura_view.js) PRECISAM ficar juntos.
+   Os 4 arquivos (Vassoura.amxd, vassoura.js, vassoura_view.js e vassoura_strip.js) PRECISAM ficar juntos.
+   Tinha uma versão antiga? Apague a pasta antiga e use só a nova.
 2. No Live, arraste o Vassoura.amxd para a PRIMEIRA faixa de áudio do projeto.
    No MASTER ele não funciona: o ANALYZE não lê os clips.
+
+ATIVAR (1ª vez · desde a 0.3.0 a VASSOURA tem licença)
+1. No device, clique OPEN THE MAGIC. A janela abre na tela ACTIVATE VASSOURA.
+2. Clique no campo E-MAIL e digite o e-mail da compra; clique em TOKEN e cole o token
+   (ISP-XXXX-XXXX-XXXX-XXXX-XXXX) que chegou no e-mail. Clique ACTIVATE (precisa de internet).
+   Já tinha a VASSOURA? A atualização é grátis: o token foi enviado para o e-mail do seu cadastro.
+3. Vale em até 2 computadores. Sem internet, segue valendo por 45 dias. LICENSE (canto da
+   janela) mostra a licença e DEACTIVATE THIS COMPUTER libera a vaga para outro computador.
 
 ANTES DO PRIMEIRO APPLY: SALVE UMA CÓPIA DO SET (File > Save Live Set As...).
 O Live não deixa juntar as edições num passo só: cada trecho mutado/apagado é um Ctrl+Z separado.
 
 USAR
 1. Abra um set com stems (clips de áudio no Arrangement, WARP DESLIGADO).
-2. Clique ANALYZE (no device ou na janela). Clique OPEN para ver a janela.
-3. Ajuste no device — a janela redesenha na hora, sem reler os arquivos:
+2. No device fica só o botão OPEN THE MAGIC: todos os controles estão na janela. Clique ANALYZE.
+3. Ajuste na janela (sliders e botões da barra) — ela redesenha na hora, sem reler os arquivos:
    - THRESHOLD (padrão -60 dB): abaixo disso é silêncio
    - MIN LENGTH (padrão 1000 ms): silêncio mais curto que isso fica
    - PRE (padrão 10 ms): folga mantida ANTES de cada som (não corta o ataque)
@@ -23,11 +32,11 @@ USAR
    - SCOPE: ALL (todas as faixas) / SELECTED (só a faixa selecionada; clique ANALYZE de novo)
    - MODE: MUTE (divide o clip e desliga os pedaços vazios — nada é apagado)
            CUT  (apaga os pedaços vazios; pede 2º clique no APPLY em até 4 s)
-   MODE, SNAP e SCOPE também mudam clicando na barra da janela.
 4. Na janela:
    - cor da faixa = som (fica) · vermelho escuro tracejado = vazio (sai) · cinza = mantido
    - clique no vermelho = manter aquele trecho · clique no nome da faixa = faixa fora da limpeza
-5. APPLY. Depois de aplicar, a VASSOURA relê o set e a janela mostra como ficou.
+5. APPLY. A vassoura passa pelas faixas junto com o trabalho real: atrás dela os vazios já saíram.
+   Depois, a VASSOURA relê o set e a janela mostra como ficou.
 
 LIMITES
 - Clips com WARP ligado e clips em LOOP aparecem em cinza e não são tocados.
@@ -47,4 +56,4 @@ SE DER ERRO
 - A cada ANALYZE a VASSOURA grava o arquivo VASSOURA-log.txt na mesma pasta do device, com cada faixa,
   clip e arquivo lido. Se o Live fechar, mande esse arquivo: a última linha mostra onde parou.
 - "v8: can't find vassoura.js" = os arquivos não estão na mesma pasta do .amxd.
-  Correção: abra o device no editor do Max, clique em FREEZE (ícone de floco de neve) e salve.
+- "E-mail ou token não conferem" = confira os dois como vieram no e-mail.

@@ -11,7 +11,8 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "rodo_data", DICT_ENV = "rodo_env";
-var VERSAO = "0.1.0";
+var VERSAO = "0.2.0";
+var msgNova = "";
 var W0 = 1360, H0 = 840;
 var HEAD_H = 72, BAR_H = 50, RULER_Y = 124, TOP = 152, FOOT_H = 40, SB_W = 14;
 var X0 = 340;
@@ -56,6 +57,9 @@ function varre(total, b0, b1) {
 }
 function progresso(i, total, s) { if (!anim) return; anim.feitos = i; anim.total = total; if (s > anim.alvo) anim.alvo = s; }
 function fim() { if (anim) anim.motorFim = 1; }
+// valores atuais do motor (a janela pode abrir antes do 1º ANALYZE)
+function valores(t, m, s) { if (arrastaTarget) return; cfg = { target: Number(t), mode: m | 0, scope: s | 0 }; if (!anim) mgraphics.redraw(); }
+function nova(v) { msgNova = String(v || ""); if (!anim) mgraphics.redraw(); }
 
 // ---------------------------------------------------------------- desenho (helpers)
 function rgb(r, g, b, a) { mgraphics.set_source_rgba(r, g, b, a == null ? 1 : a); }
@@ -110,7 +114,20 @@ function paint() {
 	var tx = 16 + largura("RODO", 26, true) + 10;
 	rgb(0.55, 0.55, 0.58); texto(VERSAO, tx, 31, 12, false);
 	tx += largura(VERSAO, 12, false) + 18;
-	if (msgStatus) { rgbv(AC); texto(cabeFim(msgStatus, W - 20 - tx, 13, true), tx, 31, 13, true); }
+	// canto direito: LICENSE (informações / desativar) e aviso de versão nova
+	var fimSt = W - 20;
+	if (licPronta()) {
+		var wl = largura("LICENSE", 11, true) + 22;
+		botaoP(W - 16 - wl, 14, wl, 24, "LICENSE", ["lic_info"]);
+		fimSt = W - 16 - wl - 10;
+		if (msgNova) {
+			var tn = "NEW VERSION " + msgNova + " · DOWNLOAD", wn = largura(tn, 11, true) + 22;
+			botaoP(fimSt - wn, 14, wn, 24, tn, ["baixar_nova"], OK);
+			fimSt -= wn + 10;
+		}
+	}
+	if (msgStatus) { rgbv(AC); texto(cabeFim(msgStatus, fimSt - tx, 13, true), tx, 31, 13, true); }
+	if (!licPronta() || licInfo) { licPinta(W, H, HEAD_H, "RODO", AC, hits); return; }
 
 	if (data) {
 		var resumo = tracks.length + " FAIXAS · " + data.nClips + " CLIPS · PICO VAI A " + f1(cfg.target) + " dB";
@@ -286,6 +303,14 @@ function paint() {
 	rodape(W, H, tracks, varrendo, feito);
 }
 
+// botão pequeno do cabeçalho (contorno)
+function botaoP(x, y, w, h, txt, cmd, cor) {
+	cor = cor || [0.55, 0.55, 0.58];
+	rgbv(cor, 0.9); mgraphics.set_line_width(1); mgraphics.rectangle_rounded(x + 0.5, y + 0.5, w - 1, h - 1, 5, 5); mgraphics.stroke();
+	rgbv(cor); textoC(txt, x + w / 2, y + h / 2 + 4, 11, true);
+	hits.push({ x: x, y: y, w: w, h: h, tipo: "cmd", msg: cmd });
+}
+
 function barra(W, varrendo, feito) {
 	caixa(0, HEAD_H, W, BAR_H, 0.10, 0.11, 0.12);
 	caixa(0, HEAD_H + BAR_H - 1, W, 1, 0.22, 0.23, 0.25);
@@ -439,6 +464,7 @@ function onclick(x, y) {
 		if (hb.tipo == "target") { if (anim) return; arrastaTarget = hb; mexeTarget(x, hb, 0); return; }
 		if (hb.tipo != "cmd") continue;
 		var m = hb.msg;
+		if (licCliqueLocal(m)) return;
 		if (m[0] == "ui_mode") cfg.mode = m[1];
 		else if (m[0] == "ui_scope") cfg.scope = m[1];
 		if (m[0] == "apply" || m[0] == "analyze" || m[0] == "reset") msgAviso = "";
@@ -446,7 +472,7 @@ function onclick(x, y) {
 		mgraphics.redraw();
 		return;
 	}
-	if (!data || anim) return;
+	if (!data || anim || !licPronta() || licInfo) return;
 	if (lay && lay.maxFirst > 0 && x >= lay.W - SB_W - 4) {
 		arrasto = y;
 		rolar(lay.maxFirst * (y - TOP) / Math.max(1, lay.listH));

@@ -8,7 +8,7 @@
 //        -> { ok: true, atualizacao: null | { versao, url, notas } }   url = instalador do sistema (ou a página do release)
 //   GET  /baixar/<pacote>/<win|mac>   redireciona para o instalador (links da mensagem do painel)
 //   GET/POST /gratis/montamonta   página grátis: e-mail -> token + download do MONTA-MONTA (ver src/gratis.js)
-//   GET/POST /gratis/vassoura (= /vassoura)   só e-mail -> cadastro sem token + e-mail com o link /baixar/vassoura/zip
+//   GET/POST /gratis/vassoura                 desde 14/11/2026 só redireciona à página de venda do site (VASSOURA paga)
 //   GET/POST /gratis/align (= /align)   e-mail + Windows/Mac -> token + download do ALIGN, 1 computador
 //   POST /gratis/align/zip   { email, token?, sistema }   zip com o instalador + LEIA-ME com e-mail, token e instruções
 //   POST /gratis/align/reenviar, GET/POST /gratis/align/novo-token   "perdi meu token" por e-mail (só com RESEND_API_KEY)
@@ -48,7 +48,7 @@ import { rotaContato } from './contato.js';
 import { PRECOS } from './precos.js';
 import { rotaInstagram, renovarTokenInstagram, publicarAgendados, limparInstagram, relatorioSemanal, varrerComentarios }from './instagram.js';
 
-const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'barebass', 'stompbox', 'maestro', 'magos', 'vassoura'];
+const PACOTES = ['criativo', 'mix', 'knob', 'quimera', 'limao', 'mercurio', 'resenha', 'montamonta', 'groovador', 'mesa', 'align', 'barebass', 'stompbox', 'maestro', 'magos', 'vassoura', 'rodo'];
 const VALIDADE_DIAS = 45;          // sem internet, o plugin segue liberado até aqui
 // Licença de TESTE (13/11/2026, pedido dele; sem divulgar: só o painel cria). origem 'teste', 1 computador, token
 // PRÓPRIO (diferente do token de compra do e-mail; todos os testes do e-mail dividem o mesmo token de teste).
@@ -277,7 +277,9 @@ async function rotaVersao(url, env) {
     const instalador = maior.arquivos.find((a) => a.toLowerCase().endsWith(ext));
     // repo privado: o link do GitHub dá 404 para o cliente ⇒ sempre o /baixar do domínio (ele pede o link assinado com o token)
     const exato = `${url.origin}/baixar/${pacote}/${sistema}?tag=${encodeURIComponent(maior.tag)}`;
-    const link = !instalador ? 'https://insidestudiosp.com.br/' : maior.pre ? exato : `https://insidestudiosp.com.br/baixar/${pacote}/${sistema}`;
+    // Max for Live (VASSOURA, RODO): o zip único, sempre pelo link fixo do domínio
+    const link = M4L[pacote] ? `https://insidestudiosp.com.br/baixar/${pacote}/zip`
+        : !instalador ? 'https://insidestudiosp.com.br/' : maior.pre ? exato : `https://insidestudiosp.com.br/baixar/${pacote}/${sistema}`;
     const atualizacao = { versao: maior.versao, url: link, notas: maior.notas };
     // atualização automática (plugins com ISP_ATUALIZAR): dados do instalador assinados com a chave das licenças;
     // o plugin confere a assinatura e o SHA-256 do arquivo baixado antes de rodar
@@ -307,7 +309,9 @@ function releaseDoPacote(lista, pacote, comPre = false) {
 // Enquanto existir o pré-release "licenca-teste" (instaladores com ativação), ele vale para todos os pacotes; depois
 // do merge, apagar o pré-release e o link passa a dar o release <pacote>-vX.Y.Z mais novo.
 // a QUIMERA sai como "Quimera" (até o build de teste da ativação o pacote se chamava "Instrumentos")
-const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'], resenha: ['Resenha'], montamonta: ['MontaMonta'], groovador: ['Groovador'], mesa: ['Mesa'], align: ['Align'], barebass: ['Barebass'], stompbox: ['Stompbox'], maestro: ['Maestro'], magos: ['Magos'], vassoura: ['Vassoura'] };
+// Max for Live (zip único para Windows e Mac): nome do arquivo no release <pacote>-vX.Y.Z
+const M4L = { vassoura: /^Vassoura-.*\.zip$/, rodo: /^Rodo-.*\.zip$/ };
+const INSTALADOR = { criativo: ['Criativo'], mix: ['Mix'], knob: ['Knob'], quimera: ['Quimera', 'Instrumentos'], limao: ['Limao'], mercurio: ['Mercurio'], resenha: ['Resenha'], montamonta: ['MontaMonta'], groovador: ['Groovador'], mesa: ['Mesa'], align: ['Align'], barebass: ['Barebass'], stompbox: ['Stompbox'], maestro: ['Maestro'], magos: ['Magos'], vassoura: ['Vassoura'], rodo: ['Rodo'] };
 
 function paginaSimples(titulo, texto, status) {
     const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -322,7 +326,7 @@ const nomeArquivo = (url) => decodeURIComponent(url.split('/').pop());
 // tag (opcional): release exato, inclusive pré-lançamento (link assinado da atualização automática)
 function acharInstalador(lista, pacote, sistema, tag = null) {
     const rel = tag ? lista.find((r) => r.tag === tag)
-        : (pacote !== 'vassoura' && lista.find((r) => r.tag === 'licenca-teste')) || releaseDoPacote(lista, pacote);
+        : (!M4L[pacote] && lista.find((r) => r.tag === 'licenca-teste')) || releaseDoPacote(lista, pacote);
     return { rel, i: rel ? indiceInstalador(rel, pacote, sistema) : -1 };
 }
 
@@ -330,8 +334,8 @@ function indiceInstalador(rel, pacote, sistema) {
     const fim = sistema === 'mac' ? '-mac.dmg' : '-win.exe';
     return rel.arquivos.findIndex((a) => {
         const nome = nomeArquivo(a);
-        // VASSOURA (Max for Live): um zip só, igual no Windows e no Mac
-        if (pacote === 'vassoura') return /^Vassoura-.*\.zip$/.test(nome);
+        // Max for Live (VASSOURA, RODO): um zip só, igual no Windows e no Mac
+        if (M4L[pacote]) return M4L[pacote].test(nome);
         return (INSTALADOR[pacote] || []).some((n) => nome.startsWith(`InsideStudioSP-${n}-`)) && nome.endsWith(fim);
     });
 }
@@ -377,10 +381,10 @@ async function instalador(env, pacote, sistema) {
 
 async function rotaBaixar(caminho, env, url) {
     const [, , pacote, sistema] = caminho.split('/');
-    // VASSOURA: /baixar/vassoura sozinho (link antigo do site, posts, painel) abre a página de cadastro;
-    // o arquivo sai por /baixar/vassoura/zip (win/mac continuam valendo para os links já enviados)
-    if (pacote === 'vassoura' && !sistema) return Response.redirect(VASSOURA_OFICIAL, 302);
-    const unico = pacote === 'vassoura' && sistema === 'zip';
+    // Max for Live (VASSOURA, RODO): /baixar/<pacote> sozinho (links antigos, posts, painel) abre a página do pack no site;
+    // o arquivo sai por /baixar/<pacote>/zip (win/mac continuam valendo para os links já enviados)
+    if (M4L[pacote] && !sistema) return Response.redirect(PAGINA_SITE + pacote + '/', 302);
+    const unico = !!M4L[pacote] && sistema === 'zip';
     if (!PACOTES.includes(pacote) || (!unico && !['win', 'mac'].includes(sistema)))
         return paginaSimples('Link inválido', 'Confira o link de download que veio no e-mail da licença.', 404);
     const indisponivel = () => paginaSimples('Download indisponível',
@@ -448,14 +452,20 @@ async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, orige
         return { id, email, pacote, token, mesmo_token: !!doTeste, token_trocado: false, teste: true, teste_dias: TESTE_DIAS };
     }
     // cadastro da página da VASSOURA não tem token (token_hash vazio): não serve de "mesmo token". O token de teste também não.
-    let doEmail = await env.DB.prepare("SELECT token_hash FROM licencas WHERE email = ? AND token_hash <> '' AND origem <> 'teste' LIMIT 1").bind(email).first();
+    // 14/11/2026: quem já tinha a VASSOURA ganhou um token PRÓPRIO dela (migração da 0.3.0) ⇒ o token principal do e-mail
+    // é o de outro pacote quando existir (a VASSOURA só serve de "mesmo token" se for o único)
+    let doEmail = await env.DB.prepare("SELECT token_hash, origem FROM licencas WHERE email = ? AND token_hash <> '' AND origem <> 'teste' ORDER BY (pacote = 'vassoura'), id LIMIT 1").bind(email).first();
     // e-mail que só tem licença da página grátis: aquele token saiu na tela sem conferir o e-mail (qualquer um pode
-    // ter cadastrado), então licença dada por aqui troca o token do e-mail inteiro e o novo vai para o cliente
-    const soGratis = doEmail && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem NOT IN ('gratis', 'teste') LIMIT 1").bind(email).first());
+    // ter cadastrado), então licença dada por aqui troca o token do e-mail e o novo vai para o cliente.
+    // A cortesia da VASSOURA (migração 14/11) não conta como compra verificada.
+    // (o token da VASSOURA só é trocado se ela mesma for grátis: o próprio, mandado por e-mail na migração, fica)
+    const soGratis = doEmail && doEmail.origem === 'gratis' && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem NOT IN ('gratis', 'teste') AND pacote <> 'vassoura' LIMIT 1").bind(email).first());
+    const hashGratis = soGratis ? doEmail.token_hash : null;
     if (soGratis) doEmail = null;
     const token = doEmail ? null : novoToken();
+    // troca só onde estava o token grátis antigo (o token próprio da VASSOURA fica como está)
     if (soGratis)
-        await env.DB.prepare("UPDATE licencas SET token_hash = ? WHERE email = ? AND origem <> 'teste'").bind(await sha256Hex('ISP' + normToken(token)), email).run();
+        await env.DB.prepare("UPDATE licencas SET token_hash = ? WHERE email = ? AND origem <> 'teste' AND token_hash = ?").bind(await sha256Hex('ISP' + normToken(token)), email, hashGratis).run();
     const r = await env.DB.prepare(
         'INSERT INTO licencas (email, pacote, token_hash, max_maquinas, origem, pedido, nota, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(email, pacote, doEmail ? doEmail.token_hash : await sha256Hex('ISP' + normToken(token)),
@@ -602,8 +612,10 @@ async function rotaAdmin(caminho, req, env, url) {
 // /gratis/align/* e /baixar/* (downloads de todos os pacotes) do insidestudiosp.com.br para este Worker
 // (o resto do domínio é o site)
 const ALIGN_OFICIAL = 'https://insidestudiosp.com.br/align/';
-// a da VASSOURA também (rota /vassoura*): só e-mail, sem token
-const VASSOURA_OFICIAL = 'https://insidestudiosp.com.br/vassoura/';
+// páginas de pack do site (VASSOURA e RODO são pagos desde 14/11/2026: /vassoura/ e /rodo/ são do site, não deste Worker)
+const PAGINA_SITE = 'https://insidestudiosp.com.br/';
+// cadastro grátis da VASSOURA acabou (14/11/2026): o endereço antigo leva à página de venda do site
+const VASSOURA_OFICIAL = PAGINA_SITE + 'vassoura/';
 // e a do BAREBASS (rotas /barebass* e /gratis/barebass/*): igual à do ALIGN
 const BAREBASS_OFICIAL = 'https://insidestudiosp.com.br/barebass/';
 // o painel também (rotas /painel* e /admin/*). A sessão é um cookie do host, então fica num endereço só (sem www).
@@ -622,9 +634,11 @@ export default {
             if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
                 && (caminho === '/align' || caminho === '/gratis/align'))
                 return Response.redirect(ALIGN_OFICIAL, 302);
-            if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
-                && (caminho === '/vassoura' || caminho === '/gratis/vassoura'))
-                return Response.redirect(VASSOURA_OFICIAL, 302);
+            // VASSOURA paga (14/11/2026): o cadastro grátis (GET e POST) não existe mais; /gratis/vassoura em qualquer host e o
+            // /vassoura do workers.dev levam à página de venda do site (no domínio, /vassoura* é do site, sem rota para cá)
+            if (caminho === '/gratis/vassoura' || caminho.startsWith('/gratis/vassoura/') || (url.hostname.endsWith('.workers.dev') && caminho === '/vassoura'))
+                return req.method === 'POST' ? resposta({ ok: false, mensagem: 'A VASSOURA agora é vendida no site: ' + VASSOURA_OFICIAL }, 410)
+                    : Response.redirect(VASSOURA_OFICIAL, 302);
             if ((req.method === 'GET' || req.method === 'HEAD') && url.hostname.endsWith('.workers.dev')
                 && (caminho === '/barebass' || caminho === '/gratis/barebass'))
                 return Response.redirect(BAREBASS_OFICIAL, 302);

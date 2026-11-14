@@ -1,7 +1,7 @@
 // Preço de cada pack à venda — fonte única: o servidor cobra por aqui e o site (site/dados.mjs) mostra daqui.
 //   brl: reais no Mercado Pago (Pix, cartão até 12x, boleto); usd: dólares no PayPal (fora do Brasil).
 //   null = sem preço ainda: o botão fica desligado no site e o servidor recusa a cobrança.
-// ALIGN e VASSOURA são grátis (páginas próprias), por isso não estão aqui.
+// ALIGN e BAREBASS são grátis (páginas próprias), por isso não estão aqui. VASSOURA e RODO (Max for Live) são pagos desde 14/11/2026.
 
 export const PRECOS = {
     // usd fica null até o PayPal ser configurado e testado: o site mostra o botão PayPal só por haver usd.
@@ -23,10 +23,15 @@ export const PRECOS = {
     magos:     { brl: 149.90, usd: null },
     // COMBO MAESTRO + MASTER DOS MAGOS: R$ 179,90 (abaixo da soma). Uma compra cria as DUAS licenças (COMBOS abaixo).
     maestromagos: { brl: 179.90, usd: null },
+    // VASSOURA (era grátis) e RODO (14/11/2026, decisão dele): Max for Live, R$ 24,90 cada na oferta (depois 49,90),
+    // combo dos dois R$ 39,90 na oferta (depois 79,90). Quem já tinha a VASSOURA ganhou a licença (migração 0.3.0).
+    vassoura:  { brl: 24.90, usd: null },
+    rodo:      { brl: 24.90, usd: null },
+    vassourarodo: { brl: 39.90, usd: null },
 };
 
 // combo = um pedido que libera vários pacotes (loja.js concluir() cria uma licença para cada um)
-export const COMBOS = { maestromagos: ['maestro', 'magos'] };
+export const COMBOS = { maestromagos: ['maestro', 'magos'], vassourarodo: ['vassoura', 'rodo'] };
 // Completar o combo (12/11/2026, decisão dele): quem já comprou UM plugin do combo e compra o outro avulso (mesmo e-mail)
 // paga só o que falta para fechar o preço do combo. O que já pagou = preço de tabela daquele plugin na data do pagamento,
 // com o cupom daquele pedido descontado na mesma proporção (loja.js creditosCombo). Vale enquanto o combo existir.
@@ -54,6 +59,7 @@ export const NOMES = {
     mesa: 'MESA', criativo: 'SÉRIE CRIATIVO', mix: 'SÉRIE MIX', knob: 'SÉRIE KNOB', quimera: 'QUIMERA',
     limao: 'LIMÃO', mercurio: 'MERCÚRIO', resenha: 'RESENHA', groovador: 'GROOVADOR', stompbox: 'STOMPBOX', maestro: 'MAESTRO',
     magos: 'MASTER DOS MAGOS', maestromagos: 'MAESTRO + MASTER DOS MAGOS',
+    vassoura: 'VASSOURA', rodo: 'RODO', vassourarodo: 'VASSOURA + RODO',
 };
 
 // Oferta de lançamento (decisão dele, 05/11/2026): só vitrine, o servidor cobra o PRECOS.brl.
@@ -61,13 +67,13 @@ export const NOMES = {
 // Usado pelo site (site/dados.mjs) e pela vitrine das páginas grátis (gratis.js). Para prorrogar: mudar a data e publicar os dois.
 // 12/11/2026 (decisão dele): TODAS as ofertas terminam no fim da Black Friday (27/11/2026, sexta, 23:59 de Brasília).
 export const OFERTA_FIM = '2026-11-27T23:59:59-03:00';
-export const DE_BRL = { 79.9: 149.9, 24.9: 49.9 };
+export const DE_BRL = { 79.9: 149.9, 24.9: 49.9, 39.9: 79.9 };   // 39,90 = combo VASSOURA + RODO
 // Pack com oferta que termina em outra data (vazio hoje: todos acabam em OFERTA_FIM).
 export const OFERTA_FIM_PACK = {};
 export const fimOferta = (id) => OFERTA_FIM_PACK[id] || OFERTA_FIM;
 
 // Preço que muda sozinho na data (decisão dele): acabada a oferta, cada pack em promoção passa a custar o preço "de"
-// (79,90 -> 149,90; 24,90 -> 49,90). MAGOS (sem promoção) e o combo MAESTRO + MAGOS (179,90) não mudam.
+// (79,90 -> 149,90; 24,90 -> 49,90; combo VASSOURA + RODO 39,90 -> 79,90). MAGOS (sem promoção) e o combo MAESTRO + MAGOS (179,90) não mudam.
 // Cobrança (loja.js) e vitrine das páginas grátis leem precoAtual() NA HORA; o site estático sai com o preço da hora
 // do build (rebuild agendado no dOne para 28/11 00:02). Para adiar: mudar OFERTA_FIM e publicar servidor e site.
 export const PRECO_DEPOIS = Object.fromEntries(Object.entries(PRECOS)

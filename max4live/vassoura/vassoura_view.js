@@ -9,10 +9,16 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "vassoura_data";
-var VERSAO = "0.2.3";
+var VERSAO = "0.3.0";
 var msgNova = "";     // versão nova disponível (vem do motor)
 var NAME_W = 250;
-var HEAD_H = 112;
+var HEAD_H = 150;
+var AC = [0.40, 0.78, 0.95];   // cor da marca da VASSOURA na janela (botões, licença)
+var anim = null;      // APPLY: { total, feitos, frac, motorFim, fimT, t }
+var pendente = 0;     // chegou dado novo durante a animação: carrega quando a vassoura terminar
+var tAnim = new Task(passoAnim);
+tAnim.interval = 33;
+var arrastaSl = null; // slider sendo arrastado
 var cfg = { threshold: -60, minlen: 1000, pre: 10, post: 100, snap: 0, mode: 0, scope: 0 };
 var msgStatus = "";   // o que o motor está fazendo agora
 var msgAviso = "";    // resultado do último APPLY (fica até o próximo)
@@ -62,7 +68,38 @@ function save() {
 }
 
 function bang() {
+	if (anim) { pendente = 1; return; }
 	load();
+	mgraphics.redraw();
+}
+
+// valores atuais do motor (a janela pode abrir antes do 1º ANALYZE)
+function valores(th, ml, pr, po, sn, mo, sc) {
+	if (arrastaSl) return;
+	cfg = { threshold: Number(th), minlen: Number(ml), pre: Number(pr), post: Number(po), snap: sn | 0, mode: mo | 0, scope: sc | 0 };
+	if (!anim) mgraphics.redraw();
+}
+
+// APPLY: a vassoura atravessa as faixas acompanhando o motor (nunca na frente dele)
+function varre(total) { msgAviso = ""; anim = { total: total, feitos: 0, frac: 0, motorFim: 0, fimT: 0, t: 0 }; tAnim.repeat(); }
+function progresso(i, total) { if (anim) { anim.feitos = i; anim.total = total; } }
+function fim() { if (anim) anim.motorFim = 1; }
+function passoAnim() {
+	if (!anim) { tAnim.cancel(); return; }
+	anim.t += 0.033;
+	if (anim.fimT > 0) {
+		if (anim.t - anim.fimT > 2.0) {
+			tAnim.cancel(); anim = null;
+			if (pendente) load();
+			pendente = 0;
+		}
+		mgraphics.redraw();
+		return;
+	}
+	var alvo = anim.motorFim ? 1.08 : Math.min(1, anim.total ? anim.feitos / anim.total : 0);
+	var falta = alvo - anim.frac;
+	if (falta > 0) anim.frac = Math.min(alvo, anim.frac + Math.max(1 / 6, Math.min(1 / 1.6, falta * 3)) * 0.033);
+	if (anim.motorFim && anim.frac >= 1.08 - 1e-9) anim.fimT = anim.t;
 	mgraphics.redraw();
 }
 
@@ -168,7 +205,7 @@ function botao(x, y, w, h, txt, fundo, frente, cmd) {
 	caixa(x, y, w, h, fundo[0], fundo[1], fundo[2]);
 	rgb(frente[0], frente[1], frente[2]);
 	texto(txt, x + (w - largura(txt, 12, true)) / 2, y + h / 2 + 4, 12, true);
-	hits.push({ x: x, y: y, w: w, h: h, tipo: "cmd", msg: cmd });
+	if (cmd) hits.push({ x: x, y: y, w: w, h: h, tipo: "cmd", msg: cmd });
 }
 
 function grupo(x, y, h, rotulo, opcoes, val, cmd) {
@@ -185,20 +222,88 @@ function grupo(x, y, h, rotulo, opcoes, val, cmd) {
 
 function barra(W) {
 	var y = 70, h = 28;
-	caixa(0, y - 6, W, h + 12, 0.12, 0.12, 0.13);
+	caixa(0, y - 6, W, h + 12 + 48, 0.12, 0.12, 0.13);
 	var x = 16;
 	x = grupo(x, y, h, "MODE", ["MUTE", "CUT"], cfg.mode, "ui_mode");
 	x = grupo(x, y, h, "SNAP", ["OFF", "1/16", "BAR"], cfg.snap, "ui_snap");
 	x = grupo(x, y, h, "SCOPE", ["ALL TRACKS", "SELECTED"], cfg.scope, "ui_scope");
 
-	var wAp = 150, wAn = 110, xAp = W - 16 - wAp, xAn = xAp - 8 - wAn;
-	var vals = "THRESHOLD " + Number(cfg.threshold).toFixed(1) + " dB · MIN LENGTH " + (cfg.minlen / 1000).toFixed(2) +
-		" s · PRE " + Math.round(cfg.pre) + " ms · POST " + Math.round(cfg.post) + " ms";
-	rgb(0.62, 0.62, 0.65); texto(cabeFim(vals, xAn - 16 - x, 12), x, y + h / 2 + 4, 12, false);
-
-	botao(xAn, y, wAn, h, "ANALYZE", [0.30, 0.30, 0.34], [0.95, 0.95, 0.95], ["analyze"]);
+	var wAp = 170, wAn = 120, xAp = W - 16 - wAp, xAn = xAp - 8 - wAn;
+	var feito = anim && anim.fimT > 0, varrendo = anim && !feito;
+	botao(xAn, y, wAn, h, "ANALYZE", [0.30, 0.30, 0.34], [0.95, 0.95, 0.95], anim ? null : ["analyze"]);
 	var cut = cfg.mode == 1;
-	botao(xAp, y, wAp, h, "APPLY · " + (cut ? "CUT" : "MUTE"), cut ? [0.72, 0.20, 0.20] : [0.20, 0.42, 0.72], [1, 1, 1], ["apply"]);
+	var tAp = feito ? "APPLIED ✓" : varrendo ? "SWEEPING…" : "APPLY · " + (cut ? "CUT" : "MUTE");
+	botao(xAp, y, wAp, h, tAp, feito ? [0.25, 0.60, 0.38] : cut ? [0.72, 0.20, 0.20] : [0.20, 0.42, 0.72], [1, 1, 1], anim ? null : ["apply"]);
+
+	// 2ª linha: THRESHOLD, MIN LENGTH, PRE, POST (arrastar; valem na hora, sem reler os arquivos)
+	var y2 = y + h + 12, ws = Math.floor((W - 32 - 3 * 24) / 4);
+	slider(16, y2, ws, "THRESHOLD", cfg.threshold, -90, -20, 1, function (v) { return v.toFixed(1) + " dB"; }, "ui_threshold", "threshold");
+	slider(16 + (ws + 24), y2, ws, "MIN LENGTH", cfg.minlen, 100, 10000, 2, function (v) { return (v / 1000).toFixed(2) + " s"; }, "ui_minlength", "minlen");
+	slider(16 + 2 * (ws + 24), y2, ws, "PRE", cfg.pre, 0, 1000, 2, function (v) { return Math.round(v) + " ms"; }, "ui_pre", "pre");
+	slider(16 + 3 * (ws + 24), y2, ws, "POST", cfg.post, 0, 2000, 2, function (v) { return Math.round(v) + " ms"; }, "ui_post", "post");
+}
+
+// slider horizontal: rótulo + valor em cima, trilho embaixo. exp > 1 = mais resolução no começo da faixa
+function slider(x, y, w, rot, v, mn, mx, exp, fmt, cmd, chave) {
+	rgb(0.55, 0.55, 0.58); texto(rot, x, y + 10, 11, true);
+	var tv = fmt(v);
+	rgb(AC[0], AC[1], AC[2]); texto(tv, x + w - largura(tv, 13, true), y + 11, 13, true);
+	var ty = y + 22, pos = Math.pow(Math.max(0, Math.min(1, (v - mn) / (mx - mn))), 1 / exp);
+	rgb(0.20, 0.21, 0.23); mgraphics.rectangle_rounded(x, ty, w, 6, 3, 3); mgraphics.fill();
+	rgb(AC[0], AC[1], AC[2]); mgraphics.rectangle_rounded(x, ty, Math.max(6, pos * w), 6, 3, 3); mgraphics.fill();
+	rgb(0.93, 0.93, 0.93); mgraphics.ellipse(x + pos * w - 7, ty - 4, 14, 14); mgraphics.fill();
+	hits.push({ x: x - 8, y: y, w: w + 16, h: 36, tipo: "slider", x0: x, x1: x + w, mn: mn, mx: mx, exp: exp, cmd: cmd, chave: chave });
+}
+var ultimoEnvio = 0;
+function mexeSlider(px, s, final) {
+	var p = Math.max(0, Math.min(1, (px - s.x0) / (s.x1 - s.x0)));
+	var v = s.mn + Math.pow(p, s.exp) * (s.mx - s.mn);
+	v = s.chave == "threshold" ? Math.round(v * 10) / 10 : Math.round(v);
+	if (v != cfg[s.chave]) { cfg[s.chave] = v; mgraphics.redraw(); }
+	var t = new Date().getTime();
+	if (final || t - ultimoEnvio > 80) { ultimoEnvio = t; outlet(0, s.cmd, v); }
+}
+
+// vassoura vista de cima: base com cerdas cobrindo as faixas, cabo para trás, poeira sendo empurrada na frente
+function desenhaVassoura(x, top, bot, t) {
+	var mid = (top + bot) / 2;
+	var s = 53;
+	function r2() { s = (s * 16807) % 2147483647; return s / 2147483647; }
+	for (var k = 0; k < 90; k++) {
+		var yy = top + 6 + r2() * (bot - top - 12), dx = 16 + r2() * 26 + Math.sin(t * 8 + k) * 2, rr = 0.8 + r2() * 2.2;
+		rgb(0.66, 0.60, 0.52, 0.25 + r2() * 0.5); mgraphics.ellipse(x + dx - rr, yy - rr, rr * 2, rr * 2); mgraphics.fill();
+	}
+	// fiapos dos trechos vazios (o "lixo" vermelho) indo junto
+	for (var q = 0; q < 26; q++) {
+		var y2 = top + 10 + r2() * (bot - top - 20), x2 = x + 18 + r2() * 20;
+		rgb(0.85, 0.30, 0.30, 0.55); mgraphics.set_line_width(1.5);
+		mgraphics.move_to(x2, y2); mgraphics.line_to(x2 + 4 + r2() * 5, y2 + (r2() - 0.5) * 6); mgraphics.stroke();
+	}
+	var hx = x - 18, hy = mid, ex = x - 340, ey = mid - 150;
+	try { mgraphics.set_line_cap("round"); } catch (e) { }
+	rgb(0, 0, 0, 0.35); mgraphics.set_line_width(16); mgraphics.move_to(hx + 6, hy + 8); mgraphics.line_to(ex + 6, ey + 8); mgraphics.stroke();
+	rgb(0.54, 0.35, 0.17); mgraphics.set_line_width(14); mgraphics.move_to(hx, hy); mgraphics.line_to(ex, ey); mgraphics.stroke();
+	rgb(0.69, 0.48, 0.26); mgraphics.set_line_width(5); mgraphics.move_to(hx - 2, hy - 4); mgraphics.line_to(ex + 2, ey - 4); mgraphics.stroke();
+	rgb(0.16, 0.17, 0.18); mgraphics.set_line_width(16); mgraphics.move_to(ex + 36, ey + 16); mgraphics.line_to(ex, ey); mgraphics.stroke();
+	try { mgraphics.set_line_cap("butt"); } catch (e) { }
+	// sombra
+	rgb(0, 0, 0, 0.3); mgraphics.rectangle_rounded(x - 22, top + 8, 40, bot - top, 6, 6); mgraphics.fill();
+	// base de madeira
+	rgb(0.58, 0.39, 0.19); mgraphics.rectangle_rounded(x - 30, top, 18, bot - top, 5, 5); mgraphics.fill();
+	rgb(0.72, 0.52, 0.28); mgraphics.rectangle(x - 27, top + 4, 3, bot - top - 8); mgraphics.fill();
+	// encaixe do cabo
+	rgb(AC[0], AC[1], AC[2]); mgraphics.rectangle_rounded(x - 40, mid - 24, 20, 48, 6, 6); mgraphics.fill();
+	// cerdas
+	mgraphics.set_line_width(1.2);
+	for (var b = top + 2; b < bot - 2; b += 2.2) {
+		var dobra = Math.sin(b * 0.7 + t * 14) * 1.5;
+		rgb(0.93, 0.80, 0.42, 0.75 + 0.25 * Math.sin(b)); mgraphics.move_to(x - 12, b); mgraphics.line_to(x + 12 + dobra, b + 1.5); mgraphics.stroke();
+	}
+	mgraphics.save();
+	mgraphics.translate(x - 21, mid);
+	mgraphics.rotate(-Math.PI / 2);
+	rgb(0.08, 0.08, 0.09); texto("VASSOURA", -largura("VASSOURA", 10, true) / 2, 4, 10, true);
+	mgraphics.restore();
 }
 
 function paint() {
@@ -212,16 +317,19 @@ function paint() {
 	rgb(0.55, 0.55, 0.58); texto(VERSAO, tx, 29, 12, false);
 	tx += largura(VERSAO, 12, false) + 18;
 	var fimStatus = W - 20;
-	if (msgNova) {
-		// faixa de versão nova: BAIXAR abre o link fixo do zip; O QUE MUDOU abre as novidades
-		var tNova = "NOVA VERSÃO " + msgNova + " · BAIXAR", wNova = largura(tNova, 12, true) + 24;
-		var tMudou = "O QUE MUDOU", wMudou = largura(tMudou, 12, true) + 20;
-		var xMudou = W - 16 - wMudou, xNova = xMudou - 6 - wNova;
-		botao(xNova, 12, wNova, 26, tNova, [0.18, 0.55, 0.30], [1, 1, 1], ["baixar_nova"]);
-		botao(xMudou, 12, wMudou, 26, tMudou, [0.19, 0.19, 0.21], [0.85, 0.85, 0.88], ["novidades"]);
-		fimStatus = xNova - 16;
+	if (licPronta()) {
+		// LICENSE (informações / desativar) e, se houver, versão nova: BAIXAR abre o link fixo do zip
+		var tL = "LICENSE", wL = largura(tL, 12, true) + 24;
+		botao(W - 16 - wL, 12, wL, 26, tL, [0.19, 0.19, 0.21], [0.85, 0.85, 0.88], ["lic_info"]);
+		fimStatus = W - 16 - wL - 8;
+		if (msgNova) {
+			var tNova = "NEW VERSION " + msgNova + " · DOWNLOAD", wNova = largura(tNova, 12, true) + 24;
+			botao(fimStatus - wNova, 12, wNova, 26, tNova, [0.18, 0.55, 0.30], [1, 1, 1], ["baixar_nova"]);
+			fimStatus -= wNova + 16;
+		}
 	}
 	if (msgStatus) { rgb(0.98, 0.78, 0.35); texto(cabeFim(msgStatus, fimStatus - tx, 13), tx, 29, 13, true); }
+	if (!licPronta() || licInfo) { licPinta(W, H, 44, "VASSOURA", AC, hits); return; }
 
 	barra(W);
 
@@ -260,6 +368,8 @@ function paint() {
 	var maxBeat = data.maxBeat > minBeat ? data.maxBeat : minBeat + sig;
 	var x0 = NAME_W + 8, x1 = W - SB_W - 10;
 	var bx = function (b) { return x0 + (x1 - x0) * (b - minBeat) / (maxBeat - minBeat); };
+	// posição da vassoura (APPLY): atrás dela os vazios já aparecem limpos
+	var vx = anim ? (anim.fimT > 0 ? 1e9 : x0 - 40 + (x1 - x0 + 80) * anim.frac) : -1e9;
 
 	var top = HEAD_H + RULER_H + 4, listH = H - top - FOOT_H;
 	var laneH = Math.max(LANE_MIN, Math.min(LANE_MAX, Math.floor(listH / Math.max(1, tracks.length))));
@@ -323,7 +433,10 @@ function paint() {
 			for (var k = 0; k < em.length; k++) {
 				var r = em[k];
 				var rx = bx(r.s), rw = Math.max(1, bx(r.e) - rx);
-				if (r.keep || off) {
+				if (!r.keep && !off && rx + rw <= vx) {
+					// já varrido: MUTE fica apagado, CUT some
+					if (cfg.mode == 1) caixa(rx, by, rw, bh, 0.09, 0.09, 0.10); else caixa(rx, by, rw, bh, 0.20, 0.20, 0.22);
+				} else if (r.keep || off) {
 					caixa(rx, by, rw, bh, 0.30, 0.30, 0.33, off ? 0.6 : 1);
 				} else {
 					caixa(rx, by, rw, bh, 0.36, 0.09, 0.10);
@@ -345,9 +458,15 @@ function paint() {
 		caixa(sx + 2, ty, SB_W - 4, th, 0.55, 0.55, 0.58);
 	}
 
+	// vassoura passando (APPLY)
+	if (anim && anim.fimT == 0 && vx > x0 - 60) desenhaVassoura(vx, top - 8, fundo + 6, anim.t);
+
 	// rodapé: faixa sob o mouse (nome inteiro) ou posição da rolagem
 	caixa(0, H - FOOT_H, W, FOOT_H, 0.13, 0.13, 0.14);
-	if (hover >= 0 && hover < tracks.length) {
+	if (anim) {
+		rgb(AC[0], AC[1], AC[2]);
+		texto(anim.fimT > 0 ? "APPLIED ✓ · " + (cfg.mode == 1 ? "CUT" : "MUTE") + " FEITO" : "SWEEPING… " + Math.min(anim.feitos, anim.total) + " de " + anim.total + " trechos", 16, H - 10, 13, true);
+	} else if (hover >= 0 && hover < tracks.length) {
 		var hr = resumo(tracks[hover]);
 		rgb(0.92, 0.92, 0.92);
 		texto(cabe(tracks[hover].name, W - 360, 13, true), 16, H - 10, 13, true);
@@ -368,11 +487,13 @@ function faixaEm(x, y) {
 }
 
 function onclick(x, y) {
-	arrasto = -1;
+	arrasto = -1; arrastaSl = null;
 	for (var b = hits.length - 1; b >= 0; b--) {
 		var hb = hits[b];
+		if (hb.tipo == "slider" && !anim && x >= hb.x && x <= hb.x + hb.w && y >= hb.y && y <= hb.y + hb.h) { arrastaSl = hb; mexeSlider(x, hb, 0); return; }
 		if (hb.tipo != "cmd" || x < hb.x || x > hb.x + hb.w || y < hb.y || y > hb.y + hb.h) continue;
 		var m = hb.msg;
+		if (licCliqueLocal(m)) return;
 		if (m[0] == "ui_mode") cfg.mode = m[1];
 		else if (m[0] == "ui_snap") cfg.snap = m[1];
 		else if (m[0] == "ui_scope") cfg.scope = m[1];
@@ -380,7 +501,7 @@ function onclick(x, y) {
 		mgraphics.redraw();
 		return;
 	}
-	if (!data) return;
+	if (!data || anim || !licPronta() || licInfo) return;
 	if (lay && lay.maxFirst > 0 && x >= lay.W - SB_W - 4) {
 		arrasto = y;
 		rolar(lay.maxFirst * (y - lay.top) / Math.max(1, lay.listH));
@@ -388,7 +509,7 @@ function onclick(x, y) {
 	}
 	for (var i = hits.length - 1; i >= 0; i--) {
 		var h = hits[i];
-		if (x < h.x || x > h.x + h.w || y < h.y || y > h.y + h.h) continue;
+		if ((h.tipo != "faixa" && h.tipo != "vazio") || x < h.x || x > h.x + h.w || y < h.y || y > h.y + h.h) continue;
 		var tracks = arr(data.tracks);
 		data.tracks = tracks;
 		var tr = tracks[h.t];
@@ -409,6 +530,11 @@ function onclick(x, y) {
 onclick.local = 1;
 
 function ondrag(x, y, but) {
+	if (arrastaSl) {
+		if (!but) { mexeSlider(x, arrastaSl, 1); arrastaSl = null; return; }
+		mexeSlider(x, arrastaSl, 0);
+		return;
+	}
 	if (arrasto < 0 || !lay) return;
 	if (!but) { arrasto = -1; return; }
 	rolar(lay.maxFirst * (y - lay.top) / Math.max(1, lay.listH));

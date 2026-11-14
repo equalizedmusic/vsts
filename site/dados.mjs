@@ -1,6 +1,8 @@
 // Conteúdo do site: packs, plugins e textos. Cada texto vem em [pt, en] (PT primeiro: o site abre em português).
 // preco: vem de licenca/servidor/src/precos.js (o mesmo que o servidor cobra) — { brl, usd } ou null = selo "EM BREVE". gratis: link da página grátis
-// (direto: true = o link já é o download, sem cadastro nem token — caso da VASSOURA, que não ativa).
+// (direto: true = o link já é o download, sem cadastro nem token). m4l: true = Max for Live (requisito do Ableton, não o dos
+// instaladores; fotos: [img, pt, en] da janela e do device, só entram as que existem em img/ — ver site/m4l-imagens.py).
+// avisoPreco: [pt, en] mostrado na caixa de compra, logo abaixo do preço.
 
 import { PRECOS, OFERTA_FIM, DE_BRL, fimOferta, precoAtual } from '../licenca/servidor/src/precos.js';
 
@@ -57,11 +59,11 @@ export const SITE = {
 // Fatos daqui vêm do servidor: 2 máquinas por licença, 45 dias sem internet (VALIDADE_DIAS), pastas do instalador (loja.js/gratis.js).
 export const FAQ = [
     ['Funciona no Mac? Quais sistemas?', 'Does it work on Mac? Which systems?',
-     'Sim. Os plugins vêm em VST3 e AU, com instalador para Windows e para Mac. Precisa de macOS 11 Big Sur ou mais novo (Apple Silicon ou Intel); versões anteriores, como o Catalina, não instalam. No Windows, precisa do Windows 10 ou 11 de 64 bits. A VASSOURA é Max for Live e roda onde o Ableton Live 12.2 ou mais novo roda.',
-     'Yes. The plugins come as VST3 and AU, with installers for Windows and Mac. They need macOS 11 Big Sur or newer (Apple Silicon or Intel); older versions such as Catalina will not install. On Windows they need 64-bit Windows 10 or 11. VASSOURA is Max for Live and runs wherever Ableton Live 12.2 or newer runs.'],
+     'Sim. Os plugins vêm em VST3 e AU, com instalador para Windows e para Mac. Precisa de macOS 11 Big Sur ou mais novo (Apple Silicon ou Intel); versões anteriores, como o Catalina, não instalam. No Windows, precisa do Windows 10 ou 11 de 64 bits. A VASSOURA e o RODO são Max for Live e rodam onde o Ableton Live 12.2 ou mais novo roda.',
+     'Yes. The plugins come as VST3 and AU, with installers for Windows and Mac. They need macOS 11 Big Sur or newer (Apple Silicon or Intel); older versions such as Catalina will not install. On Windows they need 64-bit Windows 10 or 11. VASSOURA and RODO are Max for Live and run wherever Ableton Live 12.2 or newer runs.'],
     ['Funciona em outras DAWs além do Ableton?', 'Does it work in DAWs other than Ableton?',
-     'Sim. Funciona em qualquer DAW que abra VST3 (Windows e Mac) ou AU (Mac), como FL Studio, Logic, Cubase, Bitwig, Reaper e Studio One. A exceção é a VASSOURA, que é Max for Live e só roda no Ableton Live.',
-     'Yes. They work in any DAW that loads VST3 (Windows and Mac) or AU (Mac), such as FL Studio, Logic, Cubase, Bitwig, Reaper and Studio One. The exception is VASSOURA, which is Max for Live and only runs in Ableton Live.'],
+     'Sim. Funciona em qualquer DAW que abra VST3 (Windows e Mac) ou AU (Mac), como FL Studio, Logic, Cubase, Bitwig, Reaper e Studio One. As exceções são a VASSOURA e o RODO, que são Max for Live e só rodam no Ableton Live.',
+     'Yes. They work in any DAW that loads VST3 (Windows and Mac) or AU (Mac), such as FL Studio, Logic, Cubase, Bitwig, Reaper and Studio One. The exceptions are VASSOURA and RODO, which are Max for Live and only run in Ableton Live.'],
     ['Quando recebo os plugins?', 'When do I get the plugins?',
      'Assim que o Mercado Pago aprova o pagamento, chegam no seu e-mail o token de ativação, o link de download e as instruções. Com Pix e cartão isso costuma ser na hora. Se não chegar em alguns minutos, olhe a caixa de spam e depois escreva para contato@insidestudiosp.com.br.',
      'As soon as the payment is approved you get the activation token, the download link and the instructions by e-mail. With Pix and card this is usually instant. If nothing arrives within a few minutes, check your spam folder and then write to contato@insidestudiosp.com.br.'],
@@ -101,13 +103,41 @@ const TODOS_PACKS = [
         plugins: [['barebass', 'BAREBASS', 'A tela mostra ao vivo a onda, o filtro e o envelope de cada nota.', 'The screen shows the wave, filter and envelope of every note, live.']],
     },
     {
-        id: 'vassoura', nome: 'VASSOURA', cor: '#fcd34d', tipo: ['Max for Live · Ableton Live 12.2+', 'Max for Live · Ableton Live 12.2+'], destaque: true,
-        capa: 'vassoura', preco: null, gratis: `${LIC}/baixar/vassoura`, direto: true,
+        // 14/11/2026: era grátis; virou paga (24,90 na oferta) com licença a partir da 0.3.0. Quem já tinha ganhou a licença.
+        id: 'vassoura', nome: 'VASSOURA', cor: '#fcd34d', tipo: ['Max for Live · Ableton Live 12.2+', 'Max for Live · Ableton Live 12.2+'], m4l: true,
+        capa: 'vassoura', preco: null,
         frase: ['Pare de limpar stems na mão.', 'Stop cleaning stems by hand.'],
         texto: [
-            'Lê todas as faixas do set, acha os trechos vazios dos clips de áudio e muta (MUTE) ou apaga (CUT) só o silêncio. PRE e POST protegem o ataque e a cauda, SNAP alinha os cortes na grade. Num set de 81 stems: 465 vazios em segundos.',
-            'Reads every track in the set, finds the empty parts of the audio clips and mutes (MUTE) or deletes (CUT) only the silence. PRE and POST keep attacks and tails safe, SNAP puts the cuts on the grid. On an 81-stem set: 465 gaps in seconds.'],
+            'Lê todas as faixas do set, acha os trechos vazios dos clips de áudio e muta (MUTE) ou apaga (CUT) só o silêncio. THRESHOLD e MIN LENGTH decidem o que é vazio, PRE e POST protegem o ataque e a cauda, SNAP alinha os cortes na grade. No device fica só o botão OPEN: todos os controles estão na janela, e no APPLY a vassoura passa varrendo as faixas. Num set de 81 stems: 465 vazios em segundos.',
+            'Reads every track in the set, finds the empty parts of the audio clips and mutes (MUTE) or deletes (CUT) only the silence. THRESHOLD and MIN LENGTH decide what counts as empty, PRE and POST keep attacks and tails safe, SNAP puts the cuts on the grid. The device only has the OPEN button: every control lives in the window, and on APPLY the broom sweeps across the tracks. On an 81-stem set: 465 gaps in seconds.'],
         plugins: [['vassoura', 'VASSOURA', 'A janela mostra cada faixa: som na cor da faixa, vazio tracejado.', 'The window shows every track: sound in the track color, gaps hatched.']],
+        fotos: [['vassoura-janela', 'A janela: todos os controles e cada faixa do set', 'The window: every control and every track in the set'],
+                ['vassoura-device', 'O device na faixa: só o botão OPEN', 'The device on the track: just the OPEN button']],
+        avisoPreco: ['Já tem a VASSOURA? A atualização é grátis: a licença foi enviada para o e-mail do seu cadastro. Não recebeu? Escreva para contato@insidestudiosp.com.br',
+                     'Already have VASSOURA? The update is free: your license was sent to the e-mail you signed up with. Didn\'t get it? Write to contato@insidestudiosp.com.br'],
+    },
+    {
+        // RODO (14/11/2026): par da VASSOURA, normaliza o pico dos clips pelo Clip Gain. 24,90 na oferta -> 49,90
+        id: 'rodo', nome: 'RODO', cor: '#f5a524', tipo: ['Max for Live · Ableton Live 12.2+', 'Max for Live · Ableton Live 12.2+'], m4l: true,
+        capa: 'rodo', preco: null,
+        frase: ['Todos os clips no mesmo pico, num clique.', 'Every clip at the same peak, in one click.'],
+        texto: [
+            'Lê todos os clips de áudio do set e normaliza o pico pelo Clip Gain, sem renderizar nada. TARGET de −12 a −0.3 dB. MODE CLIP leva cada clip ao TARGET; TRACK usa o mesmo ganho na faixa toda e mantém a dinâmica dela; ALL usa o mesmo ganho no set inteiro e mantém o balanço entre os stems. SCOPE ALL ou SELECTED, ANALYZE mostra antes o ganho de cada faixa, e o RESET volta os ganhos de antes. No APPLY, o rodo passa nas faixas e as ondas ficam no nível novo atrás dele.',
+            'Reads every audio clip in the set and normalizes the peak with Clip Gain, without rendering anything. TARGET from −12 to −0.3 dB. MODE CLIP takes each clip to the TARGET; TRACK uses the same gain across the whole track and keeps its dynamics; ALL uses the same gain across the whole set and keeps the balance between stems. SCOPE ALL or SELECTED, ANALYZE shows each track gain first, and RESET brings the old gains back. On APPLY, the squeegee sweeps across the tracks and the waves land at the new level behind it.'],
+        plugins: [['rodo', 'RODO', 'A janela mostra o PEAK e o GAIN de cada faixa, com o TARGET tracejado.', 'The window shows each track PEAK and GAIN, with the TARGET as a dashed line.']],
+        fotos: [['rodo-janela', 'A janela: TARGET, MODE, SCOPE e cada faixa do set', 'The window: TARGET, MODE, SCOPE and every track in the set'],
+                ['rodo-device', 'O device na faixa: só o botão OPEN', 'The device on the track: just the OPEN button']],
+    },
+    {
+        // combo (14/11/2026): VASSOURA + RODO por 39,90 na oferta (depois 79,90); o servidor cria as duas licenças (precos.js COMBOS)
+        id: 'vassourarodo', nome: 'VASSOURA + RODO', cor: '#fcd34d', tipo: ['Combo · 2 devices · Max for Live', 'Bundle · 2 devices · Max for Live'], m4l: true,
+        capa: 'vassourarodo', preco: null, combo: ['vassoura', 'rodo'],
+        frase: ['Limpa e nivela os stems: os dois juntos, por menos.', 'Clean and level your stems: both together, for less.'],
+        texto: [
+            'A VASSOURA tira o silêncio dos clips e o RODO deixa todos no mesmo pico. Juntos, preparam um set de stems para a mix em segundos, direto no arranjo do Ableton Live. Uma compra, as duas licenças no mesmo token.',
+            'VASSOURA removes the silence from the clips and RODO brings them all to the same peak. Together they get a set of stems ready for the mix in seconds, right in the Ableton Live arrangement. One purchase, both licenses on the same token.'],
+        plugins: [['vassoura', 'VASSOURA', 'Muta ou apaga os trechos vazios dos clips.', 'Mutes or deletes the empty parts of the clips.'],
+                  ['rodo', 'RODO', 'Normaliza o pico dos clips pelo Clip Gain.', 'Normalizes the clip peaks with Clip Gain.']],
     },
     {
         id: 'mesa', nome: 'MESA', cor: '#f59e0b', tipo: ['VST3 · AU', 'VST3 · AU'], oculto: true,
@@ -279,11 +309,11 @@ export const PACKS = TODOS_PACKS.filter((p) => !p.oculto);
 
 // Seções da loja (pedido dele, 10/11: a home virou um card por seção, com o leque de produtos dentro, para não rolar demais).
 // Cada seção tem a página /plugins/<id>/ com os cards dos produtos. Um produto pode estar em mais de uma seção
-// (ALIGN e VASSOURA em Grátis e Mix, BAREBASS em Grátis e Synths). O "voltar" da página do pack vai para a 1ª seção paga em que ele aparece.
+// (ALIGN em Grátis e Mix, BAREBASS em Grátis e Synths; VASSOURA é paga desde 14/11). O "voltar" da página do pack vai para a 1ª seção paga em que ele aparece.
 export const SECOES = [
-    { id: 'gratis', nome: ['Grátis', 'Free'], cor: '#34d399', itens: ['align', 'barebass', 'vassoura'],
+    { id: 'gratis', nome: ['Grátis', 'Free'], cor: '#34d399', itens: ['align', 'barebass'],
       frase: ['Baixe e use agora, sem pagar nada.', 'Download and use them now, for free.'] },
-    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'magos', 'maestromagos', 'align', 'vassoura'],   // 'mesa' fora do site desde 14/11
+    { id: 'mix', nome: ['Mix', 'Mix'], cor: '#8b5cf6', itens: ['maestro', 'magos', 'maestromagos', 'vassoura', 'rodo', 'vassourarodo', 'align'],   // 'mesa' fora do site desde 14/11
       frase: ['Mix automática, masterização, fase do grave e limpeza de stems.', 'Auto mix, mastering, low-end phase and stem cleanup.'] },
     { id: 'synths', nome: ['Synths', 'Synths'], cor: '#e879f9', itens: ['quimera', 'limao', 'mercurio', 'resenha', 'groovador', 'barebass'],
       frase: ['Wavetable, ácido, FM, percussão e baixo.', 'Wavetable, acid, FM, percussion and bass.'] },

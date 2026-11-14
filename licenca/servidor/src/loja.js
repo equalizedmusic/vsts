@@ -459,7 +459,14 @@ a { color:#a78bfa; } .marca { font-weight:800; letter-spacing:.5px; margin-botto
 //   base: endereço dos links /baixar/<pacote>/<win|mac>; sistemas: só entram os links e passos dos marcados
 //   trocado: o token novo substituiu o da página grátis (avisa que o anterior parou de valer)
 
-const NOME_EXTRA = { align: 'ALIGN', barebass: 'BAREBASS', vassoura: 'VASSOURA', montamonta: 'MONTA-MONTA' };
+const NOME_EXTRA = { align: 'ALIGN', barebass: 'BAREBASS', vassoura: 'VASSOURA', rodo: 'RODO', montamonta: 'MONTA-MONTA' };
+// Max for Live (14/11/2026: VASSOURA e RODO pagos, com ativação): zip único Windows/Mac em /baixar/<id>/zip; arquivos da pasta
+export const M4L = {
+    vassoura: { amxd: 'Vassoura.amxd', arquivos: 'Vassoura.amxd, vassoura.js, vassoura_view.js e vassoura_strip.js',
+                arquivosEn: 'Vassoura.amxd, vassoura.js, vassoura_view.js and vassoura_strip.js' },
+    rodo: { amxd: 'Rodo.amxd', arquivos: 'Rodo.amxd, rodo.js, rodo_view.js e rodo_strip.js',
+            arquivosEn: 'Rodo.amxd, rodo.js, rodo_view.js and rodo_strip.js' },
+};
 export const nomePacote = (p) => (String(p).includes('+') ? String(p).split('+').map(nomePacote).join(' + ')
     : NOMES[p] || NOME_EXTRA[p] || String(p).toUpperCase());
 
@@ -467,9 +474,9 @@ export const nomePacote = (p) => (String(p).includes('+') ? String(p).split('+')
 const SITE_MANUAIS = 'https://insidestudiosp.com.br/manuais/';
 const ARQ_MANUAL = { align: 'ALIGN', barebass: 'BAREBASS', vassoura: 'VASSOURA', mesa: 'MESA', stompbox: 'STOMPBOX', maestro: 'MAESTRO',
     magos: 'MAGOS', criativo: 'SERIE-CRIATIVO', mix: 'SERIE-MIX', knob: 'SERIE-KNOB', quimera: 'QUIMERA', limao: 'LIMAO', mercurio: 'MERCURIO',
-    resenha: 'RESENHA', groovador: 'GROOVADOR' };
+    resenha: 'RESENHA', groovador: 'GROOVADOR', rodo: 'RODO' };
 // en = true: versão em inglês (<NOME>-Manual-EN.pdf), usada no bloco ENGLISH do e-mail
-export const linksManual = (pacote, en = false) => [...new Set(String(pacote).split('+').flatMap((p) => (p === 'maestromagos' ? ['maestro', 'magos'] : [p])))]
+export const linksManual = (pacote, en = false) => [...new Set(String(pacote).split('+').flatMap((p) => COMBOS[p] || [p]))]
     .filter((p) => ARQ_MANUAL[p]).map((p) => `  ${nomePacote(p)}: ${SITE_MANUAIS}${ARQ_MANUAL[p]}-Manual${en ? '-EN' : ''}.pdf`);
 
 function emailVenda({ url, pedido, conf, token, jaTinha }) {
@@ -483,7 +490,12 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
     const ola = primeiroNome(cliente);
     const W = sistemas.includes('win') || !sistemas.includes('mac'), M = sistemas.includes('mac') || !W;
     // combo: um link por plugin (MAESTRO, MASTER DOS MAGOS); pacote comum: um link só, como antes
-    const baixar = (so) => (downloads || [pacote]).map((p) => (downloads ? `  ${so === 'win' ? 'Windows' : 'Mac'} · ${nomePacote(p)}: ` : (so === 'win' ? '  Windows: ' : '  Mac:     ')) + `${base}/baixar/${p}/${so}`);
+    const itens = downloads || [pacote];
+    const vsts = itens.filter((p) => !M4L[p]), m4ls = itens.filter((p) => M4L[p]);
+    const V = vsts.length > 0, varios = itens.length > 1;
+    const baixar = (so) => vsts.map((p) => (varios ? `  ${so === 'win' ? 'Windows' : 'Mac'} · ${nomePacote(p)}: ` : (so === 'win' ? '  Windows: ' : '  Mac:     ')) + `${base}/baixar/${p}/${so}`);
+    const baixarM4l = (en) => m4ls.map((p) => `  ${en ? 'Max for Live (Windows and Mac)' : 'Max for Live (Windows e Mac)'} · ${nomePacote(p)}: ${base}/baixar/${p}/zip`);
+    const nomesM4l = m4ls.map(nomePacote).join(' e '), nomesM4lEn = m4ls.map(nomePacote).join(' and ');
     const data = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     const meio = pedido && (pedido.metodo === 'mp' ? 'Mercado Pago' : 'PayPal');
     const so = (cond, ...linhas) => (cond ? linhas : []);
@@ -516,31 +528,44 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
             '  com este mesmo e-mail. Guarde este e-mail.', '',
         ] : [`  Licença para ${maqPt}. Guarde este e-mail.`, '']),
         '1. BAIXAR',
-        ...(W ? baixar('win') : []),
-        ...(M ? baixar('mac') : []), '',
+        ...(V && W ? baixar('win') : []),
+        ...(V && M ? baixar('mac') : []),
+        ...baixarM4l(false), '',
         '2. INSTALAR',
-        ...so(W, '  Windows: rode o instalador .exe e siga as telas. Os plugins vão para C:\\Program Files\\Common Files\\VST3.'),
-        ...so(M, '  Mac: abra o .dmg, dê dois cliques no instalador .pkg e siga as telas (VST3 e AU em /Library/Audio/Plug-Ins).'),
-        '  Depois feche e abra de novo o seu DAW (se o plugin não aparecer, mande o DAW procurar plugins de novo' + (M ? ';' : ').'),
-        ...so(M, '  no Logic: Logic Pro > Ajustes > Plug-in Manager > "Redefinir e verificar").'), '',
+        ...so(m4ls.length,
+            `  ${nomesM4l} (Max for Live): precisa do Ableton Live 12.2 ou mais novo (Suite, ou Standard com Max for Live).`,
+            '  Extraia o zip e copie a pasta inteira para a User Library do Live:',
+            '    Windows: Documentos\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+            '    Mac:     Músicas/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/',
+            ...m4ls.map((p) => `  ${nomePacote(p)}: os arquivos ${M4L[p].arquivos} PRECISAM ficar juntos na mesma pasta.`),
+            ...m4ls.map((p) => `  No Live, arraste o ${M4L[p].amxd} para a PRIMEIRA faixa de áudio do projeto (no MASTER ele não funciona).`)),
+        ...so(V && W, '  Windows: rode o instalador .exe e siga as telas. Os plugins vão para C:\\Program Files\\Common Files\\VST3.'),
+        ...so(V && M, '  Mac: abra o .dmg, dê dois cliques no instalador .pkg e siga as telas (VST3 e AU em /Library/Audio/Plug-Ins).'),
+        ...so(V, '  Depois feche e abra de novo o seu DAW (se o plugin não aparecer, mande o DAW procurar plugins de novo' + (M ? ';' : ').')),
+        ...so(V && M, '  no Logic: Logic Pro > Ajustes > Plug-in Manager > "Redefinir e verificar").'), '',
         '3. ATIVAR',
-        '  Abra o plugin no DAW. Na tela de ativação, digite o e-mail e o token acima e clique em ATIVAR.',
-        '  Precisa de internet só nessa hora. O mesmo token ativa todos os plugins do pack.',
-        '  Vai trocar de computador? Menu ≡ do plugin > Licença... > Desativar este computador, e ative no novo.', '',
-        '4. SE APARECER AVISO DE SEGURANÇA',
-        '  Os instaladores ainda não têm assinatura digital paga, então ' + (W && M ? 'o Windows e o Mac podem avisar.' : W ? 'o Windows pode avisar.' : 'o Mac pode avisar.'),
-        '  É o aviso padrão para programa novo e sem assinatura, não quer dizer que o arquivo tenha vírus.',
-        ...so(W,
+        ...so(V,
+            '  Abra o plugin no DAW. Na tela de ativação, digite o e-mail e o token acima e clique em ATIVAR.',
+            '  Precisa de internet só nessa hora. O mesmo token ativa todos os plugins do pack.',
+            '  Vai trocar de computador? Menu ≡ do plugin > Licença... > Desativar este computador, e ative no novo.'),
+        ...so(m4ls.length,
+            `  ${nomesM4l}: no device, clique no botão OPEN. Na 1ª vez a janela pede o e-mail e o token acima: digite os dois`,
+            '  e clique em ACTIVATE. Precisa de internet só nessa hora; depois funciona sem internet por até 45 dias.'),
+        '',
+        ...so(V, '4. SE APARECER AVISO DE SEGURANÇA'),
+        ...so(V, '  Os instaladores ainda não têm assinatura digital paga, então ' + (W && M ? 'o Windows e o Mac podem avisar.' : W ? 'o Windows pode avisar.' : 'o Mac pode avisar.'),
+            '  É o aviso padrão para programa novo e sem assinatura, não quer dizer que o arquivo tenha vírus.'),
+        ...so(V && W,
             '  Windows:',
             '  a) Tela azul "O Windows protegeu o computador": clique em "Mais informações" > "Executar assim mesmo".',
             '  b) Chrome/Edge barrou o download: lista de downloads > "..." do arquivo > Manter > Manter assim mesmo.',
             '  c) O Defender apagou o arquivo: Segurança do Windows > Proteção contra vírus e ameaças > Histórico de proteção >',
             '     item do instalador > Ações > Restaurar. Outro antivírus: restaure da quarentena. Não precisa desligar o antivírus.'),
-        ...so(M,
+        ...so(V && M,
             '  Mac:',
             '  a) "A Apple não pode verificá-lo" / "desenvolvedor não identificado": OK > Ajustes do Sistema > Privacidade e',
             '     Segurança > "Abrir Mesmo Assim" e confirme com a senha. (macOS 14 ou anterior: Control + clique > Abrir.)',
-            '  b) "Está danificado": no Terminal, rode  xattr -dr com.apple.quarantine ~/Downloads/<nome do arquivo>'), '',
+            '  b) "Está danificado": no Terminal, rode  xattr -dr com.apple.quarantine ~/Downloads/<nome do arquivo>'), ...so(V, ''),
         ...so(manuais.length, 'MANUAL EM PDF (passo a passo de cada controle)', ...manuais, ''),
         `  Dúvidas ou dificuldade? Responda este e-mail ou escreva para ${CONTATO}. Instagram: @equalizedmusic`, '', '',
         '===================================== ENGLISH =====================================', '',
@@ -568,31 +593,44 @@ export function textoLicenca({ base, pacote, email, cliente = '', token, jaTinha
             '  with this same e-mail. Keep this e-mail.', '',
         ] : [`  License for ${maqEn}. Keep this e-mail.`, '']),
         '1. DOWNLOAD',
-        ...(W ? baixar('win') : []),
-        ...(M ? baixar('mac') : []), '',
+        ...(V && W ? baixar('win') : []),
+        ...(V && M ? baixar('mac') : []),
+        ...baixarM4l(true), '',
         '2. INSTALL',
-        ...so(W, '  Windows: run the .exe installer and follow the steps. The plugins go to C:\\Program Files\\Common Files\\VST3.'),
-        ...so(M, '  Mac: open the .dmg, double-click the .pkg installer and follow the steps (VST3 and AU in /Library/Audio/Plug-Ins).'),
-        '  Then close and reopen your DAW (if the plugin does not show up, rescan your plugins' + (M ? ';' : ').'),
-        ...so(M, '  in Logic: Logic Pro > Settings > Plug-in Manager > "Reset & Rescan Selection").'), '',
+        ...so(m4ls.length,
+            `  ${nomesM4lEn} (Max for Live): needs Ableton Live 12.2 or newer (Suite, or Standard with Max for Live).`,
+            '  Unzip it and copy the whole folder into the Live User Library:',
+            '    Windows: Documents\\Ableton\\User Library\\Presets\\Audio Effects\\Max Audio Effect\\',
+            '    Mac:     Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/',
+            ...m4ls.map((p) => `  ${nomePacote(p)}: the files ${M4L[p].arquivosEn} MUST stay together in the same folder.`),
+            ...m4ls.map((p) => `  In Live, drag ${M4L[p].amxd} onto the FIRST audio track of the set (it does not work on the MASTER).`)),
+        ...so(V && W, '  Windows: run the .exe installer and follow the steps. The plugins go to C:\\Program Files\\Common Files\\VST3.'),
+        ...so(V && M, '  Mac: open the .dmg, double-click the .pkg installer and follow the steps (VST3 and AU in /Library/Audio/Plug-Ins).'),
+        ...so(V, '  Then close and reopen your DAW (if the plugin does not show up, rescan your plugins' + (M ? ';' : ').')),
+        ...so(V && M, '  in Logic: Logic Pro > Settings > Plug-in Manager > "Reset & Rescan Selection").'), '',
         '3. ACTIVATE',
-        '  Open the plugin in your DAW. On the activation screen, type the e-mail and token above and click ATIVAR (activate).',
-        '  Internet is needed only at this moment. The same token activates every plugin in the pack.',
-        '  Changing computers? Plugin menu ≡ > Licença... > Desativar este computador (deactivate), then activate on the new one.', '',
-        '4. IF YOU SEE A SECURITY WARNING',
-        '  The installers do not have a paid digital signature yet, so ' + (W && M ? 'Windows and macOS may warn you.' : W ? 'Windows may warn you.' : 'macOS may warn you.'),
-        '  This is the standard warning for new unsigned software, it does not mean the file has a virus.',
-        ...so(W,
+        ...so(V,
+            '  Open the plugin in your DAW. On the activation screen, type the e-mail and token above and click ATIVAR (activate).',
+            '  Internet is needed only at this moment. The same token activates every plugin in the pack.',
+            '  Changing computers? Plugin menu ≡ > Licença... > Desativar este computador (deactivate), then activate on the new one.'),
+        ...so(m4ls.length,
+            `  ${nomesM4lEn}: on the device, click OPEN. The first time, the window asks for the e-mail and token above: type both`,
+            '  and click ACTIVATE. Internet is needed only at this moment; after that it works offline for up to 45 days.'),
+        '',
+        ...so(V, '4. IF YOU SEE A SECURITY WARNING',
+            '  The installers do not have a paid digital signature yet, so ' + (W && M ? 'Windows and macOS may warn you.' : W ? 'Windows may warn you.' : 'macOS may warn you.'),
+            '  This is the standard warning for new unsigned software, it does not mean the file has a virus.'),
+        ...so(V && W,
             '  Windows:',
             '  a) Blue screen "Windows protected your PC": click "More info" > "Run anyway".',
             '  b) Chrome/Edge blocked the download: downloads list > "..." of the file > Keep > Keep anyway.',
             '  c) Defender deleted the file: Windows Security > Virus & threat protection > Protection history >',
             '     installer item > Actions > Restore. Other antivirus: restore it from quarantine. No need to turn your antivirus off.'),
-        ...so(M,
+        ...so(V && M,
             '  macOS:',
             '  a) "Apple cannot check it" / "unidentified developer": OK > System Settings > Privacy & Security >',
             '     "Open Anyway" and confirm with your password. (macOS 14 or older: Control-click > Open.)',
-            '  b) "Is damaged": in Terminal, run  xattr -dr com.apple.quarantine ~/Downloads/<file name>'), '',
+            '  b) "Is damaged": in Terminal, run  xattr -dr com.apple.quarantine ~/Downloads/<file name>'), ...so(V, ''),
         ...so(manuais.length, 'PDF MANUAL (step-by-step guide to every control)', ...linksManual(pacote, true), ''),
         `  Questions or trouble? Reply to this e-mail or write to ${CONTATO}. Instagram: @equalizedmusic`, '',
         'InsideStudioSP',

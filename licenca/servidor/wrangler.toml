@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2025-09-01"
 workers_dev = true
 
-# Páginas do ALIGN, do BAREBASS e da VASSOURA no domínio do estúdio. O resto do domínio é o Worker do site (insidestudiosp-site).
+# Páginas do ALIGN, e do BAREBASS no domínio do estúdio. O resto do domínio é o Worker do site (insidestudiosp-site).
 routes = [
   { pattern = "insidestudiosp.com.br/align*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/align*", zone_name = "insidestudiosp.com.br" },
@@ -13,8 +13,7 @@ routes = [
   { pattern = "www.insidestudiosp.com.br/barebass*", zone_name = "insidestudiosp.com.br" },
   { pattern = "insidestudiosp.com.br/gratis/barebass/*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/gratis/barebass/*", zone_name = "insidestudiosp.com.br" },
-  { pattern = "insidestudiosp.com.br/vassoura*", zone_name = "insidestudiosp.com.br" },
-  { pattern = "www.insidestudiosp.com.br/vassoura*", zone_name = "insidestudiosp.com.br" },
+  # /vassoura* saiu em 14/11/2026: a VASSOURA virou paga e a página dela é a do site (insidestudiosp-site)
   # downloads de todos os pacotes (links do e-mail da licença, do painel e das páginas); o site não usa /baixar
   { pattern = "insidestudiosp.com.br/baixar/*", zone_name = "insidestudiosp.com.br" },
   { pattern = "www.insidestudiosp.com.br/baixar/*", zone_name = "insidestudiosp.com.br" },

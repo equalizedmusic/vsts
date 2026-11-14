@@ -1,15 +1,25 @@
 RODO — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
+Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/rodo/
 Normaliza o PICO dos clips de áudio do Arrangement pelo Clip Gain. Par da VASSOURA.
 
 INSTALAR
 1. Copie a pasta inteira (Rodo-<versão>) para:
    Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
-   Os 3 arquivos (Rodo.amxd, rodo.js e rodo_view.js) PRECISAM ficar juntos.
+   Os 4 arquivos (Rodo.amxd, rodo.js, rodo_view.js e rodo_strip.js) PRECISAM ficar juntos.
 2. No Live, arraste o Rodo.amxd para a PRIMEIRA faixa de áudio do projeto.
    No MASTER ele não funciona: o ANALYZE não lê os clips.
 
+ATIVAR (1ª vez)
+1. No device, clique OPEN THE MAGIC. A janela abre na tela ACTIVATE RODO.
+2. Clique no campo E-MAIL e digite o e-mail da compra; clique em TOKEN e cole o token
+   (ISP-XXXX-XXXX-XXXX-XXXX-XXXX) que chegou no e-mail. Clique ACTIVATE (precisa de internet).
+3. Vale em até 2 computadores. Sem internet, segue valendo por 45 dias; com internet ele
+   confirma sozinho. LICENSE (canto da janela) mostra a licença e DEACTIVATE THIS COMPUTER
+   libera a vaga para outro computador.
+
 USAR
-1. Clique ANALYZE (no device ou na janela). Clique OPEN para ver a janela.
+1. No device fica só o botão OPEN THE MAGIC: todos os controles estão na janela.
+   Clique ANALYZE na janela.
    O RODO lê o arquivo de cada clip e mede o pico do trecho que o clip toca.
 2. Ajuste (a janela redesenha na hora, sem reler os arquivos):
    - TARGET (-12 a -0.3 dB, padrão -6): onde o pico vai parar
@@ -41,3 +51,5 @@ SE DER ERRO
 - A cada ANALYZE o RODO grava o arquivo RODO-log.txt na mesma pasta do device.
   Se o Live fechar, mande esse arquivo: a última linha mostra onde parou.
 - "v8: can't find rodo.js" = os arquivos não estão na mesma pasta do .amxd.
+- "E-mail ou token não conferem" = confira os dois como vieram no e-mail da compra.
+- "Limite de computadores" = desative num dos outros (LICENSE > DEACTIVATE) ou escreva para o suporte.

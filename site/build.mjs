@@ -1,11 +1,12 @@
 // Gera o site estático em site/dist: node site/build.mjs
-//   /                 loja (VASSOURA e ALIGN em destaque + todos os packs)
+//   /                 loja (seções: Grátis, Mix, Synths, Pedais, Packs)
 //   /<pack>/          página do pack (plugins, galeria, compra)
 //   /estudio/         o estúdio e o artista (fotos, vídeos, Spotify, YouTube)
 //   /contato/         formulário de contato: POST /contato/enviar (servidor de licenças) ⇒ e-mail para contato@ ⇒ Caixa de entrada do painel
 // Texto bilíngue no mesmo HTML: <span class="pt"> e <span class="en">; o site.js troca pelo atributo lang.
 
-import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, copyFileSync, readdirSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE, PACKS, LIC, FAQ, OFERTA_FIM, OFERTA_ATIVA, SECOES } from './dados.mjs';
@@ -25,8 +26,8 @@ const valor = (p) => t(brl(p.preco.brl), temUsd(p) ? usd(p.preco.usd) : brl(p.pr
 // oferta de lançamento: "de" riscado + desconto (só em reais; em dólar não há "de")
 const off = (p) => Math.round((1 - p.preco.brl / p.de) * 100);
 // requisitos de sistema (CMakeLists: macOS mínimo 11.0, universal arm64+x86_64; instalador Windows só x64)
-const REQ = () => t('Requisitos: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel)', 'Requirements: Windows 10 or 11 (64-bit) · macOS 11 Big Sur or newer (Apple Silicon and Intel)');
-const ehVst = (p) => !p.direto;   // a VASSOURA é Max for Live: segue o requisito do Ableton, não o dos instaladores
+const REQ = (p) => p?.m4l ? t('Requisito: Ableton Live 12.2 ou mais novo (Suite, ou Standard com Max for Live) · Windows e Mac', 'Requirement: Ableton Live 12.2 or newer (Suite, or Standard with Max for Live) · Windows and Mac') : t('Requisitos: Windows 10 ou 11 (64 bits) · macOS 11 Big Sur ou mais novo (Apple Silicon e Intel)', 'Requirements: Windows 10 or 11 (64-bit) · macOS 11 Big Sur or newer (Apple Silicon and Intel)');
+const ehVst = (p) => !p.m4l && !p.direto;   // Max for Live (VASSOURA, RODO): o requisito vai na caixa de compra (REQ(p))
 const deRiscado = (p) => p.de && temBrl(p) ? `<s class="de so-oferta" data-fim="${p.fim}">${brl(p.de)}</s>` : '';
 // contador regressivo (site.js atualiza a cada segundo; sem JS fica a data final)
 const fimTxt = (fim) => new Date(fim).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
@@ -99,7 +100,8 @@ function caixaCompra(p) {
     <div class="preco-de so-oferta" data-fim="${p.fim}">${t('de', 'from')} ${deRiscado(p)} ${t('por', 'now')}</div>` : ''}
     ${p.soma && temBrl(p) && p.soma > p.preco.brl ? `<div class="preco-de">${t('separados', 'separately')} <s class="de">${brl(p.soma)}</s> ${t('juntos por', 'together for')}</div>` : ''}
     <div class="preco">${temBrl(p) ? valor(p) : usd(p.preco.usd)}</div>
-    <p class="req">${REQ()}</p>
+    ${p.avisoPreco ? `<p class="aviso-preco">${t(...p.avisoPreco)}</p>` : ''}
+    <p class="req">${REQ(p)}</p>
     <a class="bt bt-principal bt-carrinho" href="/carrinho/?add=${p.id}" data-add="${p.id}">${t('+ Adicionar ao carrinho', '+ Add to cart')}</a>
     <div class="no-carrinho" hidden>
       <p class="no-carrinho-ok">${t('✓ ' + p.nome + ' está no seu carrinho', '✓ ' + p.nome + ' is in your cart')}</p>
@@ -121,7 +123,7 @@ function avisoCompletaCombo(p) {
     const outro = PACKS.find((x) => x.id === c.combo.find((y) => y !== p.id));
     if (!outro) return '';
     return `<p class="nota nota-combo">${t(`Já comprou o ${outro.nome}? No carrinho, use o mesmo e-mail da compra: o ${p.nome} sai só pelo que falta para fechar o combo dos dois (${brl(c.preco.brl)}). O valor com o abatimento aparece no Mercado Pago, antes de você pagar.`,
-        `Already bought ${outro.nome}? In the cart, use the same e-mail:${p.nome} costs only what is left to reach the bundle price (${brl(c.preco.brl)}). The reduced amount shows on Mercado Pago before you pay.`)}</p>`;
+        `Already bought ${outro.nome}? In the cart, use the same e-mail: ${p.nome} costs only what is left to reach the bundle price (${brl(c.preco.brl)}). The reduced amount shows on Mercado Pago before you pay.`)}</p>`;
 }
 
 // cupom de desconto (12/11): o site.js confere em /loja/cupom e mostra o total com desconto; quem cobra é o servidor.
@@ -302,7 +304,7 @@ function loja() {
     const [gratis, ...outras] = SECOES;
     return pagina({
         titulo: 'InsideStudioSP — Plugins',
-        descricao: 'Plugins VST3/AU e Max for Live feitos em São Paulo: ALIGN, VASSOURA, MAESTRO e mais.',
+        descricao: 'Plugins VST3/AU e Max for Live feitos em São Paulo: MAESTRO, VASSOURA, RODO, ALIGN e mais.',
         corpo: `
 ${bannerLancamento(PACKS.find((p) => p.lancamento))}
 <section class="hero"><div class="faixa">
@@ -341,7 +343,7 @@ ${bannerLancamento(PACKS.find((p) => p.lancamento))}
 
 // Manual em PDF de cada pack (arquivos em site/manuais/, copiados para /manuais/). Combo = os dois manuais.
 const MANUAIS = {
-    align: ['ALIGN'], barebass: ['BAREBASS'], vassoura: ['VASSOURA'], mesa: ['MESA'], stompbox: ['STOMPBOX'],
+    align: ['ALIGN'], barebass: ['BAREBASS'], vassoura: ['VASSOURA'], rodo: ['RODO'], vassourarodo: ['VASSOURA', 'RODO'], mesa: ['MESA'], stompbox: ['STOMPBOX'],
     maestro: ['MAESTRO'], magos: ['MAGOS'], maestromagos: ['MAESTRO', 'MAGOS'], criativo: ['SERIE-CRIATIVO'],
     mix: ['SERIE-MIX'], knob: ['SERIE-KNOB'], quimera: ['QUIMERA'], limao: ['LIMAO'], mercurio: ['MERCURIO'],
     resenha: ['RESENHA'], groovador: ['GROOVADOR'],
@@ -355,8 +357,16 @@ const linkManual = (p) => {
     return `<p class="manual">${m.map((f) => a(f, false) + a(f, true)).join('<span> · </span>')}</p>`;
 };
 
+// Max for Live: fotos da janela e do device (só as que existem em img/; geradas pelo m4l-imagens.py a partir de tmp/shots-m4l)
+const fotosPack = (p) => (p.fotos || []).filter(([img]) => existsSync(join(RAIZ, 'img', img + '.webp')));
 function paginaPack(p) {
-    const galeria = p.plugins.length > 1
+    const fotos = fotosPack(p);
+    const galeria = fotos.length
+        ? `<section class="faixa"><h2 class="secao">${t('Por dentro', 'Inside')}</h2>
+  <div class="grade-plugins">${fotos.map(([img, pt, en]) => `<figure class="plugin">
+    <button type="button" class="ampliar" data-img="/img/${img}.webp"><img src="/img/${img}.webp" alt="${esc(t(pt, en).replace(/<[^>]+>/g, ''))}" loading="lazy"></button>
+    <figcaption><span>${t(pt, en)}</span></figcaption></figure>`).join('')}</div></section>`
+        : p.plugins.length > 1
         ? `<section class="faixa"><h2 class="secao">${t(`Os ${p.plugins.length} plugins`, `The ${p.plugins.length} plugins`)}</h2>
   <div class="grade-plugins">${p.plugins.map(([img, nome, pt, en]) => `<figure class="plugin">
     <button type="button" class="ampliar" data-img="/img/${img}.webp"><img src="/img/${img}.webp" alt="${esc(nome)}" loading="lazy"></button>
@@ -493,7 +503,7 @@ function privacidade() {
           'Purchase: your full name, e-mail, the pack, the amount, the payment method and the order status, to issue and send your license. Your name and e-mail also go to Mercado Pago, to identify the purchase. Card and Pix details stay with Mercado Pago and never reach us.'],
          ['Licença: o e-mail, o token (guardado só em hash, não dá para ler de volta) e, para cada computador ativado, um código anônimo da máquina e o nome do computador, para controlar o limite de 2 computadores.',
           'License: your e-mail, the token (stored only as a hash, it cannot be read back) and, for each activated computer, an anonymous machine code and the computer name, to enforce the 2-computer limit.'],
-         ['Downloads grátis (ALIGN e VASSOURA): o e-mail, para mandar o link e o token.', 'Free downloads (ALIGN and VASSOURA): your e-mail, to send the link and the token.'],
+         ['Downloads grátis (ALIGN e BAREBASS): o e-mail, para mandar o link e o token.', 'Free downloads (ALIGN and BAREBASS): your e-mail, to send the link and the token.'],
          ['Contato: nome, e-mail e a conversa, para responder você.', 'Contact: name, e-mail and the conversation, to reply to you.'],
          ['Segurança: o endereço IP de compras e de tentativas de ativação, para barrar abuso e fraude.',
           'Security: the IP address of purchases and activation attempts, to block abuse and fraud.']],
@@ -541,6 +551,8 @@ grava('contato/enviado/index.html', paginaAviso('Mensagem enviada', 'Recebemos s
 grava('contato/erro/index.html', paginaAviso('Erro', 'Confira o nome, o e-mail e a mensagem e tente de novo. Se continuar, escreva para contato@insidestudiosp.com.br.', 'Check your name, e-mail and message and try again. If it keeps failing, write to contato@insidestudiosp.com.br.'));
 grava('contato/limite/index.html', paginaAviso('Erro', 'Muitas mensagens seguidas daqui. Tente de novo mais tarde ou escreva para contato@insidestudiosp.com.br.', 'Too many messages in a row. Try again later or write to contato@insidestudiosp.com.br.'));
 grava('404.html', pagina({ titulo: 'InsideStudioSP', descricao: '', corpo: `<section class="hero"><div class="faixa"><h1>404</h1><p class="lead">${t('Página não encontrada.', 'Page not found.')} <a href="/">${t('Voltar para a loja', 'Back to the shop')}</a></p></div></section>` }));
+// fotos dos devices Max for Live (tmp/shots-m4l -> img/*.webp); sem Python/Pillow segue com as que já estão em img/
+ try { execFileSync('python', [join(RAIZ, 'm4l-imagens.py')], { stdio: 'inherit' }); } catch (e) { console.warn('m4l-imagens.py não rodou:', e.message); }
 mkdirSync(join(DIST, 'img'), { recursive: true });
 for (const f of readdirSync(join(RAIZ, 'img'))) copyFileSync(join(RAIZ, 'img', f), join(DIST, 'img', f));
 mkdirSync(join(DIST, 'manuais'), { recursive: true });

@@ -7,7 +7,7 @@ name: release-max4live
 on:
   push:
     branches: [main]
-    paths: ['max4live/**', 'novidades/Vassoura.md', '.github/workflows/release-max4live.yml']
+    paths: ['max4live/**', 'novidades/Vassoura.md', 'novidades/Rodo.md', '.github/workflows/release-max4live.yml']
   workflow_dispatch:
 
 permissions:
@@ -31,7 +31,7 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           set -euo pipefail
-          for build in max4live/*/build-*.js; do
+          for build in max4live/[!_]*/build-*.js; do
             dir=$(dirname "$build"); dev=$(basename "$dir")
             Nome="$(tr '[:lower:]' '[:upper:]' <<< "${dev:0:1}")${dev:1}"
             nov="novidades/$Nome.md"
@@ -51,6 +51,7 @@ jobs:
               awk -v v="$ver" '$0 ~ "^## "v {on=1; next} on && /^## / {exit} on' "$nov"
               echo
               echo "Download: \`$pasta.zip\` aqui embaixo em Assets. Max for Live (Live Suite, ou Standard com Max for Live)."
+              echo "Ativar: na 1ª vez, OPEN THE MAGIC > e-mail + token da compra > ACTIVATE."
               echo "Instalar: copie a pasta \`$pasta\` inteira para \`User Library/Presets/Audio Effects/Max Audio Effect/\` e arraste o \`.amxd\` para a primeira faixa de áudio do projeto (no master ele não analisa)."
             } > "$notas"
             gh release create "$tag" "$pub/$pasta.zip" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
