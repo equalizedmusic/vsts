@@ -78,7 +78,8 @@ const GATILHOS = [
             const oferta = Date.now() < Date.parse(fimOferta('vassoura'));
             return 'Opa! Aqui está a VASSOURA 🧹\n\nLimpa os clips vazios do Ableton Live (12.2 ou mais novo), faixa por faixa.\n\n'
                 + (oferta ? 'Preço de lançamento: R$ 24,90 até 27/11 (sexta, 23h59). Com o RODO, os dois saem por R$ 39,90.\n\n' : '')
-                + '👉 https://insidestudiosp.com.br/vassoura/\n\nJá tem a VASSOURA? A atualização é grátis: a licença foi para o e-mail do seu cadastro.';
+                + '👉 https://insidestudiosp.com.br/vassoura/\n\nCombo VASSOURA + RODO 👉 https://insidestudiosp.com.br/vassourarodo/\n\n'
+                + 'Já tem a VASSOURA? A atualização é grátis: a licença foi para o e-mail do seu cadastro.';
         },
         publico: PUBLICO,
     },
@@ -89,7 +90,8 @@ const GATILHOS = [
             const oferta = Date.now() < Date.parse(fimOferta('rodo'));
             return 'Opa! Aqui está o RODO 🧽\n\nNormaliza o pico de todos os clips de áudio do Ableton Live (12.2 ou mais novo) num clique, com o TARGET que você escolher.\n\n'
                 + (oferta ? 'Preço de lançamento: R$ 24,90 até 27/11 (sexta, 23h59). Com a VASSOURA, os dois saem por R$ 39,90.\n\n' : '')
-                + '👉 https://insidestudiosp.com.br/rodo/\n\nPix ou cartão.';
+                + '👉 https://insidestudiosp.com.br/rodo/\n\nCombo VASSOURA + RODO 👉 https://insidestudiosp.com.br/vassourarodo/\n\n'
+                + 'Comprou a VASSOURA? Levando o RODO você paga só a diferença do combo. Pix ou cartão.';
         },
         publico: PUBLICO,
     },
