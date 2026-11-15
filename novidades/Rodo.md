@@ -4,6 +4,11 @@ Device Max for Live (pasta `max4live/rodo`), par da VASSOURA. A versão é o pri
 ela vira o release `rodo-vx.y.z` do GitHub (zip `Rodo-x.y.z.zip`), publicado pelo workflow `release-max4live.yml`.
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.2 — 2026-11-15
+- **Corrigido de vez: o RODO pedia e-mail e token toda vez que o set era reaberto.** O Max não estava deixando
+  gravar o arquivo da licença. Agora a licença é gravada de dois jeitos diferentes, e o computador é reconhecido
+  sempre como o mesmo: mesmo no pior caso, ativar de novo não gasta outra vaga. O token é o mesmo de antes.
+
 ## 0.3.1 — 2026-11-15
 - **Corrigido: o RODO voltava a pedir e-mail e token ao reabrir o set.** Quando o device era aberto de dentro do set,
   fora da pasta do usuário, a licença não era encontrada e cada abertura contava como um computador novo. Agora a

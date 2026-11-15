@@ -25,7 +25,7 @@ var BUF = "rodo_scan";
 var DICT = "rodo_data";   // leve: faixas, clips, picos e ganhos (republicado a cada mudança de TARGET/MODE)
 var DICT_ENV = "rodo_env"; // pesado: contorno das ondas (só depois do ANALYZE)
 var WIN_MS = 10;
-var VERSAO = "0.3.1";
+var VERSAO = "0.3.2";
 var BUILD = "";           // marca do pacote de teste no log ("teste"...); vazio na versão publicada
 var LIC_PACOTE = "rodo", LIC_NOME = "RODO";   // licença: bloco LICENÇA no fim (colado pelo build-rodo.js)
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/rodo/zip";

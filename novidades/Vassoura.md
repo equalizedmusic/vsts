@@ -5,6 +5,11 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.3 — 2026-11-15
+- **Corrigido de vez: a VASSOURA pedia e-mail e token toda vez que o set era reaberto.** O Max não estava deixando
+  gravar o arquivo da licença. Agora a licença é gravada de dois jeitos diferentes, e o computador é reconhecido
+  sempre como o mesmo: mesmo no pior caso, ativar de novo não gasta outra vaga. O token é o mesmo de antes.
+
 ## 0.3.2 — 2026-11-15
 - **Corrigido: a VASSOURA voltava a pedir e-mail e token ao reabrir o set.** Quando o device era aberto de dentro do
   set, fora da pasta do usuário, a licença não era encontrada e cada abertura contava como um computador novo. Agora a

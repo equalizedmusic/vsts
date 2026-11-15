@@ -3,9 +3,9 @@
 // LIC_NOME ("RODO"), VERSAO, e as funções licMudou() (avisa janela/device) e log().
 // Mesmo servidor e mesmo protocolo dos VSTs (licenca/cliente/IspLicenca.h): POST /v1/ativar|validar|desativar com
 // { pacote, email, token, maquina, nome_maquina, versao } -> { ok, licenca: { dados, assinatura } } (Ed25519).
-// Arquivo: Windows <home>/AppData/Roaming/InsideStudioSP-<pacote>.lic · Mac <home>/Library/Application Support/...
-// (pasta que sempre existe: o File do Max não cria pasta). Sem home reconhecível no caminho do device: pasta do device.
-// Id do computador: número aleatório gravado uma vez em InsideStudioSP-m4l.id (mesma pasta), mandado como hash.
+// Arquivo: InsideStudioSP-<pacote>-licenca.txt (ou .json pelo Dict) em <home>/AppData/Roaming (Win) · <home>/Library/Application Support (Mac)
+// e na pasta comum fixa (C:/Users/Public/Documents · /Users/Shared); detalhes em licTestaPasta.
+// Id do computador: derivado do PC (licIdDoPc) e gravado em InsideStudioSP-m4l-id.txt, mandado como hash.
 // Vale 45 dias sem internet; com mais de 3 dias confirma sozinho em segundo plano.
 // Isto segura o repasse casual (zip + pasta copiada para outro PC); o código do device é texto aberto.
 
@@ -30,11 +30,20 @@ function licSub() { return licMac() ? "/Library/Application Support/" : "/AppDat
 // a licença caía na pasta do device (ou em lugar nenhum), não gravava, e cada abertura gerava um id de PC novo
 // ⇒ pedia o token de novo e estourava o limite de computadores. Agora: várias pastas candidatas, cada uma testada
 // gravando de verdade; a licença e o id vão para TODAS as que aceitam e são lidos da primeira que tiver.
-var licPastasCache = null, licHomeAchada = "";
+var licPastasCache = null, licHomeAchada = "", licHomesVistos = [];
+// 15/11 (3), mesmo cliente com a 0.3.1/0.3.2: diag [h0 s1 c0 d0 n0] = NENHUMA pasta gravou+leu, nem C:/Users/Public/
+// Documents (que qualquer usuário grava). O defeito não era a pasta: era o arquivo. Nenhuma licença M4L ficou gravada
+// até hoje (nenhum "validou" no banco). Suspeita forte: o File do Max filtra pelo tipo ("TEXT") e a extensão .tmp/.lic/.id
+// não é TEXT no Windows. Sem Max real aqui para provar, a correção cobre as três saídas:
+//   1) arquivos .txt e File aberto com e sem a lista de tipos (e "readwrite" se "write" não abrir);
+//   2) se o File não gravar+ler, a mesma informação vai por Dict.export_json/import_json (.json), outro caminho do Max;
+//   3) id do PC sem arquivo gravado = DERIVADO do PC (perfis de C:/Users + pasta do Max), não aleatório: se nada
+//      gravar, reabrir pede ATIVAR de novo mas cai na MESMA vaga (o servidor reaproveita a máquina, sem "limite").
 function licTestaPasta(p) {
-	var t = p + "InsideStudioSP-teste.tmp";
-	if (!licGrava(t, "ok")) return false;
-	return licLe(t) == "ok";
+	var t = "InsideStudioSP-teste";
+	if (licGravaArq(p + t + ".txt", "ok") && licLe(p + t + ".txt") == "ok") return "f";
+	if (licDictGrava(p + t + ".json", "ok") && licDictLe(p + t + ".json") == "ok") return "j";
+	return "";
 }
 function licHomesDoDisco() {
 	// pastas de usuário do disco (C:/Users no Windows, /Users no Mac); só a do usuário atual aceita gravação
@@ -62,6 +71,7 @@ function licHomesDoDisco() {
 		} catch (e) { }
 	}
 	licDiag.s = homes.length;
+	licHomesVistos = homes.slice();
 	return homes;
 }
 // 15/11 (2), mesmo cliente: no dia seguinte o device abriu do set (caminho sem /Users/) e a varredura de C:/Users não
@@ -69,9 +79,10 @@ function licHomesDoDisco() {
 // depender de caminho nem de listar pasta: C:/Users/Public/Documents (Win) e /Users/Shared (Mac).
 function licPastaComum() { return licMac() ? "/Users/Shared/" : "C:/Users/Public/Documents/"; }
 // diagnóstico curto que vai junto da versão (o cliente não precisa abrir o console do Max): h = home pelo caminho,
-// s = perfis achados na varredura, c = pasta comum gravou, d = pasta do device gravou, n = pastas que gravaram
-var licDiag = { h: 0, s: 0, c: 0, d: 0, n: 0 };
-function licDiagTexto() { licPastas(); return "[h" + licDiag.h + " s" + licDiag.s + " c" + licDiag.c + " d" + licDiag.d + " n" + licDiag.n + "]"; }
+// s = perfis achados na varredura, c = pasta comum gravou, d = pasta do device gravou, n = pastas que gravaram,
+// f = pastas que gravaram pelo File, j = pastas que só gravaram pelo Dict, i = id do PC: 1 lido do disco, 2 derivado do PC
+var licDiag = { h: 0, s: 0, c: 0, d: 0, n: 0, f: 0, j: 0, i: 0 };
+function licDiagTexto() { licPastas(); licMaquina(); return "[h" + licDiag.h + " s" + licDiag.s + " c" + licDiag.c + " d" + licDiag.d + " n" + licDiag.n + " f" + licDiag.f + " j" + licDiag.j + " i" + licDiag.i + "]"; }
 function licPastas() {
 	if (licPastasCache) return licPastasCache;
 	var cand = [], vistos = {};
@@ -84,35 +95,82 @@ function licPastas() {
 	poe(licPastaComum(), "", "c");
 	var dev = pastaDoDevice();
 	if (dev) poe(dev, "", "d");
-	var ok = [];
-	licDiag.c = 0; licDiag.d = 0;
-	for (var j = 0; j < cand.length; j++) if (licTestaPasta(cand[j].p)) {
-		ok.push(cand[j].p);
+	var ok = [], vias = [];
+	licDiag.c = 0; licDiag.d = 0; licDiag.f = 0; licDiag.j = 0;
+	for (var j = 0; j < cand.length; j++) {
+		var via = licTestaPasta(cand[j].p);
+		if (!via) continue;
+		ok.push({ p: cand[j].p, via: via });
+		vias.push(cand[j].p + " (" + (via == "f" ? "File" : "Dict") + ")");
+		licDiag[via]++;
 		if (!licHomeAchada && cand[j].home) licHomeAchada = cand[j].home;
 		if (cand[j].tipo) licDiag[cand[j].tipo] = 1;
 	}
 	licDiag.n = ok.length;
-	try { log(LIC_NOME + ": pastas da licença " + (ok.length ? ok.join(" | ") : "NENHUMA gravou (testei " + cand.map(function (c) { return c.p; }).join(" | ") + ")") + "\n"); } catch (e) { }
+	try { log(LIC_NOME + ": pastas da licença " + (ok.length ? vias.join(" | ") : "NENHUMA gravou (testei " + cand.map(function (c) { return c.p; }).join(" | ") + ")") + "\n"); } catch (e) { }
 	if (ok.length) licPastasCache = ok;   // vazio não fica em cache: tenta de novo na próxima chamada
 	return ok;
 }
-function licLeDeAlguma(nome) {
+// nome = base sem extensão; File usa <base>.txt, Dict usa <base>.json. Lê também o nome antigo (.lic/.id) por garantia.
+function licLeNaPasta(pa, nome, antigo) {
+	if (pa.via == "j") return licDictLe(pa.p + nome + ".json");
+	return licLe(pa.p + nome + ".txt") || (antigo ? licLe(pa.p + antigo) : "");
+}
+function licLeDeAlguma(nome, antigo) {
 	var ps = licPastas();
-	for (var i = 0; i < ps.length; i++) { var s = licLe(ps[i] + nome); if (s) return s; }
+	for (var i = 0; i < ps.length; i++) { var s = licLeNaPasta(ps[i], nome, antigo); if (s) return s; }
 	return "";
 }
 function licGravaEmTodas(nome, texto) {
 	var ps = licPastas(), n = 0;
-	for (var i = 0; i < ps.length; i++) if (licGrava(ps[i] + nome, texto) && licLe(ps[i] + nome) == texto) n++;
+	for (var i = 0; i < ps.length; i++) {
+		var ok = ps[i].via == "j" ? licDictGrava(ps[i].p + nome + ".json", texto) : licGravaArq(ps[i].p + nome + ".txt", texto);
+		if (ok && licLeNaPasta(ps[i], nome, "") == texto) n++;
+	}
 	return n > 0;
 }
-function licNomeArq() { return "InsideStudioSP-" + LIC_PACOTE + ".lic"; }
-function licArquivo() { var ps = licPastas(); return (ps[0] || "") + licNomeArq(); }   // só para mensagens
+function licNomeArq() { return "InsideStudioSP-" + LIC_PACOTE + "-licenca"; }
+function licNomeAntigo() { return "InsideStudioSP-" + LIC_PACOTE + ".lic"; }
+function licArquivo() { var ps = licPastas(); return ps[0] ? ps[0].p + licNomeArq() + (ps[0].via == "j" ? ".json" : ".txt") : licNomeArq(); }   // só para mensagens
+
+// File do Max: tenta com a lista de tipos e sem ela (e "readwrite" quando "write" não abre um arquivo novo)
+function licAbre(caminho, modo) {
+	var tent = modo == "read" ? [["read", 1], ["read", 0]] : [["write", 1], ["write", 0], ["readwrite", 1], ["readwrite", 0]];
+	for (var i = 0; i < tent.length; i++) {
+		try {
+			var f = tent[i][1] ? new File(caminho, tent[i][0], "TEXT") : new File(caminho, tent[i][0]);
+			if (f && f.isopen) return f;
+			try { if (f) f.close(); } catch (e) { }
+		} catch (e) { }
+	}
+	return null;
+}
+// Dict do Max: { "v": texto } exportado/importado como JSON
+function licDictGrava(caminho, texto) {
+	try {
+		if (typeof Dict == "undefined") return false;
+		var d = new Dict();
+		d.set("v", String(texto));
+		d.export_json(caminho);
+		try { d.freepeer(); } catch (e) { }
+		return true;
+	} catch (e) { return false; }
+}
+function licDictLe(caminho) {
+	try {
+		if (typeof Dict == "undefined") return "";
+		var d = new Dict();
+		d.import_json(caminho);
+		var v = d.get("v");
+		try { d.freepeer(); } catch (e) { }
+		return v == null ? "" : String(v);
+	} catch (e) { return ""; }
+}
 
 function licLe(caminho) {
 	try {
-		var f = new File(caminho, "read", "TEXT");
-		if (!f.isopen) return "";
+		var f = licAbre(caminho, "read");
+		if (!f) return "";
 		var s = "", parte;
 		f.position = 0;
 		while (f.position < f.eof) {
@@ -124,30 +182,42 @@ function licLe(caminho) {
 		return s;
 	} catch (e) { return ""; }
 }
-function licGrava(caminho, texto) {
+function licGravaArq(caminho, texto) {
 	try {
-		var f = new File(caminho, "write", "TEXT");
-		if (!f.isopen) return false;
+		var f = licAbre(caminho, "write");
+		if (!f) return false;
 		try { f.eof = 0; } catch (e) { }
 		f.writestring(texto);
 		f.close();
 		return true;
 	} catch (e) { return false; }
 }
-function licApaga(caminho) { licGrava(caminho, ""); }
-
 // ---- id deste computador (hash; o número bruto não sai daqui)
+// Lido do disco quando existe; senão DERIVADO do PC (sempre o mesmo nesta máquina, mesmo que nada consiga gravar).
 var licMaqCache = "";
+function licIdDoPc() {
+	var hs = licHomesVistos.length ? licHomesVistos : (licHome() ? [licHome()] : []);
+	var nomes = hs.map(function (h) { return String(h).replace(/^.*\//, "").toLowerCase(); }).sort();
+	var app = "";
+	try { app = String(max.apppath || "").replace(/\\/g, "/").toLowerCase(); } catch (e) { }
+	return hexDe(sha512(utf8("InsideStudioSP|m4l-pc|" + (licMac() ? "mac" : "win") + "|" + nomes.join(",") + "|" + app)).slice(0, 26));
+}
 function licMaquina() {
 	if (licMaqCache) return licMaqCache;
-	var id = licLeDeAlguma("InsideStudioSP-m4l.id").replace(/[^0-9a-f]/g, "");
+	licPastas();
+	var id = licLeDeAlguma("InsideStudioSP-m4l-id", "InsideStudioSP-m4l.id").replace(/[^0-9a-f]/g, "");
+	licDiag.i = 1;
 	if (id.length < 32) {
-		id = "";
-		for (var i = 0; i < 40; i++) id += Math.floor(Math.random() * 16).toString(16);
-		id += (new Date().getTime()).toString(16);
+		if (licPastasCache && licPastasCache.length) {
+			// grava em disco: id aleatório, como sempre (dois PCs iguais não colidem)
+			id = "";
+			for (var i = 0; i < 40; i++) id += Math.floor(Math.random() * 16).toString(16);
+			id += (new Date().getTime()).toString(16);
+			licDiag.i = 3;
+		} else { id = licIdDoPc(); licDiag.i = 2; }   // nada grava: o mesmo id em toda abertura (ver /v1/recuperar)
 	}
 	// regrava em todas as pastas que aceitam (a que faltava passa a ter o mesmo id)
-	licGravaEmTodas("InsideStudioSP-m4l.id", id);
+	licGravaEmTodas("InsideStudioSP-m4l-id", id);
 	licMaqCache = hexDe(sha512(utf8("InsideStudioSP|m4l|" + id)).slice(0, 32));
 	return licMaqCache;
 }
@@ -160,7 +230,7 @@ function licNomeMaquina() {
 
 // ---- carregar / conferir
 function licCarrega() {
-	var txt = licLeDeAlguma(licNomeArq());
+	var txt = licLeDeAlguma(licNomeArq(), licNomeAntigo());
 	var lido = null;
 	try { lido = txt ? JSON.parse(txt) : null; } catch (e) { lido = null; }
 	lic.ok = false;
@@ -170,7 +240,15 @@ function licCarrega() {
 		lic.ok = true;
 		lic.msg = "";
 		var agoraS = Math.floor(new Date().getTime() / 1000);
-		if (!licConfirmou && agoraS - lic.emitida > 3 * 86400) { licConfirmou = true; licPede("validar", lic.email, lic.token, false); }
+		if (!licConfirmou && agoraS - lic.emitida > 3 * 86400) { licConfirmou = true; licPede(lic.token ? "validar" : "recuperar", lic.email, lic.token, false); }
+	} else if (!lido && !licConfirmou) {
+		// nada no disco: se este PC já foi ativado (o Max dele não deixa gravar), o servidor devolve a licença sem token
+		licConfirmou = true;
+		licPede("recuperar", "", "", false);
+	} else if (lido && !lic.token && !licConfirmou) {
+		licConfirmou = true;
+		lic.msg = erro;
+		licPede("recuperar", "", "", false);
 	} else if (lido && lic.token && !licConfirmou) {
 		licConfirmou = true;
 		lic.msg = erro;
@@ -197,15 +275,15 @@ function licConfere(lido) {
 }
 
 // ---- conversa com o servidor
-var licXhr = null;
+var licXhr = null, licXhrBg = null;
 function licPede(acao, email, token, mostrarErro) {
 	if (typeof XMLHttpRequest == "undefined") { lic.msg = "Este Max não tem XMLHttpRequest: precisa do Live 12.2 ou mais novo."; licMudou(); return; }
-	lic.ocupado = true;
-	licMudou();
+	var bg = acao == "recuperar";   // em segundo plano: não trava a tela nem o ACTIVATE
+	if (!bg) { lic.ocupado = true; licMudou(); }
 	var corpo = JSON.stringify({ pacote: LIC_PACOTE, email: email, token: token, maquina: licMaquina(),
 		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO + " " + licDiagTexto() });
 	try {
-		var x = new XMLHttpRequest(); licXhr = x;   // referência guardada (o GC não leva)
+		var x = new XMLHttpRequest(); if (bg) licXhrBg = x; else licXhr = x;   // referência guardada (o GC não leva)
 		x.open("POST", LIC_URL + acao);
 		try { x.setRequestHeader("Content-Type", "application/json"); } catch (e) { }
 		x.onreadystatechange = function () {
@@ -216,6 +294,7 @@ function licPede(acao, email, token, mostrarErro) {
 		};
 		x.send(corpo);
 	} catch (e) {
+		if (bg) return;
 		lic.ocupado = false;
 		lic.msg = "Não consegui falar com o servidor de licenças (" + e + ").";
 		licMudou();
@@ -223,7 +302,9 @@ function licPede(acao, email, token, mostrarErro) {
 }
 
 function licResposta(acao, email, token, r, mostrarErro) {
-	lic.ocupado = false;
+	if (acao == "recuperar") {
+		if (!r || !r.ok) { licMudou(); return; }   // PC não ativado ou sem internet: tela normal, sem erro
+	} else lic.ocupado = false;
 	if (!r || typeof r != "object") {
 		if (mostrarErro || !lic.ok) lic.msg = "Não consegui falar com o servidor de licenças. Confira a internet e tente de novo.";
 		licMudou();
@@ -239,15 +320,15 @@ function licResposta(acao, email, token, r, mostrarErro) {
 			return;
 		}
 		var lid = r.licenca || {};
-		var obj = { email: email, token: token, dados: lid.dados, assinatura: lid.assinatura };
+		var obj = { email: email || lic.email, token: token || lic.token, dados: lid.dados, assinatura: lid.assinatura };
 		var erro = licConfere(obj);
 		if (erro) { lic.ok = false; lic.msg = acao == "ativar" ? "A resposta do servidor não conferiu: " + erro : erro; licMudou(); return; }
 		var gravou = licGravaEmTodas(licNomeArq(), JSON.stringify(obj));
 		if (!gravou) log(LIC_NOME + ": não consegui gravar a licença em nenhuma pasta (vale até fechar o set)\n");
-		lic.ok = true; lic.email = email; lic.token = token;
-		lic.msg = !gravou ? "Ativado, mas o Max não conseguiu gravar a licença neste computador: ao reabrir vai pedir de novo. Mande um print do console do Max para contato@insidestudiosp.com.br."
+		lic.ok = true; if (acao != "recuperar") { lic.email = email; lic.token = token; }
+		lic.msg = !gravou && acao == "ativar" ? "Ativado. O Max não deixou gravar a licença neste computador: ao reabrir o set ela é buscada no servidor sozinha (precisa de internet)."
 			: acao == "ativar" ? "Ativado. Bom trabalho!" : "";
-		log(LIC_NOME + ": licença " + (acao == "ativar" ? "ativada" : "confirmada") + " (" + email + ")\n");
+		log(LIC_NOME + ": licença " + (acao == "ativar" ? "ativada" : acao == "recuperar" ? "recuperada pelo servidor (este PC já estava ativado)" : "confirmada") + " (" + email + ")\n");
 		licMudou();
 		return;
 	}
