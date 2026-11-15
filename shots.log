@@ -1,4 +1,6 @@
-== build/shot_resenha_artefacts/Release/shot_resenha
-RESENHA: ok
-total 2016
--rw-r--r--  1 runner  staff  1028964 Nov 13 16:45 RESENHA.png
+== build/shot_gogo_artefacts/Release/shot_gogo
+GOGO-TUNE: ok
+GOGO: ok
+total 2376
+-rw-r--r--  1 runner  staff  629888 Nov 15 19:53 GOGO-TUNE.png
+-rw-r--r--  1 runner  staff  584497 Nov 15 19:53 GOGO.png
