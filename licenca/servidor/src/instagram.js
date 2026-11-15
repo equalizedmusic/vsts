@@ -708,6 +708,28 @@ export async function rotaInstagram(caminho, req, env, url, ctx) {
         if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
         return json(await varrerComentarios(env));
     }
+    // 15/11/2026: resposta manual a comentário que pediu sem a palavra-chave ("Roxo", "Manda aí").
+    // POST /instagram/responder?comentario=ID&palavra=rodo -> mesma DM + resposta pública do robô; registra em ig_respostas (uma vez só)
+    if (caminho === '/instagram/responder' && req.method === 'POST') {
+        if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
+        const cid = url.searchParams.get('comentario') || '';
+        const g = GATILHOS.find((x) => x.palavra === url.searchParams.get('palavra'));
+        if (!/^\d+$/.test(cid) || !g) return json({ erro: 'parametros' }, 400);
+        const tk = await tokenAtual(env);
+        const igId = env.IG_ID || '17841400749768561';
+        const c = await graph(`/${cid}?fields=id,text,username,from{id,username},media{id}`, tk);
+        if (!c.ok) return json({ erro: 'comentario', status: c.status, detalhe: c.corpo?.error?.message }, 404);
+        const ins = await env.DB.prepare(
+            'INSERT OR IGNORE INTO ig_respostas (comentario_id, ig_id, midia_id, usuario, palavra, texto, quando) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .bind(cid, igId, c.corpo.media?.id ?? null, c.corpo.from?.username ?? c.corpo.username ?? null, g.palavra + ' (manual)',
+                String(c.corpo.text || '').slice(0, 300), new Date().toISOString()).run();
+        if (!ins.meta || ins.meta.changes !== 1) return json({ erro: 'ja_respondido' }, 409);
+        const dm = await mandarDm(env, igId, cid, g.dm);
+        const pub = dm.ok ? await responderPublico(env, cid, g.publico) : null;
+        await env.DB.prepare('UPDATE ig_respostas SET dm_ok = ?, publico_ok = ?, detalhe = ? WHERE comentario_id = ?')
+            .bind(dm.ok ? 1 : 0, pub && pub.ok ? 1 : 0, JSON.stringify({ dm: dm.tentativas, publico: pub }).slice(0, 1500), cid).run();
+        return json({ ok: dm.ok, usuario: c.corpo.from?.username ?? c.corpo.username, dm, publico: pub });
+    }
     if (caminho === '/instagram/relatorio' && req.method === 'POST') {
         if (!admin()) return json({ erro: 'nao_autorizado' }, 401);
         const r = await relatorioSemanal(env, { enviar: url.searchParams.get('enviar') === '1' });
