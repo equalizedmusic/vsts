@@ -292,7 +292,8 @@ function licPede(acao, email, token, mostrarErro) {
 	try {
 		var x = new XMLHttpRequest(); if (bg) licXhrBg = x; else licXhr = x;   // referência guardada (o GC não leva)
 		x.open("POST", LIC_URL + acao);
-		try { x.setRequestHeader("Content-Type", "application/json"); } catch (e) { }
+		// SEM setRequestHeader: no Max 9.1.5 do Mac (Live 12.4.16, Intel) ele derruba o Live inteiro (SIGSEGV em
+		// atomarray_appendatom, 15/11) e try/catch não segura. O servidor lê o corpo com req.json() sem olhar o cabeçalho.
 		x.onreadystatechange = function () {
 			if (x.readyState != 4) return;
 			var r = null;

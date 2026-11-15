@@ -5,6 +5,10 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.5 — 2026-11-15
+- **Corrigido: no Mac, o Live fechava sozinho ao colocar a VASSOURA numa faixa.** A conversa com o servidor de licenças
+  usava um recurso do Max que, no Max 9.1.5 do Mac, derruba o Live. Esse recurso saiu; a licença e o token seguem iguais.
+
 ## 0.3.4 — 2026-11-15
 - **Corrigido: depois de DEACTIVATE, a VASSOURA podia voltar a liberar ao reabrir o set.** Quem veio de uma versão
   anterior à 0.3.3 ainda tinha o arquivo de licença antigo no computador. Agora o DEACTIVATE apaga também esse arquivo.

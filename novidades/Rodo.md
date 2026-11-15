@@ -4,6 +4,10 @@ Device Max for Live (pasta `max4live/rodo`), par da VASSOURA. A versão é o pri
 ela vira o release `rodo-vx.y.z` do GitHub (zip `Rodo-x.y.z.zip`), publicado pelo workflow `release-max4live.yml`.
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.4 — 2026-11-15
+- **Corrigido: no Mac, o Live fechava sozinho ao colocar o RODO numa faixa.** A conversa com o servidor de licenças
+  usava um recurso do Max que, no Max 9.1.5 do Mac, derruba o Live. Esse recurso saiu; a licença e o token seguem iguais.
+
 ## 0.3.3 — 2026-11-15
 - **Corrigido: depois de DEACTIVATE, o RODO podia voltar a liberar ao reabrir o set.** Quem veio de uma versão
   anterior à 0.3.2 ainda tinha o arquivo de licença antigo no computador. Agora o DEACTIVATE apaga também esse arquivo.
