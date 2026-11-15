@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Dsp.h"
+#include "IspLicenca.h"
 
 // GOGÓ: cadeia de voz automática. Vai no canal da VOZ (uma voz só). CLEAN → TUNE (motor do ONKEY) → RIDE → FET → OPTO
 // → TONE → DE-ESS → WARMTH → SPACE, cada bloco com liga/desliga. As macros embaixo (TUNE, TAME, TONE, AIR, DE-ESS,
@@ -77,6 +78,8 @@ private:
     void leLink();
     juce::ValueTree fotoParametros() const;
     void aplicaFoto (const juce::ValueTree& v);
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 
     std::unique_ptr<gogo::Cadeia> motor;
     double fs = 48000.0;

@@ -9,7 +9,7 @@ const juce::Colour cBg { 0xff120f1a }, cBgB { 0xff0d0b13 }, cPn { 0xff1a1624 }, 
                    cAmb { 0xfff5c451 }, cLil { 0xffc9b0ff }, cTeal { 0xff4fd1c5 }, cRed { 0xffff4f8b }, cOrig { 0xffff8a3d },
                    cTela { 0xff07060c }, cGrade { 0xff181425 }, cGradeF { 0xff2b2442 };
 
-constexpr int menuSobre = 1, menuCopiaAB = 2;
+constexpr int menuSobre = 1, menuCopiaAB = 2, menuLicenca = 3;
 
 juce::Font fonte (float h, bool negrito = false)
 {
@@ -173,6 +173,7 @@ GogoEditor::GogoEditor (GogoProcessor& p) : AudioProcessorEditor (p), proc (p)
     const int w = w0 > 0 ? juce::jlimit (840, 2400, w0) : 1080;
     setSize (w, juce::roundToInt (w * (double) baseH / baseW));
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void GogoEditor::resized() { proc.uiW = getWidth(); }
@@ -1030,9 +1031,10 @@ void GogoEditor::menu()
     juce::PopupMenu m;
     m.addItem (menuSobre, "Como funciona");
     m.addItem (menuCopiaAB, proc.abAtual() == 0 ? u8 ("Copiar A → B") : u8 ("Copiar B → A"));
+    m.addItem (menuLicenca, u8 ("Licença…"));
     m.addSeparator();
    #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
-    m.addItem (-1, u8 ("GOGÓ ") + juce::String (JucePlugin_VersionString) + " (TESTE)", false, false);
+    m.addItem (-1, u8 ("GOGÓ ") + juce::String (JucePlugin_VersionString), false, false);
    #endif
     juce::Component::SafePointer<GogoEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
@@ -1040,6 +1042,7 @@ void GogoEditor::menu()
                      {
                          if (safe == nullptr) return;
                          if (r == menuCopiaAB) safe->proc.copiaAB();
+                         if (r == menuLicenca) { safe->ativacao.mostrarInfo(); return; }
                          if (r == menuSobre)
                              juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, u8 ("GOGÓ"),
                                  u8 ("Ponha o GOGÓ no canal da VOZ (uma voz só).\n\n"

@@ -68,6 +68,7 @@ public:
         if (p == "stompbox") return "STOMPBOX";
         if (p == "maestro") return "MAESTRO";
         if (p == "magos") return "MASTER DOS MAGOS";
+        if (p == "gogo") return utf8 ("GOGÓ");
         return p.toUpperCase();
     }
 

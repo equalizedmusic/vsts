@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 
 // Tela do GOGÓ (base 1200 × 760, escala junto com a janela), no layout do esboço v2 aprovado em 15/11/2026.
 // Tudo desenhado no paint, a 30 Hz:
@@ -26,6 +27,7 @@ public:
     static constexpr int baseW = 1200, baseH = 760;
 
 private:
+    isp::TelaAtivacao ativacao;   // sem licença cobre a tela e pede e-mail + token
     struct Knob { juce::String id; juce::Point<float> c; float r; };
     struct Alvo { juce::Rectangle<float> r; std::function<void()> f; };
 

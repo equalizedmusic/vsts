@@ -3,7 +3,7 @@ vsts_versao(Gogo.md GOGO_VERSAO)
 
 # GOGÓ: cadeia de voz automática (CLEAN, TUNE com o motor do ONKEY, RIDE, FET, OPTO, TONE, DE-ESS, WARMTH, SPACE).
 # É efeito (vai no canal da voz), mas fica em instrumentos/ para ter build, instalador e release próprios, como o ONKEY.
-# Lê o MAESTRO pelo MAESTRO LINK (Source/Link.cpp). Versão de TESTE: ainda sem isp_licenca (o servidor não conhece o pacote).
+# Lê o MAESTRO pelo MAESTRO LINK (Source/Link.cpp). Licença: pacote gogo (pago, à venda no site).
 juce_add_plugin(Gogo
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.gogo
@@ -21,6 +21,8 @@ juce_add_plugin(Gogo
     COPY_PLUGIN_AFTER_BUILD     FALSE
     VST3_CATEGORIES             Fx Dynamics EQ "Pitch Shift" Reverb
     AU_MAIN_TYPE                kAudioUnitType_Effect)
+
+isp_licenca(Gogo gogo)
 
 target_sources(Gogo PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Link.cpp)
 target_compile_definitions(Gogo PUBLIC

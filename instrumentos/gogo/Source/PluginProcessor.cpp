@@ -187,7 +187,8 @@ void GogoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
 
     gogo::Ajustes a;
     for (int b = 0; b < gogo::numBlocos; ++b) a.on[b] = p.on[b]->load() > 0.5f;
-    a.bypass = p.bypass->load() > 0.5f;
+    // sem ativação: o som passa direto (pelo BYPASS da cadeia, que mantém o atraso do TUNE e não desalinha a voz)
+    a.bypass = p.bypass->load() > 0.5f || ! licenca->liberada();
     a.tracking = p.tracking->load() > 0.5f;
     a.natural = p.natural->load() > 0.5f;
     a.role = juce::roundToInt (p.role->load());
