@@ -103,7 +103,7 @@ struct Medidas
     std::atomic<float> rideDb { 0 }, fetGr { 0 }, optoGr { 0 }, optoRelMs { 500 }, makeupDb { 0 };
     std::atomic<float> mudDb { 0 }, harshDb { 0 }, pocketHz { 0 };
     std::atomic<float> deessGr { 0 };
-    std::atomic<float> duckDb { 0 }, delayMs { 0 };
+    std::atomic<float> duckDb { 0 }, delayMs { 0 }, spaceGr { 0 }, limGr { 0 };
     std::atomic<float> inPk { -100 }, outPk { -100 }, outRms { -100 };
     std::atomic<bool> voz { false };
     std::atomic<int> learn { 0 };          // 0 parado, 1 ouvindo
@@ -262,6 +262,9 @@ public:
         mudMs = mudLongo = fullMs = harshMs = harshLongo = 0.0; mudDb = harshDb = 0.0; eqCont = 0; eqVersao = -1;
         hiEnv = fullEnvD = 0.0; deGr = 0.0;
         duckEnv = 0.0; tDelay = 0.0;
+        vozRefMs = 0.01; wetMs = 0.0; wetGr = 0.0; limG = 1.0;
+        decayS = -1.0; tamS = -1.0;
+        lfoFase[0] = 0.0; lfoFase[1] = 0.25; lfoFase[2] = 0.5; lfoFase[3] = 0.75;
         graveHz = 0.0; fcHpf = -1.0;
         histCont = 0; histInPk = histOutPk = 0.0f;
         medCont = 0; outPkAcc = 0.0; outRmsAcc = 0.0;
@@ -383,22 +386,33 @@ private:
         const double duckMax = std::clamp ((double) a.duck, 0.0, 1.0) * 15.0;
         const double decay = std::clamp ((double) a.decay, 0.3, 6.0);
         const double tam = std::clamp (0.55 + 0.22 * decay, 0.6, 1.55);
+        // DECAY/FEEDBACK/SPACE/BLEND deslizam (antes pulavam de uma vez: o tamanho das linhas da plate e o pré-delay
+        // mudavam de posição de leitura no meio da cauda e estalava ao girar o knob)
+        const double kBloco = 1.0 - std::exp (-(double) ns / (0.08 * fs));
+        decayS = decayS < 0.0 ? decay : decayS + (decay - decayS) * kBloco;
+        const double tamB = std::clamp (0.55 + 0.22 * decayS, 0.6, 1.55);
         double gLinha[8];
         static const double msLinha[8] = { 29.7, 37.1, 41.1, 43.7, 53.0, 59.9, 67.7, 73.1 };
-        int lenLinha[8];
         for (int k = 0; k < 8; ++k)
-        {
-            lenLinha[k] = std::max (8, (int) (msLinha[k] * tam * 0.001 * fs));
-            gLinha[k] = std::pow (10.0, -3.0 * lenLinha[k] / (decay * fs));
-        }
+            gLinha[k] = std::pow (10.0, -3.0 * std::max (8.0, msLinha[k] * tamB * 0.001 * fs) / (decayS * fs));
         const double kDamp = std::exp (-2.0 * kPi * 6500.0 / fs);
         const double preD = (0.010 + 0.012 * decay) * fs;
+        const double kPar = 1.0 - dsp::coef (60.0, fs);
+        if (tamS < 0.0) { tamS = tam; preDS = preD; fbS = fbD; nPlateS = nPlate; nDelayS = nDelay; }
         if (std::abs (tam - tamAnt) > 1e-3 || sendVersao != (int) std::lround (fs))
         {
             sendF[0].hp (250.0, 0.7071, fs); sendF[1].lp (7000.0, 0.7071, fs); sendF[2].hp (250.0, 0.7071, fs); sendF[3].lp (7000.0, 0.7071, fs);
             tamAnt = tam; sendVersao = (int) std::lround (fs);
         }
         const double kFbLp = std::exp (-2.0 * kPi * 5000.0 / fs), kFbHp = std::exp (-2.0 * kPi * 200.0 / fs);
+        const double modAmp = 0.00015 * fs;
+        static const double hzLfo[4] = { 0.53, 0.71, 0.89, 1.13 };
+        for (int k = 0; k < 4; ++k) lfoPasso[k] = hzLfo[k] / fs;
+        // GUARD do SPACE e limitador da saída
+        const double kVozRef = 1.0 - dsp::coef (1500.0, fs), kWetMs = 1.0 - dsp::coef (20.0, fs);
+        // solta em 250 ms enquanto canta; sem voz quase segura (4 s), senão o GUARD "levanta" a cauda e ela não cai
+        const double kWetA = 1.0 - dsp::coef (5.0, fs), kWetR = dsp::coef (250.0, fs), kWetRCauda = dsp::coef (4000.0, fs);
+        const double kLimR = dsp::coef (120.0, fs);
         const float alvoOut = (float) dsp::lin (std::clamp (a.outputDb, -24.0f, 24.0f));
         const int passoHist = std::max (1, (int) (0.01 * fs));
 
@@ -537,29 +551,35 @@ private:
                 duckEnv = as > duckEnv ? duckEnv + (as - duckEnv) * kDuckA : duckEnv * kDuckR;
                 const double alvoDuck = -duckMax * std::clamp ((dsp::db (duckEnv) + 40.0) / 22.0, 0.0, 1.0);
                 duckDb += (alvoDuck - duckDb) * kDuckG;
-                if (m > 0.0f && (nPlate > 0.0 || nDelay > 0.0))
+                tamS += (tam - tamS) * kPar; preDS += (preD - preDS) * kPar; fbS += (fbD - fbS) * kPar;
+                nPlateS += (nPlate - nPlateS) * kPar; nDelayS += (nDelay - nDelayS) * kPar;
+                if (nPlateS < 1e-6) nPlateS = nPlate;
+                if (nDelayS < 1e-6) nDelayS = nDelay;
+                if (m > 0.0f && (nPlateS > 0.0 || nDelayS > 0.0))
                 {
                     double e = sendF[1].tick (sendF[0].tick (s));
                     const double gd = dsp::lin (duckDb) * m;
                     // DELAY ping-pong
                     tDelay += (alvoDelay - tDelay) * 0.0005;
                     double dL = 0.0, dR = 0.0;
-                    if (nDelay > 0.0 && tDelay > 8.0)
+                    if (nDelayS > 0.0 && tDelay > 8.0)
                     {
                         dL = dlL.le (tDelay); dR = dlR.le (tDelay);
                         fbLpL += (dL - fbLpL) * (1.0 - kFbLp); fbLpR += (dR - fbLpR) * (1.0 - kFbLp);
                         fbHpL = kFbHp * fbHpL + (1.0 - kFbHp) * fbLpL; fbHpR = kFbHp * fbHpR + (1.0 - kFbHp) * fbLpR;
                         const double rL = fbLpL - fbHpL, rR = fbLpR - fbHpR;
-                        dlL.poe ((float) (e + fbD * rR));
-                        dlR.poe ((float) (fbD * rL));
+                        // satura de leve DENTRO da realimentação: com feedback alto as repetições não se empilham
+                        auto satFb = [] (double v) { return 0.5 * std::tanh (v * 2.0); };
+                        dlL.poe ((float) (e + satFb (fbS * rR)));
+                        dlR.poe ((float) satFb (fbS * rL));
                     }
                     else { dlL.poe (0.0f); dlR.poe (0.0f); }
                     // PLATE (FDN de 8 linhas, Hadamard)
                     double pL = 0.0, pR = 0.0;
-                    if (nPlate > 0.0)
+                    if (nPlateS > 0.0)
                     {
                         pre.poe ((float) e);
-                        double v = pre.le (preD);
+                        double v = pre.le (preDS);
                         for (int k = 0; k < 4; ++k)   // difusão de entrada (all-pass)
                         {
                             const double atr = ap[k].leInt (apLen[k]);
@@ -567,10 +587,13 @@ private:
                             ap[k].poe ((float) u);
                             v = atr - 0.6 * u;
                         }
+                        // 4 das 8 linhas balançam ±0,15 ms bem devagar: quebra a ressonância metálica do decay longo
+                        for (int k = 0; k < 4; ++k) { lfoFase[k] += lfoPasso[k]; if (lfoFase[k] >= 1.0) lfoFase[k] -= 1.0; }
                         double o[8];
                         for (int k = 0; k < 8; ++k)
                         {
-                            const double r = fdn[k].leInt (lenLinha[k]);
+                            const double len = std::max (8.0, msLinha[k] * tamS * 0.001 * fs);
+                            const double r = fdn[k].le ((k & 1) ? len + modAmp * std::sin (2.0 * kPi * lfoFase[k >> 1]) : len);
                             fdnLp[k] = r + (fdnLp[k] - r) * kDamp;
                             o[k] = fdnLp[k] * gLinha[k];
                         }
@@ -586,20 +609,39 @@ private:
                         pR = o[1] - o[3] + o[5] - o[7] + 0.5 * (o[2] + o[6]);
                         pL *= 0.6; pR *= 0.6;
                     }
-                    wetL = 3.0 * gd * (nPlate * pL + nDelay * dL);
-                    wetR = 3.0 * gd * (nPlate * pR + nDelay * dR);
+                    wetL = 3.0 * gd * (nPlateS * pL + nDelayS * dL);
+                    wetR = 3.0 * gd * (nPlateS * pR + nDelayS * dR);
                 }
+                // GUARD: o efeito nunca passa de 5 dB abaixo do nível médio da voz (com SPACE/DECAY/FEEDBACK no talo
+                // o plate e o delay ressoavam, somavam +10 dB e o teto da saída distorcia). Abaixo disso não mexe.
+                if (vozAgora) vozRefMs += (s * s - vozRefMs) * kVozRef;
+                wetMs += (0.5 * (wetL * wetL + wetR * wetR) - wetMs) * kWetMs;
+                const double alvoGr = wetMs > 1e-10 ? reducao (10.0 * std::log10 (wetMs), 10.0 * std::log10 (vozRefMs + 1e-12) - 5.0, 20.0, 4.0) : 0.0;
+                wetGr = alvoGr > wetGr ? wetGr + (alvoGr - wetGr) * kWetA : alvoGr + (wetGr - alvoGr) * (vozAgora ? kWetR : kWetRCauda);
+                const double gg = dsp::lin (-wetGr);
+                wetL *= gg; wetR *= gg;
             }
             // OUTPUT
             gOut += (alvoOut - gOut) * kG;
             const float mB = (mBypass += std::clamp ((a.bypass ? 1.0f : 0.0f) - mBypass, -pr, pr));
+            double y2[2] = { 0.0, 0.0 }, pkPre = 0.0;
+            for (int c = 0; c < nch; ++c)
+            {
+                y2[c] = (x[c] + (nch > 1 ? (c == 0 ? wetL : wetR) : 0.5 * (wetL + wetR))) * gOut;
+                pkPre = std::max (pkPre, std::abs (y2[c]));
+            }
+            // limitador de saída em −1 dBFS: abaixa o GANHO (os dois canais juntos) em vez de achatar a onda
+            {
+                const double alvoLim = pkPre > kTeto ? kTeto / pkPre : 1.0;
+                limG = alvoLim < limG ? alvoLim : alvoLim + (limG - alvoLim) * kLimR;
+                if (limG < 0.977) ++amostrasLimitadas;   // mais de 0,2 dB
+                limMin = std::min (limMin, limG);
+            }
             double pk = 0.0;
             for (int c = 0; c < nch; ++c)
             {
-                double y = (x[c] + (nch > 1 ? (c == 0 ? wetL : wetR) : 0.5 * (wetL + wetR))) * gOut;
-                // teto suave acima de −0,9 dBFS
-                const double ay = std::abs (y);
-                if (ay > 0.9) y = (y > 0 ? 1.0 : -1.0) * (0.9 + 0.1 * std::tanh ((ay - 0.9) / 0.1));
+                double y = y2[c] * limG;
+                if (std::abs (y) > 0.999) y = y > 0 ? 0.999 : -0.999;   // rede de segurança (não deveria chegar aqui)
                 const double dry = seco[c].leInt (ns - i + lat);
                 y = y + (dry - y) * mB;
                 ch[c][i] = (float) y;
@@ -789,6 +831,8 @@ private:
         med.pocketHz = aj.pocketHz;
         med.deessGr = (float) deGrAgora;
         med.duckDb = (float) duckDb;
+        med.spaceGr = (float) wetGr;
+        med.limGr = (float) -dsp::db (limG);
         med.delayMs = (float) (aj.nota == nOff ? 0.0 : tDelay / fs * 1000.0);
         med.inPk = (float) dsp::db (gIn);
         med.outPk = (float) dsp::db (outPkAcc);
@@ -834,6 +878,17 @@ private:
     double fdnLp[8] {};
     double fbLpL = 0, fbLpR = 0, fbHpL = 0, fbHpR = 0, duckEnv = 0, duckDb = 0, tDelay = 0, tamAnt = -1;
     int sendVersao = -1;
+    double lfoFase[4] { 0.0, 0.25, 0.5, 0.75 }, lfoPasso[4] {};
+    double vozRefMs = 0.01, wetMs = 0, wetGr = 0;
+    double decayS = -1, tamS = -1, preDS = 0, fbS = 0, nPlateS = 0, nDelayS = 0;
+    // OUTPUT
+    static constexpr double kTeto = 0.891;   // −1 dBFS
+    double limG = 1.0;
+public:
+    // bancada: quantas amostras o limitador da saída abaixou mais de 0,2 dB, e o menor ganho
+    std::int64_t amostrasLimitadas = 0;
+    double limMin = 1.0;
+private:
     // medidas
     int histCont = 0, medCont = 0;
     float histInPk = 0, histOutPk = 0, grFrame = 0;

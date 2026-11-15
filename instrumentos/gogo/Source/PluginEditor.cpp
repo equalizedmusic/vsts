@@ -21,7 +21,8 @@ juce::String u8 (const char* s) { return juce::String::fromUTF8 (s); }
 juce::String sinal (float v, int casas, const char* un)
 {
     if (std::abs (v) < 0.5f * std::pow (10.0f, (float) -casas)) return (casas ? u8 ("0.") + juce::String::repeatedString ("0", casas) : u8 ("0")) + u8 (un);
-    return (v > 0 ? "+" : u8 ("−")) + juce::String (std::abs (v), casas) + u8 (un);
+    const juce::String num = casas > 0 ? juce::String (std::abs (v), casas) : juce::String (juce::roundToInt (std::abs (v)));
+    return (v > 0 ? "+" : u8 ("−")) + num + u8 (un);
 }
 juce::String reducao (float gr) { return gr < 0.05f ? u8 ("0.0 dB") : u8 ("−") + juce::String (gr, 1) + " dB"; }
 juce::String hz (float f) { return f >= 1000.0f ? juce::String (f / 1000.0f, 1) + " kHz" : juce::String (juce::roundToInt (f)) + " Hz"; }
@@ -143,7 +144,8 @@ const Painel& painel (int b)
           { { "warmtype", "TYPE", "TUBE ou TAPE" }, { "warmth", "DRIVE", "quanto satura" } } },
         { "SPACE · PLATE + DELAY",
           "PLATE e DELAY no tempo do DAW, os dois abaixando enquanto você canta (DUCK) e voltando nas pausas: a voz fica "
-          "na frente e o espaço aparece entre as frases.",
+          "na frente e o espaço aparece entre as frases. O GUARD segura o efeito 5 dB abaixo da voz: com SPACE, DECAY e "
+          "FEEDBACK no máximo ele não ressoa nem distorce a saída (que tem um limitador em −1 dBFS).",
           { { "space", "SPACE", "quanto efeito" }, { "delaynote", "DELAY", "tempo (no BPM do DAW)" },
             { "feedback", "FEEDBACK", "repetições" }, { "decay", "DECAY", "tamanho da plate" },
             { "duck", "DUCK", "abaixa enquanto canta" }, { "blend", "PLATE / DELAY", "mistura dos dois" } } },
@@ -153,8 +155,8 @@ const Painel& painel (int b)
 
 const char* subtitulo (int b)
 {
-    static const char* s[gogo::numBlocos] = { "HPF + POPS + GATE", "PITCH · FORMANTS KEPT", "VOCAL RIDER", "PEAK · 1176-STYLE",
-                                              "LEVELER · LA-STYLE", "DYNAMIC EQ", "SPLIT-BAND", "TUBE / TAPE", "PLATE + DELAY" };
+    static const char* s[gogo::numBlocos] = { "HPF · GATE", "PITCH FIX", "VOCAL RIDER", "1176-STYLE",
+                                              "LA-STYLE", "DYNAMIC EQ", "SPLIT-BAND", "TUBE / TAPE", "PLATE + DELAY" };
     return s[juce::jlimit (0, gogo::numBlocos - 1, b)];
 }
 } // namespace
@@ -663,7 +665,7 @@ void GogoEditor::leituras (int b, juce::String (&rot)[3], juce::String (&val)[3]
         {
             const float gv = m.graveHz.load();
             rot[0] = proc.liga ("hpfauto") ? "HPF AUTO" : "HPF"; val[0] = hz (m.hpfHz.load());
-            rot[1] = "low note"; val[1] = gv > 0 ? nota (juce::roundToInt (69.0 + 12.0 * std::log2 (gv / 440.0))) + u8 (" · ") + hz (gv) : u8 ("—");
+            rot[1] = "low note"; val[1] = gv > 0 ? nota (juce::roundToInt (69.0 + 12.0 * std::log2 (gv / 440.0))) : u8 ("—");
             rot[2] = "pops"; val[2] = juce::String (m.pops.load()) + " tamed";
             break;
         }
@@ -757,7 +759,7 @@ void GogoEditor::cadeia (juce::Graphics& g, juce::Rectangle<float> r)
         g.drawText (gogo::nomeBloco (b), juce::Rectangle<float> (m.getX() + 32, m.getY() + 11, w - 36, 18), juce::Justification::centredLeft);
         // etiqueta AUTO / OFF / DUCK
         {
-            const juce::String et = ! on ? "OFF" : (b == gogo::bSpace ? "DUCK" : "AUTO");
+            const juce::String et = ! on ? "OFF" : (b == gogo::bSpace ? (proc.cadeia().med.spaceGr.load() > 1.0f ? "GUARD" : "DUCK") : "AUTO");
             const auto f = fonte (8.5f).withExtraKerningFactor (0.15f);
             const float ew = largura (f, et) + 10;
             const juce::Rectangle<float> er (m.getRight() - ew - 7, m.getY() + 33, ew, 14);

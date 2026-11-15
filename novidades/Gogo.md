@@ -4,6 +4,16 @@ Pacote do instalador: `InsideStudioSP-Gogo`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `gogo-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-15
+- SPACE com tudo no máximo (SPACE, DECAY, FEEDBACK) não ressoa nem distorce mais: o novo GUARD segura o efeito
+  5 dB abaixo do nível médio da voz (abaixo disso não mexe; na pausa ele não "levanta" a cauda). A etiqueta do bloco
+  mostra GUARD quando ele está agindo. O feedback do delay satura de leve por dentro (as repetições não se empilham)
+  e 4 linhas da plate balançam bem devagar, o que tira a ressonância metálica do decay longo.
+- OUTPUT: o teto suave que achatava a onda virou um limitador de verdade em −1 dBFS (abaixa o ganho, não distorce).
+- Girar DECAY, FEEDBACK, SPACE ou PLATE / DELAY não estala mais: os valores deslizam em vez de pular.
+- Tela: "low note" mostra só a nota, o DUCK sai arredondado (sem casas a mais) e os subtítulos dos blocos não são
+  mais cortados.
+
 ## 0.1.0 — 2026-11-15
 - Primeira versão do GOGÓ, para TESTE (ainda sem ativação por licença e fora do site): cadeia de voz automática.
   Vai no canal da VOZ (uma voz só) e substitui a cadeia de plugins da voz.

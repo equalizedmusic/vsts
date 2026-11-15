@@ -220,6 +220,84 @@ int main()
         confere (! nw && pkw < 1.0, "SPACE estavel");
     }
 
+#ifndef BANCADA_ANTIGA   // compila a bancada contra o Dsp.h da 0.1.0 (sem GUARD/limitador) para comparar
+    // 9. SPACE no talo (100%, decay 6 s, feedback 90%, ADLIB, sem DUCK): não pode ressoar, embolar nem distorcer
+    for (float outDb : { 0.0f, 6.0f })
+    {
+        auto c1 = std::make_unique<gogo::Cadeia>(); c1->prepare (fs);
+        auto c2 = std::make_unique<gogo::Cadeia>(); c2->prepare (fs);
+        gogo::Ajustes b = a;
+        b.space = 1.0f; b.decay = 6.0f; b.fb = 0.9f; b.blend = 0.5f; b.duck = 0.0f; b.role = gogo::rAdlib; b.outputDb = outDb;
+        gogo::Ajustes b0 = b; b0.on[gogo::bSpace] = false;
+        auto sw = roda (*c1, b, in), sd = roda (*c2, b0, in);
+        double pkw = 0, pko = 0; bool nw = false;
+        std::vector<float> wet (in.size());
+        for (size_t i = 0; i < in.size(); ++i)
+        {
+            wet[i] = sw.l[i] - sd.l[i];
+            for (float v : { sw.l[i], sw.r[i] }) { if (! std::isfinite (v)) nw = true; pko = std::max (pko, (double) std::abs (v)); }
+            pkw = std::max (pkw, (double) std::abs (wet[i]));
+        }
+        const double vozRf = rmsDb (sd.l, (size_t) (15 * fs), (size_t) (21.5 * fs)), wetRf = rmsDb (sw.l, (size_t) (15 * fs), (size_t) (21.5 * fs));
+        const double c1Db = rmsDb (wet, (size_t) (22.1 * fs), (size_t) (22.6 * fs)), c3Db = rmsDb (wet, (size_t) (23.4 * fs), (size_t) (23.9 * fs));
+        const double limCom = 100.0 * (double) c1->amostrasLimitadas / (double) in.size(), limSem = 100.0 * (double) c2->amostrasLimitadas / (double) in.size();
+        std::printf ("\n9. SPACE no talo, OUTPUT %+.0f dB: refrao seco %.1f dB, com SPACE %.1f dB; pico saida %.3f, pico do efeito %.3f\n", outDb, vozRf, wetRf, pko, pkw);
+        std::printf ("   limitador da saida agindo (> 0,2 dB): %.2f%% do tempo com SPACE, %.2f%% sem (menor ganho %.1f dB); GUARD %.1f dB\n",
+                     limCom, limSem, 20.0 * std::log10 (c1->limMin), c1->med.spaceGr.load());
+        std::printf ("   cauda 22,1 s %.1f dB -> 23,4 s %.1f dB\n", c1Db, c3Db);
+        confere (! nw && pko < 0.9, "sem NaN e pico abaixo de -0,9 dBFS");
+        if (outDb == 0.0f) confere (limCom < 0.5, "com OUTPUT 0 o SPACE no talo quase nao encosta no limitador (< 0,5% do tempo)");
+        confere (wetRf - vozRf < 4.0, "SPACE no talo soma menos de 4 dB ao refrao (nao embola)");
+        confere (c3Db < c1Db - 3.0, "cauda caindo (sem realimentar)");
+    }
+
+#endif
+    // 10. girar DECAY / FEEDBACK / SPACE no meio do refrão (degraus a cada bloco, como a automação do DAW): sem estalo
+    {
+        auto roda1 = [&] (int qual, bool espaco)
+        {
+            auto c = std::make_unique<gogo::Cadeia>(); c->prepare (fs);
+            gogo::Ajustes b = a; b.duck = 0.0f; b.space = 0.6f; b.on[gogo::bSpace] = espaco;
+            std::vector<float> L (bloco), R (bloco), out (in.size());
+            for (size_t p = 0; p < in.size(); p += bloco)
+            {
+                const double t = (double) p / fs;
+                const int n = (int) std::min<size_t> (bloco, in.size() - p);
+                if (t > 14.0 && t < 20.0)
+                {
+                    const double u = 0.5 - 0.5 * std::cos ((t - 14.0) * 2.0 * 3.14159265358979 / 1.5);   // vai e volta a cada 1,5 s
+                    if (qual == 1) b.decay = (float) (0.3 + 5.7 * u);
+                    if (qual == 2) b.fb = (float) (0.9 * u);
+                    if (qual == 3) b.space = (float) u;
+                    if (qual == 4) { b.decay = u > 0.5 ? 6.0f : 0.3f; b.fb = u > 0.5 ? 0.9f : 0.0f; }   // salto seco
+                }
+                for (int i = 0; i < n; ++i) L[(size_t) i] = R[(size_t) i] = in[p + (size_t) i];
+                float* ch[2] = { L.data(), R.data() };
+                c->process (ch, 2, n, b);
+                for (int i = 0; i < n; ++i) out[p + (size_t) i] = L[(size_t) i];
+            }
+            return out;
+        };
+        const auto seco = roda1 (0, false);
+        // estalo = alta frequência isolada no EFEITO (saída − saída sem SPACE): 2ª diferença; o efeito é filtrado (< 7 kHz)
+        auto passa = [&] (int qual)
+        {
+            const auto out = roda1 (qual, true);
+            double mx = 0;
+            for (size_t i = (size_t) (14.0 * fs); i < (size_t) (20.0 * fs); ++i)
+            {
+                const double w0 = out[i] - seco[i], w1 = out[i - 1] - seco[i - 1], w2 = out[i - 2] - seco[i - 2];
+                mx = std::max (mx, std::abs (w0 - 2.0 * w1 + w2));
+            }
+            return mx;
+        };
+        const double ref = passa (0), d1 = passa (1), d2 = passa (2), d3 = passa (3), d4 = passa (4);
+        std::printf ("\n10. girando knobs no refrao (maior 2a diferenca do efeito): parado %.4f, DECAY %.4f, FEEDBACK %.4f, SPACE %.4f, salto seco %.4f\n",
+                     ref, d1, d2, d3, d4);
+        confere (d1 < 1.3 * ref + 0.005 && d2 < 1.3 * ref + 0.005 && d3 < 1.3 * ref + 0.005 && d4 < 1.3 * ref + 0.005,
+                 "girar DECAY / FEEDBACK / SPACE nao estala");
+    }
+
     // 8. LEARN
     {
         auto c = std::make_unique<gogo::Cadeia>(); c->prepare (fs);
