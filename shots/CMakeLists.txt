@@ -63,6 +63,10 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
             elseif(name STREQUAL "onkey")
                 # ONKEY: efeito de voz; o loop manda uma voz sintética cantando em Lá menor, desafinada. Foto a 200% (1000 × 620)
                 target_compile_definitions(${t} PRIVATE SHOT_VOZ=1 SHOT_W=2000 SHOT_H=1240)
+            elseif(name STREQUAL "gogo")
+                # GOGÓ: cadeia de voz; a mesma voz sintética do ONKEY (Lá menor, desafinada). Foto a 200% (1200 × 760) e outra
+                # com os AJUSTES do TUNE abertos
+                target_compile_definitions(${t} PRIVATE SHOT_VOZ=1 SHOT_W=2400 SHOT_H=1520)
             elseif(name STREQUAL "magos")
                 # MASTER DOS MAGOS: o loop de psy no master; LISTEN, CAST e um MAESTRO LINK simulado (8 grupos). Foto a 200% (1280 × 952)
                 target_compile_definitions(${t} PRIVATE SHOT_MAGOS=1 SHOT_W=2560 SHOT_H=1904 JUCE_USE_MP3AUDIOFORMAT=1)

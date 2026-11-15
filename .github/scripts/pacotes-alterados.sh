@@ -11,7 +11,7 @@ tipo=$1; base=${2:-}; head=$3; escolha=${4:-}
 
 if [ "$tipo" = instrumentos ]; then
   mapa="quimera:Quimera limao:Limao mercurio:Mercurio resenha:Resenha montamonta:MontaMonta groovador:Groovador
-        mesa:Mesa align:Align onkey:Onkey barebass:Barebass stompbox:Stompbox maestro:Maestro magos:Magos"
+        mesa:Mesa align:Align onkey:Onkey barebass:Barebass stompbox:Stompbox maestro:Maestro magos:Magos gogo:Gogo"
   raiz=instrumentos
 else
   mapa="criativo:Criativo mix:Mix knob:Knob"
@@ -39,8 +39,9 @@ for par in $mapa; do
     done
   else
     if echo "$arquivos" | grep -qE "^$raiz/$d/|^novidades/$P\.md$"; then entra=1; fi
-    # MAGOS compila o MaestroLink do MAESTRO (memória compartilhada entre os dois): mudou o link, mudam os dois
+    # MAGOS e GOGÓ compilam o MaestroLink do MAESTRO (memória compartilhada entre os dois): mudou o link, mudam os dois
     if [ "$P" = Magos ] && echo "$arquivos" | grep -qE '^instrumentos/maestro/Source/MaestroLink\.'; then entra=1; fi
+    if [ "$P" = Gogo ] && echo "$arquivos" | grep -qE '^instrumentos/maestro/Source/MaestroLink\.'; then entra=1; fi
   fi
   if [ $entra = 1 ]; then dirs="$dirs${dirs:+;}$d"; pacotes="$pacotes${pacotes:+ }$P"; fi
 done
