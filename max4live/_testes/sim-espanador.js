@@ -10,7 +10,7 @@ const mk = (name, o) => {
     out: 'Master', inp: 'Ext. In', mon: 1, devices: 0, clips: [[16, 48], [64, 96]] }, o || {});
   t.cl = t.clips.map(() => { const c = { kind: 'clipobj', id: nextObj++, color: 0x123456 }; objs[c.id] = c; return c; });
   t.slots = t.is_foldable ? [] : [0, 1].map((k) => {
-    const sc = k === 0 ? { kind: 'clipobj', id: nextObj++, color: 0x654321 } : null; if (sc) objs[sc.id] = sc;
+    const sc = k === 0 && t.clips.length ? { kind: 'clipobj', id: nextObj++, color: 0x654321 } : null; if (sc) objs[sc.id] = sc;
     const sl = { kind: 'slot', id: nextObj++, clip: sc }; objs[sl.id] = sl; return sl;
   });
   return t;
@@ -23,7 +23,10 @@ let tracks = [
   mk('Toms', { is_foldable: 1, clips: [] }), mk('14 Tom Hi', { is_grouped: 1, out: 'Toms', grp: 'Toms' }), mk('15 Tom Lo', { is_grouped: 1, out: 'Toms', grp: 'Toms' }),
 ];
 const MOLDE = !!process.env.MOLDE;   // MOLDE=1: set com faixa-molde MAESTRO (com o plugin) -> buses nascem como cópia dela
-if (MOLDE) tracks.push(mk('Maestro', { devices: 1, clips: [] }));
+if (MOLDE) tracks.push(mk('Maestro', { devices: 1, clips: [], mon: 1, inp: 'Ext. In' }));
+const REAIS = !!process.env.REAIS;   // REAIS=1: faixas de verdade chamadas "KICK" (áudio) e "BASS" (MIDI) -> são membros, não buses
+if (REAIS) tracks.push(mk('KICK'), mk('BASS', { has_midi_input: 1 }));
+const BK = REAIS ? 'KICK BUS' : 'KICK', BB = REAIS ? 'BASS BUS' : 'BASS';
 const percs = tracks.find((t) => t.name === 'Percs'); tracks.forEach((t) => { if (t.is_grouped) t.pai = t.grp ? tracks.find((o) => o.name === t.grp).id : percs.id; });
 const orig = JSON.parse(JSON.stringify(tracks));
 const corClip = (n) => { const t = tracks.find((x) => x.name === n); return t.cl.map((c) => c.color).concat(t.slots.filter((s) => s.clip).map((s) => s.clip.color)); };
@@ -58,7 +61,7 @@ class LiveAPI {
   call(fn, a) {
     if (fn === 'create_audio_track') { tracks.splice(a, 0, mk(String(tracks.length + 1) + '-Audio', { clips: [] })); return; }
     if (fn === 'delete_track') { tracks.splice(a, 1); return; }
-    if (fn === 'duplicate_track') { const o = tracks[a]; tracks.splice(a + 1, 0, mk(o.name, { color: o.color, out: o.out, inp: o.inp, mon: o.mon, devices: o.devices, clips: o.clips.slice() })); return; }
+    if (fn === 'duplicate_track') { const o = tracks[a]; tracks.splice(a + 1, 0, mk(o.name, { color: o.color, out: o.out, inp: o.inp, mon: o.mon, devices: o.devices, clips: o.clips.slice(), semSessao: 1 })); return; }
     throw new Error('call ' + fn);
   }
   get(k) {
@@ -74,7 +77,7 @@ class LiveAPI {
     if (k === 'group_track') return ['id', t.pai || 0];
     if (k === 'arrangement_clips') return t.cl.flatMap((c) => ['id', c.id]);
     if (k === 'clip_slots') return t.slots.flatMap((c) => ['id', c.id]);
-    const m = { name: t.name, color: t.color, is_foldable: t.is_foldable, is_grouped: t.is_grouped, has_midi_input: t.has_midi_input };
+    const m = { name: t.name, color: t.color, is_foldable: t.is_foldable, is_grouped: t.is_grouped, has_midi_input: t.has_midi_input, current_monitoring_state: t.mon };
     if (k in m) return [m[k]];
     throw new Error('get ' + k);
   }
@@ -155,17 +158,22 @@ esperaLivre(() => {
     tracks.forEach((t) => console.log(`  ${t.name.padEnd(22)} cor ${t.color.toString(16).padStart(6, '0')} saída ${t.out.padEnd(10)} entrada ${t.inp} mon ${t.mon}`));
     const busD = nome('DRUMS BUS');
     confere(!!busD && busD.mon === 0 && busD.inp === 'No Input', 'bus DRUMS criado como "DRUMS BUS" (já existe Group Track DRUMS), Monitor IN, sem entrada');
-    confere(['KICK', 'BASS', 'HATS', 'SYNTHS', 'VOCAL', 'FX'].every((n) => nome(n) && nome(n).mon === 0), 'buses KICK/BASS/HATS/SYNTHS/VOCAL/FX criados');
+    confere([BK, BB, 'HATS', 'SYNTHS', 'VOCAL', 'FX'].every((n) => nome(n) && nome(n).mon === 0), 'buses ' + BK + '/' + BB + '/HATS/SYNTHS/VOCAL/FX criados');
+    if (REAIS) {
+      confere(nome('KICK') && nome('KICK').out === 'KICK BUS' && nome('KICK').mon === 1 && nome('KICK').inp === 'Ext. In', 'REAIS: faixa "KICK" com clips é membro do KICK (saída no KICK BUS, Monitor/entrada intactos)');
+      confere(nome('BASS') && nome('BASS').out === 'BASS BUS' && nome('BASS').mon === 1, 'REAIS: faixa MIDI "BASS" é membro do BASS');
+    }
     confere(!nome('AMBIENCE'), 'grupo sem faixa não ganha bus (Pad tirado do grupo)');
     const ordem = tracks.slice(0, 7).map((t) => t.name).join(',');
-    if (!MOLDE) confere(ordem === 'KICK,BASS,DRUMS BUS,HATS,SYNTHS,VOCAL,FX', 'buses no topo na ordem do MAESTRO (' + ordem + ')');
+    const ORD = [BK, BB, 'DRUMS BUS', 'HATS', 'SYNTHS', 'VOCAL', 'FX'];
+    if (!MOLDE) confere(ordem === ORD.join(','), 'buses no topo na ordem do MAESTRO (' + ordem + ')');
     else {
-      const im = tracks.findIndex((t) => t.name === 'Maestro'), apos = tracks.slice(im + 1, im + 8).map((t) => t.name).join(',');
-      confere(apos === 'KICK,BASS,DRUMS BUS,HATS,SYNTHS,VOCAL,FX', 'MOLDE: buses logo abaixo da faixa Maestro, na ordem do MAESTRO (' + apos + ')');
-      confere(['KICK', 'BASS', 'DRUMS BUS', 'HATS', 'SYNTHS', 'VOCAL', 'FX'].every((n) => nome(n).devices === 1 && nome(n).inp === 'No Input'), 'MOLDE: todo bus novo veio com o plugin da faixa-molde');
-      confere(nome('Maestro').color === 0x808080 && nome('Maestro').out === 'Master', 'MOLDE: a faixa-molde não foi mexida');
+      const im = tracks.findIndex((t) => t.name === BK), apos = tracks.slice(im, im + 7).map((t) => t.name).join(',');
+      confere(apos === ORD.join(','), 'MOLDE: buses juntos, na ordem do MAESTRO (' + apos + ')');
+      confere(ORD.every((n) => nome(n).devices === 1 && nome(n).inp === 'No Input'), 'MOLDE: todo bus novo veio com o plugin da faixa-molde');
+      confere(!nome('Maestro'), 'MOLDE: faixa-molde apagada no fim do APPLY');
     }
-    confere(nome('KICK 01 Kick') && nome('KICK 01 Kick').out === 'KICK' && nome('KICK 01 Kick').color === 0xff8a3d, 'Kick: prefixo, cor e saída no bus KICK');
+    confere(nome('KICK 01 Kick') && nome('KICK 01 Kick').out === BK && nome('KICK 01 Kick').color === 0xff8a3d, 'Kick: prefixo, cor e saída no bus KICK');
     confere(nome('DRUMS 03 Snare').out === 'DRUMS BUS', 'Snare vai para o DRUMS BUS');
     confere(nome('DRUMS 06 Conga').out === 'Percs' && nome('DRUMS 06 Conga').color === nome('DRUMS 03 Snare').color, 'Conga (dentro do Group Percs) ganha cor/prefixo mas continua saindo no grupo');
     confere(nome('Percs').out === 'Master' && nome('HATS 07 Shaker').out === 'Percs', 'Group Track Percs (DRUMS + HATS misturados) não muda de saída');
@@ -187,16 +195,17 @@ esperaLivre(() => {
       confere(tracks.length === n0, '2º APPLY reaproveita os buses (' + tracks.length + ' faixas)');
       confere(!!nome('KICK 01 Kick') && !tracks.some((t) => /^KICK KICK/.test(t.name)), '2º APPLY não dobra o prefixo');
       // MAESTRO já no bus KICK: o UNDO não pode apagar
-      nome('KICK').devices = MOLDE ? 2 : 1;
+      nome(BK).devices = MOLDE ? 2 : 1;
       motor.undo();
       esperaLivre(() => {
         console.log('UNDO:');
         tracks.forEach((t) => console.log(`  ${t.name.padEnd(22)} saída ${t.out}`));
-        const volta = orig.every((o) => { const t = byId(o.id); return t && t.name === o.name && t.color === o.color && t.out === o.out; });
+        const volta = orig.filter((o) => o.name !== 'Maestro').every((o) => { const t = byId(o.id); return t && t.name === o.name && t.color === o.color && t.out === o.out; });
         confere(volta, 'UNDO voltou nome, cor e saída de todas as faixas');
         const clipsVoltaram = orig.every((o) => { const t = byId(o.id); return !t || (t.cl.every((c, j) => c.color === o.cl[j].color) && t.slots.every((s, j) => !s.clip || s.clip.color === o.slots[j].clip.color)); });
         confere(clipsVoltaram, 'UNDO voltou a cor de todos os clips (arranjo e session)');
-        confere(!!nome('KICK') && !nome('BASS') && !nome('DRUMS BUS'), 'UNDO apagou os buses vazios e manteve o KICK (tem device)');
+        confere(!!nome(BK) && !nome(BB) && !nome('DRUMS BUS'), 'UNDO apagou os buses vazios e manteve o ' + BK + ' (tem device)');
+        if (MOLDE) { const mo = nome('Maestro'); confere(!!mo && mo.devices === 1 && mo.color === 0x808080 && mo.mon === 1 && mo.inp === 'Ext. In', 'MOLDE: UNDO devolveu a faixa-molde (com o plugin, cor, Monitor e entrada)'); }
         const lg = fs.readFileSync(path.join(LOGDIR, 'ESPANADOR-log.txt'), 'utf8');
         confere(lg.length > 200, 'log em arquivo (' + lg.split('\n').length + ' linhas)');
         console.log(erros ? '\nRESULTADO: ' + erros + ' ERROS' : '\nRESULTADO: OK');

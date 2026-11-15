@@ -25,13 +25,16 @@ USAR
    - BUS ON     = cria no TOPO do set uma faixa de áudio para cada grupo usado (KICK, BASS...) e manda
                   a saída de cada faixa do grupo para ela. O bus fica em Monitor IN e sem entrada externa:
                   soa como um Group Track (é nele que vai o MAESTRO). Padrão ON.
-                  Se já existir uma faixa com o nome do grupo (ou "<GRUPO> BUS"), ela é reaproveitada.
+                  Se já existir uma faixa de áudio VAZIA (sem clips) com o nome do grupo (ou "<GRUPO> BUS"),
+                  ela é reaproveitada. Faixa chamada "KICK" ou "BASS" com clips (ou MIDI) é o próprio kick/baixo:
+                  entra no grupo e o bus novo vira "KICK BUS" / "BASS BUS".
                   Se um Group Track já se chama DRUMS, o bus novo vira "DRUMS BUS".
                   MAESTRO EM TODO BUS: crie UMA faixa de áudio chamada MAESTRO (ou MOLDE), ponha nela o
                   MAESTRO (e o que mais quiser em todo bus) e deixe-a sem clips. Cada bus novo nasce como
                   CÓPIA dessa faixa, já com os plugins, e é renomeado/pintado. A faixa-molde não entra em
-                  grupo nenhum e fica onde está (as cópias aparecem logo abaixo dela). Bus que já existia
-                  não é mexido. Sem faixa-molde, o bus nasce vazio, como antes.
+                  grupo nenhum; as cópias aparecem logo abaixo dela e, NO FIM DO APPLY, a faixa-molde é
+                  APAGADA (o MAESTRO dela, sem nome de grupo, ficava "BY SOUND" no AMBIENCE). O UNDO a
+                  devolve. Bus que já existia não é mexido. Sem faixa-molde, o bus nasce vazio, como antes.
                   (A API do Max for Live não insere plugin numa faixa; duplicar a faixa é o caminho.)
                   Faixa que já está dentro de um Group Track (feito com Ctrl+G) CONTINUA saindo
                   no grupo: ganha cor e prefixo, e quem vai para o bus é o Group Track inteiro
@@ -42,8 +45,9 @@ USAR
                   CLIPS OFF = os clips ficam com a cor que já tinham.
 5. APPLY. O espanador desce pela lista junto com o trabalho real: atrás dele as faixas já estão na
    cor do grupo. No fim o ESPANADOR relê o set (os buses aparecem com o selo BUS).
-6. UNDO volta nome, cor e saída de cada faixa, a cor de cada clip pintado, e apaga os buses criados nesta sessão — só se continuarem
-   vazios (bus em que você já pôs um device ou clip fica). Vale enquanto o device estiver aberto.
+6. UNDO volta nome, cor e saída de cada faixa, a cor de cada clip pintado, Monitor/entrada dos buses reaproveitados,
+   e apaga os buses criados nesta sessão — só se continuarem vazios (bus em que você já pôs um device ou clip fica).
+   Se a faixa-molde foi apagada, uma das cópias volta a ser ela. Vale enquanto o device estiver aberto.
    Fora isso, cada mudança é um Ctrl+Z no Live.
 
 LIMITES
@@ -56,7 +60,9 @@ LIMITES
 
 O QUE CONFERIR NESTE TESTE (me mande print ou o log)
 - Os buses foram criados no topo, com nome e cor, em Monitor IN e entrada "No Input"?
-- Com a faixa MAESTRO (molde) no set: cada bus novo veio com o MAESTRO dentro? UNDO apagou esses buses?
+- Com a faixa MAESTRO (molde) no set: cada bus novo veio com o MAESTRO dentro? A faixa MAESTRO sumiu no fim?
+  O MAESTRO do bus AMBIENCE mostra BY NAME (e não "? BY SOUND")? UNDO apagou os buses e devolveu a faixa MAESTRO?
+- Faixas chamadas KICK / BASS (com clips) entraram nos grupos, e os buses viraram "KICK BUS" / "BASS BUS"?
 - As faixas do grupo passaram a sair no bus (OUTPUT = KICK, DRUMS...) e o som chega no bus?
 - Os clips (arranjo e session) ficaram com a cor do grupo, e com CLIPS OFF não mudaram?
 - Um Group Track só com faixas de um grupo foi inteiro para o bus?

@@ -8,7 +8,9 @@
 //   - CLIPS (opcional) pinta os clips da faixa (arranjo e session) com a cor do grupo;
 //   - BUS: cria (ou reaproveita) uma faixa de áudio com o nome do grupo no topo do set e manda a saída de cada
 //     faixa do grupo para ela. O bus fica em Monitor IN e sem entrada externa: soa como um Group Track.
-// O LOM não cria Group Track nem muda a ordem das faixas: por isso o bus.
+// O LOM não cria Group Track nem muda a ordem das faixas: por isso o bus. Bus = faixa de áudio VAZIA com o nome do grupo
+// (uma faixa "KICK" com clips é o kick: vira membro e o bus é "KICK BUS"). Faixa-molde MAESTRO/MOLDE: o bus nasce como
+// cópia dela e, no fim do APPLY, ela é apagada (o UNDO devolve numa das cópias).
 // UNDO volta nome, cor e saída de cada faixa, a cor de cada clip pintado, e apaga os buses criados nesta sessão (só se continuarem vazios).
 
 autowatch = 1;
@@ -40,6 +42,8 @@ var nOrig = 0;
 var origClip = {};      // id do clip -> cor antes do 1º APPLY (para o UNDO)
 var criados = [];       // ids dos buses criados nesta sessão
 var devCriado = {};     // id do bus criado -> nº de devices que ele já tinha ao nascer (cópia da faixa-molde)
+var origBus = {};       // id do bus reaproveitado -> { mon, inp } antes do APPLY (para o UNDO)
+var moldeApagado = null; // faixa-molde apagada no fim do APPLY: { name, color, mon, inp } (o UNDO devolve numa cópia)
 var fmtRota = -1;       // jeito de gravar output_routing_type que funcionou neste Live
 
 // ---------------------------------------------------------------- tarefas com referência guardada (ver VASSOURA 0.2.3)
@@ -332,10 +336,12 @@ function leFaixa(i) {
 	status("SCAN " + (i + 1) + " · " + tr.name);
 	tr.pai = tr.member ? idDoPai(t) : 0;
 	tr.out = rotaAtual(t, "output").nome;
-	tr.bus = tr.fold ? -1 : grupoDoBus(tr.name);
-	tr.molde = !tr.fold && ehMolde(tr.name) ? 1 : 0;
 	var nc = 0;
 	try { nc = t.getcount("arrangement_clips"); } catch (e) { nc = 0; }
+	// bus de grupo = faixa de áudio VAZIA com o nome do grupo. Uma faixa "KICK" com clips (ou MIDI) é o kick, não o bus
+	var vazia = !tr.fold && !tr.midi && !nc && !nSessao(t);
+	tr.bus = vazia ? grupoDoBus(tr.name) : -1;
+	tr.molde = !tr.fold && ehMolde(tr.name) ? 1 : 0;
 	for (var j = 0; j < nc; j++) {
 		var c = aponta("live_set tracks " + i + " arrangement_clips " + j);
 		var s = num(c.get("start_time")), e = num(c.get("end_time"));
@@ -346,6 +352,19 @@ function leFaixa(i) {
 	result.tracks.push(tr);
 	log("  " + i + " [" + tr.name + "] " + (tr.fold ? "GROUP " : "") + (tr.member ? "(no grupo) " : "") + (tr.bus >= 0 ? "BUS " + GRUPOS[tr.bus] + " " : "") +
 		"saída " + tr.out + " · " + nc + " clips\n", 1);
+}
+
+// nº de clips da session (slots com clip)
+function nSessao(api) {
+	var slots = idsDe(api, "clip_slots"), n = 0;
+	for (var s = 0; s < slots.length; s++) { try { if (num(new LiveAPI("id " + slots[s]).get("has_clip"))) n++; } catch (e) { } }
+	return n;
+}
+// pode servir de bus: faixa de áudio sem clips no arranjo nem na session
+function podeSerBus(api) {
+	if (num(api.get("is_foldable")) || num(api.get("has_midi_input"))) return false;
+	var nc = 0; try { nc = api.getcount("arrangement_clips"); } catch (e) { }
+	return !nc && !nSessao(api);
 }
 
 // Group Track que contém a faixa (group_track volta "id N"; 0 = fora de grupo)
@@ -475,6 +494,8 @@ function apply() {
 			else log("  Group Track [" + result.tracks[ordemGt[o]].name + "]: tem faixas de " + gs.length + " grupos diferentes; saída dele não mudou\n");
 		}
 	}
+	// 4) no fim, a faixa-molde sai do set (o MAESTRO dela, sem nome de grupo, ia ficar "BY SOUND" no AMBIENCE)
+	if (cfg.bus) passos.push(apagaMolde);
 	log("ESPANADOR: APPLY · " + membros.length + " faixas · BUS " + (cfg.bus ? "ON" : "OFF") + " · PREFIX " + (cfg.prefix ? "ON" : "OFF") + " · CLIPS " + (cfg.clips ? "ON" : "OFF") + "\n");
 	outlet(2, "varre", membros.length);
 	vigiaLiga();
@@ -496,10 +517,12 @@ function preparaBus(g, porNome) {
 	var nt = set.getcount("tracks"), achado = null;
 	for (var i = 0; i < nt; i++) {
 		var t = aponta("live_set tracks " + i);
-		if (num(t.get("is_foldable"))) continue;
-		if (grupoDoBus(str(t.get("name"))) == g) { achado = { id: Number(t.id), nome: str(t.get("name")) }; break; }
+		if (grupoDoBus(str(t.get("name"))) != g || !podeSerBus(t)) continue;
+		achado = { id: Number(t.id), nome: str(t.get("name")) }; break;
 	}
 	if (achado) {
+		var ab = new LiveAPI("id " + achado.id);
+		if (!origBus[achado.id]) origBus[achado.id] = { mon: num(ab.get("current_monitoring_state")), inp: rotaAtual(ab, "input").nome };
 		ap.bus[g] = achado; ap.buses++;
 		log("  bus " + GRUPOS[g] + ": reaproveitado [" + achado.nome + "]\n");
 		configuraBus(new LiveAPI("id " + achado.id), g, false);
@@ -515,6 +538,10 @@ function preparaBus(g, porNome) {
 	}
 	// faixa-molde ("MAESTRO" ou "MOLDE"): o bus nasce como cópia dela, com o MAESTRO (ou o que tiver) já dentro.
 	// O LOM não insere plugin/M4L numa faixa (insert_device só aceita device nativo), mas duplica a faixa inteira.
+	if (molde >= 0 && !ap.molde) {
+		var am = new LiveAPI("live_set tracks " + molde);
+		ap.molde = { id: Number(am.id), name: str(am.get("name")), color: num(am.get("color")), mon: num(am.get("current_monitoring_state")), inp: rotaAtual(am, "input").nome };
+	}
 	if (molde >= 0) set.call("duplicate_track", molde);
 	else set.call("create_audio_track", 0);
 	var novo = null;
@@ -554,7 +581,8 @@ function umMembro(idx, k) {
 	var g = tr.g;
 	try { api.set("color", CORES[g]); } catch (e) { log("  [" + tr.name + "]: cor não mudou (" + e + ")\n"); }
 	if (cfg.prefix) {
-		var nn = GRUPOS[g] + " " + semPrefixo(str(api.get("name")));
+		var base = semPrefixo(str(api.get("name")));
+		var nn = base.replace(/^\s+|\s+$/g, "").toUpperCase() == GRUPOS[g] ? base : GRUPOS[g] + " " + base;   // faixa "KICK" não vira "KICK KICK"
 		if (nn != str(api.get("name"))) api.set("name", nn);
 	}
 	if (cfg.clips) pintaClips(api, tr, CORES[g]);
@@ -625,12 +653,28 @@ function umGroupTrack(idx, g) {
 	log("    Group Track [" + tr.name + "] -> " + GRUPOS[g] + "\n", 1);
 }
 
+// apaga a faixa-molde se algum bus nasceu dela neste APPLY (o UNDO a devolve numa das cópias)
+function apagaMolde() {
+	if (!ap.molde || !ap.doMolde) return;
+	onde = "apaga molde";
+	var set = new LiveAPI("live_set"), nt = set.getcount("tracks"), idx = -1;
+	for (var k = 0; k < nt; k++) if (Number(aponta("live_set tracks " + k).id) == ap.molde.id) { idx = k; break; }
+	if (idx < 0) { log("  faixa-molde: não achei mais\n"); return; }
+	var am = new LiveAPI("id " + ap.molde.id);
+	if (!podeSerBus(am)) { log("  faixa-molde [" + ap.molde.name + "] tem clips: não apaguei\n"); return; }
+	set.call("delete_track", idx);
+	moldeApagado = ap.molde;
+	ap.moldeSaiu = 1;
+	log("  faixa-molde [" + ap.molde.name + "] apagada (o UNDO devolve)\n");
+}
+
 function fimApply() {
 	busy = false;
 	vigiaDesliga();
 	posApply = "APPLY FEITO · " + ap.feitos + " faixas organizadas" +
 		(cfg.clips && ap.clips ? " · " + ap.clips + " clips pintados" : "") +
 		(cfg.bus ? " · " + ap.buses + " bus" + (ap.buses > 1 ? "es" : "") + (ap.busesNovos ? " (" + ap.busesNovos + " novo" + (ap.busesNovos > 1 ? "s" : "") + (ap.doMolde ? ", cópia do molde" : "") + ")" : "") : "") +
+		(ap.moldeSaiu ? " · faixa " + ap.molde.name + " apagada" : "") +
 		(ap.rotaFalhou ? " · " + ap.rotaFalhou + " saídas NÃO mudaram (ver console)" : "") +
 		(ap.falhas ? " · " + ap.falhas + " falhas (ver console)" : "") + " · UNDO volta como estava";
 	log("ESPANADOR: " + posApply + " · " + ((agora() - ap.inicio) / 1000).toFixed(1) + " s\n");
@@ -642,11 +686,17 @@ function fimApply() {
 
 // ---------------------------------------------------------------- UNDO (volta nome, cor e saída; apaga buses vazios criados aqui)
 var filaUndo = [];
+function voltaEntrada(api, nome) {
+	if (!nome || rotaAtual(api, "input").nome == nome) return;
+	var r = achaRota(rotasDisponiveis(api, "input"), nome);
+	if (!r || !gravaRota(api, "input", r.r)) log("  [" + str(api.get("name")) + "]: entrada não voltou para \"" + nome + "\"\n");
+}
 function undo() {
 	if (busy || travado()) return;
 	filaUndo = [];
 	for (var id in orig) if (orig.hasOwnProperty(id)) filaUndo.push({ tipo: "faixa", id: Number(id) });
 	for (var cid in origClip) if (origClip.hasOwnProperty(cid)) filaUndo.push({ tipo: "clip", id: Number(cid) });
+	for (var bid in origBus) if (origBus.hasOwnProperty(bid)) filaUndo.push({ tipo: "busvelho", id: Number(bid) });
 	for (var c = criados.length - 1; c >= 0; c--) filaUndo.push({ tipo: "bus", id: criados[c] });
 	if (!filaUndo.length) { status("UNDO: nada para voltar (nenhum APPLY nesta sessão do device)"); return; }
 	busy = true;
@@ -661,9 +711,10 @@ function passoUndo() {
 			busy = false;
 			vigiaDesliga();
 			posApply = "UNDO FEITO · " + ap.feitos + " faixas de volta" + (ap.clips ? " · " + ap.clips + " clips na cor de antes" : "") + (ap.apagados ? " · " + ap.apagados + " buses apagados" : "") +
-				(ap.mantidos ? " · " + ap.mantidos + " buses mantidos (têm device ou clip)" : "") + (ap.falhas ? " · " + ap.falhas + " não achadas" : "") + (ap.clipsSumiram ? " · " + ap.clipsSumiram + " clips já não existiam" : "");
+				(ap.mantidos ? " · " + ap.mantidos + " buses mantidos (têm device ou clip)" : "") + (ap.moldeVoltou ? " · faixa-molde de volta" : "") + (ap.falhas ? " · " + ap.falhas + " não achadas" : "") + (ap.clipsSumiram ? " · " + ap.clipsSumiram + " clips já não existiam" : "");
 			log("ESPANADOR: " + posApply + "\n");
-			orig = {}; nOrig = 0; origClip = {}; criados = []; devCriado = {};
+			if (moldeApagado) log("  faixa-molde [" + moldeApagado.name + "] não voltou: todos os buses copiados ganharam device novo\n");
+			orig = {}; nOrig = 0; origClip = {}; criados = []; devCriado = {}; origBus = {}; moldeApagado = null;
 			marcasAntes = {};
 			if (result) for (var i = 0; i < result.tracks.length; i++) marcasAntes[result.tracks[i].id] = { g: result.tracks[i].g, auto: result.tracks[i].auto };
 			depois("rescan", scan, 300);
@@ -685,12 +736,26 @@ function passoUndo() {
 				if (!r || !gravaRota(api, "output", r.r)) log("  [" + o.name + "]: saída não voltou para \"" + o.rota + "\"\n");
 			}
 			ap.feitos++;
+		} else if (it.tipo == "busvelho") {
+			// bus que já existia: volta Monitor e entrada de antes
+			var bv = new LiveAPI("id " + it.id), ob = origBus[it.id];
+			try { bv.set("current_monitoring_state", ob.mon); } catch (e) { }
+			voltaEntrada(bv, ob.inp);
 		} else {
 			var b = new LiveAPI("id " + it.id), nd = 0, ncl = 0;
 			try { nd = b.getcount("devices"); } catch (e) { }
 			try { ncl = b.getcount("arrangement_clips"); } catch (e) { }
 			if (nd > (devCriado[it.id] || 0) || ncl) { ap.mantidos++; log("  bus [" + str(b.get("name")) + "] mantido: " + nd + " devices, " + ncl + " clips\n"); }
-			else {
+			else if (moldeApagado) {
+				// a faixa-molde foi apagada no APPLY: esta cópia (igual a ela) volta a ser a faixa-molde
+				var mo = moldeApagado; moldeApagado = null;
+				b.set("name", mo.name);
+				try { b.set("color", mo.color); } catch (e) { }
+				try { b.set("current_monitoring_state", mo.mon); } catch (e) { }
+				voltaEntrada(b, mo.inp);
+				ap.moldeVoltou = 1;
+				log("  faixa-molde [" + mo.name + "] de volta\n");
+			} else {
 				var set = new LiveAPI("live_set"), nt = set.getcount("tracks"), idx = -1;
 				for (var k = 0; k < nt; k++) if (Number(aponta("live_set tracks " + k).id) == it.id) { idx = k; break; }
 				if (idx >= 0) { set.call("delete_track", idx); ap.apagados++; } else ap.falhas++;
