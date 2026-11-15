@@ -129,6 +129,13 @@ function licGravaEmTodas(nome, texto) {
 	}
 	return n > 0;
 }
+// Apagar a licença: zera o .txt/.json E o .lic antigo (<= 0.3.1). Sem zerar o antigo, o licLeNaPasta cai nele
+// depois de DEACTIVATE/revogada e o device volta a liberar (achado 15/11 no t-persist).
+function licApagaEmTodas() {
+	licGravaEmTodas(licNomeArq(), "");
+	var ps = licPastas();
+	for (var i = 0; i < ps.length; i++) if (ps[i].via != "j" && licLe(ps[i].p + licNomeAntigo())) licGravaArq(ps[i].p + licNomeAntigo(), "");
+}
 function licNomeArq() { return "InsideStudioSP-" + LIC_PACOTE + "-licenca"; }
 function licNomeAntigo() { return "InsideStudioSP-" + LIC_PACOTE + ".lic"; }
 function licArquivo() { var ps = licPastas(); return ps[0] ? ps[0].p + licNomeArq() + (ps[0].via == "j" ? ".json" : ".txt") : licNomeArq(); }   // só para mensagens
@@ -312,7 +319,7 @@ function licResposta(acao, email, token, r, mostrarErro) {
 	}
 	if (r.ok) {
 		if (acao == "desativar") {
-			licGravaEmTodas(licNomeArq(), "");
+			licApagaEmTodas();
 			lic.ok = false; lic.email = ""; lic.token = "";
 			lic.msg = "Este computador foi desativado. A vaga ficou livre para outro.";
 			log(LIC_NOME + ": licença desativada neste computador\n");
@@ -335,7 +342,7 @@ function licResposta(acao, email, token, r, mostrarErro) {
 	var erroS = String(r.erro || "");
 	lic.msg = String(r.mensagem || erroS || "Recusado pelo servidor.");
 	if (acao == "validar" && (erroS == "revogada" || erroS == "nao_encontrada" || erroS == "maquina_nao_ativada" || erroS == "teste_expirado")) {
-		licGravaEmTodas(licNomeArq(), "");
+		licApagaEmTodas();
 		lic.ok = false;
 	}
 	licMudou();
