@@ -32,24 +32,28 @@ USAR
                   (com a cor do grupo, sem mudar o nome). Se o Group Track mistura faixas de
                   grupos diferentes (ex.: conga em DRUMS e shaker em HATS), a saída dele não muda.
    - BUS OFF    = só pinta (e põe o prefixo, se ligado).
+   - CLIPS ON   = pinta também os clips da faixa (do arranjo e da session) com a cor do grupo. Padrão ON.
+                  CLIPS OFF = os clips ficam com a cor que já tinham.
 5. APPLY. O espanador desce pela lista junto com o trabalho real: atrás dele as faixas já estão na
    cor do grupo. No fim o ESPANADOR relê o set (os buses aparecem com o selo BUS).
-6. UNDO volta nome, cor e saída de cada faixa e apaga os buses criados nesta sessão — só se continuarem
+6. UNDO volta nome, cor e saída de cada faixa, a cor de cada clip pintado, e apaga os buses criados nesta sessão — só se continuarem
    vazios (bus em que você já pôs um device ou clip fica). Vale enquanto o device estiver aberto.
    Fora isso, cada mudança é um Ctrl+Z no Live.
 
 LIMITES
 - A API do Live para Max for Live NÃO cria Group Track nem muda a ordem das faixas. Por isso o bus:
   ele faz o papel do grupo (soma, processa), mas não dobra e as faixas continuam onde estavam.
-- Faixa que está dentro de um Group Track: com BUS ON a saída dela sai do grupo e vai para o bus
-  (o rodapé avisa quantas são).
-- Group Track pode ser pintado e ganhar prefixo; a saída dele não é mexida.
+- Faixa que está dentro de um Group Track continua saindo no grupo (o rodapé avisa quantas são);
+  quem vai para o bus é o Group Track, se todas as faixas marcadas dentro dele forem do mesmo grupo.
+- Group Track ganha a cor do grupo, mas o nome dele não muda.
 - A cor que o Live mostra é a da paleta dele mais próxima da cor do grupo.
 
 O QUE CONFERIR NESTE TESTE (me mande print ou o log)
 - Os buses foram criados no topo, com nome e cor, em Monitor IN e entrada "No Input"?
 - As faixas do grupo passaram a sair no bus (OUTPUT = KICK, DRUMS...) e o som chega no bus?
-- O UNDO voltou tudo?
+- Os clips (arranjo e session) ficaram com a cor do grupo, e com CLIPS OFF não mudaram?
+- Um Group Track só com faixas de um grupo foi inteiro para o bus?
+- O UNDO voltou tudo, inclusive a cor dos clips?
 
 SE DER ERRO
 - Abra o console do Max (no device: botão de editar → Max → Window → Max Console).

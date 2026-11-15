@@ -5,10 +5,11 @@
 // (mesmas palavras do MAESTRO). APPLY, faixa a faixa de cima para baixo:
 //   - pinta a faixa com a cor do grupo;
 //   - PREFIX (opcional) põe o nome do grupo na frente do nome ("DRUMS Snare Top");
+//   - CLIPS (opcional) pinta os clips da faixa (arranjo e session) com a cor do grupo;
 //   - BUS: cria (ou reaproveita) uma faixa de áudio com o nome do grupo no topo do set e manda a saída de cada
 //     faixa do grupo para ela. O bus fica em Monitor IN e sem entrada externa: soa como um Group Track.
 // O LOM não cria Group Track nem muda a ordem das faixas: por isso o bus.
-// UNDO volta nome, cor e saída de cada faixa e apaga os buses criados nesta sessão (só se continuarem vazios).
+// UNDO volta nome, cor e saída de cada faixa, a cor de cada clip pintado, e apaga os buses criados nesta sessão (só se continuarem vazios).
 
 autowatch = 1;
 inlets = 1;
@@ -28,7 +29,7 @@ var PATCHER = (typeof this != "undefined" && this && this.patcher) ? this.patche
 var GRUPOS = ["KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "AMBIENCE", "VOCAL", "FX"];
 var CORES = [0xff8a3d, 0x45a6ff, 0xf5c451, 0xe6e1f5, 0xc9b0ff, 0x4fd1c5, 0xff7fb5, 0xc4e86b];
 
-var cfg = { prefix: 0, bus: 1, auto: 1 };
+var cfg = { prefix: 0, bus: 1, auto: 1, clips: 1 };
 
 var ready = false;
 var busy = false;
@@ -36,6 +37,7 @@ var result = null;
 var marcasAntes = {};   // id da faixa -> grupo marcado (sobrevive ao SCAN)
 var orig = {};          // id -> { name, color, rota } antes do 1º APPLY (para o UNDO)
 var nOrig = 0;
+var origClip = {};      // id do clip -> cor antes do 1º APPLY (para o UNDO)
 var criados = [];       // ids dos buses criados nesta sessão
 var fmtRota = -1;       // jeito de gravar output_routing_type que funcionou neste Live
 
@@ -97,16 +99,18 @@ function licMudou() {
 	if (lic.ok && !busy && !result) status("PRONTO · clique SCAN");
 	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
 }
-function enviaCfg() { outlet(2, "valores", cfg.prefix, cfg.bus, cfg.auto); }
+function enviaCfg() { outlet(2, "valores", cfg.prefix, cfg.bus, cfg.auto, cfg.clips); }
 function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
 
 // ---------------------------------------------------------------- controles
 function prefix(v) { cfg.prefix = num(v) ? 1 : 0; publica(); }
 function bus(v) { cfg.bus = num(v) ? 1 : 0; publica(); }
 function auto(v) { cfg.auto = num(v) ? 1 : 0; }
+function clips(v) { cfg.clips = num(v) ? 1 : 0; publica(); }
 function ui_prefix(v) { prefix(v); outlet(3, "prefix", cfg.prefix); enviaCfg(); }
 function ui_bus(v) { bus(v); outlet(3, "bus", cfg.bus); enviaCfg(); }
 function ui_auto(v) { auto(v); outlet(3, "auto", cfg.auto); enviaCfg(); }
+function ui_clips(v) { clips(v); outlet(3, "clips", cfg.clips); enviaCfg(); }
 
 function num(v) {
 	if (v instanceof Array) v = v[0];
@@ -433,7 +437,7 @@ function apply() {
 	}
 	if (!membros.length) { status("nenhuma faixa num grupo · marque as faixas e escolha o grupo"); return; }
 	busy = true;
-	ap = { feitos: 0, falhas: 0, rotaFalhou: 0, buses: 0, busesNovos: 0, inicio: agora(), bus: {}, total: membros.length };
+	ap = { feitos: 0, falhas: 0, rotaFalhou: 0, buses: 0, busesNovos: 0, clips: 0, inicio: agora(), bus: {}, total: membros.length };
 	passos = [];
 	// 1) buses: reaproveita o que já existe com o nome do grupo; cria os que faltam no topo (ordem KICK..FX)
 	if (cfg.bus) {
@@ -464,7 +468,7 @@ function apply() {
 			else log("  Group Track [" + result.tracks[ordemGt[o]].name + "]: tem faixas de " + gs.length + " grupos diferentes; saída dele não mudou\n");
 		}
 	}
-	log("ESPANADOR: APPLY · " + membros.length + " faixas · BUS " + (cfg.bus ? "ON" : "OFF") + " · PREFIX " + (cfg.prefix ? "ON" : "OFF") + "\n");
+	log("ESPANADOR: APPLY · " + membros.length + " faixas · BUS " + (cfg.bus ? "ON" : "OFF") + " · PREFIX " + (cfg.prefix ? "ON" : "OFF") + " · CLIPS " + (cfg.clips ? "ON" : "OFF") + "\n");
 	outlet(2, "varre", membros.length);
 	vigiaLiga();
 	ap.i = 0;
@@ -536,6 +540,7 @@ function umMembro(idx, k) {
 		var nn = GRUPOS[g] + " " + semPrefixo(str(api.get("name")));
 		if (nn != str(api.get("name"))) api.set("name", nn);
 	}
+	if (cfg.clips) pintaClips(api, tr, CORES[g]);
 	if (cfg.bus && ap.bus[g] && !tr.fold && tr.member) {
 		log("  [" + tr.name + "]: está dentro de um Group Track; a saída fica no grupo\n", 1);
 	} else if (cfg.bus && ap.bus[g] && !tr.fold) {
@@ -549,6 +554,40 @@ function umMembro(idx, k) {
 	ap.feitos++;
 	log("    [" + tr.name + "] -> " + GRUPOS[g] + "\n", 1);
 	outlet(2, "progresso", k + 1, ap.total, idx);
+}
+
+// ---------------------------------------------------------------- clips (arranjo e session) na cor do grupo
+// get("arrangement_clips") / get("clip_slots") devolvem "id 12 id 13 ..."; o "clip" do slot devolve "id N" (0 = vazio)
+function idsDe(api, prop) {
+	var r;
+	try { r = api.get(prop); } catch (e) { return []; }
+	if (!(r instanceof Array)) r = str(r).split(" ");
+	var out = [];
+	for (var i = 0; i < r.length; i++) { var n = Number(r[i]); if (String(r[i]) != "id" && !isNaN(n) && n > 0) out.push(n); }
+	return out;
+}
+function pintaClips(api, tr, cor) {
+	var ids = idsDe(api, "arrangement_clips"), slots = idsDe(api, "clip_slots"), n = 0, falhou = 0;
+	for (var s = 0; s < slots.length; s++) {
+		try {
+			var sl = new LiveAPI("id " + slots[s]);
+			if (!num(sl.get("has_clip"))) continue;
+			var c = idsDe(sl, "clip");
+			if (c.length) ids.push(c[0]);
+		} catch (e) { }
+	}
+	for (var i = 0; i < ids.length; i++) {
+		try {
+			var ca = new LiveAPI("id " + ids[i]);
+			if (Number(ca.id) != ids[i]) continue;
+			var antes = num(ca.get("color"));
+			if (!origClip.hasOwnProperty(ids[i])) origClip[ids[i]] = antes;
+			if (antes != cor) ca.set("color", cor);
+			n++;
+		} catch (e) { falhou++; }
+	}
+	ap.clips += n;
+	if (falhou) log("  [" + tr.name + "]: " + falhou + " clips não mudaram de cor\n");
 }
 
 // Group Track existente: ganha a cor do grupo e sai no bus (o nome não muda)
@@ -573,6 +612,7 @@ function fimApply() {
 	busy = false;
 	vigiaDesliga();
 	posApply = "APPLY FEITO · " + ap.feitos + " faixas organizadas" +
+		(cfg.clips && ap.clips ? " · " + ap.clips + " clips pintados" : "") +
 		(cfg.bus ? " · " + ap.buses + " bus" + (ap.buses > 1 ? "es" : "") + (ap.busesNovos ? " (" + ap.busesNovos + " novo" + (ap.busesNovos > 1 ? "s" : "") + ")" : "") : "") +
 		(ap.rotaFalhou ? " · " + ap.rotaFalhou + " saídas NÃO mudaram (ver console)" : "") +
 		(ap.falhas ? " · " + ap.falhas + " falhas (ver console)" : "") + " · UNDO volta como estava";
@@ -589,10 +629,11 @@ function undo() {
 	if (busy || travado()) return;
 	filaUndo = [];
 	for (var id in orig) if (orig.hasOwnProperty(id)) filaUndo.push({ tipo: "faixa", id: Number(id) });
+	for (var cid in origClip) if (origClip.hasOwnProperty(cid)) filaUndo.push({ tipo: "clip", id: Number(cid) });
 	for (var c = criados.length - 1; c >= 0; c--) filaUndo.push({ tipo: "bus", id: criados[c] });
 	if (!filaUndo.length) { status("UNDO: nada para voltar (nenhum APPLY nesta sessão do device)"); return; }
 	busy = true;
-	ap = { i: 0, feitos: 0, falhas: 0, apagados: 0, mantidos: 0 };
+	ap = { i: 0, feitos: 0, falhas: 0, apagados: 0, mantidos: 0, clips: 0, clipsSumiram: 0 };
 	log("ESPANADOR: UNDO · " + filaUndo.length + " itens\n");
 	vigiaLiga();
 	passoUndo();
@@ -602,10 +643,10 @@ function passoUndo() {
 		if (ap.i >= filaUndo.length) {
 			busy = false;
 			vigiaDesliga();
-			posApply = "UNDO FEITO · " + ap.feitos + " faixas de volta" + (ap.apagados ? " · " + ap.apagados + " buses apagados" : "") +
-				(ap.mantidos ? " · " + ap.mantidos + " buses mantidos (têm device ou clip)" : "") + (ap.falhas ? " · " + ap.falhas + " não achadas" : "");
+			posApply = "UNDO FEITO · " + ap.feitos + " faixas de volta" + (ap.clips ? " · " + ap.clips + " clips na cor de antes" : "") + (ap.apagados ? " · " + ap.apagados + " buses apagados" : "") +
+				(ap.mantidos ? " · " + ap.mantidos + " buses mantidos (têm device ou clip)" : "") + (ap.falhas ? " · " + ap.falhas + " não achadas" : "") + (ap.clipsSumiram ? " · " + ap.clipsSumiram + " clips já não existiam" : "");
 			log("ESPANADOR: " + posApply + "\n");
-			orig = {}; nOrig = 0; criados = [];
+			orig = {}; nOrig = 0; origClip = {}; criados = [];
 			marcasAntes = {};
 			if (result) for (var i = 0; i < result.tracks.length; i++) marcasAntes[result.tracks[i].id] = { g: result.tracks[i].g, auto: result.tracks[i].auto };
 			depois("rescan", scan, 300);
@@ -614,9 +655,10 @@ function passoUndo() {
 		var it = filaUndo[ap.i++];
 		onde = "UNDO " + ap.i + "/" + filaUndo.length;
 		status("UNDO " + ap.i + "/" + filaUndo.length);
-		var a = aponta("id " + it.id), ok = false;
+		var a = it.tipo == "clip" ? new LiveAPI("id " + it.id) : aponta("id " + it.id), ok = false;
 		try { ok = Number(a.id) == it.id; } catch (e) { ok = false; }
-		if (!ok) { ap.falhas++; }
+		if (!ok) { if (it.tipo == "clip") ap.clipsSumiram++; else ap.falhas++; }
+		else if (it.tipo == "clip") { a.set("color", origClip[it.id]); ap.clips++; }
 		else if (it.tipo == "faixa") {
 			var api = new LiveAPI("id " + it.id), o = orig[it.id];
 			api.set("name", o.name);

@@ -17,7 +17,7 @@ const tracks = T.map(([name, fold, g, member], i) => {
     auto: g >= 0 && i % 3 === 0 ? 1 : 0, bus: -1, out: member ? 'PERCS' : 'Master', clips };
 });
 tracks[16].sel = 1; tracks[17].sel = 1; tracks[21].sel = 1; tracks[22].sel = 1;
-const data = { versao: '0.1.0', sig: 4, minBeat: 64, maxBeat: 576, tracks, cfg: { prefix: 0, bus: 1, auto: 1 } };
+const data = { versao: '0.1.0', sig: 4, minBeat: 64, maxBeat: 576, tracks, cfg: { prefix: 0, bus: 1, auto: 1, clips: 1 } };
 const LIC_OK = JSON.stringify({ ok: 1, ocupado: 0, email: 'teste', token: '', msg: '', ate: 0 });
 
 (async () => {

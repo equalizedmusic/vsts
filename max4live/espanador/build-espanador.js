@@ -42,7 +42,7 @@ const rCmd = obj('r ---espanador_cmd', 0, 1, [60, 230, 130, 22]);
 line(rCmd, 0, v8, 0);
 
 // eco da janela para os controles escondidos do device (só guardam os valores no set)
-const rEco = obj('route prefix bus auto', 1, 4, [200, 300, 200, 22]);
+const rEco = obj('route prefix bus auto clips', 1, 5, [200, 300, 220, 22]);
 line(v8, 3, rEco, 0);
 
 let px = 500, ty = 0;
@@ -65,6 +65,7 @@ function tab(varname, longname, opcoes, inicial, msgName, outRoute) {
 tab('prefix', 'Prefix', ['OFF', 'ON'], 0, 'prefix', 0);
 tab('bus', 'Bus', ['OFF', 'ON'], 1, 'bus', 1);
 tab('auto', 'Auto', ['OFF', 'ON'], 1, 'auto', 2);
+tab('clips', 'Clips', ['OFF', 'ON'], 1, 'clips', 3);
 
 const send = obj('s ---espanador_ref', 1, 0, [370, 290, 130, 22]);
 line(v8, 2, send, 0);

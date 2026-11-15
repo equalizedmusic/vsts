@@ -3,9 +3,18 @@
 const fs = require('fs'), vm = require('vm'), path = require('path'), os = require('os');
 const FMT = +(process.argv[2] || 1);
 
-let nextId = 10;
-const mk = (name, o) => Object.assign({ id: nextId++, name, color: 0x808080, is_foldable: 0, is_grouped: 0, has_midi_input: 0,
-  out: 'Master', inp: 'Ext. In', mon: 1, devices: 0, clips: [[16, 48], [64, 96]] }, o || {});
+let nextId = 10, nextObj = 5000;
+const objs = {};   // clips e clip slots por id (arranjo: 1 objeto por clip; session: 2 slots, o 1º com clip)
+const mk = (name, o) => {
+  const t = Object.assign({ id: nextId++, name, color: 0x808080, is_foldable: 0, is_grouped: 0, has_midi_input: 0,
+    out: 'Master', inp: 'Ext. In', mon: 1, devices: 0, clips: [[16, 48], [64, 96]] }, o || {});
+  t.cl = t.clips.map(() => { const c = { kind: 'clipobj', id: nextObj++, color: 0x123456 }; objs[c.id] = c; return c; });
+  t.slots = t.is_foldable ? [] : [0, 1].map((k) => {
+    const sc = k === 0 ? { kind: 'clipobj', id: nextObj++, color: 0x654321 } : null; if (sc) objs[sc.id] = sc;
+    const sl = { kind: 'slot', id: nextObj++, clip: sc }; objs[sl.id] = sl; return sl;
+  });
+  return t;
+};
 let tracks = [
   mk('01 Kick'), mk('02 Kick Sub'), mk('03 Snare'), mk('04 Clap'), mk('05 HH Closed'),
   mk('Percs', { is_foldable: 1, clips: [] }), mk('06 Conga', { is_grouped: 1, out: 'Percs' }), mk('07 Shaker', { is_grouped: 1, out: 'Percs' }),
@@ -15,8 +24,10 @@ let tracks = [
 ];
 const percs = tracks.find((t) => t.name === 'Percs'); tracks.forEach((t) => { if (t.is_grouped) t.pai = t.grp ? tracks.find((o) => o.name === t.grp).id : percs.id; });
 const orig = JSON.parse(JSON.stringify(tracks));
+const corClip = (n) => { const t = tracks.find((x) => x.name === n); return t.cl.map((c) => c.color).concat(t.slots.filter((s) => s.clip).map((s) => s.clip.color)); };
 
 const byId = (id) => tracks.find((t) => t.id === id);
+const allClips = () => tracks.flatMap((t) => t.cl.concat(t.slots.filter((s) => s.clip).map((s) => s.clip)));
 const saidas = (t) => [{ display_name: 'Master', identifier: 1 }]
   .concat(t.is_grouped ? [{ display_name: t.grp || 'Percs', identifier: 2 }] : [])
   .concat(tracks.filter((o) => o !== t && !o.is_foldable).map((o, k) => ({ display_name: o.name, identifier: 100 + o.id })));
@@ -25,7 +36,7 @@ const entradas = () => [{ display_name: 'Ext. In', identifier: 1 }, { display_na
 let setsRota = 0;
 function resolve(p) {
   const w = p.split(' ');
-  if (w[0] === 'id') return { kind: byId(+w[1]) ? 'track' : 'none', id: +w[1] };
+  if (w[0] === 'id') return objs[+w[1]] && (objs[+w[1]].kind === 'slot' || allClips().includes(objs[+w[1]])) ? objs[+w[1]] : { kind: byId(+w[1]) ? 'track' : 'none', id: +w[1] };
   if (p === 'live_set') return { kind: 'set' };
   if (w[1] === 'tracks' && w.length === 3) return { kind: 'track', id: tracks[+w[2]].id };
   if (w[1] === 'tracks' && w[3] === 'arrangement_clips') return { kind: 'clip', t: byId(tracks[+w[2]].id), j: +w[4] };
@@ -34,7 +45,7 @@ function resolve(p) {
 class LiveAPI {
   constructor(p) { this.r = resolve(p); }
   goto(p) { this.r = resolve(p); }
-  get id() { return this.r.kind === 'track' ? this.r.id : 0; }
+  get id() { return ['track', 'clipobj', 'slot'].includes(this.r.kind) ? this.r.id : 0; }
   getcount(k) {
     if (this.r.kind === 'set') return tracks.length;
     const t = byId(this.r.id);
@@ -50,17 +61,22 @@ class LiveAPI {
   get(k) {
     if (this.r.kind === 'set') return [{ signature_numerator: 4 }[k]];
     if (this.r.kind === 'clip') return [this.r.t.clips[this.r.j][k === 'start_time' ? 0 : 1]];
+    if (this.r.kind === 'clipobj') { if (k === 'color') return [this.r.color]; throw new Error('get clip ' + k); }
+    if (this.r.kind === 'slot') { if (k === 'has_clip') return [this.r.clip ? 1 : 0]; if (k === 'clip') return ['id', this.r.clip ? this.r.clip.id : 0]; throw new Error('get slot ' + k); }
     const t = byId(this.r.id);
     if (k === 'output_routing_type') return [JSON.stringify({ output_routing_type: { display_name: t.out, identifier: 0 } })];
     if (k === 'input_routing_type') return [JSON.stringify({ input_routing_type: { display_name: t.inp, identifier: 0 } })];
     if (k === 'available_output_routing_types') return [JSON.stringify({ available_output_routing_types: saidas(t) })];
     if (k === 'available_input_routing_types') return [JSON.stringify({ available_input_routing_types: entradas() })];
     if (k === 'group_track') return ['id', t.pai || 0];
+    if (k === 'arrangement_clips') return t.cl.flatMap((c) => ['id', c.id]);
+    if (k === 'clip_slots') return t.slots.flatMap((c) => ['id', c.id]);
     const m = { name: t.name, color: t.color, is_foldable: t.is_foldable, is_grouped: t.is_grouped, has_midi_input: t.has_midi_input };
     if (k in m) return [m[k]];
     throw new Error('get ' + k);
   }
   set(k, ...v) {
+    if (this.r.kind === 'clipobj') { if (k === 'color') { this.r.color = v[0]; return; } throw new Error('set clip ' + k); }
     const t = byId(this.r.id);
     if (k === 'name') { t.name = String(v[0]); return; }
     if (k === 'color') { t.color = v[0]; return; }
@@ -147,6 +163,9 @@ esperaLivre(() => {
     confere(nome('Toms').out === 'DRUMS BUS' && nome('Toms').color === nome('DRUMS 03 Snare').color && nome('DRUMS 14 Tom Hi').out === 'Toms', 'Group Track Toms (só DRUMS) vai inteiro para o DRUMS BUS, com a cor, sem renomear; os toms seguem no grupo');
     confere(nome('FX 13 Coisa Sem Nome').out === 'FX', 'marca feita na janela vale no APPLY');
     confere(nome('10 Pad').out === 'Master' && nome('10 Pad').color === 0x808080, 'faixa sem grupo não muda');
+    confere(corClip('KICK 01 Kick').length === 3 && corClip('KICK 01 Kick').every((c) => c === 0xff8a3d), 'CLIPS ON: 2 clips do arranjo + 1 da session do Kick na cor do KICK');
+    confere(corClip('DRUMS 06 Conga').every((c) => c === nome('DRUMS 03 Snare').color), 'CLIPS: faixa dentro de Group Track também tem os clips pintados');
+    confere(corClip('10 Pad').every((c) => c === 0x123456 || c === 0x654321), 'CLIPS: faixa sem grupo não muda os clips');
     const prog = outs.filter((o) => o[0] === 'progresso').map((o) => o[3]);
     confere(prog.every((s, i) => i === 0 || s > prog[i - 1]), 'APPLY de cima para baixo (' + prog.join(',') + ')');
     const d2 = JSON.parse(dicts.espanador_data);
@@ -165,6 +184,8 @@ esperaLivre(() => {
         tracks.forEach((t) => console.log(`  ${t.name.padEnd(22)} saída ${t.out}`));
         const volta = orig.every((o) => { const t = byId(o.id); return t && t.name === o.name && t.color === o.color && t.out === o.out; });
         confere(volta, 'UNDO voltou nome, cor e saída de todas as faixas');
+        const clipsVoltaram = orig.every((o) => { const t = byId(o.id); return !t || (t.cl.every((c, j) => c.color === o.cl[j].color) && t.slots.every((s, j) => !s.clip || s.clip.color === o.slots[j].clip.color)); });
+        confere(clipsVoltaram, 'UNDO voltou a cor de todos os clips (arranjo e session)');
         confere(!!nome('KICK') && !nome('BASS') && !nome('DRUMS BUS'), 'UNDO apagou os buses vazios e manteve o KICK (tem device)');
         const lg = fs.readFileSync(path.join(LOGDIR, 'ESPANADOR-log.txt'), 'utf8');
         confere(lg.length > 200, 'log em arquivo (' + lg.split('\n').length + ' linhas)');
