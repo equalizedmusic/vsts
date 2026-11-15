@@ -27,6 +27,12 @@ USAR
                   soa como um Group Track (é nele que vai o MAESTRO). Padrão ON.
                   Se já existir uma faixa com o nome do grupo (ou "<GRUPO> BUS"), ela é reaproveitada.
                   Se um Group Track já se chama DRUMS, o bus novo vira "DRUMS BUS".
+                  MAESTRO EM TODO BUS: crie UMA faixa de áudio chamada MAESTRO (ou MOLDE), ponha nela o
+                  MAESTRO (e o que mais quiser em todo bus) e deixe-a sem clips. Cada bus novo nasce como
+                  CÓPIA dessa faixa, já com os plugins, e é renomeado/pintado. A faixa-molde não entra em
+                  grupo nenhum e fica onde está (as cópias aparecem logo abaixo dela). Bus que já existia
+                  não é mexido. Sem faixa-molde, o bus nasce vazio, como antes.
+                  (A API do Max for Live não insere plugin numa faixa; duplicar a faixa é o caminho.)
                   Faixa que já está dentro de um Group Track (feito com Ctrl+G) CONTINUA saindo
                   no grupo: ganha cor e prefixo, e quem vai para o bus é o Group Track inteiro
                   (com a cor do grupo, sem mudar o nome). Se o Group Track mistura faixas de
@@ -50,6 +56,7 @@ LIMITES
 
 O QUE CONFERIR NESTE TESTE (me mande print ou o log)
 - Os buses foram criados no topo, com nome e cor, em Monitor IN e entrada "No Input"?
+- Com a faixa MAESTRO (molde) no set: cada bus novo veio com o MAESTRO dentro? UNDO apagou esses buses?
 - As faixas do grupo passaram a sair no bus (OUTPUT = KICK, DRUMS...) e o som chega no bus?
 - Os clips (arranjo e session) ficaram com a cor do grupo, e com CLIPS OFF não mudaram?
 - Um Group Track só com faixas de um grupo foi inteiro para o bus?

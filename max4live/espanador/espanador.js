@@ -39,6 +39,7 @@ var orig = {};          // id -> { name, color, rota } antes do 1º APPLY (para 
 var nOrig = 0;
 var origClip = {};      // id do clip -> cor antes do 1º APPLY (para o UNDO)
 var criados = [];       // ids dos buses criados nesta sessão
+var devCriado = {};     // id do bus criado -> nº de devices que ele já tinha ao nascer (cópia da faixa-molde)
 var fmtRota = -1;       // jeito de gravar output_routing_type que funcionou neste Live
 
 // ---------------------------------------------------------------- tarefas com referência guardada (ver VASSOURA 0.2.3)
@@ -149,6 +150,11 @@ function grupoDoBus(nome) {
 	var s = String(nome || "").replace(/^\s+|\s+$/g, "").toUpperCase();
 	for (var g = 0; g < GRUPOS.length; g++) if (s == GRUPOS[g] || s == GRUPOS[g] + " BUS") return g;
 	return -1;
+}
+// faixa-molde do bus: "MAESTRO" ou "MOLDE" (exatos, sem diferença de maiúscula)
+function ehMolde(nome) {
+	var s = String(nome || "").replace(/^\s+|\s+$/g, "").toUpperCase();
+	return s == "MAESTRO" || s == "MOLDE";
 }
 // tira um prefixo de grupo que já esteja no nome ("DRUMS Snare" -> "Snare"), para o PREFIX não duplicar
 function semPrefixo(nome) {
@@ -327,6 +333,7 @@ function leFaixa(i) {
 	tr.pai = tr.member ? idDoPai(t) : 0;
 	tr.out = rotaAtual(t, "output").nome;
 	tr.bus = tr.fold ? -1 : grupoDoBus(tr.name);
+	tr.molde = !tr.fold && ehMolde(tr.name) ? 1 : 0;
 	var nc = 0;
 	try { nc = t.getcount("arrangement_clips"); } catch (e) { nc = 0; }
 	for (var j = 0; j < nc; j++) {
@@ -365,7 +372,7 @@ function fimScan() {
 	for (var b = 0; b < result.tracks.length; b++) if (result.tracks[b].bus >= 0) nomesBus[result.tracks[b].name] = result.tracks[b].bus;
 	for (var i = 0; i < result.tracks.length; i++) {
 		var tr = result.tracks[i];
-		if (tr.bus >= 0) continue;
+		if (tr.bus >= 0 || tr.molde) { tr.g = -1; continue; }
 		if (marcasAntes.hasOwnProperty(tr.id)) { tr.g = marcasAntes[tr.id].g; tr.auto = marcasAntes[tr.id].auto; continue; }
 		// já mandada para um bus de grupo: é desse grupo
 		if (!tr.fold && nomesBus.hasOwnProperty(tr.out)) { tr.g = nomesBus[tr.out]; nJa++; continue; }
@@ -433,11 +440,11 @@ function apply() {
 	var membros = [], usados = {};
 	for (var i = 0; i < result.tracks.length; i++) {
 		var tr = result.tracks[i];
-		if (tr.g >= 0 && tr.bus < 0) { membros.push(i); usados[tr.g] = 1; }
+		if (tr.g >= 0 && tr.bus < 0 && !tr.molde) { membros.push(i); usados[tr.g] = 1; }
 	}
 	if (!membros.length) { status("nenhuma faixa num grupo · marque as faixas e escolha o grupo"); return; }
 	busy = true;
-	ap = { feitos: 0, falhas: 0, rotaFalhou: 0, buses: 0, busesNovos: 0, clips: 0, inicio: agora(), bus: {}, total: membros.length };
+	ap = { feitos: 0, falhas: 0, rotaFalhou: 0, buses: 0, busesNovos: 0, doMolde: 0, clips: 0, inicio: agora(), bus: {}, total: membros.length };
 	passos = [];
 	// 1) buses: reaproveita o que já existe com o nome do grupo; cria os que faltam no topo (ordem KICK..FX)
 	if (cfg.bus) {
@@ -500,18 +507,28 @@ function preparaBus(g, porNome) {
 	}
 	// nome livre: "DRUMS"; se outra faixa (um Group Track, por ex.) já se chama DRUMS, o bus vira "DRUMS BUS"
 	var nome = porNome[GRUPOS[g]] ? GRUPOS[g] + " BUS" : GRUPOS[g];
-	var antes = {};
-	for (var k = 0; k < nt; k++) antes[Number(aponta("live_set tracks " + k).id)] = 1;
-	set.call("create_audio_track", 0);
+	var antes = {}, molde = -1;
+	for (var k = 0; k < nt; k++) {
+		var tk0 = aponta("live_set tracks " + k);
+		antes[Number(tk0.id)] = 1;
+		if (molde < 0 && !num(tk0.get("is_foldable")) && ehMolde(str(tk0.get("name")))) molde = k;
+	}
+	// faixa-molde ("MAESTRO" ou "MOLDE"): o bus nasce como cópia dela, com o MAESTRO (ou o que tiver) já dentro.
+	// O LOM não insere plugin/M4L numa faixa (insert_device só aceita device nativo), mas duplica a faixa inteira.
+	if (molde >= 0) set.call("duplicate_track", molde);
+	else set.call("create_audio_track", 0);
 	var novo = null;
 	var nt2 = set.getcount("tracks");
 	for (var k2 = 0; k2 < nt2; k2++) { var tk = aponta("live_set tracks " + k2); if (!antes[Number(tk.id)]) { novo = Number(tk.id); break; } }
 	if (!novo) { ap.falhas++; log("  bus " + GRUPOS[g] + ": o Live não criou a faixa\n"); return; }
 	criados.push(novo);
 	var api = new LiveAPI("id " + novo);
+	var nd0 = 0; try { nd0 = api.getcount("devices"); } catch (e) { }
+	devCriado[novo] = nd0;
 	api.set("name", nome);
 	ap.bus[g] = { id: novo, nome: nome }; ap.buses++; ap.busesNovos++;
-	log("  bus " + GRUPOS[g] + ": criado [" + nome + "] id " + novo + "\n");
+	if (molde >= 0) ap.doMolde++;
+	log("  bus " + GRUPOS[g] + ": criado [" + nome + "] id " + novo + (molde >= 0 ? " (cópia da faixa-molde, " + nd0 + " devices)" : "") + "\n");
 	configuraBus(api, g, true);
 }
 function configuraBus(api, g, novo) {
@@ -613,7 +630,7 @@ function fimApply() {
 	vigiaDesliga();
 	posApply = "APPLY FEITO · " + ap.feitos + " faixas organizadas" +
 		(cfg.clips && ap.clips ? " · " + ap.clips + " clips pintados" : "") +
-		(cfg.bus ? " · " + ap.buses + " bus" + (ap.buses > 1 ? "es" : "") + (ap.busesNovos ? " (" + ap.busesNovos + " novo" + (ap.busesNovos > 1 ? "s" : "") + ")" : "") : "") +
+		(cfg.bus ? " · " + ap.buses + " bus" + (ap.buses > 1 ? "es" : "") + (ap.busesNovos ? " (" + ap.busesNovos + " novo" + (ap.busesNovos > 1 ? "s" : "") + (ap.doMolde ? ", cópia do molde" : "") + ")" : "") : "") +
 		(ap.rotaFalhou ? " · " + ap.rotaFalhou + " saídas NÃO mudaram (ver console)" : "") +
 		(ap.falhas ? " · " + ap.falhas + " falhas (ver console)" : "") + " · UNDO volta como estava";
 	log("ESPANADOR: " + posApply + " · " + ((agora() - ap.inicio) / 1000).toFixed(1) + " s\n");
@@ -646,7 +663,7 @@ function passoUndo() {
 			posApply = "UNDO FEITO · " + ap.feitos + " faixas de volta" + (ap.clips ? " · " + ap.clips + " clips na cor de antes" : "") + (ap.apagados ? " · " + ap.apagados + " buses apagados" : "") +
 				(ap.mantidos ? " · " + ap.mantidos + " buses mantidos (têm device ou clip)" : "") + (ap.falhas ? " · " + ap.falhas + " não achadas" : "") + (ap.clipsSumiram ? " · " + ap.clipsSumiram + " clips já não existiam" : "");
 			log("ESPANADOR: " + posApply + "\n");
-			orig = {}; nOrig = 0; origClip = {}; criados = [];
+			orig = {}; nOrig = 0; origClip = {}; criados = []; devCriado = {};
 			marcasAntes = {};
 			if (result) for (var i = 0; i < result.tracks.length; i++) marcasAntes[result.tracks[i].id] = { g: result.tracks[i].g, auto: result.tracks[i].auto };
 			depois("rescan", scan, 300);
@@ -672,7 +689,7 @@ function passoUndo() {
 			var b = new LiveAPI("id " + it.id), nd = 0, ncl = 0;
 			try { nd = b.getcount("devices"); } catch (e) { }
 			try { ncl = b.getcount("arrangement_clips"); } catch (e) { }
-			if (nd || ncl) { ap.mantidos++; log("  bus [" + str(b.get("name")) + "] mantido: " + nd + " devices, " + ncl + " clips\n"); }
+			if (nd > (devCriado[it.id] || 0) || ncl) { ap.mantidos++; log("  bus [" + str(b.get("name")) + "] mantido: " + nd + " devices, " + ncl + " clips\n"); }
 			else {
 				var set = new LiveAPI("live_set"), nt = set.getcount("tracks"), idx = -1;
 				for (var k = 0; k < nt; k++) if (Number(aponta("live_set tracks " + k).id) == it.id) { idx = k; break; }

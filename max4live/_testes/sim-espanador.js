@@ -22,6 +22,8 @@ let tracks = [
   mk('DRUMS', { is_foldable: 1, clips: [] }),   // Group Track chamado DRUMS: o bus do DRUMS tem de virar "DRUMS BUS"
   mk('Toms', { is_foldable: 1, clips: [] }), mk('14 Tom Hi', { is_grouped: 1, out: 'Toms', grp: 'Toms' }), mk('15 Tom Lo', { is_grouped: 1, out: 'Toms', grp: 'Toms' }),
 ];
+const MOLDE = !!process.env.MOLDE;   // MOLDE=1: set com faixa-molde MAESTRO (com o plugin) -> buses nascem como cópia dela
+if (MOLDE) tracks.push(mk('Maestro', { devices: 1, clips: [] }));
 const percs = tracks.find((t) => t.name === 'Percs'); tracks.forEach((t) => { if (t.is_grouped) t.pai = t.grp ? tracks.find((o) => o.name === t.grp).id : percs.id; });
 const orig = JSON.parse(JSON.stringify(tracks));
 const corClip = (n) => { const t = tracks.find((x) => x.name === n); return t.cl.map((c) => c.color).concat(t.slots.filter((s) => s.clip).map((s) => s.clip.color)); };
@@ -56,6 +58,7 @@ class LiveAPI {
   call(fn, a) {
     if (fn === 'create_audio_track') { tracks.splice(a, 0, mk(String(tracks.length + 1) + '-Audio', { clips: [] })); return; }
     if (fn === 'delete_track') { tracks.splice(a, 1); return; }
+    if (fn === 'duplicate_track') { const o = tracks[a]; tracks.splice(a + 1, 0, mk(o.name, { color: o.color, out: o.out, inp: o.inp, mon: o.mon, devices: o.devices, clips: o.clips.slice() })); return; }
     throw new Error('call ' + fn);
   }
   get(k) {
@@ -155,7 +158,13 @@ esperaLivre(() => {
     confere(['KICK', 'BASS', 'HATS', 'SYNTHS', 'VOCAL', 'FX'].every((n) => nome(n) && nome(n).mon === 0), 'buses KICK/BASS/HATS/SYNTHS/VOCAL/FX criados');
     confere(!nome('AMBIENCE'), 'grupo sem faixa não ganha bus (Pad tirado do grupo)');
     const ordem = tracks.slice(0, 7).map((t) => t.name).join(',');
-    confere(ordem === 'KICK,BASS,DRUMS BUS,HATS,SYNTHS,VOCAL,FX', 'buses no topo na ordem do MAESTRO (' + ordem + ')');
+    if (!MOLDE) confere(ordem === 'KICK,BASS,DRUMS BUS,HATS,SYNTHS,VOCAL,FX', 'buses no topo na ordem do MAESTRO (' + ordem + ')');
+    else {
+      const im = tracks.findIndex((t) => t.name === 'Maestro'), apos = tracks.slice(im + 1, im + 8).map((t) => t.name).join(',');
+      confere(apos === 'KICK,BASS,DRUMS BUS,HATS,SYNTHS,VOCAL,FX', 'MOLDE: buses logo abaixo da faixa Maestro, na ordem do MAESTRO (' + apos + ')');
+      confere(['KICK', 'BASS', 'DRUMS BUS', 'HATS', 'SYNTHS', 'VOCAL', 'FX'].every((n) => nome(n).devices === 1 && nome(n).inp === 'No Input'), 'MOLDE: todo bus novo veio com o plugin da faixa-molde');
+      confere(nome('Maestro').color === 0x808080 && nome('Maestro').out === 'Master', 'MOLDE: a faixa-molde não foi mexida');
+    }
     confere(nome('KICK 01 Kick') && nome('KICK 01 Kick').out === 'KICK' && nome('KICK 01 Kick').color === 0xff8a3d, 'Kick: prefixo, cor e saída no bus KICK');
     confere(nome('DRUMS 03 Snare').out === 'DRUMS BUS', 'Snare vai para o DRUMS BUS');
     confere(nome('DRUMS 06 Conga').out === 'Percs' && nome('DRUMS 06 Conga').color === nome('DRUMS 03 Snare').color, 'Conga (dentro do Group Percs) ganha cor/prefixo mas continua saindo no grupo');
@@ -169,6 +178,7 @@ esperaLivre(() => {
     const prog = outs.filter((o) => o[0] === 'progresso').map((o) => o[3]);
     confere(prog.every((s, i) => i === 0 || s > prog[i - 1]), 'APPLY de cima para baixo (' + prog.join(',') + ')');
     const d2 = JSON.parse(dicts.espanador_data);
+    confere(!d2.tracks.some((t) => t.name === 'Maestro' && t.g >= 0), 'faixa-molde nunca entra em grupo');
     confere(d2.tracks.filter((t) => t.bus >= 0).length === 7, 'SCAN depois do APPLY reconhece os 7 buses');
     // 2º APPLY: não cria bus de novo nem dobra o prefixo
     const n0 = tracks.length;
@@ -177,7 +187,7 @@ esperaLivre(() => {
       confere(tracks.length === n0, '2º APPLY reaproveita os buses (' + tracks.length + ' faixas)');
       confere(!!nome('KICK 01 Kick') && !tracks.some((t) => /^KICK KICK/.test(t.name)), '2º APPLY não dobra o prefixo');
       // MAESTRO já no bus KICK: o UNDO não pode apagar
-      nome('KICK').devices = 1;
+      nome('KICK').devices = MOLDE ? 2 : 1;
       motor.undo();
       esperaLivre(() => {
         console.log('UNDO:');
