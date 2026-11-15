@@ -1,5 +1,8 @@
 # Licenças (ativação dos pacotes)
 
+> **Desde 15/11/2026 o servidor de licenças, o painel admin e o site ficam no repositório PRIVADO `equalizedmusic/site`.**
+> Aqui no `vsts` fica só `licenca/cliente` (o que vai dentro do plugin). As menções a `licenca/servidor` abaixo apontam para lá.
+
 Um **token por e-mail e por pacote** (criativo, mix, knob, quimera, limao, mercurio, resenha, montamonta, groovador, mesa, align), válido em **até 2 computadores**.
 Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
 
