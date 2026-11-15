@@ -470,7 +470,9 @@ async function criarLicenca(env, { email: emailBruto, pacote: pacoteBruto, orige
     // ter cadastrado), então licença dada por aqui troca o token do e-mail e o novo vai para o cliente.
     // A cortesia da VASSOURA (migração 14/11) não conta como compra verificada.
     // (o token da VASSOURA só é trocado se ela mesma for grátis: o próprio, mandado por e-mail na migração, fica)
-    const soGratis = doEmail && doEmail.origem === 'gratis' && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem NOT IN ('gratis', 'teste') AND pacote <> 'vassoura' LIMIT 1").bind(email).first());
+    // 15/11: só a VASSOURA de CORTESIA fica de fora. Antes era "pacote <> 'vassoura'" e, no carrinho com VASSOURA + outro
+    // pacote, a VASSOURA recém-comprada não contava ⇒ o 2º pacote trocava o token de novo e o do e-mail deixava de valer.
+    const soGratis = doEmail && doEmail.origem === 'gratis' && !(await env.DB.prepare("SELECT id FROM licencas WHERE email = ? AND origem NOT IN ('gratis', 'teste') AND NOT (pacote = 'vassoura' AND origem = 'cortesia') LIMIT 1").bind(email).first());
     const hashGratis = soGratis ? doEmail.token_hash : null;
     if (soGratis) doEmail = null;
     const token = doEmail ? null : novoToken();
