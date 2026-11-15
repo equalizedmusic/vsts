@@ -5,6 +5,11 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.4 — 2026-11-15
+- **Corrigido: depois de DEACTIVATE, a VASSOURA podia voltar a liberar ao reabrir o set.** Quem veio de uma versão
+  anterior à 0.3.3 ainda tinha o arquivo de licença antigo no computador. Agora o DEACTIVATE apaga também esse arquivo.
+  Quem não desativa nada não percebe diferença; o token é o mesmo de antes.
+
 ## 0.3.3 — 2026-11-15
 - **Corrigido de vez: a VASSOURA pedia e-mail e token toda vez que o set era reaberto.** O Max não estava deixando
   gravar o arquivo da licença. Agora a licença é gravada de dois jeitos diferentes, e o computador é reconhecido
