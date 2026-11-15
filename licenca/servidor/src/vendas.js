@@ -12,15 +12,25 @@ import { nomePedido, itensPedido } from './precos.js';
 
 const agora = () => Math.floor(Date.now() / 1000);
 const FUSO = 3 * 3600;   // São Paulo = UTC-3
-const MAX_CONSULTAS = 40;          // consultas ao Mercado Pago por abertura da aba (limite de subrequests do Worker)
-const CACHE_PAGAMENTO = 6 * 3600;  // taxa/líquido de um pagamento quase não muda: guarda 6 h no cache do Worker
+// Plano grátis do Worker: no máximo 50 subrequests (fetch + Cache API) por chamada. Com 19 vendas no mês, 1 fetch ao MP +
+// cache.match + cache.put por venda estourava ("Too many subrequests", 15/11) e a aba inteira dava erro 500.
+// Agora: o líquido fica no KV (MIDIAS, limite próprio de 1000 operações, não entra nos 50) e só CONSULTAS_MP vendas
+// sem cache vão ao Mercado Pago por chamada; as outras aparecem "sem líquido" e entram nas aberturas seguintes.
+const MAX_CONSULTAS = 40;          // vendas pagas consideradas no saldo estimado (/painel/vendas/conta)
+const CONSULTAS_MP = 20;           // fetch ao Mercado Pago por chamada (folga p/ o resto da rota)
+const CACHE_A_LIBERAR = 6 * 3600;  // dinheiro ainda a liberar: relê a cada 6 h
+const CACHE_LIBERADO = 90 * 86400; // já liberado: não muda mais
 
-// taxa e líquido de um pagamento do Mercado Pago (GET /v1/payments/{id}); null se não deu para ler
-async function pagamentoMp(env, id) {
+// taxa e líquido de um pagamento do Mercado Pago (GET /v1/payments/{id}); null se não deu para ler.
+// cota = { mp: quantos fetch ainda pode fazer nesta chamada }
+async function pagamentoMp(env, id, cota) {
     if (!env.MP_ACCESS_TOKEN || !/^\d{1,20}$/.test(String(id))) return null;
-    const chave = new Request('https://cache.interno/mp-pagamento/' + id);
-    const cache = typeof caches !== 'undefined' ? caches.default : null;
-    if (cache) { const c = await cache.match(chave); if (c) return c.json(); }
+    const chave = 'mp-pagamento:' + id;
+    if (env.MIDIAS) {
+        try { const c = await env.MIDIAS.get(chave, 'json'); if (c) return c; } catch { /* sem cache: segue */ }
+    }
+    if (!cota || cota.mp <= 0) return null;
+    cota.mp--;
     let d = null;
     try {
         const r = await fetch('https://api.mercadopago.com/v1/payments/' + id, { headers: { authorization: 'Bearer ' + env.MP_ACCESS_TOKEN } });
@@ -32,7 +42,10 @@ async function pagamentoMp(env, id) {
         if (liquido == null) return null;
         d = { liquido, taxa: Math.max(0, bruto - liquido), libera_em: p.money_release_date ? Math.floor(Date.parse(p.money_release_date) / 1000) : null };
     } catch { return null; }
-    if (cache) await cache.put(chave, new Response(JSON.stringify(d), { headers: { 'cache-control': 'max-age=' + CACHE_PAGAMENTO } }));
+    if (env.MIDIAS) {
+        const liberado = !d.libera_em || d.libera_em <= agora();
+        try { await env.MIDIAS.put(chave, JSON.stringify(d), { expirationTtl: liberado ? CACHE_LIBERADO : CACHE_A_LIBERAR }); } catch { /* fica sem cache */ }
+    }
     return d;
 }
 
@@ -76,9 +89,10 @@ export async function rotaVendas(caminho, req, env) {
             "SELECT DISTINCT strftime('%Y-%m', COALESCE(pago_em, criado_em) - ?, 'unixepoch') AS mes FROM pedidos ORDER BY mes DESC")
             .bind(FUSO).all();
         // taxa e líquido de cada venda paga no Mercado Pago (o que de fato cai na conta)
+        const cota = { mp: CONSULTAS_MP };
         await Promise.all(pedidos.filter((p) => p.metodo === 'mp' && p.pagamento_id && (p.status === 'pago' || p.status === 'processando'))
-            .slice(0, MAX_CONSULTAS).map(async (p) => {
-                const d = await pagamentoMp(env, p.pagamento_id);
+            .map(async (p) => {
+                const d = await pagamentoMp(env, p.pagamento_id, cota);
                 if (d) { p.liquido_centavos = d.liquido; p.taxa_centavos = d.taxa; p.libera_em = d.libera_em; }
             }));
         const resumo = {};   // por moeda: { pagas, total, liquido, taxas, sem_liquido, devolvidas, devolvido, cupons, desconto, carrinhos }
@@ -121,7 +135,8 @@ export async function rotaVendas(caminho, req, env) {
                 "SELECT pagamento_id FROM pedidos WHERE metodo = 'mp' AND status IN ('pago', 'processando') AND pagamento_id IS NOT NULL ORDER BY pago_em DESC LIMIT ?")
                 .bind(MAX_CONSULTAS).all();
             let liberado = 0, aLiberar = 0, proxima = null, lidos = 0;
-            for (const d of await Promise.all(pagos.map((p) => pagamentoMp(env, p.pagamento_id)))) {
+            const cota = { mp: CONSULTAS_MP - 2 };   // já gastou /users/me e o saldo
+            for (const d of await Promise.all(pagos.map((p) => pagamentoMp(env, p.pagamento_id, cota)))) {
                 if (!d) continue;
                 lidos++;
                 if (d.libera_em && d.libera_em > agora()) { aLiberar += d.liquido; if (!proxima || d.libera_em < proxima) proxima = d.libera_em; }
