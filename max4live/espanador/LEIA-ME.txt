@@ -1,75 +1,106 @@
 ESPANADOR — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
 Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/espanador/
-Organiza o set nos grupos de stems: os 8 grupos do MAESTRO (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX).
-Par do RODO e da VASSOURA, para o pré-mix.
+Organiza o set nos 8 grupos do MAESTRO (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX): pinta faixas e clips
+com a cor do grupo e cria um BUS por grupo, já com o MAESTRO dentro.
 
-*** 0.1.0 TESTE: sem licença, só para validar no Live. ***
+ONDE ELE ENTRA NO FLUXO (PACOTÃO MIX & MASTER)
+  1. VASSOURA  limpa os trechos vazios dos clips
+  2. RODO      nivela os clips (PEAK, RMS ou LUFS)
+  3. ESPANADOR organiza em grupos e cria os buses com o MAESTRO   <- você está aqui
+  4. MAESTRO   você só regula o MAESTRO de cada bus
+  5. MASTER DOS MAGOS no master, finaliza
+Cada um funciona sozinho; juntos, o set sai da bagunça e chega à master pronta.
 
-INSTALAR
+======================================================================
+INSTALAR (uma vez)
+======================================================================
 1. Copie a pasta inteira (Espanador-<versão>) para:
-   Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
+   Windows: Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
+   Mac:     Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/
    Os 4 arquivos (Espanador.amxd, espanador.js, espanador_view.js e espanador_strip.js) PRECISAM ficar juntos.
 2. No Live, arraste o Espanador.amxd para a PRIMEIRA faixa de áudio do projeto (como o RODO).
+   Não ponha no MASTER.
 
-USAR
-1. No device, clique OPEN THE MAGIC. Na janela, clique SCAN: aparecem todas as faixas do set,
-   com a cor, a saída (OUTPUT) e os clips do arranjo.
-2. Com AUTO ON SCAN ligado, as faixas já chegam marcadas pelo nome, com as mesmas palavras que o
-   MAESTRO usa (Kick, Bass, Snare, Clap, Perc, Hat, Pad, Lead, Vox, FX, Riser...). Essas aparecem
-   com o grupo só contornado e "?": confira. AUTO BY NAME marca na hora as que ainda estão sem grupo.
-3. Marque as faixas: clique = marca/desmarca · Shift+clique = marca o intervalo · arrastar = várias.
-   Depois clique no botão do grupo (KICK, BASS...). NONE tira as marcadas do grupo. CLEAR desmarca.
-   O número no botão é quantas faixas estão no grupo.
-4. Opções:
-   - PREFIX ON  = põe o nome do grupo na frente do nome da faixa ("DRUMS 03 Snare"). Padrão OFF.
-   - BUS ON     = cria no TOPO do set uma faixa de áudio para cada grupo usado (KICK, BASS...) e manda
-                  a saída de cada faixa do grupo para ela. O bus fica em Monitor IN e sem entrada externa:
-                  soa como um Group Track (é nele que vai o MAESTRO). Padrão ON.
-                  Se já existir uma faixa de áudio VAZIA (sem clips) com o nome do grupo (ou "<GRUPO> BUS"),
-                  ela é reaproveitada. Faixa chamada "KICK" ou "BASS" com clips (ou MIDI) é o próprio kick/baixo:
-                  entra no grupo e o bus novo vira "KICK BUS" / "BASS BUS".
-                  Se um Group Track já se chama DRUMS, o bus novo vira "DRUMS BUS".
-                  MAESTRO EM TODO BUS: crie UMA faixa de áudio chamada MAESTRO (ou MOLDE), ponha nela o
-                  MAESTRO (e o que mais quiser em todo bus) e deixe-a sem clips. Cada bus novo nasce como
-                  CÓPIA dessa faixa, já com os plugins, e é renomeado/pintado. A faixa-molde não entra em
-                  grupo nenhum; as cópias aparecem logo abaixo dela e, NO FIM DO APPLY, a faixa-molde é
-                  APAGADA (o MAESTRO dela, sem nome de grupo, ficava "BY SOUND" no AMBIENCE). O UNDO a
-                  devolve. Bus que já existia não é mexido. Sem faixa-molde, o bus nasce vazio, como antes.
-                  (A API do Max for Live não insere plugin numa faixa; duplicar a faixa é o caminho.)
-                  Faixa que já está dentro de um Group Track (feito com Ctrl+G) CONTINUA saindo
-                  no grupo: ganha cor e prefixo, e quem vai para o bus é o Group Track inteiro
-                  (com a cor do grupo, sem mudar o nome). Se o Group Track mistura faixas de
-                  grupos diferentes (ex.: conga em DRUMS e shaker em HATS), a saída dele não muda.
-   - BUS OFF    = só pinta (e põe o prefixo, se ligado).
-   - CLIPS ON   = pinta também os clips da faixa (do arranjo e da session) com a cor do grupo. Padrão ON.
-                  CLIPS OFF = os clips ficam com a cor que já tinham.
-5. APPLY. O espanador desce pela lista junto com o trabalho real: atrás dele as faixas já estão na
-   cor do grupo. No fim o ESPANADOR relê o set (os buses aparecem com o selo BUS).
-6. UNDO volta nome, cor e saída de cada faixa, a cor de cada clip pintado, Monitor/entrada dos buses reaproveitados,
-   e apaga os buses criados nesta sessão — só se continuarem vazios (bus em que você já pôs um device ou clip fica).
-   Se a faixa-molde foi apagada, uma das cópias volta a ser ela. Vale enquanto o device estiver aberto.
-   Fora isso, cada mudança é um Ctrl+Z no Live.
+======================================================================
+ATIVAR (1ª vez)
+======================================================================
+1. No device, clique OPEN THE MAGIC. A janela abre na tela ACTIVATE ESPANADOR.
+2. Clique no campo E-MAIL e digite o e-mail da compra; clique em TOKEN e cole o token
+   (ISP-XXXX-XXXX-XXXX-XXXX-XXXX) que chegou no e-mail. Clique ACTIVATE (precisa de internet).
+3. Vale em até 2 computadores. Sem internet, segue valendo por 45 dias. LICENSE (canto da janela)
+   mostra a licença e DEACTIVATE THIS COMPUTER libera a vaga para outro computador.
 
-LIMITES
-- A API do Live para Max for Live NÃO cria Group Track nem muda a ordem das faixas. Por isso o bus:
-  ele faz o papel do grupo (soma, processa), mas não dobra e as faixas continuam onde estavam.
-- Faixa que está dentro de um Group Track continua saindo no grupo (o rodapé avisa quantas são);
-  quem vai para o bus é o Group Track, se todas as faixas marcadas dentro dele forem do mesmo grupo.
-- Group Track ganha a cor do grupo, mas o nome dele não muda.
+======================================================================
+PASSO A PASSO
+======================================================================
+PASSO 0 — Prepare a faixa MAESTRO (opcional, mas é o que poupa mais tempo)
+   - Crie UMA faixa de áudio e dê o nome MAESTRO (ou MOLDE).
+   - Ponha nela o plugin MAESTRO (e qualquer outro que você queira em TODO bus, ex.: um EQ).
+   - Deixe essa faixa SEM clips.
+   No APPLY, cada bus novo nasce como CÓPIA dessa faixa, já com os plugins dentro. No fim, a faixa
+   MAESTRO é apagada sozinha (o UNDO devolve). Sem ela, os buses nascem vazios.
+   Dica: salve um set modelo com a faixa MAESTRO pronta.
+
+PASSO 1 — Abra e leia o set
+   - No device, clique OPEN THE MAGIC.
+   - Na janela, clique SCAN. Aparecem todas as faixas: cor, saída (OUTPUT) e os clips do arranjo.
+   - Com AUTO ON SCAN ligado (padrão), as faixas já chegam marcadas pelo nome, com as mesmas palavras do
+     MAESTRO (Kick, Bass, Snare, Clap, Perc, Hat, Pad, Lead, Vox, FX, Riser...).
+     As marcadas pelo nome aparecem com o grupo só CONTORNADO e "?": são palpites, confira.
+   - Nada muda no set até o APPLY.
+
+PASSO 2 — Confira e corrija os grupos
+   - Marque as faixas: clique = marca/desmarca · Shift+clique = marca o intervalo · arrastar = várias.
+   - Clique no botão do grupo (KICK, BASS, DRUMS...). O número no botão é quantas faixas estão nele.
+   - NONE tira as marcadas de qualquer grupo (ficam como estão). CLEAR desmarca.
+   - AUTO BY NAME marca na hora, pelo nome, as faixas que ainda estão sem grupo.
+   - Faixa sem grupo não é tocada pelo APPLY.
+
+PASSO 3 — Escolha as opções
+   - BUS ON (padrão): cria um bus para cada grupo usado e manda a saída das faixas para ele.
+   - CLIPS ON (padrão): pinta também os clips (arranjo e session) com a cor do grupo.
+   - PREFIX ON: põe o nome do grupo na frente do nome da faixa ("DRUMS 03 Snare"). Padrão OFF.
+
+PASSO 4 — APPLY
+   - Clique APPLY. O espanador desce pela lista junto com o trabalho de verdade: atrás dele, as faixas já
+     estão na cor do grupo. No fim ele relê o set e os buses aparecem com o selo BUS.
+   - No Live: os buses ficam no TOPO do set, na ordem KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX
+     (ou logo abaixo de onde estava a faixa MAESTRO).
+
+PASSO 5 — Regule o MAESTRO de cada bus
+   - Cada bus já tem o nome do grupo, então o MAESTRO dele reconhece o papel (BY NAME). Agora é só mixar.
+   - Depois, MASTER DOS MAGOS no master para finalizar.
+
+PASSO 6 — Não gostou? UNDO
+   - UNDO volta nome, cor e saída de cada faixa, a cor dos clips, apaga os buses criados que continuam
+     vazios (bus em que você já pôs device ou clip fica) e devolve a faixa MAESTRO.
+   - Vale enquanto o device estiver aberto. Fora isso, cada mudança é um Ctrl+Z (Cmd+Z) no Live.
+
+======================================================================
+COMO ELE DECIDE OS BUSES
+======================================================================
+- Já existe faixa de áudio VAZIA (sem clips) com o nome do grupo (ou "<GRUPO> BUS")? Ela é reaproveitada.
+- Faixa chamada "KICK" ou "BASS" COM clips (ou MIDI) é o próprio kick/baixo: entra no grupo e o bus novo
+  vira "KICK BUS" / "BASS BUS".
+- Group Track que já se chama DRUMS: o bus novo vira "DRUMS BUS".
+- Faixa dentro de um Group Track (Ctrl+G) CONTINUA saindo no grupo: ganha cor e prefixo, e quem vai para o
+  bus é o Group Track inteiro (com a cor do grupo, sem mudar o nome). Se o Group Track mistura faixas de
+  grupos diferentes (ex.: conga em DRUMS e shaker em HATS), a saída dele não muda.
+- O bus fica em Monitor IN e com entrada "No Input": soa como um Group Track.
+
+======================================================================
+LIMITES (do Live, não do ESPANADOR)
+======================================================================
+- O Max for Live NÃO cria Group Track nem muda a ordem das faixas. Por isso o bus: ele faz o papel do
+  grupo (soma, processa), mas não dobra, e as faixas continuam onde estavam.
+- O Max for Live não insere plugin numa faixa; por isso a faixa MAESTRO é copiada.
 - A cor que o Live mostra é a da paleta dele mais próxima da cor do grupo.
 
-O QUE CONFERIR NESTE TESTE (me mande print ou o log)
-- Os buses foram criados no topo, com nome e cor, em Monitor IN e entrada "No Input"?
-- Com a faixa MAESTRO (molde) no set: cada bus novo veio com o MAESTRO dentro? A faixa MAESTRO sumiu no fim?
-  O MAESTRO do bus AMBIENCE mostra BY NAME (e não "? BY SOUND")? UNDO apagou os buses e devolveu a faixa MAESTRO?
-- Faixas chamadas KICK / BASS (com clips) entraram nos grupos, e os buses viraram "KICK BUS" / "BASS BUS"?
-- As faixas do grupo passaram a sair no bus (OUTPUT = KICK, DRUMS...) e o som chega no bus?
-- Os clips (arranjo e session) ficaram com a cor do grupo, e com CLIPS OFF não mudaram?
-- Um Group Track só com faixas de um grupo foi inteiro para o bus?
-- O UNDO voltou tudo, inclusive a cor dos clips?
-
+======================================================================
 SE DER ERRO
-- Abra o console do Max (no device: botão de editar → Max → Window → Max Console).
-- Linhas "ESPANADOR:" mostram cada faixa, cada bus e o que não deu certo.
-- A cada SCAN o ESPANADOR grava o arquivo ESPANADOR-log.txt na mesma pasta do device. Mande esse arquivo.
-- "v8: can't find espanador.js" = os arquivos não estão na mesma pasta do .amxd.
+======================================================================
+- "v8: can't find espanador.js" = os 4 arquivos não estão na mesma pasta do .amxd. Copie a pasta inteira.
+- A cada SCAN o ESPANADOR grava ESPANADOR-log.txt na mesma pasta do device. Mande esse arquivo para
+  contato@insidestudiosp.com.br junto com a descrição do problema.
+- Console do Max (no device: botão de editar → Max → Window → Max Console): linhas "ESPANADOR:" mostram
+  cada faixa, cada bus e o que não deu certo.

@@ -1,4 +1,4 @@
-// ESPANADOR 0.1 — organiza o set em grupos de stems (os 8 grupos do MAESTRO: KICK, BASS, DRUMS, HATS, SYNTHS,
+// ESPANADOR 0.2 — organiza o set em grupos de stems (os 8 grupos do MAESTRO: KICK, BASS, DRUMS, HATS, SYNTHS,
 // AMBIENCE, VOCAL, FX). Par do RODO e da VASSOURA, pensado para o pré-mix.
 // Roda no objeto [v8] (Max 9 / Live 12.2+). SCAN lê as faixas do set (nome, cor, saída, posição dos clips).
 // Na janela você marca faixas (clique, Shift+clique, arrastar) e escolhe o grupo; AUTO pré-marca pelo nome
@@ -18,9 +18,9 @@ inlets = 1;
 outlets = 4; // 0: (livre)   1: status (device)   2: janela   3: eco dos controles (prefix/bus/auto)
 
 var DICT = "espanador_data";
-var VERSAO = "0.1.0";
-var BUILD = "teste";      // marca do pacote de teste; vazio na versão publicada
-var LIC_TESTE = true;     // 0.1 TESTE: sem licença (o pacote ainda não existe no servidor)
+var VERSAO = "0.2.0";
+var BUILD = "";           // marca do pacote de teste; vazio na versão publicada
+var LIC_TESTE = false;    // true só em pacote de teste (sem licença)
 var LIC_PACOTE = "espanador", LIC_NOME = "ESPANADOR";
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/espanador/zip";
 var URL_NOVIDADES = "https://insidestudiosp.com.br/espanador/";

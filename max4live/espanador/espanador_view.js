@@ -11,7 +11,7 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "espanador_data";
-var VERSAO = "0.1.0";
+var VERSAO = "0.2.0";
 var msgNova = "";
 var HEAD_H = 72, BAR_H = 86, RULER_Y = 160, TOP = 188, FOOT_H = 40, SB_W = 14;
 var X0 = 540;

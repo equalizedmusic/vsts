@@ -135,6 +135,13 @@ let erros = 0;
 const confere = (ok, txt) => { console.log((ok ? '  ok   ' : '  ERRO ') + txt); if (!ok) erros++; };
 const nome = (n) => tracks.find((t) => t.name === n);
 
+// versão publicada (LIC_TESTE=false): sem licença o device fica travado e o SCAN não roda
+if (!vm.runInContext('LIC_TESTE', ctx)) {
+  motor.init();
+  confere(!vm.runInContext('licLiberada()', ctx), 'PUBLICADA: sem licença fica travado');
+  confere(vm.runInContext('travado()', ctx), 'PUBLICADA: SCAN pede a licença');
+  vm.runInContext('LIC_TESTE = true', ctx);   // o resto testa o motor (a licença tem teste próprio em t-lic/lic-passos)
+}
 motor.init();
 confere(vm.runInContext('licLiberada()', ctx), 'TESTE abre sem licença');
 motor.scan();
