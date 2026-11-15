@@ -53,28 +53,47 @@ function licHomesDoDisco() {
 			var f = new Folder(raizes[r]);
 			while (!f.end) {
 				var n = String(f.filename || "");
-				if (n && f.filetype == "fold" && !fora[n.toLowerCase()] && n.charAt(0) != ".") homes.push(raizes[r] + "/" + n);
+				// 15/11 (2): filetype de pasta nem sempre vem "fold" no Max real; o teste de gravação filtra o resto
+				var tp = String(f.filetype || "");
+				if (n && (tp == "fold" || tp == "") && !fora[n.toLowerCase()] && n.charAt(0) != ".") homes.push(raizes[r] + "/" + n);
 				f.next();
 			}
 			f.close();
 		} catch (e) { }
 	}
+	licDiag.s = homes.length;
 	return homes;
 }
+// 15/11 (2), mesmo cliente: no dia seguinte o device abriu do set (caminho sem /Users/) e a varredura de C:/Users não
+// achou nada ⇒ id novo a cada abertura de novo. Pasta FIXA que todo Windows/Mac tem e qualquer usuário grava, sem
+// depender de caminho nem de listar pasta: C:/Users/Public/Documents (Win) e /Users/Shared (Mac).
+function licPastaComum() { return licMac() ? "/Users/Shared/" : "C:/Users/Public/Documents/"; }
+// diagnóstico curto que vai junto da versão (o cliente não precisa abrir o console do Max): h = home pelo caminho,
+// s = perfis achados na varredura, c = pasta comum gravou, d = pasta do device gravou, n = pastas que gravaram
+var licDiag = { h: 0, s: 0, c: 0, d: 0, n: 0 };
+function licDiagTexto() { licPastas(); return "[h" + licDiag.h + " s" + licDiag.s + " c" + licDiag.c + " d" + licDiag.d + " n" + licDiag.n + "]"; }
 function licPastas() {
 	if (licPastasCache) return licPastasCache;
 	var cand = [], vistos = {};
-	function poe(p, home) { if (p && !vistos[p.toLowerCase()]) { vistos[p.toLowerCase()] = 1; cand.push({ p: p, home: home || "" }); } }
+	function poe(p, home, tipo) { if (p && !vistos[p.toLowerCase()]) { vistos[p.toLowerCase()] = 1; cand.push({ p: p, home: home || "", tipo: tipo || "" }); } }
 	var h = licHome();
+	licDiag.h = h ? 1 : 0;
 	if (h) poe(h + licSub(), h);
 	var hs = licHomesDoDisco();
 	for (var i = 0; i < hs.length; i++) poe(hs[i] + licSub(), hs[i]);
+	poe(licPastaComum(), "", "c");
 	var dev = pastaDoDevice();
-	if (dev) poe(dev, "");
+	if (dev) poe(dev, "", "d");
 	var ok = [];
-	for (var j = 0; j < cand.length; j++) if (licTestaPasta(cand[j].p)) { ok.push(cand[j].p); if (!licHomeAchada && cand[j].home) licHomeAchada = cand[j].home; }
+	licDiag.c = 0; licDiag.d = 0;
+	for (var j = 0; j < cand.length; j++) if (licTestaPasta(cand[j].p)) {
+		ok.push(cand[j].p);
+		if (!licHomeAchada && cand[j].home) licHomeAchada = cand[j].home;
+		if (cand[j].tipo) licDiag[cand[j].tipo] = 1;
+	}
+	licDiag.n = ok.length;
 	try { log(LIC_NOME + ": pastas da licença " + (ok.length ? ok.join(" | ") : "NENHUMA gravou (testei " + cand.map(function (c) { return c.p; }).join(" | ") + ")") + "\n"); } catch (e) { }
-	licPastasCache = ok;
+	if (ok.length) licPastasCache = ok;   // vazio não fica em cache: tenta de novo na próxima chamada
 	return ok;
 }
 function licLeDeAlguma(nome) {
@@ -184,7 +203,7 @@ function licPede(acao, email, token, mostrarErro) {
 	lic.ocupado = true;
 	licMudou();
 	var corpo = JSON.stringify({ pacote: LIC_PACOTE, email: email, token: token, maquina: licMaquina(),
-		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO });
+		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO + " " + licDiagTexto() });
 	try {
 		var x = new XMLHttpRequest(); licXhr = x;   // referência guardada (o GC não leva)
 		x.open("POST", LIC_URL + acao);

@@ -4,6 +4,12 @@ Device Max for Live (pasta `max4live/rodo`), par da VASSOURA. A versão é o pri
 ela vira o release `rodo-vx.y.z` do GitHub (zip `Rodo-x.y.z.zip`), publicado pelo workflow `release-max4live.yml`.
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.1 — 2026-11-15
+- **Corrigido: o RODO voltava a pedir e-mail e token ao reabrir o set.** Quando o device era aberto de dentro do set,
+  fora da pasta do usuário, a licença não era encontrada e cada abertura contava como um computador novo. Agora a
+  licença também fica gravada numa pasta fixa do sistema (Windows: `C:\Users\Public\Documents`; Mac: `/Users/Shared`),
+  que não depende de onde o device está. O token é o mesmo de antes.
+
 ## 0.3.0 — 2026-11-14
 - **SENSOR: nivela por PEAK, RMS ou LUFS.** O ANALYZE lê cada arquivo uma vez só e mede os três; trocar de SENSOR
   muda a janela na hora, sem reler. RMS ignora o silêncio (abaixo de −60 dB); LUFS segue a ITU-R BS.1770 / EBU R128

@@ -5,6 +5,12 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.2 — 2026-11-15
+- **Corrigido: a VASSOURA voltava a pedir e-mail e token ao reabrir o set.** Quando o device era aberto de dentro do
+  set, fora da pasta do usuário, a licença não era encontrada e cada abertura contava como um computador novo. Agora a
+  licença também fica gravada numa pasta fixa do sistema (Windows: `C:\Users\Public\Documents`; Mac: `/Users/Shared`),
+  que não depende de onde o device está. O token é o mesmo de antes.
+
 ## 0.3.1 — 2026-11-15
 - **Corrigido: a VASSOURA pedia e-mail e token de novo toda vez que abria.** Em alguns computadores (biblioteca do
   Ableton fora da pasta do usuário, por exemplo em outro disco) a licença não ficava gravada. Agora ela é gravada na
