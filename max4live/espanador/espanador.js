@@ -320,6 +320,7 @@ function leFaixa(i) {
 		midi: num(t.get("has_midi_input")), g: -1, auto: 0, bus: -1, clips: []
 	};
 	status("SCAN " + (i + 1) + " · " + tr.name);
+	tr.pai = tr.member ? idDoPai(t) : 0;
 	tr.out = rotaAtual(t, "output").nome;
 	tr.bus = tr.fold ? -1 : grupoDoBus(tr.name);
 	var nc = 0;
@@ -336,6 +337,23 @@ function leFaixa(i) {
 		"saída " + tr.out + " · " + nc + " clips\n", 1);
 }
 
+// Group Track que contém a faixa (group_track volta "id N"; 0 = fora de grupo)
+function idDoPai(api) {
+	var r = null;
+	try { r = api.get("group_track"); } catch (e) { return 0; }
+	if (!r) return 0;
+	var n = (r instanceof Array || typeof r == "object") ? (r.length >= 2 ? Number(r[1]) : Number(r[0])) : Number(r);
+	return isNaN(n) ? 0 : n;
+}
+// Group Track mais de fora que contém a faixa (-1 = fora de grupo)
+function grupoDeFora(tr) {
+	var porId = {}, i;
+	for (i = 0; i < result.tracks.length; i++) porId[result.tracks[i].id] = i;
+	var idx = -1, cur = tr;
+	for (var d = 0; d < 20 && cur.pai && porId.hasOwnProperty(cur.pai); d++) { idx = porId[cur.pai]; cur = result.tracks[idx]; }
+	return idx;
+}
+
 function fimScan() {
 	busy = false;
 	vigiaDesliga();
@@ -346,7 +364,7 @@ function fimScan() {
 		if (tr.bus >= 0) continue;
 		if (marcasAntes.hasOwnProperty(tr.id)) { tr.g = marcasAntes[tr.id].g; tr.auto = marcasAntes[tr.id].auto; continue; }
 		// já mandada para um bus de grupo: é desse grupo
-		if (nomesBus.hasOwnProperty(tr.out)) { tr.g = nomesBus[tr.out]; nJa++; continue; }
+		if (!tr.fold && nomesBus.hasOwnProperty(tr.out)) { tr.g = nomesBus[tr.out]; nJa++; continue; }
 		if (cfg.auto && !tr.fold) { var g = grupoDoNome(tr.name); if (g >= 0) { tr.g = g; tr.auto = 1; nAuto++; } }
 	}
 	publica();
@@ -428,6 +446,24 @@ function apply() {
 	}
 	// 2) membros, de cima para baixo
 	for (var m = 0; m < membros.length; m++) (function (idx, k) { passos.push(function () { umMembro(idx, k); }); })(membros[m], m);
+	// 3) faixas que já estão num Group Track ficam no grupo; quem vai para o bus é o Group Track de fora,
+	//    desde que todas as faixas marcadas dentro dele sejam do mesmo grupo
+	if (cfg.bus) {
+		var gt = {}, ordemGt = [];
+		for (var mm = 0; mm < membros.length; mm++) {
+			var tm = result.tracks[membros[mm]];
+			if (!tm.member) continue;
+			var fora = grupoDeFora(tm);
+			if (fora < 0) continue;
+			if (!gt[fora]) { gt[fora] = {}; ordemGt.push(fora); }
+			gt[fora][tm.g] = 1;
+		}
+		for (var o = 0; o < ordemGt.length; o++) {
+			var gs = []; for (var kk in gt[ordemGt[o]]) if (gt[ordemGt[o]].hasOwnProperty(kk)) gs.push(Number(kk));
+			if (gs.length == 1) (function (idx, g) { passos.push(function () { umGroupTrack(idx, g); }); })(ordemGt[o], gs[0]);
+			else log("  Group Track [" + result.tracks[ordemGt[o]].name + "]: tem faixas de " + gs.length + " grupos diferentes; saída dele não mudou\n");
+		}
+	}
 	log("ESPANADOR: APPLY · " + membros.length + " faixas · BUS " + (cfg.bus ? "ON" : "OFF") + " · PREFIX " + (cfg.prefix ? "ON" : "OFF") + "\n");
 	outlet(2, "varre", membros.length);
 	vigiaLiga();
@@ -500,7 +536,9 @@ function umMembro(idx, k) {
 		var nn = GRUPOS[g] + " " + semPrefixo(str(api.get("name")));
 		if (nn != str(api.get("name"))) api.set("name", nn);
 	}
-	if (cfg.bus && ap.bus[g] && !tr.fold) {
+	if (cfg.bus && ap.bus[g] && !tr.fold && tr.member) {
+		log("  [" + tr.name + "]: está dentro de um Group Track; a saída fica no grupo\n", 1);
+	} else if (cfg.bus && ap.bus[g] && !tr.fold) {
 		var lst = rotasDisponiveis(api, "output"), a = achaRota(lst, ap.bus[g].nome);
 		if (!a) { ap.rotaFalhou++; log("  [" + tr.name + "]: o bus \"" + ap.bus[g].nome + "\" não aparece nas saídas (" + lst.length + " opções)\n"); }
 		else {
@@ -511,6 +549,24 @@ function umMembro(idx, k) {
 	ap.feitos++;
 	log("    [" + tr.name + "] -> " + GRUPOS[g] + "\n", 1);
 	outlet(2, "progresso", k + 1, ap.total, idx);
+}
+
+// Group Track existente: ganha a cor do grupo e sai no bus (o nome não muda)
+function umGroupTrack(idx, g) {
+	var tr = result.tracks[idx];
+	onde = "APPLY Group Track " + tr.name;
+	status("APPLY · Group Track " + tr.name);
+	var api = aponta("id " + tr.id), ok = false;
+	try { ok = Number(api.id) == tr.id; } catch (e) { ok = false; }
+	if (!ok) { ap.falhas++; log("  Group Track [" + tr.name + "]: não existe mais\n"); return; }
+	api = new LiveAPI("id " + tr.id);
+	if (!orig[tr.id]) { orig[tr.id] = { name: str(api.get("name")), color: num(api.get("color")), rota: rotaAtual(api, "output").nome }; nOrig++; }
+	try { api.set("color", CORES[g]); } catch (e) { }
+	if (!ap.bus[g]) return;
+	var a = achaRota(rotasDisponiveis(api, "output"), ap.bus[g].nome);
+	if (!a) { ap.rotaFalhou++; log("  Group Track [" + tr.name + "]: o bus \"" + ap.bus[g].nome + "\" não aparece nas saídas\n"); return; }
+	if (rotaAtual(api, "output").nome != a.r.nome && !gravaRota(api, "output", a.r)) { ap.rotaFalhou++; log("  Group Track [" + tr.name + "]: não consegui mudar a saída para \"" + a.r.nome + "\"\n"); return; }
+	log("    Group Track [" + tr.name + "] -> " + GRUPOS[g] + "\n", 1);
 }
 
 function fimApply() {

@@ -27,6 +27,10 @@ USAR
                   soa como um Group Track (é nele que vai o MAESTRO). Padrão ON.
                   Se já existir uma faixa com o nome do grupo (ou "<GRUPO> BUS"), ela é reaproveitada.
                   Se um Group Track já se chama DRUMS, o bus novo vira "DRUMS BUS".
+                  Faixa que já está dentro de um Group Track (feito com Ctrl+G) CONTINUA saindo
+                  no grupo: ganha cor e prefixo, e quem vai para o bus é o Group Track inteiro
+                  (com a cor do grupo, sem mudar o nome). Se o Group Track mistura faixas de
+                  grupos diferentes (ex.: conga em DRUMS e shaker em HATS), a saída dele não muda.
    - BUS OFF    = só pinta (e põe o prefixo, se ligado).
 5. APPLY. O espanador desce pela lista junto com o trabalho real: atrás dele as faixas já estão na
    cor do grupo. No fim o ESPANADOR relê o set (os buses aparecem com o selo BUS).

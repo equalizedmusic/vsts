@@ -11,12 +11,14 @@ let tracks = [
   mk('Percs', { is_foldable: 1, clips: [] }), mk('06 Conga', { is_grouped: 1, out: 'Percs' }), mk('07 Shaker', { is_grouped: 1, out: 'Percs' }),
   mk('08 Bass FM'), mk('09 Lead Acid', { has_midi_input: 1 }), mk('10 Pad'), mk('11 Vox Lead'), mk('12 Riser'), mk('13 Coisa Sem Nome'),
   mk('DRUMS', { is_foldable: 1, clips: [] }),   // Group Track chamado DRUMS: o bus do DRUMS tem de virar "DRUMS BUS"
+  mk('Toms', { is_foldable: 1, clips: [] }), mk('14 Tom Hi', { is_grouped: 1, out: 'Toms', grp: 'Toms' }), mk('15 Tom Lo', { is_grouped: 1, out: 'Toms', grp: 'Toms' }),
 ];
+const percs = tracks.find((t) => t.name === 'Percs'); tracks.forEach((t) => { if (t.is_grouped) t.pai = t.grp ? tracks.find((o) => o.name === t.grp).id : percs.id; });
 const orig = JSON.parse(JSON.stringify(tracks));
 
 const byId = (id) => tracks.find((t) => t.id === id);
 const saidas = (t) => [{ display_name: 'Master', identifier: 1 }]
-  .concat(t.is_grouped ? [{ display_name: 'Percs', identifier: 2 }] : [])
+  .concat(t.is_grouped ? [{ display_name: t.grp || 'Percs', identifier: 2 }] : [])
   .concat(tracks.filter((o) => o !== t && !o.is_foldable).map((o, k) => ({ display_name: o.name, identifier: 100 + o.id })));
 const entradas = () => [{ display_name: 'Ext. In', identifier: 1 }, { display_name: 'Resampling', identifier: 2 }, { display_name: 'No Input', identifier: 3 }];
 
@@ -53,6 +55,7 @@ class LiveAPI {
     if (k === 'input_routing_type') return [JSON.stringify({ input_routing_type: { display_name: t.inp, identifier: 0 } })];
     if (k === 'available_output_routing_types') return [JSON.stringify({ available_output_routing_types: saidas(t) })];
     if (k === 'available_input_routing_types') return [JSON.stringify({ available_input_routing_types: entradas() })];
+    if (k === 'group_track') return ['id', t.pai || 0];
     const m = { name: t.name, color: t.color, is_foldable: t.is_foldable, is_grouped: t.is_grouped, has_midi_input: t.has_midi_input };
     if (k in m) return [m[k]];
     throw new Error('get ' + k);
@@ -139,7 +142,9 @@ esperaLivre(() => {
     confere(ordem === 'KICK,BASS,DRUMS BUS,HATS,SYNTHS,VOCAL,FX', 'buses no topo na ordem do MAESTRO (' + ordem + ')');
     confere(nome('KICK 01 Kick') && nome('KICK 01 Kick').out === 'KICK' && nome('KICK 01 Kick').color === 0xff8a3d, 'Kick: prefixo, cor e saída no bus KICK');
     confere(nome('DRUMS 03 Snare').out === 'DRUMS BUS', 'Snare vai para o DRUMS BUS');
-    confere(nome('DRUMS 06 Conga').out === 'DRUMS BUS', 'Conga (dentro do Group Percs) também');
+    confere(nome('DRUMS 06 Conga').out === 'Percs' && nome('DRUMS 06 Conga').color === nome('DRUMS 03 Snare').color, 'Conga (dentro do Group Percs) ganha cor/prefixo mas continua saindo no grupo');
+    confere(nome('Percs').out === 'Master' && nome('HATS 07 Shaker').out === 'Percs', 'Group Track Percs (DRUMS + HATS misturados) não muda de saída');
+    confere(nome('Toms').out === 'DRUMS BUS' && nome('Toms').color === nome('DRUMS 03 Snare').color && nome('DRUMS 14 Tom Hi').out === 'Toms', 'Group Track Toms (só DRUMS) vai inteiro para o DRUMS BUS, com a cor, sem renomear; os toms seguem no grupo');
     confere(nome('FX 13 Coisa Sem Nome').out === 'FX', 'marca feita na janela vale no APPLY');
     confere(nome('10 Pad').out === 'Master' && nome('10 Pad').color === 0x808080, 'faixa sem grupo não muda');
     const prog = outs.filter((o) => o[0] === 'progresso').map((o) => o[3]);
