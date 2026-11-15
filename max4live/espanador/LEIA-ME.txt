@@ -1,0 +1,54 @@
+ESPANADOR — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
+Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/espanador/
+Organiza o set nos grupos de stems: os 8 grupos do MAESTRO (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX).
+Par do RODO e da VASSOURA, para o pré-mix.
+
+*** 0.1.0 TESTE: sem licença, só para validar no Live. ***
+
+INSTALAR
+1. Copie a pasta inteira (Espanador-<versão>) para:
+   Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
+   Os 4 arquivos (Espanador.amxd, espanador.js, espanador_view.js e espanador_strip.js) PRECISAM ficar juntos.
+2. No Live, arraste o Espanador.amxd para a PRIMEIRA faixa de áudio do projeto (como o RODO).
+
+USAR
+1. No device, clique OPEN THE MAGIC. Na janela, clique SCAN: aparecem todas as faixas do set,
+   com a cor, a saída (OUTPUT) e os clips do arranjo.
+2. Com AUTO ON SCAN ligado, as faixas já chegam marcadas pelo nome, com as mesmas palavras que o
+   MAESTRO usa (Kick, Bass, Snare, Clap, Perc, Hat, Pad, Lead, Vox, FX, Riser...). Essas aparecem
+   com o grupo só contornado e "?": confira. AUTO BY NAME marca na hora as que ainda estão sem grupo.
+3. Marque as faixas: clique = marca/desmarca · Shift+clique = marca o intervalo · arrastar = várias.
+   Depois clique no botão do grupo (KICK, BASS...). NONE tira as marcadas do grupo. CLEAR desmarca.
+   O número no botão é quantas faixas estão no grupo.
+4. Opções:
+   - PREFIX ON  = põe o nome do grupo na frente do nome da faixa ("DRUMS 03 Snare"). Padrão OFF.
+   - BUS ON     = cria no TOPO do set uma faixa de áudio para cada grupo usado (KICK, BASS...) e manda
+                  a saída de cada faixa do grupo para ela. O bus fica em Monitor IN e sem entrada externa:
+                  soa como um Group Track (é nele que vai o MAESTRO). Padrão ON.
+                  Se já existir uma faixa com o nome do grupo (ou "<GRUPO> BUS"), ela é reaproveitada.
+                  Se um Group Track já se chama DRUMS, o bus novo vira "DRUMS BUS".
+   - BUS OFF    = só pinta (e põe o prefixo, se ligado).
+5. APPLY. O espanador desce pela lista junto com o trabalho real: atrás dele as faixas já estão na
+   cor do grupo. No fim o ESPANADOR relê o set (os buses aparecem com o selo BUS).
+6. UNDO volta nome, cor e saída de cada faixa e apaga os buses criados nesta sessão — só se continuarem
+   vazios (bus em que você já pôs um device ou clip fica). Vale enquanto o device estiver aberto.
+   Fora isso, cada mudança é um Ctrl+Z no Live.
+
+LIMITES
+- A API do Live para Max for Live NÃO cria Group Track nem muda a ordem das faixas. Por isso o bus:
+  ele faz o papel do grupo (soma, processa), mas não dobra e as faixas continuam onde estavam.
+- Faixa que está dentro de um Group Track: com BUS ON a saída dela sai do grupo e vai para o bus
+  (o rodapé avisa quantas são).
+- Group Track pode ser pintado e ganhar prefixo; a saída dele não é mexida.
+- A cor que o Live mostra é a da paleta dele mais próxima da cor do grupo.
+
+O QUE CONFERIR NESTE TESTE (me mande print ou o log)
+- Os buses foram criados no topo, com nome e cor, em Monitor IN e entrada "No Input"?
+- As faixas do grupo passaram a sair no bus (OUTPUT = KICK, DRUMS...) e o som chega no bus?
+- O UNDO voltou tudo?
+
+SE DER ERRO
+- Abra o console do Max (no device: botão de editar → Max → Window → Max Console).
+- Linhas "ESPANADOR:" mostram cada faixa, cada bus e o que não deu certo.
+- A cada SCAN o ESPANADOR grava o arquivo ESPANADOR-log.txt na mesma pasta do device. Mande esse arquivo.
+- "v8: can't find espanador.js" = os arquivos não estão na mesma pasta do .amxd.

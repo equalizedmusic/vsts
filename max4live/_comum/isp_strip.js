@@ -82,6 +82,25 @@ function desenhaVassoura(x, top, bot) {
 	for (var p = 0; p < 18; p++) { var py = top + 4 + ((p * 37) % (bot - top - 8)); rgb(0.62, 0.56, 0.50, 0.55); mgraphics.ellipse(x + 13 + (p % 4) * 3, py, 2.5, 2.5); mgraphics.fill(); }
 }
 
+// ESPANADOR: pluma de penas nas cores dos grupos (de pé, cobrindo as faixas), cabo para trás
+var CORES_GRUPOS = [[1, 0.54, 0.24], [0.27, 0.65, 1], [0.96, 0.77, 0.32], [0.9, 0.88, 0.96], [0.79, 0.69, 1], [0.31, 0.82, 0.77], [1, 0.5, 0.71], [0.77, 0.91, 0.42]];
+function desenhaEspanador(x, top, bot) {
+	var mid = (top + bot) / 2, s = 19;
+	function r2() { s = (s * 16807) % 2147483647; return s / 2147483647; }
+	try { mgraphics.set_line_cap("round"); } catch (e) { }
+	rgb(0, 0, 0, 0.35); mgraphics.set_line_width(9); mgraphics.move_to(x - 6, mid + 5); mgraphics.line_to(x - 126, mid - 13); mgraphics.stroke();
+	rgb(0.54, 0.35, 0.17); mgraphics.set_line_width(8); mgraphics.move_to(x - 10, mid); mgraphics.line_to(x - 130, mid - 18); mgraphics.stroke();
+	rgb(0.72, 0.50, 0.27); mgraphics.set_line_width(3); mgraphics.move_to(x - 11, mid - 3); mgraphics.line_to(x - 128, mid - 21); mgraphics.stroke();
+	try { mgraphics.set_line_cap("butt"); } catch (e) { }
+	caixaR(x - 18, mid - 8, 12, 16, 3, DEV.cor);
+	for (var p = 0; p < 70; p++) {
+		var py = top + (p / 69) * (bot - top) + (r2() - 0.5) * 4, px = x + (r2() - 0.5) * 8;
+		var c = CORES_GRUPOS[Math.floor(r2() * 8)], lw = 5 + r2() * 5, lh = 7 + r2() * 8;
+		rgbv(c, 0.8); mgraphics.ellipse(px - lw / 2, py - lh / 2, lw, lh); mgraphics.fill();
+	}
+	for (var k = 0; k < 16; k++) { var yy = top + 4 + ((k * 29) % (bot - top - 8)); rgb(0.72, 0.68, 0.62, 0.6); mgraphics.ellipse(x + 10 + (k % 4) * 3, yy, 2.5, 2.5); mgraphics.fill(); }
+}
+
 function paint() {
 	var W = box.rect[2] - box.rect[0], H = box.rect[3] - box.rect[1];
 	var AC = DEV.cor;
@@ -93,12 +112,16 @@ function paint() {
 	var sx0 = 8, sx1 = W - 8, sy = 46, lh = 17, xm = 168;
 	caixaR(sx0, sy - 4, sx1 - sx0, lh * 3 + 8, 5, [0.11, 0.115, 0.125]);
 	var cores = [AC, [0.48, 0.65, 1], [0.55, 0.85, 0.55]];
+	// ESPANADOR: antes cada faixa de uma cor; depois as cores dos grupos (2 no KICK, 1 no DRUMS)
+	var coresDepois = DEV.tipo == "espanador" ? [CORES_GRUPOS[0], CORES_GRUPOS[0], CORES_GRUPOS[2]] : cores;
+	if (DEV.tipo == "espanador") cores = [[0.48, 0.65, 1], [0.55, 0.85, 0.55], [0.75, 0.45, 0.85]];
 	for (var i = 0; i < 3; i++) {
 		var cy = sy + i * lh + lh / 2;
 		ondas(sx0 + 6, xm, cy, lh / 2 - 2, 0, cores[i], 11 + i * 7);
-		ondas(xm + 14, sx1 - 6, cy, lh / 2 - 2, 1, cores[i], 11 + i * 7);
+		ondas(xm + 14, sx1 - 6, cy, lh / 2 - 2, 1, coresDepois[i], 11 + i * 7);
 	}
-	if (DEV.tipo == "rodo") {
+	if (DEV.tipo == "espanador") desenhaEspanador(xm, sy - 6, sy + lh * 3 + 4);
+	else if (DEV.tipo == "rodo") {
 		rgbv(AC, 0.5); mgraphics.set_line_width(1);
 		for (var xd = xm + 14; xd < sx1 - 6; xd += 7) { mgraphics.move_to(xd, sy + 1.5); mgraphics.line_to(xd + 4, sy + 1.5); }
 		mgraphics.stroke();
