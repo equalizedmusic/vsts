@@ -8,7 +8,7 @@ const objs = {};   // clips e clip slots por id (arranjo: 1 objeto por clip; ses
 const mk = (name, o) => {
   const t = Object.assign({ id: nextId++, name, color: 0x808080, is_foldable: 0, is_grouped: 0, has_midi_input: 0,
     out: 'Master', inp: 'Ext. In', mon: 1, devices: 0, clips: [[16, 48], [64, 96]] }, o || {});
-  t.cl = t.clips.map(() => { const c = { kind: 'clipobj', id: nextObj++, color: 0x123456 }; objs[c.id] = c; return c; });
+  t.cl = t.clips.map((_, j) => { const c = { kind: 'clipobj', id: nextObj++, color: 0x123456, looping: 0, liga: j === 0 && /kick/i.test(name) ? 1 : 0 }; objs[c.id] = c; return c; });
   t.slots = t.is_foldable ? [] : [0, 1].map((k) => {
     const sc = k === 0 && t.clips.length ? { kind: 'clipobj', id: nextObj++, color: 0x654321 } : null; if (sc) objs[sc.id] = sc;
     const sl = { kind: 'slot', id: nextObj++, clip: sc }; objs[sl.id] = sl; return sl;
@@ -67,7 +67,7 @@ class LiveAPI {
   get(k) {
     if (this.r.kind === 'set') return [{ signature_numerator: 4 }[k]];
     if (this.r.kind === 'clip') return [this.r.t.clips[this.r.j][k === 'start_time' ? 0 : 1]];
-    if (this.r.kind === 'clipobj') { if (k === 'color') return [this.r.color]; throw new Error('get clip ' + k); }
+    if (this.r.kind === 'clipobj') { if (k === 'color') return [this.r.color]; if (k === 'looping' && 'looping' in this.r) return [this.r.looping]; throw new Error('get clip ' + k); }
     if (this.r.kind === 'slot') { if (k === 'has_clip') return [this.r.clip ? 1 : 0]; if (k === 'clip') return ['id', this.r.clip ? this.r.clip.id : 0]; throw new Error('get slot ' + k); }
     const t = byId(this.r.id);
     if (k === 'output_routing_type') return [JSON.stringify({ output_routing_type: { display_name: t.out, identifier: 0 } })];
@@ -82,7 +82,7 @@ class LiveAPI {
     throw new Error('get ' + k);
   }
   set(k, ...v) {
-    if (this.r.kind === 'clipobj') { if (k === 'color') { this.r.color = v[0]; return; } throw new Error('set clip ' + k); }
+    if (this.r.kind === 'clipobj') { if (k === 'color') { this.r.color = v[0]; if (this.r.liga) this.r.looping = 1; return; } if (k === 'looping' && 'looping' in this.r) { this.r.looping = v[0]; return; } throw new Error('set clip ' + k); }
     const t = byId(this.r.id);
     if (k === 'name') { t.name = String(v[0]); return; }
     if (k === 'color') { t.color = v[0]; return; }
@@ -181,6 +181,7 @@ esperaLivre(() => {
     confere(nome('FX 13 Coisa Sem Nome').out === 'FX', 'marca feita na janela vale no APPLY');
     confere(nome('10 Pad').out === 'Master' && nome('10 Pad').color === 0x808080, 'faixa sem grupo não muda');
     confere(corClip('KICK 01 Kick').length === 3 && corClip('KICK 01 Kick').every((c) => c === 0xff8a3d), 'CLIPS ON: 2 clips do arranjo + 1 da session do Kick na cor do KICK');
+    confere(tracks.every((t) => t.cl.every((c) => !c.looping)), 'CLIPS: pintar não deixa nenhum clip com Loop ligado (mock liga o Loop ao pintar o 1º clip do Kick)');
     confere(corClip('DRUMS 06 Conga').every((c) => c === nome('DRUMS 03 Snare').color), 'CLIPS: faixa dentro de Group Track também tem os clips pintados');
     confere(corClip('10 Pad').every((c) => c === 0x123456 || c === 0x654321), 'CLIPS: faixa sem grupo não muda os clips');
     const prog = outs.filter((o) => o[0] === 'progresso').map((o) => o[3]);

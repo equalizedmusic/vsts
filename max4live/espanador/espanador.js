@@ -627,7 +627,14 @@ function pintaClips(api, tr, cor) {
 			if (Number(ca.id) != ids[i]) continue;
 			var antes = num(ca.get("color"));
 			if (!origClip.hasOwnProperty(ids[i])) origClip[ids[i]] = antes;
-			if (antes != cor) ca.set("color", cor);
+			if (antes != cor) {
+				// trava: pintar NUNCA pode mexer no loop do clip (relato 15/11: clip do BASS apareceu com Loop ligado)
+				var lp = -1, lp2 = -1;
+				try { lp = num(ca.get("looping")); } catch (e) { lp = -1; }
+				ca.set("color", cor);
+				try { if (lp >= 0) lp2 = num(ca.get("looping")); } catch (e) { lp2 = lp; }
+				if (lp >= 0 && lp2 >= 0 && lp2 != lp) { try { ca.set("looping", lp); } catch (e) { } log("  [" + tr.name + "] clip " + ids[i] + ": Loop mudou ao pintar (" + lp + "->" + lp2 + "), voltei\n"); }
+			}
 			n++;
 		} catch (e) { falhou++; }
 	}
