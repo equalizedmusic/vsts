@@ -179,7 +179,7 @@ void RetalhoProcessor::aplicaCartao (int c)
     }
     else
     {
-        static const char* nome[4] = { nullptr, "PSY RISER 1/32", "TAPE DROP", "OFFBEAT VOX" };
+        static const char* nome[4] = { nullptr, "PSY RISER 1/32", "TAPE DROP", "OFFBEAT REPLACE" };   // GROOVE: voz original muda enquanto o chop toca
         aplicaPreset (presetPorNome (nome[juce::jlimit (1, 3, c)]));
     }
     define (kGrooveOn, 0.0f);   // no SIMPLE o GROOVE toca pelo QUANDO TOCA, não fica ligado direto
