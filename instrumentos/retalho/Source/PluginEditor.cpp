@@ -191,18 +191,18 @@ void RetalhoEditor::liga (juce::Graphics& g, juce::Rectangle<float> r, const juc
 
 float RetalhoEditor::grupo (juce::Graphics& g, float x, float y, const juce::String& titulo, int campo, const juce::StringArray& nomes)
 {
-    const auto ft = fonte (10.0f).withExtraKerningFactor (0.3f);
-    rotulo (g, { x, y, largura (ft, titulo) + 4, 20 }, titulo, cMu, juce::Justification::centredLeft, 10.0f);
-    x += largura (ft, titulo) + 10;
-    const auto fb = fonte (10.5f).withExtraKerningFactor (0.22f);
+    const auto ft = fonte (9.0f).withExtraKerningFactor (0.22f);
+    rotulo (g, { x, y, largura (ft, titulo) + 4, 20 }, titulo, cMu, juce::Justification::centredLeft, 9.0f);
+    x += largura (ft, titulo) + 7;
+    const auto fb = fonte (9.5f).withExtraKerningFactor (0.22f);
     const int atual = escolha (campo);
     for (int i = 0; i < nomes.size(); ++i)
     {
-        const float w = largura (fb, nomes[i]) + 16;
-        botao (g, { x, y, w, 20 }, nomes[i], i == atual, cAmb, [this, campo, i] { proc.define (campo, (float) i); });
-        x += w + 3;
+        const float w = largura (fb, nomes[i]) + 11;
+        botao (g, { x, y, w, 20 }, nomes[i], i == atual, cAmb, [this, campo, i] { proc.define (campo, (float) i); }, 9.5f);
+        x += w + 2;
     }
-    return x + 12;
+    return x + 9;
 }
 
 void RetalhoEditor::knob (juce::Graphics& g, int campo, const juce::String& nome, juce::Point<float> c, juce::Colour cor)
@@ -239,13 +239,13 @@ void RetalhoEditor::painel (juce::Graphics& g, juce::Rectangle<float> r, const j
 
 float RetalhoEditor::chip (juce::Graphics& g, float xDir, const juce::String& rot, const juce::String& val, juce::Colour cor, std::function<void()> f)
 {
-    const auto fr = fonte (9.5f).withExtraKerningFactor (0.25f), fv = fonte (10.5f, true).withExtraKerningFactor (0.2f);
-    const float w = largura (fr, rot) + largura (fv, val) + (rot.isNotEmpty() ? 26 : 18);
+    const auto fr = fonte (8.5f).withExtraKerningFactor (0.22f), fv = fonte (9.5f, true).withExtraKerningFactor (0.22f);
+    const float w = largura (fr, rot) + largura (fv, val) + (rot.isNotEmpty() ? 20 : 14);
     const juce::Rectangle<float> r (xDir - w, 11, w, 26);
     caixa (g, r, cPn, 5.0f);
-    float x = r.getX() + 9;
-    if (rot.isNotEmpty()) { rotulo (g, { x, r.getY(), largura (fr, rot) + 2, r.getHeight() }, rot, cMu, juce::Justification::centredLeft, 9.5f); x += largura (fr, rot) + 8; }
-    rotulo (g, { x, r.getY(), largura (fv, val) + 4, r.getHeight() }, val, cor, juce::Justification::centredLeft, 10.5f, true);
+    float x = r.getX() + 7;
+    if (rot.isNotEmpty()) { rotulo (g, { x, r.getY(), largura (fr, rot) + 2, r.getHeight() }, rot, cMu, juce::Justification::centredLeft, 8.5f); x += largura (fr, rot) + 6; }
+    rotulo (g, { x, r.getY(), largura (fv, val) + 4, r.getHeight() }, val, cor, juce::Justification::centredLeft, 9.5f, true);
     if (f) alvos.push_back ({ r, std::move (f) });
     return r.getX() - 6;
 }
@@ -271,16 +271,16 @@ void RetalhoEditor::topo (juce::Graphics& g)
     rotulo (g, { x + 10, 24, 80, 12 }, "GROOVE", cMu, juce::Justification::centredLeft, 9.0f);
 
     // abas
-    float tx = 248;
+    float tx = 236;
     const int modo = escolha (kModo);
     for (int i = 0; i < 3; ++i)
     {
-        const auto ft = fonte (12.0f, true).withExtraKerningFactor (0.3f);
-        const float w = largura (ft, ch::modo[i]) + 34;
+        const auto ft = fonte (11.0f, true).withExtraKerningFactor (0.22f);
+        const float w = largura (ft, ch::modo[i]) + 24;
         const juce::Rectangle<float> r (tx, 9, w, 30);
         if (i == modo) { g.setColour (cAmb); g.fillRoundedRectangle (r, 5.0f); }
         else { g.setColour (cPn2); g.fillRoundedRectangle (r, 5.0f); g.setColour (cLn); g.drawRoundedRectangle (r, 5.0f, 1.0f); }
-        rotulo (g, r, ch::modo[i], i == modo ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 12.0f, true);
+        rotulo (g, r, ch::modo[i], i == modo ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 11.0f, true);
         alvos.push_back ({ r, [this, i] { proc.define (kModo, (float) i); } });
         tx += w + 5;
     }
@@ -299,11 +299,11 @@ void RetalhoEditor::topo (juce::Graphics& g)
     const bool cap = vista.valida;
     {
         const float x0 = xd;
-        xd = chip (g, xd, "", juce::String ("   CAPTURE 4 BARS"), cap ? cTx : cDim, nullptr);
+        xd = chip (g, xd, "", juce::String ("   CAPTURE"), cap ? cTx : cDim, nullptr);
         const float pulso = cap ? 0.75f + 0.25f * std::sin (quadro * 0.15f) : 0.25f;
         juce::ignoreUnused (x0);
         g.setColour ((cap ? cVerde : cDim).withAlpha (pulso));
-        g.fillEllipse (xd + 6 + 10, 21, 7, 7);
+        g.fillEllipse (xd + 6 + 8, 21, 6, 6);
     }
     xd = chip (g, xd, "LATENCY", "0 ms", cTx, nullptr);
     const bool host = m.tocandoA.load();
