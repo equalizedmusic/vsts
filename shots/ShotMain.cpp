@@ -596,6 +596,22 @@ int main (int argc, char** argv)
    #if SHOT_VOZ
     // ONKEY: o tom trava depois de ~4 s de voz; espera mais para o gráfico encher
     juce::MessageManager::getInstance()->runDispatchLoopUntil (4000);
+    // RETALHO: a captura (próximo compasso + 2 compassos) pode passar do tempo fixo no runner lento: espera a amostra
+    // aparecer no estado (filho AMOSTRA), até 25 s, e diz quanto levou
+    if (juce::String (SHOT_PLUGIN) == "RETALHO")
+    {
+        const double t0 = juce::Time::getMillisecondCounterHiRes();
+        bool pronta = false;
+        while (! pronta && juce::Time::getMillisecondCounterHiRes() - t0 < 25000.0)
+        {
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (500);
+            juce::MemoryBlock mb;
+            proc->getStateInformation (mb);
+            if (auto x = juce::AudioProcessor::getXmlFromBinary (mb.getData(), (int) mb.getSize()))
+                pronta = x->getChildByName ("AMOSTRA") != nullptr;
+        }
+        std::printf ("RETALHO captura: %s em %.1f s\n", pronta ? "pronta" : "NAO terminou", (juce::Time::getMillisecondCounterHiRes() - t0) / 1000.0);
+    }
    #endif
     juce::MessageManager::getInstance()->runDispatchLoopUntil (4500);
     // o editor pode ter voltado ao tamanho salvo depois de abrir: de novo em 200% para a foto

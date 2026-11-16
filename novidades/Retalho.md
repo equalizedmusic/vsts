@@ -4,6 +4,11 @@ Pacote do instalador: `InsideStudioSP-Retalho`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `retalho-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.3 — 2026-11-16
+- Ainda TESTE (sem licença, fora do site).
+- Tela mais leve: o brilho das ondas agora é desenhado por preenchimento (antes, contorno em cada barra).
+- PRO/GROOVE: "ENTRA NO PRÓXIMO COMPASSO" com acento certo; a onda de cada chop não passa mais por cima dos "ms".
+
 ## 0.1.2 — 2026-11-16
 - Ainda TESTE (sem licença, fora do site).
 - Agora o RETALHO é um SAMPLER: a voz fica dentro dele. Arraste o arquivo do vocal (WAV, AIFF, FLAC, MP3 ou OGG, até

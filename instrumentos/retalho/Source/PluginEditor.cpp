@@ -114,10 +114,12 @@ struct Pincel
             const auto c = cor[i];
             if (brilho)
             {
-                g.setColour (c.withAlpha (0.05f));
-                g.strokePath (p[i], juce::PathStrokeType (9.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-                g.setColour (c.withAlpha (0.10f));
-                g.strokePath (p[i], juce::PathStrokeType (3.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+                // brilho barato: o mesmo Path esticado em volta do centro e deslocado 1,5 px para os lados, bem
+                // transparente (preencher é muito mais leve que contornar centenas de barras a 30 Hz)
+                const auto estica = juce::AffineTransform::translation (0, -cy).scaled (1.0f, 1.12f).translated (0, cy);
+                g.setColour (c.withAlpha (0.09f));
+                g.fillPath (p[i], estica.translated (-1.5f, 0));
+                g.fillPath (p[i], estica.translated (1.5f, 0));
             }
             juce::ColourGradient gr (c.brighter (0.35f), 0, cy - meia, c.brighter (0.35f), 0, cy + meia, false);
             gr.addColour (0.30, c);
@@ -863,7 +865,7 @@ void RetalhoEditor::resultGroove (juce::Graphics& g, juce::Rectangle<float> in)
             cVerde, juce::Justification::centredLeft, 10.0f, true);
     const bool tocando = m.grooveTocando.load();
     rotulo (g, { areaResult.getRight() - 300, areaResult.getY() + 6, 290, 14 },
-            tocando ? juce::String ("GROOVE TOCANDO") : (real (kGrooveOn) > 0.5f ? juce::String ("ENTRA NO PR\xc3\x93XIMO COMPASSO") : juce::String ("GROOVE DESLIGADO \xc2\xb7 LIGUE EM GROOVE ON")),
+            tocando ? juce::String ("GROOVE TOCANDO") : (real (kGrooveOn) > 0.5f ? u8 ("ENTRA NO PR\xc3\x93XIMO COMPASSO") : u8 ("GROOVE DESLIGADO \xc2\xb7 LIGUE EM GROOVE ON")),
             tocando ? cVerde : cDim, juce::Justification::centredRight, 9.5f, true);
 
     // 8 chops
@@ -881,11 +883,12 @@ void RetalhoEditor::resultGroove (juce::Graphics& g, juce::Rectangle<float> in)
         {
             float mxo = 0.0f;
             for (int x = 0; x < 48; ++x) mxo = juce::jmax (mxo, v.chopOnda[s][x]);
-            const float gs = mxo > 0.0f ? 1.0f / mxo : 0.0f, cy = rr.getCentreY() + 2, bw = (rr.getWidth() - 28) / 48.0f;
+            // a onda fica entre o número (em cima) e os ms (embaixo), sem encostar no texto
+            const float gs = mxo > 0.0f ? 1.0f / mxo : 0.0f, cy = rr.getY() + 19.0f, bw = (rr.getWidth() - 28) / 48.0f;
             Pincel pc;
             for (int x = 0; x < 48; ++x)
-                pc.barra (cor, rr.getX() + 22 + bw * x, juce::jmax (1.0f, bw - 0.8f), cy, juce::jmin (1.0f, v.chopOnda[s][x] * gs) * 14.0f);
-            pc.pinta (g, cy, 14.0f, false);
+                pc.barra (cor, rr.getX() + 22 + bw * x, juce::jmax (1.0f, bw - 0.8f), cy, juce::jmin (1.0f, v.chopOnda[s][x] * gs) * 10.0f);
+            pc.pinta (g, cy, 10.0f, false);
         }
         rotulo (g, { rr.getX() + 6, rr.getY() + 3, 20, 14 }, juce::String (s + 1), cor, juce::Justification::centredLeft, 11.0f, true);
         rotulo (g, { rr.getX() + 4, rr.getBottom() - 14, rr.getWidth() - 8, 12 }, cheio ? juce::String (juce::roundToInt (v.chopMs[s])) + " ms" : u8 ("\xe2\x80\x94"),
