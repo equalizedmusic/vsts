@@ -16,6 +16,11 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 - A amostra é salva dentro do projeto (FLAC): reabriu o projeto, ela está lá, mesmo se o arquivo sumir.
 - GROOVE do SIMPLE: a voz original cala enquanto os chops tocam (antes só abaixava 9 dB).
 - PRO: o rodapé mostra a versão certa e o ONE-SHOT não encosta mais na borda do botão.
+- Visual novo das ondas: o resultado mostra a onda REAL do áudio processado, em barras espelhadas com degradê e brilho,
+  com um vão entre cada repetição (repetição curta vira uma barra cheia). A amostra, o ORIGINAL e os chops do GROOVE
+  usam o mesmo desenho. Grade de tempo tracejada, cursor com brilho e knobs com corpo de metal escuro e ponto aceso.
+- SIMPLE: a onda do resultado ficou bem maior (OUVIR e LOOP subiram para o topo, ao lado do ARRASTE PARA O DAW) e os
+  cartões de efeito ficaram mais baixos.
 
 ## 0.1.1 — 2026-11-16
 - Ainda TESTE (sem licença, fora do site).

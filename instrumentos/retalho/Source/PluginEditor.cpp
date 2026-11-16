@@ -47,10 +47,114 @@ void rotulo (juce::Graphics& g, juce::Rectangle<float> r, const juce::String& t,
 
 void caixa (juce::Graphics& g, juce::Rectangle<float> r, juce::Colour fundo = cPn, float raio = 6.0f)
 {
-    g.setColour (fundo);
+    // leve volume: topo um pouco mais claro e um fio de luz na borda de cima
+    g.setGradientFill (juce::ColourGradient (fundo.brighter (0.05f), 0, r.getY(), fundo.darker (0.12f), 0, r.getBottom(), false));
     g.fillRoundedRectangle (r, raio);
     g.setColour (cLn);
     g.drawRoundedRectangle (r, raio, 1.0f);
+    if (r.getHeight() > 30.0f)
+    {
+        g.setColour (juce::Colours::white.withAlpha (0.035f));
+        g.drawLine (r.getX() + raio, r.getY() + 1.0f, r.getRight() - raio, r.getY() + 1.0f, 1.0f);
+    }
+}
+
+// fundo dos displays de onda: vidro escuro com vinheta e borda
+void tela (juce::Graphics& g, juce::Rectangle<float> r, float raio = 8.0f)
+{
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff0e1116), 0, r.getY(), juce::Colour (0xff060709), 0, r.getBottom(), false));
+    g.fillRoundedRectangle (r, raio);
+    juce::ColourGradient vin (juce::Colours::transparentBlack, r.getCentreX(), r.getCentreY(),
+                              juce::Colours::black.withAlpha (0.35f), r.getX(), r.getCentreY(), true);
+    g.setGradientFill (vin);
+    g.fillRoundedRectangle (r, raio);
+    g.setColour (juce::Colour (0xff252a32));
+    g.drawRoundedRectangle (r, raio, 1.0f);
+    g.setColour (juce::Colours::black.withAlpha (0.6f));
+    g.drawRoundedRectangle (r.reduced (1.0f), raio - 1.0f, 1.0f);
+}
+
+// grade por tempo tracejada (compasso mais forte), no estilo dos displays de stutter
+void gradeTempo (juce::Graphics& g, juce::Rectangle<float> in, float y0, float y1, double beats, int bpb)
+{
+    const float dash[2] = { 2.0f, 4.0f };
+    for (int b = 1; b < (int) std::ceil (beats - 1e-6); ++b)
+    {
+        const float x = in.getX() + in.getWidth() * (float) (b / beats);
+        const bool compasso = b % juce::jmax (1, bpb) == 0;
+        g.setColour (compasso ? juce::Colour (0xff3a414c) : juce::Colour (0xff22272f));
+        g.drawDashedLine ({ x, y0, x, y1 }, dash, 2, 1.0f);
+    }
+}
+
+// Onda REAL: barras espelhadas com degradê (claras nas pontas, escuras no meio) e brilho em volta.
+// Cada cor é um Path só (um preenchimento por cor, leve a 30 Hz).
+struct Pincel
+{
+    juce::Colour cor[12];
+    juce::Path p[12];
+    int n = 0;
+    juce::Path& de (juce::Colour c)
+    {
+        for (int i = 0; i < n; ++i) if (cor[i] == c) return p[i];
+        if (n == 12) return p[11];
+        cor[n] = c;
+        return p[n++];
+    }
+    void barra (juce::Colour c, float x, float w, float cy, float meia)
+    {
+        meia = juce::jmax (0.6f, meia);
+        de (c).addRectangle (x, cy - meia, w, 2.0f * meia);
+    }
+    void pinta (juce::Graphics& g, float cy, float meia, bool brilho = true) const
+    {
+        for (int i = 0; i < n; ++i)
+        {
+            if (p[i].isEmpty()) continue;
+            const auto c = cor[i];
+            if (brilho)
+            {
+                g.setColour (c.withAlpha (0.05f));
+                g.strokePath (p[i], juce::PathStrokeType (9.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+                g.setColour (c.withAlpha (0.10f));
+                g.strokePath (p[i], juce::PathStrokeType (3.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            }
+            juce::ColourGradient gr (c.brighter (0.35f), 0, cy - meia, c.brighter (0.35f), 0, cy + meia, false);
+            gr.addColour (0.30, c);
+            gr.addColour (0.50, c.darker (0.55f));
+            gr.addColour (0.70, c);
+            g.setGradientFill (gr);
+            g.fillPath (p[i]);
+        }
+    }
+};
+
+// pico (0..1) das colunas [c0, c1] de um par min/max
+float picoCols (const std::vector<float>& mn, const std::vector<float>& mx, int c0, int c1)
+{
+    const int C = (int) juce::jmin (mn.size(), mx.size());
+    if (C == 0) return 0.0f;
+    c0 = juce::jlimit (0, C - 1, c0); c1 = juce::jlimit (c0, C - 1, c1);
+    float p = 0.0f;
+    for (int c = c0; c <= c1; ++c) p = juce::jmax (p, std::abs (mn[(size_t) c]), std::abs (mx[(size_t) c]));
+    return p;
+}
+
+// ganho para a onda encher o display (o maior pico chega a ~92%)
+float ganhoOnda (const std::vector<float>& mn, const std::vector<float>& mx)
+{
+    const float p = picoCols (mn, mx, 0, (int) mx.size() - 1);
+    return 0.92f / juce::jmax (0.06f, p);
+}
+
+// cursor com brilho (playhead)
+void agulha (juce::Graphics& g, float x, float y0, float y1, juce::Colour cor)
+{
+    g.setColour (cor.withAlpha (0.06f)); g.fillRect (x - 8.0f, y0, 16.0f, y1 - y0);
+    g.setColour (cor.withAlpha (0.14f)); g.fillRect (x - 3.0f, y0, 6.0f, y1 - y0);
+    g.setColour (cor); g.fillRect (x - 0.75f, y0, 1.5f, y1 - y0);
+    juce::Path t; t.addTriangle (x - 5.0f, y0, x + 5.0f, y0, x, y0 + 6.0f);
+    g.fillPath (t);
 }
 
 // triângulos (os glifos ◀ ▶ ▼ não existem em todas as fontes)
@@ -79,19 +183,35 @@ void desenhaKnob (juce::Graphics& g, juce::Point<float> c, float raio, float v, 
     const float a0 = juce::MathConstants<float>::pi * 1.25f, a1 = juce::MathConstants<float>::pi * 2.75f;
     const float av = a0 + (a1 - a0) * juce::jlimit (0.0f, 1.0f, v), am = a0 + (a1 - a0) * zero;
     if (! ativo) cor = cDim;
-    g.setColour (cPn2); g.fillEllipse (juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c));
-    g.setColour (cLn); g.drawEllipse (juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c), 1.0f);
-    const float ra = raio + (raio > 20.0f ? 6.0f : 4.0f), esp = raio > 20.0f ? 4.5f : 3.0f;
+    const auto corpo = juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c);
+    // sombra, corpo com luz de cima-esquerda, aro e reflexo: knob "de metal escuro"
+    g.setColour (juce::Colours::black.withAlpha (0.55f)); g.fillEllipse (corpo.translated (0, raio * 0.12f).expanded (raio * 0.08f));
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff353b45), c.x - raio * 0.5f, c.y - raio * 0.7f,
+                                             juce::Colour (0xff0f1216), c.x + raio * 0.5f, c.y + raio * 0.9f, false));
+    g.fillEllipse (corpo);
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff2a3038), c.x, c.y - raio * 0.6f, juce::Colour (0xff15181d), c.x, c.y + raio * 0.6f, false));
+    g.fillEllipse (corpo.reduced (raio * 0.16f));
+    g.setColour (juce::Colours::white.withAlpha (0.10f)); g.drawEllipse (corpo.reduced (0.5f), 1.0f);
+    g.setColour (juce::Colours::black.withAlpha (0.5f)); g.drawEllipse (corpo.reduced (raio * 0.16f), 1.0f);
+    const float ra = raio + (raio > 20.0f ? 6.0f : 4.0f), esp = raio > 20.0f ? 4.0f : 3.0f;
     juce::Path tr; tr.addCentredArc (c.x, c.y, ra, ra, 0, a0, a1, true);
-    g.setColour (juce::Colour (0xff262b33)); g.strokePath (tr, juce::PathStrokeType (esp, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (juce::Colour (0xff1c2027)); g.strokePath (tr, juce::PathStrokeType (esp, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     if (std::abs (av - am) > 0.001f)
     {
         juce::Path va; va.addCentredArc (c.x, c.y, ra, ra, 0, juce::jmin (am, av), juce::jmax (am, av), true);
+        if (ativo)
+        {
+            g.setColour (cor.withAlpha (0.10f)); g.strokePath (va, juce::PathStrokeType (esp + 7.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.setColour (cor.withAlpha (0.22f)); g.strokePath (va, juce::PathStrokeType (esp + 3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        }
         g.setColour (cor); g.strokePath (va, juce::PathStrokeType (esp, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
+    // ponteiro: ponto aceso perto da borda do corpo
     const juce::Point<float> d (std::sin (av), -std::cos (av));
-    g.setColour (cor);
-    g.drawLine (c.x + d.x * raio * 0.25f, c.y + d.y * raio * 0.25f, c.x + d.x * raio * 0.85f, c.y + d.y * raio * 0.85f, raio > 20.0f ? 3.2f : 2.4f);
+    const juce::Point<float> pp (c.x + d.x * raio * 0.62f, c.y + d.y * raio * 0.62f);
+    const float pr = raio > 20.0f ? 3.4f : 2.4f;
+    if (ativo) { g.setColour (cor.withAlpha (0.3f)); g.fillEllipse (juce::Rectangle<float> (pr * 4, pr * 4).withCentre (pp)); }
+    g.setColour (ativo ? cor.brighter (0.3f) : cDim); g.fillEllipse (juce::Rectangle<float> (pr * 2, pr * 2).withCentre (pp));
 }
 
 juce::String valorPasso (uint32_t p)
@@ -419,37 +539,34 @@ void RetalhoEditor::linha (juce::Graphics& g)
 void RetalhoEditor::original (juce::Graphics& g, juce::Rectangle<float> r)
 {
     areaOriginal = r;
-    caixa (g, r, cTela, 6.0f);
+    tela (g, r, 6.0f);
     const int modo = escolha (kModo);
     const auto in = r.reduced (8, 6);
     const float W = in.getWidth();
     const auto& v = vista;
     const double beats = v.len > 0 ? (double) v.len / v.spb : 4.0;
 
-    // grade: linha por tempo
-    for (int b = 1; b < (int) std::ceil (beats); ++b)
-    {
-        const float x = in.getX() + W * (float) (b / beats);
-        g.setColour (b % (int) v.bpb == 0 ? juce::Colour (0xff2c323c) : juce::Colour (0xff1b1f26));
-        g.drawLine (x, r.getY() + 2, x, r.getBottom() - 2, 1.0f);
-    }
-    const float cy = in.getCentreY() + 6, hh = in.getHeight() * 0.36f;
+    // grade: linha por tempo (tracejada)
+    gradeTempo (g, in, r.getY() + 2, r.getBottom() - 2, beats, (int) v.bpb);
+    const float cy = in.getCentreY() + 6, hh = in.getHeight() * 0.40f;
     if (v.valida)
     {
         const bool edit = modo == mEdit;
-        for (int x = 0; x < (int) W; x += 2)
+        const int C = RetalhoProcessor::colunas;
+        const float ganho = ganhoOnda (v.oMin, v.oMax);
+        Pincel pc;
+        for (float x = 0; x < W - 1.0f; x += 2.0f)
         {
-            const int c = juce::jlimit (0, RetalhoProcessor::colunas - 1, (int) ((float) x / W * RetalhoProcessor::colunas));
-            const float a = juce::jmin (1.0f, juce::jmax (std::abs (v.oMin[(size_t) c]), std::abs (v.oMax[(size_t) c])) * 1.6f);
-            const float fr = (float) x / W;
+            const float fr = x / W;
+            const float a = juce::jmin (1.0f, picoCols (v.oMin, v.oMax, (int) (fr * C), (int) ((x + 2.0f) / W * C)) * ganho);
             juce::Colour cor = cOnda;
             if (edit && fr >= v.chunkIni && fr < v.chunkFim) cor = juce::Colour (0xffdfe3e8);
             if (modo == mGroove)
                 for (int s = 0; s < numChops; ++s)
                     if (v.chopIni[s] >= 0 && fr >= v.chopIni[s] && fr < v.chopFim[s]) cor = corChop (s);
-            g.setColour (cor);
-            g.fillRect (in.getX() + (float) x, cy - a * hh, 1.2f, juce::jmax (1.0f, 2.0f * a * hh));
+            pc.barra (cor, in.getX() + x, 1.3f, cy, a * hh);
         }
+        pc.pinta (g, cy, hh, false);
         if (edit && v.chunkFim > v.chunkIni)
         {
             const float x0 = in.getX() + W * v.chunkIni, x1 = in.getX() + W * juce::jmin (1.0f, v.chunkFim);
@@ -498,7 +615,7 @@ void RetalhoEditor::original (juce::Graphics& g, juce::Rectangle<float> r)
 void RetalhoEditor::result (juce::Graphics& g, juce::Rectangle<float> r)
 {
     areaResult = r;
-    caixa (g, r, cTela, 6.0f);
+    tela (g, r, 6.0f);
     const int modo = escolha (kModo);
     const auto in = r.reduced (10, 0).withTrimmedTop (26).withTrimmedBottom (34);
     if (modo == mEdit) resultEdit (g, in);
@@ -529,12 +646,7 @@ void RetalhoEditor::result (juce::Graphics& g, juce::Rectangle<float> r)
     float pr = -1.0f;
     if (m.fillProg.load() >= 0.0f && m.fillModo.load() == modo && modo != mGroove) pr = std::fmod (m.fillProg.load(), 1.0f);
     else if (proc.previewTocando() == 2) pr = proc.previewPos();
-    if (pr >= 0.0f && modo != mGroove)
-    {
-        const float x = in.getX() + in.getWidth() * pr;
-        g.setColour (cAmb.withAlpha (0.25f)); g.fillRect (x - 3, r.getY() + 4, 6.0f, r.getHeight() - 8);
-        g.setColour (cAmb); g.fillRect (x - 1, r.getY() + 4, 2.0f, r.getHeight() - 8);
-    }
+    if (pr >= 0.0f && modo != mGroove) agulha (g, in.getX() + in.getWidth() * pr, r.getY() + 24, r.getBottom() - 32, cAmb);
 }
 
 void RetalhoEditor::resultEdit (juce::Graphics& g, juce::Rectangle<float> in)
@@ -546,7 +658,8 @@ void RetalhoEditor::resultEdit (juce::Graphics& g, juce::Rectangle<float> in)
     for (int b = 1; b < (int) std::ceil (beats - 1e-6); ++b)
     {
         const float x = in.getX() + W * (float) (b / beats);
-        g.setColour (juce::Colour (0xff20252d)); g.drawLine (x, in.getY() - 20, x, in.getBottom() + 26, 1.0f);
+        const float dash[2] = { 2.0f, 4.0f };
+        g.setColour (juce::Colour (0xff2a3038)); g.drawDashedLine ({ x, in.getY() - 2, x, in.getBottom() + 2 }, dash, 2, 1.0f);
         rotulo (g, { x + 4, in.getY() - 4, 60, 12 }, "BEAT " + juce::String (b + 1), cDim, juce::Justification::centredLeft, 8.5f);
     }
 
@@ -625,30 +738,38 @@ void RetalhoEditor::blocosFill (juce::Graphics& g, juce::Rectangle<float> in)
 {
     const auto& v = vista;
     if (! v.valida || v.plano.n == 0) return;
-    const float W = in.getWidth(), cy = in.getCentreY(), hh = in.getHeight() * 0.46f;
+    const float W = in.getWidth(), cy = in.getCentreY(), hh = in.getHeight() * 0.5f;
     const double L = (double) v.len;
+    const int C = RetalhoProcessor::colunas;
+    const float ganho = ganhoOnda (v.rMin, v.rMax);
+    // linha de centro
+    g.setColour (juce::Colour (0xff1d2128)); g.fillRect (in.getX(), cy - 0.5f, W, 1.0f);
+    // a onda renderizada de verdade, fatia por fatia: dentro de cada fatia, barras de 2 px a cada 3 px com o pico real;
+    // um vão entre as fatias deixa cada repetição visível (fatia curta = uma barra cheia, como nos displays de stutter)
+    Pincel pc;
     for (int k = 0; k < v.plano.n; ++k)
     {
         const auto& f = v.plano.f[k];
         const float x0 = in.getX() + W * (float) (f.t0 / L), x1 = in.getX() + W * (float) ((f.t0 + f.dur) / L);
-        const float wv = juce::jmax (1.0f, x1 - x0 - (x1 - x0 > 6 ? 2.5f : 0.6f));
-        const float pk = k < (int) v.picoFatia.size() ? v.picoFatia[(size_t) k] : 0.0f;
-        const float a = f.tipo == fMute ? 0.10f : juce::jlimit (0.18f, 1.0f, pk * 1.5f + 0.12f);
-        juce::Colour cor = f.tipo == fMute ? cDim : (f.rev ? cRosa : (f.tipo == fTapeStop ? cLil : cAmb));
-        const juce::Rectangle<float> blk (x0, cy - a * hh, wv, 2 * a * hh);
-        g.setGradientFill (juce::ColourGradient (cor.brighter (0.15f), 0, blk.getY(), cor.darker (0.55f), 0, cy, true));
-        g.fillRect (blk.withHeight (a * hh));
-        g.setGradientFill (juce::ColourGradient (cor.darker (0.55f), 0, cy, cor.brighter (0.15f), 0, blk.getBottom(), false));
-        g.fillRect (blk.withTrimmedTop (a * hh));
-        // onda dentro do bloco
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        for (float x = x0; x < x0 + wv; x += 2.0f)
+        const float vao = x1 - x0 > 8.0f ? 2.0f : (x1 - x0 > 3.0f ? 1.0f : 0.0f);
+        const float a0 = x0, a1 = juce::jmax (x0 + 1.0f, x1 - vao);
+        const juce::Colour cor = f.tipo == fMute ? cDim : (f.rev ? cRosa : (f.tipo == fTapeStop ? cLil : cAmb));
+        if (f.tipo == fMute) { pc.barra (cor, a0, a1 - a0, cy, 0.6f); continue; }
+        const float passo = 3.0f, bw = 2.0f;
+        if (a1 - a0 <= passo + 0.5f)
         {
-            const int c = juce::jlimit (0, RetalhoProcessor::colunas - 1, (int) ((x - in.getX()) / W * RetalhoProcessor::colunas));
-            const float s = juce::jmin (1.0f, juce::jmax (std::abs (v.rMin[(size_t) c]), std::abs (v.rMax[(size_t) c])) * 1.4f);
-            g.fillRect (x, cy - s * a * hh * 0.9f, 1.0f, 2.0f * s * a * hh * 0.9f);
+            const float pk = picoCols (v.rMin, v.rMax, (int) ((a0 - in.getX()) / W * C), (int) ((a1 - in.getX()) / W * C));
+            pc.barra (cor, a0, a1 - a0, cy, juce::jmin (1.0f, pk * ganho) * hh);
+            continue;
+        }
+        for (float x = a0; x < a1 - 0.5f; x += passo)
+        {
+            const float xe = juce::jmin (a1, x + bw);
+            const float pk = picoCols (v.rMin, v.rMax, (int) ((x - in.getX()) / W * C), (int) ((x + passo - in.getX()) / W * C));
+            pc.barra (cor, x, xe - x, cy, juce::jmin (1.0f, pk * ganho) * hh);
         }
     }
+    pc.pinta (g, cy, hh);
     // PITCH (ciano)
     if (std::abs (real (kPFim) - real (kPIni)) > 0.5f || std::abs (real (kPIni)) > 0.5f)
     {
@@ -665,6 +786,7 @@ void RetalhoEditor::blocosFill (juce::Graphics& g, juce::Rectangle<float> in)
             else pp.lineTo (x0, yst (s0));
             pp.lineTo (x1, yst (s1));
         }
+        g.setColour (cCiano.withAlpha (0.18f)); g.strokePath (pp, juce::PathStrokeType (6.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         g.setColour (cCiano); g.strokePath (pp, juce::PathStrokeType (1.8f));
     }
 }
@@ -707,14 +829,15 @@ void RetalhoEditor::resultComplex (juce::Graphics& g, juce::Rectangle<float> in)
         if (v.valida && t != tMute)
         {
             const float f0 = (float) k / N, f1 = (float) (k + 1) / N;
-            for (float xx = x + 2; xx < x + cw - 2; xx += 1.5f)
+            const int C = RetalhoProcessor::colunas;
+            const float ganho = ganhoOnda (v.rMin, v.rMax);
+            Pincel pc;
+            for (float xx = x + 2; xx < x + cw - 2; xx += 2.0f)
             {
-                const float fr = f0 + (f1 - f0) * (xx - x) / cw;
-                const int c = juce::jlimit (0, RetalhoProcessor::colunas - 1, (int) (fr * RetalhoProcessor::colunas));
-                const float s = juce::jmin (1.0f, juce::jmax (std::abs (v.rMin[(size_t) c]), std::abs (v.rMax[(size_t) c])) * 1.6f);
-                g.setColour (cor.withAlpha (0.85f));
-                g.fillRect (xx, cy - s * hh, 1.0f, juce::jmax (1.0f, 2 * s * hh));
+                const float fa = f0 + (f1 - f0) * (xx - x) / cw, fb = f0 + (f1 - f0) * (xx + 2.0f - x) / cw;
+                pc.barra (cor, xx, 1.3f, cy, juce::jmin (1.0f, picoCols (v.rMin, v.rMax, (int) (fa * C), (int) (fb * C)) * ganho) * hh);
             }
+            pc.pinta (g, cy, hh, false);
         }
         // topo: tipo + valor
         const float fh = N > 16 ? 7.5f : 9.0f;
@@ -755,13 +878,15 @@ void RetalhoEditor::resultGroove (juce::Graphics& g, juce::Rectangle<float> in)
         g.setColour (cor.withAlpha (cheio ? 0.10f : 0.04f)); g.fillRoundedRectangle (rr, 4.0f);
         g.setColour (s == sel ? cor : cor.withAlpha (0.3f)); g.drawRoundedRectangle (rr, 4.0f, s == sel ? 1.8f : 1.0f);
         if (cheio)
+        {
+            float mxo = 0.0f;
+            for (int x = 0; x < 48; ++x) mxo = juce::jmax (mxo, v.chopOnda[s][x]);
+            const float gs = mxo > 0.0f ? 1.0f / mxo : 0.0f, cy = rr.getCentreY() + 2, bw = (rr.getWidth() - 28) / 48.0f;
+            Pincel pc;
             for (int x = 0; x < 48; ++x)
-            {
-                const float a = juce::jmin (1.0f, v.chopOnda[s][x] * 1.8f);
-                const float xx = rr.getX() + 22 + (rr.getWidth() - 28) * x / 48.0f, cy = rr.getCentreY() + 4;
-                g.setColour (cor.withAlpha (0.85f));
-                g.fillRect (xx, cy - a * 13, juce::jmax (1.0f, (rr.getWidth() - 28) / 48.0f - 0.6f), juce::jmax (1.0f, 26 * a));
-            }
+                pc.barra (cor, rr.getX() + 22 + bw * x, juce::jmax (1.0f, bw - 0.8f), cy, juce::jmin (1.0f, v.chopOnda[s][x] * gs) * 14.0f);
+            pc.pinta (g, cy, 14.0f, false);
+        }
         rotulo (g, { rr.getX() + 6, rr.getY() + 3, 20, 14 }, juce::String (s + 1), cor, juce::Justification::centredLeft, 11.0f, true);
         rotulo (g, { rr.getX() + 4, rr.getBottom() - 14, rr.getWidth() - 8, 12 }, cheio ? juce::String (juce::roundToInt (v.chopMs[s])) + " ms" : u8 ("\xe2\x80\x94"),
                 cMu, juce::Justification::centredRight, 8.5f);
@@ -1646,7 +1771,7 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
         const float cw = (1176.0f - 30.0f) / 4.0f;
         for (int i = 0; i < 4; ++i)
         {
-            const juce::Rectangle<float> r (12.0f + i * (cw + 10.0f), 72, cw, 50);
+            const juce::Rectangle<float> r (12.0f + i * (cw + 10.0f), 72, cw, 44);
             const bool on = ca == i;
             const juce::Colour cor = i == 3 ? cVerde : cAmb;
             if (on)
@@ -1657,15 +1782,15 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
                 g.setColour (cor); g.drawRoundedRectangle (r, 9.0f, 1.6f);
             }
             else caixa (g, r, cPn, 9.0f);
-            rotulo (g, { r.getX() + 16, r.getY() + 5, r.getWidth() - 24, 22 }, nomes[i], on ? cor : cTx, juce::Justification::centredLeft, 16.0f, true);
-            rotulo (g, { r.getX() + 16, r.getY() + 28, r.getWidth() - 24, 15 }, u8 (desc[i]), on ? cTx.withAlpha (0.8f) : cMu, juce::Justification::centredLeft, 10.0f);
+            rotulo (g, { r.getX() + 16, r.getY() + 4, r.getWidth() - 24, 20 }, nomes[i], on ? cor : cTx, juce::Justification::centredLeft, 16.0f, true);
+            rotulo (g, { r.getX() + 16, r.getY() + 25, r.getWidth() - 24, 14 }, u8 (desc[i]), on ? cTx.withAlpha (0.8f) : cMu, juce::Justification::centredLeft, 10.0f);
             alvos.push_back ({ r, [this, i] { proc.aplicaCartao (i); } });
         }
     }
 
     // ---- a amostra (dentro do plugin) e a onda do resultado ----
-    faixaAmostra (g, { 12, 130, 1176, 68 });
-    ondaSimples (g, { 12, 204, 1176, 110 });
+    faixaAmostra (g, { 12, 122, 1176, 64 });
+    ondaSimples (g, { 12, 192, 1176, 122 });
 
     // ---- 2 · ajuste: 5 macros ----
     secao (14, 320, "2", "AJUSTE");
@@ -1798,21 +1923,16 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
 
 void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    caixa (g, r, cTela, 8.0f);
+    tela (g, r, 8.0f);
     auto& m = proc.motor();
     const auto& v = vista;
     const int modo = escolha (kModo);
     const bool gr = modo == mGroove;
-    const auto in = r.reduced (14, 0).withTrimmedTop (28).withTrimmedBottom (32);
+    const auto in = r.reduced (14, 0).withTrimmedTop (32).withTrimmedBottom (8);
 
-    // grade por tempo
+    // grade por tempo (tracejada)
     const double beats = v.len > 0 ? (double) v.len / v.spb : 4.0;
-    for (int b = 1; b < (int) std::ceil (beats - 1e-6); ++b)
-    {
-        const float x = in.getX() + in.getWidth() * (float) (b / beats);
-        g.setColour (b % juce::jmax (1, (int) v.bpb) == 0 ? juce::Colour (0xff2c323c) : juce::Colour (0xff1b1f26));
-        g.drawLine (x, r.getY() + 6, x, r.getBottom() - 6, 1.0f);
-    }
+    gradeTempo (g, in, r.getY() + 28, r.getBottom() - 6, beats, (int) v.bpb);
 
     const juce::String tit = u8 ("RESULTADO \xc2\xb7 ");
     const auto ft = fonte (10.0f).withExtraKerningFactor (0.3f);
@@ -1833,8 +1953,11 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
         // GROOVE: os chops no pattern, numa faixa só (a linha de cima manda)
         const int porC = escolha (kGGrid) == 1 ? 12 : 16;
         const int nCel = juce::jmin (maxCelulas, porC * (escolha (kGBars) + 1));
-        const float cw = in.getWidth() / (float) nCel, cy = in.getCentreY(), hh = in.getHeight() * 0.46f;
+        const float cw = in.getWidth() / (float) nCel, cy = in.getCentreY(), hh = in.getHeight() * 0.5f;
         const int tc = m.grooveTocando.load() ? m.grooveCel.load() : -1;
+        g.setColour (juce::Colour (0xff1d2128)); g.fillRect (in.getX(), cy - 0.5f, in.getWidth(), 1.0f);
+        // cada chop no pattern é desenhado com a onda REAL da sílaba (48 pontos), na altura do velocity
+        Pincel pc;
         for (int c = 0; c < nCel; ++c)
         {
             uint32_t cv = 0;
@@ -1842,20 +1965,21 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
             const int s = cChop (cv);
             if (s < 0) continue;
             const float a = juce::jlimit (0.2f, 1.0f, cVel (cv) / 255.0f);
-            const juce::Rectangle<float> blk (in.getX() + c * cw + 1.5f, cy - a * hh, juce::jmax (1.0f, cw - 3.0f), 2.0f * a * hh);
-            const juce::Colour cor = corChop (s).withAlpha (c == tc ? 1.0f : 0.85f);
-            g.setGradientFill (juce::ColourGradient (cor.brighter (0.15f), 0, blk.getY(), cor.darker (0.5f), 0, cy, true));
-            g.fillRoundedRectangle (blk, 2.5f);
-            if (v.chopMs[s] > 0.0f)
+            const float bx = in.getX() + c * cw + 1.5f, bwid = juce::jmax (1.0f, cw - 3.0f);
+            const juce::Colour cor = corChop (s);
+            if (c == tc) { g.setColour (cor.withAlpha (0.12f)); g.fillRoundedRectangle (bx - 1.0f, in.getY() - 2.0f, bwid + 2.0f, in.getHeight() + 4.0f, 3.0f); }
+            float mxo = 0.0f;
+            for (int i = 0; i < 48; ++i) mxo = juce::jmax (mxo, v.chopOnda[s][i]);
+            const float gs = mxo > 0.0f ? 1.0f / mxo : 0.0f;
+            if (v.chopMs[s] <= 0.0f || gs == 0.0f) { pc.barra (cor, bx, bwid, cy, a * hh); continue; }
+            for (float x = 0; x < bwid - 0.5f; x += 3.0f)
             {
-                g.setColour (juce::Colours::black.withAlpha (0.35f));
-                for (int x = 0; x < (int) blk.getWidth() - 2; x += 2)
-                {
-                    const float sa = juce::jmin (1.0f, v.chopOnda[s][juce::jlimit (0, 47, x * 48 / juce::jmax (1, (int) blk.getWidth()))] * 1.8f);
-                    g.fillRect (blk.getX() + 1 + x, cy - sa * a * hh * 0.85f, 1.0f, 2.0f * sa * a * hh * 0.85f);
-                }
+                const float sa = v.chopOnda[s][juce::jlimit (0, 47, (int) (x * 48.0f / bwid))] * gs;
+                pc.barra (cor, bx + x, juce::jmin (2.0f, bwid - x), cy, juce::jmin (1.0f, sa) * a * hh);
             }
         }
+        pc.pinta (g, cy, hh);
+        if (tc >= 0) agulha (g, in.getX() + (tc + 0.5f) * cw, r.getY() + 28, r.getBottom() - 6, cVerde);
         bool algum = false;
         for (int s = 0; s < numChops; ++s) algum = algum || v.chopMs[s] > 0.0f;
         if (! algum)
@@ -1875,28 +1999,21 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
         g.setColour (cTx); g.drawLine (ax, ay - 5, ax, ay + 3, 1.4f);
         tri (g, { ax, ay + 3 }, 6, 2, cTx);
 
-        // OUVIR / LOOP
-        const float y = r.getBottom() - 27;
+        // OUVIR (só o efeito, aqui no plugin) / LOOP — no topo, ao lado do ARRASTE
         const int pt = proc.previewTocando();
-        const juce::Rectangle<float> r1 (r.getX() + 14, y, 92, 22), r2 (r1.getRight() + 6, y, 64, 22);
-        botao (g, r1, "     OUVIR", pt == 2, cAmb, [this] { proc.preview (2); }, 10.5f);
-        tri (g, { r1.getX() + 16, r1.getCentreY() }, 8, 0, pt == 2 ? cAmb : cMu);
-        botao (g, r2, "LOOP", proc.previewLoop.load(), cAmb, [this] { proc.previewLoop = ! proc.previewLoop.load(); }, 10.5f);
-        rotulo (g, { r2.getRight() + 12, y, 500, 22 }, u8 ("OUVIR TOCA S\xc3\x93 O EFEITO, AQUI NO PLUGIN"), cDim, juce::Justification::centredLeft, 9.0f);
+        const juce::Rectangle<float> r2 (areaDaw.getX() - 8 - 58, areaDaw.getY(), 58, 20), r1 (r2.getX() - 6 - 84, areaDaw.getY(), 84, 20);
+        botao (g, r1, "     OUVIR", pt == 2, cAmb, [this] { proc.preview (2); }, 10.0f);
+        tri (g, { r1.getX() + 15, r1.getCentreY() }, 7, 0, pt == 2 ? cAmb : cMu);
+        botao (g, r2, "LOOP", proc.previewLoop.load(), cAmb, [this] { proc.previewLoop = ! proc.previewLoop.load(); }, 10.0f);
 
         float pr = -1.0f;
         if (m.fillProg.load() >= 0.0f && m.fillModo.load() == modo) pr = std::fmod (m.fillProg.load(), 1.0f);
         else if (proc.previewTocando() == 2) pr = proc.previewPos();
-        if (pr >= 0.0f)
-        {
-            const float x = in.getX() + in.getWidth() * pr;
-            g.setColour (cAmb.withAlpha (0.25f)); g.fillRect (x - 3, r.getY() + 4, 6.0f, r.getHeight() - 8);
-            g.setColour (cAmb); g.fillRect (x - 1, r.getY() + 4, 2.0f, r.getHeight() - 8);
-        }
+        if (pr >= 0.0f) agulha (g, in.getX() + in.getWidth() * pr, r.getY() + 28, r.getBottom() - 6, cAmb);
     }
     else
-        rotulo (g, { r.getX() + 14, r.getBottom() - 26, r.getWidth() - 28, 20 },
-                u8 ("OS CHOPS DA AMOSTRA TOCAM NO PROJETO, NA HORA ESCOLHIDA EM QUANDO TOCA (A AMOSTRA CALA ENQUANTO ELES TOCAM)"), cDim, juce::Justification::centredLeft, 9.0f);
+        rotulo (g, { r.getX() + 400, r.getY() + 8, r.getWidth() - 414, 14 },
+                u8 ("OS CHOPS TOCAM NA HORA DE \"QUANDO TOCA\" \xc2\xb7 A AMOSTRA CALA ENQUANTO ELES TOCAM"), cDim, juce::Justification::centredRight, 8.5f);
 }
 
 // =====================================================================================================================
@@ -1949,7 +2066,7 @@ void RetalhoEditor::menuCaptura()
 
 void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    caixa (g, r, cTela, 8.0f);
+    caixa (g, r, cPn, 8.0f);
     const auto& va = visaoA;
     const bool tem = va.tem && proc.temAmostra();
     const int ce = proc.estadoCaptura();
@@ -1995,8 +2112,8 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
     }
 
     // meio: a onda da amostra, o trecho que toca e onde está tocando
-    const juce::Rectangle<float> w (rl.getRight() + 10, r.getY() + 7, x - rl.getRight() - 10, r.getHeight() - 14);
-    g.setColour (juce::Colour (0xff0d0f13)); g.fillRoundedRectangle (w, 5.0f);
+    const juce::Rectangle<float> w (rl.getRight() + 10, r.getY() + 6, x - rl.getRight() - 10, r.getHeight() - 12);
+    tela (g, w, 5.0f);
     if (ce == 1 || ce == 2)
     {
         const float pulso = 0.6f + 0.4f * std::sin (quadro * 0.2f);
@@ -2024,14 +2141,19 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
     areaAmostra = w;
     const float s0 = proc.selIni.load(), s1 = juce::jmax (s0 + 0.001f, proc.selFim.load());
     const int C = (int) va.mx.size();
-    const float cy = w.getCentreY(), hh = w.getHeight() * 0.44f;
-    for (int px = 0; px < (int) w.getWidth() && C > 0; px += 2)
+    const float cy = w.getCentreY() - 3.0f, hh = w.getHeight() * 0.40f;
     {
-        const float fr = (float) px / w.getWidth();
-        const int c = juce::jlimit (0, C - 1, (int) (fr * C));
-        const float a = juce::jmin (1.0f, juce::jmax (std::abs (va.mn[(size_t) c]), std::abs (va.mx[(size_t) c])) * 1.5f);
-        g.setColour (fr >= s0 && fr <= s1 ? juce::Colour (0xffc9ced6) : cOnda.withAlpha (0.45f));
-        g.fillRect (w.getX() + (float) px, cy - a * hh, 1.2f, juce::jmax (1.0f, 2.0f * a * hh));
+        // onda real da amostra: o trecho que toca aceso (âmbar), o resto apagado
+        const float ganho = ganhoOnda (va.mn, va.mx);
+        Pincel pc;
+        const juce::Colour acesa (0xffe8c25a), apagada = cOnda.withAlpha (0.55f);
+        for (float px = 0; px < w.getWidth() - 1.0f && C > 0; px += 2.0f)
+        {
+            const float fr = px / w.getWidth();
+            const float pk = picoCols (va.mn, va.mx, (int) (fr * C), (int) ((px + 2.0f) / w.getWidth() * C));
+            pc.barra (fr >= s0 && fr <= s1 ? acesa : apagada, w.getX() + px, 1.3f, cy, juce::jmin (1.0f, pk * ganho) * hh);
+        }
+        pc.pinta (g, cy, hh, false);
     }
     const float x0 = w.getX() + w.getWidth() * s0, x1 = w.getX() + w.getWidth() * s1;
     if (s0 > 0.0005f || s1 < 0.9995f)
@@ -2043,7 +2165,7 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
     if (pa >= 0.0f && pa <= 1.0f)
     {
         const float xp = x0 + (x1 - x0) * pa;
-        g.setColour (cVerde); g.fillRect (xp - 1, w.getY() + 2, 2.0f, w.getHeight() - 4);
+        agulha (g, xp, w.getY() + 1, w.getBottom() - 1, cVerde);
     }
     rotulo (g, { w.getX() + 6, w.getBottom() - 13, w.getWidth() - 12, 12 },
             u8 ("ARRASTE NA ONDA PARA ESCOLHER O TRECHO \xc2\xb7 DUPLO CLIQUE = INTEIRA"), cDim, juce::Justification::centredRight, 8.0f);
