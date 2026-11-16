@@ -2,7 +2,7 @@
 
 #include "PluginProcessor.h"
 
-// Tela do RETALHO (base 1200 × 620, escala junto com a janela), no layout do esboço v2 aprovado em 15/11/2026:
+// Tela do RETALHO (base 1200 × 620, escala junto com a janela). Abre no SIMPLE; o PRO segue o esboço v2 de 15/11/2026:
 //  - topo: marca, abas EDIT / COMPLEX / GROOVE, PRESET ▾, KEY, TEMPO, LATENCY, CAPTURE e o menu ≡;
 //  - linha de botões da aba (SHAPE, LENGTH, RATE… / STEPS, READ, DICE MODE / CHOPS, CUT, STYLE…);
 //  - display de onda: ORIGINAL (a voz capturada, ataques ▼, CHUNK em destaque) e RESULT (o fill renderizado em
@@ -26,9 +26,24 @@ public:
     static constexpr int baseW = 1200, baseH = 620;
 
 private:
-    struct Knob { int campo; juce::Point<float> c; float r; };
+    struct Knob { int campo; juce::Point<float> c; float r; };   // campo < 0 = macro do SIMPLE (−1 − índice)
     struct Alvo { juce::Rectangle<float> r; std::function<void()> f; };
-    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw };
+    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw, arMacro };
+
+    // SIMPLE (tela padrão desde 16/11/2026): 4 cartões de efeito, a onda do resultado, 5 macros, QUANDO TOCA e os pads.
+    // PRO = a tela completa (EDIT / COMPLEX / GROOVE). A troca é só de tela: o som e os parâmetros são os mesmos.
+    bool simples() const { return proc.uiPro.load() == 0; }
+    void telaSimples (juce::Graphics&);
+    void chaveModo (juce::Graphics&);
+    void ondaSimples (juce::Graphics&, juce::Rectangle<float> r);
+    void blocosFill (juce::Graphics&, juce::Rectangle<float> in);
+    int cartao() const;          // 0 STUTTER, 1 RISER, 2 TAPE STOP, 3 GROOVE, −1 cena do COMPLEX
+    int quando() const;          // 0 TODO COMPASSO, 1 FIM DE 4 BARS, 2 FIM DE 8 BARS, 3 SÓ NO PAD, −1 outro (do PRO)
+    float macroLe (int i) const;
+    void macroDefine (int i, float v);
+    float macroPadrao (int i) const;
+    juce::String macroTexto (int i) const;
+    bool macroAtivo (int i) const { return cartao() >= 0 || i >= 3; }
 
     void timerCallback() override;
     float escala() const { return (float) getWidth() / (float) baseW; }
@@ -49,7 +64,8 @@ private:
     void liga (juce::Graphics&, juce::Rectangle<float> r, const juce::String& t, int campo, juce::Colour cor);
     void knob (juce::Graphics&, int campo, const juce::String& nome, juce::Point<float> c, juce::Colour cor);
     void painel (juce::Graphics&, juce::Rectangle<float> r, const juce::String& titulo, const juce::String& sub);
-    float chip (juce::Graphics&, float xDir, const juce::String& rot, const juce::String& val, juce::Colour cor, std::function<void()> f);
+    float chip (juce::Graphics&, float xDir, const juce::String& rot, const juce::String& val, juce::Colour cor, std::function<void()> f,
+                float maxW = 10000.0f);
     void menuEscolha (int campo);
     void menuPresets();
     void menu();
@@ -71,7 +87,7 @@ private:
     int versaoVista = -1;
     std::vector<Knob> knobs;
     std::vector<Alvo> alvos;
-    int arrasto = arNada, arrastoIdx = -1, arrastoLinha = 0, knobCampo = -1, padSegurado = -1;
+    int arrasto = arNada, arrastoIdx = -1, arrastoLinha = 0, knobCampo = -1, padSegurado = -1, macroIdx = -1;
     float valorIni = 0.0f, yIni = 0.0f, xIni = 0.0f;
     bool moveu = false;
     int quadro = 0;

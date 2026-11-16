@@ -167,6 +167,31 @@ void RetalhoProcessor::aplicaPreset (int i)
     presetNome = v[(size_t) i].nome;
 }
 
+void RetalhoProcessor::aplicaCartao (int c)
+{
+    if (c == 0)
+    {
+        Cena x;
+        pr::edit (x, shGrid, 0, 2);   // 1/2 BAR em 1/16, sem pitch: o stutter puro
+        x.v[kDecay] = -1;
+        aplicaCena (x);
+        presetNome = "STUTTER 1/16";
+    }
+    else
+    {
+        static const char* nome[4] = { nullptr, "PSY RISER 1/32", "TAPE DROP", "OFFBEAT VOX" };
+        aplicaPreset (presetPorNome (nome[juce::jlimit (1, 3, c)]));
+    }
+    define (kGrooveOn, 0.0f);   // no SIMPLE o GROOVE toca pelo QUANDO TOCA, não fica ligado direto
+}
+
+void RetalhoProcessor::presetVizinho (int passo)
+{
+    const int n = (int) presets().size();
+    const int i = presetPorNome (presetNome.toRawUTF8());
+    aplicaPreset (i < 0 ? 0 : ((i + passo) % n + n) % n);
+}
+
 juce::File RetalhoProcessor::pastaPresets()
 {
     return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("RETALHO").getChildFile ("Presets");
@@ -569,6 +594,7 @@ void RetalhoProcessor::getStateInformation (juce::MemoryBlock& destData)
     for (int i = state.getNumChildren() - 1; i >= 0; --i)
         if (! state.getChild (i).hasType ("PARAM")) state.removeChild (i, nullptr);
     state.setProperty ("uiw", uiW.load(), nullptr);
+    state.setProperty ("uipro", uiPro.load(), nullptr);
     state.setProperty ("ab", ab.load(), nullptr);
     state.setProperty ("preset", presetNome, nullptr);
     const Cena c = cenaAtual();
@@ -605,6 +631,7 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
     if (xml == nullptr || ! xml->hasTagName (apvts.state.getType())) return;
     auto vt = juce::ValueTree::fromXml (*xml);
     uiW = (int) vt.getProperty ("uiw", 0);
+    uiPro = (int) vt.getProperty ("uipro", 0) ? 1 : 0;
     ab = (int) vt.getProperty ("ab", 0) ? 1 : 0;
     presetNome = vt.getProperty ("preset", "INIT").toString();
     {
@@ -633,8 +660,9 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
     const bool fotoGroove = xml->hasAttribute ("sel");   // programa da foto (shots): 2ª foto na aba GROOVE
     apvts.replaceState (vt);
     ultimoEstilo = (int) valor (kEstilo); ultimoBars = (int) valor (kGBars); ultimoGrid = (int) valor (kGGrid);
-    if (fotoGroove)
+    if (fotoGroove)   // a 2ª foto mostra o PRO na aba GROOVE (a 1ª é o SIMPLE)
     {
+        uiPro = 1;
         aplicaPreset (presetPorNome ("OFFBEAT VOX"));
         define (kGrooveOn, 1.0f);
     }

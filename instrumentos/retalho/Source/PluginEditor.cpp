@@ -73,6 +73,27 @@ void cadeado (juce::Graphics& g, juce::Point<float> c, float s, bool fechado, ju
     g.strokePath (a, juce::PathStrokeType (1.4f));
 }
 
+// knob: v e zero em 0..1 (zero = de onde o arco sai; bipolar no meio)
+void desenhaKnob (juce::Graphics& g, juce::Point<float> c, float raio, float v, float zero, juce::Colour cor, bool ativo = true)
+{
+    const float a0 = juce::MathConstants<float>::pi * 1.25f, a1 = juce::MathConstants<float>::pi * 2.75f;
+    const float av = a0 + (a1 - a0) * juce::jlimit (0.0f, 1.0f, v), am = a0 + (a1 - a0) * zero;
+    if (! ativo) cor = cDim;
+    g.setColour (cPn2); g.fillEllipse (juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c));
+    g.setColour (cLn); g.drawEllipse (juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c), 1.0f);
+    const float ra = raio + (raio > 20.0f ? 6.0f : 4.0f), esp = raio > 20.0f ? 4.5f : 3.0f;
+    juce::Path tr; tr.addCentredArc (c.x, c.y, ra, ra, 0, a0, a1, true);
+    g.setColour (juce::Colour (0xff262b33)); g.strokePath (tr, juce::PathStrokeType (esp, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    if (std::abs (av - am) > 0.001f)
+    {
+        juce::Path va; va.addCentredArc (c.x, c.y, ra, ra, 0, juce::jmin (am, av), juce::jmax (am, av), true);
+        g.setColour (cor); g.strokePath (va, juce::PathStrokeType (esp, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+    const juce::Point<float> d (std::sin (av), -std::cos (av));
+    g.setColour (cor);
+    g.drawLine (c.x + d.x * raio * 0.25f, c.y + d.y * raio * 0.25f, c.x + d.x * raio * 0.85f, c.y + d.y * raio * 0.85f, raio > 20.0f ? 3.2f : 2.4f);
+}
+
 juce::String valorPasso (uint32_t p)
 {
     const int t = pTipo (p), v = pValor (p);
@@ -120,7 +141,7 @@ juce::String RetalhoEditor::texto (int k) const
     const float v = real (k);
     switch (k)
     {
-        case kDecay:   return sinal (v, 1, " dB/rep");
+        case kDecay:   return sinal (v, 1, " dB");
         case kFadeIn: case kFadeOut: return v < 10.0f ? juce::String (v, 1) + " ms" : juce::String (juce::roundToInt (v)) + " ms";
         case kPIni: case kPFim: case kGPitch: return sinal (v, 0, " st");
         case kPCurva: case kCurva: return v > 10.0f ? "EXP " + juce::String (juce::roundToInt (v)) : (v < -10.0f ? "LOG " + juce::String (juce::roundToInt (-v)) : juce::String ("LIN"));
@@ -157,7 +178,11 @@ void RetalhoEditor::paint (juce::Graphics& g)
     g.fillRect (juce::Rectangle<float> (0, 0, (float) baseW, (float) baseH));
     knobs.clear();
     alvos.clear();
+    // áreas de mouse da outra tela não podem sobrar
+    areaResult = areaOriginal = areaDaw = areaCelulas = {};
+    for (auto& a : areaPads) a = {};
 
+    if (simples()) { telaSimples (g); return; }
     topo (g);
     linha (g);
     original (g, { 12, 84, 1176, 70 });
@@ -211,23 +236,10 @@ void RetalhoEditor::knob (juce::Graphics& g, int campo, const juce::String& nome
     if (p == nullptr) return;
     const float raio = 14.0f;
     knobs.push_back ({ campo, c, raio });
-    rotulo (g, { c.x - 40, c.y - 33, 80, 12 }, nome, cMu, juce::Justification::centred, 9.5f);
-    const float v = p->getValue();
-    const float a0 = juce::MathConstants<float>::pi * 1.25f, a1 = juce::MathConstants<float>::pi * 2.75f;
+    rotulo (g, { c.x - 40, c.y - 31, 80, 12 }, nome, cMu, juce::Justification::centred, 9.5f);
     const bool bip = info (campo).min < 0.0f && info (campo).max > 0.0f;
-    const float zero = bip ? p->convertTo0to1 (0.0f) : 0.0f;
-    const float av = a0 + (a1 - a0) * v, am = a0 + (a1 - a0) * zero;
-    g.setColour (cPn2); g.fillEllipse (juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c));
-    g.setColour (cLn); g.drawEllipse (juce::Rectangle<float> (raio * 2, raio * 2).withCentre (c), 1.0f);
-    const float ra = raio + 4.0f;
-    juce::Path tr; tr.addCentredArc (c.x, c.y, ra, ra, 0, a0, a1, true);
-    g.setColour (juce::Colour (0xff262b33)); g.strokePath (tr, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    juce::Path va; va.addCentredArc (c.x, c.y, ra, ra, 0, juce::jmin (am, av), juce::jmax (am, av), true);
-    g.setColour (cor); g.strokePath (va, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    const juce::Point<float> d (std::sin (av), -std::cos (av));
-    g.setColour (cor);
-    g.drawLine (c.x + d.x * raio * 0.25f, c.y + d.y * raio * 0.25f, c.x + d.x * raio * 0.85f, c.y + d.y * raio * 0.85f, 2.4f);
-    rotulo (g, { c.x - 44, c.y + 19, 88, 13 }, texto (campo), cTx, juce::Justification::centred, 10.5f, true);
+    desenhaKnob (g, c, raio, p->getValue(), bip ? p->convertTo0to1 (0.0f) : 0.0f, cor);
+    rotulo (g, { c.x - 31, c.y + 19, 62, 13 }, texto (campo), cTx, juce::Justification::centred, 10.0f, true);
 }
 
 void RetalhoEditor::painel (juce::Graphics& g, juce::Rectangle<float> r, const juce::String& titulo, const juce::String& sub)
@@ -237,10 +249,15 @@ void RetalhoEditor::painel (juce::Graphics& g, juce::Rectangle<float> r, const j
     if (sub.isNotEmpty()) rotulo (g, { r.getCentreX(), r.getY() + 6, r.getWidth() * 0.5f - 12, 14 }, sub, cDim, juce::Justification::centredRight, 9.0f);
 }
 
-float RetalhoEditor::chip (juce::Graphics& g, float xDir, const juce::String& rot, const juce::String& val, juce::Colour cor, std::function<void()> f)
+float RetalhoEditor::chip (juce::Graphics& g, float xDir, const juce::String& rot, const juce::String& v0, juce::Colour cor, std::function<void()> f,
+                           float maxW)
 {
     const auto fr = fonte (8.5f).withExtraKerningFactor (0.22f), fv = fonte (9.5f, true).withExtraKerningFactor (0.22f);
-    const float w = largura (fr, rot) + largura (fv, val) + (rot.isNotEmpty() ? 20 : 14);
+    const float extra = largura (fr, rot) + (rot.isNotEmpty() ? 20 : 14);
+    juce::String val = v0;
+    while (val.length() > 3 && extra + largura (fv, val) > maxW)   // não cabe: corta o fim com reticências
+        val = val.trimEnd().dropLastCharacters (val.endsWith (u8 ("\xe2\x80\xa6")) ? 2 : 1).trimEnd() + u8 ("\xe2\x80\xa6");
+    const float w = extra + largura (fv, val);
     const juce::Rectangle<float> r (xDir - w, 11, w, 26);
     caixa (g, r, cPn, 5.0f);
     float x = r.getX() + 7;
@@ -267,11 +284,11 @@ void RetalhoEditor::topo (juce::Graphics& g)
         g.drawText (partes[i], juce::Rectangle<float> (x, 8, 120, 32), juce::Justification::centredLeft);
         x += largura (f, partes[i]);
     }
-    rotulo (g, { x + 10, 12, 80, 12 }, "STUTTER", cMu, juce::Justification::centredLeft, 9.0f);
-    rotulo (g, { x + 10, 24, 80, 12 }, "GROOVE", cMu, juce::Justification::centredLeft, 9.0f);
+    juce::ignoreUnused (x);
+    chaveModo (g);
 
     // abas
-    float tx = 236;
+    float tx = 300;
     const int modo = escolha (kModo);
     for (int i = 0; i < 3; ++i)
     {
@@ -305,7 +322,6 @@ void RetalhoEditor::topo (juce::Graphics& g)
         g.setColour ((cap ? cVerde : cDim).withAlpha (pulso));
         g.fillEllipse (xd + 6 + 8, 21, 6, 6);
     }
-    xd = chip (g, xd, "LATENCY", "0 ms", cTx, nullptr);
     const bool host = m.tocandoA.load();
     xd = chip (g, xd, "TEMPO", (host ? "HOST " : "FREE ") + juce::String (juce::roundToInt (m.bpmA.load())), cTx, nullptr);
     const juce::String keyTxt = (escolha (kRoot) == 0 ? juce::String ("AUTO ") + u8 ("\xc2\xb7 ") : juce::String()) + nomeTom();
@@ -325,7 +341,8 @@ void RetalhoEditor::topo (juce::Graphics& g)
             else if (r >= 100) safe->proc.define (kRoot, (float) (r - 100));
         });
     });
-    xd = chip (g, xd, "PRESET", proc.nomePreset() + "  ", cAmb, [this] { menuPresets(); });
+    // o PRESET fica com o espaço que sobra até as abas (nome longo é cortado, nunca cobre a aba)
+    xd = chip (g, xd, "PRESET", proc.nomePreset(), cAmb, [this] { menuPresets(); }, xd - (tx + 6));
     juce::ignoreUnused (xd);
 }
 
@@ -510,7 +527,7 @@ void RetalhoEditor::result (juce::Graphics& g, juce::Rectangle<float> r)
 void RetalhoEditor::resultEdit (juce::Graphics& g, juce::Rectangle<float> in)
 {
     const auto& v = vista;
-    const float W = in.getWidth(), cy = in.getCentreY(), hh = in.getHeight() * 0.46f;
+    const float W = in.getWidth();
     const double beats = v.len > 0 ? (double) v.len / v.spb : 4.0;
     const int sh = escolha (kShape);
     for (int b = 1; b < (int) std::ceil (beats - 1e-6); ++b)
@@ -556,6 +573,46 @@ void RetalhoEditor::resultEdit (juce::Graphics& g, juce::Rectangle<float> in)
     }
 
     if (! v.valida || v.plano.n == 0) return;
+    blocosFill (g, in);
+    // FILTER (rosa tracejado)
+    if (escolha (kFiltro) != flOff)
+    {
+        juce::Path fp;
+        const float de = real (kFDe), ate = real (kFAte);
+        auto yf = [&] (float f) { return in.getBottom() - (std::log (f / 20.0f) / std::log (1000.0f)) * in.getHeight(); };
+        for (int i = 0; i <= 60; ++i)
+        {
+            const float t = i / 60.0f, f = de * std::pow (ate / juce::jmax (20.0f, de), t);
+            const float x = in.getX() + W * t;
+            if (i == 0) fp.startNewSubPath (x, yf (f)); else fp.lineTo (x, yf (f));
+        }
+        juce::Path tr;
+        const float dash[2] = { 6.0f, 5.0f };
+        juce::PathStrokeType (1.6f).createDashedStroke (tr, fp, dash, 2);
+        g.setColour (cRosa); g.fillPath (tr);
+    }
+    // FREE: a curva desenhada
+    if (sh == shFree)
+    {
+        juce::Path cp;
+        for (int i = 0; i < numLivre; ++i)
+        {
+            const float x = in.getX() + W * i / (numLivre - 1), y = in.getBottom() - proc.motor().aLivre[i].load() * in.getHeight();
+            if (i == 0) cp.startNewSubPath (x, y); else cp.lineTo (x, y);
+            g.setColour (cTx); g.fillEllipse (x - 4, y - 4, 8, 8);
+        }
+        g.setColour (cTx.withAlpha (0.8f)); g.strokePath (cp, juce::PathStrokeType (1.4f));
+        rotulo (g, { in.getX() + 4, in.getY(), 80, 12 }, "1/64", cDim, juce::Justification::centredLeft, 8.5f);
+        rotulo (g, { in.getX() + 4, in.getBottom() - 12, 80, 12 }, "1/4", cDim, juce::Justification::centredLeft, 8.5f);
+    }
+}
+
+// os blocos do fill (âmbar; reverse rosa, tape lilás, mute apagado) e a linha de PITCH em ciano
+void RetalhoEditor::blocosFill (juce::Graphics& g, juce::Rectangle<float> in)
+{
+    const auto& v = vista;
+    if (! v.valida || v.plano.n == 0) return;
+    const float W = in.getWidth(), cy = in.getCentreY(), hh = in.getHeight() * 0.46f;
     const double L = (double) v.len;
     for (int k = 0; k < v.plano.n; ++k)
     {
@@ -596,37 +653,6 @@ void RetalhoEditor::resultEdit (juce::Graphics& g, juce::Rectangle<float> in)
             pp.lineTo (x1, yst (s1));
         }
         g.setColour (cCiano); g.strokePath (pp, juce::PathStrokeType (1.8f));
-    }
-    // FILTER (rosa tracejado)
-    if (escolha (kFiltro) != flOff)
-    {
-        juce::Path fp;
-        const float de = real (kFDe), ate = real (kFAte);
-        auto yf = [&] (float f) { return in.getBottom() - (std::log (f / 20.0f) / std::log (1000.0f)) * in.getHeight(); };
-        for (int i = 0; i <= 60; ++i)
-        {
-            const float t = i / 60.0f, f = de * std::pow (ate / juce::jmax (20.0f, de), t);
-            const float x = in.getX() + W * t;
-            if (i == 0) fp.startNewSubPath (x, yf (f)); else fp.lineTo (x, yf (f));
-        }
-        juce::Path tr;
-        const float dash[2] = { 6.0f, 5.0f };
-        juce::PathStrokeType (1.6f).createDashedStroke (tr, fp, dash, 2);
-        g.setColour (cRosa); g.fillPath (tr);
-    }
-    // FREE: a curva desenhada
-    if (sh == shFree)
-    {
-        juce::Path cp;
-        for (int i = 0; i < numLivre; ++i)
-        {
-            const float x = in.getX() + W * i / (numLivre - 1), y = in.getBottom() - proc.motor().aLivre[i].load() * in.getHeight();
-            if (i == 0) cp.startNewSubPath (x, y); else cp.lineTo (x, y);
-            g.setColour (cTx); g.fillEllipse (x - 4, y - 4, 8, 8);
-        }
-        g.setColour (cTx.withAlpha (0.8f)); g.strokePath (cp, juce::PathStrokeType (1.4f));
-        rotulo (g, { in.getX() + 4, in.getY(), 80, 12 }, "1/64", cDim, juce::Justification::centredLeft, 8.5f);
-        rotulo (g, { in.getX() + 4, in.getBottom() - 12, 80, 12 }, "1/4", cDim, juce::Justification::centredLeft, 8.5f);
     }
 }
 
@@ -777,7 +803,7 @@ void RetalhoEditor::paineis (juce::Graphics& g)
 {
     const float y = 364, h = 90;
     const int modo = escolha (kModo);
-    auto kn = [&] (int campo, const juce::String& nome, float cx, juce::Colour cor) { knob (g, campo, nome, { cx, y + 50 }, cor); };
+    auto kn = [&] (int campo, const juce::String& nome, float cx, juce::Colour cor) { knob (g, campo, nome, { cx, y + 56 }, cor); };
     if (modo == mEdit)
     {
         painel (g, { 12, y, 336, h }, "SLICE", u8 ("CADA REPETI\xc3\x87\xc3\x83O"));
@@ -996,7 +1022,11 @@ void RetalhoEditor::mouseDown (const juce::MouseEvent& e)
         {
             if (e.mods.isPopupMenu()) { menuPad (i); return; }
             if (e.mods.isShiftDown()) { proc.salvaPad (i); repaint(); return; }
-            if (! proc.infoPad (i).cheio) return;
+            if (! proc.infoPad (i).cheio)
+            {
+                if (simples()) { proc.salvaPad (i); repaint(); }   // SIMPLE: pad vazio = "+ SALVAR"
+                return;
+            }
             padSegurado = i;
             proc.apertaPad (i);
             return;
@@ -1004,6 +1034,12 @@ void RetalhoEditor::mouseDown (const juce::MouseEvent& e)
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 6)
         {
+            if (k.campo < 0)
+            {
+                const int mi = -1 - k.campo;
+                if (macroAtivo (mi)) { arrasto = arMacro; macroIdx = mi; valorIni = macroLe (mi); }
+                return;
+            }
             if (auto* prm = proc.param (k.campo))
             {
                 arrasto = arKnob; knobCampo = k.campo;
@@ -1021,6 +1057,7 @@ void RetalhoEditor::mouseDown (const juce::MouseEvent& e)
             return;
         }
     if (areaDaw.contains (p) && modo != mGroove) { arrasto = arDaw; return; }
+    if (simples()) return;
 
     auto& m = proc.motor();
     if (modo == mEdit && areaResult.contains (p))
@@ -1091,6 +1128,9 @@ void RetalhoEditor::mouseDrag (const juce::MouseEvent& e)
                 prm->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, valorIni + (yIni - p.y) / sens));
             }
             break;
+        case arMacro:
+            macroDefine (macroIdx, valorIni + (yIni - p.y) / (e.mods.isShiftDown() ? 900.0f : 220.0f));
+            break;
         case arGrade:
             if (moveu)
             {
@@ -1153,6 +1193,13 @@ void RetalhoEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
     for (auto& k : knobs)
+        if (p.getDistanceFrom (k.c) <= k.r + 6 && k.campo < 0)
+        {
+            if (macroAtivo (-1 - k.campo)) macroDefine (-1 - k.campo, macroPadrao (-1 - k.campo));
+            repaint();
+            return;
+        }
+    for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 6)
             if (auto* prm = proc.param (k.campo))
             {
@@ -1167,6 +1214,14 @@ void RetalhoEditor::mouseDoubleClick (const juce::MouseEvent& e)
 void RetalhoEditor::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
 {
     const auto p = e.position / escala();
+    for (auto& k : knobs)
+        if (p.getDistanceFrom (k.c) <= k.r + 6 && k.campo < 0)
+        {
+            const int mi = -1 - k.campo;
+            if (macroAtivo (mi)) macroDefine (mi, macroLe (mi) + (w.deltaY > 0 ? 1.0f : -1.0f) * (mi == 0 && cartao() != 3 ? 0.26f : (mi == 3 ? 0.51f : 0.04f)));
+            repaint();
+            return;
+        }
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 6)
             if (auto* prm = proc.param (k.campo))
@@ -1295,6 +1350,8 @@ void RetalhoEditor::menu()
         if (r == 1)
             juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "RETALHO",
                 u8 ("Ponha o RETALHO no canal da voz. Lat\xc3\xaancia 0: ele repete o que j\xc3\xa1 passou.\n\n"
+                    "SIMPLE (a tela que abre): 1) escolha o efeito no cart\xc3\xa3o, 2) ajuste nos 5 knobs, 3) escolha QUANDO TOCA. "
+                    "Os pads guardam e disparam ajustes. O PRO mostra todos os controles abaixo.\n\n"
                     "EDIT: o fill desenhado. SHAPE (GRID, RAMP, CURVE, FREE, TREMOLO), LENGTH e RATE; PITCH, FILTER, STEREO, "
                     "TAPE STOP e REVERSE. No GRID, clique nas fatias do RESULT para ligar ou desligar.\n\n"
                     "COMPLEX: passos com 8 tipos. Clique no topo do passo para trocar o tipo e arraste para o valor. "
@@ -1308,4 +1365,494 @@ void RetalhoEditor::menu()
                     "ARRASTE PARA O DAW: arraste o chip para soltar o WAV do RESULT numa faixa. EXPORT grava em "
                     "Documentos/RETALHO/Exports."));
     });
+}
+
+// =====================================================================================================================
+// SIMPLE
+// =====================================================================================================================
+void RetalhoEditor::chaveModo (juce::Graphics& g)
+{
+    const juce::Rectangle<float> r (182, 11, 110, 26);
+    g.setColour (cPn2); g.fillRoundedRectangle (r, 13.0f);
+    g.setColour (cLn); g.drawRoundedRectangle (r, 13.0f, 1.0f);
+    const bool s = simples();
+    const auto rs = r.withWidth (58.0f), rp = r.withTrimmedLeft (58.0f);
+    g.setColour (cAmb); g.fillRoundedRectangle (s ? rs : rp, 13.0f);
+    rotulo (g, rs, "SIMPLE", s ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 9.5f, true);
+    rotulo (g, rp, "PRO", s ? cMu : juce::Colour (0xff141414), juce::Justification::centred, 9.5f, true);
+    alvos.push_back ({ rs, [this] { proc.uiPro = 0; } });
+    alvos.push_back ({ rp, [this] { proc.uiPro = 1; } });
+}
+
+int RetalhoEditor::cartao() const
+{
+    const int md = escolha (kModo);
+    if (md == mGroove) return 3;
+    if (md == mComplex) return -1;
+    if (real (kTapeStop) > 0.5f) return 2;
+    const int sh = escolha (kShape);
+    return (sh == shRamp || sh == shCurve) ? 1 : 0;
+}
+
+int RetalhoEditor::quando() const
+{
+    if (escolha (kGatilho) != gAuto) return 3;
+    switch (escolha (kOnde)) { case 0: return 0; case 2: return 1; case 3: return 2; default: return -1; }
+}
+
+namespace
+{
+// RISER: SPEED anda por (RATE, RAMP TO)
+const int riserRate[4] = { 1, 1, 2, 3 }, riserTo[4] = { 3, 4, 4, 4 };
+float logPos (float v, float a, float b) { return std::log (juce::jlimit (juce::jmin (a, b), juce::jmax (a, b), v) / a) / std::log (b / a); }
+} // namespace
+
+float RetalhoEditor::macroLe (int i) const
+{
+    const int c = cartao();
+    const bool gr = c == 3;
+    switch (i)
+    {
+        case 0:
+            if (gr) return real (kDensity) / 100.0f;
+            if (c == 1)
+            {
+                const int r = escolha (kRate), t = escolha (kRampTo);
+                return t <= 3 ? 0.0f : (r <= 1 ? 1.0f / 3.0f : (r == 2 ? 2.0f / 3.0f : 1.0f));
+            }
+            return escolha (kRate) / 4.0f;
+        case 1:
+            return gr ? (real (kGPitch) + 12.0f) / 24.0f : juce::jlimit (0.0f, 1.0f, (real (kPFim) + 12.0f) / 36.0f);
+        case 2:
+            if (gr)
+                return real (kChopLpf) < 19500.0f ? 0.5f - 0.5f * logPos (real (kChopLpf), 20000.0f, 1500.0f)
+                                                  : 0.5f + 0.5f * logPos (real (kChopHpf), 20.0f, 2000.0f);
+            switch (escolha (kFiltro))
+            {
+                case flLpf: return 0.5f - 0.5f * logPos (real (kFAte), 18000.0f, 300.0f);
+                case flHpf: return 0.5f + 0.5f * logPos (real (kFAte), 60.0f, 4000.0f);
+                default:    return 0.5f;
+            }
+        case 3:
+            return gr ? (float) escolha (kGBars) : escolha (kLength) / 2.0f;
+        default:
+            return real (kDryWet) / 100.0f;
+    }
+}
+
+void RetalhoEditor::macroDefine (int i, float v)
+{
+    v = juce::jlimit (0.0f, 1.0f, v);
+    const int c = cartao();
+    const bool gr = c == 3;
+    switch (i)
+    {
+        case 0:
+            if (gr) proc.define (kDensity, (float) juce::roundToInt (v * 100.0f));
+            else if (c == 1)
+            {
+                const int k = juce::roundToInt (v * 3.0f);
+                proc.define (kRate, (float) riserRate[k]);
+                proc.define (kRampTo, (float) riserTo[k]);
+            }
+            else proc.define (kRate, (float) juce::roundToInt (v * 4.0f));
+            break;
+        case 1:
+            if (gr) proc.define (kGPitch, (float) juce::roundToInt (v * 24.0f - 12.0f));
+            else proc.define (kPFim, (float) juce::roundToInt (v * 36.0f - 12.0f));
+            break;
+        case 2:
+        {
+            const float f = v * 2.0f - 1.0f;   // −1 abafa … +1 abre
+            if (gr)
+            {
+                if (f < -0.02f) proc.define (kChopLpf, 20000.0f * std::pow (1500.0f / 20000.0f, -f));
+                else
+                {
+                    proc.define (kChopLpf, 20000.0f);
+                    proc.define (kChopHpf, f > 0.02f ? 20.0f * std::pow (100.0f, f) : 20.0f);
+                }
+            }
+            else if (f < -0.02f)
+            {
+                proc.define (kFiltro, (float) flLpf); proc.define (kFDe, 18000.0f);
+                proc.define (kFAte, 18000.0f * std::pow (300.0f / 18000.0f, -f));
+            }
+            else if (f > 0.02f)
+            {
+                proc.define (kFiltro, (float) flHpf); proc.define (kFDe, 60.0f);
+                proc.define (kFAte, 60.0f * std::pow (4000.0f / 60.0f, f));
+            }
+            else proc.define (kFiltro, (float) flOff);
+            break;
+        }
+        case 3:
+            if (gr) proc.define (kGBars, v > 0.5f ? 1.0f : 0.0f);
+            else proc.define (kLength, (float) juce::roundToInt (v * 2.0f));
+            break;
+        default:
+            proc.define (kDryWet, (float) juce::roundToInt (v * 100.0f));
+            break;
+    }
+}
+
+float RetalhoEditor::macroPadrao (int i) const
+{
+    const int c = cartao();
+    switch (i)
+    {
+        case 0: return c == 3 ? 0.7f : (c == 1 ? 1.0f / 3.0f : 0.5f);
+        case 1: return c == 3 ? 0.5f : 12.0f / 36.0f;
+        case 2: return 0.5f;
+        case 3: return c == 3 ? 0.0f : 0.5f;
+        default: return 1.0f;
+    }
+}
+
+juce::String RetalhoEditor::macroTexto (int i) const
+{
+    const int c = cartao();
+    const bool gr = c == 3;
+    switch (i)
+    {
+        case 0:
+            if (gr) return juce::String (juce::roundToInt (real (kDensity))) + "%";
+            if (c == 1) return juce::String (ch::rate[lim (escolha (kRate), 0, 4)]) + u8 (" \xe2\x86\x92 ") + ch::rate[lim (escolha (kRampTo), 0, 4)];
+            return ch::rate[lim (escolha (kRate), 0, 4)];
+        case 1:
+            return sinal (gr ? real (kGPitch) : real (kPFim), 0, " st");
+        case 2:
+            if (gr)
+            {
+                if (real (kChopLpf) < 19500.0f) return "LPF " + hz (real (kChopLpf));
+                return real (kChopHpf) > 21.0f ? "HPF " + hz (real (kChopHpf)) : juce::String ("OFF");
+            }
+            if (escolha (kFiltro) == flLpf) return "LPF " + hz (real (kFAte));
+            if (escolha (kFiltro) == flHpf) return "HPF " + hz (real (kFAte));
+            if (escolha (kFiltro) == flBpf) return "BPF " + hz (real (kFAte));
+            return "OFF";
+        case 3:
+            return gr ? juce::String (ch::bars[lim (escolha (kGBars), 0, 1)]) : juce::String (ch::length[lim (escolha (kLength), 0, 2)]);
+        default:
+            return juce::String (juce::roundToInt (real (kDryWet))) + "%";
+    }
+}
+
+void RetalhoEditor::telaSimples (juce::Graphics& g)
+{
+    auto& m = proc.motor();
+    const int ca = cartao();
+
+    // ---- topo: marca, SIMPLE/PRO, PRESET ◀ ▶, o que está ouvindo, menu ----
+    g.setColour (juce::Colour (0xff15191f)); g.fillRect (0.0f, 0.0f, (float) baseW, 48.0f);
+    g.setColour (cLn); g.drawLine (0, 48, (float) baseW, 48, 1.0f);
+    {
+        const auto f = fonte (25.0f, true).withExtraKerningFactor (0.34f);
+        float x = 18;
+        const juce::String partes[3] = { "RETA", "L", "HO" };
+        g.setFont (f);
+        for (int i = 0; i < 3; ++i)
+        {
+            g.setColour (i == 1 ? cAmb : cTx);
+            g.drawText (partes[i], juce::Rectangle<float> (x, 8, 120, 32), juce::Justification::centredLeft);
+            x += largura (f, partes[i]);
+        }
+    }
+    chaveModo (g);
+    {
+        const juce::Rectangle<float> rp (316, 9, 420, 30);
+        caixa (g, rp, juce::Colour (0xff121418), 6.0f);
+        rotulo (g, { rp.getX() + 12, rp.getY(), 60, rp.getHeight() }, "PRESET", cMu, juce::Justification::centredLeft, 9.0f);
+        const juce::Rectangle<float> rn (rp.getX() + 70, rp.getY(), rp.getWidth() - 70 - 74, rp.getHeight());
+        rotulo (g, rn.withTrimmedRight (18), proc.nomePreset(), cAmb, juce::Justification::centredLeft, 12.0f, true);
+        tri (g, { rn.getRight() - 8, rn.getCentreY() }, 8, 2, cMu);
+        alvos.push_back ({ rn, [this] { menuPresets(); } });
+        const juce::Rectangle<float> ra (rp.getRight() - 68, rp.getY() + 3, 30, 24), rb (rp.getRight() - 34, rp.getY() + 3, 30, 24);
+        botao (g, ra, "", false, cAmb, [this] { proc.presetVizinho (-1); });
+        tri (g, ra.getCentre(), 9, 1, cTx);
+        botao (g, rb, "", false, cAmb, [this] { proc.presetVizinho (1); });
+        tri (g, rb.getCentre(), 9, 0, cTx);
+    }
+    {
+        const bool cap = vista.valida;
+        const juce::String t = juce::String (cap ? "OUVINDO A VOZ" : "ESPERANDO A VOZ") + u8 (" \xc2\xb7 ")
+                               + juce::String (juce::roundToInt (m.bpmA.load())) + " BPM";
+        const float w = largura (fonte (10.0f, true).withExtraKerningFactor (0.22f), t);
+        const float x1 = 1148;
+        rotulo (g, { x1 - w - 4, 9, w + 4, 30 }, t, cap ? cTx : cDim, juce::Justification::centredRight, 10.0f, true);
+        const float pulso = cap ? 0.75f + 0.25f * std::sin (quadro * 0.15f) : 0.3f;
+        g.setColour ((cap ? cVerde : cDim).withAlpha (pulso));
+        g.fillEllipse (x1 - w - 18, 21, 7, 7);
+        const juce::Rectangle<float> r (1160, 11, 28, 26);
+        caixa (g, r, cPn, 5.0f);
+        g.setColour (cMu);
+        for (int i = 0; i < 3; ++i) g.fillRect (r.getX() + 8, r.getY() + 8 + i * 4.5f, 12.0f, 1.6f);
+        alvos.push_back ({ r, [this] { menu(); } });
+    }
+
+    auto secao = [&] (float x, float y, const char* n, const juce::String& t)
+    {
+        rotulo (g, { x, y, 16, 14 }, n, cAmb, juce::Justification::centredLeft, 11.0f, true);
+        rotulo (g, { x + 16, y, 400, 14 }, t, cMu, juce::Justification::centredLeft, 10.0f);
+    };
+
+    // ---- 1 · efeito ----
+    secao (14, 54, "1", "ESCOLHA O EFEITO");
+    if (ca < 0)
+        rotulo (g, { 600, 54, 588, 14 }, u8 ("CENA DO PRO (COMPLEX): ESCOLHA UM EFEITO OU AJUSTE NO PRO"), cLil, juce::Justification::centredRight, 9.0f);
+    {
+        static const char* nomes[4] = { "STUTTER", "RISER", "TAPE STOP", "GROOVE" };
+        static const char* desc[4] = { "repete a s\xc3\xadlaba no ritmo", "acelera e sobe o tom at\xc3\xa9 o drop",
+                                       "a voz \"freia\" e para", "a voz vira chops no contratempo" };
+        const float cw = (1176.0f - 30.0f) / 4.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            const juce::Rectangle<float> r (12.0f + i * (cw + 10.0f), 72, cw, 58);
+            const bool on = ca == i;
+            const juce::Colour cor = i == 3 ? cVerde : cAmb;
+            if (on)
+            {
+                g.setColour (cor.withAlpha (0.10f)); g.fillRoundedRectangle (r.expanded (3), 11.0f);
+                g.setGradientFill (juce::ColourGradient (cor.withAlpha (0.22f), 0, r.getY(), cor.withAlpha (0.06f), 0, r.getBottom(), false));
+                g.fillRoundedRectangle (r, 9.0f);
+                g.setColour (cor); g.drawRoundedRectangle (r, 9.0f, 1.6f);
+            }
+            else caixa (g, r, cPn, 9.0f);
+            rotulo (g, { r.getX() + 16, r.getY() + 7, r.getWidth() - 24, 24 }, nomes[i], on ? cor : cTx, juce::Justification::centredLeft, 17.0f, true);
+            rotulo (g, { r.getX() + 16, r.getY() + 33, r.getWidth() - 24, 16 }, u8 (desc[i]), on ? cTx.withAlpha (0.8f) : cMu, juce::Justification::centredLeft, 10.0f);
+            alvos.push_back ({ r, [this, i] { proc.aplicaCartao (i); } });
+        }
+    }
+
+    // ---- onda do resultado ----
+    ondaSimples (g, { 12, 140, 1176, 172 });
+
+    // ---- 2 · ajuste: 5 macros ----
+    secao (14, 320, "2", "AJUSTE");
+    {
+        const juce::Rectangle<float> rm (12, 338, 788, 134);
+        caixa (g, rm, cPn, 9.0f);
+        const bool gr = ca == 3;
+        const char* nomes[5] = { gr ? "DENSITY" : "SPEED", "PITCH", "FILTER", "LENGTH", "MIX" };
+        const char* subs[5] = { gr ? "quantos chops entram" : "qu\xc3\xa3o r\xc3\xa1pido repete", "quanto o tom muda",
+                                "\xe2\x86\x90 abafa \xc2\xb7 abre \xe2\x86\x92", "tamanho do efeito", "efeito \xc3\x97 voz" };
+        const juce::Colour cores[5] = { gr ? cVerde : cAmb, cCiano, cRosa, gr ? cVerde : cAmb, cTx };
+        const float zeros[5] = { 0.0f, gr ? 0.5f : 12.0f / 36.0f, 0.5f, 0.0f, 0.0f };
+        const float cw = rm.getWidth() / 5.0f;
+        for (int i = 0; i < 5; ++i)
+        {
+            const float cx = rm.getX() + cw * (i + 0.5f);
+            const bool at = macroAtivo (i);
+            if (i > 0) { g.setColour (cLn.withAlpha (0.6f)); g.drawLine (rm.getX() + cw * i, rm.getY() + 14, rm.getX() + cw * i, rm.getBottom() - 14, 1.0f); }
+            rotulo (g, { cx - cw * 0.5f, rm.getY() + 9, cw, 16 }, nomes[i], at ? cTx : cDim, juce::Justification::centred, 12.5f, true);
+            rotulo (g, { cx - cw * 0.5f, rm.getY() + 25, cw, 13 }, u8 (subs[i]), cDim, juce::Justification::centred, 9.0f);
+            const juce::Point<float> c (cx, rm.getY() + 72);
+            desenhaKnob (g, c, 23.0f, macroLe (i), zeros[i], cores[i], at);
+            knobs.push_back ({ -1 - i, c, 23.0f });
+            rotulo (g, { cx - cw * 0.5f, rm.getY() + 104, cw, 18 }, at ? macroTexto (i) : u8 ("\xe2\x80\x94"), at ? cTx : cDim, juce::Justification::centred, 12.0f, true);
+        }
+    }
+
+    // ---- 3 · quando toca ----
+    secao (814, 320, "3", "QUANDO TOCA");
+    {
+        const juce::Rectangle<float> rq (812, 338, 376, 134);
+        caixa (g, rq, cPn, 9.0f);
+        static const char* op[4] = { "TODO COMPASSO", "FIM DE 4 BARS", "FIM DE 8 BARS", "S\xc3\x93 NO PAD" };
+        const int q = quando();
+        const float bw = (rq.getWidth() - 24.0f - 8.0f) / 2.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            const juce::Rectangle<float> r (rq.getX() + 12 + (i % 2) * (bw + 8), rq.getY() + 12 + (i / 2) * 40.0f, bw, 32);
+            botao (g, r, u8 (op[i]), q == i, cAmb, [this, i]
+            {
+                if (i == 3) { proc.define (kGatilho, (float) gOneShot); return; }
+                static const int onde[3] = { 0, 2, 3 };
+                proc.define (kGatilho, (float) gAuto);
+                proc.define (kOnde, (float) onde[i]);
+            }, 11.0f);
+        }
+        static const char* expl[5] = {
+            "Ajuste vindo do PRO. Escolha uma op\xc3\xa7\xc3\xa3o acima.",
+            "Toca em todo compasso, no fim dele, com o projeto tocando.",
+            "Entra sozinho no fim de cada frase de 4 compassos, com o projeto tocando.",
+            "Entra sozinho no fim de cada frase de 8 compassos, com o projeto tocando.",
+            ("S\xc3\xb3 toca quando voc\xc3\xaa clica num pad ou manda a nota MIDI (C3\xe2\x80\x93" "F3).") };
+        g.setColour (cMu);
+        g.setFont (fonte (10.0f));
+        g.drawFittedText (u8 (expl[q + 1]), juce::Rectangle<int> ((int) rq.getX() + 14, (int) rq.getY() + 96, (int) rq.getWidth() - 28, 32),
+                          juce::Justification::centredLeft, 2, 0.9f);
+    }
+
+    // ---- pads e saída ----
+    const float y0 = 482;
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff13161b), 0, y0, juce::Colour (0xff0e1014), 0, (float) baseH, false));
+    g.fillRect (0.0f, y0, (float) baseW, (float) baseH - y0);
+    g.setColour (cLn); g.drawLine (0, y0, (float) baseW, y0, 1.0f);
+    rotulo (g, { 14, y0 + 6, 900, 14 },
+            escolha (kGatilho) == gAuto ? u8 ("PADS \xc2\xb7 CLIQUE = CARREGA ESSE AJUSTE (EM \"S\xc3\x93 NO PAD\" O CLIQUE TOCA) \xc2\xb7 MIDI C3\xe2\x80\x93" "F3")
+                                        : u8 ("PADS \xc2\xb7 CLIQUE = TOCA \xc2\xb7 MIDI C3\xe2\x80\x93" "F3"),
+            cMu, juce::Justification::centredLeft, 10.0f);
+    {
+        static const char* notas[numPads] = { "C3", "C#3", "D3", "D#3", "E3", "F3" };
+        const int aceso = m.padAceso.load();
+        const float pw = (938.0f - 5.0f * 8.0f) / 6.0f;
+        for (int i = 0; i < numPads; ++i)
+        {
+            const juce::Rectangle<float> r (12.0f + i * (pw + 8.0f), y0 + 24, pw, 82);
+            areaPads[i] = r;
+            const auto ip = proc.infoPad (i);
+            const juce::Colour cor = ! ip.cheio ? cDim : (ip.modo == mGroove ? cVerde : (ip.modo == mComplex ? cLil : cAmb));
+            const bool on = aceso == i || padSegurado == i;
+            g.setColour (on ? cor.withAlpha (0.22f) : cPn); g.fillRoundedRectangle (r, 7.0f);
+            g.setColour (on ? cor : (ip.cheio ? cor.withAlpha (0.45f) : cLn)); g.drawRoundedRectangle (r, 7.0f, on ? 1.8f : 1.0f);
+            rotulo (g, { r.getX() + 10, r.getY() + 6, 80, 12 }, juce::String (i + 1) + u8 (" \xc2\xb7 ") + notas[i], cMu, juce::Justification::centredLeft, 8.5f);
+            if (ip.cheio)
+            {
+                g.setColour (cor);
+                g.setFont (fonte (12.0f, true).withExtraKerningFactor (0.1f));
+                g.drawFittedText (ip.nome, juce::Rectangle<int> ((int) r.getX() + 10, (int) r.getY() + 22, (int) r.getWidth() - 16, 34), juce::Justification::topLeft, 2, 0.8f);
+                rotulo (g, { r.getX() + 10, r.getBottom() - 18, r.getWidth() - 14, 12 },
+                        ip.modo == mGroove ? "GROOVE" : (ip.modo == mComplex ? "GLITCH" : "FILL"), cMu, juce::Justification::centredLeft, 8.5f);
+            }
+            else
+            {
+                rotulo (g, { r.getX() + 10, r.getY() + 24, r.getWidth() - 14, 18 }, "+ SALVAR", cMu, juce::Justification::centredLeft, 12.0f, true);
+                rotulo (g, { r.getX() + 10, r.getBottom() - 18, r.getWidth() - 14, 12 }, "guarda o ajuste atual", cDim, juce::Justification::centredLeft, 8.5f);
+            }
+        }
+    }
+    {
+        const float x = 962, w = 226;
+        const int abv = proc.abAtual();
+        botao (g, { x, y0 + 24, 60, 26 }, "A", abv == 0, cTx, [this] { proc.trocaAB (0); }, 11.0f);
+        botao (g, { x + 66, y0 + 24, 60, 26 }, "B", abv == 1, cTx, [this] { proc.trocaAB (1); }, 11.0f);
+        botao (g, { x + 132, y0 + 24, w - 132, 26 }, u8 ("A\xe2\x86\x92" "B"), false, cTx, [this] { proc.copiaAB(); }, 10.0f);
+        liga (g, { x, y0 + 56, w, 26 }, "BYPASS", kBypass, cRosa);
+        // o que está tocando agora
+        const float pr = m.fillProg.load();
+        juce::String t = u8 ("\xe2\x80\x94");
+        juce::Colour c1 = cDim;
+        if (pr >= 0.0f)
+        {
+            const int fp = m.fillPad.load();
+            t = "TOCANDO " + (fp >= 0 ? proc.infoPad (fp).nome : proc.nomePreset());
+            c1 = cAmb;
+            g.setColour (c1.withAlpha (0.25f)); g.fillRect (x, y0 + 104, w, 3.0f);
+            g.setColour (c1); g.fillRect (x, y0 + 104, w * std::fmod (pr, 1.0f), 3.0f);
+        }
+        else if (m.grooveTocando.load()) { t = "TOCANDO GROOVE"; c1 = cVerde; }
+        else if (quando() >= 0 && quando() < 3 && ! m.tocandoA.load()) t = u8 ("ESPERANDO O PLAY DO PROJETO");
+        rotulo (g, { x, y0 + 86, w, 16 }, t, c1, juce::Justification::centredLeft, 9.5f, true);
+    }
+#ifdef JucePlugin_VersionString
+    const juce::String ver = juce::String (JucePlugin_VersionString);
+#else
+    const juce::String ver = "0.1.1";
+#endif
+    rotulo (g, { 14, (float) baseH - 20, 900, 14 },
+            u8 ("PAD VAZIO = GUARDA O AJUSTE \xc2\xb7 BOT\xc3\x83O DIREITO NO PAD = RENOMEIA / LIMPA \xc2\xb7 DUPLO CLIQUE NO KNOB = VOLTA AO PADR\xc3\x83O \xc2\xb7 PRO = TODOS OS AJUSTES"),
+            cDim, juce::Justification::centredLeft, 8.5f);
+    rotulo (g, { 900, (float) baseH - 20, 288, 14 }, u8 ("RETALHO ") + ver + " TESTE", cDim, juce::Justification::centredRight, 8.5f);
+}
+
+void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
+{
+    caixa (g, r, cTela, 8.0f);
+    auto& m = proc.motor();
+    const auto& v = vista;
+    const int modo = escolha (kModo);
+    const bool gr = modo == mGroove;
+    const auto in = r.reduced (14, 0).withTrimmedTop (30).withTrimmedBottom (40);
+
+    // grade por tempo
+    const double beats = v.len > 0 ? (double) v.len / v.spb : 4.0;
+    for (int b = 1; b < (int) std::ceil (beats - 1e-6); ++b)
+    {
+        const float x = in.getX() + in.getWidth() * (float) (b / beats);
+        g.setColour (b % juce::jmax (1, (int) v.bpb) == 0 ? juce::Colour (0xff2c323c) : juce::Colour (0xff1b1f26));
+        g.drawLine (x, r.getY() + 6, x, r.getBottom() - 6, 1.0f);
+    }
+
+    const juce::String tit = u8 ("RESULTADO \xc2\xb7 ");
+    const auto ft = fonte (10.0f).withExtraKerningFactor (0.3f);
+    rotulo (g, { r.getX() + 14, r.getY() + 8, 200, 14 }, tit, cMu, juce::Justification::centredLeft, 10.0f);
+    rotulo (g, { r.getX() + 14 + largura (ft, tit), r.getY() + 8, 300, 14 },
+            gr ? juce::String (ch::bars[lim (escolha (kGBars), 0, 1)]) + u8 (" \xc2\xb7 ") + ch::estilo[lim (escolha (kEstilo), 0, 6)]
+               : juce::String (ch::length[lim (escolha (kLength), 0, 2)]),
+            gr ? cVerde : cAmb, juce::Justification::centredLeft, 10.0f, true);
+
+    if (! v.valida)
+        rotulo (g, in, u8 ("D\xc3\x8a PLAY NO PROJETO COM A VOZ PASSANDO: O RESULTADO APARECE AQUI"), cDim, juce::Justification::centred, 11.0f);
+    else if (! gr)
+        blocosFill (g, in);
+    else
+    {
+        // GROOVE: os chops no pattern, numa faixa só (a linha de cima manda)
+        const int porC = escolha (kGGrid) == 1 ? 12 : 16;
+        const int nCel = juce::jmin (maxCelulas, porC * (escolha (kGBars) + 1));
+        const float cw = in.getWidth() / (float) nCel, cy = in.getCentreY(), hh = in.getHeight() * 0.46f;
+        const int tc = m.grooveTocando.load() ? m.grooveCel.load() : -1;
+        for (int c = 0; c < nCel; ++c)
+        {
+            uint32_t cv = 0;
+            for (int l = 0; l < numLinhas && cChop (cv) < 0; ++l) cv = m.aCel[l][c].load();
+            const int s = cChop (cv);
+            if (s < 0) continue;
+            const float a = juce::jlimit (0.2f, 1.0f, cVel (cv) / 255.0f);
+            const juce::Rectangle<float> blk (in.getX() + c * cw + 1.5f, cy - a * hh, juce::jmax (1.0f, cw - 3.0f), 2.0f * a * hh);
+            const juce::Colour cor = corChop (s).withAlpha (c == tc ? 1.0f : 0.85f);
+            g.setGradientFill (juce::ColourGradient (cor.brighter (0.15f), 0, blk.getY(), cor.darker (0.5f), 0, cy, true));
+            g.fillRoundedRectangle (blk, 2.5f);
+            if (v.chopMs[s] > 0.0f)
+            {
+                g.setColour (juce::Colours::black.withAlpha (0.35f));
+                for (int x = 0; x < (int) blk.getWidth() - 2; x += 2)
+                {
+                    const float sa = juce::jmin (1.0f, v.chopOnda[s][juce::jlimit (0, 47, x * 48 / juce::jmax (1, (int) blk.getWidth()))] * 1.8f);
+                    g.fillRect (blk.getX() + 1 + x, cy - sa * a * hh * 0.85f, 1.0f, 2.0f * sa * a * hh * 0.85f);
+                }
+            }
+        }
+        bool algum = false;
+        for (int s = 0; s < numChops; ++s) algum = algum || v.chopMs[s] > 0.0f;
+        if (! algum)
+            rotulo (g, { in.getX(), in.getY() - 2, in.getWidth(), 14 }, u8 ("AINDA SEM S\xc3\x8dLABAS: D\xc3\x8a PLAY COM A VOZ PASSANDO"), cDim, juce::Justification::centred, 9.5f);
+    }
+
+    if (! gr)
+    {
+        // ARRASTE PARA O DAW
+        const juce::String td = "    ARRASTE PARA O DAW";
+        const float w = largura (fonte (10.0f, true).withExtraKerningFactor (0.25f), td) + 18;
+        areaDaw = { r.getRight() - 12 - w, r.getY() + 7, w, 20 };
+        g.setColour (cTx.withAlpha (0.06f)); g.fillRoundedRectangle (areaDaw, 4.0f);
+        g.setColour (cTx.withAlpha (0.7f)); g.drawRoundedRectangle (areaDaw, 4.0f, 1.0f);
+        rotulo (g, areaDaw, td, cTx, juce::Justification::centred, 10.0f, true);
+        const float ax = areaDaw.getX() + 12, ay = areaDaw.getCentreY();
+        g.setColour (cTx); g.drawLine (ax, ay - 5, ax, ay + 3, 1.4f);
+        tri (g, { ax, ay + 3 }, 6, 2, cTx);
+
+        // OUVIR / LOOP
+        const float y = r.getBottom() - 32;
+        const int pt = proc.previewTocando();
+        const juce::Rectangle<float> r1 (r.getX() + 14, y, 92, 24), r2 (r1.getRight() + 6, y, 64, 24);
+        botao (g, r1, "     OUVIR", pt == 2, cAmb, [this] { proc.preview (2); }, 10.5f);
+        tri (g, { r1.getX() + 16, r1.getCentreY() }, 8, 0, pt == 2 ? cAmb : cMu);
+        botao (g, r2, "LOOP", proc.previewLoop.load(), cAmb, [this] { proc.previewLoop = ! proc.previewLoop.load(); }, 10.5f);
+        rotulo (g, { r2.getRight() + 12, y, 500, 24 }, u8 ("OUVIR TOCA S\xc3\x93 O EFEITO, AQUI NO PLUGIN"), cDim, juce::Justification::centredLeft, 9.0f);
+
+        float pr = -1.0f;
+        if (m.fillProg.load() >= 0.0f && m.fillModo.load() == modo) pr = std::fmod (m.fillProg.load(), 1.0f);
+        else if (proc.previewTocando() == 2) pr = proc.previewPos();
+        if (pr >= 0.0f)
+        {
+            const float x = in.getX() + in.getWidth() * pr;
+            g.setColour (cAmb.withAlpha (0.25f)); g.fillRect (x - 3, r.getY() + 4, 6.0f, r.getHeight() - 8);
+            g.setColour (cAmb); g.fillRect (x - 1, r.getY() + 4, 2.0f, r.getHeight() - 8);
+        }
+    }
+    else
+        rotulo (g, { r.getX() + 14, r.getBottom() - 30, r.getWidth() - 28, 20 },
+                u8 ("OS CHOPS TOCAM NO PROJETO, NA HORA ESCOLHIDA EM QUANDO TOCA"), cDim, juce::Justification::centredLeft, 9.0f);
 }

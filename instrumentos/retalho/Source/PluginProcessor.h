@@ -112,6 +112,11 @@ public:
     juce::File exporta (bool temporario);
 
     std::atomic<int> uiW { 0 };
+    std::atomic<int> uiPro { 0 };   // 0 = tela SIMPLE (padrão), 1 = PRO
+
+    // SIMPLE: os 4 cartões (0 STUTTER, 1 RISER, 2 TAPE STOP, 3 GROOVE) carregam uma cena pronta
+    void aplicaCartao (int c);
+    void presetVizinho (int passo);   // ◀ ▶ do SIMPLE
     std::atomic<int> pincelTipo { retalho::tRepeat }, pincelChop { 0 };
 
 private:

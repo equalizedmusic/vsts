@@ -4,6 +4,17 @@ Pacote do instalador: `InsideStudioSP-Retalho`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `retalho-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-16
+- Ainda TESTE (sem licença, fora do site).
+- Nova tela SIMPLE, que é a que abre: 1) escolha o efeito em 4 cartões (STUTTER, RISER, TAPE STOP, GROOVE),
+  2) ajuste em 5 knobs grandes (SPEED ou DENSITY, PITCH, FILTER, LENGTH, MIX), 3) escolha QUANDO TOCA (TODO COMPASSO,
+  FIM DE 4 BARS, FIM DE 8 BARS ou SÓ NO PAD). A onda do resultado fica no meio, com OUVIR, LOOP e ARRASTE PARA O DAW.
+  Pad vazio vira "+ SALVAR" (um clique guarda o ajuste atual). PRESET com ◀ ▶ para passar um por um.
+- A tela completa continua no botão PRO, ao lado do nome; nada foi removido e o som é o mesmo nas duas.
+- PRO: o PRESET não cobre mais as abas (nome longo é cortado) e o chip LATENCY saiu do topo (é sempre 0 ms).
+  Os nomes dos knobs não encostam mais no título do painel e o valor do DECAY ficou curto (dB). Os botões de RAMP TO
+  e do GRID 1/16T não cortam mais na borda.
+
 ## 0.1.0 — 2026-11-16
 - Primeira versão do RETALHO (nome provisório), para TESTE: ainda sem ativação por licença e fora do site.
   Stutter + groove de vocal, VST3 e AU, latência 0 (repete só o que já passou).
