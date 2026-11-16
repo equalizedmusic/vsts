@@ -128,6 +128,7 @@ Cada pacote tem um arquivo de novidades em `novidades/`:
 | `InsideStudioSP-Mesa` | `novidades/Mesa.md` | `mesa-vX.Y.Z` |
 | `InsideStudioSP-Align` | `novidades/Align.md` | `align-vX.Y.Z` |
 | `InsideStudioSP-Gogo` (GOGÓ, cadeia de voz) | `novidades/Gogo.md` | `gogo-vX.Y.Z` |
+| `InsideStudioSP-Retalho` (RETALHO, stutter + groove de vocal) | `novidades/Retalho.md` | `retalho-vX.Y.Z` |
 
 O primeiro título `## X.Y.Z — data` do arquivo é a **versão atual**. Ela vai para:
 - os plugins, pelo `VERSION` do CMake (o host mostra; nos instrumentos ela também aparece no fim do menu de presets);

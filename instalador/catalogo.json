@@ -44,5 +44,6 @@
   "STOMPBOX": ["STOMPBOX", "pedalboard de guitarra: 10 pedais em série, AMP + CAB e noise gate, presets de estilos"],
   "MAESTRO": ["MAESTRO", "mix conductor: vai nos 8 grupos (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX); nivela, TONE MATCH, LOW-END GUARD e FOCUS (EQ dinâmica que abre espaço)"],
   "MASTER-DOS-MAGOS": ["MASTER DOS MAGOS", "masterizador par do MAESTRO: referência, TONE MATCH, EQ dinâmica, multibanda e limitador true peak"],
-  "GOGO": ["GOGÓ", "cadeia de voz automática: afinação (motor do ONKEY), rider, FET + OPTO, EQ dinâmica, de-ess, warmth e plate + delay com duck"]
+  "GOGO": ["GOGÓ", "cadeia de voz automática: afinação (motor do ONKEY), rider, FET + OPTO, EQ dinâmica, de-ess, warmth e plate + delay com duck"],
+  "RETALHO": ["RETALHO", "stutter + groove de vocal: fill desenhado (GRID, RAMP, CURVE, FREE, TREMOLO), passos COMPLEX com DICE e a voz em chops no contratempo"]
 }

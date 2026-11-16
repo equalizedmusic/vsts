@@ -588,7 +588,7 @@ int main (int argc, char** argv)
     juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
     const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
    #if SHOT_VOZ
-    // ONKEY com o AJUSTE FINO aberto; GOGÓ com os AJUSTES do TUNE abertos ("sel" = 1)
+    // ONKEY com o AJUSTE FINO aberto; GOGÓ com os AJUSTES do TUNE abertos ("sel" = 1); RETALHO na aba GROOVE
     {
         juce::MemoryBlock mb;
         proc->getStateInformation (mb);
@@ -603,7 +603,7 @@ int main (int argc, char** argv)
         editor->setSize (SHOT_W, SHOT_H);
         juce::MessageManager::getInstance()->runDispatchLoopUntil (800);
         const auto imgF = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
-        const juce::String nomeF = juce::String (SHOT_PLUGIN) + (juce::String (SHOT_PLUGIN) == "ONKEY" ? "-FINO" : "-TUNE");
+        const juce::String nomeF = juce::String (SHOT_PLUGIN) + (juce::String (SHOT_PLUGIN) == "ONKEY" ? "-FINO" : (juce::String (SHOT_PLUGIN) == "RETALHO" ? "-GROOVE" : "-TUNE"));
         const auto fF = outDir.getChildFile (nomeF + ".png");
         fF.deleteFile();
         juce::FileOutputStream osF (fF);
