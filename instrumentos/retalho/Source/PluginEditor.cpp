@@ -128,6 +128,7 @@ void RetalhoEditor::resized() { proc.uiW = getWidth(); }
 void RetalhoEditor::timerCallback()
 {
     ++quadro;
+    if (proc.versaoAmostra() != visaoA.versao) visaoA = proc.visaoAmostra();
     if (proc.vista().versao != versaoVista)
     {
         vista = proc.vista();
@@ -179,16 +180,28 @@ void RetalhoEditor::paint (juce::Graphics& g)
     knobs.clear();
     alvos.clear();
     // áreas de mouse da outra tela não podem sobrar
-    areaResult = areaOriginal = areaDaw = areaCelulas = {};
+    areaResult = areaOriginal = areaDaw = areaCelulas = areaAmostra = {};
     for (auto& a : areaPads) a = {};
 
-    if (simples()) { telaSimples (g); return; }
-    topo (g);
-    linha (g);
-    original (g, { 12, 84, 1176, 70 });
-    result (g, { 12, 160, 1176, 196 });
-    paineis (g);
-    rodape (g);
+    if (simples()) telaSimples (g);
+    else
+    {
+        topo (g);
+        linha (g);
+        original (g, { 12, 84, 1176, 70 });
+        result (g, { 12, 160, 1176, 196 });
+        paineis (g);
+        rodape (g);
+    }
+    if (soltando)
+    {
+        const juce::Rectangle<float> r (0, 0, (float) baseW, (float) baseH);
+        g.setColour (juce::Colours::black.withAlpha (0.72f)); g.fillRect (r);
+        g.setColour (cAmb); g.drawRoundedRectangle (r.reduced (16), 14.0f, 2.5f);
+        rotulo (g, r.withTrimmedBottom (40), u8 ("SOLTE O VOCAL AQUI"), cAmb, juce::Justification::centred, 30.0f, true);
+        rotulo (g, r.withTrimmedTop (60), u8 ("ELE VIRA A AMOSTRA DO RETALHO \xc2\xb7 WAV, AIFF, FLAC, MP3, OGG \xc2\xb7 AT\xc3\x89 60 s"),
+                cTx, juce::Justification::centred, 12.0f);
+    }
 }
 
 // ---- peças ----------------------------------------------------------------------------------------------------------
@@ -446,11 +459,11 @@ void RetalhoEditor::original (juce::Graphics& g, juce::Rectangle<float> r)
         for (float a : v.ataques) tri (g, { in.getX() + W * a, r.getY() + 21 }, 8, 2, cAmb);
     }
     else
-        rotulo (g, in.withTrimmedTop (14), u8 ("TOQUE O PROJETO COM A VOZ PASSANDO: A CAPTURE MOSTRA AQUI O \xc3\x9aLTIMO TRECHO"), cDim,
+        rotulo (g, in.withTrimmedTop (14), u8 ("ARRASTE O VOCAL PARA A JANELA (OU MENU \xe2\x86\x92 CAPTURAR) E D\xc3\x8a PLAY NO PROJETO"), cDim,
                 juce::Justification::centred, 10.0f);
 
     // título
-    juce::String tit = u8 ("ORIGINAL \xc2\xb7 CAPTURE");
+    juce::String tit = proc.temAmostra() ? u8 ("AMOSTRA \xc2\xb7 ") + visaoA.nome.toUpperCase().substring (0, 28) : u8 ("ENTRADA DA FAIXA (SEM AMOSTRA)");
     juce::String det;
     if (modo == mEdit && v.valida && v.plano.n > 0)
         det = juce::String (ch::chunk[lim (escolha (kChunk), 0, 8)]) + u8 (" \xc2\xb7 CHUNK ") + juce::String (juce::roundToInt (1000.0 * (v.chunkFim - v.chunkIni) * v.len / v.fs)) + " ms";
@@ -913,11 +926,11 @@ void RetalhoEditor::rodape (juce::Graphics& g)
     // gatilho
     rotulo (g, { 14, y0 + 8, 100, 14 }, "LIVE", cMu, juce::Justification::centredLeft, 10.5f);
     const int gt = escolha (kGatilho);
-    const float bw[3] = { 48, 50, 66 };
+    const float bw[3] = { 46, 46, 72 };   // ONE-SHOT com folga (encostava na borda)
     float x = 14;
     for (int i = 0; i < 3; ++i)
     {
-        botao (g, { x, y0 + 26, bw[i], 22 }, ch::gatilho[i], gt == i, cAmb, [this, i] { proc.define (kGatilho, (float) i); }, 10.0f);
+        botao (g, { x, y0 + 26, bw[i], 22 }, ch::gatilho[i], gt == i, cAmb, [this, i] { proc.define (kGatilho, (float) i); }, 9.5f);
         x += bw[i] + 4;
     }
     {
@@ -1003,7 +1016,7 @@ void RetalhoEditor::rodape (juce::Graphics& g)
 #ifdef JucePlugin_VersionString
     const juce::String ver = juce::String (JucePlugin_VersionString);
 #else
-    const juce::String ver = "0.1.0";
+    const juce::String ver = "0.1.2";
 #endif
     rotulo (g, { 700, (float) baseH - 18, 488, 14 }, u8 ("RETALHO ") + ver + u8 (" TESTE \xc2\xb7 NOME PROVIS\xc3\x93RIO"), cDim, juce::Justification::centredRight, 8.5f);
 }
@@ -1057,6 +1070,12 @@ void RetalhoEditor::mouseDown (const juce::MouseEvent& e)
             return;
         }
     if (areaDaw.contains (p) && modo != mGroove) { arrasto = arDaw; return; }
+    if (areaAmostra.contains (p))
+    {
+        arrasto = arSel;
+        selA0 = juce::jlimit (0.0f, 1.0f, (p.x - areaAmostra.getX()) / areaAmostra.getWidth());
+        return;
+    }
     if (simples()) return;
 
     auto& m = proc.motor();
@@ -1158,6 +1177,14 @@ void RetalhoEditor::mouseDrag (const juce::MouseEvent& e)
                 proc.escreveCelula (arrastoLinha, arrastoIdx, celula (cChop (cv), juce::jlimit (20, 255, (int) (valorIni + (yIni - p.y) * 3.0f)), cRoll (cv)));
             }
             break;
+        case arSel:
+            if (moveu && ! areaAmostra.isEmpty())
+            {
+                const float b = juce::jlimit (0.0f, 1.0f, (p.x - areaAmostra.getX()) / areaAmostra.getWidth());
+                proc.selIni = juce::jmin (selA0, b);
+                proc.selFim = juce::jmax (selA0, b);
+            }
+            break;
         case arDaw:
             if (moveu)
             {
@@ -1192,6 +1219,7 @@ void RetalhoEditor::mouseUp (const juce::MouseEvent&)
 void RetalhoEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
+    if (areaAmostra.contains (p)) { proc.selIni = 0.0f; proc.selFim = 1.0f; repaint(); return; }
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 6 && k.campo < 0)
         {
@@ -1332,6 +1360,10 @@ void RetalhoEditor::menu()
     mn.addItem (3, u8 ("Limitador de seguran\xc3\xa7" "a (\xe2\x88\x92" "0,3 dBFS)"), true, real (kLimit) > 0.5f);
     mn.addItem (4, "Abrir a pasta de exports");
     mn.addSeparator();
+    mn.addItem (10, u8 ("Amostra: abrir arquivo\xe2\x80\xa6"));
+    for (int b : { 1, 2, 4, 8 }) mn.addItem (10 + b, "Amostra: capturar " + juce::String (b) + (b > 1 ? " compassos" : " compasso"));
+    mn.addItem (20, "Amostra: tirar (a faixa volta a passar)", proc.temAmostra());
+    mn.addSeparator();
 #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     mn.addItem (-1, u8 ("RETALHO ") + juce::String (JucePlugin_VersionString) + " TESTE", false, false);
 #endif
@@ -1340,6 +1372,9 @@ void RetalhoEditor::menu()
     {
         if (safe == nullptr) return;
         if (r == 2) safe->proc.copiaAB();
+        if (r == 10) safe->abreArquivo();
+        if (r > 10 && r < 20) safe->proc.capturar (r - 10);
+        if (r == 20) safe->proc.limpaAmostra();
         if (r == 3) safe->proc.define (kLimit, safe->real (kLimit) > 0.5f ? 0.0f : 1.0f);
         if (r == 4)
         {
@@ -1349,7 +1384,10 @@ void RetalhoEditor::menu()
         }
         if (r == 1)
             juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "RETALHO",
-                u8 ("Ponha o RETALHO no canal da voz. Lat\xc3\xaancia 0: ele repete o que j\xc3\xa1 passou.\n\n"
+                u8 ("O RETALHO \xc3\xa9 um sampler: a voz fica DENTRO dele. Arraste o arquivo do vocal para a janela (ou ABRIR), "
+                    "ou ponha o plugin na faixa da voz e clique em CAPTURAR: ele grava os compassos escolhidos a partir do pr\xc3\xb3ximo compasso. "
+                    "Com amostra, a faixa original fica muda e a amostra toca em loop no tempo do projeto. Arraste na onda da amostra para "
+                    "escolher o trecho que toca (duplo clique volta para ela inteira). Todos os efeitos atuam na amostra.\n\n"
                     "SIMPLE (a tela que abre): 1) escolha o efeito no cart\xc3\xa3o, 2) ajuste nos 5 knobs, 3) escolha QUANDO TOCA. "
                     "Os pads guardam e disparam ajustes. O PRO mostra todos os controles abaixo.\n\n"
                     "EDIT: o fill desenhado. SHAPE (GRID, RAMP, CURVE, FREE, TREMOLO), LENGTH e RATE; PITCH, FILTER, STEREO, "
@@ -1574,9 +1612,10 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
         tri (g, rb.getCentre(), 9, 0, cTx);
     }
     {
-        const bool cap = vista.valida;
-        const juce::String t = juce::String (cap ? "OUVINDO A VOZ" : "ESPERANDO A VOZ") + u8 (" \xc2\xb7 ")
-                               + juce::String (juce::roundToInt (m.bpmA.load())) + " BPM";
+        const bool am = proc.temAmostra();
+        const bool cap = am ? proc.posAmostra() >= 0.0f : vista.valida;
+        const juce::String t = juce::String (am ? (cap ? "AMOSTRA TOCANDO" : "AMOSTRA PRONTA") : (cap ? "SEM AMOSTRA: A FAIXA PASSA" : "SEM AMOSTRA"))
+                               + u8 (" \xc2\xb7 ") + juce::String (juce::roundToInt (m.bpmA.load())) + " BPM";
         const float w = largura (fonte (10.0f, true).withExtraKerningFactor (0.22f), t);
         const float x1 = 1148;
         rotulo (g, { x1 - w - 4, 9, w + 4, 30 }, t, cap ? cTx : cDim, juce::Justification::centredRight, 10.0f, true);
@@ -1607,7 +1646,7 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
         const float cw = (1176.0f - 30.0f) / 4.0f;
         for (int i = 0; i < 4; ++i)
         {
-            const juce::Rectangle<float> r (12.0f + i * (cw + 10.0f), 72, cw, 58);
+            const juce::Rectangle<float> r (12.0f + i * (cw + 10.0f), 72, cw, 50);
             const bool on = ca == i;
             const juce::Colour cor = i == 3 ? cVerde : cAmb;
             if (on)
@@ -1618,14 +1657,15 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
                 g.setColour (cor); g.drawRoundedRectangle (r, 9.0f, 1.6f);
             }
             else caixa (g, r, cPn, 9.0f);
-            rotulo (g, { r.getX() + 16, r.getY() + 7, r.getWidth() - 24, 24 }, nomes[i], on ? cor : cTx, juce::Justification::centredLeft, 17.0f, true);
-            rotulo (g, { r.getX() + 16, r.getY() + 33, r.getWidth() - 24, 16 }, u8 (desc[i]), on ? cTx.withAlpha (0.8f) : cMu, juce::Justification::centredLeft, 10.0f);
+            rotulo (g, { r.getX() + 16, r.getY() + 5, r.getWidth() - 24, 22 }, nomes[i], on ? cor : cTx, juce::Justification::centredLeft, 16.0f, true);
+            rotulo (g, { r.getX() + 16, r.getY() + 28, r.getWidth() - 24, 15 }, u8 (desc[i]), on ? cTx.withAlpha (0.8f) : cMu, juce::Justification::centredLeft, 10.0f);
             alvos.push_back ({ r, [this, i] { proc.aplicaCartao (i); } });
         }
     }
 
-    // ---- onda do resultado ----
-    ondaSimples (g, { 12, 140, 1176, 172 });
+    // ---- a amostra (dentro do plugin) e a onda do resultado ----
+    faixaAmostra (g, { 12, 130, 1176, 68 });
+    ondaSimples (g, { 12, 204, 1176, 110 });
 
     // ---- 2 · ajuste: 5 macros ----
     secao (14, 320, "2", "AJUSTE");
@@ -1748,7 +1788,7 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
 #ifdef JucePlugin_VersionString
     const juce::String ver = juce::String (JucePlugin_VersionString);
 #else
-    const juce::String ver = "0.1.1";
+    const juce::String ver = "0.1.2";
 #endif
     rotulo (g, { 14, (float) baseH - 20, 900, 14 },
             u8 ("PAD VAZIO = GUARDA O AJUSTE \xc2\xb7 BOT\xc3\x83O DIREITO NO PAD = RENOMEIA / LIMPA \xc2\xb7 DUPLO CLIQUE NO KNOB = VOLTA AO PADR\xc3\x83O \xc2\xb7 PRO = TODOS OS AJUSTES"),
@@ -1763,7 +1803,7 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
     const auto& v = vista;
     const int modo = escolha (kModo);
     const bool gr = modo == mGroove;
-    const auto in = r.reduced (14, 0).withTrimmedTop (30).withTrimmedBottom (40);
+    const auto in = r.reduced (14, 0).withTrimmedTop (28).withTrimmedBottom (32);
 
     // grade por tempo
     const double beats = v.len > 0 ? (double) v.len / v.spb : 4.0;
@@ -1783,7 +1823,9 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
             gr ? cVerde : cAmb, juce::Justification::centredLeft, 10.0f, true);
 
     if (! v.valida)
-        rotulo (g, in, u8 ("D\xc3\x8a PLAY NO PROJETO COM A VOZ PASSANDO: O RESULTADO APARECE AQUI"), cDim, juce::Justification::centred, 11.0f);
+        rotulo (g, in, proc.temAmostra() ? u8 ("D\xc3\x8a PLAY NO PROJETO: O RESULTADO EM CIMA DA AMOSTRA APARECE AQUI")
+                                         : u8 ("CARREGUE A AMOSTRA ACIMA (OU D\xc3\x8a PLAY COM A VOZ PASSANDO): O RESULTADO APARECE AQUI"),
+                cDim, juce::Justification::centred, 11.0f);
     else if (! gr)
         blocosFill (g, in);
     else
@@ -1817,7 +1859,7 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
         bool algum = false;
         for (int s = 0; s < numChops; ++s) algum = algum || v.chopMs[s] > 0.0f;
         if (! algum)
-            rotulo (g, { in.getX(), in.getY() - 2, in.getWidth(), 14 }, u8 ("AINDA SEM S\xc3\x8dLABAS: D\xc3\x8a PLAY COM A VOZ PASSANDO"), cDim, juce::Justification::centred, 9.5f);
+            rotulo (g, { in.getX(), in.getY() - 2, in.getWidth(), 14 }, u8 ("AINDA SEM S\xc3\x8dLABAS: D\xc3\x8a PLAY NO PROJETO"), cDim, juce::Justification::centred, 9.5f);
     }
 
     if (! gr)
@@ -1834,13 +1876,13 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
         tri (g, { ax, ay + 3 }, 6, 2, cTx);
 
         // OUVIR / LOOP
-        const float y = r.getBottom() - 32;
+        const float y = r.getBottom() - 27;
         const int pt = proc.previewTocando();
-        const juce::Rectangle<float> r1 (r.getX() + 14, y, 92, 24), r2 (r1.getRight() + 6, y, 64, 24);
+        const juce::Rectangle<float> r1 (r.getX() + 14, y, 92, 22), r2 (r1.getRight() + 6, y, 64, 22);
         botao (g, r1, "     OUVIR", pt == 2, cAmb, [this] { proc.preview (2); }, 10.5f);
         tri (g, { r1.getX() + 16, r1.getCentreY() }, 8, 0, pt == 2 ? cAmb : cMu);
         botao (g, r2, "LOOP", proc.previewLoop.load(), cAmb, [this] { proc.previewLoop = ! proc.previewLoop.load(); }, 10.5f);
-        rotulo (g, { r2.getRight() + 12, y, 500, 24 }, u8 ("OUVIR TOCA S\xc3\x93 O EFEITO, AQUI NO PLUGIN"), cDim, juce::Justification::centredLeft, 9.0f);
+        rotulo (g, { r2.getRight() + 12, y, 500, 22 }, u8 ("OUVIR TOCA S\xc3\x93 O EFEITO, AQUI NO PLUGIN"), cDim, juce::Justification::centredLeft, 9.0f);
 
         float pr = -1.0f;
         if (m.fillProg.load() >= 0.0f && m.fillModo.load() == modo) pr = std::fmod (m.fillProg.load(), 1.0f);
@@ -1853,6 +1895,156 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
         }
     }
     else
-        rotulo (g, { r.getX() + 14, r.getBottom() - 30, r.getWidth() - 28, 20 },
-                u8 ("OS CHOPS TOCAM NO PROJETO, NA HORA ESCOLHIDA EM QUANDO TOCA"), cDim, juce::Justification::centredLeft, 9.0f);
+        rotulo (g, { r.getX() + 14, r.getBottom() - 26, r.getWidth() - 28, 20 },
+                u8 ("OS CHOPS DA AMOSTRA TOCAM NO PROJETO, NA HORA ESCOLHIDA EM QUANDO TOCA (A AMOSTRA CALA ENQUANTO ELES TOCAM)"), cDim, juce::Justification::centredLeft, 9.0f);
+}
+
+// =====================================================================================================================
+// SAMPLER: a amostra dentro do plugin
+// =====================================================================================================================
+bool RetalhoEditor::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    for (auto& f : files) if (RetalhoProcessor::arquivoDeAudio (f)) return true;
+    return false;
+}
+
+void RetalhoEditor::filesDropped (const juce::StringArray& files, int, int)
+{
+    soltando = false;
+    for (auto& f : files)
+        if (RetalhoProcessor::arquivoDeAudio (f))
+        {
+            if (! proc.carregaArquivo (juce::File (f))) { avisoArquivo = u8 ("N\xc3\x83O CONSEGUI ABRIR ESSE ARQUIVO"); avisoQuadro = quadro; }
+            else avisoArquivo.clear();
+            break;
+        }
+    repaint();
+}
+
+void RetalhoEditor::abreArquivo()
+{
+    seletor = std::make_unique<juce::FileChooser> (u8 ("Abrir o vocal"), juce::File(), "*.wav;*.aif;*.aiff;*.flac;*.mp3;*.ogg");
+    juce::Component::SafePointer<RetalhoEditor> safe (this);
+    seletor->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [safe] (const juce::FileChooser& fc)
+    {
+        if (safe == nullptr) return;
+        const auto f = fc.getResult();
+        if (! f.existsAsFile()) return;
+        if (! safe->proc.carregaArquivo (f)) { safe->avisoArquivo = u8 ("N\xc3\x83O CONSEGUI ABRIR ESSE ARQUIVO"); safe->avisoQuadro = safe->quadro; }
+        else safe->avisoArquivo.clear();
+        safe->repaint();
+    });
+}
+
+void RetalhoEditor::menuCaptura()
+{
+    juce::PopupMenu mn;
+    for (int b : { 1, 2, 4, 8 }) mn.addItem (b, juce::String (b) + (b > 1 ? " COMPASSOS" : " COMPASSO"), true, proc.capBars.load() == b);
+    juce::Component::SafePointer<RetalhoEditor> safe (this);
+    mn.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(), [safe] (int r)
+    {
+        if (safe != nullptr && r > 0) safe->proc.capBars = r;
+    });
+}
+
+void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
+{
+    caixa (g, r, cTela, 8.0f);
+    const auto& va = visaoA;
+    const bool tem = va.tem && proc.temAmostra();
+    const int ce = proc.estadoCaptura();
+
+    // esquerda: o que está carregado
+    const juce::Rectangle<float> rl (r.getX() + 14, r.getY() + 6, 220, r.getHeight() - 12);
+    rotulo (g, { rl.getX(), rl.getY(), rl.getWidth(), 14 }, "AMOSTRA", cMu, juce::Justification::centredLeft, 9.5f);
+    if (tem)
+    {
+        rotulo (g, { rl.getX(), rl.getY() + 15, rl.getWidth(), 18 }, va.nome.toUpperCase(), cAmb, juce::Justification::centredLeft, 12.0f, true);
+        const double dur = va.seg * (proc.selFim.load() - proc.selIni.load());
+        const int k = proc.loopBars();
+        rotulo (g, { rl.getX(), rl.getY() + 35, rl.getWidth(), 14 },
+                juce::String (dur, 1).replaceCharacter ('.', ',') + u8 (" s \xc2\xb7 LOOP DE ") + juce::String (k) + (k > 1 ? " BARS" : " BAR"),
+                cTx.withAlpha (0.75f), juce::Justification::centredLeft, 9.5f);
+    }
+    else
+    {
+        rotulo (g, { rl.getX(), rl.getY() + 15, rl.getWidth(), 18 }, "VAZIO", cDim, juce::Justification::centredLeft, 12.0f, true);
+        rotulo (g, { rl.getX(), rl.getY() + 35, rl.getWidth(), 14 }, u8 ("A FAIXA PASSA DIRETO"), cDim, juce::Justification::centredLeft, 9.5f);
+    }
+
+    // direita: ABRIR, CAPTURAR (e quantos compassos), TIRAR
+    const float by = r.getCentreY() - 13;
+    float x = r.getRight() - 12;
+    {
+        const juce::Rectangle<float> rx (x - 30, by, 30, 26);
+        botao (g, rx, "X", false, cRosa, tem ? std::function<void()> ([this] { proc.limpaAmostra(); }) : std::function<void()>(), 11.0f);
+        x = rx.getX() - 6;
+        const int cb = proc.capBars.load();
+        const juce::Rectangle<float> rb (x - 70, by, 70, 26);
+        botao (g, rb, juce::String (cb) + (cb > 1 ? " BARS" : " BAR") + "  ", false, cAmb, [this] { menuCaptura(); }, 10.0f);
+        tri (g, { rb.getRight() - 11, rb.getCentreY() }, 7, 2, cMu);
+        x = rb.getX() - 4;
+        const juce::Rectangle<float> rc (x - 100, by, 100, 26);
+        const bool armada = ce != 0;
+        botao (g, rc, armada ? "CANCELAR" : "CAPTURAR", armada, cRosa, [this, armada] { if (armada) proc.cancelaCaptura(); else proc.capturar (proc.capBars.load()); }, 10.5f);
+        if (! armada) { g.setColour (cRosa); g.fillEllipse (rc.getX() + 9, rc.getCentreY() - 3.5f, 7, 7); }
+        x = rc.getX() - 6;
+        const juce::Rectangle<float> ra (x - 80, by, 80, 26);
+        botao (g, ra, u8 ("ABRIR\xe2\x80\xa6"), false, cAmb, [this] { abreArquivo(); }, 10.5f);
+        x = ra.getX() - 14;
+    }
+
+    // meio: a onda da amostra, o trecho que toca e onde está tocando
+    const juce::Rectangle<float> w (rl.getRight() + 10, r.getY() + 7, x - rl.getRight() - 10, r.getHeight() - 14);
+    g.setColour (juce::Colour (0xff0d0f13)); g.fillRoundedRectangle (w, 5.0f);
+    if (ce == 1 || ce == 2)
+    {
+        const float pulso = 0.6f + 0.4f * std::sin (quadro * 0.2f);
+        if (ce == 2)
+        {
+            g.setColour (cRosa.withAlpha (0.25f)); g.fillRoundedRectangle (w.withWidth (w.getWidth() * proc.progressoCaptura()), 5.0f);
+            rotulo (g, w, u8 ("GRAVANDO \xc2\xb7 ") + juce::String (juce::roundToInt (proc.progressoCaptura() * 100.0f)) + "%", cRosa.withAlpha (pulso),
+                    juce::Justification::centred, 12.0f, true);
+        }
+        else
+            rotulo (g, w, u8 ("CAPTURA ARMADA: COME\xc3\x87" "A NO PR\xc3\x93XIMO COMPASSO COM O PROJETO TOCANDO"), cRosa.withAlpha (pulso),
+                    juce::Justification::centred, 10.5f, true);
+        return;
+    }
+    if (! tem)
+    {
+        juce::String t = u8 ("ARRASTE AQUI O ARQUIVO DO VOCAL OU CLIQUE EM CAPTURAR PARA GRAVAR A FAIXA");
+        juce::Colour c = cMu;
+        if (avisoArquivo.isNotEmpty() && quadro - avisoQuadro < 120) { t = avisoArquivo; c = cRosa; }
+        else if (proc.capVazia.load()) { t = u8 ("A CAPTURA S\xc3\x93 PEGOU SIL\xc3\x8aNCIO: CAPTURE NUM TRECHO COM VOZ"); c = cRosa; }
+        g.setColour (cLn); g.drawRoundedRectangle (w.reduced (2), 5.0f, 1.0f);
+        rotulo (g, w, t, c, juce::Justification::centred, 10.5f, true);
+        return;
+    }
+    areaAmostra = w;
+    const float s0 = proc.selIni.load(), s1 = juce::jmax (s0 + 0.001f, proc.selFim.load());
+    const int C = (int) va.mx.size();
+    const float cy = w.getCentreY(), hh = w.getHeight() * 0.44f;
+    for (int px = 0; px < (int) w.getWidth() && C > 0; px += 2)
+    {
+        const float fr = (float) px / w.getWidth();
+        const int c = juce::jlimit (0, C - 1, (int) (fr * C));
+        const float a = juce::jmin (1.0f, juce::jmax (std::abs (va.mn[(size_t) c]), std::abs (va.mx[(size_t) c])) * 1.5f);
+        g.setColour (fr >= s0 && fr <= s1 ? juce::Colour (0xffc9ced6) : cOnda.withAlpha (0.45f));
+        g.fillRect (w.getX() + (float) px, cy - a * hh, 1.2f, juce::jmax (1.0f, 2.0f * a * hh));
+    }
+    const float x0 = w.getX() + w.getWidth() * s0, x1 = w.getX() + w.getWidth() * s1;
+    if (s0 > 0.0005f || s1 < 0.9995f)
+    {
+        g.setColour (cAmb.withAlpha (0.07f)); g.fillRect (x0, w.getY(), x1 - x0, w.getHeight());
+        g.setColour (cAmb); g.fillRect (x0 - 1, w.getY(), 2.0f, w.getHeight()); g.fillRect (x1 - 1, w.getY(), 2.0f, w.getHeight());
+    }
+    const float pa = proc.posAmostra();
+    if (pa >= 0.0f && pa <= 1.0f)
+    {
+        const float xp = x0 + (x1 - x0) * pa;
+        g.setColour (cVerde); g.fillRect (xp - 1, w.getY() + 2, 2.0f, w.getHeight() - 4);
+    }
+    rotulo (g, { w.getX() + 6, w.getBottom() - 13, w.getWidth() - 12, 12 },
+            u8 ("ARRASTE NA ONDA PARA ESCOLHER O TRECHO \xc2\xb7 DUPLO CLIQUE = INTEIRA"), cDim, juce::Justification::centredRight, 8.0f);
 }

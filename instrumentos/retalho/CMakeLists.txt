@@ -27,7 +27,8 @@ target_sources(Retalho PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cp
 target_compile_definitions(Retalho PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0)
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    JUCE_USE_MP3AUDIOFORMAT=1)   # SAMPLER: o vocal pode vir em MP3
 target_link_libraries(Retalho
     PRIVATE
         juce::juce_audio_utils

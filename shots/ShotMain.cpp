@@ -470,6 +470,21 @@ int main (int argc, char** argv)
         proc->updateTrackProperties (tp);
     }
    #endif
+   #if SHOT_VOZ
+    // RETALHO é sampler: a foto precisa de amostra. "capturar" = grava 2 compassos da voz sintética logo no começo
+    if (juce::String (SHOT_PLUGIN) == "RETALHO")
+    {
+        juce::MemoryBlock mb;
+        proc->getStateInformation (mb);
+        if (auto x = juce::AudioProcessor::getXmlFromBinary (mb.getData(), (int) mb.getSize()))
+        {
+            x->setAttribute ("capturar", 2);
+            juce::MemoryBlock m2;
+            juce::AudioProcessor::copyXmlToBinary (*x, m2);
+            proc->setStateInformation (m2.getData(), (int) m2.getSize());
+        }
+    }
+   #endif
     std::unique_ptr<juce::AudioProcessorEditor> editor (proc->createEditorAndMakeActive());
     editor->setSize (SHOT_W, SHOT_H);   // 200%
 

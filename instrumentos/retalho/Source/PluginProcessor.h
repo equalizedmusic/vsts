@@ -119,7 +119,59 @@ public:
     void presetVizinho (int passo);   // ◀ ▶ do SIMPLE
     std::atomic<int> pincelTipo { retalho::tRepeat }, pincelChop { 0 };
 
+    // ---- SAMPLER (0.1.2): a voz fica DENTRO do plugin ----
+    // A amostra entra arrastando um arquivo (ou ABRIR) ou pela CAPTURA (grava N compassos da faixa a partir do próximo
+    // compasso). Com amostra carregada, a entrada da faixa é ignorada: o plugin toca a amostra em loop, no tempo do
+    // projeto, e o STUTTER / RISER / TAPE STOP / GROOVE atuam sobre ela. Sem amostra, a faixa passa (e pode ser capturada).
+    struct Amostra
+    {
+        juce::AudioBuffer<float> buf;   // na taxa do host
+        double offBeats = 0.0;          // em que tempo do loop a amostra começa (captura: onde o projeto estava)
+    };
+    struct VisaoAmostra
+    {
+        int versao = 0;
+        bool tem = false;
+        juce::String nome;
+        double seg = 0.0;
+        std::vector<float> mn, mx;      // 600 colunas
+    };
+    bool temAmostra() const { return ativa.load() != nullptr; }
+    bool carregaArquivo (const juce::File& f);          // thread da tela
+    void capturar (int bars);                           // arma: grava a partir do próximo compasso
+    void cancelaCaptura() { capEstado = 0; }
+    void limpaAmostra();
+    int estadoCaptura() const { return capEstado.load(); }   // 0 nada, 1 esperando o compasso, 2 gravando
+    float progressoCaptura() const { return capLen.load() > 0 ? (float) capPos.load() / (float) capLen.load() : 0.0f; }
+    std::atomic<int> capBars { 2 };
+    std::atomic<bool> capVazia { false };                     // a última captura só tinha silêncio
+    std::atomic<float> selIni { 0.0f }, selFim { 1.0f };      // trecho da amostra que toca (fração)
+    VisaoAmostra visaoAmostra() const { const juce::ScopedLock sl (travaAmostra); return visao; }
+    int versaoAmostra() const { return visaoVersao.load(); }
+    float posAmostra() const { return posA.load(); }          // fração tocando agora (−1 = parado)
+    int loopBars() const { return loopK.load(); }
+    static bool arquivoDeAudio (const juce::String& caminho);
+
 private:
+    void instalaAmostra (const juce::AudioBuffer<float>& origem, double fsOrigem, const juce::String& nome, double offBeats, bool codifica);
+    void montaAtiva();                // reamostra a origem na taxa do host e troca a ativa (sem travar o áudio)
+    void recolheAposentadas (bool tudo);
+    juce::AudioBuffer<float> origBuf; // a amostra como veio (arquivo ou captura)
+    double origFs = 48000.0, origOff = 0.0;
+    juce::String origNome, origB64;   // FLAC em base64 (vai no projeto)
+    juce::CriticalSection travaAmostra;
+    std::atomic<Amostra*> ativa { nullptr };
+    std::vector<std::pair<Amostra*, int64_t>> aposentadas;
+    std::atomic<int64_t> blocoIni { 0 }, blocoFim { 0 };
+    VisaoAmostra visao;
+    std::atomic<int> visaoVersao { 0 };
+    std::atomic<float> posA { -1.0f };
+    std::atomic<int> loopK { 1 };
+    juce::AudioBuffer<float> capBuf;
+    std::atomic<int> capEstado { 0 }, capPos { 0 }, capLen { 0 };
+    std::atomic<bool> capPronta { false };
+    std::atomic<double> capOff { 0.0 };
+
     void timerCallback() override;
     void atualizaVista (bool forcar);
     void carregaPad (int i);

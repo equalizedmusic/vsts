@@ -17,7 +17,7 @@ nomes=""
 add() { case " $nomes " in *" $1 "*) ;; *) nomes="$nomes${nomes:+ }$1";; esac; }
 
 if [ -n "$escolha" ]; then
-  for e in $escolha; do add "${e,,}"; done
+  for e in $escolha; do add "$(printf %s "$e" | tr "[:upper:]" "[:lower:]")"; done
 else
   if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
     base="$head~1"

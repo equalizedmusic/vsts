@@ -9,7 +9,7 @@
 //    blocos, PITCH ciano, FILTER rosa; no COMPLEX os passos; no GROOVE os 8 chops e o pattern);
 //  - painéis de knobs da aba e o rodapé LIVE fixo (AUTO / HOLD / ONE-SHOT, ONDE, CATCH, 6 pads, DRY/WET, OUTPUT, A/B).
 // Tudo desenhado no paint, a 30 Hz.
-class RetalhoEditor : public juce::AudioProcessorEditor, private juce::Timer
+class RetalhoEditor : public juce::AudioProcessorEditor, public juce::FileDragAndDropTarget, private juce::Timer
 {
 public:
     explicit RetalhoEditor (RetalhoProcessor&);
@@ -23,12 +23,18 @@ public:
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
+    // SAMPLER: arrastar o arquivo do vocal para qualquer lugar da janela
+    bool isInterestedInFileDrag (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int, int) override;
+    void fileDragEnter (const juce::StringArray&, int, int) override { soltando = true; repaint(); }
+    void fileDragExit (const juce::StringArray&) override { soltando = false; repaint(); }
+
     static constexpr int baseW = 1200, baseH = 620;
 
 private:
     struct Knob { int campo; juce::Point<float> c; float r; };   // campo < 0 = macro do SIMPLE (−1 − índice)
     struct Alvo { juce::Rectangle<float> r; std::function<void()> f; };
-    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw, arMacro };
+    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw, arMacro, arSel };
 
     // SIMPLE (tela padrão desde 16/11/2026): 4 cartões de efeito, a onda do resultado, 5 macros, QUANDO TOCA e os pads.
     // PRO = a tela completa (EDIT / COMPLEX / GROOVE). A troca é só de tela: o som e os parâmetros são os mesmos.
@@ -36,6 +42,9 @@ private:
     void telaSimples (juce::Graphics&);
     void chaveModo (juce::Graphics&);
     void ondaSimples (juce::Graphics&, juce::Rectangle<float> r);
+    void faixaAmostra (juce::Graphics&, juce::Rectangle<float> r);   // a amostra dentro do plugin
+    void abreArquivo();
+    void menuCaptura();
     void blocosFill (juce::Graphics&, juce::Rectangle<float> in);
     int cartao() const;          // 0 STUTTER, 1 RISER, 2 TAPE STOP, 3 GROOVE, −1 cena do COMPLEX
     int quando() const;          // 0 TODO COMPASSO, 1 FIM DE 4 BARS, 2 FIM DE 8 BARS, 3 SÓ NO PAD, −1 outro (do PRO)
@@ -77,7 +86,12 @@ private:
     juce::String nomeTom() const;
 
     // áreas dos displays (coordenadas base) para o mouse
-    juce::Rectangle<float> areaResult, areaOriginal, areaDaw, areaCelulas;
+    juce::Rectangle<float> areaResult, areaOriginal, areaDaw, areaCelulas, areaAmostra;
+    RetalhoProcessor::VisaoAmostra visaoA;   // cópia (muda só quando a amostra muda)
+    float selA0 = 0.0f;                      // arrasto da seleção
+    bool soltando = false;
+    juce::String avisoArquivo;
+    int avisoQuadro = 0;
     juce::Rectangle<float> areaPads[retalho::numPads];
     float celX0 = 0, celW = 1, celY0 = 0, celH = 1;
     int nCelVis = 16;

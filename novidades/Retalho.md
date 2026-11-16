@@ -4,6 +4,19 @@ Pacote do instalador: `InsideStudioSP-Retalho`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `retalho-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.2 — 2026-11-16
+- Ainda TESTE (sem licença, fora do site).
+- Agora o RETALHO é um SAMPLER: a voz fica dentro dele. Arraste o arquivo do vocal (WAV, AIFF, FLAC, MP3 ou OGG, até
+  60 s) para a janela, use ABRIR ou clique em CAPTURAR para gravar 1, 2, 4 ou 8 compassos da faixa a partir do
+  próximo compasso. Com amostra carregada, a faixa original fica muda e a amostra toca em loop no tempo do projeto.
+  STUTTER, RISER, TAPE STOP e GROOVE (e todo o PRO) atuam em cima da amostra.
+- Faixa AMOSTRA no SIMPLE, entre os cartões e o resultado: nome, duração, tamanho do loop, a onda com o trecho que
+  toca (arraste na onda para escolher; duplo clique volta para ela inteira) e onde está tocando. X tira a amostra e a
+  faixa volta a passar. No PRO, a amostra fica no menu ≡.
+- A amostra é salva dentro do projeto (FLAC): reabriu o projeto, ela está lá, mesmo se o arquivo sumir.
+- GROOVE do SIMPLE: a voz original cala enquanto os chops tocam (antes só abaixava 9 dB).
+- PRO: o rodapé mostra a versão certa e o ONE-SHOT não encosta mais na borda do botão.
+
 ## 0.1.1 — 2026-11-16
 - Ainda TESTE (sem licença, fora do site).
 - Nova tela SIMPLE, que é a que abre: 1) escolha o efeito em 4 cartões (STUTTER, RISER, TAPE STOP, GROOVE),

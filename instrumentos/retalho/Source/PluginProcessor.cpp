@@ -109,7 +109,149 @@ RetalhoProcessor::RetalhoProcessor()
     startTimerHz (15);
 }
 
-RetalhoProcessor::~RetalhoProcessor() { stopTimer(); }
+RetalhoProcessor::~RetalhoProcessor()
+{
+    stopTimer();
+    delete ativa.exchange (nullptr);
+    recolheAposentadas (true);
+}
+
+// ---- SAMPLER --------------------------------------------------------------------------------------------------------
+bool RetalhoProcessor::arquivoDeAudio (const juce::String& caminho)
+{
+    const auto e = juce::File (caminho).getFileExtension().toLowerCase();
+    return e == ".wav" || e == ".aif" || e == ".aiff" || e == ".flac" || e == ".mp3" || e == ".ogg";
+}
+
+void RetalhoProcessor::recolheAposentadas (bool tudo)
+{
+    const int64_t fim = blocoFim.load();
+    for (auto it = aposentadas.begin(); it != aposentadas.end();)
+    {
+        if (tudo || fim > it->second) { delete it->first; it = aposentadas.erase (it); }
+        else ++it;
+    }
+}
+
+// reamostra a origem na taxa do host e troca a amostra que o áudio toca (a antiga é apagada quando o áudio largar)
+void RetalhoProcessor::montaAtiva()
+{
+    std::unique_ptr<Amostra> a;
+    {
+        const juce::ScopedLock sl (travaAmostra);
+        if (origBuf.getNumSamples() > 0)
+        {
+            a = std::make_unique<Amostra>();
+            const double r = origFs / fs;   // passo na origem por amostra de saída
+            const int n0 = origBuf.getNumSamples();
+            const int n = juce::jmax (1, (int) std::floor ((double) (n0 - 1) / r) + 1);
+            a->buf.setSize (2, n);
+            for (int c = 0; c < 2; ++c)
+            {
+                const float* s = origBuf.getReadPointer (juce::jmin (c, origBuf.getNumChannels() - 1));
+                float* d = a->buf.getWritePointer (c);
+                if (std::abs (r - 1.0) < 1e-9) { std::copy (s, s + juce::jmin (n, n0), d); continue; }
+                for (int i = 0; i < n; ++i)
+                {
+                    const double p = i * r;
+                    const int k = (int) p;
+                    const float t = (float) (p - k);
+                    const float x0 = s[juce::jlimit (0, n0 - 1, k - 1)], x1 = s[juce::jlimit (0, n0 - 1, k)],
+                                x2 = s[juce::jlimit (0, n0 - 1, k + 1)], x3 = s[juce::jlimit (0, n0 - 1, k + 2)];
+                    d[i] = hermite (x0, x1, x2, x3, t);
+                }
+            }
+            a->offBeats = origOff;
+        }
+    }
+    const juce::ScopedLock sl (travaAmostra);
+    Amostra* velha = ativa.exchange (a.release());
+    if (velha != nullptr) aposentadas.push_back ({ velha, blocoIni.load() });
+    recolheAposentadas (false);
+}
+
+void RetalhoProcessor::instalaAmostra (const juce::AudioBuffer<float>& origem, double fsOrigem, const juce::String& nome, double offBeats, bool codifica)
+{
+    {
+        const juce::ScopedLock sl (travaAmostra);
+        origBuf.makeCopyOf (origem);
+        origFs = fsOrigem;
+        origNome = nome;
+        origOff = offBeats;
+        if (codifica)
+        {
+            // FLAC 24 bits em base64: o projeto guarda a amostra junto (não depende do arquivo continuar no lugar)
+            origB64.clear();
+            juce::MemoryBlock blk;
+            bool ok = false;
+            {
+                std::unique_ptr<juce::OutputStream> os = std::make_unique<juce::MemoryOutputStream> (blk, false);
+                juce::FlacAudioFormat flac;
+                const int nc = juce::jlimit (1, 2, origBuf.getNumChannels());
+                if (auto w = flac.createWriterFor (os, juce::AudioFormatWriterOptions{}.withSampleRate (origFs).withNumChannels (nc).withBitsPerSample (24)))
+                    ok = w->writeFromAudioSampleBuffer (origBuf, 0, origBuf.getNumSamples());
+                // o writer fecha o FLAC (cabeçalho com o total de amostras) ao ser destruído, aqui
+            }
+            if (ok && blk.getSize() > 0) origB64 = juce::Base64::toBase64 (blk.getData(), blk.getSize());
+        }
+        // a vista da amostra (600 colunas)
+        visao.tem = origBuf.getNumSamples() > 0;
+        visao.nome = nome;
+        visao.seg = origBuf.getNumSamples() / juce::jmax (1.0, origFs);
+        const int C = 600, n = origBuf.getNumSamples();
+        visao.mn.assign (C, 0.0f); visao.mx.assign (C, 0.0f);
+        for (int x = 0; x < C && n > 0; ++x)
+        {
+            const int i0 = (int) ((int64_t) n * x / C), i1 = juce::jmax (i0 + 1, (int) ((int64_t) n * (x + 1) / C));
+            float lo = 0.0f, hi = 0.0f;
+            for (int i = i0; i < i1 && i < n; ++i)
+            {
+                float s = 0.0f;
+                for (int c = 0; c < origBuf.getNumChannels(); ++c) s += origBuf.getSample (c, i);
+                s /= (float) juce::jmax (1, origBuf.getNumChannels());
+                lo = juce::jmin (lo, s); hi = juce::jmax (hi, s);
+            }
+            visao.mn[(size_t) x] = lo; visao.mx[(size_t) x] = hi;
+        }
+        visao.versao = ++visaoVersao;
+    }
+    montaAtiva();
+}
+
+bool RetalhoProcessor::carregaArquivo (const juce::File& f)
+{
+    juce::AudioFormatManager fm;
+    fm.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> r (fm.createReaderFor (f));
+    if (r == nullptr || r->lengthInSamples <= 0 || r->sampleRate <= 0) return false;
+    const int n = (int) juce::jmin<juce::int64> (r->lengthInSamples, (juce::int64) (r->sampleRate * 60.0));   // até 60 s
+    juce::AudioBuffer<float> b (juce::jlimit (1, 2, (int) r->numChannels), n);
+    r->read (&b, 0, n, 0, true, true);
+    selIni = 0.0f; selFim = 1.0f;
+    instalaAmostra (b, r->sampleRate, f.getFileNameWithoutExtension(), 0.0, true);
+    return true;
+}
+
+void RetalhoProcessor::capturar (int bars)
+{
+    capBars = juce::jlimit (1, 8, bars);
+    capPos = 0;
+    capEstado = 1;
+}
+
+void RetalhoProcessor::limpaAmostra()
+{
+    {
+        const juce::ScopedLock sl (travaAmostra);
+        origBuf.setSize (0, 0);
+        origB64.clear();
+        origNome.clear();
+        visao.tem = false; visao.nome.clear(); visao.mn.clear(); visao.mx.clear();
+        visao.versao = ++visaoVersao;
+    }
+    selIni = 0.0f; selFim = 1.0f;
+    montaAtiva();
+}
 
 bool RetalhoProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
@@ -120,9 +262,13 @@ bool RetalhoProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 
 void RetalhoProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    const bool mudouTaxa = std::abs (fs - sampleRate) > 0.5;
     fs = sampleRate;
     m->prepare (sampleRate);
     for (auto& b : prevBuf) b.setSize (2, (int) (sampleRate * 9.0), false, true, false);
+    capBuf.setSize (2, (int) (sampleRate * 50.0), false, true, false);   // 8 compassos até ~40 BPM
+    capEstado = capEstado.load() == 2 ? 1 : capEstado.load();
+    if (mudouTaxa || (ativa.load() == nullptr && origBuf.getNumSamples() > 0)) montaAtiva();
     prevEstado = 0;
     eventos.reserve ((size_t) juce::jmax (256, samplesPerBlock));
     setLatencySamples (0);
@@ -329,6 +475,83 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         if (eventos.size() < eventos.capacity()) eventos.push_back (e);
     }
 
+    // ---- SAMPLER: a captura grava a faixa; com amostra, a faixa sai e entra a amostra no tempo do projeto ----
+    const int64_t nb = blocoIni.load (std::memory_order_relaxed) + 1;
+    blocoIni.store (nb, std::memory_order_release);
+    {
+        const double bpm = tp.bpm > 1.0 ? tp.bpm : 120.0;
+        const double spbS = fs * 60.0 / bpm, bpbS = tp.numerador > 0 ? (double) tp.numerador : 4.0;
+        const bool host = tp.tocando && tp.temPpq;
+        int ce = capEstado.load();
+        if (ce != 0 && ! host) { if (ce == 2) capEstado = ce = 1; capPos = 0; }   // parou no meio: espera o próximo play
+        int ini = 0;
+        if (ce == 1 && host)
+        {
+            const double b0 = tp.ppq, b1 = b0 + n / spbS;
+            const double tb = std::ceil (b0 / bpbS - 1e-9) * bpbS;
+            if (tb < b1)
+            {
+                const double Lb = capBars.load() * bpbS;
+                ini = juce::jlimit (0, n, (int) std::llround ((tb - b0) * spbS));
+                capLen = (int) juce::jmin<int64_t> (capBuf.getNumSamples(), (int64_t) std::llround (Lb * spbS));
+                capPos = 0;
+                capOff = std::fmod (tb, Lb);
+                capEstado = ce = 2;
+            }
+        }
+        if (ce == 2)
+        {
+            int pos = capPos.load();
+            const int len = capLen.load();
+            const int k = juce::jmin (n - ini, len - pos);
+            for (int c = 0; c < 2 && k > 0; ++c) capBuf.copyFrom (c, pos, buffer, juce::jmin (c, nch - 1), ini, k);
+            pos += juce::jmax (0, k);
+            capPos = pos;
+            if (pos >= len) { capEstado = 0; capPronta = true; }
+        }
+
+        Amostra* a = ativa.load (std::memory_order_acquire);
+        if (a != nullptr && ce == 0)
+        {
+            const int N = a->buf.getNumSamples();
+            int i0 = juce::jlimit (0, N, (int) std::lround (selIni.load() * N)), i1 = juce::jlimit (0, N, (int) std::lround (selFim.load() * N));
+            if (i1 - i0 < 256) { i0 = 0; i1 = N; }
+            const double selLen = (double) (i1 - i0);
+            const int K = juce::jlimit (1, 32, (int) std::ceil (selLen / (bpbS * spbS) - 0.15));
+            loopK = K;
+            const double Lb = K * bpbS, fade = 0.002 * fs;
+            const float* s0 = a->buf.getReadPointer (0);
+            const float* s1 = a->buf.getReadPointer (1);
+            if (host)
+            {
+                for (int i = 0; i < n; ++i)
+                {
+                    double ph = std::fmod (tp.ppq + i / spbS - a->offBeats, Lb);
+                    if (ph < 0.0) ph += Lb;
+                    const double p = i0 + ph * spbS;
+                    float l = 0.0f, r = 0.0f;
+                    if (p < (double) (i1 - 1))
+                    {
+                        const int k = (int) p;
+                        const float t = (float) (p - k);
+                        const float e = (float) (juce::jmin (1.0, (p - i0 + 1.0) / fade) * juce::jmin (1.0, ((double) (i1 - 1) - p) / fade));
+                        l = (s0[k] + (s0[k + 1] - s0[k]) * t) * e;
+                        r = (s1[k] + (s1[k + 1] - s1[k]) * t) * e;
+                    }
+                    if (nch > 1) { buffer.setSample (0, i, l); buffer.setSample (1, i, r); }
+                    else buffer.setSample (0, i, 0.5f * (l + r));
+                    if (i == 0) posA = (float) (ph * spbS / juce::jmax (1.0, selLen));
+                }
+            }
+            else
+            {
+                for (int c = 0; c < nch; ++c) buffer.clear (c, 0, n);
+                posA = -1.0f;
+            }
+        }
+        else posA = -1.0f;
+    }
+
     m->process (buffer.getArrayOfWritePointers(), nch, n, val, tp, eventos.data(), (int) eventos.size());
 
     // preview: toca a janela no lugar da saída
@@ -351,6 +574,7 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         }
         prevPos = pos;
     }
+    blocoFim.store (nb, std::memory_order_release);
 }
 
 // 15 Hz, na thread da tela
@@ -358,6 +582,25 @@ void RetalhoProcessor::timerCallback()
 {
     // pad disparado (MIDI, automação ou clique): a tela mostra a cena dele
     if (const int pd = m->padPedido.exchange (-1); pd >= 0) carregaPad (pd);
+
+    // captura pronta → vira a amostra (trecho em silêncio é descartado)
+    if (capPronta.exchange (false))
+    {
+        const int len = juce::jmin (capLen.load(), capBuf.getNumSamples());
+        if (len > 0 && capBuf.getMagnitude (0, len) > 0.01f)
+        {
+            juce::AudioBuffer<float> b (2, len);
+            for (int c = 0; c < 2; ++c) b.copyFrom (c, 0, capBuf, c, 0, len);
+            selIni = 0.0f; selFim = 1.0f;
+            instalaAmostra (b, fs, "CAPTURA " + juce::String (capBars.load()) + (capBars.load() > 1 ? " BARS" : " BAR"), capOff.load(), true);
+            capVazia = false;
+        }
+        else capVazia = true;
+    }
+    {
+        const juce::ScopedLock sl (travaAmostra);
+        if (! aposentadas.empty()) recolheAposentadas (false);
+    }
 
     // GROOVE: STYLE / BARS / GRID mudou → refaz o pattern (a não ser com LOCK GRID)
     const int es = (int) valor (kEstilo), gb = (int) valor (kGBars), gg = (int) valor (kGGrid);
@@ -614,6 +857,21 @@ void RetalhoProcessor::getStateInformation (juce::MemoryBlock& destData)
         pd.copyPropertiesFrom (t, nullptr);
         state.appendChild (pd, nullptr);
     }
+    {
+        const juce::ScopedLock sl (travaAmostra);
+        if (origBuf.getNumSamples() > 0 && origB64.isNotEmpty())
+        {
+            juce::ValueTree am ("AMOSTRA");
+            am.setProperty ("nome", origNome, nullptr);
+            am.setProperty ("fs", origFs, nullptr);
+            am.setProperty ("off", origOff, nullptr);
+            am.setProperty ("ini", selIni.load(), nullptr);
+            am.setProperty ("fim", selFim.load(), nullptr);
+            am.setProperty ("flac", origB64, nullptr);
+            state.appendChild (am, nullptr);
+        }
+    }
+    state.setProperty ("capbars", capBars.load(), nullptr);
     slots[ab.load()] = fotoCompleta();
     for (int i = 0; i < 2; ++i)
         if (slots[i].isValid())
@@ -655,6 +913,41 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
         if (s.isValid()) { juce::ValueTree c ("CENA"); c.copyPropertiesFrom (s, nullptr); slots[i] = c; }
         else slots[i] = {};
     }
+    // a amostra do projeto (FLAC em base64)
+    capBars = juce::jlimit (1, 8, (int) vt.getProperty ("capbars", 2));
+    {
+        auto am = vt.getChildWithName ("AMOSTRA");
+        const juce::String b64 = am.isValid() ? am.getProperty ("flac", "").toString() : juce::String();
+        bool mesma;
+        { const juce::ScopedLock sl (travaAmostra); mesma = b64 == origB64 && ! xml->hasAttribute ("sel"); }   // a 2ª foto refaz do FLAC (testa o projeto reaberto)
+        if (b64.isEmpty()) { if (! mesma) limpaAmostra(); }
+        else if (! mesma)
+        {
+            juce::MemoryOutputStream mo;
+            bool ok = juce::Base64::convertFromBase64 (mo, b64);
+            if (ok)
+            {
+                juce::FlacAudioFormat flac;
+                std::unique_ptr<juce::AudioFormatReader> r (flac.createReaderFor (new juce::MemoryInputStream (mo.getData(), mo.getDataSize(), true), true));
+                ok = r != nullptr && r->lengthInSamples > 0;
+                if (ok)
+                {
+                    juce::AudioBuffer<float> b (juce::jlimit (1, 2, (int) r->numChannels), (int) r->lengthInSamples);
+                    r->read (&b, 0, b.getNumSamples(), 0, true, true);
+                    instalaAmostra (b, (double) am.getProperty ("fs", r->sampleRate), am.getProperty ("nome", "AMOSTRA").toString(),
+                                    (double) am.getProperty ("off", 0.0), false);
+                    const juce::ScopedLock sl (travaAmostra);
+                    origB64 = b64;
+                }
+            }
+        }
+        if (am.isValid())
+        {
+            selIni = juce::jlimit (0.0f, 1.0f, (float) am.getProperty ("ini", 0.0f));
+            selFim = juce::jlimit (0.0f, 1.0f, (float) am.getProperty ("fim", 1.0f));
+        }
+    }
+    if ((int) vt.getProperty ("capturar", 0) > 0) capturar ((int) vt.getProperty ("capturar", 2));   // programa da foto
     for (int i = vt.getNumChildren() - 1; i >= 0; --i)
         if (! vt.getChild (i).hasType ("PARAM")) vt.removeChild (i, nullptr);
     const bool fotoGroove = xml->hasAttribute ("sel");   // programa da foto (shots): 2ª foto na aba GROOVE
