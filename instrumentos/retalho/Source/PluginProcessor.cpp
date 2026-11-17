@@ -1225,12 +1225,7 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
     const bool fotoGroove = xml->hasAttribute ("sel");   // programa da foto (shots): 2ª foto na aba GROOVE
     apvts.replaceState (vt);
     ultimoEstilo = (int) valor (kEstilo); ultimoBars = (int) valor (kGBars); ultimoGrid = (int) valor (kGGrid);
-    if (fotoGroove)   // a 2ª foto mostra o PRO na aba GROOVE (a 1ª é o SIMPLE)
-    {
-        uiPro = 1;
-        aplicaPreset (presetPorNome ("OFFBEAT VOX"));
-        define (kGrooveOn, 1.0f);
-    }
+    if (fotoGroove) uiPro = 0;   // 0.1.4: a 2ª foto é o ESTICA na tela principal (o shots já pôs modo/direção/intensidade)
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new RetalhoProcessor(); }

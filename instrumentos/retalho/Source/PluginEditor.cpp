@@ -1871,7 +1871,7 @@ void RetalhoEditor::ondaGrande (juce::Graphics& g, juce::Rectangle<float> r)
     const int md = escolha (kModo);
     const bool est = md == mEstica, pic = md == mPicote;
     const juce::Colour corM = est ? corDir (escolha (kEDir)) : cAmb;
-    const auto in = r.reduced (18, 0).withTrimmedTop (44).withTrimmedBottom (est ? 76 : 34);
+    const auto in = r.reduced (18, 0).withTrimmedTop (44).withTrimmedBottom (est ? 76 : 52);   // PICOTE: espaço p/ o nome do efeito sob a onda sem bater na legenda
     const float W = in.getWidth(), cy = in.getCentreY(), hh = in.getHeight() * 0.5f;
     const int C = RetalhoProcessor::colunas;
 
@@ -2079,7 +2079,7 @@ void RetalhoEditor::controlesPicote (juce::Graphics& g, float y)
                    [this, i] { proc.define (kQuanto, (float) i); }, 12.0f);
         const int lp = vista.valida && vista.modo == mPicote ? juce::roundToInt (vista.limpo * 100.0f) : 0;
         rotulo (g, { r.getX() + 14, y + 108, r.getWidth() - 28, 22 }, juce::String (lp) + u8 ("% DA VOZ LIMPA"), cTx, juce::Justification::centredLeft, 15.0f, true);
-        rotulo (g, { r.getX() + 14, y + 132, r.getWidth() - 28, 28 }, u8 ("o efeito cai no fim da frase e do compasso"), cDim, juce::Justification::centredLeft, 9.0f);
+        rotulo (g, { r.getX() + 14, y + 132, r.getWidth() - 28, 28 }, u8 ("efeito no fim da frase"), cDim, juce::Justification::centredLeft, 9.0f);
     }
     // RITMO
     {
@@ -2105,7 +2105,7 @@ void RetalhoEditor::controlesPicote (juce::Graphics& g, float y)
         rotulo (g, { rm.getRight(), y + 50, rp.getX() - rm.getRight(), 46 }, ch::length[lim (l, 0, 3)], cAmb, juce::Justification::centred, 14.0f, true);
         const double seg = vista.valida ? (double) vista.len / juce::jmax (1.0, vista.fs) : 0.0;
         if (seg > 0.0)
-            rotulo (g, { r.getX() + 14, y + 112, r.getWidth() - 28, 16 }, juce::String (seg, 1).replaceCharacter ('.', ',') + u8 (" s no tempo do projeto"), cMu, juce::Justification::centredLeft, 10.0f);
+            rotulo (g, { r.getX() + 14, y + 112, r.getWidth() - 28, 16 }, juce::String (seg, 1).replaceCharacter ('.', ',') + u8 (" s no projeto"), cMu, juce::Justification::centredLeft, 10.0f);
     }
     // SAÍDA
     {
@@ -2382,6 +2382,7 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
         const float xp = x0 + (x1 - x0) * pa;
         agulha (g, xp, w.getY() + 1, w.getBottom() - 1, cVerde);
     }
+    g.setColour (juce::Colours::black.withAlpha (0.78f)); g.fillRect (w.getX() + 1, w.getBottom() - 14, w.getWidth() - 2, 13.0f);   // fundo: o texto não briga com a onda nem com o marcador
     rotulo (g, { w.getX() + 6, w.getBottom() - 13, w.getWidth() - 12, 12 },
             u8 ("O EFEITO COME\xc3\x87" "A NO \xe2\x96\xbc \xc2\xb7 ARRASTE NA ONDA = TRECHO \xc2\xb7 DUPLO CLIQUE = INTEIRA"), cDim, juce::Justification::centredRight, 8.0f);
 }
