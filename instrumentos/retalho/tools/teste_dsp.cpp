@@ -372,7 +372,7 @@ int main()
         const auto t0 = std::chrono::steady_clock::now();
         for (int d = 0; d < numDirecoes; ++d)
         {
-            Cena c; c.v[kModo] = mEstica; c.v[kEDir] = (float) d; c.v[kEInt] = 100;
+            Cena c; c.v[kModo] = mEstica; c.v[kEDir] = (float) d; c.v[kEInt] = 100; c.v[kEForma] = foSobe;
             std::vector<Grao> gs;
             renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l.data(), r.data(), &gs);
             renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l2.data(), r2.data(), nullptr);
@@ -380,18 +380,186 @@ int main()
             for (int64_t i = 0; i < len; ++i) { e += (double) l[(size_t) i] * l[(size_t) i]; pk = std::max (pk, std::abs (l[(size_t) i]) + std::abs (r[(size_t) i])); igual = igual && l[(size_t) i] == l2[(size_t) i]; }
             som = som && e / (double) len > 1e-5 && ! gs.empty();
             alto = alto || pk > pv * 1.001f;
-            float mn = 1, mx = 0;
-            for (auto& g : gs) { mn = std::min (mn, g.src); mx = std::max (mx, g.src); }
-            if (d == esCongela) espalhaCongela = mx - mn;
+            // CONGELA com SOBE: no último quarto a cabeça quase não anda; MEIO TEMPO: anda a frase toda
+            float mn = 1, mx = 0, mn4 = 1, mx4 = 0;
+            for (auto& g : gs)
+            {
+                mn = std::min (mn, g.src); mx = std::max (mx, g.src);
+                if (g.t0 > 0.8f) { mn4 = std::min (mn4, g.src); mx4 = std::max (mx4, g.src); }
+            }
+            if (d == esCongela) espalhaCongela = mx4 - mn4;
             if (d == esMeio) espalhaMeio = mx - mn;
         }
         const double s = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();
         confere (som && ! alto, "16. ESTICA: 6 dire\xc3\xa7\xc3\xb5" "es soam e nunca passam do volume da voz");
         confere (igual, "16b. ESTICA: mesmo SEED = mesmo resultado");
         std::snprintf (buf, sizeof buf, "(CONGELA anda %.0f%% da amostra; MEIO TEMPO %.0f%%)", espalhaCongela * 100, espalhaMeio * 100);
-        confere (espalhaCongela < 0.03 && espalhaMeio > 0.2, "16c. ESTICA: CONGELA fica num ponto, MEIO TEMPO anda", buf);
+        confere (espalhaCongela < 0.03 && espalhaMeio > 0.2, "16c. ESTICA: CONGELA vai parando, MEIO TEMPO anda", buf);
         std::snprintf (buf, sizeof buf, "(12 renders de 2 s em %.0f ms)", s * 1000);
         confere (s < 3.0, "16d. ESTICA: render r\xc3\xa1pido na tela", buf);
+    }
+
+    // 16e. ESTICA: MOVIMENTO 0 = os knobs parados (a direção não muda nada); VARIAR (SEED) muda o resultado
+    {
+        const int N = (int) (4.0 * fs);
+        std::vector<float> a ((size_t) N), b ((size_t) N);
+        for (int i = 0; i < N; ++i) { a[(size_t) i] = voz (i / fs); b[(size_t) i] = a[(size_t) i]; }
+        Trecho tr; tr.d[0] = a.data(); tr.d[1] = b.data(); tr.n = N; tr.base = 0;
+        const int64_t len = (int64_t) (2.0 * fs);
+        std::vector<float> l1 ((size_t) len), r1 ((size_t) len), l2 ((size_t) len), r2 ((size_t) len);
+        Cena c; c.v[kModo] = mEstica; c.v[kEInt] = 0; c.v[kEDir] = esMeio;
+        renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l1.data(), r1.data(), nullptr);
+        c.v[kEDir] = esTunel;
+        renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l2.data(), r2.data(), nullptr);
+        double d0 = 0;
+        for (int64_t i = 0; i < len; ++i) d0 = std::max (d0, (double) std::abs (l1[(size_t) i] - l2[(size_t) i]));
+        c.v[kEInt] = 80; c.v[kEDir] = esEstilhaca; c.v[kSeed] = 1;
+        renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l1.data(), r1.data(), nullptr);
+        c.v[kSeed] = 2;
+        renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l2.data(), r2.data(), nullptr);
+        double d1 = 0;
+        for (int64_t i = 0; i < len; ++i) d1 += std::abs (l1[(size_t) i] - l2[(size_t) i]);
+        d1 /= (double) len;
+        // e o knob grande mexe nos knobs: o caminho da direção no fim da frase (SOBE) é diferente do começo
+        Cena k; k.v[kEDir] = esMeio; k.v[kEInt] = 100; k.v[kEForma] = foSobe;
+        const auto e0 = esticaEf (k, movimentoEm (k, 0.0, 1.0)), e1 = esticaEf (k, movimentoEm (k, 1.0, 1.0));
+        std::snprintf (buf, sizeof buf, "(dire\xc3\xa7\xc3\xa3o com MOV 0: %.1e \xc2\xb7 SEED 1 x 2: %.3f \xc2\xb7 VEL %.0f%% \xe2\x86\x92 %.0f%%)", d0, d1, e0.vel, e1.vel);
+        confere (d0 < 1e-6 && d1 > 0.003 && e0.vel > 99 && e1.vel < 30, "16e. ESTICA: MOVIMENTO leva os knobs; VARIAR muda o som", buf);
+    }
+
+    // 17. sem estalo: o resultado nunca pula mais que a própria voz (PICOTE, ESTICA, GROOVE)
+    {
+        const int N = (int) (8.0 * fs);
+        std::vector<float> a ((size_t) N), b ((size_t) N);
+        double saltoVoz = 0;
+        for (int i = 0; i < N; ++i) { a[(size_t) i] = voz (i / fs); b[(size_t) i] = a[(size_t) i]; if (i) saltoVoz = std::max (saltoVoz, (double) std::abs (a[(size_t) i] - a[(size_t) i - 1])); }
+        Trecho tr; tr.d[0] = a.data(); tr.d[1] = b.data(); tr.n = N; tr.base = 0;
+        double pior = 0;
+        // PICOTE: todas as receitas, MUITO, 2 BARS
+        for (int rc = 0; rc < numReceitas; ++rc)
+        {
+            Cena c; c.v[kModo] = mPicote; c.v[kReceita] = (float) rc; c.v[kQuanto] = 2; c.v[kLength] = 2;
+            Contexto cx; cx.fs = fs; cx.spb = fs * 60 / 120; cx.inicio = 0; cx.offline = true;
+            Plano p; monta (c, cx, p);
+            Render r; r.inicia (p, (float) fs);
+            float ant = 0;
+            int k = 0;
+            for (int64_t s2 = 0; s2 < p.len; ++s2)
+            {
+                float x, y; r.amostra (s2, N - 1, tr, x, y);
+                while (k + 1 < p.n && s2 >= p.f[k + 1].t0) ++k;
+                // tom acima = a onda fica mais rápida: o salto permitido sobe junto (o estalo é salto SEM tom)
+                const double sobe = std::pow (2.0, std::max (0.0f, std::max (p.f[k].st, k > 0 ? p.f[k - 1].st : 0.0f)) / 12.0);
+                if (s2) pior = std::max (pior, (double) std::abs (x - ant) / sobe);
+                ant = x;
+            }
+        }
+        // ESTICA: as 6 direções, MOVIMENTO 100, formas variadas
+        const int64_t len = (int64_t) (4.0 * fs);
+        std::vector<float> l ((size_t) len), r ((size_t) len);
+        for (int d = 0; d < numDirecoes; ++d)
+        {
+            Cena c; c.v[kModo] = mEstica; c.v[kEDir] = (float) d; c.v[kEInt] = 100; c.v[kEForma] = (float) (d % numFormas);
+            renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l.data(), r.data(), nullptr);
+            const auto e = esticaEf (c, 1.0);
+            const double sobe = std::pow (2.0, std::max (0.0, e.tom + e.tomJit + (e.pOit > 0 ? 12.0 : 0.0)) / 12.0);
+            for (int64_t i = 1; i < len; ++i) pior = std::max (pior, (double) std::abs (l[(size_t) i] - l[(size_t) i - 1]) / sobe);
+        }
+        std::snprintf (buf, sizeof buf, "(maior salto %.3f; a voz %.3f)", pior, saltoVoz);
+        confere (pior <= saltoVoz * 1.15, "17. sem estalo: PICOTE e ESTICA n\xc3\xa3o pulam mais que a voz", buf);
+    }
+
+    // 18. GROOVE melódico: acha as sílabas e a altura delas; com AFINAR, todas na linha de baixo saem na mesma nota
+    {
+        const int N = (int) (4.0 * fs);
+        std::vector<float> a ((size_t) N), b ((size_t) N);
+        for (int i = 0; i < N; ++i) { a[(size_t) i] = voz (i / fs); b[(size_t) i] = a[(size_t) i]; }
+        Trecho tr; tr.d[0] = a.data(); tr.d[1] = b.data(); tr.n = N; tr.base = 0;
+        std::vector<int64_t> at;
+        for (int k = 0; k < 16; ++k) at.push_back ((int64_t) (k * 0.25 * fs));
+        Silaba sl[maxSilabas];
+        const int ns = silabasDe (tr, at, 0, N, fs, sl);
+        static const int notas[8] = { 54, 57, 61, 59, 57, 54, 52, 57 };
+        double erroAltura = 0;
+        for (int i = 0; i < ns; ++i) erroAltura = std::max (erroAltura, std::abs ((double) sl[i].midi - notas[i % 8]));
+        const float base = notaBase (sl, ns);
+        // 1 compasso a 120: uma nota a cada tempo, sílabas 0..3 (54, 57, 61, 59), todas na linha 0
+        NotaG nt[maxPassosG];
+        for (int k = 0; k < 4; ++k) { nt[k * 4].on = true; nt[k * 4].linha = 0; nt[k * 4].silaba = k; nt[k * 4].dur = 3; }
+        Cena c; c.v[kModo] = mMelodia; c.v[kGAfina] = 1; c.v[kGEsc] = 0;
+        const double spb = fs * 0.5;
+        const int64_t len = (int64_t) (4 * spb);
+        std::vector<float> l ((size_t) len), r ((size_t) len);
+        renderMelodia (c, tr, sl, ns, nt, fs, spb, len, base, -1, l.data(), r.data());
+        Trecho to; to.d[0] = l.data(); to.d[1] = r.data(); to.n = len; to.base = 0;
+        double erroAfina = 0;
+        for (int k = 0; k < 4; ++k)
+        {
+            const float m = alturaTrecho (to, (int64_t) (k * spb), (int64_t) (0.11 * fs), fs);
+            erroAfina = std::max (erroAfina, m < 0 ? 99.0 : std::abs ((double) m - base));
+        }
+        // linha 4 da escala menor = +7 st
+        nt[4].linha = 4;
+        renderMelodia (c, tr, sl, ns, nt, fs, spb, len, base, -1, l.data(), r.data());
+        const float m4 = alturaTrecho (to, (int64_t) spb, (int64_t) (0.11 * fs), fs);
+        // os 8 padrões e o VARIAR saem com notas dentro do tamanho
+        bool padOk = true;
+        for (int i = 0; i < 8; ++i)
+        {
+            NotaG pn[maxPassosG]; geraPadraoG (i, 32, pn);
+            int q = 0; for (int k = 0; k < 32; ++k) q += pn[k].on ? 1 : 0;
+            for (int k = 32; k < maxPassosG; ++k) padOk = padOk && ! pn[k].on;
+            padOk = padOk && q >= 6;
+        }
+        NotaG v1[maxPassosG], v2[maxPassosG];
+        sorteiaPadraoG (1, 32, v1); sorteiaPadraoG (2, 32, v2);
+        bool difere = false;
+        for (int k = 0; k < 32; ++k) difere = difere || empacotaNota (v1[k]) != empacotaNota (v2[k]);
+        bool pacote = true;
+        for (int k = 0; k < 32; ++k) pacote = pacote && empacotaNota (abreNota (empacotaNota (v1[k]))) == empacotaNota (v1[k]);
+        std::snprintf (buf, sizeof buf, "(%d s\xc3\xadlabas, erro de altura %.2f st; base %.0f; afinado %.2f st; linha 4 = %+.1f st)", ns, erroAltura, base, erroAfina, m4 - base);
+        confere (ns == 8 && erroAltura < 0.4, "18. GROOVE: as s\xc3\xadlabas e a altura de cada uma", buf);
+        confere (erroAfina < 0.5 && std::abs (m4 - base - 7.0) < 0.5, "18b. GROOVE: AFINAR leva cada s\xc3\xadlaba para a nota da linha");
+        confere (padOk && difere && pacote, "18c. GROOVE: 8 padr\xc3\xb5" "es e o VARIAR montam notas v\xc3\xa1lidas");
+    }
+
+    // 15e. PICOTE: pedaço marcado à mão manda (efeito onde marcou; LIMPA tira o efeito); MANUAL = só os marcados
+    {
+        Cena c; c.v[kModo] = mPicote; c.v[kReceita] = 0; c.v[kQuanto] = 3; c.v[kLength] = 2;
+        Contexto cx; cx.fs = fs; cx.spb = fs * 60 / 120; cx.inicio = 0; cx.offline = true;
+        PedacoManual pm[2];
+        pm[0].u0 = 4; pm[0].u1 = 6; pm[0].tipo = pkRe;
+        pm[1].u0 = 10; pm[1].u1 = 14; pm[1].tipo = pkRepete;
+        cx.manual = pm; cx.nManual = 2;
+        Plano p; monta (c, cx, p);
+        const int64_t u = (int64_t) (cx.spb * 0.5);
+        bool ok = p.n > 0;
+        for (int k = 0; k < p.n; ++k)
+        {
+            const auto& f = p.f[k];
+            const int un = (int) (f.t0 / u);
+            const int esperado = (un >= 4 && un < 6) ? pkRe : ((un >= 10 && un < 14) ? pkRepete : -1);
+            ok = ok && f.tipoPasso == esperado;
+        }
+        // LIMPA por cima do sorteio
+        c.v[kQuanto] = 2;
+        PedacoManual lp; lp.u0 = 0; lp.u1 = 16; lp.tipo = -1;
+        cx.manual = &lp; cx.nManual = 1;
+        Plano p2; monta (c, cx, p2);
+        for (int k = 0; k < p2.n; ++k) if (p2.f[k].t0 < 16 * u) ok = ok && p2.f[k].tipoPasso < 0;
+        confere (ok, "15e. PICOTE: peda\xc3\xa7os marcados \xc3\xa0 m\xc3\xa3o (MANUAL e LIMPA)");
+    }
+
+    // 15f. 16 BARS: a frase fecha (PICOTE e ESTICA)
+    {
+        Cena c; c.v[kModo] = mPicote; c.v[kLength] = 5; c.v[kQuanto] = 1;
+        Contexto cx; cx.fs = fs; cx.spb = fs * 60 / 140; cx.inicio = 0; cx.offline = true;
+        Plano p; monta (c, cx, p);
+        int64_t fim = 0;
+        for (int k = 0; k < p.n; ++k) fim = std::max<int64_t> (fim, p.f[k].t0 + p.f[k].dur);
+        const bool ok = p.n > 0 && p.n < Plano::maxF && fim == p.len && p.len == (int64_t) std::llround (16 * 4 * cx.spb);
+        std::snprintf (buf, sizeof buf, "(%d fatias)", p.n);
+        confere (ok, "15f. PICOTE: 16 BARS fecha a frase", buf);
     }
 
     std::printf ("\n%s (%d falha%s)\n", falhas ? "BANCADA REPROVADA" : "BANCADA OK", falhas, falhas == 1 ? "" : "s");

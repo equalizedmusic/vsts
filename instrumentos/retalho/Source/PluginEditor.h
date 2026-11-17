@@ -34,7 +34,7 @@ public:
 private:
     struct Knob { int campo; juce::Point<float> c; float r; };   // campo < 0 = macro do SIMPLE (−1 − índice)
     struct Alvo { juce::Rectangle<float> r; std::function<void()> f; };
-    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw, arMacro, arSel };
+    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw, arMacro, arSel, arPedaco, arNota };
 
     // SIMPLE (tela padrão desde 16/11/2026): 4 cartões de efeito, a onda do resultado, 5 macros, QUANDO TOCA e os pads.
     // PRO = a tela completa (EDIT / COMPLEX / GROOVE). A troca é só de tela: o som e os parâmetros são os mesmos.
@@ -44,6 +44,16 @@ private:
     void ondaGrande (juce::Graphics&, juce::Rectangle<float> r);      // 0.1.4: a onda grande da tela principal
     void controlesPicote (juce::Graphics&, float y);
     void controlesEstica (juce::Graphics&, float y);
+    void controlesGroove (juce::Graphics&, float y);
+    void desenhaOnda (juce::Graphics&, juce::Rectangle<float> r, juce::Rectangle<float> in);   // a camada guardada da onda
+    juce::Image cacheOnda;
+    uint64_t chaveOnda = 0, assinatura = 0;
+    juce::Rectangle<float> areaOnda, areaGrade;
+    int selU0 = -1, selU1 = -1;          // PICOTE: o trecho sendo marcado (colcheias)
+    int unidadeEm (float x) const;
+    void menuPedaco();
+    void menuNota (int k);
+    juce::String textoV (int k, float v) const;
     void exportar (juce::Graphics&, juce::Rectangle<float> r);
     bool verOriginal = false;
     juce::String avisoExport;

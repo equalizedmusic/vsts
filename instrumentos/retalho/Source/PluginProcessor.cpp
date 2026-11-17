@@ -91,7 +91,8 @@ RetalhoProcessor::RetalhoProcessor()
     for (int k = 0; k < numCampos; ++k) p[k] = apvts.getRawParameterValue (info (k).id);
     eventos.reserve (256);
     // pads de fábrica
-    const char* fabrica[numPads] = { "PSY RISER 1/32", "TAPE DROP", "GLITCH 16", "OFFBEAT VOX", "GALLOP CHOP", nullptr };
+    // 0.1.5: sem pads de fábrica (o AVANÇADO saiu; uma nota MIDI não pode trocar o modo da tela principal)
+    const char* fabrica[numPads] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
     for (int i = 0; i < numPads; ++i)
     {
         const int pi = fabrica[i] != nullptr ? presetPorNome (fabrica[i]) : -1;
@@ -106,12 +107,20 @@ RetalhoProcessor::RetalhoProcessor()
     vistaAtual.rMin.assign (colunas, 0.0f); vistaAtual.rMax.assign (colunas, 0.0f);
     slots[0] = fotoCompleta();
     ultimoEstilo = (int) valor (kEstilo); ultimoBars = (int) valor (kGBars); ultimoGrid = (int) valor (kGGrid);
+    {
+        NotaG nt[maxPassosG];
+        geraPadraoG (0, 32, nt);
+        for (int k = 0; k < maxPassosG; ++k) notasG[k] = empacotaNota (nt[k]);
+    }
+    renderizador = std::make_unique<Renderizador> (*this);
+    renderizador->startThread (juce::Thread::Priority::low);
     startTimerHz (15);
 }
 
 RetalhoProcessor::~RetalhoProcessor()
 {
     stopTimer();
+    if (renderizador != nullptr) { renderizador->signalThreadShouldExit(); renderizador->notify(); renderizador->stopThread (4000); }
     delete ativa.exchange (nullptr);
     recolheAposentadas (true);
     delete resAtivo.exchange (nullptr);
@@ -129,14 +138,17 @@ bool RetalhoProcessor::arquivoDeAudio (const juce::String& caminho)
 void RetalhoProcessor::recolheAposentadas (bool tudo)
 {
     const int64_t fim = blocoFim.load();
-    for (auto it = aposentadas.begin(); it != aposentadas.end();)
-    {
-        if (tudo || fim > it->second) { delete it->first; it = aposentadas.erase (it); }
-        else ++it;
-    }
+    const juce::ScopedTryLock tl (travaRender);   // a linha do render pode estar lendo a amostra velha
+    if (tudo || tl.isLocked())
+        for (auto it = aposentadas.begin(); it != aposentadas.end();)
+        {
+            if (tudo || fim > it->second) { delete it->first; it = aposentadas.erase (it); }
+            else ++it;
+        }
+    const void* emUso = resUsoVelho.load();
     for (auto it = resAposentados.begin(); it != resAposentados.end();)
     {
-        if (tudo || fim > it->second) { delete it->first; it = resAposentados.erase (it); }
+        if (tudo || (fim > it->second && (const void*) it->first != emUso)) { delete it->first; it = resAposentados.erase (it); }
         else ++it;
     }
 }
@@ -151,6 +163,10 @@ void RetalhoProcessor::publicaResultado (bool tem)
         const int n = (int) outR[0].size();
         r->buf.setSize (2, n);
         for (int ch = 0; ch < 2; ++ch) r->buf.copyFrom (ch, 0, outR[ch].data(), n);
+        // o loop volta do fim para o começo: 1 ms de subida e 6 ms de descida nas pontas (era um estalo a cada volta)
+        const int fi = juce::jmin (n / 4, (int) (0.001 * fs)), fo = juce::jmin (n / 4, (int) (0.006 * fs));
+        if (fi > 0) r->buf.applyGainRamp (0, fi, 0.0f, 1.0f);
+        if (fo > 0) r->buf.applyGainRamp (n - fo, fo, 1.0f, 0.0f);
     }
     const juce::ScopedLock sl (travaAmostra);
     Resultado* velho = resAtivo.exchange (r.release());
@@ -161,6 +177,7 @@ void RetalhoProcessor::publicaResultado (bool tem)
 // reamostra a origem na taxa do host e troca a amostra que o áudio toca (a antiga é apagada quando o áudio largar)
 void RetalhoProcessor::montaAtiva()
 {
+    const juce::ScopedLock sr (travaRender);
     std::unique_ptr<Amostra> a;
     {
         const juce::ScopedLock sl (travaAmostra);
@@ -256,8 +273,11 @@ bool RetalhoProcessor::carregaArquivo (const juce::File& f)
     selIni = 0.0f; selFim = 1.0f;
     ponto = 0;
     instalaAmostra (b, r->sampleRate, f.getFileNameWithoutExtension(), 0.0, true);
-    ouvirAoCarregar = true;
-    atualizaVista (true);   // renderiza já (e toca) — não espera o timer nem o play do projeto
+    {
+        const juce::ScopedLock sr (travaRender);
+        ouvirAoCarregar = true;
+    }
+    pedeRender (true);   // renderiza já (e toca) — não espera o timer nem o play do projeto
     return true;
 }
 
@@ -270,6 +290,7 @@ void RetalhoProcessor::capturar (int bars)
 
 void RetalhoProcessor::limpaAmostra()
 {
+    const juce::ScopedLock sr (travaRender);
     {
         const juce::ScopedLock sl (travaAmostra);
         origBuf.setSize (0, 0);
@@ -284,7 +305,11 @@ void RetalhoProcessor::limpaAmostra()
     // o resultado era da amostra: some junto (a janela ao vivo volta no próximo compasso tocado)
     prevEstado = 0;
     snap[0].clear(); snap[1].clear();
-    vistaAtual.valida = false; ++vistaAtual.versao;
+    {
+        const juce::ScopedLock sv (travaVista);
+        vistaAtual.valida = false; ++vistaAtual.versao;
+        versaoPub = vistaAtual.versao;
+    }
     pontoFr = -1.0f; nPontos = 0; ponto = 0;
 }
 
@@ -376,6 +401,15 @@ void RetalhoProcessor::aplicaModo (int modo)
         aplicaCena (x);
         presetNome = juce::String ("ESTICA ") + juce::String::fromUTF8 ("\xc2\xb7 ") + juce::String::fromUTF8 (ch::direcao[lim (x.i (kEDir), 0, 5)]);
     }
+    else if (modo == mMelodia)
+    {
+        // GROOVE melódico: grade de 1/16 em 1, 2 ou 4 BARS (abre em 2)
+        Cena x = cenaAtual();
+        x.v[kModo] = mMelodia;
+        if (x.i (kLength) < 1 || x.i (kLength) > 3) x.v[kLength] = 2;
+        aplicaCena (x);
+        presetNome = juce::String ("GROOVE ") + juce::String::fromUTF8 ("\xc2\xb7 ") + juce::String::fromUTF8 (ch::gpadrao[lim (x.i (kGPadrao), 0, 7)]);
+    }
     else
     {
         const Cena atual = cenaAtual();
@@ -388,7 +422,8 @@ void RetalhoProcessor::aplicaReceita (int i)
 {
     const Cena atual = cenaAtual();
     Cena x;   // parte da padrão (nada do PRO sobra), mas guarda o que é da tela principal
-    for (int k : { kQuanto, kRitmo, kFadeFim, kWidth, kEDir, kEInt, kEGrao, kEEspaco, kEVel, kEEst, kEGrade, kETom, kSeed })
+    for (int k : { kQuanto, kRitmo, kFadeFim, kWidth, kEDir, kEInt, kEGrao, kEEspaco, kEVel, kEEst, kEGrade, kETom, kSeed,
+                   kEForma, kGEsc, kGAfina, kGPadrao, kGSwing, kGPitch, kMixVoz })
         x.v[k] = atual.v[k];
     x.v[kModo] = mPicote;
     x.v[kReceita] = (float) ((i % numReceitas + numReceitas) % numReceitas);
@@ -400,7 +435,80 @@ void RetalhoProcessor::aplicaReceita (int i)
 
 void RetalhoProcessor::variar()
 {
-    define (kSeed, (float) ((int) valor (kSeed) % 999 + 1));
+    const int sd = (int) valor (kSeed) % 999 + 1;
+    define (kSeed, (float) sd);
+    const int md = juce::roundToInt (valor (kModo));
+    if (md == mEstica)
+    {
+        // ESTICA: outra FORMA de movimento (nunca a mesma de agora) e outros grãos
+        const int atual = juce::roundToInt (valor (kEForma));
+        define (kEForma, (float) ((atual + 1 + (int) (hash01 ((uint32_t) sd * 31u) * (numFormas - 1))) % numFormas));
+    }
+    else if (md == mMelodia)
+    {
+        NotaG nt[maxPassosG];
+        sorteiaPadraoG ((uint32_t) sd, passosGroove(), nt);
+        for (int k = 0; k < maxPassosG; ++k) notasG[k] = empacotaNota (nt[k]);
+        presetNome = "GROOVE #" + juce::String (sd);
+    }
+}
+
+int RetalhoProcessor::passosGroove() const
+{
+    return juce::jlimit (16, maxPassosG, (int) std::lround (compassosLength (juce::jlimit (1, 3, juce::roundToInt (valor (kLength)))) * 16.0));
+}
+
+void RetalhoProcessor::aplicaPadraoG (int i)
+{
+    i = ((i % 8) + 8) % 8;
+    define (kGPadrao, (float) i);
+    NotaG nt[maxPassosG];
+    geraPadraoG (i, passosGroove(), nt);
+    for (int k = 0; k < maxPassosG; ++k) notasG[k] = empacotaNota (nt[k]);
+    presetNome = juce::String ("GROOVE ") + juce::String::fromUTF8 ("\xc2\xb7 ") + juce::String::fromUTF8 (ch::gpadrao[i]);
+}
+
+void RetalhoProcessor::marcaPedaco (int u0, int u1, int tipo)
+{
+    if (u1 <= u0) return;
+    const juce::ScopedLock sl (travaNotas);
+    // o novo manda: o que ficou inteiro por baixo sai, o que cruza é aparado
+    std::vector<PedacoManual> v;
+    for (const auto& pm : manuais)
+    {
+        if (pm.u1 <= u0 || pm.u0 >= u1) { v.push_back (pm); continue; }
+        if (pm.u0 < u0) { PedacoManual a = pm; a.u1 = (int16_t) u0; v.push_back (a); }
+        if (pm.u1 > u1) { PedacoManual b = pm; b.u0 = (int16_t) u1; v.push_back (b); }
+    }
+    if (tipo >= -1)   // −2 = só tira as marcas daqui (volta ao sorteio)
+    {
+        PedacoManual n;
+        n.u0 = (int16_t) u0; n.u1 = (int16_t) u1; n.tipo = (int8_t) juce::jlimit (-1, numPk - 1, tipo);
+        v.push_back (n);
+    }
+    while ((int) v.size() > maxManuais) v.erase (v.begin());
+    manuais.swap (v);
+}
+
+void RetalhoProcessor::limpaPedacos()
+{
+    const juce::ScopedLock sl (travaNotas);
+    manuais.clear();
+}
+
+void RetalhoProcessor::pedeRender (bool forcar)
+{
+    if (forcar) renderForcar = true;
+    renderPedido = true;
+    if (renderizador != nullptr) renderizador->notify();
+}
+
+void RetalhoProcessor::trabalhaRender()
+{
+    if (! renderPedido.exchange (false)) return;
+    const bool f = renderForcar.exchange (false);
+    const juce::ScopedLock sl (travaRender);
+    atualizaVista (f);
 }
 
 void RetalhoProcessor::presetVizinho (int passo)
@@ -626,11 +734,21 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     m->process (buffer.getArrayOfWritePointers(), nch, n, val, tp, eventos.data(), (int) eventos.size());
 
-    // 0.1.4: com amostra, o PICOTE / ESTICA tocam o RESULTADO pronto, em loop no tempo do projeto, no lugar da amostra crua
+    // 0.1.4: com amostra, PICOTE / ESTICA / GROOVE tocam o RESULTADO pronto, em loop no tempo do projeto, no lugar da amostra
+    // crua. 0.1.5: render novo entra com 25 ms de crossfade (a troca seca estalava a cada knob)
     {
         const int md = (int) std::lround (val[kModo]);
         const Resultado* rs = resAtivo.load (std::memory_order_acquire);
-        if ((md == mPicote || md == mEstica) && rs != nullptr && ativa.load (std::memory_order_acquire) != nullptr
+        if ((const void*) rs != resVisto)
+        {
+            resVelho = resVisto;
+            resUsoVelho.store (resVelho);
+            resVisto = rs;
+            xfN = juce::jmax (1, (int) (0.025 * fs)); xfI = resVelho != nullptr ? 0 : xfN;
+        }
+        const Resultado* rv = xfI < xfN ? static_cast<const Resultado*> (resVelho) : nullptr;
+        float pr = -1.0f;
+        if ((md == mPicote || md == mEstica || md == mMelodia) && rs != nullptr && ativa.load (std::memory_order_acquire) != nullptr
             && capEstado.load() == 0 && val[kBypass] < 0.5f)
         {
             const int R = rs->buf.getNumSamples();
@@ -647,7 +765,19 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                     double ph = std::fmod (tp.ppq + i / spbS, Lb);
                     if (ph < 0.0) ph += Lb;
                     const int k = juce::jlimit (0, R - 1, (int) (ph * spbS));
-                    const float l = r0[k], r = r1[k];
+                    if (i == 0) pr = (float) k / (float) R;
+                    float l = r0[k], r = r1[k];
+                    if (rv != nullptr && xfI < xfN)
+                    {
+                        const int R2 = rv->buf.getNumSamples();
+                        double ph2 = std::fmod (tp.ppq + i / spbS, (double) R2 / spbS);
+                        if (ph2 < 0.0) ph2 += (double) R2 / spbS;
+                        const int k2 = juce::jlimit (0, R2 - 1, (int) (ph2 * spbS));
+                        const float gx = (float) xfI / (float) xfN;
+                        l = l * gx + rv->buf.getSample (0, k2) * (1.0f - gx);
+                        r = r * gx + rv->buf.getSample (1, k2) * (1.0f - gx);
+                        ++xfI;
+                    }
                     if (nch > 1)
                     {
                         buffer.setSample (0, i, buffer.getSample (0, i) * (1.0f - w) + l * w * gs);
@@ -657,6 +787,9 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 }
             }
         }
+        posRes = pr;
+        if (pr < 0.0f) xfI = xfN;   // não tocou o resultado neste bloco: o velho pode ir embora
+        if (xfI >= xfN) { xfI = xfN; resUsoVelho.store (nullptr); }
     }
 
     // preview: toca a janela no lugar da saída
@@ -665,20 +798,43 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     if (est == 1 && m->compassoVersao.load() != prevCv.load()) { prevEstado = est = 2; prevPos = 0; }
     if (est == 2)
     {
-        const int s = prevSlot.load(), len = juce::jmin (prevLen.load(), prevBuf[s].getNumSamples());
-        int pos = prevPos.load();
-        for (int i = 0; i < n; ++i)
+        const juce::SpinLock::ScopedTryLockType tl (travaPrevTam);
+        if (! tl.isLocked()) { for (int c = 0; c < nch; ++c) buffer.clear (c, 0, n); }   // buffer crescendo: 1 bloco mudo
+        else
         {
-            if (pos >= len)
+            const int s = prevSlot.load(), len = juce::jmin (prevLen.load(), prevBuf[s].getNumSamples());
+            if (s != prevSlotVisto)
             {
-                if (previewLoop.load() && len > 0) pos = 0;
-                else { for (int c = 0; c < nch; ++c) buffer.clear (c, i, n - i); prevEstado = 0; break; }
+                // render novo enquanto ouve: 25 ms de crossfade do buffer velho para o novo, na mesma posição
+                pxfDe = prevSlotVisto; prevSlotVisto = s;
+                pxfN = juce::jmax (1, (int) (0.025 * fs)); pxfI = 0;
             }
-            for (int c = 0; c < nch; ++c) buffer.setSample (c, i, prevBuf[s].getSample (juce::jmin (c, 1), pos));
-            ++pos;
+            int pos = prevPos.load();
+            if (len > 0 && pos >= len) pos = pos % len;
+            for (int i = 0; i < n; ++i)
+            {
+                if (pos >= len)
+                {
+                    if (previewLoop.load() && len > 0) pos = 0;
+                    else { for (int c = 0; c < nch; ++c) buffer.clear (c, i, n - i); prevEstado = 0; break; }
+                }
+                for (int c = 0; c < nch; ++c)
+                {
+                    float x = prevBuf[s].getSample (juce::jmin (c, 1), pos);
+                    if (pxfI < pxfN && pos < prevBuf[pxfDe].getNumSamples())
+                    {
+                        const float gx = (float) pxfI / (float) pxfN;
+                        x = x * gx + prevBuf[pxfDe].getSample (juce::jmin (c, 1), pos) * (1.0f - gx);
+                    }
+                    buffer.setSample (c, i, x);
+                }
+                if (pxfI < pxfN) ++pxfI;
+                ++pos;
+            }
+            prevPos = pos;
         }
-        prevPos = pos;
     }
+    else prevSlotVisto = prevSlot.load();
     blocoFim.store (nb, std::memory_order_release);
 }
 
@@ -704,7 +860,7 @@ void RetalhoProcessor::timerCallback()
     }
     {
         const juce::ScopedLock sl (travaAmostra);
-        if (! aposentadas.empty()) recolheAposentadas (false);
+        if (! aposentadas.empty() || ! resAposentados.empty()) recolheAposentadas (false);
     }
 
     // GROOVE: STYLE / BARS / GRID mudou → refaz o pattern (a não ser com LOCK GRID)
@@ -714,7 +870,7 @@ void RetalhoProcessor::timerCallback()
         if (valor (kLockGrid) < 0.5f) geraEstiloAgora();
         ultimoEstilo = es; ultimoBars = gb; ultimoGrid = gg;
     }
-    atualizaVista (false);
+    pedeRender (false);   // o cálculo vai para a linha do render (antes travava a tela a cada knob)
 }
 
 void RetalhoProcessor::atualizaVista (bool forcar)
@@ -854,7 +1010,7 @@ void RetalhoProcessor::vistaDaAmostra (const Amostra& am, bool forcar)
     const double bars = modo == mGroove ? (double) (c.i (kGBars) + 1) : compassosLength (c.i (kLength));
     const int64_t L = (int64_t) std::llround (bars * bpb * spb);
     const int64_t N = am.buf.getNumSamples();
-    if (L <= 0 || N < 256 || L > (int64_t) (fs * 30.0)) return;
+    if (L <= 0 || N < 256 || L > (int64_t) (fs * 70.0)) return;   // 16 BARS até ~55 BPM
 
     if (ataquesDe != (const void*) &am || ataquesN != (int) N)
     {
@@ -879,6 +1035,12 @@ void RetalhoProcessor::vistaDaAmostra (const Amostra& am, bool forcar)
     h = (h ^ (uint64_t) N) * 1099511628211ull;
     h = (h ^ (uint64_t) i1) * 1099511628211ull;
     h = (h ^ (uint64_t) (uintptr_t) &am) * 1099511628211ull;
+    {
+        // os pedaços marcados à mão (PICOTE) e as notas (GROOVE) também mudam o resultado
+        const juce::ScopedLock sl (travaNotas);
+        for (const auto& pm : manuais) h = (h ^ ((uint64_t) (uint16_t) pm.u0 | (uint64_t) (uint16_t) pm.u1 << 16 | (uint64_t) (uint8_t) pm.tipo << 32)) * 1099511628211ull;
+    }
+    for (int k = 0; k < maxPassosG; ++k) h = (h ^ (uint64_t) notasG[k].load()) * 1099511628211ull;
     if (! forcar && h == ultimoHash && snap[0].size() == (size_t) L) return;
     ultimoHash = h;
 
@@ -913,7 +1075,7 @@ void RetalhoProcessor::montaVista (const Cena& c, unsigned masc, double spb, dou
 {
     const int modo = c.i (kModo);
     const int64_t N = (int64_t) snap[0].size();
-    Vista& v = vistaAtual;
+    Vista v;   // monta fora da trava; a tela só vê o quadro pronto (troca no fim)
     v.spb = spb; v.bpb = bpb; v.fs = fs; v.len = L;
     v.ataques.clear();
     for (int i = 0; i < at.n; ++i) if (at.v[i] >= inicio && at.v[i] < inicio + L) v.ataques.push_back ((float) ((double) (at.v[i] - inicio) / (double) L));
@@ -942,15 +1104,44 @@ void RetalhoProcessor::montaVista (const Cena& c, unsigned masc, double spb, dou
     {
         // ESTICA: granular direto da amostra, do PONTO até o fim do trecho escolhido
         const int64_t fimReg = offline ? juce::jmax (inicio + 256, estFim) : tr.base + tr.n;
-        renderEstica (c, tr, inicio, fimReg, fs, spb, L, outR[0].data(), outR[1].data(), &v.graos);
+        renderEstica (c, tr, inicio, fimReg, fs, spb, L, outR[0].data(), outR[1].data(), &v.graos, bpb);
         v.plano.n = 0;
         v.chunkIni = v.chunkFim = 0.0f;
         v.regiaoSobreL = (float) ((double) (fimReg - inicio) / (double) L);
+    }
+    else if (modo == mMelodia)
+    {
+        // GROOVE melódico: as sílabas do PONTO em diante (dentro do trecho), nas notas da grade
+        v.plano.n = 0;
+        v.chunkIni = v.chunkFim = 0.0f;
+        const int64_t fimReg = offline ? juce::jmax (inicio + 256, estFim) : tr.base + tr.n;
+        const uint64_t chave = ((uint64_t) inicio * 1099511628211ull) ^ (uint64_t) fimReg ^ ((uint64_t) (uintptr_t) tr.d[0] << 7) ^ (uint64_t) ataquesA.size();
+        if (chave != silCacheChave)
+        {
+            silCacheN = silabasDe (tr, ataquesA, inicio, fimReg, fs, silCache);
+            silCacheBase = notaBase (silCache, silCacheN);
+            silCacheChave = chave;
+        }
+        NotaG nt[maxPassosG];
+        for (int k = 0; k < maxPassosG; ++k) nt[k] = abreNota (notasG[k].load());
+        renderMelodia (c, tr, silCache, silCacheN, nt, fs, spb, L, silCacheBase, inicio, outR[0].data(), outR[1].data());
+        for (int i = 0; i < silCacheN; ++i) v.sil[i] = silCache[i];
+        v.nSil = silCacheN;
+        v.baseMidi = silCacheBase;
+        v.amostraN = tr.n;
     }
     else if (modo != mGroove)
     {
         Contexto cx;
         cx.spb = spb; cx.bpb = bpb; cx.fs = fs; cx.inicio = inicio; cx.mascara = masc;
+        std::vector<PedacoManual> pm;
+        if (modo == mPicote)
+        {
+            const juce::ScopedLock sl (travaNotas);
+            pm = manuais;
+        }
+        cx.manual = pm.empty() ? nullptr : pm.data();
+        cx.nManual = (int) pm.size();
         int t, e;
         m->tomEmUso (val, t, e);
         cx.pcChunk = m->pcAgora.load() >= 0 ? m->pcAgora.load() : t;
@@ -989,7 +1180,7 @@ void RetalhoProcessor::montaVista (const Cena& c, unsigned masc, double spb, dou
         v.limpo = (float) ((double) limpo / (double) L);
     }
     // FADE OUT: o último quarto da frase desce até o silêncio
-    if ((modo == mPicote || modo == mEstica) && c.b (kFadeFim))
+    if ((modo == mPicote || modo == mEstica || modo == mMelodia) && c.b (kFadeFim))
     {
         const int64_t f0 = L - L / 4;
         for (int64_t i = f0; i < L; ++i)
@@ -998,7 +1189,7 @@ void RetalhoProcessor::montaVista (const Cena& c, unsigned masc, double spb, dou
             outR[0][(size_t) i] *= x * x; outR[1][(size_t) i] *= x * x;
         }
     }
-    if (offline && (modo == mPicote || modo == mEstica)) publicaResultado (true);
+    if (offline && (modo == mPicote || modo == mEstica || modo == mMelodia)) publicaResultado (true);
     colunasDe (outR[0].data(), outR[1].data(), v.rMin, v.rMax);
 
     // chops (GROOVE): de onde vieram e a onda de cada um
@@ -1022,21 +1213,47 @@ void RetalhoProcessor::montaVista (const Cena& c, unsigned masc, double spb, dou
         }
     }
     v.valida = true;
-    ++v.versao;
+    {
+        const juce::ScopedLock sv (travaVista);
+        v.versao = vistaAtual.versao + 1;
+        vistaAtual = std::move (v);
+        versaoPub = vistaAtual.versao;
+    }
+    // ouvindo o RESULTADO (OUVIR): o som novo entra sem parar, com crossfade
+    if (offline && prevEstado.load() != 0 && prevQual.load() == 2) preview (2, true);
 }
 
-void RetalhoProcessor::preview (int qual)
+void RetalhoProcessor::preview (int qual, bool manter)
 {
-    if (qual == 0 || (prevEstado.load() != 0 && prevQual.load() == qual)) { prevEstado = 0; return; }
+    const juce::ScopedLock sr (travaRender);
+    if (! manter && (qual == 0 || (prevEstado.load() != 0 && prevQual.load() == qual))) { prevEstado = 0; return; }
     if (! vistaAtual.valida) return;
     const int64_t L = vistaAtual.len, N = (int64_t) snap[0].size();
+    if (L <= 0 || N < L || (int64_t) outR[0].size() < L) return;
     const int s = 1 - prevSlot.load();
     auto& b = prevBuf[s];
+    if (b.getNumSamples() < L)
+    {
+        // 8 / 16 BARS: o buffer cresce (o áudio pula o preview neste instante)
+        const juce::SpinLock::ScopedLockType sl (travaPrevTam);
+        b.setSize (2, (int) L, true, true, false);
+    }
     const int len = (int) juce::jmin<int64_t> (L, b.getNumSamples());
     if (len <= 0) return;
     for (int ch = 0; ch < 2; ++ch)
         for (int i = 0; i < len; ++i)
             b.setSample (ch, i, qual == 1 ? snap[ch][(size_t) (N - L + i)] : outR[ch][(size_t) i]);
+    // pontas sem estalo quando o LOOP volta
+    const int fo = juce::jmin (len / 4, (int) (0.006 * fs)), fi = juce::jmin (len / 4, (int) (0.001 * fs));
+    if (fo > 0) b.applyGainRamp (len - fo, fo, 1.0f, 0.0f);
+    if (fi > 0 && qual == 2) b.applyGainRamp (0, fi, 0.0f, 1.0f);
+    if (manter && prevEstado.load() != 0)
+    {
+        // render novo enquanto toca: troca de buffer na mesma posição (o áudio faz o crossfade)
+        prevLen = len;
+        prevSlot = s;
+        return;
+    }
     prevEstado = 0;
     prevSlot = s;
     prevLen = len;
@@ -1048,10 +1265,12 @@ void RetalhoProcessor::preview (int qual)
 
 juce::File RetalhoProcessor::exporta (bool temporario)
 {
+    const juce::ScopedLock sr (travaRender);
     if (! vistaAtual.valida || outR[0].empty() || cenaAtual().i (kModo) == mGroove) return {};
     const Cena ce = cenaAtual();
     const juce::String base = ce.i (kModo) == mEstica ? "ESTICA " + juce::String::fromUTF8 (ch::direcao[lim (ce.i (kEDir), 0, 5)])
-                            : (ce.i (kModo) == mPicote ? "PICOTE " + juce::String::fromUTF8 (ch::receita[lim (ce.i (kReceita), 0, numReceitas - 1)]) : presetNome);
+                            : (ce.i (kModo) == mPicote ? "PICOTE " + juce::String::fromUTF8 (ch::receita[lim (ce.i (kReceita), 0, numReceitas - 1)])
+                               : (ce.i (kModo) == mMelodia ? juce::String ("GROOVE ") + juce::String::fromUTF8 (ch::gpadrao[lim (ce.i (kGPadrao), 0, 7)]) : presetNome));
     const auto nome = "RETALHO " + base.replaceCharacters ("/\\:*?\"<>|", "---------") + " "
                       + juce::Time::getCurrentTime().formatted ("%Y%m%d-%H%M%S") + ".wav";
     const auto pasta = temporario ? juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("RETALHO")
@@ -1144,6 +1363,14 @@ void RetalhoProcessor::getStateInformation (juce::MemoryBlock& destData)
         }
     }
     state.setProperty ("capbars", capBars.load(), nullptr);
+    {
+        juce::StringArray pz;
+        for (const auto& pm : pedacos()) pz.add (juce::String (pm.u0) + ":" + juce::String (pm.u1) + ":" + juce::String (pm.tipo));
+        state.setProperty ("pedacos", pz.joinIntoString (","), nullptr);
+        uint32_t nt[maxPassosG];
+        for (int k = 0; k < maxPassosG; ++k) nt[k] = notasG[k].load();
+        state.setProperty ("notasg", juntaU (nt, maxPassosG), nullptr);
+    }
     slots[ab.load()] = fotoCompleta();
     for (int i = 0; i < 2; ++i)
         if (slots[i].isValid())
@@ -1161,7 +1388,7 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
     if (xml == nullptr || ! xml->hasTagName (apvts.state.getType())) return;
     auto vt = juce::ValueTree::fromXml (*xml);
     uiW = (int) vt.getProperty ("uiw", 0);
-    uiPro = (int) vt.getProperty ("uipro", 0) ? 1 : 0;
+    uiPro = 0;   // 0.1.5: o AVANÇADO saiu (só a tela principal)
     ab = (int) vt.getProperty ("ab", 0) ? 1 : 0;
     presetNome = vt.getProperty ("preset", "INIT").toString();
     {
@@ -1187,6 +1414,25 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
     }
     // a amostra do projeto (FLAC em base64)
     capBars = juce::jlimit (1, 8, (int) vt.getProperty ("capbars", 2));
+    {
+        std::vector<PedacoManual> v;
+        for (const auto& t : juce::StringArray::fromTokens (vt.getProperty ("pedacos", "").toString(), ",", ""))
+        {
+            const auto q = juce::StringArray::fromTokens (t, ":", "");
+            if (q.size() != 3) continue;
+            PedacoManual pm;
+            pm.u0 = (int16_t) juce::jlimit (0, 512, q[0].getIntValue()); pm.u1 = (int16_t) juce::jlimit (0, 512, q[1].getIntValue());
+            pm.tipo = (int8_t) juce::jlimit (-1, numPk - 1, q[2].getIntValue());
+            if (pm.u1 > pm.u0 && (int) v.size() < maxManuais) v.push_back (pm);
+        }
+        { const juce::ScopedLock sl (travaNotas); manuais.swap (v); }
+        if (vt.hasProperty ("notasg"))
+        {
+            uint32_t nt[maxPassosG] {};
+            separaU (vt.getProperty ("notasg").toString(), nt, maxPassosG);
+            for (int k = 0; k < maxPassosG; ++k) notasG[k] = nt[k];
+        }
+    }
     {
         auto am = vt.getChildWithName ("AMOSTRA");
         const juce::String b64 = am.isValid() ? am.getProperty ("flac", "").toString() : juce::String();
@@ -1225,7 +1471,13 @@ void RetalhoProcessor::setStateInformation (const void* data, int sizeInBytes)
     const bool fotoGroove = xml->hasAttribute ("sel");   // programa da foto (shots): 2ª foto na aba GROOVE
     apvts.replaceState (vt);
     ultimoEstilo = (int) valor (kEstilo); ultimoBars = (int) valor (kGBars); ultimoGrid = (int) valor (kGGrid);
-    if (fotoGroove) uiPro = 0;   // 0.1.4: a 2ª foto é o ESTICA na tela principal (o shots já pôs modo/direção/intensidade)
+    juce::ignoreUnused (fotoGroove);   // 0.1.4: a 2ª foto é o ESTICA na tela principal (o shots já pôs modo/direção/intensidade)
+    // projeto de antes da 0.1.5 num modo do AVANÇADO: volta para o PICOTE (só existe a tela principal)
+    {
+        const int md = juce::roundToInt (valor (kModo));
+        if (md != mPicote && md != mEstica && md != mMelodia) aplicaModo (mPicote);
+    }
+    pedeRender (true);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new RetalhoProcessor(); }

@@ -4,6 +4,28 @@ Pacote do instalador: `InsideStudioSP-Retalho`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `retalho-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.5 — 2026-11-17
+- Ainda TESTE (sem licença, fora do site).
+- Três modos na tela principal: PICOTE | ESTICA | GROOVE. O AVANÇADO saiu (e com ele os pads de fábrica: uma nota MIDI
+  não troca mais o modo da tela). Projeto salvo num modo antigo abre no PICOTE.
+- Mais leve: o efeito é calculado numa linha própria, fora da tela. Girar knob não trava mais a janela, e a tela só
+  é redesenhada quando algo muda (a onda fica guardada numa imagem; a 30 Hz só anda o cursor).
+- Sem estalos: o resultado novo entra com 25 ms de crossfade (com o projeto tocando e no OUVIR), e as pontas do loop
+  têm subida e descida curtas. No PICOTE, as emendas entre pedaços ficaram mais suaves (3 ms / 6 ms). No ESTICA, um
+  grão não dá mais a volta no fim do trecho no meio dele. Mexer num knob com o OUVIR ligado troca o som sem parar.
+- PICOTE: arraste na onda (ou clique num pedaço) e escolha o efeito daquele pedaço: LIMPA, REPETE, TOM, AO CONTRÁRIO,
+  ACELERA, FREIA ou CORTE. Os pedaços marcados ganham uma quina branca e ficam salvos no projeto. QUANTO EFEITO ganhou
+  MANUAL (só o que você marcar). TAMANHO vai até 16 BARS. ARRASTE PARA O DAW agora é só o botão (a onda serve para
+  marcar). "AO CONTRÁRIO" não sai mais quebrado na legenda.
+- ESTICA: o knob grande virou MOVIMENTO. Ele leva os knobs do AJUSTE FINO pelo caminho da DIREÇÃO ao longo da frase,
+  na FORMA escolhida (SOBE, SOBE E DESCE, DEGRAUS, ONDA, DESCE). O arco claro em cada knob mostra onde o movimento está
+  agora (anda junto com o som), e a linha sobre a onda mostra o movimento na frase. VARIAR troca a forma e os grãos
+  (antes quase não mudava nada).
+- GROOVE (modo novo): as sílabas da voz, do PONTO em diante, tocam numa grade de 1/16 que você programa, cada nota
+  numa linha da ESCALA (MENOR, MAIOR, PENTA MENOR, PENTA MAIOR). AFINAR mede a altura de cada sílaba e leva para a nota
+  da linha. Clique para pôr, arraste para alongar, clique de novo para apagar, botão direito escolhe a sílaba. 8
+  padrões prontos (◀ ▶), VARIAR sorteia um groove novo, TOM sobe ou desce tudo, SWING, 1/2/4 BARS e VOZ JUNTO.
+
 ## 0.1.4 — 2026-11-17
 - Ainda TESTE (sem licença, fora do site).
 - Tela principal nova, bem mais simples: PICOTE | ESTICA no topo, a amostra, UMA onda grande e poucos controles. Os

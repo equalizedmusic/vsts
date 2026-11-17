@@ -103,11 +103,29 @@ public:
         std::vector<retalho::Grao> graos;             // ESTICA: cada grão (t0/dur no resultado, src na região)
         float limpo = 1.0f;                           // PICOTE: fração da frase que ficou limpa
         float regiaoSobreL = 1.0f;                    // ESTICA: tamanho da região lida / tamanho do resultado
+        retalho::Silaba sil[retalho::maxSilabas];     // GROOVE: as sílabas (posição na amostra inteira)
+        int nSil = 0;
+        float baseMidi = -1.0f;                       // GROOVE: a nota da linha de baixo
+        int64_t amostraN = 0;                         // GROOVE: tamanho da amostra (para a fração das sílabas)
     };
-    const Vista& vista() const { return vistaAtual; }
+    // 0.1.5: o efeito é calculado numa linha própria (a tela não trava girando knob); a tela copia o quadro pronto
+    int versaoVista() const { return versaoPub.load(); }
+    void copiaVista (Vista& destino) const { const juce::ScopedLock sl (travaVista); destino = vistaAtual; }
+    float posResultado() const { return posRes.load(); }   // fração do resultado tocando com o projeto (−1 = parado)
+
+    // ---- PICOTE (0.1.5): pedaços marcados à mão na onda (colcheias desde o começo da frase) ----
+    void marcaPedaco (int u0, int u1, int tipo);   // tipo −1 = LIMPA
+    void limpaPedacos();
+    std::vector<retalho::PedacoManual> pedacos() const { const juce::ScopedLock sl (travaNotas); return manuais; }
+
+    // ---- GROOVE melódico (0.1.5): as notas da grade (1/16) ----
+    retalho::NotaG nota (int k) const { return retalho::abreNota (notasG[juce::jlimit (0, retalho::maxPassosG - 1, k)].load()); }
+    void escreveNota (int k, const retalho::NotaG& n) { notasG[juce::jlimit (0, retalho::maxPassosG - 1, k)] = retalho::empacotaNota (n); }
+    void aplicaPadraoG (int i);
+    int passosGroove() const;   // passos de 1/16 no TAMANHO atual
 
     // preview (toca a janela ORIGINAL ou o RESULT no lugar da saída)
-    void preview (int qual);      // 1 ORIGINAL, 2 RESULT; repetir o mesmo = para
+    void preview (int qual, bool manter = false);   // 1 ORIGINAL, 2 RESULT; repetir o mesmo = para; manter = troca o som sem parar (render novo)
     int previewTocando() const { return prevEstado.load() != 0 ? prevQual.load() : 0; }
     float previewPos() const { return prevLen.load() > 0 ? (float) prevPos.load() / (float) prevLen.load() : 0.0f; }
     std::atomic<bool> previewLoop { false }, previewOnBar { false };
@@ -168,7 +186,41 @@ public:
     int totalPontos() const { return nPontos.load(); }
     float pontoFrac() const { return pontoFr.load(); }   // onde o efeito começa, fração da amostra inteira (−1 = sem)
 
+    void trabalhaRender();   // chamado pela linha do render
+
 private:
+    // a linha do render: o timer só pede; o cálculo pesado sai da linha da tela
+    struct Renderizador : public juce::Thread
+    {
+        RetalhoProcessor& p;
+        explicit Renderizador (RetalhoProcessor& x) : juce::Thread ("RETALHO render"), p (x) {}
+        void run() override { while (! threadShouldExit()) { wait (120); if (! threadShouldExit()) p.trabalhaRender(); } }
+    };
+    std::unique_ptr<Renderizador> renderizador;
+    std::atomic<bool> renderPedido { false }, renderForcar { false };
+    void pedeRender (bool forcar);
+    juce::CriticalSection travaRender;          // a linha do render segura enquanto calcula (snap, outR, ataques)
+    juce::CriticalSection travaVista;           // só a troca do quadro pronto
+    juce::CriticalSection travaNotas;           // pedaços do PICOTE
+    std::atomic<int> versaoPub { 0 };
+    std::atomic<float> posRes { -1.0f };
+    std::vector<retalho::PedacoManual> manuais;
+    std::atomic<uint32_t> notasG[retalho::maxPassosG] {};
+    // GROOVE: as sílabas da última amostra/ponto (refaz só quando muda)
+    retalho::Silaba silCache[retalho::maxSilabas];
+    int silCacheN = 0;
+    float silCacheBase = -1.0f;
+    uint64_t silCacheChave = 0;
+    // troca do resultado com crossfade (sem estalo)
+    const void* resVisto = nullptr;
+    const void* resVelho = nullptr;
+    std::atomic<const void*> resUsoVelho { nullptr };
+    int xfN = 1, xfI = 1;
+    // preview: troca de buffer com crossfade
+    juce::SpinLock travaPrevTam;
+    int prevSlotVisto = 0, pxfI = 1, pxfN = 1, pxfDe = 0;
+    std::atomic<int> prevPosVelho { 0 };
+
     void vistaDaAmostra (const Amostra& am, bool forcar);
     void montaVista (const retalho::Cena& c, unsigned masc, double spb, double bpb, int64_t L, int64_t inicio,
                      const retalho::Trecho& tr, const retalho::Ataques& at, bool offline);

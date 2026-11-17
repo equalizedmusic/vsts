@@ -635,6 +635,7 @@ int main (int argc, char** argv)
                     if (id == "modo") pe->setAttribute ("value", 4);
                     if (id == "edir") pe->setAttribute ("value", 3);
                     if (id == "eint") pe->setAttribute ("value", 70);
+                    if (id == "eforma") pe->setAttribute ("value", 3);   // 0.1.5: MOVIMENTO em ONDA
                 }
             juce::MemoryBlock m2;
             juce::AudioProcessor::copyXmlToBinary (*x, m2);
@@ -649,6 +650,33 @@ int main (int argc, char** argv)
         juce::FileOutputStream osF (fF);
         juce::PNGImageFormat pngF;
         std::printf ("%s: %s\n", nomeF.toRawUTF8(), osF.openedOk() && pngF.writeImageToStream (imgF, osF) ? "ok" : "falhou");
+        // RETALHO 0.1.5: 3ª foto no GROOVE melódico (as sílabas na grade, padrão CHAMADA, 2 BARS)
+        if (juce::String (SHOT_PLUGIN) == "RETALHO")
+        {
+            juce::MemoryBlock mb3;
+            proc->getStateInformation (mb3);
+            if (auto x = juce::AudioProcessor::getXmlFromBinary (mb3.getData(), (int) mb3.getSize()))
+            {
+                x->setAttribute ("sel", 1);
+                for (auto* pe : x->getChildWithTagNameIterator ("PARAM"))
+                {
+                    const auto id = pe->getStringAttribute ("id");
+                    if (id == "modo") pe->setAttribute ("value", 5);
+                    if (id == "length") pe->setAttribute ("value", 2);
+                }
+                juce::MemoryBlock m3;
+                juce::AudioProcessor::copyXmlToBinary (*x, m3);
+                proc->setStateInformation (m3.getData(), (int) m3.getSize());
+            }
+            editor->setSize (SHOT_W, SHOT_H);
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (1500);
+            const auto imgG = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+            const auto fG = outDir.getChildFile ("RETALHO-GROOVE.png");
+            fG.deleteFile();
+            juce::FileOutputStream osG (fG);
+            juce::PNGImageFormat pngG;
+            std::printf ("RETALHO-GROOVE: %s\n", osG.openedOk() && pngG.writeImageToStream (imgG, osG) ? "ok" : "falhou");
+        }
     }
    #endif
    #if SHOT_MESA
