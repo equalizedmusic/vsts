@@ -15,7 +15,7 @@
 -- Exporting juceaide
 -- Testing juceaide
 -- Finished setting up juceaide
--- Configuring done (58.0s)
+-- Configuring done (34.0s)
 -- Generating done (0.0s)
 -- Build files have been written to: /Users/runner/work/vsts/vsts/build
 [  1%] Generating juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData42.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData43.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData44.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData45.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData46.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData47.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData48.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData49.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData50.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData51.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData52.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData53.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData54.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData55.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData56.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData57.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData58.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData59.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData60.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData61.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData62.cpp, juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData_SerieKnob.h
@@ -35,11 +35,11 @@
 [ 13%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData11.cpp.o
 [ 14%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData12.cpp.o
 [ 14%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData13.cpp.o
-[ 15%] Building CXX object CMakeFiles/shot_retalho.dir/_deps/juce-src/modules/juce_audio_utils/juce_audio_utils.mm.o
-[ 16%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData14.cpp.o
-[ 17%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData15.cpp.o
-[ 18%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData16.cpp.o
-[ 19%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData17.cpp.o
+[ 15%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData14.cpp.o
+[ 16%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData15.cpp.o
+[ 17%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData16.cpp.o
+[ 18%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData17.cpp.o
+[ 19%] Building CXX object CMakeFiles/shot_retalho.dir/_deps/juce-src/modules/juce_audio_utils/juce_audio_utils.mm.o
 [ 20%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData18.cpp.o
 [ 21%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData19.cpp.o
 [ 22%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData20.cpp.o
@@ -70,15 +70,15 @@
 [ 44%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData45.cpp.o
 [ 45%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData46.cpp.o
 [ 46%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData47.cpp.o
-[ 47%] Building CXX object CMakeFiles/shot_retalho.dir/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors.mm.o
-[ 48%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData48.cpp.o
-[ 49%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData49.cpp.o
-[ 50%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData50.cpp.o
-[ 51%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData51.cpp.o
+[ 47%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData48.cpp.o
+[ 48%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData49.cpp.o
+[ 49%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData50.cpp.o
+[ 50%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData51.cpp.o
+[ 51%] Building CXX object CMakeFiles/shot_retalho.dir/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors.mm.o
 [ 52%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData52.cpp.o
 [ 52%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData53.cpp.o
-[ 53%] Building CXX object CMakeFiles/shot_retalho.dir/_deps/juce-src/modules/juce_gui_extra/juce_gui_extra.mm.o
-[ 54%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData54.cpp.o
+[ 53%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData54.cpp.o
+[ 54%] Building CXX object CMakeFiles/shot_retalho.dir/_deps/juce-src/modules/juce_gui_extra/juce_gui_extra.mm.o
 [ 55%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData55.cpp.o
 [ 56%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData56.cpp.o
 [ 57%] Building CXX object CMakeFiles/shot_serieknob_data.dir/juce_binarydata_shot_serieknob_data/JuceLibraryCode/BinaryData57.cpp.o
