@@ -1144,7 +1144,7 @@ void RetalhoEditor::rodape (juce::Graphics& g)
 #ifdef JucePlugin_VersionString
     const juce::String ver = juce::String (JucePlugin_VersionString);
 #else
-    const juce::String ver = "0.1.2";
+    const juce::String ver = "0.1.3";
 #endif
     rotulo (g, { 700, (float) baseH - 18, 488, 14 }, u8 ("RETALHO ") + ver + u8 (" TESTE \xc2\xb7 NOME PROVIS\xc3\x93RIO"), cDim, juce::Justification::centredRight, 8.5f);
 }
@@ -1916,7 +1916,7 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
 #ifdef JucePlugin_VersionString
     const juce::String ver = juce::String (JucePlugin_VersionString);
 #else
-    const juce::String ver = "0.1.2";
+    const juce::String ver = "0.1.3";
 #endif
     rotulo (g, { 14, (float) baseH - 20, 900, 14 },
             u8 ("PAD VAZIO = GUARDA O AJUSTE \xc2\xb7 BOT\xc3\x83O DIREITO NO PAD = RENOMEIA / LIMPA \xc2\xb7 DUPLO CLIQUE NO KNOB = VOLTA AO PADR\xc3\x83O \xc2\xb7 PRO = TODOS OS AJUSTES"),
