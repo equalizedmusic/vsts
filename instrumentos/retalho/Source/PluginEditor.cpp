@@ -1998,8 +1998,8 @@ void RetalhoEditor::ondaGrande (juce::Graphics& g, juce::Rectangle<float> r)
         // ESTICA: a faixa dos grãos embaixo (esquerda em cima, direita embaixo; ré azul, oitava verde)
         if (est && ! v.graos.empty())
         {
-            const float y0 = in.getBottom() + 10, h = 24;
-            rotulo (g, { r.getX() + 16, y0 - 2, 60, 12 }, u8 ("GR\xc3\x83OS"), cDim, juce::Justification::centredLeft, 8.5f, true);
+            const float y0 = in.getBottom() + 18, h = 24;   // rótulo EM CIMA da faixa (antes encostava no início dela)
+            rotulo (g, { in.getX(), in.getBottom() + 5, 60, 11 }, u8 ("GR\xc3\x83OS"), cDim, juce::Justification::centredLeft, 8.5f, true);
             g.setColour (juce::Colour (0xff1d2128)); g.fillRect (in.getX(), y0 + h * 0.5f, W, 1.0f);
             for (const auto& gr : v.graos)
             {
