@@ -1,6 +1,7 @@
 == build/shot_retalho_artefacts/Release/shot_retalho
+RETALHO captura: pronta em 20.4 s
 RETALHO-GROOVE: ok
 RETALHO: ok
-total 2800
--rw-r--r--  1 runner  staff  708341 Nov 16 23:29 RETALHO-GROOVE.png
--rw-r--r--  1 runner  staff  722354 Nov 16 23:29 RETALHO.png
+total 2856
+-rw-r--r--  1 runner  staff  700776 Nov 17 00:27 RETALHO-GROOVE.png
+-rw-r--r--  1 runner  staff  757646 Nov 17 00:27 RETALHO.png
