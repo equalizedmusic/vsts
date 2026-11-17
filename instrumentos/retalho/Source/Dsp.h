@@ -422,6 +422,7 @@ struct Contexto
     unsigned mascara = 0xFFFu;
     int pcChunk = -1;
     const Ataques* at = nullptr;
+    bool offline = false;   // amostra inteira já na mão (arquivo solto): pode ler adiante, nada "ainda não gravado"
 };
 
 inline Fatia& novaFatia (Plano& p) { if (p.n < Plano::maxF) ++p.n; return p.f[p.n - 1]; }
@@ -433,7 +434,7 @@ inline void regiao (Fatia& f, const Contexto& cx, int64_t ini, int64_t L, bool p
     const int64_t pos = cx.inicio + f.t0;
     if (podeVivo && ini == pos && f.r0 <= 1.0f && f.r1 <= 1.0f && ! f.rev) { f.src = pos; f.L = 0; return; }
     L = std::max<int64_t> (L, 32);
-    if (ini + L > pos)
+    if (! cx.offline && ini + L > pos)
     {
         if (encolhe && pos - ini >= 32) L = pos - ini;
         else ini = pos - L;

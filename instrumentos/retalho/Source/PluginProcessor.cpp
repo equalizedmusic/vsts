@@ -165,6 +165,7 @@ void RetalhoProcessor::montaAtiva()
         }
     }
     const juce::ScopedLock sl (travaAmostra);
+    ataquesDe = nullptr;   // amostra nova: refaz os ataques
     Amostra* velha = ativa.exchange (a.release());
     if (velha != nullptr) aposentadas.push_back ({ velha, blocoIni.load() });
     recolheAposentadas (false);
@@ -228,7 +229,10 @@ bool RetalhoProcessor::carregaArquivo (const juce::File& f)
     juce::AudioBuffer<float> b (juce::jlimit (1, 2, (int) r->numChannels), n);
     r->read (&b, 0, n, 0, true, true);
     selIni = 0.0f; selFim = 1.0f;
+    ponto = 0;
     instalaAmostra (b, r->sampleRate, f.getFileNameWithoutExtension(), 0.0, true);
+    ouvirAoCarregar = true;
+    atualizaVista (true);   // renderiza já (e toca) — não espera o timer nem o play do projeto
     return true;
 }
 
@@ -251,6 +255,11 @@ void RetalhoProcessor::limpaAmostra()
     }
     selIni = 0.0f; selFim = 1.0f;
     montaAtiva();
+    // o resultado era da amostra: some junto (a janela ao vivo volta no próximo compasso tocado)
+    prevEstado = 0;
+    snap[0].clear(); snap[1].clear();
+    vistaAtual.valida = false; ++vistaAtual.versao;
+    pontoFr = -1.0f; nPontos = 0; ponto = 0;
 }
 
 bool RetalhoProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -614,6 +623,17 @@ void RetalhoProcessor::timerCallback()
 
 void RetalhoProcessor::atualizaVista (bool forcar)
 {
+    if (const Amostra* am = ativa.load (std::memory_order_acquire); am != nullptr)
+    {
+        vistaDaAmostra (*am, forcar);
+        if (ouvirAoCarregar && vistaAtual.valida)
+        {
+            ouvirAoCarregar = false;
+            if (cenaAtual().i (kModo) != mGroove) preview (2);   // soltou o arquivo: já toca o resultado
+        }
+        return;
+    }
+    pontoFr = -1.0f; nPontos = 0;
     const double spb = m->spbA.load(), bpb = m->bpbA.load();
     if (spb < 100.0) return;
     const Cena c = cenaAtual();
@@ -660,8 +680,6 @@ void RetalhoProcessor::atualizaVista (bool forcar)
     if (! nova && ! forcar && h == ultimoHash) return;
     ultimoHash = h;
 
-    Vista& v = vistaAtual;
-    v.spb = spb; v.bpb = bpb; v.fs = fs; v.len = L;
     const int64_t inicio = snapIni + N - L;
     Trecho tr;
     tr.d[0] = snap[0].data(); tr.d[1] = snap[1].data(); tr.n = N; tr.base = snapIni;
@@ -675,9 +693,132 @@ void RetalhoProcessor::atualizaVista (bool forcar)
         std::sort (a.begin(), a.end());
         at.n = juce::jmin (128, (int) a.size());
         for (int i = 0; i < at.n; ++i) at.v[i] = a[(size_t) i];
-        v.ataques.clear();
-        for (int i = 0; i < at.n; ++i) if (at.v[i] >= inicio) v.ataques.push_back ((float) ((double) (at.v[i] - inicio) / (double) L));
     }
+    montaVista (c, masc, spb, bpb, L, inicio, tr, at, false);
+}
+
+// ataques de uma amostra inteira (envelope de 5 ms; subida forte acima do piso; 80 ms entre um e outro)
+static std::vector<int64_t> detectaAtaques (const juce::AudioBuffer<float>& b, double fs)
+{
+    std::vector<int64_t> r;
+    const int n = b.getNumSamples(), nc = juce::jmax (1, b.getNumChannels());
+    const int hop = juce::jmax (64, (int) (fs * 0.005));
+    const int nf = n / hop;
+    if (nf < 2) return r;
+    std::vector<float> e ((size_t) nf, 0.0f);
+    float pk = 0.0f;
+    for (int f = 0; f < nf; ++f)
+    {
+        double s = 0.0;
+        for (int i = f * hop; i < (f + 1) * hop; ++i)
+        {
+            float x = 0.0f;
+            for (int c = 0; c < nc; ++c) x += b.getSample (c, i);
+            x /= (float) nc;
+            s += (double) x * x;
+        }
+        e[(size_t) f] = (float) std::sqrt (s / hop);
+        pk = juce::jmax (pk, e[(size_t) f]);
+    }
+    if (pk < 1.0e-4f) return r;
+    const float piso = pk * 0.08f;                 // ~ −22 dB do pico: o que "soa"
+    const int gap = juce::jmax (1, (int) (0.08 * fs / hop));
+    int ultimo = -gap;
+    for (int f = 0; f < nf; ++f)
+    {
+        float ant = 1.0e9f;
+        for (int j = juce::jmax (0, f - 6); j < f; ++j) ant = juce::jmin (ant, e[(size_t) j]);
+        if (f == 0) ant = 0.0f;
+        if (e[(size_t) f] > piso && e[(size_t) f] > 1.8f * ant + pk * 0.01f && f - ultimo >= gap)
+        {
+            // o começo de verdade: a primeira amostra que passa da metade do nível do quadro, 1 ms antes
+            const float lim = e[(size_t) f] * 0.5f;
+            int64_t at = (int64_t) f * hop;
+            for (int i = juce::jmax (0, (f - 1) * hop); i < (f + 1) * hop && i < n; ++i)
+            {
+                float x = 0.0f;
+                for (int c = 0; c < nc; ++c) x += std::abs (b.getSample (c, i));
+                if (x / nc > lim) { at = i; break; }
+            }
+            r.push_back (juce::jmax<int64_t> (0, at - (int64_t) (fs * 0.001)));
+            ultimo = f;
+        }
+    }
+    return r;
+}
+
+// a amostra carregada: o efeito é renderizado direto do arquivo, a partir do PONTO, sem depender do play
+void RetalhoProcessor::vistaDaAmostra (const Amostra& am, bool forcar)
+{
+    double spb = m->spbA.load(), bpb = m->bpbA.load();
+    if (spb < 100.0) spb = fs * 0.5;   // ainda sem tempo do host: 120 BPM
+    if (bpb < 1.0) bpb = 4.0;
+    const Cena c = cenaAtual();
+    const int modo = c.i (kModo);
+    const double bars = modo == mGroove ? (double) (c.i (kGBars) + 1) : compassosLength (c.i (kLength));
+    const int64_t L = (int64_t) std::llround (bars * bpb * spb);
+    const int64_t N = am.buf.getNumSamples();
+    if (L <= 0 || N < 256 || L > (int64_t) (fs * 30.0)) return;
+
+    if (ataquesDe != (const void*) &am || ataquesN != (int) N)
+    {
+        ataquesA = detectaAtaques (am.buf, fs);
+        ataquesDe = &am; ataquesN = (int) N;
+    }
+    int64_t i0 = juce::jlimit<int64_t> (0, N, std::llround (selIni.load() * N)), i1 = juce::jlimit<int64_t> (0, N, std::llround (selFim.load() * N));
+    if (i1 - i0 < 256) { i0 = 0; i1 = N; }
+    std::vector<int64_t> pts;
+    for (auto a : ataquesA) if (a >= i0 && a < i1) pts.push_back (a);
+    if (pts.empty()) pts.push_back (i0);
+    const int np = (int) pts.size();
+    const int pi = juce::jlimit (0, np - 1, ponto.load());
+    ponto = pi; nPontos = np;
+    const int64_t T = pts[(size_t) pi];
+    pontoFr = (float) ((double) T / (double) N);
+
+    const unsigned masc = m->mascara (val);
+    uint64_t h = hashCena (c, masc, spb);
+    h = (h ^ (uint64_t) T) * 1099511628211ull;
+    h = (h ^ (uint64_t) N) * 1099511628211ull;
+    h = (h ^ (uint64_t) (uintptr_t) &am) * 1099511628211ull;
+    if (! forcar && h == ultimoHash && snap[0].size() == (size_t) L) return;
+    ultimoHash = h;
+
+    // ORIGINAL = a amostra do PONTO em diante (o preview ORIGINAL e a tela leem daqui)
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        snap[ch].assign ((size_t) L, 0.0f);
+        const float* s = am.buf.getReadPointer (juce::jmin (ch, am.buf.getNumChannels() - 1));
+        for (int64_t i = 0; i < L && T + i < N; ++i) snap[ch][(size_t) i] = s[T + i];
+    }
+    snapIni = T;
+    vistoCompasso = -1;   // tirou a amostra: a janela ao vivo volta sozinha
+
+    Trecho tr;
+    tr.d[0] = am.buf.getReadPointer (0);
+    tr.d[1] = am.buf.getReadPointer (juce::jmin (1, am.buf.getNumChannels() - 1));
+    tr.n = N; tr.base = 0;
+    Ataques at;
+    {
+        const int64_t de = T - (int64_t) (8.0 * bpb * spb);
+        std::vector<int64_t> a;
+        for (auto x : ataquesA) if (x >= de && x < T + L) a.push_back (x);
+        if (a.size() > 128) a.erase (a.begin(), a.end() - 128);
+        at.n = (int) a.size();
+        for (int i = 0; i < at.n; ++i) at.v[i] = a[(size_t) i];
+    }
+    montaVista (c, masc, spb, bpb, L, T, tr, at, true);
+}
+
+void RetalhoProcessor::montaVista (const Cena& c, unsigned masc, double spb, double bpb, int64_t L, int64_t inicio,
+                                   const Trecho& tr, const Ataques& at, bool offline)
+{
+    const int modo = c.i (kModo);
+    const int64_t N = (int64_t) snap[0].size();
+    Vista& v = vistaAtual;
+    v.spb = spb; v.bpb = bpb; v.fs = fs; v.len = L;
+    v.ataques.clear();
+    for (int i = 0; i < at.n; ++i) if (at.v[i] >= inicio && at.v[i] < inicio + L) v.ataques.push_back ((float) ((double) (at.v[i] - inicio) / (double) L));
 
     // ORIGINAL por coluna
     auto colunasDe = [L] (const float* a, const float* b, std::vector<float>& mn, std::vector<float>& mx)
@@ -704,13 +845,14 @@ void RetalhoProcessor::atualizaVista (bool forcar)
         m->tomEmUso (val, t, e);
         cx.pcChunk = m->pcAgora.load() >= 0 ? m->pcAgora.load() : t;
         cx.at = &at;
+        cx.offline = offline;
         monta (c, cx, v.plano);
         Render r;
         r.inicia (v.plano, (float) fs);
         for (int64_t i = 0; i < L; ++i)
         {
             float a, b;
-            r.amostra (i, inicio + i, tr, a, b);
+            r.amostra (i, offline ? tr.base + tr.n - 1 : inicio + i, tr, a, b);
             outR[0][(size_t) i] = a; outR[1][(size_t) i] = b;
         }
         v.picoFatia.assign ((size_t) v.plano.n, 0.0f);
@@ -739,7 +881,7 @@ void RetalhoProcessor::atualizaVista (bool forcar)
         const int64_t o = m->chopOrigem[s].load();
         v.chopMs[s] = len > 0 ? (float) (1000.0 * len / fs) : 0.0f;
         v.chopIni[s] = v.chopFim[s] = -1.0f;
-        if (len > 0 && o >= inicio && o < inicio + L)
+        if (! offline && len > 0 && o >= inicio && o < inicio + L)
         {
             v.chopIni[s] = (float) ((double) (o - inicio) / (double) L);
             v.chopFim[s] = juce::jmin (1.0f, v.chopIni[s] + (float) len / (float) L);

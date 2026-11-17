@@ -1946,7 +1946,7 @@ void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
             gr ? cVerde : cAmb, juce::Justification::centredLeft, 10.0f, true);
 
     if (! v.valida)
-        rotulo (g, in, proc.temAmostra() ? u8 ("D\xc3\x8a PLAY NO PROJETO: O RESULTADO EM CIMA DA AMOSTRA APARECE AQUI")
+        rotulo (g, in, proc.temAmostra() ? u8 ("PREPARANDO O RESULTADO\xe2\x80\xa6")
                                          : u8 ("CARREGUE A AMOSTRA ACIMA (OU D\xc3\x8a PLAY COM A VOZ PASSANDO): O RESULTADO APARECE AQUI"),
                 cDim, juce::Justification::centred, 11.0f);
     else if (! gr)
@@ -2112,6 +2112,20 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
         const juce::Rectangle<float> ra (x - 80, by, 80, 26);
         botao (g, ra, u8 ("ABRIR\xe2\x80\xa6"), false, cAmb, [this] { abreArquivo(); }, 10.5f);
         x = ra.getX() - 14;
+        // PONTO: em que ataque o efeito começa (◀ anterior · ▶ próximo) — muda e já renderiza de novo
+        if (tem && proc.totalPontos() > 0)
+        {
+            const int pa = proc.pontoAtual(), np = proc.totalPontos();
+            const juce::Rectangle<float> rn (x - 26, by, 26, 26), rt (x - 26 - 58, by, 58, 26), rp (x - 26 - 58 - 26, by, 26, 26);
+            botao (g, rp, "", false, cAmb, pa > 0 ? std::function<void()> ([this] { proc.pontoVizinho (-1); }) : std::function<void()>());
+            tri (g, { rp.getCentreX() - 1, rp.getCentreY() }, 7, 1, pa > 0 ? cAmb : cDim);
+            botao (g, rn, "", false, cAmb, pa < np - 1 ? std::function<void()> ([this] { proc.pontoVizinho (1); }) : std::function<void()>());
+            tri (g, { rn.getCentreX() + 1, rn.getCentreY() }, 7, 0, pa < np - 1 ? cAmb : cDim);
+            rotulo (g, { rt.getX(), rt.getY() - 1, rt.getWidth(), 13 }, "PONTO", cMu, juce::Justification::centred, 8.5f);
+            rotulo (g, { rt.getX(), rt.getY() + 11, rt.getWidth(), 15 }, juce::String (pa + 1) + " / " + juce::String (np), cAmb,
+                    juce::Justification::centred, 11.0f, true);
+            x = rp.getX() - 14;
+        }
     }
 
     // meio: a onda da amostra, o trecho que toca e onde está tocando
@@ -2164,6 +2178,14 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
         g.setColour (cAmb.withAlpha (0.07f)); g.fillRect (x0, w.getY(), x1 - x0, w.getHeight());
         g.setColour (cAmb); g.fillRect (x0 - 1, w.getY(), 2.0f, w.getHeight()); g.fillRect (x1 - 1, w.getY(), 2.0f, w.getHeight());
     }
+    const float pf = proc.pontoFrac();
+    if (pf >= 0.0f && pf <= 1.0f)
+    {
+        // o PONTO: onde o efeito começa (bandeira âmbar no alto)
+        const float xf = w.getX() + w.getWidth() * pf;
+        g.setColour (cAmb.withAlpha (0.85f)); g.fillRect (xf - 0.75f, w.getY() + 2, 1.5f, w.getHeight() - 4);
+        tri (g, { xf, w.getY() + 6 }, 9, 2, cAmb);
+    }
     const float pa = proc.posAmostra();
     if (pa >= 0.0f && pa <= 1.0f)
     {
@@ -2171,5 +2193,5 @@ void RetalhoEditor::faixaAmostra (juce::Graphics& g, juce::Rectangle<float> r)
         agulha (g, xp, w.getY() + 1, w.getBottom() - 1, cVerde);
     }
     rotulo (g, { w.getX() + 6, w.getBottom() - 13, w.getWidth() - 12, 12 },
-            u8 ("ARRASTE NA ONDA PARA ESCOLHER O TRECHO \xc2\xb7 DUPLO CLIQUE = INTEIRA"), cDim, juce::Justification::centredRight, 8.0f);
+            u8 ("O EFEITO COME\xc3\x87" "A NO \xe2\x96\xbc \xc2\xb7 ARRASTE NA ONDA = TRECHO \xc2\xb7 DUPLO CLIQUE = INTEIRA"), cDim, juce::Justification::centredRight, 8.0f);
 }

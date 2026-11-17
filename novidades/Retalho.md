@@ -6,6 +6,10 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 
 ## 0.1.3 — 2026-11-16
 - Ainda TESTE (sem licença, fora do site).
+- Soltou o arquivo, o efeito já está pronto: o RETALHO renderiza na hora a partir do próprio arquivo, sem precisar dar
+  play no projeto, e toca o resultado uma vez. O efeito começa no primeiro ataque que soa (o ▼ âmbar na onda da
+  amostra); ◀ PONTO ▶ troca para o ataque anterior ou o próximo e renderiza de novo. Mexer em cartão, knob ou preset
+  também refaz o resultado na hora. OUVIR toca de novo e ARRASTE PARA O DAW leva o clip pronto.
 - Tela mais leve: o brilho das ondas agora é desenhado por preenchimento (antes, contorno em cada barra).
 - PRO/GROOVE: "ENTRA NO PRÓXIMO COMPASSO" com acento certo; a onda de cada chop não passa mais por cima dos "ms".
 

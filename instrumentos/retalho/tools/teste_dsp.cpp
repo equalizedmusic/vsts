@@ -264,6 +264,46 @@ int main()
         confere (ok, "12. presets de fábrica", buf);
     }
 
+    // 14. RENDER DO ARQUIVO (0.1.3): amostra inteira na mão, efeito começa no ataque escolhido, sem play
+    {
+        const int N = (int) (4.0 * fs);
+        std::vector<float> a ((size_t) N), b ((size_t) N);
+        for (int i = 0; i < N; ++i) { a[(size_t) i] = voz (i / fs); b[(size_t) i] = a[(size_t) i]; }
+        Trecho tr; tr.d[0] = a.data(); tr.d[1] = b.data(); tr.n = N; tr.base = 0;
+        const int64_t T = (int64_t) (0.75 * fs);   // 4ª sílaba
+        Ataques at; for (int k = 0; k < 16; ++k) at.v[at.n++] = (int64_t) (k * 0.25 * fs);
+        Contexto cx; cx.fs = fs; cx.spb = fs * 60 / 120; cx.inicio = T; cx.at = &at; cx.offline = true;
+
+        // GRID 1/16, 1 BAR: toda repetição começa igual ao arquivo no ataque
+        Cena c; c.v[kShape] = shGrid; c.v[kRate] = 2; c.v[kLength] = 1;
+        Plano p; montaEdit (c, cx, p);
+        Render r; r.inicia (p, (float) fs);
+        std::vector<float> o ((size_t) p.len);
+        for (int64_t i = 0; i < p.len; ++i) { float x, y; r.amostra (i, N - 1, tr, x, y); o[(size_t) i] = x; }
+        double err = 0;
+        for (int k = 0; k < p.n; ++k)
+            for (int i = 400; i < 1200 && p.f[k].t0 + i < p.len; ++i)   // depois do fade-in, antes do fade-out
+                err = std::max (err, (double) std::abs (o[(size_t) (p.f[k].t0 + i)] / p.f[k].ganho - a[(size_t) (T + i)]));   // DECAY à parte
+        std::snprintf (buf, sizeof buf, "(%d repetições, diferença máx %.3f)", p.n, err);
+        confere (p.n == 16 && err < 0.02, "14. arquivo: cada repetição = o ataque escolhido", buf);
+
+        // todos os presets COMPLEX/EDIT soam do começo ao fim (nada vira silêncio por "ainda não gravado")
+        int mudos = 0, total = 0;
+        for (int i = 0; i < (int) presets().size(); ++i)
+        {
+            const Cena pc = cenaPreset (i);
+            if (pc.i (kModo) == mGroove) continue;
+            Plano pp; monta (pc, cx, pp);
+            Render rr; rr.inicia (pp, (float) fs);
+            double e = 0;
+            for (int64_t s = 0; s < pp.len; ++s) { float x, y; rr.amostra (s, N - 1, tr, x, y); e += (double) x * x + (double) y * y; }
+            ++total;
+            if (e / std::max<int64_t> (1, pp.len) < 1e-5) ++mudos;
+        }
+        std::snprintf (buf, sizeof buf, "(%d presets, %d mudos)", total, mudos);
+        confere (total > 0 && mudos == 0, "14b. arquivo: todo preset sai com som", buf);
+    }
+
     std::printf ("\n%s (%d falha%s)\n", falhas ? "BANCADA REPROVADA" : "BANCADA OK", falhas, falhas == 1 ? "" : "s");
     return falhas ? 1 : 0;
 }

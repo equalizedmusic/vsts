@@ -152,7 +152,23 @@ public:
     int loopBars() const { return loopK.load(); }
     static bool arquivoDeAudio (const juce::String& caminho);
 
+    // ---- RENDER NA HORA (0.1.3): soltou o arquivo, o efeito já sai pronto, sem dar play no projeto ----
+    // O efeito começa no PONTO: o primeiro ataque que soa no trecho; ◀ ▶ troca para o ataque vizinho.
+    void pontoVizinho (int passo) { ponto = juce::jmax (0, ponto.load() + passo); }
+    int pontoAtual() const { return ponto.load(); }
+    int totalPontos() const { return nPontos.load(); }
+    float pontoFrac() const { return pontoFr.load(); }   // onde o efeito começa, fração da amostra inteira (−1 = sem)
+
 private:
+    void vistaDaAmostra (const Amostra& am, bool forcar);
+    void montaVista (const retalho::Cena& c, unsigned masc, double spb, double bpb, int64_t L, int64_t inicio,
+                     const retalho::Trecho& tr, const retalho::Ataques& at, bool offline);
+    std::atomic<int> ponto { 0 }, nPontos { 0 };
+    std::atomic<float> pontoFr { -1.0f };
+    std::vector<int64_t> ataquesA;    // ataques da amostra ativa (na taxa do host)
+    const void* ataquesDe = nullptr;
+    int ataquesN = 0;
+    bool ouvirAoCarregar = false;
     void instalaAmostra (const juce::AudioBuffer<float>& origem, double fsOrigem, const juce::String& nome, double offBeats, bool codifica);
     void montaAtiva();                // reamostra a origem na taxa do host e troca a ativa (sem travar o áudio)
     void recolheAposentadas (bool tudo);
