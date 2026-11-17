@@ -1,10 +1,10 @@
 # versão: o primeiro "## x.y.z" de novidades/Retalho.md
 vsts_versao(Retalho.md RETALHO_VERSAO)
 
-# RETALHO (nome provisório): stutter + groove de vocal, latência 0. EDIT (fill desenhado), COMPLEX (passos com DICE) e
+# RETALHO: stutter + groove de vocal, latência 0. EDIT (fill desenhado), COMPLEX (passos com DICE) e
 # GROOVE (a voz em 8 chops tocando no contratempo). Pads de memória por MIDI (C3–F3), então recebe MIDI.
 # É efeito, mas fica em instrumentos/ para ter build, instalador e release próprios, como o GOGÓ.
-# 0.1.0 = TESTE, sem licença (a licença entra na versão oficial: isp_licenca(Retalho retalho)).
+# 0.2.0 = oficial, paga: licença do pacote retalho (sem ativação a faixa passa direto).
 juce_add_plugin(Retalho
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.retalho
@@ -22,6 +22,8 @@ juce_add_plugin(Retalho
     COPY_PLUGIN_AFTER_BUILD     FALSE
     VST3_CATEGORIES             Fx Delay
     AU_MAIN_TYPE                kAudioUnitType_MusicEffect)
+
+isp_licenca(Retalho retalho)
 
 target_sources(Retalho PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
 target_compile_definitions(Retalho PUBLIC

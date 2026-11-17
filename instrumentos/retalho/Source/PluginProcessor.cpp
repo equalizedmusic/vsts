@@ -327,6 +327,8 @@ void RetalhoProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     m->prepare (sampleRate);
     for (auto& b : prevBuf) b.setSize (2, (int) (sampleRate * 20.0), false, true, false);   // até 4 BARS a 50 BPM
     capBuf.setSize (2, (int) (sampleRate * 50.0), false, true, false);   // 8 compassos até ~40 BPM
+    abSeco.setSize (2, juce::jmax (8192, samplesPerBlock * 2), false, true, false);
+    abG = ouvirOriginal.load() ? 0.0f : 1.0f;
     capEstado = capEstado.load() == 2 ? 1 : capEstado.load();
     if (mudouTaxa || (ativa.load() == nullptr && origBuf.getNumSamples() > 0)) montaAtiva();
     prevEstado = 0;
@@ -626,6 +628,7 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     const int n = buffer.getNumSamples();
     const int nch = juce::jmin (2, getTotalNumInputChannels(), buffer.getNumChannels());
     if (n == 0 || nch == 0) return;
+    if (! licenca->liberada()) { midi.clear(); posRes = -1.0f; return; }   // sem ativação: a faixa passa direto, sem processar
     for (int c = nch; c < buffer.getNumChannels(); ++c) buffer.clear (c, 0, n);
 
     for (int k = 0; k < numCampos; ++k) val[k] = p[k]->load();
@@ -732,6 +735,10 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         else posA = -1.0f;
     }
 
+    // a amostra crua deste bloco (o ORIGINAL do A/B com o projeto tocando)
+    const bool temSeco = n <= abSeco.getNumSamples();
+    if (temSeco) for (int c = 0; c < 2; ++c) abSeco.copyFrom (c, 0, buffer, juce::jmin (c, nch - 1), 0, n);
+
     m->process (buffer.getArrayOfWritePointers(), nch, n, val, tp, eventos.data(), (int) eventos.size());
 
     // 0.1.4: com amostra, PICOTE / ESTICA / GROOVE tocam o RESULTADO pronto, em loop no tempo do projeto, no lugar da amostra
@@ -748,6 +755,7 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         }
         const Resultado* rv = xfI < xfN ? static_cast<const Resultado*> (resVelho) : nullptr;
         float pr = -1.0f;
+        const float abAlvo = ouvirOriginal.load() ? 0.0f : 1.0f, abPasso = (float) (1.0 / juce::jmax (1.0, 0.02 * fs));
         if ((md == mPicote || md == mEstica || md == mMelodia) && rs != nullptr && ativa.load (std::memory_order_acquire) != nullptr
             && capEstado.load() == 0 && val[kBypass] < 0.5f)
         {
@@ -784,9 +792,18 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                         buffer.setSample (1, i, buffer.getSample (1, i) * (1.0f - w) + r * w * gs);
                     }
                     else buffer.setSample (0, i, buffer.getSample (0, i) * (1.0f - w) + 0.5f * (l + r) * w * gs);
+                    // ORIGINAL | RESULTADO: 20 ms de rampa entre a amostra crua e o resultado
+                    abG += juce::jlimit (-abPasso, abPasso, abAlvo - abG);
+                    if (temSeco && abG < 1.0f)
+                        for (int c = 0; c < nch; ++c)
+                        {
+                            const float sx = nch > 1 ? abSeco.getSample (juce::jmin (c, 1), i) : 0.5f * (abSeco.getSample (0, i) + abSeco.getSample (1, i));
+                            buffer.setSample (c, i, buffer.getSample (c, i) * abG + sx * gs * (1.0f - abG));
+                        }
                 }
             }
         }
+        if (pr < 0.0f) abG = abAlvo;
         posRes = pr;
         if (pr < 0.0f) xfI = xfN;   // não tocou o resultado neste bloco: o velho pode ir embora
         if (xfI >= xfN) { xfI = xfN; resUsoVelho.store (nullptr); }
@@ -1251,6 +1268,7 @@ void RetalhoProcessor::preview (int qual, bool manter)
     {
         // render novo enquanto toca: troca de buffer na mesma posição (o áudio faz o crossfade)
         prevLen = len;
+        prevQual = qual;
         prevSlot = s;
         return;
     }
@@ -1261,6 +1279,14 @@ void RetalhoProcessor::preview (int qual, bool manter)
     prevCv = m->compassoVersao.load();
     prevReinicia = true;
     prevEstado = previewOnBar.load() ? 1 : 2;
+}
+
+void RetalhoProcessor::escolheOriginal (bool orig)
+{
+    ouvirOriginal = orig;
+    // o OUVIR que estiver tocando troca de lado na mesma posição (o áudio faz o crossfade de 25 ms)
+    const int quer = orig ? 1 : 2;
+    if (prevEstado.load() != 0 && prevQual.load() != quer) preview (quer, true);
 }
 
 juce::File RetalhoProcessor::exporta (bool temporario)

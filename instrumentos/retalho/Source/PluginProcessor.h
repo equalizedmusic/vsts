@@ -4,6 +4,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include "Dsp.h"
 #include "Presets.h"
+#include "IspLicenca.h"
 
 // RETALHO: stutter + groove de vocal, latência 0. Vai no canal da voz (ou em qualquer canal).
 //  - EDIT: o fill desenhado (GRID / RAMP / CURVE / FREE / TREMOLO), com pitch, filtro, stereo, tape stop e reverse;
@@ -129,6 +130,10 @@ public:
     int previewTocando() const { return prevEstado.load() != 0 ? prevQual.load() : 0; }
     float previewPos() const { return prevLen.load() > 0 ? (float) prevPos.load() / (float) prevLen.load() : 0.0f; }
     std::atomic<bool> previewLoop { false }, previewOnBar { false };
+    // 0.2.0: ORIGINAL | RESULTADO também troca o SOM (antes só a onda): com o projeto tocando sai a amostra limpa,
+    // e o OUVIR que estiver tocando passa para o outro na mesma posição (crossfade, sem estalo)
+    void escolheOriginal (bool orig);
+    bool vendoOriginal() const { return ouvirOriginal.load(); }
 
     // export do RESULT em WAV 24 bits
     juce::File exporta (bool temporario);
@@ -189,6 +194,7 @@ public:
     void trabalhaRender();   // chamado pela linha do render
 
 private:
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // 0.2.0: sem licença a faixa passa direto
     // a linha do render: o timer só pede; o cálculo pesado sai da linha da tela
     struct Renderizador : public juce::Thread
     {
@@ -216,6 +222,10 @@ private:
     const void* resVelho = nullptr;
     std::atomic<const void*> resUsoVelho { nullptr };
     int xfN = 1, xfI = 1;
+    // ORIGINAL | RESULTADO no som do projeto: a amostra crua (antes do motor) e o ganho A/B suavizado
+    std::atomic<bool> ouvirOriginal { false };
+    juce::AudioBuffer<float> abSeco;
+    float abG = 1.0f;
     // preview: troca de buffer com crossfade
     juce::SpinLock travaPrevTam;
     int prevSlotVisto = 0, pxfI = 1, pxfN = 1, pxfDe = 0;

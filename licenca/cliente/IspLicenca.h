@@ -69,6 +69,7 @@ public:
         if (p == "maestro") return "MAESTRO";
         if (p == "magos") return "MASTER DOS MAGOS";
         if (p == "gogo") return utf8 ("GOGÓ");
+        if (p == "retalho") return "RETALHO";
         return p.toUpperCase();
     }
 

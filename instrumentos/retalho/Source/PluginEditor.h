@@ -1,14 +1,13 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 
-// Tela do RETALHO (base 1200 × 620, escala junto com a janela). Abre no SIMPLE; o PRO segue o esboço v2 de 15/11/2026:
-//  - topo: marca, abas EDIT / COMPLEX / GROOVE, PRESET ▾, KEY, TEMPO, LATENCY, CAPTURE e o menu ≡;
-//  - linha de botões da aba (SHAPE, LENGTH, RATE… / STEPS, READ, DICE MODE / CHOPS, CUT, STYLE…);
-//  - display de onda: ORIGINAL (a voz capturada, ataques ▼, CHUNK em destaque) e RESULT (o fill renderizado em
-//    blocos, PITCH ciano, FILTER rosa; no COMPLEX os passos; no GROOVE os 8 chops e o pattern);
-//  - painéis de knobs da aba e o rodapé LIVE fixo (AUTO / HOLD / ONE-SHOT, ONDE, CATCH, 6 pads, DRY/WET, OUTPUT, A/B).
-// Tudo desenhado no paint, a 30 Hz.
+// Tela do RETALHO (base 1200 × 620, escala junto com a janela). Uma tela só, desde a 0.1.5 (o SIMPLE/PRO e o AVANÇADO saíram):
+//  - topo: marca, PICOTE | ESTICA | GROOVE, RECEITA / DIREÇÃO / PADRÃO ◀ ▶, VARIAR, status da amostra e o menu ≡;
+//  - a faixa da amostra (arrastar o vocal, ABRIR, CAPTURAR), a onda grande e os controles do modo;
+//  - rodapé com a dica do modo e a versão.
+// Tudo desenhado no paint; o timer (30 Hz) só repinta quando algo muda.
 class RetalhoEditor : public juce::AudioProcessorEditor, public juce::FileDragAndDropTarget, private juce::Timer
 {
 public:
@@ -32,15 +31,12 @@ public:
     static constexpr int baseW = 1200, baseH = 620;
 
 private:
-    struct Knob { int campo; juce::Point<float> c; float r; };   // campo < 0 = macro do SIMPLE (−1 − índice)
+    isp::TelaAtivacao ativacao;   // 0.2.0: sem licença cobre a tela e pede e-mail + token
+    struct Knob { int campo; juce::Point<float> c; float r; };
     struct Alvo { juce::Rectangle<float> r; std::function<void()> f; };
-    enum { arNada, arKnob, arGrade, arLivre, arPasso, arCelula, arDaw, arMacro, arSel, arPedaco, arNota };
+    enum { arNada, arKnob, arDaw, arSel, arPedaco, arNota };
 
-    // SIMPLE (tela padrão desde 16/11/2026): 4 cartões de efeito, a onda do resultado, 5 macros, QUANDO TOCA e os pads.
-    // PRO = a tela completa (EDIT / COMPLEX / GROOVE). A troca é só de tela: o som e os parâmetros são os mesmos.
-    bool simples() const { return proc.uiPro.load() == 0; }
-    void telaSimples (juce::Graphics&);
-    void chaveModo (juce::Graphics&);
+    void telaSimples (juce::Graphics&);   // a tela inteira
     void ondaGrande (juce::Graphics&, juce::Rectangle<float> r);      // 0.1.4: a onda grande da tela principal
     void controlesPicote (juce::Graphics&, float y);
     void controlesEstica (juce::Graphics&, float y);
@@ -61,40 +57,14 @@ private:
     void faixaAmostra (juce::Graphics&, juce::Rectangle<float> r);   // a amostra dentro do plugin
     void abreArquivo();
     void menuCaptura();
-    void blocosFill (juce::Graphics&, juce::Rectangle<float> in);
-    int cartao() const;          // 0 STUTTER, 1 RISER, 2 TAPE STOP, 3 GROOVE, −1 cena do COMPLEX
-    int quando() const;          // 0 TODO COMPASSO, 1 FIM DE 4 BARS, 2 FIM DE 8 BARS, 3 SÓ NO PAD, −1 outro (do PRO)
-    float macroLe (int i) const;
-    void macroDefine (int i, float v);
-    float macroPadrao (int i) const;
-    juce::String macroTexto (int i) const;
-    bool macroAtivo (int i) const { return cartao() >= 0 || i >= 3; }
 
     void timerCallback() override;
     float escala() const { return (float) getWidth() / (float) baseW; }
 
-    void topo (juce::Graphics&);
-    void linha (juce::Graphics&);
-    void original (juce::Graphics&, juce::Rectangle<float> r);
-    void result (juce::Graphics&, juce::Rectangle<float> r);
-    void resultEdit (juce::Graphics&, juce::Rectangle<float> in);
-    void resultComplex (juce::Graphics&, juce::Rectangle<float> in);
-    void resultGroove (juce::Graphics&, juce::Rectangle<float> in);
-    void paineis (juce::Graphics&);
-    void rodape (juce::Graphics&);
-
     // peças
-    float grupo (juce::Graphics&, float x, float y, const juce::String& titulo, int campo, const juce::StringArray& nomes);
     void botao (juce::Graphics&, juce::Rectangle<float> r, const juce::String& t, bool on, juce::Colour cor, std::function<void()> f, float fonteH = 10.5f);
     void liga (juce::Graphics&, juce::Rectangle<float> r, const juce::String& t, int campo, juce::Colour cor);
-    void knob (juce::Graphics&, int campo, const juce::String& nome, juce::Point<float> c, juce::Colour cor);
-    void painel (juce::Graphics&, juce::Rectangle<float> r, const juce::String& titulo, const juce::String& sub);
-    float chip (juce::Graphics&, float xDir, const juce::String& rot, const juce::String& val, juce::Colour cor, std::function<void()> f,
-                float maxW = 10000.0f);
-    void menuEscolha (int campo);
-    void menuPresets();
     void menu();
-    void menuPad (int i);
 
     float real (int campo) const { return proc.valor (campo); }
     int escolha (int campo) const { return juce::roundToInt (proc.valor (campo)); }
@@ -102,22 +72,19 @@ private:
     juce::String nomeTom() const;
 
     // áreas dos displays (coordenadas base) para o mouse
-    juce::Rectangle<float> areaResult, areaOriginal, areaDaw, areaCelulas, areaAmostra;
+    juce::Rectangle<float> areaDaw, areaAmostra;
     RetalhoProcessor::VisaoAmostra visaoA;   // cópia (muda só quando a amostra muda)
     float selA0 = 0.0f;                      // arrasto da seleção
     bool soltando = false;
     juce::String avisoArquivo;
     int avisoQuadro = 0;
-    juce::Rectangle<float> areaPads[retalho::numPads];
-    float celX0 = 0, celW = 1, celY0 = 0, celH = 1;
-    int nCelVis = 16;
 
     RetalhoProcessor& proc;
     RetalhoProcessor::Vista vista;   // cópia do quadro
     int versaoVista = -1;
     std::vector<Knob> knobs;
     std::vector<Alvo> alvos;
-    int arrasto = arNada, arrastoIdx = -1, arrastoLinha = 0, knobCampo = -1, padSegurado = -1, macroIdx = -1;
+    int arrasto = arNada, arrastoIdx = -1, knobCampo = -1;
     float valorIni = 0.0f, yIni = 0.0f, xIni = 0.0f;
     bool moveu = false;
     int quadro = 0;

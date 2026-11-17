@@ -4,6 +4,20 @@ Pacote do instalador: `InsideStudioSP-Retalho`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `retalho-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-23
+- Versão oficial, à venda no site.
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até 2
+  computadores, e desativar num computador libera a vaga para outro. Sem ativar, a faixa passa direto, sem processar.
+- Menu ≡ > Licença… mostra a licença ativa.
+- ORIGINAL | RESULTADO agora troca também o SOM, não só a onda: com o projeto tocando, ORIGINAL toca a amostra limpa e
+  RESULTADO volta ao efeito (troca suave, sem estalo). Com o OUVIR ligado, o som passa para o outro na mesma posição.
+- A dica "CAPTURA ARMADA" (e as outras da faixa da amostra) não sai mais cortada: se a frase não cabe, entra uma
+  versão curta.
+- ESTICA: o nome do knob VELOCIDADE não sai mais cortado.
+- GROOVE: a legenda das sílabas mostra só o número e a cor. A nota que toca é a da linha da grade (a altura medida na
+  voz aparecia na legenda e confundia).
+- O som e as telas são os da 0.1.5 (aprovada no teste).
+
 ## 0.1.5 — 2026-11-17
 - Ainda TESTE (sem licença, fora do site).
 - Três modos na tela principal: PICOTE | ESTICA | GROOVE. O AVANÇADO saiu (e com ele os pads de fábrica: uma nota MIDI
