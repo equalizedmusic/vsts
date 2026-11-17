@@ -619,7 +619,7 @@ int main (int argc, char** argv)
     juce::MessageManager::getInstance()->runDispatchLoopUntil (300);
     const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
    #if SHOT_VOZ
-    // ONKEY com o AJUSTE FINO aberto; GOGÓ com os AJUSTES do TUNE abertos ("sel" = 1); RETALHO na aba GROOVE
+    // ONKEY com o AJUSTE FINO aberto; GOGÓ com os AJUSTES do TUNE abertos ("sel" = 1); RETALHO no ESTICA
     {
         juce::MemoryBlock mb;
         proc->getStateInformation (mb);
@@ -627,6 +627,15 @@ int main (int argc, char** argv)
         {
             x->setAttribute ("fino", 1);
             x->setAttribute ("sel", 1);
+            // RETALHO 0.1.4: a 2ª foto mostra o ESTICA (direção ABRE, 70 %) sobre a mesma amostra
+            if (juce::String (SHOT_PLUGIN) == "RETALHO")
+                for (auto* pe : x->getChildWithTagNameIterator ("PARAM"))
+                {
+                    const auto id = pe->getStringAttribute ("id");
+                    if (id == "modo") pe->setAttribute ("value", 4);
+                    if (id == "edir") pe->setAttribute ("value", 3);
+                    if (id == "eint") pe->setAttribute ("value", 70);
+                }
             juce::MemoryBlock m2;
             juce::AudioProcessor::copyXmlToBinary (*x, m2);
             proc->setStateInformation (m2.getData(), (int) m2.getSize());
@@ -634,7 +643,7 @@ int main (int argc, char** argv)
         editor->setSize (SHOT_W, SHOT_H);
         juce::MessageManager::getInstance()->runDispatchLoopUntil (800);
         const auto imgF = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
-        const juce::String nomeF = juce::String (SHOT_PLUGIN) + (juce::String (SHOT_PLUGIN) == "ONKEY" ? "-FINO" : (juce::String (SHOT_PLUGIN) == "RETALHO" ? "-GROOVE" : "-TUNE"));
+        const juce::String nomeF = juce::String (SHOT_PLUGIN) + (juce::String (SHOT_PLUGIN) == "ONKEY" ? "-FINO" : (juce::String (SHOT_PLUGIN) == "RETALHO" ? "-ESTICA" : "-TUNE"));
         const auto fF = outDir.getChildFile (nomeF + ".png");
         fF.deleteFile();
         juce::FileOutputStream osF (fF);

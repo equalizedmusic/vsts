@@ -304,6 +304,96 @@ int main()
         confere (total > 0 && mudos == 0, "14b. arquivo: todo preset sai com som", buf);
     }
 
+    // 15. PICOTE (0.1.4): a frase fica LIMPA na maior parte; o efeito só em alguns pontos; tudo soa; trecho limpo = original
+    {
+        const int N = (int) (8.0 * fs);
+        std::vector<float> a ((size_t) N), b ((size_t) N);
+        for (int i = 0; i < N; ++i) { a[(size_t) i] = voz (i / fs); b[(size_t) i] = a[(size_t) i]; }
+        Trecho tr; tr.d[0] = a.data(); tr.d[1] = b.data(); tr.n = N; tr.base = 0;
+        Contexto cx; cx.fs = fs; cx.spb = fs * 60 / 120; cx.inicio = 0; cx.offline = true;
+        static const float minLimpo[3] = { 0.65f, 0.55f, 0.45f };
+        bool limpoOk = true, fimOk = true, somOk = true, igualOk = true, fimEfeito = true;
+        double piorLimpo[3] = { 1, 1, 1 }, difMax = 0;
+        for (int rc = 0; rc < numReceitas; ++rc)
+            for (int q = 0; q < 3; ++q)
+                for (int len = 1; len <= 3; ++len)
+                    for (int sd = 1; sd <= 3; ++sd)
+                    {
+                        Cena c; c.v[kModo] = mPicote; c.v[kReceita] = (float) rc; c.v[kQuanto] = (float) q; c.v[kLength] = (float) len; c.v[kSeed] = (float) sd;
+                        const int nU = (int) std::lround (compassosLength (len) * 8);
+                        std::vector<int8_t> tp; std::vector<int16_t> sg;
+                        sorteiaPicote (c, nU, 8, tp, sg);
+                        int limpos = 0; for (auto x : tp) if (x < 0) ++limpos;
+                        const double fl = (double) limpos / nU;
+                        piorLimpo[q] = std::min (piorLimpo[q], fl);
+                        limpoOk = limpoOk && fl >= minLimpo[q] && limpos < nU;
+                        fimEfeito = fimEfeito && tp[(size_t) (nU - 1)] >= 0;
+                        Plano p; monta (c, cx, p);
+                        int64_t fim = 0;
+                        for (int k = 0; k < p.n; ++k) fim = std::max<int64_t> (fim, p.f[k].t0 + p.f[k].dur);
+                        fimOk = fimOk && p.n > 0 && fim == p.len;
+                        Render r; r.inicia (p, (float) fs);
+                        double e = 0;
+                        for (int64_t s = 0; s < p.len; ++s)
+                        {
+                            float x, y; r.amostra (s, N - 1, tr, x, y); e += (double) x * x;
+                            // trecho limpo (longe das bordas das fatias) = a voz original
+                            const int u = (int) (s / (cx.spb * 0.5));
+                            if (u < nU && tp[(size_t) u] < 0)
+                            {
+                                bool longe = true;
+                                for (int k = 0; k < p.n; ++k)
+                                    if (std::abs (s - p.f[k].t0) < 600 || std::abs (s - (p.f[k].t0 + p.f[k].dur)) < 600) { longe = false; break; }
+                                if (longe) difMax = std::max (difMax, (double) std::abs (x - a[(size_t) s]));
+                            }
+                        }
+                        somOk = somOk && e / (double) p.len > 1e-5;
+                    }
+        igualOk = difMax < 1e-4;
+        std::snprintf (buf, sizeof buf, "(limpo m\xc3\xadnimo: POUCO %.0f%% \xc2\xb7 M\xc3\x89" "DIO %.0f%% \xc2\xb7 MUITO %.0f%%)", piorLimpo[0] * 100, piorLimpo[1] * 100, piorLimpo[2] * 100);
+        confere (limpoOk, "15. PICOTE: a maior parte da frase fica limpa", buf);
+        confere (fimEfeito, "15b. PICOTE: o fim da frase sempre ganha efeito");
+        confere (fimOk && somOk, "15c. PICOTE: 16 receitas x 3 quantidades x 3 tamanhos fecham na frase e soam");
+        std::snprintf (buf, sizeof buf, "(diferen\xc3\xa7" "a m\xc3\xa1x %.1e)", difMax);
+        confere (igualOk, "15d. PICOTE: trecho limpo = a voz original", buf);
+    }
+
+    // 16. ESTICA (0.1.4): as 6 direções soam, nunca passam do volume da voz, mesmo SEED = mesmo som; CONGELA fica parado
+    {
+        const int N = (int) (4.0 * fs);
+        std::vector<float> a ((size_t) N), b ((size_t) N);
+        float pv = 0;
+        for (int i = 0; i < N; ++i) { a[(size_t) i] = voz (i / fs); b[(size_t) i] = a[(size_t) i]; pv = std::max (pv, 2 * std::abs (a[(size_t) i])); }
+        Trecho tr; tr.d[0] = a.data(); tr.d[1] = b.data(); tr.n = N; tr.base = 0;
+        const int64_t len = (int64_t) (2.0 * fs);
+        std::vector<float> l ((size_t) len), r ((size_t) len), l2 ((size_t) len), r2 ((size_t) len);
+        bool som = true, alto = false, igual = true;
+        double espalhaCongela = 0, espalhaMeio = 0;
+        const auto t0 = std::chrono::steady_clock::now();
+        for (int d = 0; d < numDirecoes; ++d)
+        {
+            Cena c; c.v[kModo] = mEstica; c.v[kEDir] = (float) d; c.v[kEInt] = 100;
+            std::vector<Grao> gs;
+            renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l.data(), r.data(), &gs);
+            renderEstica (c, tr, 0, N, fs, fs * 0.5, len, l2.data(), r2.data(), nullptr);
+            double e = 0; float pk = 0;
+            for (int64_t i = 0; i < len; ++i) { e += (double) l[(size_t) i] * l[(size_t) i]; pk = std::max (pk, std::abs (l[(size_t) i]) + std::abs (r[(size_t) i])); igual = igual && l[(size_t) i] == l2[(size_t) i]; }
+            som = som && e / (double) len > 1e-5 && ! gs.empty();
+            alto = alto || pk > pv * 1.001f;
+            float mn = 1, mx = 0;
+            for (auto& g : gs) { mn = std::min (mn, g.src); mx = std::max (mx, g.src); }
+            if (d == esCongela) espalhaCongela = mx - mn;
+            if (d == esMeio) espalhaMeio = mx - mn;
+        }
+        const double s = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();
+        confere (som && ! alto, "16. ESTICA: 6 dire\xc3\xa7\xc3\xb5" "es soam e nunca passam do volume da voz");
+        confere (igual, "16b. ESTICA: mesmo SEED = mesmo resultado");
+        std::snprintf (buf, sizeof buf, "(CONGELA anda %.0f%% da amostra; MEIO TEMPO %.0f%%)", espalhaCongela * 100, espalhaMeio * 100);
+        confere (espalhaCongela < 0.03 && espalhaMeio > 0.2, "16c. ESTICA: CONGELA fica num ponto, MEIO TEMPO anda", buf);
+        std::snprintf (buf, sizeof buf, "(12 renders de 2 s em %.0f ms)", s * 1000);
+        confere (s < 3.0, "16d. ESTICA: render r\xc3\xa1pido na tela", buf);
+    }
+
     std::printf ("\n%s (%d falha%s)\n", falhas ? "BANCADA REPROVADA" : "BANCADA OK", falhas, falhas == 1 ? "" : "s");
     return falhas ? 1 : 0;
 }

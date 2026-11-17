@@ -41,7 +41,13 @@ private:
     bool simples() const { return proc.uiPro.load() == 0; }
     void telaSimples (juce::Graphics&);
     void chaveModo (juce::Graphics&);
-    void ondaSimples (juce::Graphics&, juce::Rectangle<float> r);
+    void ondaGrande (juce::Graphics&, juce::Rectangle<float> r);      // 0.1.4: a onda grande da tela principal
+    void controlesPicote (juce::Graphics&, float y);
+    void controlesEstica (juce::Graphics&, float y);
+    void exportar (juce::Graphics&, juce::Rectangle<float> r);
+    bool verOriginal = false;
+    juce::String avisoExport;
+    int avisoExportQuadro = 0;
     void faixaAmostra (juce::Graphics&, juce::Rectangle<float> r);   // a amostra dentro do plugin
     void abreArquivo();
     void menuCaptura();

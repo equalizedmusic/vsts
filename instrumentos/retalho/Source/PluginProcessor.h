@@ -99,6 +99,10 @@ public:
         float chopOnda[retalho::numChops][48] {};
         float chopMs[retalho::numChops] {};
         float chunkIni = 0.0f, chunkFim = 0.0f;       // fração
+        int modo = 0;
+        std::vector<retalho::Grao> graos;             // ESTICA: cada grão (t0/dur no resultado, src na região)
+        float limpo = 1.0f;                           // PICOTE: fração da frase que ficou limpa
+        float regiaoSobreL = 1.0f;                    // ESTICA: tamanho da região lida / tamanho do resultado
     };
     const Vista& vista() const { return vistaAtual; }
 
@@ -116,6 +120,11 @@ public:
 
     // SIMPLE: os 4 cartões (0 STUTTER, 1 RISER, 2 TAPE STOP, 3 GROOVE) carregam uma cena pronta
     void aplicaCartao (int c);
+
+    // ---- 0.1.4: PICOTE / ESTICA (a tela principal) ----
+    void aplicaModo (int modo);          // PICOTE (receita) ou ESTICA (direção), mantendo a amostra
+    void aplicaReceita (int i);          // ◀ ▶ da RECEITA
+    void variar();                       // VARIAR: sorteia outra versão (SEED + 1)
     void presetVizinho (int passo);   // ◀ ▶ do SIMPLE
     std::atomic<int> pincelTipo { retalho::tRepeat }, pincelChop { 0 };
 
@@ -179,6 +188,12 @@ private:
     std::atomic<Amostra*> ativa { nullptr };
     std::vector<std::pair<Amostra*, int64_t>> aposentadas;
     std::atomic<int64_t> blocoIni { 0 }, blocoFim { 0 };
+    // o resultado do PICOTE / ESTICA tocando em loop no tempo do projeto (troca sem travar o áudio, como a amostra)
+    struct Resultado { juce::AudioBuffer<float> buf; };
+    std::atomic<Resultado*> resAtivo { nullptr };
+    std::vector<std::pair<Resultado*, int64_t>> resAposentados;
+    void publicaResultado (bool tem);
+    int64_t estFim = 0;               // ESTICA: fim da região (fim do trecho escolhido da amostra)
     VisaoAmostra visao;
     std::atomic<int> visaoVersao { 0 };
     std::atomic<float> posA { -1.0f };

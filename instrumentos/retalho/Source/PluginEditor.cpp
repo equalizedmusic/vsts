@@ -273,6 +273,9 @@ juce::String RetalhoEditor::texto (int k) const
                                 : (v < 50.0f ? juce::String (juce::roundToInt (v * 2.0f)) + "%" : "PING " + juce::String (juce::roundToInt ((v - 50.0f) * 2.0f)) + "%")));
         case kDuck: case kChopVol: case kOutput: return sinal (v, 1, " dB");
         case kSeed:    return "#" + juce::String (juce::roundToInt (v));
+        case kEGrao:   return juce::String (juce::roundToInt (v)) + " ms";
+        case kETom:    return sinal (v, 0, " st");
+        case kEVel:    return std::abs (v) < 0.5f ? juce::String ("PARADO") : (v < 0.0f ? u8 ("R\xc3\x89 ") + juce::String (juce::roundToInt (-v)) + "%" : juce::String (juce::roundToInt (v)) + "%");
         default: break;
     }
     if (auto* c = dynamic_cast<juce::AudioParameterChoice*> (proc.param (k))) return c->getCurrentChoiceName();
@@ -527,7 +530,7 @@ void RetalhoEditor::linha (juce::Graphics& g)
         const char* expl[3] = { "FOLLOW: CADA PASSO L\xc3\x8a O SEU PONTO", "HOLD: TODOS LEEM DO 1\xc2\xba PASSO", "HITS: CADA PASSO PULA PARA O ATAQUE" };
         rotulo (g, { x, y, 1188 - x, 20 }, u8 (expl[lim (rd, 0, 2)]), cDim, juce::Justification::centredLeft, 9.5f);
     }
-    else
+    else if (modo == mGroove)
     {
         x = grupo (g, x, y, "CHOPS", kChops, lista (kChops));
         x = grupo (g, x, y, "CUT", kCut, lista (kCut));
@@ -535,6 +538,8 @@ void RetalhoEditor::linha (juce::Graphics& g)
         x = grupo (g, x, y, "BARS", kGBars, lista (kGBars));
         grupo (g, x, y, "GRID", kGGrid, lista (kGGrid));
     }
+    else
+        rotulo (g, { x, y, 1100, 20 }, juce::String (ch::modo[lim (modo, 0, 4)]) + u8 (": AJUSTE NA TELA PRINCIPAL"), cDim, juce::Justification::centredLeft, 10.0f);
 }
 
 // ---- ORIGINAL ---------------------------------------------------------------------------------------------------------
@@ -622,7 +627,8 @@ void RetalhoEditor::result (juce::Graphics& g, juce::Rectangle<float> r)
     const auto in = r.reduced (10, 0).withTrimmedTop (26).withTrimmedBottom (34);
     if (modo == mEdit) resultEdit (g, in);
     else if (modo == mComplex) resultComplex (g, in);
-    else resultGroove (g, in);
+    else if (modo == mGroove) resultGroove (g, in);
+    else blocosFill (g, in);
 
     // transporte do preview (EDIT / COMPLEX)
     if (modo != mGroove)
@@ -666,7 +672,7 @@ void RetalhoEditor::resultEdit (juce::Graphics& g, juce::Rectangle<float> in)
     }
 
     // título
-    juce::String det = juce::String (ch::length[lim (escolha (kLength), 0, 2)]) + u8 (" \xc2\xb7 ");
+    juce::String det = juce::String (ch::length[lim (escolha (kLength), 0, 3)]) + u8 (" \xc2\xb7 ");
     const juce::String rt = juce::String (ch::rate[lim (escolha (kRate), 0, 4)]) + (escolha (kRateMod) == 1 ? "T" : (escolha (kRateMod) == 2 ? u8 ("\xc2\xb7") : ""));
     if (sh == shRamp || sh == shCurve) det += rt + u8 (" \xe2\x86\x92 ") + ch::rate[lim (escolha (kRampTo), 0, 4)];
     else if (sh == shTremolo) det += "TREMOLO " + rt + " " + ch::trem[lim (escolha (kTrem), 0, 2)];
@@ -801,7 +807,7 @@ void RetalhoEditor::resultComplex (juce::Graphics& g, juce::Rectangle<float> in)
     const auto ft = fonte (10.0f).withExtraKerningFactor (0.3f);
     rotulo (g, { areaResult.getX() + 10, areaResult.getY() + 6, 160, 14 }, u8 ("RESULT \xc2\xb7 STEPS"), cMu, juce::Justification::centredLeft, 10.0f);
     rotulo (g, { areaResult.getX() + 18 + largura (ft, u8 ("RESULT \xc2\xb7 STEPS")), areaResult.getY() + 6, 500, 14 },
-            juce::String (N) + u8 (" \xc2\xb7 ") + ch::length[lim (escolha (kLength), 0, 2)] + u8 (" \xc2\xb7 READ ") + ch::read[lim (escolha (kRead), 0, 2)]
+            juce::String (N) + u8 (" \xc2\xb7 ") + ch::length[lim (escolha (kLength), 0, 3)] + u8 (" \xc2\xb7 READ ") + ch::read[lim (escolha (kRead), 0, 2)]
                 + (escolha (kDEvery) > 0 ? u8 (" \xc2\xb7 DICE ") + juce::String (ch::every[escolha (kDEvery)]) : juce::String()),
             cAmb, juce::Justification::centredLeft, 10.0f, true);
     {
@@ -1011,7 +1017,7 @@ void RetalhoEditor::paineis (juce::Graphics& g)
             if (f.existsAsFile()) f.revealToUser();
         }, 9.5f);
     }
-    else
+    else if (modo == mGroove)
     {
         painel (g, { 12, y, 300, h }, "FEEL", "");
         kn (kDensity, "DENSITY", 52, cVerde); kn (kGSwing, "SWING", 120, cVerde); kn (kHumanize, "HUMANIZE", 188, cVerde); kn (kGPitch, "PITCH", 256, cVerde);
@@ -1039,6 +1045,12 @@ void RetalhoEditor::paineis (juce::Graphics& g)
         }
         botao (g, { 1018, y + 48, 76, 30 }, "DICE", false, cAmb, [this] { proc.dadoGroove(); }, 11.0f);
         liga (g, { 1100, y + 48, 76, 30 }, "LOCK GRID", kLockGrid, cAmb);
+    }
+    else
+    {
+        painel (g, { 12, y, 1176, h }, "PICOTE / ESTICA", "");
+        rotulo (g, { 24, y + 30, 1150, 40 }, u8 ("ESTE AJUSTE \xc3\x89 DA TELA PRINCIPAL: VOLTE NELA (\xe2\x80\xb9 PRINCIPAL) OU ESCOLHA EDIT, COMPLEX OU GROOVE AQUI EM CIMA."),
+                cMu, juce::Justification::centredLeft, 11.0f);
     }
 }
 
@@ -1144,7 +1156,7 @@ void RetalhoEditor::rodape (juce::Graphics& g)
 #ifdef JucePlugin_VersionString
     const juce::String ver = juce::String (JucePlugin_VersionString);
 #else
-    const juce::String ver = "0.1.3";
+    const juce::String ver = "0.1.4";
 #endif
     rotulo (g, { 700, (float) baseH - 18, 488, 14 }, u8 ("RETALHO ") + ver + u8 (" TESTE \xc2\xb7 NOME PROVIS\xc3\x93RIO"), cDim, juce::Justification::centredRight, 8.5f);
 }
@@ -1516,8 +1528,13 @@ void RetalhoEditor::menu()
                     "ou ponha o plugin na faixa da voz e clique em CAPTURAR: ele grava os compassos escolhidos a partir do pr\xc3\xb3ximo compasso. "
                     "Com amostra, a faixa original fica muda e a amostra toca em loop no tempo do projeto. Arraste na onda da amostra para "
                     "escolher o trecho que toca (duplo clique volta para ela inteira). Todos os efeitos atuam na amostra.\n\n"
-                    "SIMPLE (a tela que abre): 1) escolha o efeito no cart\xc3\xa3o, 2) ajuste nos 5 knobs, 3) escolha QUANDO TOCA. "
-                    "Os pads guardam e disparam ajustes. O PRO mostra todos os controles abaixo.\n\n"
+                    "PICOTE (a tela que abre): a frase toca LIMPA e o efeito cai s\xc3\xb3 em alguns pontos (o fim da frase, o fim do compasso). "
+                    "RECEITA \xe2\x97\x80 \xe2\x96\xb6 escolhe quais efeitos, QUANTO EFEITO escolhe quanto da frase \xc3\xa9 mexida, VARIAR sorteia outra vers\xc3\xa3o. "
+                    "Na onda: cinza = voz limpa, amarelo = repete, rosa = tom, azul = ao contr\xc3\xa1rio, roxo = acelera, laranja = freia.\n\n"
+                    "ESTICA: a voz vira gr\xc3\xa3os. Escolha a DIRE\xc3\x87\xc3\x83O (MEIO TEMPO, CONGELA, AO CONTR\xc3\x81RIO, ABRE, ESTILHA\xc3\x87" "A, T\xc3\x9aNEL) "
+                    "e gire o knob grande para dizer quanto. GR\xc3\x83O, ESPA\xc3\x87O, VELOCIDADE, EST\xc3\x89REO, GRADE e TOM ajustam o fino.\n\n"
+                    "Com o projeto tocando, o resultado toca em loop no tempo dele. EXPORTAR WAV ou arraste a onda para o DAW. "
+                    "AVAN\xc3\x87" "ADO mostra os controles antigos abaixo.\n\n"
                     "EDIT: o fill desenhado. SHAPE (GRID, RAMP, CURVE, FREE, TREMOLO), LENGTH e RATE; PITCH, FILTER, STEREO, "
                     "TAPE STOP e REVERSE. No GRID, clique nas fatias do RESULT para ligar ou desligar.\n\n"
                     "COMPLEX: passos com 8 tipos. Clique no topo do passo para trocar o tipo e arraste para o valor. "
@@ -1538,16 +1555,9 @@ void RetalhoEditor::menu()
 // =====================================================================================================================
 void RetalhoEditor::chaveModo (juce::Graphics& g)
 {
+    // 0.1.4: o PRO virou o AVANÇADO; daqui volta para a tela principal (PICOTE / ESTICA)
     const juce::Rectangle<float> r (182, 11, 110, 26);
-    g.setColour (cPn2); g.fillRoundedRectangle (r, 13.0f);
-    g.setColour (cLn); g.drawRoundedRectangle (r, 13.0f, 1.0f);
-    const bool s = simples();
-    const auto rs = r.withWidth (58.0f), rp = r.withTrimmedLeft (58.0f);
-    g.setColour (cAmb); g.fillRoundedRectangle (s ? rs : rp, 13.0f);
-    rotulo (g, rs, "SIMPLE", s ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 9.5f, true);
-    rotulo (g, rp, "PRO", s ? cMu : juce::Colour (0xff141414), juce::Justification::centred, 9.5f, true);
-    alvos.push_back ({ rs, [this] { proc.uiPro = 0; } });
-    alvos.push_back ({ rp, [this] { proc.uiPro = 1; } });
+    botao (g, r, u8 ("\xe2\x80\xb9 PRINCIPAL"), false, cAmb, [this] { proc.uiPro = 0; }, 10.0f);
 }
 
 int RetalhoEditor::cartao() const
@@ -1698,18 +1708,47 @@ juce::String RetalhoEditor::macroTexto (int i) const
             if (escolha (kFiltro) == flBpf) return "BPF " + hz (real (kFAte));
             return "OFF";
         case 3:
-            return gr ? juce::String (ch::bars[lim (escolha (kGBars), 0, 1)]) : juce::String (ch::length[lim (escolha (kLength), 0, 2)]);
+            return gr ? juce::String (ch::bars[lim (escolha (kGBars), 0, 1)]) : juce::String (ch::length[lim (escolha (kLength), 0, 3)]);
         default:
             return juce::String (juce::roundToInt (real (kDryWet))) + "%";
     }
 }
 
+namespace
+{
+const juce::Colour cAzul { 0xff4f8cff }, cLaranja { 0xffff9a4d }, cLimpo { 0xff9aa3b0 };
+juce::Colour corPk (int t)
+{
+    static const juce::Colour c[numPk] = { juce::Colour (0xfff6c445), juce::Colour (0xffff6fa3), juce::Colour (0xff4f8cff),
+                                           juce::Colour (0xffb9a2ff), juce::Colour (0xffff9a4d), juce::Colour (0xff9aa5b1) };
+    return t < 0 ? cLimpo : c[lim (t, 0, numPk - 1)];
+}
+juce::Colour corDir (int d)
+{
+    static const juce::Colour c[numDirecoes] = { juce::Colour (0xff3cc8d8), juce::Colour (0xff9fd8ff), juce::Colour (0xff4f8cff),
+                                                 juce::Colour (0xff43d17a), juce::Colour (0xffff6fa3), juce::Colour (0xffb9a2ff) };
+    return c[lim (d, 0, numDirecoes - 1)];
+}
+// dado (VARIAR)
+void dado (juce::Graphics& g, juce::Rectangle<float> r, juce::Colour cor)
+{
+    g.setColour (cor); g.drawRoundedRectangle (r, 3.0f, 1.4f);
+    const float s = r.getWidth();
+    for (auto p : { juce::Point<float> (0.28f, 0.28f), juce::Point<float> (0.72f, 0.72f), juce::Point<float> (0.5f, 0.5f),
+                    juce::Point<float> (0.72f, 0.28f), juce::Point<float> (0.28f, 0.72f) })
+        g.fillEllipse (r.getX() + p.x * s - 1.5f, r.getY() + p.y * s - 1.5f, 3.0f, 3.0f);
+}
+} // namespace
+
+// =====================================================================================================================
+// TELA PRINCIPAL (0.1.4): PICOTE | ESTICA, uma onda grande e poucos controles (esboço v3 de 17/11/2026)
+// =====================================================================================================================
 void RetalhoEditor::telaSimples (juce::Graphics& g)
 {
-    auto& m = proc.motor();
-    const int ca = cartao();
+    const int md = escolha (kModo);
+    const bool est = md == mEstica, pic = md == mPicote;
 
-    // ---- topo: marca, SIMPLE/PRO, PRESET ◀ ▶, o que está ouvindo, menu ----
+    // ---- topo: marca, PICOTE | ESTICA, RECEITA / DIREÇÃO ◀ ▶, VARIAR, status, menu ----
     g.setColour (juce::Colour (0xff15191f)); g.fillRect (0.0f, 0.0f, (float) baseW, 48.0f);
     g.setColour (cLn); g.drawLine (0, 48, (float) baseW, 48, 1.0f);
     {
@@ -1724,31 +1763,70 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
             x += largura (f, partes[i]);
         }
     }
-    chaveModo (g);
     {
-        const juce::Rectangle<float> rp (316, 9, 420, 30);
-        caixa (g, rp, juce::Colour (0xff121418), 6.0f);
-        rotulo (g, { rp.getX() + 12, rp.getY(), 60, rp.getHeight() }, "PRESET", cMu, juce::Justification::centredLeft, 9.0f);
-        const juce::Rectangle<float> rn (rp.getX() + 70, rp.getY(), rp.getWidth() - 70 - 74, rp.getHeight());
-        rotulo (g, rn.withTrimmedRight (18), proc.nomePreset(), cAmb, juce::Justification::centredLeft, 12.0f, true);
-        tri (g, { rn.getRight() - 8, rn.getCentreY() }, 8, 2, cMu);
-        alvos.push_back ({ rn, [this] { menuPresets(); } });
-        const juce::Rectangle<float> ra (rp.getRight() - 68, rp.getY() + 3, 30, 24), rb (rp.getRight() - 34, rp.getY() + 3, 30, 24);
-        botao (g, ra, "", false, cAmb, [this] { proc.presetVizinho (-1); });
-        tri (g, ra.getCentre(), 9, 1, cTx);
-        botao (g, rb, "", false, cAmb, [this] { proc.presetVizinho (1); });
-        tri (g, rb.getCentre(), 9, 0, cTx);
+        const juce::Rectangle<float> r (182, 10, 200, 28);
+        g.setColour (cPn2); g.fillRoundedRectangle (r, 14.0f);
+        g.setColour (cLn); g.drawRoundedRectangle (r, 14.0f, 1.0f);
+        const auto ra = r.withWidth (100.0f), rb = r.withTrimmedLeft (100.0f);
+        if (pic) { g.setColour (cAmb); g.fillRoundedRectangle (ra, 14.0f); }
+        if (est) { g.setColour (cCiano); g.fillRoundedRectangle (rb, 14.0f); }
+        rotulo (g, ra, "PICOTE", pic ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 11.0f, true);
+        rotulo (g, rb, "ESTICA", est ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 11.0f, true);
+        alvos.push_back ({ ra, [this] { proc.aplicaModo (mPicote); } });
+        alvos.push_back ({ rb, [this] { proc.aplicaModo (mEstica); } });
     }
     {
+        const juce::Rectangle<float> rp (398, 9, 400, 30);
+        caixa (g, rp, juce::Colour (0xff121418), 6.0f);
+        rotulo (g, { rp.getX() + 12, rp.getY(), 70, rp.getHeight() }, est ? u8 ("DIRE\xc3\x87\xc3\x83O") : "RECEITA", cMu, juce::Justification::centredLeft, 9.0f);
+        const juce::Rectangle<float> rn (rp.getX() + 84, rp.getY(), rp.getWidth() - 84 - 72, rp.getHeight());
+        juce::String nome;
+        juce::Colour cn = cAmb;
+        if (est) { nome = u8 (ch::direcao[lim (escolha (kEDir), 0, 5)]); cn = corDir (escolha (kEDir)); }
+        else if (pic) nome = juce::String (escolha (kReceita) + 1) + "/" + juce::String (numReceitas) + "   " + u8 (ch::receita[lim (escolha (kReceita), 0, numReceitas - 1)]);
+        else { nome = u8 ("AJUSTE DO AVAN\xc3\x87" "ADO: ") + juce::String (ch::modo[lim (md, 0, 4)]); cn = cLil; }
+        rotulo (g, rn, nome, cn, juce::Justification::centredLeft, 13.0f, true);
+        if (pic || ! est)
+            alvos.push_back ({ rn, [this]
+            {
+                juce::PopupMenu mn;
+                for (int i = 0; i < numReceitas; ++i) mn.addItem (1 + i, u8 (ch::receita[i]), true, escolha (kModo) == mPicote && escolha (kReceita) == i);
+                juce::Component::SafePointer<RetalhoEditor> safe (this);
+                mn.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(), [safe] (int r)
+                {
+                    if (safe != nullptr && r > 0) safe->proc.aplicaReceita (r - 1);
+                });
+            } });
+        const juce::Rectangle<float> ra (rp.getRight() - 68, rp.getY() + 3, 30, 24), rb (rp.getRight() - 34, rp.getY() + 3, 30, 24);
+        auto passo = [this, est] (int d)
+        {
+            if (est) proc.define (kEDir, (float) ((escolha (kEDir) + d + numDirecoes) % numDirecoes));
+            else proc.aplicaReceita (escolha (kModo) == mPicote ? escolha (kReceita) + d : 0);
+        };
+        botao (g, ra, "", false, cAmb, [passo] { passo (-1); });
+        tri (g, ra.getCentre(), 9, 1, cTx);
+        botao (g, rb, "", false, cAmb, [passo] { passo (1); });
+        tri (g, rb.getCentre(), 9, 0, cTx);
+
+        const juce::Rectangle<float> rv (rp.getRight() + 8, rp.getY(), 108, 30);
+        const juce::Colour cv = est ? cCiano : cAmb;
+        g.setColour (cv.withAlpha (0.12f)); g.fillRoundedRectangle (rv, 6.0f);
+        g.setColour (cv); g.drawRoundedRectangle (rv.reduced (0.5f), 6.0f, 1.3f);
+        dado (g, { rv.getX() + 11, rv.getCentreY() - 8, 16, 16 }, cv);
+        rotulo (g, rv.withTrimmedLeft (34), "VARIAR", cv, juce::Justification::centredLeft, 11.0f, true);
+        alvos.push_back ({ rv, [this] { proc.variar(); } });
+    }
+    {
+        auto& m = proc.motor();
         const bool am = proc.temAmostra();
-        const bool cap = am ? proc.posAmostra() >= 0.0f : vista.valida;
-        const juce::String t = juce::String (am ? (cap ? "AMOSTRA TOCANDO" : "AMOSTRA PRONTA") : (cap ? "SEM AMOSTRA: A FAIXA PASSA" : "SEM AMOSTRA"))
+        const bool toca = am && proc.posAmostra() >= 0.0f;
+        const juce::String t = juce::String (am ? (toca ? "TOCANDO" : "AMOSTRA PRONTA") : "SEM AMOSTRA")
                                + u8 (" \xc2\xb7 ") + juce::String (juce::roundToInt (m.bpmA.load())) + " BPM";
         const float w = largura (fonte (10.0f, true).withExtraKerningFactor (0.22f), t);
         const float x1 = 1148;
-        rotulo (g, { x1 - w - 4, 9, w + 4, 30 }, t, cap ? cTx : cDim, juce::Justification::centredRight, 10.0f, true);
-        const float pulso = cap ? 0.75f + 0.25f * std::sin (quadro * 0.15f) : 0.3f;
-        g.setColour ((cap ? cVerde : cDim).withAlpha (pulso));
+        rotulo (g, { x1 - w - 4, 9, w + 4, 30 }, t, am ? cTx : cDim, juce::Justification::centredRight, 10.0f, true);
+        const float pulso = toca ? 0.75f + 0.25f * std::sin (quadro * 0.15f) : 0.35f;
+        g.setColour ((am ? cVerde : cDim).withAlpha (pulso));
         g.fillEllipse (x1 - w - 18, 21, 7, 7);
         const juce::Rectangle<float> r (1160, 11, 28, 26);
         caixa (g, r, cPn, 5.0f);
@@ -1757,266 +1835,378 @@ void RetalhoEditor::telaSimples (juce::Graphics& g)
         alvos.push_back ({ r, [this] { menu(); } });
     }
 
-    auto secao = [&] (float x, float y, const char* n, const juce::String& t)
+    // ---- a amostra, a onda grande e os controles ----
+    faixaAmostra (g, { 12, 54, 1176, 60 });
+    ondaGrande (g, { 12, 122, 1176, 270 });
+    if (est) controlesEstica (g, 402.0f);
+    else if (pic) controlesPicote (g, 402.0f);
+    else
     {
-        rotulo (g, { x, y, 16, 14 }, n, cAmb, juce::Justification::centredLeft, 11.0f, true);
-        rotulo (g, { x + 16, y, 400, 14 }, t, cMu, juce::Justification::centredLeft, 10.0f);
-    };
-
-    // ---- 1 · efeito ----
-    secao (14, 54, "1", "ESCOLHA O EFEITO");
-    if (ca < 0)
-        rotulo (g, { 600, 54, 588, 14 }, u8 ("CENA DO PRO (COMPLEX): ESCOLHA UM EFEITO OU AJUSTE NO PRO"), cLil, juce::Justification::centredRight, 9.0f);
-    {
-        static const char* nomes[4] = { "STUTTER", "RISER", "TAPE STOP", "GROOVE" };
-        static const char* desc[4] = { "repete a s\xc3\xadlaba no ritmo", "acelera e sobe o tom at\xc3\xa9 o drop",
-                                       "a voz \"freia\" e para", "a voz vira chops no contratempo" };
-        const float cw = (1176.0f - 30.0f) / 4.0f;
-        for (int i = 0; i < 4; ++i)
-        {
-            const juce::Rectangle<float> r (12.0f + i * (cw + 10.0f), 72, cw, 44);
-            const bool on = ca == i;
-            const juce::Colour cor = i == 3 ? cVerde : cAmb;
-            if (on)
-            {
-                g.setColour (cor.withAlpha (0.10f)); g.fillRoundedRectangle (r.expanded (3), 11.0f);
-                g.setGradientFill (juce::ColourGradient (cor.withAlpha (0.22f), 0, r.getY(), cor.withAlpha (0.06f), 0, r.getBottom(), false));
-                g.fillRoundedRectangle (r, 9.0f);
-                g.setColour (cor); g.drawRoundedRectangle (r, 9.0f, 1.6f);
-            }
-            else caixa (g, r, cPn, 9.0f);
-            rotulo (g, { r.getX() + 16, r.getY() + 4, r.getWidth() - 24, 20 }, nomes[i], on ? cor : cTx, juce::Justification::centredLeft, 16.0f, true);
-            rotulo (g, { r.getX() + 16, r.getY() + 25, r.getWidth() - 24, 14 }, u8 (desc[i]), on ? cTx.withAlpha (0.8f) : cMu, juce::Justification::centredLeft, 10.0f);
-            alvos.push_back ({ r, [this, i] { proc.aplicaCartao (i); } });
-        }
+        const juce::Rectangle<float> r (12, 402, 1176, 172);
+        caixa (g, r, cPn, 9.0f);
+        rotulo (g, r, u8 ("ESTE SOM VEM DO AVAN\xc3\x87" "ADO. ESCOLHA PICOTE OU ESTICA L\xc3\x81 EM CIMA PARA VOLTAR \xc3\x80 TELA SIMPLES."), cMu,
+                juce::Justification::centred, 12.0f, true);
     }
 
-    // ---- a amostra (dentro do plugin) e a onda do resultado ----
-    faixaAmostra (g, { 12, 122, 1176, 64 });
-    ondaSimples (g, { 12, 192, 1176, 122 });
-
-    // ---- 2 · ajuste: 5 macros ----
-    secao (14, 320, "2", "AJUSTE");
-    {
-        const juce::Rectangle<float> rm (12, 338, 788, 134);
-        caixa (g, rm, cPn, 9.0f);
-        const bool gr = ca == 3;
-        const char* nomes[5] = { gr ? "DENSITY" : "SPEED", "PITCH", "FILTER", "LENGTH", "MIX" };
-        const char* subs[5] = { gr ? "quantos chops entram" : "qu\xc3\xa3o r\xc3\xa1pido repete", "quanto o tom muda",
-                                "\xe2\x86\x90 abafa \xc2\xb7 abre \xe2\x86\x92", "tamanho do efeito", "efeito \xc3\x97 voz" };
-        const juce::Colour cores[5] = { gr ? cVerde : cAmb, cCiano, cRosa, gr ? cVerde : cAmb, cTx };
-        const float zeros[5] = { 0.0f, gr ? 0.5f : 12.0f / 36.0f, 0.5f, 0.0f, 0.0f };
-        const float cw = rm.getWidth() / 5.0f;
-        for (int i = 0; i < 5; ++i)
-        {
-            const float cx = rm.getX() + cw * (i + 0.5f);
-            const bool at = macroAtivo (i);
-            if (i > 0) { g.setColour (cLn.withAlpha (0.6f)); g.drawLine (rm.getX() + cw * i, rm.getY() + 14, rm.getX() + cw * i, rm.getBottom() - 14, 1.0f); }
-            rotulo (g, { cx - cw * 0.5f, rm.getY() + 9, cw, 16 }, nomes[i], at ? cTx : cDim, juce::Justification::centred, 12.5f, true);
-            rotulo (g, { cx - cw * 0.5f, rm.getY() + 25, cw, 13 }, u8 (subs[i]), cDim, juce::Justification::centred, 9.0f);
-            const juce::Point<float> c (cx, rm.getY() + 72);
-            desenhaKnob (g, c, 23.0f, macroLe (i), zeros[i], cores[i], at);
-            knobs.push_back ({ -1 - i, c, 23.0f });
-            rotulo (g, { cx - cw * 0.5f, rm.getY() + 104, cw, 18 }, at ? macroTexto (i) : u8 ("\xe2\x80\x94"), at ? cTx : cDim, juce::Justification::centred, 12.0f, true);
-        }
-    }
-
-    // ---- 3 · quando toca ----
-    secao (814, 320, "3", "QUANDO TOCA");
-    {
-        const juce::Rectangle<float> rq (812, 338, 376, 134);
-        caixa (g, rq, cPn, 9.0f);
-        static const char* op[4] = { "TODO COMPASSO", "FIM DE 4 BARS", "FIM DE 8 BARS", "S\xc3\x93 NO PAD" };
-        const int q = quando();
-        const float bw = (rq.getWidth() - 24.0f - 8.0f) / 2.0f;
-        for (int i = 0; i < 4; ++i)
-        {
-            const juce::Rectangle<float> r (rq.getX() + 12 + (i % 2) * (bw + 8), rq.getY() + 12 + (i / 2) * 40.0f, bw, 32);
-            botao (g, r, u8 (op[i]), q == i, cAmb, [this, i]
-            {
-                if (i == 3) { proc.define (kGatilho, (float) gOneShot); return; }
-                static const int onde[3] = { 0, 2, 3 };
-                proc.define (kGatilho, (float) gAuto);
-                proc.define (kOnde, (float) onde[i]);
-            }, 11.0f);
-        }
-        static const char* expl[5] = {
-            "Ajuste vindo do PRO. Escolha uma op\xc3\xa7\xc3\xa3o acima.",
-            "Toca em todo compasso, no fim dele, com o projeto tocando.",
-            "Entra sozinho no fim de cada frase de 4 compassos, com o projeto tocando.",
-            "Entra sozinho no fim de cada frase de 8 compassos, com o projeto tocando.",
-            ("S\xc3\xb3 toca quando voc\xc3\xaa clica num pad ou manda a nota MIDI (C3\xe2\x80\x93" "F3).") };
-        g.setColour (cMu);
-        g.setFont (fonte (10.0f));
-        g.drawFittedText (u8 (expl[q + 1]), juce::Rectangle<int> ((int) rq.getX() + 14, (int) rq.getY() + 96, (int) rq.getWidth() - 28, 32),
-                          juce::Justification::centredLeft, 2, 0.9f);
-    }
-
-    // ---- pads e saída ----
-    const float y0 = 482;
-    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff13161b), 0, y0, juce::Colour (0xff0e1014), 0, (float) baseH, false));
-    g.fillRect (0.0f, y0, (float) baseW, (float) baseH - y0);
-    g.setColour (cLn); g.drawLine (0, y0, (float) baseW, y0, 1.0f);
-    rotulo (g, { 14, y0 + 6, 900, 14 },
-            escolha (kGatilho) == gAuto ? u8 ("PADS \xc2\xb7 CLIQUE = CARREGA ESSE AJUSTE (EM \"S\xc3\x93 NO PAD\" O CLIQUE TOCA) \xc2\xb7 MIDI C3\xe2\x80\x93" "F3")
-                                        : u8 ("PADS \xc2\xb7 CLIQUE = TOCA \xc2\xb7 MIDI C3\xe2\x80\x93" "F3"),
-            cMu, juce::Justification::centredLeft, 10.0f);
-    {
-        static const char* notas[numPads] = { "C3", "C#3", "D3", "D#3", "E3", "F3" };
-        const int aceso = m.padAceso.load();
-        const float pw = (938.0f - 5.0f * 8.0f) / 6.0f;
-        for (int i = 0; i < numPads; ++i)
-        {
-            const juce::Rectangle<float> r (12.0f + i * (pw + 8.0f), y0 + 24, pw, 82);
-            areaPads[i] = r;
-            const auto ip = proc.infoPad (i);
-            const juce::Colour cor = ! ip.cheio ? cDim : (ip.modo == mGroove ? cVerde : (ip.modo == mComplex ? cLil : cAmb));
-            const bool on = aceso == i || padSegurado == i;
-            g.setColour (on ? cor.withAlpha (0.22f) : cPn); g.fillRoundedRectangle (r, 7.0f);
-            g.setColour (on ? cor : (ip.cheio ? cor.withAlpha (0.45f) : cLn)); g.drawRoundedRectangle (r, 7.0f, on ? 1.8f : 1.0f);
-            rotulo (g, { r.getX() + 10, r.getY() + 6, 80, 12 }, juce::String (i + 1) + u8 (" \xc2\xb7 ") + notas[i], cMu, juce::Justification::centredLeft, 8.5f);
-            if (ip.cheio)
-            {
-                g.setColour (cor);
-                g.setFont (fonte (12.0f, true).withExtraKerningFactor (0.1f));
-                g.drawFittedText (ip.nome, juce::Rectangle<int> ((int) r.getX() + 10, (int) r.getY() + 22, (int) r.getWidth() - 16, 34), juce::Justification::topLeft, 2, 0.8f);
-                rotulo (g, { r.getX() + 10, r.getBottom() - 18, r.getWidth() - 14, 12 },
-                        ip.modo == mGroove ? "GROOVE" : (ip.modo == mComplex ? "GLITCH" : "FILL"), cMu, juce::Justification::centredLeft, 8.5f);
-            }
-            else
-            {
-                rotulo (g, { r.getX() + 10, r.getY() + 24, r.getWidth() - 14, 18 }, "+ SALVAR", cMu, juce::Justification::centredLeft, 12.0f, true);
-                rotulo (g, { r.getX() + 10, r.getBottom() - 18, r.getWidth() - 14, 12 }, "guarda o ajuste atual", cDim, juce::Justification::centredLeft, 8.5f);
-            }
-        }
-    }
-    {
-        const float x = 962, w = 226;
-        const int abv = proc.abAtual();
-        botao (g, { x, y0 + 24, 60, 26 }, "A", abv == 0, cTx, [this] { proc.trocaAB (0); }, 11.0f);
-        botao (g, { x + 66, y0 + 24, 60, 26 }, "B", abv == 1, cTx, [this] { proc.trocaAB (1); }, 11.0f);
-        botao (g, { x + 132, y0 + 24, w - 132, 26 }, u8 ("A\xe2\x86\x92" "B"), false, cTx, [this] { proc.copiaAB(); }, 10.0f);
-        liga (g, { x, y0 + 56, w, 26 }, "BYPASS", kBypass, cRosa);
-        // o que está tocando agora
-        const float pr = m.fillProg.load();
-        juce::String t = u8 ("\xe2\x80\x94");
-        juce::Colour c1 = cDim;
-        if (pr >= 0.0f)
-        {
-            const int fp = m.fillPad.load();
-            t = "TOCANDO " + (fp >= 0 ? proc.infoPad (fp).nome : proc.nomePreset());
-            c1 = cAmb;
-            g.setColour (c1.withAlpha (0.25f)); g.fillRect (x, y0 + 104, w, 3.0f);
-            g.setColour (c1); g.fillRect (x, y0 + 104, w * std::fmod (pr, 1.0f), 3.0f);
-        }
-        else if (m.grooveTocando.load()) { t = "TOCANDO GROOVE"; c1 = cVerde; }
-        else if (quando() >= 0 && quando() < 3 && ! m.tocandoA.load()) t = u8 ("ESPERANDO O PLAY DO PROJETO");
-        rotulo (g, { x, y0 + 86, w, 16 }, t, c1, juce::Justification::centredLeft, 9.5f, true);
-    }
+    // ---- rodapé ----
 #ifdef JucePlugin_VersionString
     const juce::String ver = juce::String (JucePlugin_VersionString);
 #else
-    const juce::String ver = "0.1.3";
+    const juce::String ver = "0.1.4";
 #endif
-    rotulo (g, { 14, (float) baseH - 20, 900, 14 },
-            u8 ("PAD VAZIO = GUARDA O AJUSTE \xc2\xb7 BOT\xc3\x83O DIREITO NO PAD = RENOMEIA / LIMPA \xc2\xb7 DUPLO CLIQUE NO KNOB = VOLTA AO PADR\xc3\x83O \xc2\xb7 PRO = TODOS OS AJUSTES"),
+    rotulo (g, { 14, (float) baseH - 30, 860, 20 },
+            est ? u8 ("SOLTE O VOCAL NA JANELA \xc2\xb7 ESCOLHA A DIRE\xc3\x87\xc3\x83O E GIRE O KNOB \xc2\xb7 VARIAR SORTEIA OUTROS GR\xc3\x83OS \xc2\xb7 ARRASTE A ONDA PARA O DAW")
+                : u8 ("SOLTE O VOCAL NA JANELA \xc2\xb7 \xe2\x97\x80 \xe2\x96\xb6 TROCA A RECEITA \xc2\xb7 VARIAR SORTEIA ONDE O EFEITO CAI \xc2\xb7 ARRASTE A ONDA PARA O DAW"),
             cDim, juce::Justification::centredLeft, 8.5f);
-    rotulo (g, { 900, (float) baseH - 20, 288, 14 }, u8 ("RETALHO ") + ver + " TESTE", cDim, juce::Justification::centredRight, 8.5f);
+    const juce::Rectangle<float> rav (1078, (float) baseH - 32, 110, 24);
+    botao (g, rav, u8 ("AVAN\xc3\x87" "ADO  \xe2\x80\xba"), false, cTx, [this] { proc.uiPro = 1; }, 10.0f);
+    rotulo (g, { 880, (float) baseH - 30, 190, 20 }, u8 ("RETALHO ") + ver + " TESTE", cDim, juce::Justification::centredRight, 8.5f);
 }
 
-void RetalhoEditor::ondaSimples (juce::Graphics& g, juce::Rectangle<float> r)
+// a onda grande: o RESULTADO (ou o ORIGINAL), com as zonas de efeito do PICOTE ou os grãos do ESTICA
+void RetalhoEditor::ondaGrande (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    tela (g, r, 8.0f);
-    auto& m = proc.motor();
+    tela (g, r, 10.0f);
     const auto& v = vista;
-    const int modo = escolha (kModo);
-    const bool gr = modo == mGroove;
-    const auto in = r.reduced (14, 0).withTrimmedTop (32).withTrimmedBottom (8);
+    const int md = escolha (kModo);
+    const bool est = md == mEstica, pic = md == mPicote;
+    const juce::Colour corM = est ? corDir (escolha (kEDir)) : cAmb;
+    const auto in = r.reduced (18, 0).withTrimmedTop (44).withTrimmedBottom (est ? 76 : 34);
+    const float W = in.getWidth(), cy = in.getCentreY(), hh = in.getHeight() * 0.5f;
+    const int C = RetalhoProcessor::colunas;
 
-    // grade por tempo (tracejada)
-    const double beats = v.len > 0 ? (double) v.len / v.spb : 4.0;
-    gradeTempo (g, in, r.getY() + 28, r.getBottom() - 6, beats, (int) v.bpb);
-
-    const juce::String tit = u8 ("RESULTADO \xc2\xb7 ");
-    const auto ft = fonte (10.0f).withExtraKerningFactor (0.3f);
-    rotulo (g, { r.getX() + 14, r.getY() + 8, 200, 14 }, tit, cMu, juce::Justification::centredLeft, 10.0f);
-    rotulo (g, { r.getX() + 14 + largura (ft, tit), r.getY() + 8, 300, 14 },
-            gr ? juce::String (ch::bars[lim (escolha (kGBars), 0, 1)]) + u8 (" \xc2\xb7 ") + ch::estilo[lim (escolha (kEstilo), 0, 6)]
-               : juce::String (ch::length[lim (escolha (kLength), 0, 2)]),
-            gr ? cVerde : cAmb, juce::Justification::centredLeft, 10.0f, true);
+    // título
+    {
+        const juce::String a = verOriginal ? u8 ("ORIGINAL \xc2\xb7 ") : u8 ("RESULTADO \xc2\xb7 ");
+        juce::String b = juce::String (ch::length[lim (escolha (kLength), 0, 3)]);
+        if (pic) b += u8 (" \xc2\xb7 ") + juce::String (u8 (ch::receita[lim (escolha (kReceita), 0, numReceitas - 1)])) + u8 (" \xc2\xb7 ") + u8 (ch::quanto[lim (escolha (kQuanto), 0, 2)]);
+        if (est) b += u8 (" \xc2\xb7 ") + juce::String (u8 (ch::direcao[lim (escolha (kEDir), 0, 5)])) + " " + juce::String (juce::roundToInt (real (kEInt))) + "%";
+        const auto ft = fonte (10.5f).withExtraKerningFactor (0.3f);
+        rotulo (g, { r.getX() + 16, r.getY() + 12, largura (ft, a) + 6, 16 }, a, cMu, juce::Justification::centredLeft, 10.5f);
+        rotulo (g, { r.getX() + 22 + largura (ft, a), r.getY() + 12, 520, 16 }, b, corM, juce::Justification::centredLeft, 10.5f, true);
+    }
+    // direita: ORIGINAL | RESULTADO, OUVIR, LOOP
+    const int pt = proc.previewTocando();
+    {
+        float x = r.getRight() - 14;
+        const juce::Rectangle<float> rl (x - 58, r.getY() + 10, 58, 22);
+        botao (g, rl, "LOOP", proc.previewLoop.load(), corM, [this] { proc.previewLoop = ! proc.previewLoop.load(); }, 10.0f);
+        x = rl.getX() - 6;
+        const int qual = verOriginal ? 1 : 2;
+        const juce::Rectangle<float> ro (x - 92, r.getY() + 10, 92, 22);
+        botao (g, ro, "      OUVIR", pt == qual, corM, [this, qual] { proc.preview (qual); }, 10.5f);
+        tri (g, { ro.getX() + 17, ro.getCentreY() }, 8, 0, pt == qual ? corM : cMu);
+        x = ro.getX() - 12;
+        const juce::Rectangle<float> rc (x - 196, r.getY() + 10, 196, 22);
+        g.setColour (cPn2); g.fillRoundedRectangle (rc, 11.0f);
+        g.setColour (cLn); g.drawRoundedRectangle (rc, 11.0f, 1.0f);
+        const auto r1 = rc.withWidth (92.0f), r2 = rc.withTrimmedLeft (92.0f);
+        g.setColour (cTx.withAlpha (0.9f)); g.fillRoundedRectangle (verOriginal ? r1 : r2, 11.0f);
+        rotulo (g, r1, "ORIGINAL", verOriginal ? juce::Colour (0xff141414) : cMu, juce::Justification::centred, 9.5f, true);
+        rotulo (g, r2, "RESULTADO", verOriginal ? cMu : juce::Colour (0xff141414), juce::Justification::centred, 9.5f, true);
+        alvos.push_back ({ r1, [this] { verOriginal = true; } });
+        alvos.push_back ({ r2, [this] { verOriginal = false; } });
+    }
 
     if (! v.valida)
-        rotulo (g, in, proc.temAmostra() ? u8 ("PREPARANDO O RESULTADO\xe2\x80\xa6")
-                                         : u8 ("CARREGUE A AMOSTRA ACIMA (OU D\xc3\x8a PLAY COM A VOZ PASSANDO): O RESULTADO APARECE AQUI"),
-                cDim, juce::Justification::centred, 11.0f);
-    else if (! gr)
-        blocosFill (g, in);
-    else
     {
-        // GROOVE: os chops no pattern, numa faixa só (a linha de cima manda)
-        const int porC = escolha (kGGrid) == 1 ? 12 : 16;
-        const int nCel = juce::jmin (maxCelulas, porC * (escolha (kGBars) + 1));
-        const float cw = in.getWidth() / (float) nCel, cy = in.getCentreY(), hh = in.getHeight() * 0.5f;
-        const int tc = m.grooveTocando.load() ? m.grooveCel.load() : -1;
-        g.setColour (juce::Colour (0xff1d2128)); g.fillRect (in.getX(), cy - 0.5f, in.getWidth(), 1.0f);
-        // cada chop no pattern é desenhado com a onda REAL da sílaba (48 pontos), na altura do velocity
-        Pincel pc;
-        for (int c = 0; c < nCel; ++c)
+        rotulo (g, in, proc.temAmostra() ? u8 ("PREPARANDO O RESULTADO\xe2\x80\xa6")
+                                         : u8 ("SOLTE O ARQUIVO DO VOCAL AQUI: O RESULTADO APARECE NA HORA"),
+                cDim, juce::Justification::centred, 13.0f, true);
+        return;
+    }
+    const double L = (double) v.len;
+    const double beats = v.len > 0 ? L / v.spb : 4.0;
+    gradeTempo (g, in, in.getY() - 6, in.getBottom() + 6, beats, (int) v.bpb);
+    {
+        // número do compasso no começo de cada um (pequeno, dentro da onda, longe das bordas)
+        const int bars = juce::jmax (1, (int) std::round (beats / juce::jmax (1.0, v.bpb)));
+        for (int b = 0; b < bars; ++b)
         {
-            uint32_t cv = 0;
-            for (int l = 0; l < numLinhas && cChop (cv) < 0; ++l) cv = m.aCel[l][c].load();
-            const int s = cChop (cv);
-            if (s < 0) continue;
-            const float a = juce::jlimit (0.2f, 1.0f, cVel (cv) / 255.0f);
-            const float bx = in.getX() + c * cw + 1.5f, bwid = juce::jmax (1.0f, cw - 3.0f);
-            const juce::Colour cor = corChop (s);
-            if (c == tc) { g.setColour (cor.withAlpha (0.12f)); g.fillRoundedRectangle (bx - 1.0f, in.getY() - 2.0f, bwid + 2.0f, in.getHeight() + 4.0f, 3.0f); }
-            float mxo = 0.0f;
-            for (int i = 0; i < 48; ++i) mxo = juce::jmax (mxo, v.chopOnda[s][i]);
-            const float gs = mxo > 0.0f ? 1.0f / mxo : 0.0f;
-            if (v.chopMs[s] <= 0.0f || gs == 0.0f) { pc.barra (cor, bx, bwid, cy, a * hh); continue; }
-            for (float x = 0; x < bwid - 0.5f; x += 3.0f)
+            const float x = in.getX() + W * (float) (b * v.bpb / beats);
+            rotulo (g, { x + 5, in.getY() - 18, 40, 12 }, juce::String (b + 1), cDim, juce::Justification::centredLeft, 9.0f, true);
+        }
+    }
+    g.setColour (juce::Colour (0xff1d2128)); g.fillRect (in.getX(), cy - 0.5f, W, 1.0f);
+
+    // ---- PICOTE: zonas de efeito (faixa colorida + etiqueta) ----
+    if (pic && v.plano.n > 0)
+    {
+        for (int k = 0; k < v.plano.n;)
+        {
+            const auto& f = v.plano.f[k];
+            int k1 = k + 1;
+            if (f.tipoPasso < 0) { k = k1; continue; }
+            while (k1 < v.plano.n && v.plano.f[k1].passo == f.passo && v.plano.f[k1].tipoPasso >= 0) ++k1;
+            const auto& u = v.plano.f[k1 - 1];
+            const float x0 = in.getX() + W * (float) (f.t0 / L), x1 = in.getX() + W * (float) ((u.t0 + u.dur) / L);
+            const juce::Colour cz = corPk (f.tipoPasso);
+            g.setColour (cz.withAlpha (0.07f)); g.fillRect (x0, in.getY() - 4, x1 - x0, in.getHeight() + 8);
+            g.setColour (cz.withAlpha (0.8f)); g.fillRect (x0, in.getY() - 4, x1 - x0, 2.0f);
+            juce::String et = nomePk (f.tipoPasso);
+            if (f.tipoPasso == pkRepete || f.tipoPasso == pkTom) et += u8 (" \xc3\x97") + juce::String (k1 - k);
+            const auto fe = fonte (8.5f, true).withExtraKerningFactor (0.15f);
+            if (x1 - x0 > largura (fe, et) + 10)
+                rotulo (g, { x0 + 4, in.getBottom() + 6, x1 - x0 - 4, 12 }, et, cz, juce::Justification::centredLeft, 8.5f, true);
+            k = k1;
+        }
+    }
+
+    // ---- a onda ----
+    if (verOriginal)
+    {
+        const float ganho = ganhoOnda (v.oMin, v.oMax);
+        Pincel pc;
+        for (float x = 0; x < W - 1.0f; x += 3.0f)
+        {
+            const float fr = x / W;
+            const float a = juce::jmin (1.0f, picoCols (v.oMin, v.oMax, (int) (fr * C), (int) ((x + 3.0f) / W * C)) * ganho);
+            pc.barra (cOnda.brighter (0.4f), in.getX() + x, 2.0f, cy, a * hh);
+        }
+        pc.pinta (g, cy, hh, false);
+        // ESTICA: de onde cada grão sai (ponto na altura da onda)
+        if (est)
+            for (const auto& gr : v.graos)
             {
-                const float sa = v.chopOnda[s][juce::jlimit (0, 47, (int) (x * 48.0f / bwid))] * gs;
-                pc.barra (cor, bx + x, juce::jmin (2.0f, bwid - x), cy, juce::jmin (1.0f, sa) * a * hh);
+                const float fx = gr.src * v.regiaoSobreL;   // a região do ESTICA pode ser maior que a janela mostrada
+                if (fx > 1.0f) continue;
+                const float x = in.getX() + W * fx;
+                const float yc = in.getY() + 4 + (gr.pan + 1.0f) * 5.0f;
+                g.setColour ((gr.rev ? cAzul : (gr.oitava ? cTx : corM)).withAlpha (0.6f)); g.fillEllipse (x - 2.0f, yc - 2.0f, 4.0f, 4.0f);
             }
+    }
+    else if (pic || est)
+    {
+        const float ganho = ganhoOnda (v.rMin, v.rMax);
+        Pincel pc;
+        int k = 0;
+        for (float x = 0; x < W - 1.0f; x += 3.0f)
+        {
+            const float fr = x / W;
+            juce::Colour cor = corM;
+            if (pic && v.plano.n > 0)
+            {
+                const double t = fr * L;
+                while (k + 1 < v.plano.n && t >= (double) v.plano.f[k + 1].t0) ++k;
+                const auto& f = v.plano.f[k];
+                cor = f.tipo == fMute ? cDim : corPk (f.tipoPasso);
+            }
+            const float a = juce::jmin (1.0f, picoCols (v.rMin, v.rMax, (int) (fr * C), (int) ((x + 3.0f) / W * C)) * ganho);
+            pc.barra (cor, in.getX() + x, 2.0f, cy, a * hh);
         }
         pc.pinta (g, cy, hh);
-        if (tc >= 0) agulha (g, in.getX() + (tc + 0.5f) * cw, r.getY() + 28, r.getBottom() - 6, cVerde);
-        bool algum = false;
-        for (int s = 0; s < numChops; ++s) algum = algum || v.chopMs[s] > 0.0f;
-        if (! algum)
-            rotulo (g, { in.getX(), in.getY() - 2, in.getWidth(), 14 }, u8 ("AINDA SEM S\xc3\x8dLABAS: D\xc3\x8a PLAY NO PROJETO"), cDim, juce::Justification::centred, 9.5f);
+        // ESTICA: a faixa dos grãos embaixo (esquerda em cima, direita embaixo; ré azul, oitava verde)
+        if (est && ! v.graos.empty())
+        {
+            const float y0 = in.getBottom() + 10, h = 24;
+            rotulo (g, { r.getX() + 16, y0 - 2, 60, 12 }, u8 ("GR\xc3\x83OS"), cDim, juce::Justification::centredLeft, 8.5f, true);
+            g.setColour (juce::Colour (0xff1d2128)); g.fillRect (in.getX(), y0 + h * 0.5f, W, 1.0f);
+            for (const auto& gr : v.graos)
+            {
+                const float x0 = in.getX() + W * gr.t0, w = juce::jmax (2.0f, W * gr.dur);
+                const float yc = y0 + h * 0.5f + gr.pan * h * 0.42f;
+                const juce::Colour c = gr.rev ? cAzul : (gr.oitava ? cTx : corM);
+                g.setColour (c.withAlpha (0.35f)); g.fillRoundedRectangle (x0, yc - 2.5f, juce::jmin (w, in.getRight() - x0), 5.0f, 2.5f);
+                g.setColour (c.withAlpha (0.9f)); g.fillRect (x0, yc - 2.5f, 1.2f, 5.0f);
+            }
+        }
     }
+    else blocosFill (g, in);
 
-    if (! gr)
+    // ---- cursor do preview / do projeto ----
+    if (proc.previewTocando() != 0) agulha (g, in.getX() + W * proc.previewPos(), in.getY() - 8, in.getBottom() + 8, corM);
+
+    // ---- ARRASTE PARA O DAW (a onda inteira arrasta) e a legenda ----
+    areaDaw = in;
     {
-        // ARRASTE PARA O DAW
         const juce::String td = "    ARRASTE PARA O DAW";
-        const float w = largura (fonte (10.0f, true).withExtraKerningFactor (0.25f), td) + 18;
-        areaDaw = { r.getRight() - 12 - w, r.getY() + 7, w, 20 };
-        g.setColour (cTx.withAlpha (0.06f)); g.fillRoundedRectangle (areaDaw, 4.0f);
-        g.setColour (cTx.withAlpha (0.7f)); g.drawRoundedRectangle (areaDaw, 4.0f, 1.0f);
-        rotulo (g, areaDaw, td, cTx, juce::Justification::centred, 10.0f, true);
-        const float ax = areaDaw.getX() + 12, ay = areaDaw.getCentreY();
+        const float w = largura (fonte (9.5f, true).withExtraKerningFactor (0.25f), td) + 18;
+        const juce::Rectangle<float> rd (r.getRight() - 16 - w, r.getBottom() - 26, w, 18);
+        g.setColour (cTx.withAlpha (0.06f)); g.fillRoundedRectangle (rd, 4.0f);
+        g.setColour (cTx.withAlpha (0.5f)); g.drawRoundedRectangle (rd, 4.0f, 1.0f);
+        rotulo (g, rd, td, cTx.withAlpha (0.85f), juce::Justification::centred, 9.5f, true);
+        const float ax = rd.getX() + 12, ay = rd.getCentreY();
         g.setColour (cTx); g.drawLine (ax, ay - 5, ax, ay + 3, 1.4f);
         tri (g, { ax, ay + 3 }, 6, 2, cTx);
-
-        // OUVIR (só o efeito, aqui no plugin) / LOOP — no topo, ao lado do ARRASTE
-        const int pt = proc.previewTocando();
-        const juce::Rectangle<float> r2 (areaDaw.getX() - 8 - 58, areaDaw.getY(), 58, 20), r1 (r2.getX() - 6 - 84, areaDaw.getY(), 84, 20);
-        botao (g, r1, "     OUVIR", pt == 2, cAmb, [this] { proc.preview (2); }, 10.0f);
-        tri (g, { r1.getX() + 15, r1.getCentreY() }, 7, 0, pt == 2 ? cAmb : cMu);
-        botao (g, r2, "LOOP", proc.previewLoop.load(), cAmb, [this] { proc.previewLoop = ! proc.previewLoop.load(); }, 10.0f);
-
-        float pr = -1.0f;
-        if (m.fillProg.load() >= 0.0f && m.fillModo.load() == modo) pr = std::fmod (m.fillProg.load(), 1.0f);
-        else if (proc.previewTocando() == 2) pr = proc.previewPos();
-        if (pr >= 0.0f) agulha (g, in.getX() + in.getWidth() * pr, r.getY() + 28, r.getBottom() - 6, cAmb);
     }
-    else
-        rotulo (g, { r.getX() + 400, r.getY() + 8, r.getWidth() - 414, 14 },
-                u8 ("OS CHOPS TOCAM NA HORA DE \"QUANDO TOCA\" \xc2\xb7 A AMOSTRA CALA ENQUANTO ELES TOCAM"), cDim, juce::Justification::centredRight, 8.5f);
+    if (pic && ! verOriginal)
+    {
+        float x = r.getX() + 16;
+        const float y = r.getBottom() - 25;
+        auto item = [&] (juce::Colour c, const juce::String& t)
+        {
+            g.setColour (c); g.fillRoundedRectangle (x, y + 5, 8, 8, 2.0f);
+            const float w = largura (fonte (8.5f).withExtraKerningFactor (0.22f), t);
+            rotulo (g, { x + 12, y, w + 4, 18 }, t, cMu, juce::Justification::centredLeft, 8.5f);
+            x += w + 26;
+        };
+        item (cLimpo, "LIMPA " + juce::String (juce::roundToInt (v.limpo * 100.0f)) + "%");
+        for (int t = 0; t < numPk; ++t) item (corPk (t), nomePk (t));
+    }
+    if (est && ! verOriginal)
+    {
+        float x = r.getX() + 16;
+        const float y = r.getBottom() - 25;
+        auto item = [&] (juce::Colour c, const juce::String& t)
+        {
+            g.setColour (c); g.fillRoundedRectangle (x, y + 5, 8, 8, 2.0f);
+            const float w = largura (fonte (8.5f).withExtraKerningFactor (0.22f), t);
+            rotulo (g, { x + 12, y, w + 4, 18 }, t, cMu, juce::Justification::centredLeft, 8.5f);
+            x += w + 26;
+        };
+        item (corM, u8 ("GR\xc3\x83O")); item (cTx, u8 ("OITAVA ACIMA")); item (cAzul, u8 ("DE R\xc3\x89"));
+        rotulo (g, { x, y, 300, 18 }, u8 ("ALTO = ESQUERDA \xc2\xb7 BAIXO = DIREITA"), cDim, juce::Justification::centredLeft, 8.5f);
+    }
+}
+
+// PICOTE: QUANTO EFEITO · RITMO · TAMANHO · SAÍDA · EXPORTAR
+void RetalhoEditor::controlesPicote (juce::Graphics& g, float y)
+{
+    const float h = 172;
+    auto titulo = [&] (juce::Rectangle<float> r, const juce::String& t, const juce::String& s)
+    {
+        caixa (g, r, cPn, 9.0f);
+        rotulo (g, { r.getX() + 14, r.getY() + 10, r.getWidth() - 20, 16 }, t, cTx, juce::Justification::centredLeft, 11.5f, true);
+        rotulo (g, { r.getX() + 14, r.getY() + 27, r.getWidth() - 20, 13 }, s, cDim, juce::Justification::centredLeft, 9.0f);
+    };
+    // QUANTO EFEITO
+    {
+        const juce::Rectangle<float> r (12, y, 262, h);
+        titulo (r, "QUANTO EFEITO", u8 ("quanto da frase \xc3\xa9 mexida"));
+        const float bw = (r.getWidth() - 28 - 12) / 3.0f;
+        for (int i = 0; i < 3; ++i)
+            botao (g, { r.getX() + 14 + i * (bw + 6), y + 50, bw, 46 }, u8 (ch::quanto[i]), escolha (kQuanto) == i, cAmb,
+                   [this, i] { proc.define (kQuanto, (float) i); }, 12.0f);
+        const int lp = vista.valida && vista.modo == mPicote ? juce::roundToInt (vista.limpo * 100.0f) : 0;
+        rotulo (g, { r.getX() + 14, y + 108, r.getWidth() - 28, 22 }, juce::String (lp) + u8 ("% DA VOZ LIMPA"), cTx, juce::Justification::centredLeft, 15.0f, true);
+        rotulo (g, { r.getX() + 14, y + 132, r.getWidth() - 28, 28 }, u8 ("o efeito cai no fim da frase e do compasso"), cDim, juce::Justification::centredLeft, 9.0f);
+    }
+    // RITMO
+    {
+        const juce::Rectangle<float> r (284, y, 330, h);
+        titulo (r, u8 ("RITMO DAS REPETI\xc3\x87\xc3\x95" "ES"), u8 ("o tamanho de cada repeti\xc3\xa7\xc3\xa3o"));
+        const float bw = (r.getWidth() - 28 - 16) / 5.0f;
+        for (int i = 0; i < 5; ++i)
+            botao (g, { r.getX() + 14 + i * (bw + 4), y + 50, bw, 46 }, ch::ritmo[i], escolha (kRitmo) == i, cAmb,
+                   [this, i] { proc.define (kRitmo, (float) i); }, 12.0f);
+        static const char* ex[5] = { "1/4: repete um tempo inteiro (lento)", ("1/8: duas repeti\xc3\xa7\xc3\xb5" "es por tempo"),
+                                     "1/16: quatro por tempo (o cl\xc3\xa1ssico)", "1/32: oito por tempo (metralhadora)",
+                                     "MISTO: cada efeito sorteia o seu" };
+        rotulo (g, { r.getX() + 14, y + 112, r.getWidth() - 28, 16 }, u8 (ex[lim (escolha (kRitmo), 0, 4)]), cMu, juce::Justification::centredLeft, 10.0f);
+    }
+    // TAMANHO
+    {
+        const juce::Rectangle<float> r (624, y, 190, h);
+        titulo (r, "TAMANHO", "da frase, em compassos");
+        const int l = escolha (kLength);
+        const juce::Rectangle<float> rm (r.getX() + 14, y + 50, 38, 46), rp (r.getRight() - 52, y + 50, 38, 46);
+        botao (g, rm, u8 ("\xe2\x88\x92"), false, cAmb, l > 1 ? std::function<void()> ([this, l] { proc.define (kLength, (float) (l - 1)); }) : std::function<void()>(), 18.0f);
+        botao (g, rp, "+", false, cAmb, l < 3 ? std::function<void()> ([this, l] { proc.define (kLength, (float) (l + 1)); }) : std::function<void()>(), 18.0f);
+        rotulo (g, { rm.getRight(), y + 50, rp.getX() - rm.getRight(), 46 }, ch::length[lim (l, 0, 3)], cAmb, juce::Justification::centred, 14.0f, true);
+        const double seg = vista.valida ? (double) vista.len / juce::jmax (1.0, vista.fs) : 0.0;
+        if (seg > 0.0)
+            rotulo (g, { r.getX() + 14, y + 112, r.getWidth() - 28, 16 }, juce::String (seg, 1).replaceCharacter ('.', ',') + u8 (" s no tempo do projeto"), cMu, juce::Justification::centredLeft, 10.0f);
+    }
+    // SAÍDA
+    {
+        const juce::Rectangle<float> r (824, y, 170, h);
+        titulo (r, u8 ("SA\xc3\x8d" "DA"), "");
+        liga (g, { r.getX() + 14, y + 50, r.getWidth() - 28, 46 }, "FADE OUT", kFadeFim, cAmb);
+        const bool st = real (kWidth) > 75.0f;
+        botao (g, { r.getX() + 14, y + 104, r.getWidth() - 28, 46 }, u8 ("EST\xc3\x89REO"), st, cAmb,
+               [this, st] { proc.define (kWidth, st ? 50.0f : 100.0f); }, 12.0f);
+    }
+    exportar (g, { 1004, y, 184, h });
+}
+
+// ESTICA: DIREÇÃO (knob grande + 6 direções) · AJUSTE FINO (6 knobs + TAMANHO) · EXPORTAR
+void RetalhoEditor::controlesEstica (juce::Graphics& g, float y)
+{
+    const float h = 172;
+    const int dir = lim (escolha (kEDir), 0, numDirecoes - 1);
+    const juce::Colour cd = corDir (dir);
+    {
+        const juce::Rectangle<float> r (12, y, 420, h);
+        caixa (g, r, cPn, 9.0f);
+        rotulo (g, { r.getX() + 14, y + 10, 200, 16 }, u8 ("DIRE\xc3\x87\xc3\x83O"), cTx, juce::Justification::centredLeft, 11.5f, true);
+        rotulo (g, { r.getRight() - 214, y + 10, 200, 16 }, "GIRE = QUANTO", cDim, juce::Justification::centredRight, 9.0f);
+        const juce::Point<float> c (r.getCentreX(), y + 98);
+        desenhaKnob (g, c, 40.0f, real (kEInt) / 100.0f, 0.0f, cd);
+        knobs.push_back ({ kEInt, c, 40.0f });
+        rotulo (g, { c.x - 40, c.y + 50, 80, 16 }, juce::String (juce::roundToInt (real (kEInt))) + "%", cTx, juce::Justification::centred, 12.0f, true);
+        for (int i = 0; i < numDirecoes; ++i)
+        {
+            const bool esq = i < 3;
+            const juce::Rectangle<float> rb (esq ? r.getX() + 14 : r.getRight() - 14 - 128, y + 40 + (i % 3) * 42.0f, 128, 34);
+            const juce::Colour ci = corDir (i);
+            const bool on = i == dir;
+            g.setColour (on ? ci.withAlpha (0.16f) : cPn2); g.fillRoundedRectangle (rb, 6.0f);
+            g.setColour (on ? ci : cLn); g.drawRoundedRectangle (rb.reduced (0.5f), 6.0f, on ? 1.5f : 1.0f);
+            g.setColour (ci.withAlpha (on ? 1.0f : 0.6f)); g.fillEllipse (rb.getX() + 10, rb.getCentreY() - 4, 8, 8);
+            rotulo (g, rb.withTrimmedLeft (24), u8 (ch::direcao[i]), on ? ci : cMu, juce::Justification::centredLeft, 10.0f, true);
+            alvos.push_back ({ rb, [this, i] { proc.define (kEDir, (float) i); } });
+            if (on)
+            {
+                // fio do knob até a direção escolhida
+                const float xa = esq ? rb.getRight() : rb.getX(), xb = c.x + (esq ? -46.0f : 46.0f);
+                g.setColour (ci.withAlpha (0.6f)); g.drawLine (xa, rb.getCentreY(), xb, c.y, 1.4f);
+            }
+        }
+    }
+    {
+        const juce::Rectangle<float> r (442, y, 552, h);
+        caixa (g, r, cPn, 9.0f);
+        rotulo (g, { r.getX() + 14, y + 10, 200, 16 }, "AJUSTE FINO", cTx, juce::Justification::centredLeft, 11.5f, true);
+        struct K { int campo; const char* nome; const char* sub; };
+        static const K ks[6] = { { kEGrao, "GR\xc3\x83O", "tamanho" }, { kEEspaco, "ESPA\xc3\x87O", "entre os gr\xc3\xa3os" },
+                                 { kEVel, "VELOCIDADE", "anda na voz" }, { kEEst, "EST\xc3\x89REO", "abre" },
+                                 { kEGrade, "GRADE", "no tempo" }, { kETom, "TOM", "altura" } };
+        const float kw = 456.0f / 6.0f;
+        for (int i = 0; i < 6; ++i)
+        {
+            const float cx = r.getX() + 10 + kw * (i + 0.5f);
+            rotulo (g, { cx - kw * 0.5f, y + 36, kw, 14 }, u8 (ks[i].nome), cTx, juce::Justification::centred, 10.5f, true);
+            rotulo (g, { cx - kw * 0.5f, y + 50, kw, 12 }, u8 (ks[i].sub), cDim, juce::Justification::centred, 8.5f);
+            const juce::Point<float> c (cx, y + 96);
+            auto* prm = proc.param (ks[i].campo);
+            const bool bip = info (ks[i].campo).min < 0.0f && info (ks[i].campo).max > 0.0f;
+            if (prm != nullptr) desenhaKnob (g, c, 21.0f, prm->getValue(), bip ? prm->convertTo0to1 (0.0f) : 0.0f, cd);
+            knobs.push_back ({ ks[i].campo, c, 21.0f });
+            rotulo (g, { cx - kw * 0.5f, y + 128, kw, 16 }, texto (ks[i].campo), cTx, juce::Justification::centred, 11.0f, true);
+        }
+        // TAMANHO (coluna da direita)
+        const float xt = r.getRight() - 84;
+        g.setColour (cLn.withAlpha (0.7f)); g.drawLine (xt - 6, y + 36, xt - 6, y + h - 14, 1.0f);
+        rotulo (g, { xt, y + 36, 72, 14 }, "TAMANHO", cTx, juce::Justification::centred, 10.5f, true);
+        const int l = escolha (kLength);
+        botao (g, { xt + 6, y + 56, 60, 26 }, "+", false, cd, l < 3 ? std::function<void()> ([this, l] { proc.define (kLength, (float) (l + 1)); }) : std::function<void()>(), 15.0f);
+        rotulo (g, { xt, y + 84, 72, 26 }, ch::length[lim (l, 0, 3)], cd, juce::Justification::centred, 12.0f, true);
+        botao (g, { xt + 6, y + 112, 60, 26 }, u8 ("\xe2\x88\x92"), false, cd, l > 1 ? std::function<void()> ([this, l] { proc.define (kLength, (float) (l - 1)); }) : std::function<void()>(), 15.0f);
+    }
+    exportar (g, { 1004, y, 184, h });
+}
+
+void RetalhoEditor::exportar (juce::Graphics& g, juce::Rectangle<float> r)
+{
+    const juce::Colour c = escolha (kModo) == mEstica ? cCiano : cAmb;
+    caixa (g, r, cPn, 9.0f);
+    rotulo (g, { r.getX() + 14, r.getY() + 10, r.getWidth() - 20, 16 }, "EXPORTAR", cTx, juce::Justification::centredLeft, 11.5f, true);
+    const juce::Rectangle<float> rb (r.getX() + 14, r.getY() + 50, r.getWidth() - 28, 56);
+    const bool pode = vista.valida;
+    g.setColour (pode ? c : cPn2); g.fillRoundedRectangle (rb, 8.0f);
+    rotulo (g, rb, "EXPORTAR WAV", pode ? juce::Colour (0xff141414) : cDim, juce::Justification::centred, 13.0f, true);
+    if (pode)
+        alvos.push_back ({ rb, [this]
+        {
+            const auto f = proc.exporta (false);
+            avisoExport = f.existsAsFile() ? u8 ("SALVO EM DOCUMENTOS/RETALHO/EXPORTS") : u8 ("N\xc3\x83O CONSEGUI SALVAR");
+            avisoExportQuadro = quadro;
+        } });
+    const bool aviso = avisoExport.isNotEmpty() && quadro - avisoExportQuadro < 150;
+    g.setColour (aviso ? cVerde : cDim);
+    g.setFont (fonte (9.0f));
+    g.drawFittedText (aviso ? avisoExport : u8 ("WAV 24 bits \xc2\xb7 ou arraste a onda direto para uma faixa do DAW"),
+                      juce::Rectangle<int> ((int) r.getX() + 14, (int) r.getY() + 114, (int) r.getWidth() - 28, 40), juce::Justification::topLeft, 3, 0.9f);
 }
 
 // =====================================================================================================================

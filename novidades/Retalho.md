@@ -4,6 +4,20 @@ Pacote do instalador: `InsideStudioSP-Retalho`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `retalho-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.4 — 2026-11-17
+- Ainda TESTE (sem licença, fora do site).
+- Tela principal nova, bem mais simples: PICOTE | ESTICA no topo, a amostra, UMA onda grande e poucos controles. Os
+  cartões, os knobs de macro, os pads e o QUANDO TOCA saíram da tela e ficaram no AVANÇADO (o antigo PRO).
+- PICOTE: a frase toca LIMPA e o efeito cai só em alguns pontos, no fim da frase e do compasso. RECEITA ◀ ▶ (16
+  receitas), QUANTO EFEITO (POUCO 75 % limpa, MÉDIO 62 %, MUITO 50 %), RITMO DAS REPETIÇÕES (1/4, 1/8, 1/16, 1/32,
+  MISTO), TAMANHO (1, 2 ou 4 compassos), FADE OUT e ESTÉREO. VARIAR sorteia de novo onde o efeito cai. Na onda, cinza
+  é voz limpa e cada efeito tem a sua cor: repete, tom, ao contrário, acelera, freia e corte.
+- ESTICA (modo novo): a voz vira grãos. Seis direções (MEIO TEMPO, CONGELA, AO CONTRÁRIO, ABRE, ESTILHAÇA, TÚNEL) e um
+  knob grande diz quanto. AJUSTE FINO: GRÃO, ESPAÇO, VELOCIDADE (0 congela, negativo anda de ré), ESTÉREO, GRADE e TOM.
+  Embaixo da onda aparece cada grão: em cima os da esquerda, embaixo os da direita.
+- Com o projeto tocando, o resultado do PICOTE ou do ESTICA toca em loop no tempo do projeto, no lugar da amostra crua.
+- EXPORTAR WAV na própria tela (Documentos/RETALHO/Exports), ou arraste a onda inteira para uma faixa do DAW.
+
 ## 0.1.3 — 2026-11-16
 - Ainda TESTE (sem licença, fora do site).
 - Soltou o arquivo, o efeito já está pronto: o RETALHO renderiza na hora a partir do próprio arquivo, sem precisar dar

@@ -25,7 +25,7 @@ template <class T> inline T lim (T v, T a, T b) { return v < a ? a : (v > b ? b 
 inline float dbGanho (float db) { return std::pow (10.0f, db / 20.0f); }
 
 // ---- listas ---------------------------------------------------------------------------------------------------------
-enum { mEdit, mComplex, mGroove };
+enum { mEdit, mComplex, mGroove, mPicote, mEstica };   // PICOTE e ESTICA (0.1.4) = a tela principal
 enum { shGrid, shRamp, shCurve, shFree, shTremolo };
 enum { gAuto, gHold, gOneShot };
 enum { caOff, ca16, ca4, caBar };
@@ -42,9 +42,15 @@ constexpr int maxGrade = 64, maxPassos = 32, numLinhas = 3, maxCelulas = 32, num
 
 namespace ch
 {
-inline const char* const modo[] = { "EDIT", "COMPLEX", "GROOVE" };
+inline const char* const modo[] = { "EDIT", "COMPLEX", "GROOVE", "PICOTE", "ESTICA" };
 inline const char* const shape[] = { "GRID", "RAMP", "CURVE", "FREE", "TREMOLO" };
-inline const char* const length[] = { "1/2 BAR", "1 BAR", "2 BARS" };
+inline const char* const length[] = { "1/2 BAR", "1 BAR", "2 BARS", "4 BARS" };
+inline const char* const quanto[] = { "POUCO", ("M\xC3\x89" "DIO"), "MUITO" };
+inline const char* const ritmo[] = { "1/4", "1/8", "1/16", "1/32", "MISTO" };
+inline const char* const direcao[] = { "MEIO TEMPO", "CONGELA", "AO CONTR\xC3\x81RIO", "ABRE", ("ESTILHA\xC3\x87" "A"), "T\xC3\x9ANEL" };
+inline const char* const egrade[] = { "LIVRE", "1/32", "1/16", "1/8", "1/4" };
+inline const char* const receita[] = { "VOZ PICADA", "S\xC3\x8DLABA PRESA", "ESCADA", "DESCIDA", "ESPELHO", "DECOLA", "FREIO", "GAGUEJA",
+                                       "PING-PONG", "MISTURA", "OITAVA", "VAI E VOLTA", "ROB\xC3\x94", "FIM DE FRASE", "SOLU\xC3\x87O", "TUDO JUNTO" };
 inline const char* const rate[] = { "1/4", "1/8", "1/16", "1/32", "1/64" };
 inline const char* const rateMod[] = { "STRAIGHT", "TRIPLET", "DOTTED" };
 inline const char* const trem[] = { "SQUARE", "SINE", "SAW" };
@@ -83,6 +89,8 @@ enum Campo
     kWidth, kTapeStop, kReverse, kChunk,
     kPassos, kRead, kDMode, kDAmount, kDChaos, kDEvery, kSeed,
     kEstilo, kGBars, kGGrid, kDensity, kGSwing, kHumanize, kGPitch, kMixVoz, kDuck, kChopHpf, kChopLpf, kChopVol, kLockGrid,
+    kReceita, kQuanto, kRitmo, kFadeFim,                                   // PICOTE (0.1.4)
+    kEDir, kEInt, kEGrao, kEEspaco, kEVel, kEEst, kEGrade, kETom,          // ESTICA (0.1.4)
     numCena,
     kChops = numCena, kCut, kSens, kChopLen, kGrooveOn, kGatilho, kCatch, kOnde, kRoot, kEscala,
     kDryWet, kOutput, kBypass, kLimit,
@@ -105,9 +113,9 @@ struct InfoCampo
 inline const InfoCampo& info (int k)
 {
     static const InfoCampo t[numCampos] = {
-        { "modo", "Mode", 0, 2, 1, 0, 1, "", RETALHO_ESC (ch::modo), false },
+        { "modo", "Mode", 0, 4, 1, 0, 1, "", RETALHO_ESC (ch::modo), false },
         { "shape", "Shape", 0, 4, 1, 0, 1, "", RETALHO_ESC (ch::shape), false },
-        { "length", "Length", 0, 2, 1, 1, 1, "", RETALHO_ESC (ch::length), false },
+        { "length", "Length", 0, 3, 1, 1, 1, "", RETALHO_ESC (ch::length), false },
         { "rate", "Rate", 0, 4, 1, 2, 1, "", RETALHO_ESC (ch::rate), false },
         { "ratemod", "Rate Mod", 0, 2, 1, 0, 1, "", RETALHO_ESC (ch::rateMod), false },
         { "rampto", "Ramp To", 0, 4, 1, 4, 1, "", RETALHO_ESC (ch::rate), false },
@@ -151,6 +159,18 @@ inline const InfoCampo& info (int k)
         { "choplpf", "Chop LPF", 1000, 20000, 10, 14000, 0.5f, "Hz", nullptr, 0, false },
         { "chopvol", "Chop Volume", -24, 6, 0.1f, 0, 1, "dB", nullptr, 0, false },
         { "lockgrid", "Lock Grid", 0, 1, 1, 0, 1, "", nullptr, 0, true },
+        { "receita", "Recipe", 0, 15, 1, 0, 1, "", RETALHO_ESC (ch::receita), false },
+        { "quanto", "Effect Amount", 0, 2, 1, 0, 1, "", RETALHO_ESC (ch::quanto), false },
+        { "ritmo", "Repeat Rhythm", 0, 4, 1, 2, 1, "", RETALHO_ESC (ch::ritmo), false },
+        { "fadefim", "Fade Out", 0, 1, 1, 0, 1, "", nullptr, 0, true },
+        { "edir", "Stretch Direction", 0, 5, 1, 0, 1, "", RETALHO_ESC (ch::direcao), false },
+        { "eint", "Stretch Amount", 0, 100, 1, 60, 1, "%", nullptr, 0, false },
+        { "egrao", "Grain", 10, 500, 1, 90, 0.5f, "ms", nullptr, 0, false },
+        { "eespaco", "Spacing", 10, 200, 1, 60, 1, "%", nullptr, 0, false },
+        { "evel", "Speed", -200, 200, 1, 100, 1, "%", nullptr, 0, false },
+        { "eest", "Stretch Stereo", 0, 100, 1, 40, 1, "%", nullptr, 0, false },
+        { "egrade", "Stretch Grid", 0, 4, 1, 0, 1, "", RETALHO_ESC (ch::egrade), false },
+        { "etom", "Stretch Pitch", -24, 24, 1, 0, 1, "st", nullptr, 0, false },
         // globais
         { "chops", "Chops", 0, 1, 1, 0, 1, "", RETALHO_ESC (ch::chops), false },
         { "cut", "Cut", 0, 2, 1, 0, 1, "", RETALHO_ESC (ch::cut), false },
@@ -184,7 +204,7 @@ inline double beatsRate (int r, int mod)
     else if (mod == 2) b *= 1.5;
     return b;
 }
-inline double compassosLength (int l) { static const double c[] = { 0.5, 1.0, 2.0 }; return c[lim (l, 0, 2)]; }
+inline double compassosLength (int l) { static const double c[] = { 0.5, 1.0, 2.0, 4.0 }; return c[lim (l, 0, 3)]; }
 inline double beatsChopLen (int i) { static const double b[] = { 0.125, 0.25, 0.5, 1.0 }; return b[lim (i, 0, 3)]; }
 
 // ---- pacotes dos arrays ---------------------------------------------------------------------------------------------
@@ -626,9 +646,233 @@ inline void montaComplex (const Cena& c, const Contexto& cx, Plano& p)
     p.fadeOut = (float) (std::max (0.5f, c.f (kFadeOut)) * 0.001 * cx.fs);
 }
 
+// ---- PICOTE (0.1.4): a frase passa LIMPA e o efeito cai só em alguns pontos -------------------------------------------
+// Como nos stutters de vídeo: a voz toca normal quase o tempo todo; o efeito entra em pontos-chave (o fim da frase, o
+// fim de cada compasso, a chegada no tempo 1). QUANTO EFEITO escolhe quanto da frase ganha efeito (POUCO 25 %, MÉDIO
+// 38 %, MUITO 50 %); a RECEITA escolhe quais efeitos; VARIAR (SEED) sorteia de novo onde eles caem.
+enum { pkRepete, pkTom, pkRe, pkAcelera, pkFreia, pkCorte, numPk };
+inline const char* nomePk (int t)
+{
+    static const char* n[numPk] = { "REPETE", "TOM", "AO CONTR\xC3\x81RIO", "ACELERA", "FREIA", "CORTE" };
+    return n[lim (t, 0, numPk - 1)];
+}
+struct Receita
+{
+    uint8_t peso[numPk];   // chance de cada efeito
+    int8_t tomPasso;       // TOM: semitons por repetição (12 = alterna oitava)
+    uint8_t tamanhos;      // bits: 1 = 1/8, 2 = 1/4, 4 = 1/2 tempo… (em colcheias: 1, 2, 4)
+    bool soFimCompasso;    // efeito só no fim de cada compasso
+    bool pingPong;         // repetições alternam esquerda / direita mesmo sem ESTÉREO
+};
+constexpr int numReceitas = 16;
+inline const Receita& receita (int i)
+{
+    //                         REP TOM RÉ  ACEL FREIA CORTE  tom  tam   fim    ping
+    static const Receita r[numReceitas] = {
+        { { 6, 1, 1, 1, 0, 1 },  2, 3, false, false },   // VOZ PICADA
+        { { 8, 0, 1, 0, 0, 0 },  0, 6, false, false },   // SÍLABA PRESA
+        { { 2, 8, 0, 0, 0, 0 },  2, 6, false, false },   // ESCADA
+        { { 1, 8, 0, 0, 1, 0 }, -2, 6, false, false },   // DESCIDA
+        { { 2, 0, 8, 0, 0, 0 },  0, 3, false, false },   // ESPELHO
+        { { 2, 1, 0, 8, 0, 0 },  3, 6, false, false },   // DECOLA
+        { { 3, 0, 0, 0, 6, 0 },  0, 6, false, false },   // FREIO
+        { { 8, 0, 0, 0, 0, 3 },  0, 1, false, false },   // GAGUEJA
+        { { 6, 0, 2, 0, 0, 0 },  0, 3, false, true  },   // PING-PONG
+        { { 3, 3, 3, 3, 1, 1 },  2, 7, false, false },   // MISTURA
+        { { 2, 7, 0, 0, 0, 0 }, 12, 6, false, false },   // OITAVA
+        { { 5, 0, 5, 0, 0, 0 },  0, 3, false, false },   // VAI E VOLTA
+        { { 5, 0, 0, 0, 0, 5 },  0, 3, false, true  },   // ROBÔ
+        { { 2, 0, 0, 5, 3, 0 },  3, 6, true,  false },   // FIM DE FRASE
+        { { 2, 0, 0, 0, 0, 8 },  0, 3, false, false },   // SOLUÇO
+        { { 3, 2, 2, 3, 2, 2 },  2, 7, false, true  },   // TUDO JUNTO
+    };
+    return r[lim (i, 0, numReceitas - 1)];
+}
+inline double beatsRitmo (int r) { static const double b[] = { 1.0, 0.5, 0.25, 0.125 }; return b[lim (r, 0, 3)]; }
+
+// onde cada efeito cai, em colcheias (−1 = limpo); seg = índice do trecho com efeito. Mesmo SEED = mesmo resultado.
+inline void sorteiaPicote (const Cena& c, int nU, int uPorCompasso, std::vector<int8_t>& tipo, std::vector<int16_t>& seg)
+{
+    tipo.assign ((size_t) nU, -1);
+    seg.assign ((size_t) nU, -1);
+    if (nU < 4) return;
+    const Receita& rc = receita (c.i (kReceita));
+    static const float frac[3] = { 0.25f, 0.375f, 0.5f };
+    const int q = lim (c.i (kQuanto), 0, 2);
+    const int alvo = std::max (1, (int) std::lround (nU * frac[q]));
+    Rng r ((uint32_t) c.i (kSeed) * 7919u + (uint32_t) c.i (kReceita) * 131u + 17u);
+    struct Cand { float s; int e; };
+    std::vector<Cand> cs;
+    for (int e = 2; e <= nU; ++e)
+    {
+        if (rc.soFimCompasso && e % uPorCompasso != 0 && e != nU) continue;
+        float s = e == nU ? 100.0f : (e % uPorCompasso == 0 ? 6.0f : (e % 4 == 0 ? 3.0f : (e % 2 == 0 ? 1.5f : 0.5f)));
+        s += r.f() * (q == 2 ? 5.0f : 2.5f);
+        cs.push_back ({ s, e });
+    }
+    std::stable_sort (cs.begin(), cs.end(), [] (const Cand& a, const Cand& b) { return a.s > b.s; });
+    int soma = 0;
+    for (int w : rc.peso) soma += w;
+    int feito = 0, nSeg = 0;
+    for (const auto& cd : cs)
+    {
+        if (feito >= alvo) break;
+        // o efeito
+        int t = 0;
+        {
+            int x = r.n (std::max (1, soma));
+            while (t < numPk - 1 && x >= rc.peso[t]) { x -= rc.peso[t]; ++t; }
+        }
+        // o tamanho (colcheias): dos permitidos pela receita; REPETE/TOM em 1/4 pedem pelo menos 2 tempos
+        int tams[3], nt = 0;
+        for (int b = 0; b < 3; ++b) if (rc.tamanhos & (1 << b)) tams[nt++] = 1 << b;
+        if (nt == 0) tams[nt++] = 2;
+        int len = tams[r.n (nt)];
+        if ((t == pkRepete || t == pkTom) && c.i (kRitmo) == 0) len = 4;
+        if (t == pkAcelera || t == pkFreia) len = std::max (len, 2);
+        len = std::max (1, std::min (len, alvo - feito));   // nunca passa da quantidade pedida
+        const int s = cd.e - len;
+        if (s < 1) continue;   // o comecinho da frase fica sempre limpo
+        bool livre = true;
+        for (int u = s - 1; u <= cd.e && u < nU; ++u) if (u >= 0 && tipo[(size_t) u] >= 0) livre = false;   // 1 colcheia limpa entre efeitos
+        if (! livre) continue;
+        for (int u = s; u < cd.e; ++u) { tipo[(size_t) u] = (int8_t) t; seg[(size_t) u] = (int16_t) nSeg; }
+        ++nSeg;
+        feito += len;
+    }
+}
+
+inline void montaPicote (const Cena& c, const Contexto& cx, Plano& p)
+{
+    p.n = 0; p.modo = mPicote; p.inicio = cx.inicio; p.ganho = 1;
+    const double L = compassosLength (c.i (kLength)) * cx.bpb * cx.spb;
+    p.len = std::max<int64_t> (64, (int64_t) std::llround (L));
+    const double u = cx.spb * 0.5;   // colcheia
+    const int uPorCompasso = std::max (1, (int) std::lround (cx.bpb * 2.0));
+    const int nU = std::max (1, (int) std::lround (L / u));
+    std::vector<int8_t> tipo;
+    std::vector<int16_t> seg;
+    sorteiaPicote (c, nU, uPorCompasso, tipo, seg);
+    const Receita& rc = receita (c.i (kReceita));
+    const float w = c.f (kWidth) * 0.01f;
+    p.estereo = std::min (1.0f, w * 2.0f);
+    const float ping = rc.pingPong ? std::max (0.6f, w * 2.0f - 1.0f) : std::max (0.0f, w * 2.0f - 1.0f);
+    Rng r ((uint32_t) c.i (kSeed) * 104729u + 7u);
+    auto pos = [&] (int un) -> int64_t { return un >= nU ? p.len : std::min<int64_t> (p.len, (int64_t) std::llround (un * u)); };
+
+    int un = 0;
+    while (un < nU && p.n < Plano::maxF - 2)
+    {
+        int fimU = un + 1;
+        const int t = tipo[(size_t) un];
+        if (t < 0) { while (fimU < nU && tipo[(size_t) fimU] < 0) ++fimU; }
+        else { while (fimU < nU && seg[(size_t) fimU] == seg[(size_t) un]) ++fimU; }
+        const int64_t t0 = pos (un), t1 = pos (fimU), dur = std::max<int64_t> (1, t1 - t0);
+        const int64_t ini = cx.inicio + t0;
+        const int16_t sg = (int16_t) (t < 0 ? -1 : seg[(size_t) un]);
+        auto ler = [&] (int64_t a, int64_t b, int64_t src, int64_t Lr, float st, bool rev, float gate, bool vivo, float pan) -> Fatia&
+        {
+            Fatia& f = novaFatia (p);
+            f = Fatia();
+            f.t0 = a; f.dur = (int32_t) std::max<int64_t> (1, b - a);
+            f.r0 = f.r1 = (float) std::pow (2.0, st / 12.0); f.st = st;
+            f.rev = rev; f.gate = gate; f.pan = pan; f.tipo = fLer;
+            f.passo = sg; f.tipoPasso = (int8_t) t;
+            regiao (f, cx, src, Lr, vivo, true);
+            return f;
+        };
+        switch (t)
+        {
+            case -1:   // limpo: a voz como está
+                ler (t0, t1, ini, 0, 0.0f, false, 1.0f, true, 0.0f);
+                break;
+            case pkRepete: case pkTom:
+            {
+                double sb = c.i (kRitmo) == 4 ? (r.n (3) == 0 ? 0.5 : (r.n (2) == 0 ? 0.25 : 0.125)) : beatsRitmo (c.i (kRitmo));
+                double sub = sb * cx.spb;
+                if (sub * 2.0 > (double) dur) sub = (double) dur * 0.5;
+                const int R = std::max (2, std::min (64, (int) std::lround ((double) dur / sub)));
+                for (int j = 0; j < R && p.n < Plano::maxF - 2; ++j)
+                {
+                    const int64_t a = t0 + dur * j / R, b = t0 + dur * (j + 1) / R;
+                    float st = 0.0f;
+                    if (t == pkTom) st = rc.tomPasso == 12 ? (j % 2 ? 12.0f : 0.0f) : (float) lim (rc.tomPasso * j, -24, 24);
+                    ler (a, b, ini, b - a, st, false, j == R - 1 ? 1.0f : 0.86f, j == 0 && st == 0.0f, ping > 0 ? (j % 2 ? ping : -ping) : 0.0f);
+                }
+                break;
+            }
+            case pkRe:
+                ler (t0, t1, ini, dur, 0.0f, true, 1.0f, false, ping > 0 ? ping * 0.5f : 0.0f);
+                break;
+            case pkAcelera:
+            {
+                // repetições que encurtam de 1/8 até 1/32 e sobem o tom até a chegada
+                const double d0 = 0.5 * cx.spb, d1 = 0.125 * cx.spb;
+                double tt = 0.0;
+                int j = 0;
+                while (tt < (double) dur - 1.0 && p.n < Plano::maxF - 2)
+                {
+                    const double fr = tt / (double) dur;
+                    double d = d0 * std::pow (d1 / d0, fr);
+                    if (tt + d > (double) dur - d1 * 0.5) d = (double) dur - tt;
+                    const int64_t a = t0 + (int64_t) std::llround (tt), b = t0 + (int64_t) std::llround (tt + d);
+                    const float st = (float) std::round (rc.tomPasso * 2.0 * fr);
+                    ler (a, std::max (a + 1, b), ini, std::max<int64_t> (32, b - a), st, false, 0.85f, j == 0, ping > 0 ? (j % 2 ? ping : -ping) : 0.0f);
+                    tt += d;
+                    ++j;
+                }
+                break;
+            }
+            case pkFreia:
+            {
+                Fatia& f = novaFatia (p);
+                f = Fatia();
+                f.t0 = t0; f.dur = (int32_t) dur; f.tipo = fTapeStop; f.src = ini; f.L = 0;
+                f.passo = sg; f.tipoPasso = (int8_t) t;
+                break;
+            }
+            default:   // CORTE: a voz passa em pedaços de 1/16 com buracos
+            {
+                const double d = 0.25 * cx.spb;
+                const int R = std::max (2, (int) std::lround ((double) dur / d));
+                for (int j = 0; j < R && p.n < Plano::maxF - 2; ++j)
+                {
+                    const int64_t a = t0 + dur * j / R, b = t0 + dur * (j + 1) / R;
+                    if (j % 2 == 0) ler (a, b, cx.inicio + a, 0, 0.0f, false, 1.0f, true, ping > 0 ? (j % 4 ? ping : -ping) : 0.0f);
+                    else
+                    {
+                        Fatia& f = novaFatia (p);
+                        f = Fatia();
+                        f.t0 = a; f.dur = (int32_t) std::max<int64_t> (1, b - a); f.tipo = fMute; f.passo = sg; f.tipoPasso = (int8_t) t;
+                    }
+                }
+                break;
+            }
+        }
+        un = fimU;
+    }
+    p.filtro = flOff; p.trem = trSquare;
+    p.fadeIn = (float) (std::max (0.5f, c.f (kFadeIn)) * 0.001 * cx.fs);
+    p.fadeOut = (float) (std::max (0.5f, c.f (kFadeOut)) * 0.001 * cx.fs);
+}
+
+// ESTICA ao vivo não existe (é granular sobre a amostra parada): no anel do motor ele passa a voz limpa
+inline void montaLimpo (const Cena& c, const Contexto& cx, Plano& p)
+{
+    p.n = 0; p.modo = mEstica; p.inicio = cx.inicio; p.ganho = 1;
+    p.len = std::max<int64_t> (64, (int64_t) std::llround (compassosLength (c.i (kLength)) * cx.bpb * cx.spb));
+    Fatia& f = novaFatia (p);
+    f = Fatia();
+    f.t0 = 0; f.dur = (int32_t) p.len; f.src = cx.inicio; f.L = 0;
+    p.filtro = flOff; p.estereo = 1.0f;
+}
+
 inline void monta (const Cena& c, const Contexto& cx, Plano& p)
 {
-    if (c.i (kModo) == mComplex) montaComplex (c, cx, p);
+    const int m = c.i (kModo);
+    if (m == mComplex) montaComplex (c, cx, p);
+    else if (m == mPicote) montaPicote (c, cx, p);
+    else if (m == mEstica) montaLimpo (c, cx, p);
     else montaEdit (c, cx, p);
 }
 
@@ -813,6 +1057,113 @@ struct Render
         }
     }
 };
+
+// ---- ESTICA (0.1.4): granular sobre a amostra parada -------------------------------------------------------------------
+// A voz vira grãos (pedacinhos de GRÃO ms com subida e descida suaves), um a cada ESPAÇO × GRÃO (ou na GRADE do tempo).
+// A cabeça de leitura anda pela amostra na VELOCIDADE (100 % = o tempo original, 0 = congela, negativo = de ré), sem mudar
+// o tom; o TOM muda só a altura. A DIREÇÃO dá o caráter e INTENSIDADE diz quanto:
+//   MEIO TEMPO (anda mais devagar) · CONGELA (para num ponto, com leve espalhamento) · AO CONTRÁRIO (grãos de ré)
+//   ABRE (espalha no estéreo e soma oitava acima) · ESTILHAÇA (grãos curtos de lugares sorteados) · TÚNEL (desce e abafa).
+enum { esMeio, esCongela, esRe, esAbre, esEstilhaca, esTunel, numDirecoes };
+struct Grao { float t0 = 0, dur = 0, src = 0, pan = 0; bool rev = false; bool oitava = false; };   // frações do resultado / da região
+
+struct AjusteEstica { double grao = 0, hop = 0, vel = 1, est = 0, tom = 0, jit = 0, pRev = 0, pOit = 0, tomJit = 0, lpf = 0; };
+inline AjusteEstica ajusteEstica (const Cena& c, double fs, double spb)
+{
+    AjusteEstica a;
+    const int dir = lim (c.i (kEDir), 0, numDirecoes - 1);
+    const double I = lim (c.f (kEInt) * 0.01, 0.0, 1.0);
+    double gms = c.f (kEGrao), esp = c.f (kEEspaco) * 0.01;
+    a.vel = c.f (kEVel) * 0.01; a.est = c.f (kEEst) * 0.01; a.tom = c.f (kETom);
+    switch (dir)
+    {
+        case esMeio:      a.vel *= 1.0 - 0.5 * I; gms *= 1.0 + 0.6 * I; break;
+        case esCongela:   a.vel *= 1.0 - I; a.jit = 0.012 * I; gms *= 1.0 + 0.8 * I; esp *= 1.0 - 0.5 * I; break;
+        case esRe:        a.pRev = std::min (1.0, 1.4 * I); if (I > 0.6) a.vel = -std::abs (a.vel); break;
+        case esAbre:      a.est = std::max (a.est, 0.4 + 0.6 * I); a.pOit = 0.45 * I; gms *= 1.0 + 0.5 * I; esp *= 1.0 - 0.45 * I; break;
+        case esEstilhaca: a.jit = 0.30 * I; gms *= 1.0 - 0.75 * I; a.pRev = 0.35 * I; a.tomJit = 5.0 * I; esp *= 1.0 + 0.8 * I; break;
+        default:          a.tom -= 12.0 * I; gms *= 1.0 + 1.2 * I; esp *= 1.0 - 0.55 * I; a.lpf = I; break;
+    }
+    a.grao = lim (gms, 8.0, 900.0) * 0.001 * fs;
+    a.hop = std::max (0.002 * fs, a.grao * lim (esp, 0.08, 3.0));
+    if (c.i (kEGrade) > 0)
+    {
+        static const double gb[4] = { 0.125, 0.25, 0.5, 1.0 };
+        a.hop = gb[lim (c.i (kEGrade) - 1, 0, 3)] * spb;
+    }
+    return a;
+}
+
+// renderiza [0, len) do ESTICA lendo a região [ini, fim) de uma fonte (Trecho); graos (opcional) = para a tela
+template <class Fonte>
+inline void renderEstica (const Cena& c, const Fonte& fonte, int64_t ini, int64_t fim, double fs, double spb, int64_t len,
+                          float* oL, float* oR, std::vector<Grao>* graos)
+{
+    if (graos) graos->clear();
+    std::fill (oL, oL + len, 0.0f);
+    std::fill (oR, oR + len, 0.0f);
+    const int64_t R = std::max<int64_t> (256, fim - ini);
+    const AjusteEstica a = ajusteEstica (c, fs, spb);
+    std::vector<float> soma ((size_t) len, 0.0f);
+    Rng rng ((uint32_t) c.i (kSeed) * 2654435761u + 99u);
+    const int64_t G = std::max<int64_t> (16, (int64_t) a.grao);
+    auto dentro = [R] (double x) { x = std::fmod (x, (double) R); return x < 0.0 ? x + (double) R : x; };
+    double t = 0.0;
+    int k = 0;
+    float pico = 0.0f;
+    for (int64_t i = ini; i < ini + R; i += 4) pico = std::max (pico, std::abs (fonte.at (0, i)) + std::abs (fonte.at (1, i)));
+    while (t < (double) len)
+    {
+        const int64_t t0 = (int64_t) t;
+        double p0 = dentro (a.vel * t + rng.f() * a.jit * fs);   // espalha só para frente (CONGELA não pula para o fim)
+        double st = a.tom + (rng.f() * 2.0f - 1.0f) * a.tomJit;
+        const bool oit = rng.f() < (float) a.pOit;
+        if (oit) st += 12.0;
+        const double ratio = std::pow (2.0, st / 12.0);
+        const bool rev = rng.f() < (float) a.pRev;
+        const float pan = (float) (a.est * (k % 2 ? 1.0 : -1.0) * (0.6 + 0.4 * rng.f()));
+        const float gl = 1.0f - std::max (0.0f, pan), gr = 1.0f + std::min (0.0f, pan);
+        for (int64_t i = 0; i < G && t0 + i < len; ++i)
+        {
+            const double x = (double) i / (double) G, aa = 0.3;
+            const double env = x < aa ? 0.5 - 0.5 * std::cos (kPi * x / aa) : (x > 1.0 - aa ? 0.5 - 0.5 * std::cos (kPi * (1.0 - x) / aa) : 1.0);
+            const double q = (rev ? (double) (G - 1 - i) : (double) i) * ratio;
+            const double sp = (double) ini + dentro (p0 + q);
+            const float e = (float) env;
+            oL[t0 + i] += fonte.ler (0, sp, ini + R - 1) * e * gl;
+            oR[t0 + i] += fonte.ler (1, sp, ini + R - 1) * e * gr;
+            soma[(size_t) (t0 + i)] += e;
+        }
+        if (graos != nullptr && graos->size() < 900)
+        {
+            Grao g;
+            g.t0 = (float) (t / (double) len); g.dur = (float) ((double) G / (double) len);
+            g.src = (float) (p0 / (double) R); g.pan = pan; g.rev = rev; g.oitava = oit;
+            graos->push_back (g);
+        }
+        t += a.hop;
+        ++k;
+    }
+    // grãos sobrepostos não somam volume (só onde passa de 1)
+    for (int64_t i = 0; i < len; ++i)
+        if (soma[(size_t) i] > 1.0f) { oL[i] /= soma[(size_t) i]; oR[i] /= soma[(size_t) i]; }
+    // TÚNEL: abafa (passa-baixa de 1 polo, de 9 kHz até 900 Hz)
+    if (a.lpf > 0.0)
+    {
+        const double fc = 9000.0 * std::pow (0.1, a.lpf);
+        const float k1 = (float) (1.0 - std::exp (-2.0 * kPi * fc / fs));
+        float yl = 0.0f, yr = 0.0f;
+        for (int64_t i = 0; i < len; ++i) { yl += k1 * (oL[i] - yl); yr += k1 * (oR[i] - yr); oL[i] = yl; oR[i] = yr; }
+    }
+    // nunca mais alto que a voz original
+    float po = 0.0f;
+    for (int64_t i = 0; i < len; ++i) po = std::max (po, std::abs (oL[i]) + std::abs (oR[i]));
+    if (po > pico && po > 0.0f)
+    {
+        const float g = pico / po;
+        for (int64_t i = 0; i < len; ++i) { oL[i] *= g; oR[i] *= g; }
+    }
+}
 
 // ---- detectores -----------------------------------------------------------------------------------------------------
 // ataque de sílaba: envelope rápido passando o lento (SENSITIVITY muda o quanto e o piso)
