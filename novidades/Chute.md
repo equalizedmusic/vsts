@@ -4,6 +4,11 @@ Pacote do instalador: `InsideStudioSP-Chute`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `chute-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.1 — 2026-11-18
+- Ainda TESTE (sem licença, fora do site).
+- Tela: o corpo (verde) volta a aparecer na batida desenhada do KICK · NOW (na 0.1.0 só o ataque aparecia).
+- Curva de pitch desenhada suave (a medida anda em degraus de meio ciclo; o som não muda).
+
 ## 0.1.0 — 2026-11-18
 - Primeira versão do CHUTE, kick designer. TESTE (sem licença, fora do site).
 - Cada nota MIDI toca uma batida: CLICK (o ataque do preset) + BODY (o corpo do kick, afinável).

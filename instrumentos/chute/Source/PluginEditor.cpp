@@ -125,6 +125,19 @@ void ChuteEditor::atualizaPrevia()
     assinatura = s;
     fimPrevia = chute::Engine::previa (a, nota, taxaPrevia, pClick.data(), pCorpo.data(), nPrevia);
     lenCurva = chute::curvasCorpo (a, chute::fCauda (a, nota), curvaF.data(), curvaA.data());
+    {
+        // a frequência medida anda em degraus (um valor por meio ciclo): na tela vai suavizada (média em log, ±3 ms;
+        // mais curta no começo, onde a queda é rápida)
+        std::vector<float> s ((size_t) lenCurva);
+        for (int k = 0; k < lenCurva; ++k)
+        {
+            const int r = juce::jmin (3, k / 2);
+            double acc = 0; int n = 0;
+            for (int j = juce::jmax (0, k - r); j <= juce::jmin (lenCurva - 1, k + r); ++j) { acc += std::log (juce::jmax (1.0f, curvaF[(size_t) j])); ++n; }
+            s[(size_t) k] = (float) std::exp (acc / juce::jmax (1, n));
+        }
+        for (int k = 0; k < lenCurva; ++k) curvaF[(size_t) k] = s[(size_t) k];
+    }
     picoPrevia = 1.0e-4f;
     for (int i = 0; i < fimPrevia; ++i) picoPrevia = juce::jmax (picoPrevia, std::abs (pClick[(size_t) i] + pCorpo[(size_t) i]));
 }
@@ -341,7 +354,8 @@ void ChuteEditor::painelKick (juce::Graphics& g, juce::Rectangle<float> r)
     // a batida: ataque (laranja) e corpo (verde), 4 pontos por pixel
     const int npx = (int) (t.getWidth() * 3);
     juce::Path pc, pb;
-    bool temClick = false;
+    bool temClick = false, temCorpo = false;   // (Path::isEmpty() segue true só com o ponto inicial: flag própria)
+    auto corpoAte = [&] (float x, float y) { if (! temCorpo) { pb.startNewSubPath (x, y); temCorpo = true; } else pb.lineTo (x, y); };
     for (int j = 0; j <= npx; ++j)
     {
         const double tms = W * j / npx;
@@ -353,9 +367,9 @@ void ChuteEditor::painelKick (juce::Graphics& g, juce::Rectangle<float> r)
         if (noClick)
         {
             if (! temClick) { pc.startNewSubPath (x, y); temClick = true; } else pc.lineTo (x, y);
-            if (tms >= fimClick) { if (pb.isEmpty()) pb.startNewSubPath (x, y); else pb.lineTo (x, y); }
+            if (tms >= fimClick) corpoAte (x, y);
         }
-        else { if (pb.isEmpty()) pb.startNewSubPath (x, y); else pb.lineTo (x, y); }
+        else corpoAte (x, y);
     }
     g.setColour (cVerde.withAlpha (0.16f + 0.2f * flash));
     g.strokePath (pb, juce::PathStrokeType (5.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
