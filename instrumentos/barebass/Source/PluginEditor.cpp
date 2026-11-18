@@ -296,6 +296,15 @@ void BarebassEditor::topo (juce::Graphics& g)
     rPreset = chip ("PRESET " + u8 ("· ") + proc.getProgramName (proc.preset.load()) + u8 (" ▾"), cRoxo, false, false);
     const int nota = L.nota.load();
     chip ("NOTE " + u8 ("· ") + (L.gate.load() ? nomeNota (nota) : u8 ("—")), cVerde, L.gate.load(), true);
+    // LINK com o CHUTE: a nota do kick (só a letra: a oitava do Ableton e a do CHUTE são contadas diferente) e o KICK LOCK
+    {
+        static const char* nn[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        const bool lk = proc.linkOn.load();
+        const bool trava = real ("kicklock") > 0.5f;
+        const float kn = proc.kickNota.load();
+        const juce::String kt = lk && kn > 0.0f ? juce::String (nn[((int) std::lround (kn)) % 12]) : juce::String ("NO CHUTE");
+        rKick = chip ("KICK LOCK " + u8 ("· ") + kt, cLaranja, lk && trava, true);
+    }
 }
 
 void BarebassEditor::painelOnda (juce::Graphics& g, juce::Rectangle<float> r)
@@ -716,6 +725,7 @@ void BarebassEditor::mouseDown (const juce::MouseEvent& e)
     for (auto& b : botoes)
         if (b.r.contains (p)) { proc.define (b.id, b.valor); repaint(); return; }
     if (rPreset.contains (p)) { menuPreset(); return; }
+    if (rKick.contains (p)) { proc.define ("kicklock", real ("kicklock") > 0.5f ? 0.0f : 1.0f); repaint(); return; }
     if (rMenu.contains (p) || e.mods.isPopupMenu()) menu();
 }
 
@@ -810,6 +820,9 @@ void BarebassEditor::menu()
                                      "Quanto mais alto, mais rápido e mais fundo. Em 0 fica desligado.\n\n"
                                      "MONO redispara o envelope a cada nota; LEGATO não redispara quando as notas se encostam. "
                                      "GLIDE desliza de uma nota para a outra. VELO: quanto a força da nota (velocity) muda "
-                                     "o volume e o quanto o ENV abre; em 0 toda nota sai igual."));
+                                     "o volume e o quanto o ENV abre; em 0 toda nota sai igual.\n\n"
+                                     "KICK LOCK (com o CHUTE no kick do mesmo projeto, sem sidechain): cada nota nasce com o SUB "
+                                     "em fase com o corpo do kick naquele instante, e o chip mostra a nota do kick. Clique no "
+                                     "chip para ligar ou desligar. Sem CHUTE no projeto, nada muda."));
                      });
 }

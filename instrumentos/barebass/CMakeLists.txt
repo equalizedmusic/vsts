@@ -21,7 +21,9 @@ juce_add_plugin(Barebass
     VST3_CATEGORIES             Instrument Synth
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
 
-target_sources(Barebass PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
+# 0.4.0: LINK com o CHUTE (nota do kick e o corpo dele para o baixo nascer em fase): compila o ChuteLink do CHUTE
+target_sources(Barebass PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp ../chute/Source/ChuteLink.cpp)
+target_include_directories(Barebass PRIVATE ../chute/Source)
 isp_licenca(Barebass barebass)
 target_compile_definitions(Barebass PUBLIC
     JUCE_WEB_BROWSER=0

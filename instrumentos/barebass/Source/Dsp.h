@@ -3,6 +3,8 @@
 // Uma voz (mono): OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB (TPT/SVF, sem atraso) com envelope ADSR
 // -> unHUNF (decay só no grave, de 10 a 50 Hz) -> volume. VELOCITY (knob VELO) pesa no volume e no ENV. Amplitude = gate (abre na hora, fecha no RELEASE).
 // A cada nota redisparada as ondas recomeçam do ponto inicial (fase 0): todas as notas batem igual, sem drift.
+// 0.4.0 KICK LOCK: se a nota nasce enquanto o corpo do CHUTE soa (LINK), as ondas recomeçam no ponto em que o SUB fica
+// em fase com o kick naquele instante (todas andam o mesmo tempo τ, então o desenho da onda é o mesmo de sempre).
 // A tela lê o que acontece agora pela struct Leitura e pelo Scope (dois ciclos da onda antes e depois do filtro).
 #include <atomic>
 #include <cmath>
@@ -50,6 +52,7 @@ struct Leitura
     std::atomic<float> envT { 10.0f };      // s desde o último disparo
     std::atomic<float> hunfGr { 0.0f };     // dB (≤ 0) que o unHUNF tira agora do sub da nota
     std::atomic<float> pico { 0.0f };       // pico da saída no último bloco
+    std::atomic<uint32_t> travadas { 0 };   // notas que nasceram em fase com o kick (KICK LOCK)
 };
 
 // dois ciclos da onda: anel de amostras + marcas do início de cada ciclo da frequência de referência
@@ -199,8 +202,10 @@ public:
     // conta[] = quantas vezes a mesma nota está ligada: com 1/16 encostados alguns DAWs mandam o "liga" da nota nova
     // antes do "solta" da anterior (mesma altura). Esse "solta" atrasado não pode cortar a nota que acabou de começar.
     // velo = velocity 0..1; a.velo = quanto ela pesa (0 = toda nota igual)
-    void noteOn (int nota, const Ajustes& a, float velo = 1.0f)
+    // faseKick: fase do corpo do kick agora (ciclos, já com o sinal), ou < 0 = sem kick (fase 0, como sempre)
+    void noteOn (int nota, const Ajustes& a, float velo = 1.0f, double faseKick = -1.0)
     {
+        faseKickNota = faseKick;
         nota &= 127;
         vel = 1.0 - a.velo * (1.0 - std::clamp ((double) velo, 0.0, 1.0));
         ++conta[nota];
@@ -218,6 +223,7 @@ public:
         const bool eraAtual = nHeld > 0 && held[nHeld - 1] == nota;
         removeHeld (nota);
         if (! eraAtual) return;
+        faseKickNota = -1.0;   // a volta para a nota presa não é um nascimento novo junto com o kick
         if (nHeld > 0) vaiPara (held[nHeld - 1], ! a.legato, true, a);   // volta para a nota que ainda está presa
         else { gateOn = false; envF.solta(); leitura.gate = false; }
     }
@@ -400,6 +406,21 @@ private:
             // sem isso a fase "anda" de nota para nota e cada uma bate diferente
             for (auto& p : fase) p = 0.0;
             faseSub = 0.0; faseRef = 0.0;
+            if (faseKickNota >= 0.0)
+            {
+                // SUB em fase com o kick: τ = quanto a onda "já andou" para o seno do SUB estar na fase do kick
+                const double f0 = 440.0 * std::pow (2.0, (nota + bend - 69.0) / 12.0);
+                const double fSub = f0 * std::pow (2.0, a.oitavaSub);
+                const double alvo = faseKickNota - std::floor (faseKickNota);
+                const double tau = alvo / std::max (1.0, fSub);
+                for (int o = 0; o < 2; ++o)
+                {
+                    const double fo = f0 * std::pow (2.0, a.oitava[o] + a.fino[o] / 1200.0) * tau;
+                    fase[o] = fo - std::floor (fo);
+                }
+                faseSub = alvo;
+                leitura.travadas.fetch_add (1);
+            }
             inicio[0] = inicio[1] = inicioSub = true;
             envF.dispara();
         }
@@ -419,7 +440,7 @@ private:
     bool inicio[2] { true, true }, inicioSub = true;
     double notaGlide = 36, alvoGlide = 36, bend = 0;
     double amp = 0, cutSuave = 18000, volSuave = 0.7, ultimoFc = 18000;
-    double tDisparo = 10, ganhoHunf = 1, vel = 1, velSuave = 1;
+    double tDisparo = 10, ganhoHunf = 1, vel = 1, velSuave = 1, faseKickNota = -1.0;
     bool gateOn = false;
 };
 } // namespace barebass

@@ -65,7 +65,7 @@ private:
     float escVis = 0.3f, freqOnda = 0.0f;
 
     // alvos de clique (coordenadas da tela base)
-    juce::Rectangle<float> rMenu, rPreset;
+    juce::Rectangle<float> rMenu, rPreset, rKick;
     std::vector<Knob> knobs;
     std::vector<Botao> botoes;
     juce::String arrastando;

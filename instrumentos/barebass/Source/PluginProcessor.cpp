@@ -88,6 +88,9 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<P> (juce::ParameterID { "volume", 1 }, "Volume", faixa (-36, 6, 0.1f), -3.0f, A().withLabel ("dB")));
     // 0.3.0: quanto a velocity da nota pesa no volume e na abertura do ENV (0 = toda nota igual, como antes)
     l.add (std::make_unique<P> (juce::ParameterID { "velo", 1 }, "Velocity", faixa (0, 100, 1), 60.0f, A().withLabel ("%")));
+    // 0.4.0: KICK LOCK (LINK com o CHUTE). Ligado em instância nova; projeto salvo antes da 0.4.0 abre desligado
+    // (setStateInformation), para soar igual
+    l.add (std::make_unique<B> (juce::ParameterID { "kicklock", 2 }, "Kick Lock", true));
     return l;
 }
 
@@ -177,6 +180,21 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     if (! licenca->liberada()) return;   // sem ativação: mudo (o buffer já foi zerado)
 
     const auto a = ajustes();
+    // LINK: o CHUTE do projeto (nota do kick para a tela; o corpo dele para o KICK LOCK)
+    const bool temLink = link.sincroniza();
+    linkOn = temLink;
+    kickNota = temLink ? link.nota() : -1.0f;
+    const bool trava = temLink && apvts.getRawParameterValue ("kicklock")->load() > 0.5f;
+    bool tocando = false; int64_t posBloco = 0;
+    if (trava)
+        if (auto* ph = getPlayHead())
+            if (auto p = ph->getPosition())
+            {
+                tocando = p->getIsPlaying();
+                if (auto ts = p->getTimeInSamples()) posBloco = *ts; else tocando = false;
+            }
+    const double wallBloco = (double) chutelink::agoraUs() * 0.001;
+
     float* const* out = buffer.getArrayOfWritePointers();
     int pos = 0;
     for (const auto meta : midi)
@@ -184,7 +202,18 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         const int t = juce::jlimit (0, n, meta.samplePosition);
         if (t > pos) { motor->render (out, nch, pos, t - pos, a); pos = t; }
         const auto m = meta.getMessage();
-        if (m.isNoteOn()) motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity());
+        if (m.isNoteOn())
+        {
+            // nasce em fase com o corpo do kick que está soando agora (se houver e ainda tiver corpo)
+            double faseKick = -1.0;
+            if (trava)
+            {
+                double tk = 0.0, ciclos = 0.0, amp = 0.0;
+                if (const auto* b = link.soando (t, fs, tocando, posBloco, wallBloco, tk))
+                    if (b->faseEm (tk, ciclos, amp) && amp > 1.0e-3) faseKick = ciclos - std::floor (ciclos);
+            }
+            motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity(), faseKick);
+        }
         else if (m.isNoteOff()) motor->noteOff (m.getNoteNumber(), a);
         else if (m.isPitchWheel()) motor->pitchBend (m.getPitchWheelValue());
         else if (m.isAllNotesOff() || m.isAllSoundOff()) motor->allNotesOff();
@@ -210,7 +239,10 @@ void BarebassProcessor::setStateInformation (const void* data, int sizeInBytes)
             auto vt = juce::ValueTree::fromXml (*xml);
             uiW = (int) vt.getProperty ("uiw", 0);
             preset = (int) vt.getProperty ("preset", 0);
+            const bool antigo = ! vt.getChildWithProperty ("id", "kicklock").isValid();   // salvo antes da 0.4.0
             apvts.replaceState (vt);
+            if (antigo)
+                if (auto* p = apvts.getParameter ("kicklock")) p->setValueNotifyingHost (0.0f);
         }
 }
 

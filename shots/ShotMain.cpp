@@ -29,6 +29,9 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
 #ifndef SHOT_BAIXO
  #define SHOT_BAIXO 0
 #endif
+#ifndef SHOT_KICK
+ #define SHOT_KICK 0
+#endif
 #ifndef SHOT_MAESTRO
  #define SHOT_MAESTRO 0
 #endif
@@ -212,7 +215,16 @@ public:
             // instrumento: silêncio na entrada; acorde de Lá menor com 9ª e um baixo, pressão subindo
             buf.clear();
             midi.clear();
-           #if SHOT_BAIXO
+           #if SHOT_KICK
+            // CHUTE: um kick por tempo (nota F; no modo KEY·MIDI o corpo vai para o F1 do preset)
+            {
+                const double passo = fs * 60.0 / bpm;
+                const double b0 = (double) blocks * block, b1 = b0 + block;
+                for (int k = (int) std::ceil (b0 / passo); k * passo < b1; ++k)
+                    midi.addEvent (juce::MidiMessage::noteOn (1, 41, (juce::uint8) 110), juce::jlimit (0, block - 1, (int) (k * passo - b0)));
+            }
+            if (false)
+           #elif SHOT_BAIXO
             // BAREBASS (uma voz): baixo rolando em F1, 1/16 nos três contratempos, nota de 60% do passo. Depois de 1 s
             // de áudio as notas não soltam mais (cada 1/16 redispara): a foto pega uma nota tocando, não o intervalo
             {

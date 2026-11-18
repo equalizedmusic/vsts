@@ -251,13 +251,26 @@ void AlignEditor::topo (juce::Graphics& g)
     };
     rMenu = chip (u8 ("≡"), cRoxo, false, false);
     juce::String st; juce::Colour cs = cApagado; bool aceso = true;
-    if (estado == 0)       { st = "NO SIDECHAIN"; cs = cRuim; }
+    const int fonte = proc.fonte.load();
+    if (estado == 0)       { st = fonte == AlignProcessor::fonteLink ? "WAITING KICK" : "NO KICK"; cs = cRuim; }
     else if (! ligado)     { st = "BYPASS"; aceso = false; }
     else if (estado == 1)  { st = "LEARNING"; cs = cRoxo; }
     else                   { st = "TRACKING"; cs = cVerde; }
     chip (st, cs, aceso, true);
     chip ("IN " + u8 ("·") + " BASS", cBaixo, L.temBaixo.load(), true);
-    chip ("SC " + u8 ("·") + " KICK", cKick, L.temKick.load(), true);
+    if (fonte == AlignProcessor::fonteLink)
+    {
+        // LINK: o nome do CHUTE seguido (clique = escolher outro, se houver mais de um)
+        juce::String nome = "CHUTE";
+        if (auto* a = chutelink::area())
+        {
+            const int v = proc.linkVaga.load();
+            if (v >= 0) { char nn[chutelink::NNOME] {}; std::memcpy (nn, a->vaga[v].nome, chutelink::NNOME - 1); nome = juce::String::fromUTF8 (nn); }
+        }
+        rFonte = chip ("LINK " + u8 ("·") + " " + nome.toUpperCase() + u8 (" ▾"), cKick, L.temKick.load(), true);
+    }
+    else rFonte = chip ((fonte == AlignProcessor::fonteSidechain ? "SC " : "NO SC ") + u8 ("·") + " KICK", cKick,
+                        fonte == AlignProcessor::fonteSidechain && L.temKick.load(), true);
     const float bpm = proc.bpm.load(), bs = L.batidaS.load();
     chip (bpm > 30.0f ? juce::String (bpm, bpm == std::floor (bpm) ? 0 : 1) + " BPM"
                       : (bs > 0.15f ? juce::String (60.0f / bs, 0) + " BPM" : u8 ("— BPM")), cRoxo, false, false);
@@ -556,12 +569,12 @@ void AlignEditor::dose (juce::Graphics& g, juce::Rectangle<float> r)
     chave (rGuard, "LEVEL GUARD", proc.ligadoParam ("guard"));
 
     const bool guardOn = proc.ligadoParam ("guard");
-    rDepth = { rGuard.getRight() + 22, yc, 168, hc };
+    rDepth = { rGuard.getRight() + 22, yc, 120, hc };
     rotulo (g, { rDepth.getX(), yl, rDepth.getWidth(), 14 }, "GUARD DEPTH");
     const float dep = proc.valorParam ("depth");
     barra (rDepth, dep / 100.0f, guardOn, juce::String (juce::roundToInt (dep)) + "%");
 
-    rReact = { rDepth.getRight() + 22, yc, 186, hc };
+    rReact = { rDepth.getRight() + 22, yc, 150, hc };
     rotulo (g, { rReact.getX(), yl, rReact.getWidth(), 14 }, "REACT");
     {
         const int rv = (int) std::lround (proc.valorParam ("react"));
@@ -578,7 +591,15 @@ void AlignEditor::dose (juce::Graphics& g, juce::Rectangle<float> r)
         }
     }
 
-    rXo = { rReact.getRight() + 22, yc, r.getRight() - 12 - (rReact.getRight() + 22), hc };
+    rDuck = { rReact.getRight() + 22, yc, 118, hc };
+    rotulo (g, { rDuck.getX(), yl, rDuck.getWidth(), 14 }, "DUCK");
+    {
+        const float dk = proc.valorParam ("duck");
+        const float gr = proc.engine.leitura.duckScDb.load();
+        barra (rDuck, dk / 100.0f, dk > 0.5f, dk > 0.5f ? (gr < -0.05f ? db (gr) : juce::String (juce::roundToInt (dk)) + "%") : juce::String ("OFF"));
+    }
+
+    rXo = { rDuck.getRight() + 22, yc, r.getRight() - 12 - (rDuck.getRight() + 22), hc };
     rotulo (g, { rXo.getX(), yl, rXo.getWidth(), 14 }, "X-OVER MAX");
     const float xm = proc.valorParam ("xomax");
     barra (rXo, (xm - 60.0f) / 90.0f, true, juce::String (juce::roundToInt (xm)) + " Hz");
@@ -611,14 +632,21 @@ void AlignEditor::base (juce::Graphics& g)
     // ajuda
     auto& L = proc.engine.leitura;
     juce::String t1, t2; juce::Colour c1 = cTexto;
-    if (L.estado.load() == 0)
+    const bool viaLink = proc.fonte.load() == AlignProcessor::fonteLink;
+    if (L.estado.load() == 0 && viaLink)
     {
-        t1 = u8 ("Sem kick no sidechain."); c1 = cRuim;
-        t2 = u8 ("No Ableton: abra o Sidechain do ALIGN e escolha a faixa do kick (Post FX).");
+        t1 = u8 ("CHUTE achado pelo LINK: esperando o kick tocar."); c1 = cVerde;
+        t2 = u8 ("Dê play no projeto. Com sidechain ligado (com som), o sidechain tem prioridade.");
+    }
+    else if (L.estado.load() == 0)
+    {
+        t1 = u8 ("Sem kick: ligue o sidechain ou use o CHUTE."); c1 = cRuim;
+        t2 = u8 ("No Ableton: Sidechain do ALIGN → faixa do kick (Post FX). Com o CHUTE no kick, o ALIGN acha sozinho (LINK).");
     }
     else if (ligado)
     {
-        t1 = u8 ("Corretor ligado: alinha a fase e segura o nível."); c1 = cVerde;
+        t1 = viaLink ? u8 ("Corretor ligado, kick do CHUTE pelo LINK (sem sidechain).") : u8 ("Corretor ligado: alinha a fase e segura o nível.");
+        c1 = cVerde;
         t2 = u8 ("Onde kick e baixo se cruzam, o grave do baixo abaixa só o que a soma passaria. Notas em roxo já têm correção guardada.");
     }
     else if (L.lowEndDb.load() < -1.0f)
@@ -660,7 +688,8 @@ void AlignEditor::mouseDown (const juce::MouseEvent& e)
         }
         repaint(); return;
     }
-    const std::pair<juce::Rectangle<float>, const char*> barras[] = { { rDepth, "depth" }, { rXo, "xomax" } };
+    if (rFonte.contains (p) && proc.fonte.load() == AlignProcessor::fonteLink) { menuChute(); return; }
+    const std::pair<juce::Rectangle<float>, const char*> barras[] = { { rDepth, "depth" }, { rXo, "xomax" }, { rDuck, "duck" } };
     for (const auto& b : barras)
         if (b.first.contains (p))
         {
@@ -692,6 +721,30 @@ void AlignEditor::mouseUp (const juce::MouseEvent&)
     arrasto = nullptr;
 }
 
+void AlignEditor::menuChute()
+{
+    int idx[chutelink::NSL]; char nomes[chutelink::NSL][chutelink::NNOME];
+    const int n = chutelink::vivas (idx, nomes);
+    juce::PopupMenu m;
+    m.addSectionHeader (u8 ("LINK · QUAL CHUTE SEGUIR"));
+    const auto pref = proc.chutePreferido();
+    m.addItem (1, u8 ("Automático (o primeiro)"), true, pref.isEmpty());
+    juce::StringArray lista;
+    for (int i = 0; i < n; ++i)
+    {
+        const auto nm = juce::String::fromUTF8 (nomes[i]);
+        lista.add (nm);
+        m.addItem (10 + i, nm, true, nm == pref);
+    }
+    juce::Component::SafePointer<AlignEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
+                     [safe, lista] (int r)
+                     {
+                         if (safe == nullptr || r <= 0) return;
+                         safe->proc.preferirChute (r == 1 ? juce::String() : lista[r - 10]);
+                     });
+}
+
 void AlignEditor::menu()
 {
     juce::PopupMenu m;
@@ -709,7 +762,9 @@ void AlignEditor::menu()
                          if (r == menuLicenca) safe->ativacao.mostrarInfo();
                          if (r == menuSobre)
                              juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "ALIGN",
-                                 u8 ("Ponha o ALIGN no canal do BAIXO e mande o KICK pelo sidechain.\n\n"
+                                 u8 ("Ponha o ALIGN no canal do BAIXO e mande o KICK pelo sidechain. Se o kick for o CHUTE, "
+                                     "não precisa de sidechain: o ALIGN acha o CHUTE do projeto sozinho (LINK). Sidechain "
+                                     "ligado e com som tem prioridade. Vários CHUTEs: clique no LINK, no alto, e escolha.\n\n"
                                      "Ligado, ele acompanha cada batida: escolhe sozinho a polaridade e a rotação de fase do "
                                      "grave do baixo que faz kick e baixo somarem sem cancelar, e guarda a correção por nota. "
                                      "O LEVEL GUARD abaixa o grave do baixo só onde os dois se cruzam, para a soma não passar "
@@ -717,7 +772,8 @@ void AlignEditor::menu()
                                      "DOSE: o corretor segue automático. PHASE e POLARITY ligam/desligam cada tipo de "
                                      "correção, LEVEL GUARD liga/desliga o controle de nível e o GUARD DEPTH dosa quanto ele "
                                      "abaixa. REACT é a rapidez com que aprende cada nota. X-OVER MAX é o teto do grave "
-                                     "corrigido (duplo clique na barra volta ao padrão).\n\n"
+                                     "corrigido (duplo clique na barra volta ao padrão). DUCK é o sidechain clássico: o baixo "
+                                     "inteiro abaixa junto com o kick, na dose da barra (em 0 fica OFF).\n\n"
                                      "Latência zero. Desligado, o som passa sem nenhuma alteração."));
                      });
 }

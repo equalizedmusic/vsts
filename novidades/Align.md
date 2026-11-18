@@ -4,6 +4,16 @@ Pacote do instalador: `InsideStudioSP-Align`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `align-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.0 — 2026-11-18
+- TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.2.0).
+- LINK com o CHUTE: sem sidechain, o ALIGN acha o CHUTE do mesmo projeto sozinho e recria o corpo de cada batida na
+  posição certa. Prioridade: sidechain ligado e com som > LINK > aviso "ligue o sidechain ou use o CHUTE". No alto
+  aparece LINK · <nome da faixa do CHUTE>; com vários CHUTEs, clique para escolher qual seguir.
+- DUCK (faixa DOSE): sidechain clássico com dosagem. O baixo inteiro abaixa junto com o envelope do kick, até a
+  porcentagem da barra; a barra mostra quanto abaixou. Em 0 fica OFF (projeto antigo abre igual).
+- Limites do LINK: efeitos depois do CHUTE (EQ, saturador) não entram na conta (para isso, sidechain); faixa
+  congelada / passada para áudio ou DAW que isola cada plugin (Bitwig com sandbox) = sem LINK.
+
 ## 0.2.0 — 2026-11-11
 - DOSE: o ALIGN segue sempre automático (lendo a nota e corrigindo em tempo real), e agora dá para dosar cada parte
   na faixa nova embaixo do osciloscópio:

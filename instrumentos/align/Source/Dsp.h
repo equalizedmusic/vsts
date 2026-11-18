@@ -16,6 +16,8 @@
 //  - LEVEL GUARD: depois de alinhar, a soma kick + baixo passaria da soma de potência (embola). Um ganho só no
 //    grave do baixo, calculado pelos envelopes (não amostra a amostra, para não seguir o harmônico), segura a soma
 //    em eK² + eB²: nem cancelamento nem soma. Teto de −6 dB.
+//  - DUCK (0.3.0): sidechain clássico com dosagem. O baixo inteiro abaixa junto com o envelope do kick (o quanto o
+//    kick está soando em relação ao pico dele), até −DUCK × 100%. Em 0 não faz nada (projeto antigo abre igual).
 //  - O desligado (ALIGN off) devolve a entrada sem nenhuma alteração; a análise continua (serve de A/B e já
 //    chega aprendido quando liga).
 
@@ -132,6 +134,7 @@ struct Leitura
     std::atomic<float> lowEndDb { 0.0f };    // perda (−) ou soma (+) no grave em relação à soma de potência
     std::atomic<float> corr { 0.0f };        // correlação kick × baixo no grave (−1..+1)
     std::atomic<float> duckDb { 0.0f };      // LEVEL GUARD: menor ganho da última batida
+    std::atomic<float> duckScDb { 0.0f };    // DUCK: menor ganho do último bloco (dB, ≤ 0)
     std::atomic<float> rotDeg { 0.0f };      // rotação aplicada na fundamental da nota (graus, 0..−360)
     std::atomic<int>   invertida { 0 };
     std::atomic<float> xoverHz { 90.0f };
@@ -188,6 +191,7 @@ public:
     double guardDepth = 1.0;    // LEVEL GUARD DEPTH 0..1: g = 1 − depth·(1 − gNota)
     int react = 1;              // REACT 0 lento, 1 médio, 2 rápido
     double xoMax = 110.0;       // X-OVER MAX (60..150 Hz): teto do X-OVER que acompanha a nota
+    double duck = 0.0;          // DUCK 0..1 (0.3.0): quanto o baixo abaixa com o kick (0 = desligado)
 
     // o host muda a dosagem bloco a bloco (sem alocar; o REACT ajusta o crossfade)
     void setReact (int r)
@@ -217,6 +221,8 @@ public:
         gEnv = std::exp (-1.0 / (0.012 * fs));
         gAtk = std::exp (-1.0 / (0.004 * fs)); gRel = std::exp (-1.0 / (0.015 * fs));
         xoK = 1.0 - std::exp (-32.0 / (0.050 * fs));
+        dRel = std::exp (-1.0 / (0.040 * fs)); dPicoC = std::exp (-1.0 / (2.0 * fs));
+        dAtk = std::exp (-1.0 / (0.001 * fs)); dSolta = std::exp (-1.0 / (0.012 * fs));
         scope.prepare (fs);
         reset();
     }
@@ -233,6 +239,7 @@ public:
         envF = envS = 0; kLowEnv = 0; bEnv = 0; bPico = 0; jJunto = false;
         desdeOnset = 1 << 30; semKick = 1 << 30;
         eK2 = eB2 = 0; g = 1.0; gNota = 1.0;
+        dEnv = 0; dPico = 0; gd = 1.0;
         zcTem = false; zcArmado = false; zcPer = 0; blAnt = 0; notaAgora = -1; notaAplica = -1; f0Agora = 0;
         ultOnset = -1; numInt = 0;
         agora = 0; scopePos = 0; decConta = 0;
@@ -243,6 +250,7 @@ public:
     {
         nch = std::min (nch, maxCh);
         const double wetAlvo = ligado ? 1.0 : 0.0;
+        double gdMin = 1.0;
         for (int i = 0; i < n; ++i, ++agora)
         {
             // ---- kick (mono) ----
@@ -330,8 +338,18 @@ public:
 
             // ---- saída ----
             wet = wetAlvo > wet ? std::min (wetAlvo, wet + wetPasso) : std::max (wetAlvo, wet - wetPasso);
+            // DUCK: envelope do kick inteiro (ataque na hora, solta em 40 ms) relativo ao pico dele (2 s)
+            {
+                const double ak = std::fabs (k);
+                dEnv = ak > dEnv ? ak : dEnv * dRel;
+                dPico = std::max (dPico * dPicoC, dEnv);
+                const double alvo = duck > 0.0 && dPico > 1e-4 ? 1.0 - std::clamp (duck, 0.0, 1.0) * std::min (1.0, dEnv / dPico) : 1.0;
+                gd = alvo < gd ? dAtk * gd + (1 - dAtk) * alvo : dSolta * gd + (1 - dSolta) * alvo;
+            }
+            const double gDuck = 1.0 - wet * (1.0 - gd);
+            gdMin = std::min (gdMin, gDuck);
             for (int c = 0; c < nch; ++c)
-                if (wet > 0.0) bass[c][i] = (float) (xC[c] + wet * (hiC[c] + g * yAp[c] - xC[c]));
+                if (wet > 0.0) bass[c][i] = (float) (gDuck * (xC[c] + wet * (hiC[c] + g * yAp[c] - xC[c])));
             const double outFull = bm + wet * (hm + g * yApM - bm);
             const double semFull = bm + wet * (hm + yApM - bm);
             // saída no grave com o mesmo filtro do kick: na tela e no medidor, a fase entre os dois é a real
@@ -361,6 +379,7 @@ public:
             }
         }
         scope.pos.store (scopePos);
+        leitura.duckScDb = gainToDb ((float) gdMin);
         leitura.temKick = semKick < (std::int64_t) (2.0 * fs);
         leitura.temBaixo = bEnv > 1e-4;
         leitura.estado = ! leitura.temKick.load() ? 0 : (mem[notaAplica >= 0 ? notaAplica : semNota].opcao >= 0 ? 2 : 1);
@@ -554,6 +573,9 @@ private:
 
     // LEVEL GUARD
     double eK2 = 0, eB2 = 0, g = 1.0, gNota = 1.0, gEnv = 0, gAtk = 0, gRel = 0;
+
+    // DUCK
+    double dEnv = 0, dPico = 0, dRel = 0, dPicoC = 0, dAtk = 0, dSolta = 0, gd = 1.0;
 
     // altura
     bool zcTem = false, zcArmado = false;

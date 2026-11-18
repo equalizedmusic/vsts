@@ -6,4 +6,6 @@ report/
 .vs/
 .vscode/
 __pycache__/
+# CHUTE: modelos em claro; no git só o Modelos.h.cifrado (instrumentos/chute/modelos.cmake)
+instrumentos/chute/Source/Modelos.h
 *.pyc

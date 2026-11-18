@@ -35,6 +35,7 @@ private:
     void dose (juce::Graphics&, juce::Rectangle<float> r);
     void base (juce::Graphics&);
     void menu();
+    void menuChute();   // LINK: qual CHUTE seguir
 
     // janela da foto: começo (amostra absoluta) e duração do trecho de 2 tempos
     bool janela (std::int64_t& ini, double& batida) const;
@@ -45,7 +46,7 @@ private:
     float escalaScope = 1.0f, escalaZoom = 1.0f;
 
     // alvos de clique (coordenadas da tela base)
-    juce::Rectangle<float> rBotao, rFull, rLow, rMenu, rFase, rPol, rGuard, rDepth, rReact, rXo;
+    juce::Rectangle<float> rBotao, rFull, rLow, rMenu, rFase, rPol, rGuard, rDepth, rReact, rXo, rDuck, rFonte;
     juce::RangedAudioParameter* arrasto = nullptr;   // DEPTH / X-OVER MAX sendo arrastado
     juce::Rectangle<float> arrastoR;
 

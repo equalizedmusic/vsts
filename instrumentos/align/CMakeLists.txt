@@ -21,7 +21,9 @@ juce_add_plugin(Align
     VST3_CATEGORIES             Fx Tools
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
-target_sources(Align PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
+# 0.3.0: LINK com o CHUTE (o kick sem sidechain): compila o ChuteLink do CHUTE
+target_sources(Align PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp ../chute/Source/ChuteLink.cpp)
+target_include_directories(Align PRIVATE ../chute/Source)
 isp_licenca(Align align)
 target_compile_definitions(Align PUBLIC
     JUCE_WEB_BROWSER=0

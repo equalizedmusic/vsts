@@ -3,9 +3,12 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Dsp.h"
 #include "IspLicenca.h"
+#include "ChuteLink.h"
 
 // ALIGN: vai no canal do BAIXO; o KICK entra pelo sidechain. Um botão só (ALIGN) liga o corretor automático de fase
 // kick/baixo com o LEVEL GUARD. Latência zero. Desligado, o som passa sem nenhuma alteração.
+// 0.3.0: sem sidechain, o kick vem do CHUTE do mesmo projeto pelo LINK (ChuteLink.h). Prioridade: sidechain com som >
+// LINK > aviso "ligue o sidechain". DUCK: sidechain clássico com dosagem.
 class AlignProcessor : public juce::AudioProcessor
 {
 public:
@@ -42,6 +45,11 @@ public:
 
     std::atomic<float> bpm { 0.0f };          // do host (0 = não informou)
     std::atomic<bool> scLigado { false };     // o host ligou o sidechain
+    enum Fonte { semKick = 0, fonteSidechain, fonteLink };
+    std::atomic<int> fonte { semKick };       // de onde vem o kick agora
+    std::atomic<int> linkVaga { -1 };         // vaga do CHUTE seguida (−1 = nenhuma)
+    void preferirChute (const juce::String& nome);   // vários CHUTEs: qual seguir (vazio = o primeiro)
+    juce::String chutePreferido() const;
     std::atomic<bool> verGrave { true };      // osciloscópio: só o grave (LOW) ou tudo (FULL)
     std::atomic<int> uiW { 0 };               // largura da janela (0 = ainda não abriu)
 
@@ -53,7 +61,14 @@ public:
 
 private:
     std::atomic<float>* pAlign = nullptr;
-    std::atomic<float> *pPhase = nullptr, *pPolarity = nullptr, *pGuard = nullptr, *pDepth = nullptr, *pReact = nullptr, *pXoMax = nullptr;
+    std::atomic<float> *pPhase = nullptr, *pPolarity = nullptr, *pGuard = nullptr, *pDepth = nullptr, *pReact = nullptr, *pXoMax = nullptr,
+                       *pDuck = nullptr;
+    chutelink::Leitor link;
+    std::vector<float> kickLink;
+    int64_t semScDesde = 1 << 30;   // amostras desde a última vez que o sidechain teve som
+    juce::String prefNome;
+    std::atomic<bool> prefNovo { false };
+    juce::SpinLock prefTrava;
     void aplicaDose();
     double fs = 48000.0;
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto

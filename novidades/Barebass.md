@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.0 — 2026-11-18
+- TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.3.0).
+- LINK com o CHUTE (sem sidechain): o chip KICK LOCK no alto mostra a nota do kick do projeto.
+- KICK LOCK: cada nota nasce com o SUB em fase com o corpo do kick naquele instante (as outras ondas andam junto, o
+  desenho da onda é o mesmo). Clique no chip para ligar ou desligar. Ligado em instância nova; projeto salvo antes
+  da 0.4.0 abre desligado (soa igual). Sem CHUTE no projeto, nada muda.
+
 ## 0.3.0 — 2026-11-08
 - Afinação: com o unHUNF ligado o grave desafinava. O filtro dele subia de frequência a cada nota e, ao passar
   pelo sub, deixava um "toque" na frequência do próprio filtro: o grave deslizava até meia oitava acima da nota
