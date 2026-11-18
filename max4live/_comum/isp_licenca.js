@@ -281,26 +281,75 @@ function licConfere(lido) {
 	return "";
 }
 
-// ---- conversa com o servidor
-var licXhr = null, licXhrBg = null;
-function licPede(acao, email, token, mostrarErro) {
-	if (typeof XMLHttpRequest == "undefined") { lic.msg = "Este Max não tem XMLHttpRequest: precisa do Live 12.2 ou mais novo."; licMudou(); return; }
-	var bg = acao == "recuperar";   // em segundo plano: não trava a tela nem o ACTIVATE
-	if (!bg) { lic.ocupado = true; licMudou(); }
-	var corpo = JSON.stringify({ pacote: LIC_PACOTE, email: email, token: token, maquina: licMaquina(),
-		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO + " " + licDiagTexto() });
-	try {
-		var x = new XMLHttpRequest(); if (bg) licXhrBg = x; else licXhr = x;   // referência guardada (o GC não leva)
-		x.open("POST", LIC_URL + acao);
+// ---- HTTP: XMLHttpRequest do [v8] quando existe; senão pelo [js] clássico do patcher (<dev>_http.js)
+// 18/11 (cliente Kontrakulture, Live 12.3.2 = Max 9.0.x): o [v8] desse Max NÃO tem XMLHttpRequest e o ACTIVATE parava
+// em "precisa do Live 12.2". O [js] clássico tem XMLHttpRequest há muitas versões: o pedido sai pela saída 1 como
+// "http req <id> <método> <url> t<corpo>" (o patcher desvia o "http" para o [js] antes da faixa do device) e a resposta
+// volta como "http_resp <id> <status> t<texto>". Corpo e texto vão em encodeURIComponent com um "t" na frente: o Max não
+// mexe no símbolo (vírgula, ponto e vírgula, aspas, texto vazio ou só número). Sem resposta em 25 s = falha de rede.
+// No Live 12.4+ nada muda: o caminho é o mesmo de antes (XMLHttpRequest do próprio [v8]).
+var licHttpPend = {}, licHttpSeq = 0, licHttpAvisou = false;
+function licTemXhr() { return typeof XMLHttpRequest != "undefined"; }
+function licAscii(s) {
+	// corpo só em ASCII no caminho do [js] (o \uXXXX é JSON válido e não depende de como o [js] codifica o envio)
+	return String(s).replace(/[\u0080-￿]/g, function (c) { return "\\u" + ("000" + c.charCodeAt(0).toString(16)).slice(-4); });
+}
+// cb(status, texto) — texto null = não houve resposta
+function licHttp(metodo, url, corpo, cb) {
+	if (licTemXhr()) {
+		var k = "x" + (++licHttpSeq);
+		var x = new XMLHttpRequest(); licHttpPend[k] = x;   // referência guardada (o GC não leva)
+		x.open(metodo, url);
 		// SEM setRequestHeader: no Max 9.1.5 do Mac (Live 12.4.16, Intel) ele derruba o Live inteiro (SIGSEGV em
 		// atomarray_appendatom, 15/11) e try/catch não segura. O servidor lê o corpo com req.json() sem olhar o cabeçalho.
 		x.onreadystatechange = function () {
 			if (x.readyState != 4) return;
-			var r = null;
-			try { r = JSON.parse(x.responseText); } catch (e) { r = null; }
-			licResposta(acao, email, token, r, mostrarErro);
+			delete licHttpPend[k];
+			cb(x.status, x.responseText);
 		};
-		x.send(corpo);
+		if (corpo == null) x.send(); else x.send(corpo);
+		return;
+	}
+	if (!licHttpAvisou) { licHttpAvisou = true; log(LIC_NOME + ": este [v8] não tem XMLHttpRequest; a internet vai pelo [js] clássico\n"); }
+	var id = ++licHttpSeq;
+	var t = new Task(function () { licHttpFim(id, 0, null); });
+	licHttpPend["j" + id] = { cb: cb, t: t };
+	t.schedule(25000);
+	outlet(1, "http", "req", id, metodo, url, "t" + encodeURIComponent(corpo == null ? "" : licAscii(corpo)));
+}
+function licHttpFim(id, status, texto) {
+	var p = licHttpPend["j" + id];
+	if (!p) return;
+	delete licHttpPend["j" + id];
+	try { p.t.cancel(); } catch (e) { }
+	if (texto == null) log(LIC_NOME + ": sem resposta do [js] de internet (pedido " + id + ")\n");
+	p.cb(status, texto);
+}
+// vindo do [js] <dev>_http.js
+function http_resp(id, status, txt) {
+	var s = txt == null ? "" : String(txt), texto = null;
+	if (s.charAt(0) == "t") { try { texto = decodeURIComponent(s.substr(1)); } catch (e) { texto = null; } }
+	licHttpFim(Number(id), Number(status) || 0, texto);
+}
+
+// ---- conversa com o servidor
+function licPede(acao, email, token, mostrarErro) {
+	var bg = acao == "recuperar";   // em segundo plano: não trava a tela nem o ACTIVATE
+	if (!bg) { lic.ocupado = true; licMudou(); }
+	var corpo = JSON.stringify({ pacote: LIC_PACOTE, email: email, token: token, maquina: licMaquina(),
+		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO + " " + licDiagTexto() + (licTemXhr() ? "" : " js") });
+	try {
+		licHttp("POST", LIC_URL + acao, corpo, function (status, texto) {
+			if (status == -1 && !bg) {   // nem o [js] clássico deste Max tem XMLHttpRequest
+				lic.ocupado = false;
+				lic.msg = "Este Max não consegue acessar a internet pelo device. Atualize o Ableton Live para a versão mais nova do Live 12.";
+				licMudou();
+				return;
+			}
+			var r = null;
+			try { r = texto ? JSON.parse(texto) : null; } catch (e) { r = null; }
+			licResposta(acao, email, token, r, mostrarErro);
+		});
 	} catch (e) {
 		if (bg) return;
 		lic.ocupado = false;
@@ -375,18 +424,14 @@ function licEstado() {
 // O motor define URL_BAIXAR (zip fixo do site) e URL_NOVIDADES. Sem internet ou com erro: fica quieto.
 var nova = "";
 var versaoChecada = false;
-var verXhr = null;
 function checaVersao() {
 	if (versaoChecada) return;
 	versaoChecada = true;
-	if (typeof XMLHttpRequest == "undefined") { log(LIC_NOME + ": sem XMLHttpRequest, não confere versão nova\n"); return; }
 	try {
-		var x = new XMLHttpRequest(); verXhr = x;
-		x.open("GET", LIC_URL + "versao?pacote=" + LIC_PACOTE + "&versao=" + VERSAO + "&sistema=" + (licMac() ? "mac" : "win"));
-		x.onreadystatechange = function () {
-			if (x.readyState != 4) return;
+		licHttp("GET", LIC_URL + "versao?pacote=" + LIC_PACOTE + "&versao=" + VERSAO + "&sistema=" + (licMac() ? "mac" : "win"), null, function (status, texto) {
+			if (texto == null) return;
 			try {
-				var r = JSON.parse(x.responseText);
+				var r = JSON.parse(texto);
 				var v = r && r.ok && r.atualizacao ? String(r.atualizacao.versao || "") : "";
 				if (!/^\d+\.\d+\.\d+$/.test(v) || comparaVersao(v, VERSAO) <= 0) return;
 				nova = v;
@@ -394,8 +439,7 @@ function checaVersao() {
 				outlet(2, "nova", v);
 				outlet(1, "nova", v);
 			} catch (e) { log(LIC_NOME + ": resposta de versão inválida\n"); }
-		};
-		x.send();
+		});
 	} catch (e) { log(LIC_NOME + ": não conferiu versão nova (" + e + ")\n"); }
 }
 function comparaVersao(a, b) {

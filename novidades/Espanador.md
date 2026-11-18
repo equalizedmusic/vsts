@@ -4,6 +4,9 @@ Device Max for Live (pasta `max4live/espanador`), da família da VASSOURA e do R
 `## x.y.z` deste arquivo: ela vira o release `espanador-vx.y.z` do GitHub (zip `Espanador-x.y.z.zip`), publicado pelo
 workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.1 — 2026-11-18
+- **Corrigido: no Live 12.2 e 12.3 o ACTIVATE não ativava** e mostrava "Este Max não tem XMLHttpRequest: precisa do Live 12.2 ou mais novo". O ESPANADOR agora usa outro caminho do Max para falar com o servidor de licenças nessas versões. No Live 12.4 e mais novos nada muda.
+
 ## 0.2.0 — 2026-11-15
 Primeira versão à venda (a 0.1 foi só de teste).
 - **Organiza o set nos 8 grupos do MAESTRO** (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX). O SCAN lê todas

@@ -18,7 +18,7 @@ inlets = 1;
 outlets = 4; // 0: (livre)   1: status (device)   2: janela   3: eco dos controles (prefix/bus/auto)
 
 var DICT = "espanador_data";
-var VERSAO = "0.2.0";
+var VERSAO = "0.2.1";
 var BUILD = "";           // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = false;    // true só em pacote de teste (sem licença)
 var LIC_PACOTE = "espanador", LIC_NOME = "ESPANADOR";

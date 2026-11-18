@@ -5,6 +5,9 @@ ela vira o release `vassoura-vx.y.z` do GitHub (zip `Vassoura-x.y.z.zip`, com o 
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit
 da mudança. Fica só o release da última versão.
 
+## 0.3.6 — 2026-11-18
+- **Corrigido: no Live 12.2 e 12.3 o ACTIVATE não ativava** e mostrava "Este Max não tem XMLHttpRequest: precisa do Live 12.2 ou mais novo". A VASSOURA agora usa outro caminho do Max para falar com o servidor de licenças nessas versões. No Live 12.4 e mais novos nada muda.
+
 ## 0.3.5 — 2026-11-15
 - **Corrigido: no Mac, o Live fechava sozinho ao colocar a VASSOURA numa faixa.** A conversa com o servidor de licenças
   usava um recurso do Max que, no Max 9.1.5 do Mac, derruba o Live. Esse recurso saiu; a licença e o token seguem iguais.

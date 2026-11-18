@@ -14,7 +14,14 @@ function faixaEJanela(k) {
 
   const strip = box({ maxclass: 'jsui', filename: `${dev}_strip.js`, numinlets: 1, numoutlets: 1, outlettype: [''],
     parameter_enable: 0, patching_rect: [700, 520, 420, 166], presentation: 1, presentation_rect: [0, 0, 420, 166] });
-  line(v8, 1, strip, 0);
+  // saída 1 do motor: "http req ..." vai para o [js] clássico de internet (Live 12.2/12.3, [v8] sem XMLHttpRequest);
+  // o resto segue para a faixa como antes. A resposta do [js] volta direto ao motor (http_resp).
+  const rHttp = obj('route http', 1, 2, [700, 470, 70, 22]);
+  const jsHttp = obj(`js ${dev}_http.js`, 1, 1, [580, 500, 110, 22]);
+  line(v8, 1, rHttp, 0);
+  line(rHttp, 0, jsHttp, 0);
+  line(jsHttp, 0, v8, 0);
+  line(rHttp, 1, strip, 0);
 
   const sub = {
     fileversion: 1,
@@ -81,6 +88,7 @@ function escrever(out, dir, dev, Nome, patcher, DEVJS) {
   const versao = (/var VERSAO = "([^"]+)"/.exec(motor) || [])[1] || '?';
   fs.writeFileSync(path.join(out, `${dev}.js`), motor + '\n' + ler(path.join(COMUM, 'isp_licenca.js')));
   fs.writeFileSync(path.join(out, `${dev}_view.js`), ler(path.join(dir, `${dev}_view.js`)) + '\n' + ler(path.join(COMUM, 'isp_tela_lic.js')));
+  fs.writeFileSync(path.join(out, `${dev}_http.js`), ler(path.join(COMUM, 'isp_http.js')));
   fs.writeFileSync(path.join(out, `${dev}_strip.js`),
     '// ' + Nome.toUpperCase() + ' — faixa do device (gerado pelo build a partir de _comum/isp_strip.js)\n' +
     'var DEV = ' + JSON.stringify(Object.assign({ versao }, DEVJS)) + ';\n' + ler(path.join(COMUM, 'isp_strip.js')));
@@ -91,6 +99,7 @@ const dependencias = (dev) => [
   { name: `${dev}.js`, type: 'TEXT', implicit: 1 },
   { name: `${dev}_view.js`, type: 'TEXT', implicit: 1 },
   { name: `${dev}_strip.js`, type: 'TEXT', implicit: 1 },
+  { name: `${dev}_http.js`, type: 'TEXT', implicit: 1 },
 ];
 
 module.exports = { faixaEJanela, escrever, dependencias };

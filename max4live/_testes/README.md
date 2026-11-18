@@ -21,5 +21,6 @@ set MOTOR=%TEMP%/m4l/vassoura/vassoura.js & node sim-vassoura.js MUTE & node sim
 ```
 
 Os mesmos `t-*.js` servem para a VASSOURA (passe o `vassoura.js`). Cada um termina com `RESULTADO: OK` ou a lista de erros.
+`t-http.js` (sem chave): internet pelo [js] clássico quando o [v8] não tem XMLHttpRequest (Live 12.2/12.3); `node t-http.js real` fala com o servidor de verdade.
 `t-lic.js` confere a chave pública embutida em `_comum/isp_licenca.js` contra a do `ISP_ED25519`.
 `shot-all.js` desenha a faixa e a janela (precisa de `puppeteer`; `M4L_BUILD` = pasta com `Rodo-x.y.z/` e `Vassoura-x.y.z/`).
