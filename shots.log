@@ -1,4 +1,194 @@
+== build/shot_montamonta_artefacts/Release/shot_montamonta
+MONTAMONTA: ok
+== build/shot_picador_artefacts/Release/shot_picador
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+PICADOR: ok
+== build/shot_mastiga_artefacts/Release/shot_mastiga
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+MASTIGA: ok
 == build/shot_chute_artefacts/Release/shot_chute
 CHUTE: ok
-total 1024
--rw-r--r--  1 runner  staff  522562 Nov 18 10:10 CHUTE.png
+== build/shot_soco_artefacts/Release/shot_soco
+SOCO: ok
+== build/shot_horizonte_artefacts/Release/shot_horizonte
+HORIZONTE: ok
+== build/shot_chama_artefacts/Release/shot_chama
+CHAMA: ok
+== build/shot_eco_artefacts/Release/shot_eco
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+ECO: ok
+== build/shot_escada_artefacts/Release/shot_escada
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+ESCADA: ok
+== build/shot_mercurio_artefacts/Release/shot_mercurio
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+MERCURIO: ok
+== build/shot_sala_artefacts/Release/shot_sala
+SALA: ok
+== build/shot_espiral_artefacts/Release/shot_espiral
+ESPIRAL: ok
+== build/shot_miragem_artefacts/Release/shot_miragem
+MIRAGEM: ok
+== build/shot_fita_artefacts/Release/shot_fita
+FITA: ok
+== build/shot_mesa_artefacts/Release/shot_mesa
+MESA-ZOOM: ok
+MESA-CANAL: ok
+MESA: ok
+== build/shot_avesso_artefacts/Release/shot_avesso
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+AVESSO: ok
+== build/shot_align_artefacts/Release/shot_align
+ALIGN: layout ok, entradas 4, sidechain ligado
+ALIGN-OFF: ok
+ALIGN: ok
+== build/shot_repeteco_artefacts/Release/shot_repeteco
+REPETECO: ok
+== build/shot_fole_artefacts/Release/shot_fole
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+FOLE: ok
+== build/shot_navalha_artefacts/Release/shot_navalha
+NAVALHA: ok
+== build/shot_prisma_artefacts/Release/shot_prisma
+PRISMA: ok
+== build/shot_retalho_artefacts/Release/shot_retalho
+RETALHO captura: pronta em 17.2 s
+RETALHO-ESTICA: ok
+RETALHO-GROOVE: ok
+RETALHO: ok
+== build/shot_monitor_artefacts/Release/shot_monitor
+MONITOR: ok
+== build/shot_magos_artefacts/Release/shot_magos
+MAGOS-LISTEN: ok
+MAGOS-MANUAL: ok
+MAGOS: ok
+== build/shot_barragem_artefacts/Release/shot_barragem
+BARRAGEM: ok
+== build/shot_resenha_artefacts/Release/shot_resenha
+RESENHA: ok
+== build/shot_lixa_artefacts/Release/shot_lixa
+LIXA: ok
+== build/shot_stompbox_artefacts/Release/shot_stompbox
+STOMPBOX-PEDAIS-1: ok
+STOMPBOX-PEDAIS-2: ok
+STOMPBOX-AMP-1: ok
+STOMPBOX-AMP-2: ok
+STOMPBOX-AMP-3: ok
+STOMPBOX-AMP-4: ok
+STOMPBOX-AMP-5: ok
+STOMPBOX-AMP-OFF: ok
+STOMPBOX-TUNER: ok
+STOMPBOX: ok
+== build/shot_caleido_artefacts/Release/shot_caleido
+CALEIDO: ok
+== build/shot_repique_artefacts/Release/shot_repique
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+REPIQUE: ok
+== build/shot_ringer_artefacts/Release/shot_ringer
+RINGER: ok
+== build/shot_quimera_artefacts/Release/shot_quimera
+QUIMERA: ok
+== build/shot_picote_artefacts/Release/shot_picote
+PICOTE: ok
+== build/shot_limao_artefacts/Release/shot_limao
+LIMAO: ok
+== build/shot_barebass_artefacts/Release/shot_barebass
+BAREBASS: ok
+== build/shot_mare_artefacts/Release/shot_mare
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+MARE: ok
+== build/shot_maestro_artefacts/Release/shot_maestro
+MAESTRO-LEARN: ok
+MAESTRO-LOCK: ok
+MAESTRO-FOCUS: ok
+MAESTRO: ok
+== build/shot_vaivem_artefacts/Release/shot_vaivem
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+VAIVEM: ok
+== build/shot_console_artefacts/Release/shot_console
+CONSOLE: ok
+== build/shot_grao_artefacts/Release/shot_grao
+GRAO: ok
+== build/shot_groovador_artefacts/Release/shot_groovador
+GROOVADOR: ok
+== build/shot_gogo_artefacts/Release/shot_gogo
+GOGO-TUNE: ok
+GOGO: ok
+== build/shot_torno_artefacts/Release/shot_torno
+TORNO: ok
+== build/shot_freio_artefacts/Release/shot_freio
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+FREIO: ok
+== build/shot_f1_artefacts/Release/shot_f1
+F1: ok
+== build/shot_onkey_artefacts/Release/shot_onkey
+ONKEY-FINO: ok
+ONKEY: ok
+total 165272
+-rw-r--r--  1 runner  staff   501303 Nov 18 19:49 ALIGN-OFF.png
+-rw-r--r--  1 runner  staff   525017 Nov 18 19:49 ALIGN.png
+-rw-r--r--  1 runner  staff   550327 Nov 18 19:49 AVESSO.png
+-rw-r--r--  1 runner  staff   362459 Nov 18 19:52 BAREBASS.png
+-rw-r--r--  1 runner  staff  1636789 Nov 18 19:51 BARRAGEM.png
+-rw-r--r--  1 runner  staff  2290095 Nov 18 19:51 CALEIDO.png
+-rw-r--r--  1 runner  staff  2337608 Nov 18 19:48 CHAMA.png
+-rw-r--r--  1 runner  staff   524642 Nov 18 19:48 CHUTE.png
+-rw-r--r--  1 runner  staff  1681058 Nov 18 19:53 CONSOLE.png
+-rw-r--r--  1 runner  staff   543882 Nov 18 19:48 ECO.png
+-rw-r--r--  1 runner  staff   550881 Nov 18 19:48 ESCADA.png
+-rw-r--r--  1 runner  staff  2250371 Nov 18 19:49 ESPIRAL.png
+-rw-r--r--  1 runner  staff  2128396 Nov 18 19:53 F1.png
+-rw-r--r--  1 runner  staff  2220673 Nov 18 19:49 FITA.png
+-rw-r--r--  1 runner  staff   556561 Nov 18 19:49 FOLE.png
+-rw-r--r--  1 runner  staff   534497 Nov 18 19:53 FREIO.png
+-rw-r--r--  1 runner  staff   629987 Nov 18 19:53 GOGO-TUNE.png
+-rw-r--r--  1 runner  staff   574106 Nov 18 19:53 GOGO.png
+-rw-r--r--  1 runner  staff  1999020 Nov 18 19:53 GRAO.png
+-rw-r--r--  1 runner  staff   771366 Nov 18 19:53 GROOVADOR.png
+-rw-r--r--  1 runner  staff  1703971 Nov 18 19:48 HORIZONTE.png
+-rw-r--r--  1 runner  staff  2152358 Nov 18 19:52 LIMAO.png
+-rw-r--r--  1 runner  staff  1597578 Nov 18 19:51 LIXA.png
+-rw-r--r--  1 runner  staff   626483 Nov 18 19:52 MAESTRO-FOCUS.png
+-rw-r--r--  1 runner  staff   519594 Nov 18 19:52 MAESTRO-LEARN.png
+-rw-r--r--  1 runner  staff   573750 Nov 18 19:52 MAESTRO-LOCK.png
+-rw-r--r--  1 runner  staff   632462 Nov 18 19:52 MAESTRO.png
+-rw-r--r--  1 runner  staff   633635 Nov 18 19:51 MAGOS-LISTEN.png
+-rw-r--r--  1 runner  staff   782481 Nov 18 19:51 MAGOS-MANUAL.png
+-rw-r--r--  1 runner  staff   730502 Nov 18 19:51 MAGOS.png
+-rw-r--r--  1 runner  staff   550348 Nov 18 19:52 MARE.png
+-rw-r--r--  1 runner  staff   558617 Nov 18 19:48 MASTIGA.png
+-rw-r--r--  1 runner  staff  2802869 Nov 18 19:48 MERCURIO.png
+-rw-r--r--  1 runner  staff   645611 Nov 18 19:49 MESA-CANAL.png
+-rw-r--r--  1 runner  staff  2662341 Nov 18 19:49 MESA-ZOOM.png
+-rw-r--r--  1 runner  staff  1845103 Nov 18 19:49 MESA.png
+-rw-r--r--  1 runner  staff  2081605 Nov 18 19:49 MIRAGEM.png
+-rw-r--r--  1 runner  staff  1680908 Nov 18 19:50 MONITOR.png
+-rw-r--r--  1 runner  staff   577617 Nov 18 19:47 MONTAMONTA.png
+-rw-r--r--  1 runner  staff  1602824 Nov 18 19:49 NAVALHA.png
+-rw-r--r--  1 runner  staff   300070 Nov 18 19:53 ONKEY-FINO.png
+-rw-r--r--  1 runner  staff   239060 Nov 18 19:53 ONKEY.png
+-rw-r--r--  1 runner  staff   553184 Nov 18 19:48 PICADOR.png
+-rw-r--r--  1 runner  staff  2071853 Nov 18 19:52 PICOTE.png
+-rw-r--r--  1 runner  staff  1859497 Nov 18 19:50 PRISMA.png
+-rw-r--r--  1 runner  staff  2763104 Nov 18 19:52 QUIMERA.png
+-rw-r--r--  1 runner  staff  2001929 Nov 18 19:49 REPETECO.png
+-rw-r--r--  1 runner  staff   545393 Nov 18 19:51 REPIQUE.png
+-rw-r--r--  1 runner  staff  1029709 Nov 18 19:51 RESENHA.png
+-rw-r--r--  1 runner  staff   687937 Nov 18 19:50 RETALHO-ESTICA.png
+-rw-r--r--  1 runner  staff   541237 Nov 18 19:50 RETALHO-GROOVE.png
+-rw-r--r--  1 runner  staff   780459 Nov 18 19:50 RETALHO.png
+-rw-r--r--  1 runner  staff  2162058 Nov 18 19:52 RINGER.png
+-rw-r--r--  1 runner  staff  1775888 Nov 18 19:48 SALA.png
+-rw-r--r--  1 runner  staff  1685389 Nov 18 19:48 SOCO.png
+-rw-r--r--  1 runner  staff   274217 Nov 18 19:51 STOMPBOX-AMP-1.png
+-rw-r--r--  1 runner  staff   294711 Nov 18 19:51 STOMPBOX-AMP-2.png
+-rw-r--r--  1 runner  staff   274793 Nov 18 19:51 STOMPBOX-AMP-3.png
+-rw-r--r--  1 runner  staff   276172 Nov 18 19:51 STOMPBOX-AMP-4.png
+-rw-r--r--  1 runner  staff   258857 Nov 18 19:51 STOMPBOX-AMP-5.png
+-rw-r--r--  1 runner  staff   249637 Nov 18 19:51 STOMPBOX-AMP-OFF.png
+-rw-r--r--  1 runner  staff  1487044 Nov 18 19:51 STOMPBOX-PEDAIS-1.png
+-rw-r--r--  1 runner  staff  1512303 Nov 18 19:51 STOMPBOX-PEDAIS-2.png
+-rw-r--r--  1 runner  staff  1110121 Nov 18 19:51 STOMPBOX-TUNER.png
+-rw-r--r--  1 runner  staff  1512903 Nov 18 19:51 STOMPBOX.png
+-rw-r--r--  1 runner  staff  1700494 Nov 18 19:53 TORNO.png
+-rw-r--r--  1 runner  staff   554465 Nov 18 19:52 VAIVEM.png
