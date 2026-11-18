@@ -5,7 +5,7 @@ Nivela os clips de áudio do Arrangement pelo Clip Gain, medindo por PICO, RMS o
 INSTALAR
 1. Copie a pasta inteira (Rodo-<versão>) para:
    Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
-   Os 4 arquivos (Rodo.amxd, rodo.js, rodo_view.js e rodo_strip.js) PRECISAM ficar juntos.
+   O Rodo.amxd e os 4 arquivos .js (rodo.js, rodo_view.js, rodo_strip.js e rodo_http.js) PRECISAM ficar juntos.
 2. No Live, arraste o Rodo.amxd para a PRIMEIRA faixa de áudio do projeto.
    No MASTER ele não funciona: o ANALYZE não lê os clips.
 

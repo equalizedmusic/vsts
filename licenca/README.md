@@ -25,7 +25,7 @@ Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
    Repo privado ou GitHub fora = nenhum aviso, nada quebra (com repo privado dá para pôr um token só leitura no
    segredo `GITHUB_TOKEN` do Worker). Para testar, `-DISP_LICENCA_VERSAO_TESTE=1.0.0` faz o plugin fingir ser 1.0.0
    (o workflow do piloto usa isso).
-7. **Atualização automática** (só plugins com `isp_licenca(<alvo> <pacote> ATUALIZAR)`; hoje o LIMÃO, em teste): a
+7. **Atualização automática** (só plugins com `isp_licenca(<alvo> <pacote> ATUALIZAR)`; hoje o LIMÃO e o RESENHA): a
    resposta do `/v1/versao` traz `instalador: { dados, assinatura }` — `{ v, tipo:"instalador", pacote, sistema,
    versao, sha256, tamanho, url }` assinado com a MESMA chave Ed25519 das licenças (sha256 = `digest` do asset no
    GitHub; url = `/baixar/<pacote>/<sistema>?tag=<pacote>-vX.Y.Z`, a versão exata). O plugin confere a assinatura,

@@ -46,7 +46,7 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
   peak, curto, PLR, GR), STEREO por banda, WHERE IT WILL PLAY (quanto Spotify / YouTube / Apple abaixam; o grave que o
   celular perde) e HEAR IT ON (PHONE, EARBUDS, CAR, MONO; só para ouvir).
 - MAESTRO LINKED: com o MAESTRO nos 8 grupos do mesmo projeto, mostra o nível de cada grupo contra o STYLE e de qual
-  grupo vem cada problema do master. Precisa da versão do MAESTRO que publica o link (próxima atualização).
+  grupo vem cada problema do master. Precisa do MAESTRO 0.2.1 ou mais novo (a versão que envia o link).
 - FASE LINEAR em todo o caminho do som: TONE MATCH, TILT, DYNAMIC EQ e o crossover das 4 bandas não giram a fase
   (o transiente do kick sai inteiro e a soma das bandas é exata). Pouca CPU: tudo numa convolução só, com os ganhos
   mudando sem redesenhar filtro.

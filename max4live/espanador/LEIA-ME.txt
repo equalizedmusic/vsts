@@ -17,7 +17,7 @@ INSTALAR (uma vez)
 1. Copie a pasta inteira (Espanador-<versão>) para:
    Windows: Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
    Mac:     Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/
-   Os 4 arquivos (Espanador.amxd, espanador.js, espanador_view.js e espanador_strip.js) PRECISAM ficar juntos.
+   O Espanador.amxd e os 4 arquivos .js (espanador.js, espanador_view.js, espanador_strip.js e espanador_http.js) PRECISAM ficar juntos.
 2. No Live, arraste o Espanador.amxd para a PRIMEIRA faixa de áudio do projeto (como o RODO).
    Não ponha no MASTER.
 
@@ -99,7 +99,7 @@ LIMITES (do Live, não do ESPANADOR)
 ======================================================================
 SE DER ERRO
 ======================================================================
-- "v8: can't find espanador.js" = os 4 arquivos não estão na mesma pasta do .amxd. Copie a pasta inteira.
+- "v8: can't find espanador.js" = os arquivos .js não estão na mesma pasta do .amxd. Copie a pasta inteira.
 - A cada SCAN o ESPANADOR grava ESPANADOR-log.txt na mesma pasta do device. Mande esse arquivo para
   contato@insidestudiosp.com.br junto com a descrição do problema.
 - Console do Max (no device: botão de editar → Max → Window → Max Console): linhas "ESPANADOR:" mostram

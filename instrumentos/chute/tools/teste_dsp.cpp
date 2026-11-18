@@ -1,8 +1,8 @@
-// Bancada do motor do CHUTE (sem JUCE). Compila só com Source/Dsp.h + Source/Modelos.h:
+// Bancada do motor do CHUTE (sem JUCE). Compila com Source/Dsp.h + Source/Modelos.h (gerado pelo modelos.cmake, que precisa da chave):
 //   zig c++ -std=c++17 -O2 -I ../Source teste_dsp.cpp -o teste_dsp.exe
 //   teste_dsp.exe <pasta de saída>
-// Grava em <saída>/modelos_44k.f32 os 50 modelos nos valores de fábrica (modo PRESET, 450 ms cada, 44,1 kHz) para
-// a referência (fora do repositório), e confere os knobs (nota da cauda, DECAY, CHOKE, LINK).
+// Grava em <saída>/modelos_44k.f32 os presets de fábrica (modo PRESET, 450 ms cada, 44,1 kHz) para ouvir/conferir,
+// e confere os knobs (nota da cauda, DECAY, CHOKE, LINK).
 #include "Dsp.h"
 #include "../Source/ChuteLink.h"
 #include <cstdio>
@@ -41,7 +41,7 @@ static std::vector<float> toca (const Ajustes& a, int nota, double fs, double se
 int main (int argc, char** argv)
 {
     const std::string saida = argc > 1 ? argv[1] : ".";
-    // 1) os 50 modelos de fábrica (para comparar com a referência, fora daqui)
+    // 1) os presets de fábrica
     {
         std::FILE* f = std::fopen ((saida + "/modelos_44k.f32").c_str(), "wb");
         for (int m = 0; m < numModelos; ++m)
