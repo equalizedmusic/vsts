@@ -1,6 +1,8 @@
 # F1 — filtro ladder
 
-![F1](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/F1.png)
+> Parte da **SÉRIE CRIATIVO** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Criativo.md`](../../../novidades/Criativo.md)
+
+![F1](https://insidestudiosp.com.br/img/f1.webp)
 
 Filtro passa-baixa de 4 degraus no estilo dos pedais analógicos clássicos ("101"): ressonância
 que chega a auto-oscilar, drive na entrada, envelope que abre ou fecha o filtro com a força do som
@@ -40,6 +42,17 @@ Trocar de preset não mexe nos botões de performance (ABRIR, FUMAÇA).
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/F1/`
 - Windows: `%APPDATA%\InsideStudioSP\F1\Presets\`
 
+## Janela e licença
+
+- Visual de pedal: moldura de madeira, chapa esmaltada na cor do plugin, controles em chapa preta com os
+  knobs da SÉRIE KNOB e alavancas de metal nas chaves liga/desliga.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -47,4 +60,5 @@ Trocar de preset não mexe nos botões de performance (ABRIR, FUMAÇA).
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/LadderEngine.h` | Ladder ZDF de 4 degraus com saturação, envelope, LFO no grid e a FUMAÇA |
 | `Source/PluginProcessor.*` | Relógio do host, mix, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (chapa de 1000×580 na moldura de madeira, janela de 1048×620 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (moldura, chapa, alavancas) |

@@ -1,10 +1,13 @@
 # MONTA-MONTA
 
+> **Versão atual: 0.1.1** (29/10/2026) · não está à venda (synth didático) · notas em [`novidades/MontaMonta.md`](../../novidades/MontaMonta.md)
+
 ![MONTA-MONTA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONTAMONTA.png)
 
 Synth didático: as peças de um Minimoog de 2 osciladores ficam numa bandeja e o usuário monta o caminho do som no
 rack, como um quebra-cabeça. Cada peça ensina o que faz. Textos em português e inglês (botão PT/EN). Instalador próprio
-(`InsideStudioSP-MontaMonta-win.exe` / `-mac.dmg`).
+(`InsideStudioSP-MontaMonta-win.exe` / `-mac.dmg`). Pede ativação na 1ª vez (e-mail + token da licença); sem
+ativar, o instrumento fica mudo.
 
 ## Peças
 

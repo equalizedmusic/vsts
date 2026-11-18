@@ -1,10 +1,12 @@
 # SÉRIE KNOB
 
+> Pacote da **SÉRIE KNOB** · versão atual do pacote: **0.3.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Knob.md`](../../novidades/Knob.md)
+
 Dez pedais de efeito de **um knob grandão**, todos no tempo do DAW. O knob vai de 0 (nada) a 10 (tudo) e as
 lâmpadas em volta dele acendem até o valor e respiram junto com o efeito.
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FOLE.png" width="150" alt="FOLE"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PICADOR.png" width="150" alt="PICADOR"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MARE.png" width="150" alt="MARÉ"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/VAIVEM.png" width="150" alt="VAIVÉM"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/REPIQUE.png" width="150" alt="REPIQUE"><br><img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ECO.png" width="150" alt="ECO"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/AVESSO.png" width="150" alt="AVESSO"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/FREIO.png" width="150" alt="FREIO"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ESCADA.png" width="150" alt="ESCADA"> <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MASTIGA.png" width="150" alt="MASTIGA">
+<img src="https://insidestudiosp.com.br/img/fole.webp" width="150" alt="FOLE"> <img src="https://insidestudiosp.com.br/img/picador.webp" width="150" alt="PICADOR"> <img src="https://insidestudiosp.com.br/img/mare.webp" width="150" alt="MARÉ"> <img src="https://insidestudiosp.com.br/img/vaivem.webp" width="150" alt="VAIVÉM"> <img src="https://insidestudiosp.com.br/img/repique.webp" width="150" alt="REPIQUE"><br><img src="https://insidestudiosp.com.br/img/eco.webp" width="150" alt="ECO"> <img src="https://insidestudiosp.com.br/img/avesso.webp" width="150" alt="AVESSO"> <img src="https://insidestudiosp.com.br/img/freio.webp" width="150" alt="FREIO"> <img src="https://insidestudiosp.com.br/img/escada.webp" width="150" alt="ESCADA"> <img src="https://insidestudiosp.com.br/img/mastiga.webp" width="150" alt="MASTIGA">
 </p>
 
 ## Controles (iguais nos 10)
@@ -37,6 +39,15 @@ O LED ao lado de TRIGGER pisca a cada tempo (INT) ou a cada nota/ataque (MIDI/Á
 | **FREIO** | Quanto do ciclo a freada ocupa (até metade) | PARADA, PARTIDA, PARA E VOLTA, MEIA VELOCIDADE | 1 COMP |
 | **ESCADA** | Tamanho dos saltos de pitch, sempre dentro da escala/acorde | SOBE, DESCE, SOBE E DESCE, OITAVAS, ARPEJO MAIOR, ARPEJO MENOR, QUINTAS, ALEATÓRIO | 1/8 |
 | **MASTIGA** | O quanto morde: drive, bits (até 3) e taxa (até /32) no pico da forma | QUADRADO, SENO, SOBE, DESCE, DEGRAUS, PULSO, ALEATÓRIO | 1/8 |
+
+## Janela e licença
+
+- A janela mostra só o pedal. Muda de tamanho pelo canto de baixo à direita (60% a 200%, sem deformar) e guarda o
+  tamanho.
+- Na primeira vez o pedal pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. Clique direito fora dos controles → *Licença…* mostra a licença e
+  tem *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
 
 ## Como é feito
 

@@ -1,7 +1,12 @@
 # STOMPBOX
 
+> **Versão atual: 0.2.0** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Stompbox.md`](../../novidades/Stompbox.md)
+
+![STOMPBOX](https://insidestudiosp.com.br/img/stompbox.webp)
+
 Pedalboard de guitarra em plugin (InsideStudioSP). Vai no canal da guitarra (DI). Até 10 pedais em série, AMP + CAB
-no fim e NOISE GATE na entrada. Pago (pacote `stompbox` no servidor de licenças), à venda no site; sem ativação o som passa direto.
+no fim e NOISE GATE na entrada. Licença do pacote `stompbox` (e-mail + token na 1ª vez, até 2 computadores; ≡ MENU >
+Licença… mostra a licença ativa); sem ativação o som passa direto. Sem latência (só o BENDER, quando pisado).
 
 ## Cadeia
 
@@ -11,6 +16,12 @@ no fim e NOISE GATE na entrada. Pago (pacote `stompbox` no servidor de licenças
 - Arrastar um pedal troca a ordem. Botão direito: trocar, duplicar, knobs no padrão, mover, remover.
 - Footswitch liga/desliga (LED), com crossfade (sem estalo). Pedal desligado não gasta CPU.
 - Parâmetros por posição para automação: `Slot N Pedal / On / Knob 1..4 / Switch`.
+
+Barra de cima: presets (◀ visor ▶, **SAVE** grava presets do usuário), **A/B** (dois boards na memória; botão direito
+copia), **SYNC** (o TIME do ECHO e o SPEED/RATE do SWIRL e do TIDE viram divisões do BPM do DAW), **TUNER** (afinador
+grande; a saída fica muda enquanto afina) e **HQ** (drives, fuzz e amp com oversampling 16x; o normal é 8x).
+Embaixo: INPUT com o afinador fixo da entrada (nota, barra de cents, não corta o som; clique abre o TUNER grande),
+NOISE GATE (THRESHOLD, RELEASE), AMP, CAB e OUTPUT com medidores.
 
 ## Pedais
 
@@ -32,11 +43,13 @@ no fim e NOISE GATE na entrada. Pago (pacote `stompbox` no servidor de licenças
 
 BLONDE 65 (clean americano), CHIME 30 (classe A), PLEX 68 (crunch britânico), CITRUS (britânico encorpado),
 IRON HG (high-gain moderno). GAIN, BASS, MID, TREBLE, PRESENCE, MASTER, CLEAN/DIRTY. CAB 1x12 OPEN / 2x12 / 4x12,
-mic DYN/RIBBON, MIC POS (centro → borda), DISTANCE (perto → longe).
+mic DYN/RIBBON, MIC POS (centro → borda), DISTANCE (perto → longe). BASS/MID/TREBLE são o tone stack de cada amp,
+entre o pré e a potência; o CAB é uma resposta de impulso gerada da curva do falante, sem latência. AMP + CAB tem
+botão ON/OFF, para usar um amp de verdade.
 
 ## Presets de fábrica
 
-Os nomes brincam com o do guitarrista (nunca o nome exato) e não citam marca. Referência de cada um:
+INIT e mais 23. Os nomes brincam com o do guitarrista (nunca o nome exato) e não citam marca. Referência de cada um:
 
 | Preset | Inspirado em | Board | Amp |
 |---|---|---|---|
@@ -67,7 +80,8 @@ Os nomes brincam com o do guitarrista (nunca o nome exato) e não citam marca. R
 Entre parênteses: o pedal está no board, desligado (é só pisar).
 ## Código
 
-- `Source/Dsp.h`: motor sem JUCE (pedais, amp, cab, gate, oversampling meio-banda IIR 2x/4x sem latência).
+- `Source/Dsp.h`: motor sem JUCE (pedais, amp, cab, gate, oversampling meio-banda IIR 8x/16x sem latência, com
+  passa-baixa elíptico antes da última decimação).
 - `Source/Presets.h`: presets de fábrica (sem JUCE). `Source/Pedais.h`: nomes, knobs, chaves e cores.
 - `Source/PluginEditor.cpp` + `EditorPedal.cpp` + `EditorPainel.cpp` + `EditorMouse.cpp`: a tela (base 1600 × 900).
 - `tools/teste_dsp.cpp`: bancada (meio-banda, cada pedal nos extremos, aliasing, bypass, SYNC, cauda do reverb, afinação do BENDER,

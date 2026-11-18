@@ -1,6 +1,8 @@
 # MONITOR — medidor de loudness
 
-![MONITOR](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONITOR.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![MONITOR](https://insidestudiosp.com.br/img/monitor.webp)
 
 Medidor para entrega: **não altera o som** (a saída é a entrada, bit a bit, enquanto as checagens
 estão desligadas) e não tem latência. Mede LUFS momentâneo, curto e integrado (BS.1770-4, filtro K,
@@ -53,6 +55,17 @@ plataforma. No menu de presets: *Salvar como novo*; com um preset do usuário ab
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/MONITOR/`
 - Windows: `%APPDATA%\InsideStudioSP\MONITOR\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -61,4 +74,5 @@ plataforma. No menu de presets: *Salvar como novo*; com um preset do usuário ab
 | `Source/MeterEngine.h` | Filtro K, momentâneo/curto/integrado (histograma com portões), LRA, true peak 4×, pico, RMS, correlação e os anéis da interface |
 | `Source/Analyzer.h` | FFT do espectro (na thread da interface, nunca no áudio) |
 | `Source/PluginProcessor.*` | Checagens (mono, no alvo), estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |

@@ -1,5 +1,7 @@
 # MESA
 
+> **Versão atual: 0.5.1** (31/10/2026) · **fora do site desde 14/11/2026** (licenças e download de quem comprou seguem valendo) · notas em [`novidades/Mesa.md`](../../novidades/Mesa.md)
+
 Console analógica em plugin (efeito, VST3/AU), em dois plugins do mesmo código:
 
 - **MESA**, a console. Vai no **master** do DAW. A janela é o mixer inteiro:
@@ -14,7 +16,11 @@ Console analógica em plugin (efeito, VST3/AU), em dois plugins do mesmo código
   o som da própria faixa e aparece sozinho na console. A janela dele mostra o canal inteiro e, ao lado, a ligação com a
   console, o número, o nome, o grupo, três VUs e os modelos.
 
+Os dois binários usam a licença do pacote `mesa` (e-mail + token na 1ª vez; sem ativar, o som passa direto).
+
 <img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MESA.png" width="900" alt="MESA">
+
+<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MESA-CANAL.png" width="600" alt="MESA CANAL">
 
 ## Como funciona
 - O **áudio segue o caminho do DAW**: cada MESA CANAL processa a própria faixa, então sends, returns e grupos

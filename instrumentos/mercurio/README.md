@@ -1,6 +1,8 @@
 # MERCÚRIO — FM de 4 operadores, polifônico
 
-![MERCÚRIO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MERCURIO.png)
+> **Versão atual: 0.6.0** (27/10/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mercurio.md`](../../novidades/Mercurio.md)
+
+![MERCÚRIO](https://insidestudiosp.com.br/img/mercurio.webp)
 
 Sintetizador (VSTi / AU) FM de 4 operadores e 16 vozes, no espírito das FM de mesa dos anos 80 (TX81Z, DX), puxado para
 o **plástico, o metal e o psicodélico**: razões inarmônicas, realimentação, ring e dobra de onda. Leve no processador:
@@ -13,7 +15,8 @@ faixas de alumínio anodizado preto em cima (presets, VOICE) e embaixo (EFFECTS)
 mesmos do LIMÃO: baquelite preto canelado, tampa de alumínio e risco pintado), LEDs magenta e visores OLED ciano. Cada operador tem a sua cor (ponteiro do
 LEVEL, onda no visor, caixa no desenho do algoritmo e plaqueta no canto da seção). A chapa, os knobs, as teclas e os
 parafusos são **imagens renderizadas** (`tools/gerar-texturas.py`: relevo iluminado pixel a pixel, com sombra). Tudo à vista numa tela só (sem páginas). Instalador próprio
-(`InsideStudioSP-Mercurio-win.exe` / `-mac.dmg`).
+(`InsideStudioSP-Mercurio-win.exe` / `-mac.dmg`). Pede ativação na 1ª vez (e-mail + token da licença); sem ativar, o
+instrumento fica mudo.
 
 ## Painel
 
@@ -55,7 +58,8 @@ trocar de preset não dá pulo de volume. Os ARP já vêm com o arpejador ligado
 
 O menu de presets (e as listas dos campos) abre **dentro** da janela do plugin: como janela solta, a camada de
 dentro (banco → categoria → preset) podia ficar por baixo da janela do plugin, que o host deixa sempre na frente.
-No mesmo menu ficam o tamanho da janela (60–180%, salvo no projeto; começa em 85%) e a versão (`novidades/Mercurio.md`).
+No mesmo menu ficam o tamanho da janela (60–180%, salvo no projeto; começa em 85%), a versão (`novidades/Mercurio.md`)
+e a Licença…; com a licença ativa, o aviso de versão nova aparece no pé da janela (BAIXAR / Agora não).
 
 **Letras:** as listas de LEDs (modo dos filtros, modos do ARP, KEY MODE, ROUTING) usam 10,5 pt em passos de
 15 px; os nomes dos knobs ficam em 9,5 pt, os campos de visor em 12 pt e as legendas em 9 pt. Não descer disso: a

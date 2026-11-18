@@ -1,6 +1,8 @@
 # NAVALHA — clipper
 
-![NAVALHA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/NAVALHA.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![NAVALHA](https://insidestudiosp.com.br/img/navalha.webp)
 
 Clipper com oversampling de 4× (FIR de fase linear) que **mostra o que está cortando**: no alto,
 a forma de onda dos últimos ~4 s, com o que passa em creme e o que a navalha cortou em coral,
@@ -37,6 +39,18 @@ Vinte de fábrica. No menu de presets: *Salvar como novo*; com um preset do usu�
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/NAVALHA/`
 - Windows: `%APPDATA%\InsideStudioSP\NAVALHA\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga. IN/OUT em VU de ponteiro, que lê o pico: o fim da escala
+  (+3) é 0 dBFS e o 0 VU, −3 dBFS.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -44,4 +58,5 @@ Vinte de fábrica. No menu de presets: *Salvar como novo*; com um preset do usu�
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/ClipEngine.h` | DRIVE, oversampling 4×, curva com joelho/assimetria/link, histórico da forma de onda |
 | `Source/PluginProcessor.*` | Mix, latência, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |

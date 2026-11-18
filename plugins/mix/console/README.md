@@ -1,6 +1,8 @@
 # CONSOLE — cor de canal / soma de mesa
 
-![CONSOLE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CONSOLE.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![CONSOLE](https://insidestudiosp.com.br/img/console.webp)
 
 Cor de canal de mesa analógica com oversampling de 2× ou 4× (FIR de fase linear) na saturação.
 Três modelos de mesa, cada um com a sua curva, o seu equilíbrio de harmônicos pares/ímpares, uma
@@ -51,6 +53,18 @@ Trocar de preset não mexe em COMPARAR, OS 4× nem no bypass.
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/CONSOLE/`
 - Windows: `%APPDATA%\InsideStudioSP\CONSOLE\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga. IN/OUT em VU de ponteiro, que lê o pico: o fim da escala
+  (+3) é 0 dBFS e o 0 VU, −3 dBFS.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -58,7 +72,8 @@ Trocar de preset não mexe em COMPARAR, OS 4× nem no bypass.
 | `Source/Params.h` | Parâmetros, faixas, textos, nomes/descrições dos modelos e presets de fábrica |
 | `Source/ConsoleEngine.h` | Modelos, DRIVE, oversampling 2×/4×, curva, EQ, TONE, crosstalk, compensação, ruído, histórico |
 | `Source/PluginProcessor.*` | Mix, ganho, COMPARAR com volume casado, latência, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |
 
 O alvo do CMake chama `ConsoleIsp` (um nome genérico como "Console" poderia colidir); o bundle e o
 zip saem como `CONSOLE` porque vêm do PRODUCT_NAME.

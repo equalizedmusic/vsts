@@ -1,6 +1,8 @@
 # SOCO — modelador de transiente
 
-![SOCO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/SOCO.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![SOCO](https://insidestudiosp.com.br/img/soco.webp)
 
 Mexe no **attack** e no **sustain** de cada golpe sem depender do volume: o detector compara um
 envelope rápido com um lento (a diferença é o golpe) e dois envelopes com solturas diferentes (a
@@ -31,7 +33,7 @@ As cores dos knobs são as do desenho: ATTACK coral, SUSTAIN azul, FOCO creme (a
 teste), DETECTOR e CUTOFF violeta (a curva do detector).
 
 **Latência:** zero (o detector não olha para a frente). O ganho é o mesmo nos dois canais, então a
-imagem estéreo não mexe. Os medidores IN/OUT são de pico, em dBFS.
+imagem estéreo não mexe. IN/OUT em VU de ponteiro, lendo o pico.
 
 ## Presets
 
@@ -41,6 +43,18 @@ Vinte de fábrica. No menu de presets: *Salvar como novo*; com um preset do usu�
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/SOCO/`
 - Windows: `%APPDATA%\InsideStudioSP\SOCO\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga. IN/OUT em VU de ponteiro, que lê o pico: o fim da escala
+  (+3) é 0 dBFS e o 0 VU, −3 dBFS.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -48,4 +62,5 @@ Vinte de fábrica. No menu de presets: *Salvar como novo*; com um preset do usu�
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/TransientEngine.h` | Detector (envelopes e filtro), ganho de attack/sustain, DRY/WET, DELTA, clipper, histórico da forma de onda |
 | `Source/PluginProcessor.*` | Bypass, medidores, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |

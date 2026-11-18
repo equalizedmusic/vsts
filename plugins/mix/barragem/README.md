@@ -1,6 +1,8 @@
 # BARRAGEM — limiter de master (true peak + LUFS)
 
-![BARRAGEM](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BARRAGEM.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![BARRAGEM](https://insidestudiosp.com.br/img/barragem.webp)
 
 Limiter de master com detecção em **true peak** (oversampling de 4× só no caminho de detecção) e
 medidor de **loudness** (BS.1770 / EBU R128). No alto, a forma de onda dos últimos ~4 s: o que sai
@@ -12,7 +14,7 @@ YouTube, Club…).
 
 | Bloco | Controle | Faixa | O que faz |
 |---|---|---|---|
-| WAVEFORM | visual | ~4 s | Pico de cada fatia de 8 ms: creme = saiu, coral = segurado; linha azul = GAIN REDUCTION (régua em dB à direita, abre para 24 dB quando passa de 12); linha âmbar = CEILING |
+| WAVEFORM | visual | ~4 s | Pico de cada fatia de 8 ms: creme = saiu, coral = segurado; linha azul = GAIN REDUCTION (escala fixa de 0 a −12 dB, marcas a cada 3 dB; acima de 12 dB a linha encosta no meio); linha âmbar = CEILING |
 | LOUDNESS | visual | — | INTEGRATED (com gate), distância até o TARGET, MOMENTARY (400 ms), SHORT-TERM (3 s) e tempo medido. Barra de −32 a −4 LUFS: faixa = short-term, traço = momentary, triângulo = integrated, verde = target |
 | | Target | 12 alvos | Clique na caixa TARGET: Spotify −14, Spotify Alto −11, Apple Music −16, YouTube −14, Tidal −14, Amazon Music −14, Deezer −15, Podcast −16, Club −9, Pista Pesada −7, TV EBU R128 −23, TV ATSC A/85 −24 |
 | 01 LIMITE | **Macro ENCHER** | 0 a +24 dB | Ganho antes do limiter: empurra o som contra o CEILING |
@@ -24,7 +26,7 @@ YouTube, Club…).
 | 02 ANÁLISE | visual | — | Segurando agora, MAX (segura 3 s), PEAK DEPOIS DO ENCHER e OUTPUT PEAK, em dBFS |
 | 03 OUTPUT | DELTA | liga/desliga | Escuta só o que a barragem está tirando. Os presets não mexem nele |
 | | RESET INTEGRATED | golpe | Recomeça a medida do integrado (e o tempo medido). Os presets não mexem nele |
-| | Picos e medidores | — | INPUT PEAK e OUTPUT PEAK do plugin em dBFS (segura 3 s) e medidores IN/OUT |
+| | Picos e medidores | — | INPUT PEAK e OUTPUT PEAK do plugin em dBFS (segura 3 s) e VU de ponteiro IN/OUT |
 
 As cores dos knobs são as do desenho: ENCHER coral (o segurado), CEILING âmbar (a linha), RELEASE e
 LOOKAHEAD azul (a curva de redução), e o TARGET em verde (a marca na barra de LUFS).
@@ -47,6 +49,18 @@ O TARGET faz parte do preset; DELTA, RESET INTEGRATED e bypass não.
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/BARRAGEM/`
 - Windows: `%APPDATA%\InsideStudioSP\BARRAGEM\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga. IN/OUT em VU de ponteiro, que lê o pico: o fim da escala
+  (+3) é 0 dBFS e o 0 VU, −3 dBFS.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -55,4 +69,5 @@ O TARGET faz parte do preset; DELTA, RESET INTEGRATED e bypass não.
 | `Source/LimiterEngine.h` | ENCHER, detecção true peak 4×, mínimo na janela, rampa do lookahead, soltura (fixa/auto), histórico da forma de onda |
 | `Source/Loudness.h` | K-weighting e LUFS momentâneo, curto e integrado (BS.1770-4) |
 | `Source/PluginProcessor.*` | Bypass, latência, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |

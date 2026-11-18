@@ -1,6 +1,8 @@
 # CALEIDO — glitch pattern FX
 
-![CALEIDO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CALEIDO.png)
+> Parte da **SÉRIE CRIATIVO** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Criativo.md`](../../../novidades/Criativo.md)
+
+![CALEIDO](https://insidestudiosp.com.br/img/caleido.webp)
 
 Efeito de glitch sincronizado ao BPM do projeto, pensado para psytrance. O compasso é
 fatiado em **16 passos** e cada passo pode ser repetido, invertido, transposto, filtrado,
@@ -50,6 +52,17 @@ Pasta:
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/CALEIDO/`
 - Windows: `%APPDATA%\InsideStudioSP\CALEIDO\Presets\`
 
+## Janela e licença
+
+- Visual de pedal: moldura de madeira, chapa esmaltada na cor do plugin, controles em chapa preta com os
+  knobs da SÉRIE KNOB e alavancas de metal nas chaves liga/desliga.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -57,4 +70,5 @@ Pasta:
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/GlitchEngine.h` | Relógio, buffer, padrão, vozes por passo, crush, filtro e giro |
 | `Source/PluginProcessor.*` | Host/BPM, mix, estado (com o padrão) e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (chapa de 1000×580 na moldura de madeira, janela de 1048×620 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (moldura, chapa, alavancas) |

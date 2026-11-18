@@ -1,10 +1,13 @@
 # GROOVADOR
 
+> **Versão atual: 0.2.0** (11/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Groovador.md`](../../novidades/Groovador.md)
+
 ![GROOVADOR](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png)
 
 Percussão sintetizada (sem bumbo) com gerador de groove e variação de timbre, com cara de bateria eletrônica.
 Toca no tempo do DAW (COM PLAY) ou pelas notas MIDI (PADS). Instalador próprio
-(`InsideStudioSP-Groovador-win.exe` / `-mac.dmg`).
+(`InsideStudioSP-Groovador-win.exe` / `-mac.dmg`). Pede ativação na 1ª vez (e-mail + token da licença); sem
+ativar, o instrumento fica mudo.
 
 ## Instrumentos
 
@@ -45,6 +48,13 @@ MUDA A CADA ½ a 8 compassos; **A ↔ B** alterna todos, **CONVERSA** deixa meta
 metade fica em A e depois trocam, **DERIVA** vai mudando aos poucos. QUANTO = o tamanho da diferença. A faixa embaixo
 da grade mostra quem está em B em cada trecho. FILL A CADA 4 ou 8 compassos troca a 2ª metade do último compasso do
 ciclo por um fill (instrumento sem batida no fill segue o groove).
+
+## Tocar e ARRASTAR MIDI
+
+**COM PLAY**: o groove roda no tempo do DAW. **PADS**: cada nota MIDI toca um instrumento (tabela acima).
+**ARRASTAR MIDI** solta as peças **separadas**: um arquivo por peça que tem nota ("GROOVADOR - preset - SNARE.mid"),
+cada um com a nota do pad da peça. No Ableton, segure Ctrl (Windows) ou Cmd (Mac) ao soltar para cada peça ir para
+uma faixa própria. Na saída: DRIVE, DELAY PING-PONG e REVERB.
 
 ## Presets
 

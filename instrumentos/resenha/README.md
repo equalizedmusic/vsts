@@ -1,17 +1,42 @@
 # RESENHA — call & response FM
 
+> **Versão atual: 0.7.0** (13/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
+
 ![RESENHA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png)
 
-Sintetizador (VSTi / AU) de call & response: 4 timbres FM (A, B, C, D) conversam numa frase gerada na escala, um
-pergunta e o outro responde. Toca no tempo do DAW. Instalador próprio (`InsideStudioSP-Resenha-win.exe` / `-mac.dmg`).
+Sintetizador (VSTi / AU) de call & response: 4 timbres (A, B, C, D) conversam numa frase gerada na escala, um
+pergunta e o outro responde. Cada slot usa o som INTERNO do RESENHA ou um synth seu (HUB). Toca no tempo do DAW.
+Instalador próprio (`InsideStudioSP-Resenha-win.exe` / `-mac.dmg`). Pede ativação na 1ª vez (e-mail + token da
+licença); sem ativar, o instrumento fica mudo. Com a licença ativa, o aviso de versão nova tem **ATUALIZAR** (baixa e
+instala sozinho, Windows e Mac).
 
-## Timbres
+## HUB: INTERNO ou PLUGIN
+
+Cada um dos 4 slots é **INTERNO** (o FM/VA do RESENHA, abaixo) ou **PLUGIN**, um instrumento seu (Serum, Sylenth1,
+Vital, Diva...). No slot PLUGIN o RESENHA manda só a conversa em MIDI; o som e os presets são do próprio plugin.
+
+- **ESCOLHER PLUGIN**: lista dos instrumentos instalados (VST3 no Windows; AU e VST3 no Mac), com busca pelo nome ou
+  fabricante, favoritos com estrela e BUSCAR PLUGINS DE NOVO. A busca é só de instrumentos (efeito descartado fica
+  lembrado) e não trava o DAW: cada plugin é lido fora dele, pelo **ResenhaScan** (instalado junto). Plugin que trava
+  (30 s), fecha ou não abre é pulado e vai para os bloqueados com o motivo; PULAR ESTE PLUGIN encerra o que está sendo
+  lido; busca interrompida continua de onde parou.
+- **Cartão do slot**: nome, fabricante, preset atual e CPU do plugin; ABRIR (janela do plugin), TROCAR e BYP (cala o
+  slot e deixa o silêncio na vez dele).
+- **Knobs ligados ao plugin**: 4 por slot. Em **+ LIGAR**, mexa um controle na janela do plugin (ou escolha da lista)
+  e o knob passa a movê-lo; dá para automatizar no DAW.
+- **Na conversa**, por slot: OITAVA, VELOC. (accent sai em 127), BEND (pitch bend na nota que fecha a fala) e NÍVEL.
+  As frases ficam entre Dó 1 e Si 3 (Dó 3 = nota 60); para subir ou descer um slot, use a OITAVA dele.
+- O dado do slot e o TIMBRES sorteiam um preset do próprio plugin, quando ele mostra a lista de presets.
+- O projeto guarda o plugin, o som dele e os ajustes de cada slot; plugin que não está instalado na máquina deixa o
+  slot avisando, sem perder o som ao salvar. Os presets do RESENHA não trocam o plugin dos slots.
+
+## Timbres (slot INTERNO)
 
 Cada timbre é um FM de 2 operadores (moduladora com realimentação → portadora com forma de onda) com filtro e
 panorâmica próprios. Controles por timbre: WAVE (SINE, TRI, SAW, SQUARE), RATIO (0.50 a 13.0), FM, FEEDBACK, FM DEC,
 FILTER, CUTOFF, RESO, F.ENV, UNISON, MOVE, RATE, DECAY, P.ENV, GLIDE, BEND e PAN. Um envelope só (no tempo do FM DEC) move
-no ataque o índice de FM, o pitch e o filtro. **UNISON** soma 2 cópias desafinadas (até ±25 cents), uma em cada lado do
-estéreo. **FILTER**: LP, BP ou **VOWEL** — dois formantes, o CUTOFF escolhe a vogal (u-o-a-e-i) e o F.ENV abre a "boca" no
+no ataque o índice de FM, o pitch e o filtro. **UNISON** soma ao centro 2 cópias desafinadas (até ±25 cents), uma em cada lado
+do estéreo. **FILTER**: LP, BP ou **VOWEL** — dois formantes, o CUTOFF escolhe a vogal (u-o-a-e-i) e o F.ENV abre a "boca" no
 ataque: o lead fala. **MOVE** é um LFO no tempo do DAW (RATE de 1/16 a 2 compassos) que mexe no FM e no filtro/vogal. **BEND** (−24 a +24 semitons) é o mergulho do lead: a última nota de cada fala do timbre desliza
 durante a nota inteira, começando devagar e acelerando, e a tela desenha a cauda dela. Cada timbre é monofônico; as
 caudas de timbres diferentes se sobrepõem (8 vozes no total).
@@ -66,5 +91,7 @@ VOWEL na frente, com MOVE e conversa por compasso. O plugin abre no "Boca Aberta
 
 - `Source/Params.h`: ids dos parâmetros, listas e a frase que a tela escreve e o áudio lê.
 - `Source/Phrase.h`: da frase escrita à conversa que toca (quem fala cada nota e qual nota a resposta faz).
-- `Source/Engine.h`: vozes FM, filtro e efeitos.
+- `Source/Engine.h`: vozes FM/VA, filtro e efeitos.
+- `Source/Hub.h`: o HUB (catálogo dos plugins instalados e o slot que hospeda o plugin). `Scanner/ScanMain.cpp`: o
+  ResenhaScan, que lê cada plugin fora do DAW.
 - `Source/Presets.h` e `Source/presets/fabrica.inc` (gerado por `tools/gerar-presets.py`).

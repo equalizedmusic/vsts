@@ -1,6 +1,8 @@
 # PRISMA — dinâmica + saturação multibanda
 
-![PRISMA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PRISMA.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![PRISMA](https://insidestudiosp.com.br/img/prisma.webp)
 
 Divide o som em **4 bandas** (crossovers Linkwitz-Riley de 4ª ordem, soma plana) e em cada uma
 tem um compressor e um DRIVE (saturação tanh com compensação de nível). No alto, o **espectro da
@@ -26,7 +28,7 @@ mouse**; a redução de cada banda aparece pendurada no topo da banda, e o drive
 | 05 GLOBAL | **Macro** | 0–100% | Em todas as bandas juntas: threshold até −12 dB, ratio até +3 e drive até +12 dB |
 | | Dry/Wet | 0–100% | Seco ↔ processado (paralelo; o seco passa pelos mesmos crossovers, então não há cancelamento de fase) |
 | | Gain | −24 a +12 dB | Volume final |
-| | IN / OUT | dBFS de pico | Medidores de entrada e saída |
+| | IN / OUT | −20 a +3 VU | VU de ponteiro de entrada e saída (lê o pico; +3 = 0 dBFS) |
 
 As cores dos knobs são as do desenho: THRESH, RATIO, ATTACK e RELEASE na **cor da banda** (a mesma
 da faixa no espectro e da redução): LOW âmbar, LOW-MID verde, HIGH-MID azul, HIGH
@@ -45,6 +47,18 @@ Trocar de preset não mexe em SOLO, MUTE nem no bypass.
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/PRISMA/`
 - Windows: `%APPDATA%\InsideStudioSP\PRISMA\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga. IN/OUT em VU de ponteiro, que lê o pico: o fim da escala
+  (+3) é 0 dBFS e o 0 VU, −3 dBFS.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -52,4 +66,5 @@ Trocar de preset não mexe em SOLO, MUTE nem no bypass.
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/MultibandEngine.h` | Crossovers LR4 + all-pass, compressor por banda, DRIVE, solo/mudo, anel da saída para o espectro |
 | `Source/PluginProcessor.*` | Mix, latência, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |

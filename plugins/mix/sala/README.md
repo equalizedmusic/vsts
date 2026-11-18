@@ -1,6 +1,8 @@
 # SALA — reverb de mix
 
-![SALA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/SALA.png)
+> Parte da **SÉRIE MIX** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mix.md`](../../../novidades/Mix.md)
+
+![SALA](https://insidestudiosp.com.br/img/sala.webp)
 
 Reverb **limpo e transparente** para colocar instrumentos e vozes num mesmo espaço (o oposto da
 MIRAGEM, que é shimmer). Rede de 8 linhas misturadas por Hadamard, com difusores passa-tudo na
@@ -31,7 +33,7 @@ decaimento, com a linha da cauda de agora. Embaixo, o **TAIL EQ** com o amorteci
 
 As cores dos knobs são as do desenho: SIZE e DECAY âmbar (a cauda), PRE-DELAY azul,
 DIFFUSION e EARLY REF. violeta, LOW CUT e HIGH CUT coral (a curva do EQ), DAMPING verde
-(o tracejado), WIDTH e DUCK creme. Medidores IN/OUT em dBFS de pico.
+(o tracejado), WIDTH e DUCK creme. IN/OUT em VU de ponteiro, lendo o pico.
 
 **Latência:** zero. A cauda informada ao host é de 13,5 s (decay máximo + pré-delay máximo).
 A realimentação de cada linha é sempre menor que 1 (mesmo com decay de 12 s) e a matriz conserva a
@@ -47,6 +49,18 @@ antes de salvar.
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/SALA/`
 - Windows: `%APPDATA%\InsideStudioSP\SALA\Presets\`
 
+## Janela e licença
+
+- Visual de rack de 19": orelhas parafusadas, frente pintada na cor do plugin, knobs no padrão Moog com a escala
+  serigrafada e alavancas de metal nas chaves liga/desliga. IN/OUT em VU de ponteiro, que lê o pico: o fim da escala
+  (+3) é 0 dBFS e o 0 VU, −3 dBFS.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -54,4 +68,5 @@ antes de salvar.
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/RoomEngine.h` | Pré-delay, reflexões iniciais, difusão, rede de 8 linhas, largura, EQ da cauda e duck |
 | `Source/PluginProcessor.*` | PRE SYNC, mix, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (frente de 1000×580 entre as orelhas do rack, janela de 1064×580 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (rack, alavancas, VU) |

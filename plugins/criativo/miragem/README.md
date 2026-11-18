@@ -1,6 +1,8 @@
 # MIRAGEM — reverb atmosférico com shimmer
 
-![MIRAGEM](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MIRAGEM.png)
+> Parte da **SÉRIE CRIATIVO** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Criativo.md`](../../../novidades/Criativo.md)
+
+![MIRAGEM](https://insidestudiosp.com.br/img/miragem.webp)
 
 Reverb de 8 linhas (FDN) com difusão na entrada e shimmer: a cauda sobe de tom (oitava, quinta,
 as duas, ou oitava abaixo) e volta para a sala, então cada volta fica mais alta e mais brilhante.
@@ -43,6 +45,17 @@ Trocar de preset não mexe nos botões de performance (CONGELAR, REVERSO).
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/MIRAGEM/`
 - Windows: `%APPDATA%\InsideStudioSP\MIRAGEM\Presets\`
 
+## Janela e licença
+
+- Visual de pedal: moldura de madeira, chapa esmaltada na cor do plugin, controles em chapa preta com os
+  knobs da SÉRIE KNOB e alavancas de metal nas chaves liga/desliga.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -50,4 +63,5 @@ Trocar de preset não mexe nos botões de performance (CONGELAR, REVERSO).
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/ReverbEngine.h` | Pré-delay, difusores, 8 linhas com Hadamard, shimmer (pitch shift de duas cabeças), corte de grave, REVERSO, DUCK e histórico da tela |
 | `Source/PluginProcessor.*` | Relógio do host, mix, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (chapa de 1000×580 na moldura de madeira, janela de 1048×620 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (moldura, chapa, alavancas) |

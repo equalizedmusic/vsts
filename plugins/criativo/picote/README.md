@@ -1,6 +1,8 @@
 # PICOTE — gate rítmico de 16 passos
 
-![PICOTE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/PICOTE.png)
+> Parte da **SÉRIE CRIATIVO** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Criativo.md`](../../../novidades/Criativo.md)
+
+![PICOTE](https://insidestudiosp.com.br/img/picote.webp)
 
 Fatia o som no grid do host. Cada um dos 16 passos tem o seu **volume**, **pan** e **filtro**,
 desenhados com o mouse na grade do topo. EMBARALHAR sorteia um padrão novo para a faixa que está
@@ -39,6 +41,17 @@ O **+** pede o nome antes de salvar. Trocar de preset não mexe no PRENDER.
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/PICOTE/`
 - Windows: `%APPDATA%\InsideStudioSP\PICOTE\Presets\`
 
+## Janela e licença
+
+- Visual de pedal: moldura de madeira, chapa esmaltada na cor do plugin, controles em chapa preta com os
+  knobs da SÉRIE KNOB e alavancas de metal nas chaves liga/desliga.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -46,4 +59,5 @@ O **+** pede o nome antes de salvar. Trocar de preset não mexe no PRENDER.
 | `Source/Params.h` | Parâmetros (12 + 3 faixas × 16 passos), textos e presets de fábrica escritos como texto (`x.xx.x…`) |
 | `Source/GateEngine.h` | Posição no grid com swing, envelope do passo, filtro TPT por passo, pan, PRENDER |
 | `Source/PluginProcessor.*` | Relógio do host, mix, estado, presets e EMBARALHAR |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (chapa de 1000×580 na moldura de madeira, janela de 1048×620 em 100%); `Theme.h`/`Widgets.h` são o padrão da marca |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (moldura, chapa, alavancas) |

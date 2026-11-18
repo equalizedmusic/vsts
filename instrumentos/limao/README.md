@@ -1,11 +1,14 @@
 # LIMÃO — bassline ácido
 
-![LIMÃO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/LIMAO.png)
+> **Versão atual: 0.6.2** (12/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Limao.md`](../../novidades/Limao.md)
+
+![LIMÃO](https://insidestudiosp.com.br/img/limao.webp)
 
 Sintetizador monofônico (VSTi / AU) com a alma do TB-303, mas moderno: uma voz, filtro ladder de 18 dB/oit
 que grita na ressonância, ACCENT que acumula em accents seguidos, SLIDE entre notas ligadas, efeitos na saída e
 um sequenciador de até 32 passos que anda no tempo do projeto. Visual: painel branco com faixa verde-limão,
-knobs Moog da casa e osciloscópio. Instalador próprio (`InsideStudioSP-Limao-win.exe` / `-mac.dmg`).
+knobs Moog da casa e osciloscópio. Instalador próprio (`InsideStudioSP-Limao-win.exe` / `-mac.dmg`). Pede ativação
+na 1ª vez (e-mail + token da licença); sem ativar, o instrumento fica mudo.
 
 ## Blocos
 
@@ -17,13 +20,23 @@ knobs Moog da casa e osciloscópio. Instalador próprio (`InsideStudioSP-Limao-w
 | DELAY | no tempo (1/16 a 3/8), pingue-pongue, cada volta mais escura; FEEDBACK e MIX |
 | REVERB | SIZE e MIX |
 | SAÍDA | VOLUME e medidor de pico em LEDs |
-| SEQUENCIADOR | liga/desliga, PASSOS (1–32), RATE (1/32 a 1/8), SWING, GIRAR (◀ ▶), TRANSP (−1 / +1), SCALE + ROOT, ALEATORIZAR e LIMPAR |
+| SEQUENCIADOR | liga/desliga, PASSOS (1–32), RATE (1/32 a 1/8), SWING, GIRAR (◀ ▶), TRANSP (−1 / +1), SCALE + ROOT, ALEATORIZAR, LIMPAR, AUTO ALEATÓRIO + A CADA e ARRASTAR MIDI |
 
 **SCALE + ROOT** (13 escalas; CHROMATIC = desligado): a nota de cada passo toca encaixada na escala (a de fora vai
 para a da escala mais perto) e o visor mostra a nota que toca. Arrastar, a rodinha e o TRANSP andam um grau da
 escala, e ALEATORIZAR gera a linha só com notas da escala, a partir da tônica. O padrão guardado não muda: voltar para
 CHROMATIC toca como estava. A transposição pelo teclado vem depois da escala, então ela vai junto. SCALE e ROOT entram
 no preset (os de fábrica são CHROMATIC). As escalas ficam em `Source/Scales.h`, o mesmo arquivo da QUIMERA.
+
+**AUTO ALEATÓRIO** (A CADA 4, 8, 16, 32 ou 64 TEMPOS): ligado, cria linhas NOVAS a partir da que você montou, sem
+parar e sem mexer em SCALE e ROOT. As notas novas ficam na escala e na tônica, entre a nota mais grave e a mais aguda
+da sua linha, e os graus que você usou aparecem mais; cada linha nasce da anterior e só 1 ou 2 passos do ritmo trocam
+de lugar. A proporção é mantida (mesma quantidade de notas, pausas, ligaduras, accents e slides). A troca cai na
+virada do bloco, junto com o compasso. Editar, carregar um preset, apertar ALEATORIZAR ou mudar PASSOS faz a próxima
+troca partir da linha nova.
+
+**ARRASTAR MIDI:** arraste a tecla para o DAW e a linha vira clipe MIDI, como no RESENHA (com SCALE + ROOT; accent =
+velocity 127, slide = nota encostando na próxima, swing e andamento no arquivo).
 
 **Cada passo:** visor da nota (arraste na vertical ou roda do mouse = muda a nota, de C1 a C4; duplo clique = nota ↔
 pausa), tecla NOTA / PAUSA / LIGA (ligadura segura a nota anterior), ACC (accent) e SLD (slide para o próximo passo).
@@ -45,7 +58,10 @@ sequenciador. O padrão editado fica salvo no projeto. Igual à QUIMERA:
 - O banco de fábrica é GERADO: `python tools/gerar-presets.py` reescreve `Source/presets/fabrica.inc` (receitas por
   categoria com semente fixa; os 14 feitos à mão entram primeiro).
 
-No menu do preset também ficam o tamanho da janela (75–200%, salvo no projeto) e a versão (`novidades/Limao.md`).
+No menu do preset também ficam o tamanho da janela (75–200%, salvo no projeto), a versão (`novidades/Limao.md`) e a
+Licença…. Com a licença ativa, o aviso de versão nova no pé da janela tem **ATUALIZAR**: o plugin baixa o instalador,
+confere o arquivo e instala sozinho (no Windows espera o DAW fechar; no Mac pede a senha); o BAIXAR pelo navegador
+continua lá.
 Os menus abrem **dentro** da janela do plugin: como janela solta, a lista de dentro (banco → categoria → preset) ficava
 por baixo da janela do plugin com ela grande.
 

@@ -1,6 +1,8 @@
 # GRÃO — granular texture FX
 
-![GRÃO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GRAO.png)
+> Parte da **SÉRIE CRIATIVO** · versão atual do pacote: **1.2.1** (08/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Criativo.md`](../../../novidades/Criativo.md)
+
+![GRÃO](https://insidestudiosp.com.br/img/grao.webp)
 
 O som que entra é gravado numa **fita** de 4 s. Dela saem **grãos** curtos, cada um com o
 próprio tamanho, posição, afinação e lado do estéreo. Os grãos passam por feedback (voltam
@@ -39,6 +41,17 @@ estado atual. No menu, com um preset do usuário aberto: *Salvar alterações*, 
 - Mac: `~/Library/Audio/Presets/InsideStudioSP/GRAO/`
 - Windows: `%APPDATA%\InsideStudioSP\GRAO\Presets\`
 
+## Janela e licença
+
+- Visual de pedal: moldura de madeira, chapa esmaltada na cor do plugin, controles em chapa preta com os
+  knobs da SÉRIE KNOB e alavancas de metal nas chaves liga/desliga.
+- A janela muda de tamanho pelo canto ou no menu de presets → *Tamanho da janela* (75% a 200%) e abre no
+  tamanho salvo.
+- Na primeira vez o plugin pede o e-mail e o token da licença do pacote; o mesmo token vale em até 2 computadores.
+  Sem ativar, o som passa direto, sem processar. No menu de presets, *Licença…* mostra a licença e tem
+  *Desativar este computador* (libera a vaga para outro).
+- Com a licença ativa, uma faixa no pé da janela avisa quando sai versão nova do pacote (**BAIXAR** / **Agora não**).
+
 ## Código
 
 | Arquivo | Conteúdo |
@@ -46,4 +59,5 @@ estado atual. No menu, com um preset do usuário aberto: *Salvar alterações*, 
 | `Source/Params.h` | Parâmetros, faixas, textos e presets de fábrica |
 | `Source/GrainEngine.h` | Fita, agendador e vozes de grão |
 | `Source/PluginProcessor.*` | Macros, filtro, cauda, mix, estado e presets |
-| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (1000×580) |
+| `Source/PluginEditor.*`, `Widgets.h`, `Theme.h` | Interface (chapa de 1000×580 na moldura de madeira, janela de 1048×620 em 100%) |
+| `Source/Hardware.h`, `Painel.h` | Peças renderizadas (knobs, lâmpadas) e o painel em volta (moldura, chapa, alavancas) |

@@ -1,10 +1,13 @@
 # QUIMERA — sintetizador
 
-![QUIMERA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/QUIMERA.png)
+> **Versão atual: 0.5.0** (27/10/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Quimera.md`](../../novidades/Quimera.md)
+
+![QUIMERA](https://insidestudiosp.com.br/img/quimera.webp)
 
 Sintetizador polifônico (VSTi / AU) que junta o lado metálico e digital das wavetables com o lado orgânico
 de um sintetizador analógico mono clássico: deriva de afinação por voz, filtro ladder que auto-oscila, glide e legato.
-Todas as tabelas são geradas por código (nada copiado de outro synth). Suporta **MPE**.
+Todas as tabelas são geradas por código (nada copiado de outro synth). Suporta **MPE**. Pede ativação na 1ª vez
+(e-mail + token da licença); sem ativar, o instrumento fica mudo.
 
 ## Blocos
 
@@ -58,6 +61,7 @@ janela solta, a lista de dentro (banco → categoria → preset) ficava por baix
 
 ## Build
 
-Projeto CMake próprio (`instrumentos/CMakeLists.txt`) e workflow `build-instrumentos.yml`: instalador
-`InsideStudioSP-Instrumentos-win.exe` / `-mac.dmg` no release `latest-instrumentos` (logs no branch
-`builds-instrumentos`). Versão e notas: `novidades/Quimera.md` (ver o README da raiz).
+Projeto CMake próprio (`instrumentos/CMakeLists.txt`) e workflow `build-instrumentos.yml`: instalador próprio
+`InsideStudioSP-Quimera-win.exe` / `-mac.dmg` (era `InsideStudioSP-Instrumentos` até a 0.4; no Windows o novo
+substitui o antigo) no release `quimera-vx.y.z` (fica só a última versão; logs no branch `builds-instrumentos`).
+Versão e notas: `novidades/Quimera.md` (ver o README da raiz).
