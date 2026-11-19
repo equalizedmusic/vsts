@@ -1,5 +1,6 @@
 // Bancada do CHUTE LINK (sem JUCE): o CHUTE publica batidas na memória compartilhada e um "ALIGN" lê no mesmo processo.
 //   zig c++ -std=c++17 -O2 -I ../Source teste_link.cpp ../Source/ChuteLink.cpp -o teste_link.exe
+//   teste_link.exe ../bancos/fabrica/FABRICA.chutebank
 // Confere: (1) o corpo recriado bate amostra a amostra com o motor do CHUTE quando a batida chega no mesmo bloco;
 // (2) batida que chega um bloco atrasada (o DAW processou o baixo antes do kick) é recriada na posição certa, só
 // sem o pedaço que já passou; (3) a faixa do kick um bloco NA FRENTE: a batida espera o bloco dela (0.1.2); (4) volta do
@@ -10,6 +11,8 @@
 #include "ChuteLink.h"
 #include <chrono>
 #include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <thread>
@@ -19,8 +22,15 @@ using namespace chute;
 static int falhas = 0;
 static void confere (bool ok, const std::string& o) { std::printf ("%s  %s\n", ok ? "ok  " : "FALHA", o.c_str()); if (! ok) ++falhas; }
 
-int main()
+int main (int argc, char** argv)
 {
+    if (argc < 2) { std::printf ("uso: teste_link <FABRICA.chutebank>\n"); return 2; }
+    {
+        std::ifstream f (argv[1], std::ios::binary);
+        const std::vector<uint8_t> fab { std::istreambuf_iterator<char> (f), {} };
+        Catalogo::get().monta (fab.data(), fab.size(), {});
+        confere (numModelos() == 50, "banco de fábrica lido (50 presets)");
+    }
     const double fs = 48000.0; const int bloco = 256;
     Ajustes a; padraoDoModelo (a, 19); a.modo = modoPreset; a.clickOn = false; a.volumeDb = 0.0f; a.velo = 0.0f;
     // o que o CHUTE toca (só o corpo), com a batida na amostra 1000 da linha do tempo

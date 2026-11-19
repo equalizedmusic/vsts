@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
     # só a pasta de cada instrumento e o novidades dele; o job detectar escolhe QUAIS compilam (só os atualizados)
-    paths: ['instrumentos/**', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md', 'novidades/Resenha.md', 'novidades/MontaMonta.md', 'novidades/Groovador.md', 'novidades/Mesa.md', 'novidades/Align.md', 'novidades/Onkey.md', 'novidades/Barebass.md', 'novidades/Stompbox.md', 'novidades/Maestro.md', 'novidades/Magos.md', 'novidades/Gogo.md', 'novidades/Retalho.md', 'novidades/Chute.md']
+    paths: ['instrumentos/**', '!instrumentos/chute/bancos/*.chutebank', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md', 'novidades/Resenha.md', 'novidades/MontaMonta.md', 'novidades/Groovador.md', 'novidades/Mesa.md', 'novidades/Align.md', 'novidades/Onkey.md', 'novidades/Barebass.md', 'novidades/Stompbox.md', 'novidades/Maestro.md', 'novidades/Magos.md', 'novidades/Gogo.md', 'novidades/Retalho.md', 'novidades/Chute.md']
   workflow_dispatch:
     inputs:
       pacotes:
@@ -60,7 +60,6 @@ jobs:
         id: build
         env:
           VSTS_SO: ${{ needs.detectar.outputs.dirs }}
-          CHUTE_MODELOS_KEY: ${{ secrets.CHUTE_MODELOS_KEY }}   # abre os modelos do CHUTE (instrumentos/chute/modelos.cmake)
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
@@ -202,9 +201,10 @@ jobs:
           if [ -d dist-retalho/VST3 ]; then
             $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Retalho --origem dist-retalho --versao "$(versao Retalho)" --saida .
           fi
-          # CHUTE: InsideStudioSP-Chute-mac.dmg / -win.exe
+          # CHUTE: InsideStudioSP-Chute-mac.dmg / -win.exe (leva também os bancos extras de instrumentos/chute/bancos; banco novo
+          # sozinho = pacote ChuteBancos, release-chute-bancos.yml, sem recompilar o plugin)
           if [ -d dist-chute/VST3 ]; then
-            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Chute --origem dist-chute --versao "$(versao Chute)" --saida .
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Chute --origem dist-chute --bancos instrumentos/chute/bancos --versao "$(versao Chute)" --saida .
           fi
           { find dist -maxdepth 2; find dist-limao dist-mercurio dist-resenha dist-montamonta dist-groovador dist-mesa dist-align dist-onkey dist-barebass dist-stompbox dist-maestro dist-magos dist-gogo dist-retalho dist-chute -maxdepth 2 2>/dev/null || true; ls -l InsideStudioSP-*; } | tee pack.log
 

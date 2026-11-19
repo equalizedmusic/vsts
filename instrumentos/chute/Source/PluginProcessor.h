@@ -5,8 +5,9 @@
 #include "ChuteLink.h"
 
 // CHUTE: kick designer. Cada nota MIDI dispara uma batida: ATAQUE do preset + CORPO sintetizado (afinável). Latência
-// zero. Presets de fábrica = os 50 modelos (bancos SUB / PUNCH / TIGHT / BOOM); mexeu em qualquer knob, o nome ganha
-// "*" e o SAVE AS grava como preset novo no banco USER (arquivo .chute na pasta do usuário).
+// zero. Presets = os modelos do catálogo (Bancos.h): os 50 de fábrica (SUB / PUNCH / TIGHT / BOOM, de dentro do
+// plugin) + os bancos .chutebank instalados; mexeu em qualquer knob, o nome ganha "*" e o SAVE AS grava como preset
+// novo no banco USER (arquivo .chute na pasta do usuário).
 // LINK: cada batida vai para a memória compartilhada (ChuteLink.h): o ALIGN e o BAREBASS do mesmo projeto acham o
 // kick sozinhos, sem sidechain.
 class ChuteProcessor : public juce::AudioProcessor
@@ -30,8 +31,8 @@ public:
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 1.0; }
 
-    // programas do host = os 50 presets de fábrica (na ordem do menu)
-    int getNumPrograms() override { return chute::numModelos; }
+    // programas do host = os presets de fábrica e dos bancos instalados (na ordem do menu)
+    int getNumPrograms() override { garanteCatalogo(); return chute::numModelos(); }
     int getCurrentProgram() override { return juce::jmax (0, ordemDe (preset.modelo)); }
     void setCurrentProgram (int i) override { carregaFabrica (modeloNaOrdem (i)); }
     const juce::String getProgramName (int i) override;
@@ -56,7 +57,9 @@ public:
         std::map<juce::String, float> valores;   // valor real de cada parâmetro quando o preset abriu (o "*")
     };
     Preset preset;                                // o que está carregado (mexer na lista só na thread da mensagem)
-    static const juce::StringArray& bancos();     // SUB, PUNCH, TIGHT, BOOM (ordem do menu)
+    static void garanteCatalogo();                // monta o catálogo (fábrica + bancos instalados), 1 vez por processo
+    static juce::Array<juce::File> pastasBancos(); // onde ficam os .chutebank (todos os usuários, depois o usuário)
+    static juce::StringArray bancos();            // SUB, PUNCH, TIGHT, BOOM e os dos bancos instalados (ordem do menu)
     static int ordemDe (int modelo);              // posição no menu (bancos na ordem) ↔ índice do modelo
     static int modeloNaOrdem (int ordem);
     static juce::String nomeNota (double midi, bool comCents = false);   // F1, F#1 (cifra; 29 = F1)

@@ -1,6 +1,6 @@
 # CHUTE — KICK DESIGNER
 
-> **Versão atual: 0.1.1** (18/11/2026) · TESTE, sem licença e ainda fora do site (vai ser pago) · notas em
+> **Versão atual: 0.1.3** (19/11/2026) · TESTE, sem licença e ainda fora do site (vai ser pago) · notas em
 > [`novidades/Chute.md`](../../novidades/Chute.md)
 
 ![CHUTE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHUTE.png)
@@ -19,7 +19,11 @@ ALIGN e o BAREBASS do mesmo projeto enxergam cada batida sem sidechain. Latênci
 ## Presets
 
 50 de fábrica em 4 bancos (**SUB**, **PUNCH**, **TIGHT**, **BOOM**), com nomes de golpe de luta, mais o banco
-**USER** com os seus. ◀ ▶ passam pelos de fábrica e pelos USER.
+**USER** com os seus. ◀ ▶ passam pelos de fábrica, pelos bancos instalados e pelos USER.
+
+**Bancos novos** (0.1.3): arquivos .chutebank (formato em Source/Bancos.h, ferramenta 	ools/banco.py, regras em
+[ancos/README.md](bancos/README.md)). Saem num instalador só de presets (InsideStudioSP-ChuteBancos, sem
+atualizar o plugin) e aparecem no menu depois dos de fábrica quando o DAW reabre.
 
 ## O que ele faz
 
@@ -47,6 +51,11 @@ ALIGN e o BAREBASS do mesmo projeto enxergam cada batida sem sidechain. Latênci
 ## Código
 
 - `Source/Dsp.h`: o motor (CLICK, BODY, DRIVE + TONE só na saturação), em C++ puro (sem JUCE).
+- `Source/Bancos.h`: o formato `.chutebank` e o catálogo (fábrica de dentro do plugin + bancos instalados), sem JUCE.
+  Sem chave: a fábrica é `bancos/fabrica/FABRICA.chutebank` (BinaryData, `bancos.cmake`).
+- `tools/teste_dsp.cpp`: bancada do motor e do leitor de bancos
+  `zig c++ -std=c++17 -O2 -I ../Source teste_dsp.cpp ../Source/ChuteLink.cpp -o teste_dsp.exe` →
+  `teste_dsp.exe ../bancos/fabrica/FABRICA.chutebank`
 - `Source/PluginProcessor.cpp`: parâmetros, presets (fábrica e USER) e a publicação das batidas no LINK.
 - `Source/PluginEditor.cpp`: a tela.
 - `Source/ChuteLink.h` e `Source/ChuteLink.cpp`: o LINK. O CHUTE escreve cada batida numa memória compartilhada do
@@ -54,4 +63,5 @@ ALIGN e o BAREBASS do mesmo projeto enxergam cada batida sem sidechain. Latênci
 - `tools/teste_link.cpp`: bancada do LINK (sem JUCE): o corpo recriado do lado de quem lê bate com o do CHUTE, a
   batida que chega um bloco atrasada cai na posição certa, o loop do DAW não toca batida velha e a vaga some quando o
   CHUTE é destruído.
-  `zig c++ -std=c++17 -O2 -I ../Source teste_link.cpp ../Source/ChuteLink.cpp -o teste_link.exe`
+  `zig c++ -std=c++17 -O2 -I ../Source teste_link.cpp ../Source/ChuteLink.cpp -o teste_link.exe` →
+  `teste_link.exe ../bancos/fabrica/FABRICA.chutebank`

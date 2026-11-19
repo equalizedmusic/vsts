@@ -6,6 +6,6 @@ report/
 .vs/
 .vscode/
 __pycache__/
-# CHUTE: modelos em claro; no git só o Modelos.h.cifrado (instrumentos/chute/modelos.cmake)
+# CHUTE: Modelos.h em claro (tools/banco.py abre) nunca vai para o git; os presets ficam em instrumentos/chute/bancos/*.chutebank
 instrumentos/chute/Source/Modelos.h
 *.pyc

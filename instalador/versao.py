@@ -39,6 +39,8 @@ PACOTES = {
     "Gogo":         ("Gogo.md", "gogo", "GOGÓ"),
     "Retalho":      ("Retalho.md", "retalho", "RETALHO"),
     "Chute":        ("Chute.md", "chute", "CHUTE"),
+    # pacote SÓ de presets do CHUTE (bancos .chutebank, sem plugin): .github/workflows/release-chute-bancos.yml
+    "ChuteBancos":  ("ChuteBancos.md", "chute-bancos", "CHUTE · BANCOS DE PRESETS"),
 }
 
 # nome do instalador publicado no release, quando é diferente do pacote (hoje nenhum: até a 0.4.1 a QUIMERA saía

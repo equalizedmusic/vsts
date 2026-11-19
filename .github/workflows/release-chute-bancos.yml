@@ -1,0 +1,110 @@
+name: release-chute-bancos
+
+# Pacote SÓ de presets do CHUTE: não compila plugin nenhum. Pega os .chutebank de instrumentos/chute/bancos/ (a raiz; a
+# fábrica em bancos/fabrica vai dentro do plugin) e monta InsideStudioSP-ChuteBancos-win.exe / -mac.dmg, que põem os
+# bancos na pasta de bancos do CHUTE. A versão é o primeiro "## x.y.z" de novidades/ChuteBancos.md e a seção vira a
+# nota do release "chute-bancos-vx.y.z". Versão já lançada não é refeita (para lançar, escreva a seção nova no topo);
+# criado o release novo, os chute-bancos-v… anteriores são apagados (fica só a última, como nos outros pacotes).
+# Banco novo: tools/banco.py gera → bancos/<NOME>.chutebank → seção nova em novidades/ChuteBancos.md → push.
+on:
+  push:
+    branches: [main]
+    paths: ['instrumentos/chute/bancos/*.chutebank', 'novidades/ChuteBancos.md', '.github/workflows/release-chute-bancos.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-chute-bancos
+  cancel-in-progress: false
+
+jobs:
+  versao:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      versao: ${{ steps.v.outputs.versao }}
+      lancar: ${{ steps.v.outputs.lancar }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -f novidades/ChuteBancos.md ] || ! ls instrumentos/chute/bancos/*.chutebank > /dev/null 2>&1; then
+            echo "sem bancos novos (instrumentos/chute/bancos/*.chutebank) ou sem novidades/ChuteBancos.md"; echo "lancar=nao" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          tag=$(python3 instalador/versao.py ChuteBancos --tag); ver=$(python3 instalador/versao.py ChuteBancos)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"; echo "versao=$ver" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$tag já existe: mantido como está"; echo "lancar=nao" >> "$GITHUB_OUTPUT"
+          else
+            echo "lancar=sim" >> "$GITHUB_OUTPUT"
+          fi
+
+  instalador:
+    needs: versao
+    if: needs.versao.outputs.lancar == 'sim'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: macos-latest,   name: mac }
+          - { os: windows-latest, name: win }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - name: Conferir os bancos
+        run: |
+          if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
+          export PYTHONIOENCODING=utf-8
+          for b in instrumentos/chute/bancos/*.chutebank; do $PY instrumentos/chute/tools/banco.py lista "$b"; done
+      - name: Montar
+        run: |
+          set -e
+          if [ "${{ matrix.name }}" = mac ]; then PY=python3; else PY=python; fi
+          export PYTHONIOENCODING=utf-8
+          if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
+            choco install innosetup -y --no-progress > /dev/null
+          fi
+          $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote ChuteBancos --so-bancos \
+            --bancos instrumentos/chute/bancos --versao "${{ needs.versao.outputs.versao }}" --saida .
+          ls -l InsideStudioSP-ChuteBancos-*
+      - uses: actions/upload-artifact@v5
+        with:
+          name: chutebancos-${{ matrix.name }}
+          path: InsideStudioSP-ChuteBancos-*
+
+  publicar:
+    needs: [versao, instalador]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        with:
+          path: pacotes
+          merge-multiple: true
+      # RELEASE_TOKEN: o token automático toma 403 ao criar o release quando o commit mexe em .github/workflows
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          TAG: ${{ needs.versao.outputs.tag }}
+        run: |
+          set -euo pipefail
+          notas=$(mktemp)
+          {
+            python3 instalador/versao.py ChuteBancos --notas
+            echo
+            echo "Download: \`InsideStudioSP-ChuteBancos-win.exe\` (Windows) ou \`InsideStudioSP-ChuteBancos-mac.dmg\` (Mac) aqui embaixo em Assets."
+            echo "Feche o DAW, instale e abra de novo: os bancos aparecem no menu de presets do CHUTE."
+          } > "$notas"
+          gh release create "$TAG" pacotes/InsideStudioSP-ChuteBancos-* -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$(python3 instalador/versao.py ChuteBancos --titulo)" --notes-file "$notas"
+          gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' \
+            | grep -E "^chute-bancos-v[0-9]" | grep -vxF "$TAG" \
+            | while read -r antiga; do gh release delete "$antiga" --yes --cleanup-tag -R "$GITHUB_REPOSITORY"; echo "apagado $antiga"; done || true

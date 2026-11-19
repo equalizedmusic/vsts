@@ -15,6 +15,15 @@ Sem assinatura: o Windows mostra o SmartScreen e o Mac pede "Abrir mesmo assim" 
 Desinstalar: no Windows, "Aplicativos instalados" (InsideStudioSP <pacote>) ou o atalho "Desinstalar" no menu Iniciar;
 no Mac, "Desinstalar InsideStudioSP <pacote>.command" dentro do .dmg (apaga os .vst3/.component do pacote nas
 pastas do sistema e do usuário). Os presets do usuário ficam.
+
+Bancos de presets do CHUTE (.chutebank):
+    --bancos instrumentos/chute/bancos   o instalador do CHUTE leva também os bancos da pasta (só os *.chutebank da
+                                         raiz; a fábrica fica em bancos/fabrica e vai dentro do plugin)
+    --so-bancos --pacote ChuteBancos --bancos instrumentos/chute/bancos --versao 1.0
+                                         pacote SÓ de presets (sem plugin): InsideStudioSP-ChuteBancos-win.exe / -mac.dmg
+Os bancos vão para a pasta de bancos de todos os usuários (Windows: C:\\ProgramData\\InsideStudioSP\\CHUTE\\Bancos;
+Mac: /Library/Application Support/InsideStudioSP/CHUTE/Bancos) e ficam lá ao desinstalar. O CHUTE lê a pasta quando
+o DAW abre.
 """
 import argparse
 import json
@@ -75,6 +84,17 @@ def rodar(*cmd):
     subprocess.run(cmd, check=True)
 
 
+BANCOS_WIN = r"{commonappdata}\InsideStudioSP\CHUTE\Bancos"
+BANCOS_MAC = "/Library/Application Support/InsideStudioSP/CHUTE/Bancos"
+
+
+def bancos_da_pasta(pasta):
+    """Os .chutebank da raiz da pasta (bancos/fabrica fica de fora: vai dentro do plugin)."""
+    if not pasta:
+        return []
+    return sorted(os.path.join(pasta, n) for n in os.listdir(pasta) if n.lower().endswith(".chutebank"))
+
+
 # ---------------------------------------------------------------- Windows (Inno Setup)
 
 def achar_iscc():
@@ -84,7 +104,7 @@ def achar_iscc():
     sys.exit("ISCC.exe (Inno Setup 6) não encontrado")
 
 
-def iss(pacote, versao, origem, plugins, saida, nome_arquivo):
+def iss(pacote, versao, origem, plugins, saida, nome_arquivo, bancos=()):
     origem = os.path.abspath(origem)
     antigo = PACOTE_ANTIGO.get(pacote)
     L = [
@@ -141,12 +161,60 @@ def iss(pacote, versao, origem, plugins, saida, nome_arquivo):
         src = os.path.join(origem, "VST3", p + ".vst3")
         L.append(rf'Source: "{src}\*"; DestDir: "{{app}}\{p}.vst3"; Components: {ident(p)}; '
                  "Flags: ignoreversion recursesubdirs createallsubdirs")
+    # bancos do CHUTE: junto com o componente CHUTE; ficam ao desinstalar (o pacote de presets pode ter posto o mesmo)
+    comp = f"; Components: {ident('CHUTE')}" if "CHUTE" in plugins else ""
+    for b in bancos:
+        L.append(rf'Source: "{os.path.abspath(b)}"; DestDir: "{BANCOS_WIN}"{comp}; Flags: ignoreversion uninsneveruninstall')
+    return "\r\n".join(L) + "\r\n"
+
+
+def iss_bancos(pacote, versao, bancos, saida, nome_arquivo):
+    """Pacote só de presets do CHUTE: sem pasta para escolher, sem lista; põe os bancos e pronto."""
+    nomes = ", ".join(os.path.splitext(os.path.basename(b))[0] for b in bancos)
+    L = [
+        "[Setup]",
+        f"AppId={MARCA}.{pacote}",
+        f"AppName={MARCA} {pacote}",
+        f"AppVersion={versao}",
+        f"AppVerName={MARCA} {pacote} {versao}",
+        f"AppPublisher={MARCA}",
+        f"DefaultDirName={BANCOS_WIN}",
+        "DisableDirPage=yes",
+        "DisableProgramGroupPage=yes",
+        "DisableReadyPage=no",
+        rf"UninstallFilesDir={{commonpf64}}\{MARCA}\{pacote}",
+        f"UninstallDisplayName={MARCA} {pacote}",
+        "PrivilegesRequired=admin",
+        "ArchitecturesAllowed=x64compatible",
+        "ArchitecturesInstallIn64BitMode=x64compatible",
+        "WizardStyle=modern",
+        "Compression=lzma2/max",
+        "SolidCompression=yes",
+        f"OutputDir={os.path.abspath(saida)}",
+        f"OutputBaseFilename={nome_arquivo}",
+        "",
+        "[Languages]",
+        r'Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"',
+        "",
+        "[Messages]",
+        f"WelcomeLabel2=Bancos de presets do CHUTE: {nomes}.%n%nEles aparecem no menu de presets do CHUTE na próxima vez que você abrir o DAW. Feche o DAW antes de continuar.",
+        "",
+        "[Icons]",
+        rf'Name: "{{autoprograms}}\{MARCA}\Desinstalar {MARCA} {pacote}"; Filename: "{{uninstallexe}}"',
+        "",
+        "[Files]",
+    ]
+    L += [rf'Source: "{os.path.abspath(b)}"; DestDir: "{{app}}"; Flags: ignoreversion' for b in bancos]
     return "\r\n".join(L) + "\r\n"
 
 
 def montar_win(a, plugins):
     nome = f"{MARCA}-{a.pacote}-win"
-    script = iss(a.pacote, a.versao, a.origem, plugins, a.saida, nome)
+    bancos = bancos_da_pasta(a.bancos)
+    if a.so_bancos:
+        script = iss_bancos(a.pacote, a.versao, bancos, a.saida, nome)
+    else:
+        script = iss(a.pacote, a.versao, a.origem, plugins, a.saida, nome, bancos)
     caminho = os.path.join(tempfile.mkdtemp(), f"{nome}.iss")
     with open(caminho, "w", encoding="utf-8-sig") as f:  # Inno lê UTF-8 com BOM (acentos)
         f.write(script)
@@ -208,6 +276,19 @@ def pkg_componente(bundle, fmt, ident_pkg, versao, pasta_pkgs, trabalho):
     rodar("pkgbuild", "--root", raiz, "--component-plist", plist, "--identifier", ident_pkg, "--scripts", scripts,
           "--version", versao, "--install-location", local, os.path.join(pasta_pkgs, arq))
     return arq
+
+
+def pkg_bancos(bancos, versao, pasta_pkgs, trabalho):
+    """Os .chutebank num pkg que instala em /Library/Application Support/InsideStudioSP/CHUTE/Bancos."""
+    ident_pkg = "com.insidestudiosp.pkg.chutebancos"
+    raiz = os.path.join(trabalho, ident_pkg)
+    os.makedirs(raiz)
+    for b in bancos:
+        shutil.copy2(b, raiz)
+    arq = f"{ident_pkg}.pkg"
+    rodar("pkgbuild", "--root", raiz, "--identifier", ident_pkg, "--version", versao,
+          "--install-location", BANCOS_MAC, os.path.join(pasta_pkgs, arq))
+    return ident_pkg, arq
 
 
 def distribution(pacote, versao, escolhas):
@@ -291,6 +372,15 @@ def montar_mac(a, plugins):
                 r = f"com.insidestudiosp.pkg.{ident(p)}.{ext}"
                 e["pkgs"].append((r, pkg_componente(bundle, fmt, r, a.versao, pkgs, trabalho)))
         escolhas.append(e)
+    bancos = bancos_da_pasta(a.bancos)
+    if bancos:
+        pb = pkg_bancos(bancos, a.versao, pkgs, trabalho)
+        dono = next((e for e in escolhas if e["id"] == ident("CHUTE")), None)
+        if dono is not None:   # junto com o CHUTE
+            dono["pkgs"].append(pb)
+        else:                  # pacote só de presets
+            nomes = ", ".join(os.path.splitext(os.path.basename(b))[0] for b in bancos)
+            escolhas.append({"id": "chutebancos", "titulo": "Bancos de presets do CHUTE", "desc": nomes, "pkgs": [pb]})
     dist = os.path.join(trabalho, "distribution.xml")
     with open(dist, "w", encoding="utf-8") as f:
         f.write(distribution(a.pacote, a.versao, escolhas))
@@ -299,6 +389,10 @@ def montar_mac(a, plugins):
     os.makedirs(palco)
     rodar("productbuild", "--distribution", dist, "--package-path", pkgs, "--version", a.versao,
           os.path.join(palco, f"Instalar {MARCA} {a.pacote}.pkg"))
+    if a.so_bancos:
+        with open(os.path.join(palco, "LEIA-ME.txt"), "w", encoding="utf-8") as f:
+            f.write(LEIAME_BANCOS.format(marca=MARCA, pacote=a.pacote, versao=a.versao, pasta=BANCOS_MAC))
+        return gerar_dmg(a, palco)
     with open(os.path.join(palco, "LEIA-ME.txt"), "w", encoding="utf-8") as f:
         f.write(LEIAME.format(marca=MARCA, pacote=a.pacote, versao=a.versao))
     nomes = com_antigos(plugins)
@@ -307,6 +401,10 @@ def montar_mac(a, plugins):
         f.write(DESINSTALAR.format(marca=MARCA, pacote=a.pacote, lista=", ".join(rotulo(p)[0] for p in plugins),
                                    nomes=" ".join(nomes), ids="|".join(ident(n) for n in nomes)))
     os.chmod(des, 0o755)
+    gerar_dmg(a, palco)
+
+
+def gerar_dmg(a, palco):
     dmg = os.path.join(a.saida, f"{MARCA}-{a.pacote}-mac.dmg")
     for tentativa in range(3):  # o hdiutil dos runners às vezes falha com "Resource busy"
         try:
@@ -319,16 +417,42 @@ def montar_mac(a, plugins):
     print("gerado:", dmg)
 
 
+LEIAME_BANCOS = """{marca} {pacote} {versao}
+
+Bancos de presets do CHUTE.
+
+1. Feche o DAW.
+2. Abra "Instalar {marca} {pacote}.pkg" e clique em Instalar (pede a senha de administrador).
+3. Abra o DAW: os bancos novos aparecem no menu de presets do CHUTE.
+
+Os bancos vão para {pasta}.
+Para tirar um banco, apague o arquivo .chutebank dessa pasta.
+
+Se o Mac disser que não pode abrir o instalador (desenvolvedor não identificado):
+Ajustes do Sistema > Privacidade e Segurança > role até o aviso do instalador > "Abrir Mesmo Assim".
+"""
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sistema", choices=["mac", "win"], required=True)
     ap.add_argument("--pacote", required=True, help="Criativo, Mix, Quimera…")
-    ap.add_argument("--origem", required=True)
+    ap.add_argument("--origem", help="pasta com VST3/ (e AU/); não precisa com --so-bancos")
     ap.add_argument("--versao", required=True)
     ap.add_argument("--saida", default=".")
+    ap.add_argument("--bancos", help="pasta com os .chutebank do CHUTE (vão junto, ou sozinhos com --so-bancos)")
+    ap.add_argument("--so-bancos", action="store_true", help="pacote só de presets do CHUTE, sem plugin")
     ap.add_argument("--so-script", action="store_true", help="Windows: só mostra o .iss, sem compilar")
     a = ap.parse_args()
     os.makedirs(a.saida, exist_ok=True)
+    if a.so_bancos:
+        if not bancos_da_pasta(a.bancos):
+            sys.exit(f"nenhum .chutebank em {a.bancos}")
+        print(f"{MARCA} {a.pacote} {a.versao} ({a.sistema}): só bancos")
+        (montar_mac if a.sistema == "mac" else montar_win)(a, [])
+        return
+    if not a.origem:
+        sys.exit("falta --origem")
     plugins = plugins_da_origem(a.origem)
     print(f"{MARCA} {a.pacote} {a.versao} ({a.sistema}): {', '.join(plugins)}")
     (montar_mac if a.sistema == "mac" else montar_win)(a, plugins)

@@ -1,5 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <ChuteBancos.h>
+#include <mutex>
 
 namespace
 {
@@ -22,8 +24,9 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     using C = juce::AudioParameterChoice;
     using B = juce::AudioParameterBool;
     juce::AudioProcessorValueTreeState::ParameterLayout l;
+    ChuteProcessor::garanteCatalogo();
     juce::StringArray nomes;
-    for (int i = 0; i < chute::numModelos; ++i) nomes.add (chute::modelos[i].nome);
+    for (int i = 0; i < chute::numModelos(); ++i) nomes.add (juce::String::fromUTF8 (chute::modelo (i).nome.c_str()));
     const int ini = ChuteProcessor::modeloNaOrdem (0);
     chute::Ajustes a; chute::padraoDoModelo (a, ini);
     l.add (std::make_unique<C> (juce::ParameterID { "model", 1 }, "Model", nomes, ini));
@@ -53,8 +56,8 @@ ChuteProcessor::ChuteProcessor()
 {
     motor->prepare (fs);
     preset.modelo = modeloNaOrdem (0);
-    preset.banco = chute::modelos[preset.modelo].banco;
-    preset.nome = chute::modelos[preset.modelo].nome;
+    preset.banco = juce::String::fromUTF8 (chute::modelo (preset.modelo).banco.c_str());
+    preset.nome = juce::String::fromUTF8 (chute::modelo (preset.modelo).nome.c_str());
     snapshot();
     link.ocupa();
 }
@@ -79,7 +82,7 @@ chute::Ajustes ChuteProcessor::ajustes() const
     auto v = [this] (const char* id) { return apvts.getRawParameterValue (id)->load(); };
     auto iv = [&] (const char* id) { return juce::roundToInt (v (id)); };
     chute::Ajustes a;
-    a.modelo = juce::jlimit (0, chute::numModelos - 1, iv ("model"));
+    a.modelo = juce::jlimit (0, chute::numModelos() - 1, iv ("model"));
     a.clickOn = v ("clickon") > 0.5f; a.bodyOn = v ("bodyon") > 0.5f;
     a.clickDb = v ("clicklevel"); a.clickTone = v ("clicktone"); a.clickMs = v ("clicklen");
     a.modo = iv ("mode"); a.tune = v ("tune");
@@ -162,18 +165,63 @@ juce::String ChuteProcessor::linkNome() const
 
 // ---------------------------------------------------------------- presets
 
-const juce::StringArray& ChuteProcessor::bancos()
+// ---- bancos: a fábrica vem de dentro do plugin (ChuteBancos, feita de bancos/fabrica/FABRICA.chutebank); os outros
+// são os .chutebank da pasta de bancos de todos os usuários e da pasta do usuário, em ordem alfabética do arquivo.
+// Uma vez por processo (depois o catálogo não muda: o áudio lê sem trava). Banco instalado com o DAW aberto aparece
+// quando o DAW reabre.
+juce::Array<juce::File> ChuteProcessor::pastasBancos()
 {
-    static const juce::StringArray b { "SUB", "PUNCH", "TIGHT", "BOOM" };
+    juce::Array<juce::File> p;
+   #if JUCE_MAC
+    p.add (juce::File ("/Library/Application Support/InsideStudioSP/CHUTE/Bancos"));
+    p.add (juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile ("Library/Application Support/InsideStudioSP/CHUTE/Bancos"));
+   #else
+    p.add (juce::File::getSpecialLocation (juce::File::commonApplicationDataDirectory).getChildFile ("InsideStudioSP").getChildFile ("CHUTE").getChildFile ("Bancos"));
+    p.add (juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory).getChildFile ("InsideStudioSP").getChildFile ("CHUTE").getChildFile ("Bancos"));
+   #endif
+    return p;
+}
+
+void ChuteProcessor::garanteCatalogo()
+{
+    static std::once_flag uma;
+    std::call_once (uma, []
+    {
+        juce::Array<juce::File> arqs;
+        for (auto& d : pastasBancos())
+            for (auto& f : d.findChildFiles (juce::File::findFiles, false, "*.chutebank"))
+            {
+                bool tem = false;   // o mesmo arquivo nas duas pastas: o de todos os usuários vale
+                for (auto& a : arqs) if (a.getFileName().equalsIgnoreCase (f.getFileName())) tem = true;
+                if (! tem) arqs.add (f);
+            }
+        std::sort (arqs.begin(), arqs.end(), [] (const juce::File& a, const juce::File& b)
+                   { return a.getFileName().compareNatural (b.getFileName()) < 0; });
+        std::vector<std::vector<uint8_t>> extras;
+        for (auto& f : arqs)
+        {
+            if (f.getSize() > 64 * 1024 * 1024) continue;
+            juce::MemoryBlock mb;
+            if (f.loadFileAsData (mb))
+                extras.emplace_back ((const uint8_t*) mb.getData(), (const uint8_t*) mb.getData() + mb.getSize());
+        }
+        chute::Catalogo::get().monta (ChuteBancos::FABRICA_chutebank, (size_t) ChuteBancos::FABRICA_chutebankSize, extras);
+    });
+}
+
+juce::StringArray ChuteProcessor::bancos()
+{
+    juce::StringArray b;
+    for (auto& s : chute::catalogo().bancos()) b.add (juce::String::fromUTF8 (s.c_str()));
     return b;
 }
 
 int ChuteProcessor::modeloNaOrdem (int ordem)
 {
     int k = 0;
-    for (const auto& b : bancos())
-        for (int m = 0; m < chute::numModelos; ++m)
-            if (b == chute::modelos[m].banco)
+    for (const auto& b : chute::catalogo().bancos())
+        for (int m = 0; m < chute::numModelos(); ++m)
+            if (b == chute::modelo (m).banco)
             {
                 if (k == ordem) return m;
                 ++k;
@@ -183,14 +231,14 @@ int ChuteProcessor::modeloNaOrdem (int ordem)
 
 int ChuteProcessor::ordemDe (int modelo)
 {
-    for (int i = 0; i < chute::numModelos; ++i) if (modeloNaOrdem (i) == modelo) return i;
+    for (int i = 0; i < chute::numModelos(); ++i) if (modeloNaOrdem (i) == modelo) return i;
     return 0;
 }
 
 const juce::String ChuteProcessor::getProgramName (int i)
 {
-    const int m = modeloNaOrdem (i);
-    return juce::String (chute::modelos[m].banco) + " / " + chute::modelos[m].nome;
+    const auto& M = chute::modelo (modeloNaOrdem (i));
+    return juce::String::fromUTF8 (M.banco.c_str()) + " / " + juce::String::fromUTF8 (M.nome.c_str());
 }
 
 juce::String ChuteProcessor::nomeNota (double midi, bool comCents)
@@ -249,8 +297,9 @@ float ChuteProcessor::valorDoPreset (const juce::String& id) const
 
 void ChuteProcessor::carregaFabrica (int modelo)
 {
-    modelo = juce::jlimit (0, chute::numModelos - 1, modelo);
+    modelo = juce::jlimit (0, chute::numModelos() - 1, modelo);
     chute::Ajustes a; chute::padraoDoModelo (a, modelo);
+    const auto& M = chute::modelo (modelo);
     for (const char* id : doPreset)
         if (auto* rp = dynamic_cast<juce::RangedAudioParameter*> (apvts.getParameter (id)))
         {
@@ -260,12 +309,14 @@ void ChuteProcessor::carregaFabrica (int modelo)
             else if (s == "pitch") alvo = rp->convertTo0to1 (a.pitchHz);
             else if (s == "drop") alvo = rp->convertTo0to1 (a.dropMs);
             else if (s == "decay") alvo = rp->convertTo0to1 (a.decayMs);
+            for (auto& aj : M.ajustes)   // knobs que o banco define para este preset (CLICK LEVEL, DRIVE…)
+                if (s == juce::String (aj.first.c_str())) alvo = rp->convertTo0to1 (rp->getNormalisableRange().snapToLegalValue (aj.second));
             rp->beginChangeGesture();
             rp->setValueNotifyingHost (alvo);
             rp->endChangeGesture();
         }
-    preset.banco = chute::modelos[modelo].banco;
-    preset.nome = chute::modelos[modelo].nome;
+    preset.banco = juce::String::fromUTF8 (M.banco.c_str());
+    preset.nome = juce::String::fromUTF8 (M.nome.c_str());
     preset.user = false;
     preset.arquivo = juce::File();
     preset.modelo = modelo;
@@ -344,11 +395,12 @@ juce::String ChuteProcessor::sugestaoNome() const
 void ChuteProcessor::proximo (int passo)
 {
     const auto user = presetsUser();
-    const int total = chute::numModelos + user.size();
-    int atual = preset.user ? chute::numModelos + juce::jmax (0, user.indexOf (preset.arquivo)) : ordemDe (preset.modelo);
+    const int nm = chute::numModelos();
+    const int total = nm + user.size();
+    int atual = preset.user ? nm + juce::jmax (0, user.indexOf (preset.arquivo)) : ordemDe (preset.modelo);
     atual = ((atual + passo) % total + total) % total;
-    if (atual < chute::numModelos) carregaFabrica (modeloNaOrdem (atual));
-    else carregaUser (user[atual - chute::numModelos]);
+    if (atual < nm) carregaFabrica (modeloNaOrdem (atual));
+    else carregaUser (user[atual - nm]);
 }
 
 // ---------------------------------------------------------------- estado
@@ -361,6 +413,10 @@ void ChuteProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty ("pnome", preset.nome, nullptr);
     state.setProperty ("puser", preset.user, nullptr);
     state.setProperty ("parq", preset.arquivo.getFullPathName(), nullptr);
+    // o modelo também pelo NOME (banco + preset): com outros bancos instalados o número muda de máquina para máquina
+    const auto& M = chute::modelo (juce::roundToInt (apvts.getRawParameterValue ("model")->load()));
+    state.setProperty ("mbanco", juce::String::fromUTF8 (M.banco.c_str()), nullptr);
+    state.setProperty ("mnome", juce::String::fromUTF8 (M.nome.c_str()), nullptr);
     juce::String v;
     for (auto& [id, val] : preset.valores) v << id << "=" << juce::String (val, 4) << ";";
     state.setProperty ("pval", v, nullptr);
@@ -379,6 +435,17 @@ void ChuteProcessor::setStateInformation (const void* data, int sizeInBytes)
             preset.nome = vt.getProperty ("pnome", preset.nome).toString();
             preset.user = (bool) vt.getProperty ("puser", false);
             preset.arquivo = juce::File (vt.getProperty ("parq", "").toString());
+            // projeto com o nome do modelo: acha o número dele nesta máquina (projeto antigo, sem o nome: vale o
+            // número, e a fábrica tem sempre os mesmos números)
+            const auto mn = vt.getProperty ("mnome", "").toString();
+            const int antes = juce::roundToInt (apvts.getRawParameterValue ("model")->load());
+            if (mn.isNotEmpty())
+            {
+                const int idx = chute::catalogo().acha (vt.getProperty ("mbanco", "").toString().toStdString(), mn.toStdString());
+                if (idx >= 0 && idx != antes)
+                    if (auto* rp = dynamic_cast<juce::RangedAudioParameter*> (apvts.getParameter ("model")))
+                        rp->setValueNotifyingHost (rp->convertTo0to1 ((float) idx));
+            }
             preset.modelo = juce::roundToInt (apvts.getRawParameterValue ("model")->load());
             const auto v = vt.getProperty ("pval", "").toString();
             if (v.isNotEmpty())
@@ -388,6 +455,9 @@ void ChuteProcessor::setStateInformation (const void* data, int sizeInBytes)
                     if (par.contains ("=")) preset.valores[par.upToFirstOccurrenceOf ("=", false, false)] = par.fromFirstOccurrenceOf ("=", false, false).getFloatValue();
             }
             else snapshot();
+            // o modelo mudou de número nesta máquina: o preset aberto também (senão o nome ganharia "*")
+            if (preset.modelo != antes && preset.valores.count ("model") && juce::roundToInt (preset.valores["model"]) == antes)
+                preset.valores["model"] = (float) preset.modelo;
         }
 }
 

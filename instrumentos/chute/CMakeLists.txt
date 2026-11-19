@@ -1,8 +1,7 @@
 # versão: o primeiro "## x.y.z" de novidades/Chute.md
 vsts_versao(Chute.md CHUTE_VERSAO)
 
-# CHUTE: kick designer (synth de kick, uma nota = uma batida). Presets de fábrica em Source/Modelos.h, gerado fora
-# do repositório e guardado CIFRADO (Source/Modelos.h.cifrado, aberto na configuração: modelos.cmake). ChuteLink.cpp: memória compartilhada que avisa cada batida ao ALIGN e ao BAREBASS (LINK, sem
+# CHUTE: kick designer (synth de kick, uma nota = uma batida). Presets em bancos .chutebank: a FÁBRICA vai dentro do plugin (bancos.cmake) e os outros (bancos/*.chutebank) vão no instalador. ChuteLink.cpp: memória compartilhada que avisa cada batida ao ALIGN e ao BAREBASS (LINK, sem
 # sidechain); os dois compilam o mesmo arquivo.
 # 0.1.0 = TESTE, sem licença (a licença entra na versão oficial: isp_licenca(Chute chute)).
 juce_add_plugin(Chute
@@ -24,8 +23,8 @@ juce_add_plugin(Chute
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
 
 target_sources(Chute PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/ChuteLink.cpp)
-include(${CMAKE_CURRENT_SOURCE_DIR}/modelos.cmake)
-chute_modelos(Chute)
+include(${CMAKE_CURRENT_SOURCE_DIR}/bancos.cmake)
+chute_bancos(Chute)
 target_compile_definitions(Chute PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

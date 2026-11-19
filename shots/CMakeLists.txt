@@ -91,11 +91,11 @@ foreach(dir ${plugin_dirs} ${inst_dirs})
                 # BAREBASS: synth de uma voz; o loop toca um baixo rolando em F1 (1/16). Foto a 200% (1000 × 752)
                 target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_BAIXO=1 SHOT_W=2000 SHOT_H=1504)
             elseif(name STREQUAL "chute")
-                # CHUTE: kick designer; o loop toca um kick por tempo (145 BPM). Foto a 200% (1000 × 752). Os modelos vêm
-                # cifrados (chave CHUTE_MODELOS_KEY no ambiente)
+                # CHUTE: kick designer; o loop toca um kick por tempo (145 BPM). Foto a 200% (1000 × 752). O banco de
+                # fábrica entra como BinaryData (instrumentos/chute/bancos.cmake), sem chave
                 target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_KICK=1 SHOT_W=2000 SHOT_H=1504)
-                include("${CMAKE_CURRENT_SOURCE_DIR}/../instrumentos/chute/modelos.cmake")
-                chute_modelos(${t})
+                include("${CMAKE_CURRENT_SOURCE_DIR}/../instrumentos/chute/bancos.cmake")
+                chute_bancos(${t})
             elseif(name STREQUAL "mercurio")
                 target_compile_definitions(${t} PRIVATE SHOT_SYNTH=1 SHOT_W=2880 SHOT_H=1920)
             else()

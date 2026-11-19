@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Chute`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `chute-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.3 — 2026-11-19
+- Ainda TESTE (sem licença, fora do site). O som dos 50 presets não muda (conferido amostra por amostra).
+- BANCOS DE PRESETS: os presets agora vêm de bancos (arquivo .chutebank). Os 50 de fábrica (SUB, PUNCH, TIGHT,
+  BOOM) continuam dentro do plugin; bancos novos chegam num instalador só de presets (InsideStudioSP-ChuteBancos)
+  e aparecem no menu, depois dos de fábrica, na próxima vez que você abrir o DAW. Sem atualizar o plugin.
+- Um preset de banco pode trazer os knobs dele (CLICK, DRIVE, TONE…), não só o kick.
+- O projeto guarda o preset pelo nome (banco + preset): abre no mesmo kick mesmo com outros bancos instalados.
 ## 0.1.2 — 2026-11-18
 - Ainda TESTE (sem licença, fora do site).
 - DRIVE: girar o knob não faz mais o ruído de "liga e desliga". O knob anda suave e a saturação entra aos poucos

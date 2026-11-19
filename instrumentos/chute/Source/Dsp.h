@@ -1,7 +1,7 @@
 #pragma once
-// CHUTE: motor do kick, sem JUCE (o teste em tools/ compila só com este arquivo e o Modelos.h).
+// CHUTE: motor do kick, sem JUCE (o teste em tools/ compila só com este arquivo e o Bancos.h).
 //
-// Cada batida = ATAQUE + CORPO, sempre a partir de um MODELO de fábrica (Modelos.h):
+// Cada batida = ATAQUE + CORPO, sempre a partir de um MODELO do catálogo (Bancos.h: a fábrica + os bancos instalados):
 //  - ATAQUE (CLICK): os primeiros ms do modelo, tocados como estão (com LEVEL e TONE). Termina em LENGTH com
 //    crossfade de 5 ms para o corpo.
 //  - CORPO (BODY): um seno com a curva de pitch e o envelope do modelo, medidos a 1 ms. Os knobs mexem nas curvas:
@@ -16,7 +16,7 @@
 //    10% do knob; o ganho máximo caiu de +30 para +18 dB (+12 no FOLD) e o HARD virou um corte de joelho firme.
 //  - Kick é mono: a batida nova sempre corta a anterior em 3 ms (o seletor CHOKE / POLY saiu na 0.1.2).
 // Latência zero. Saída mono (a mesma nos dois canais).
-#include "Modelos.h"
+#include "Bancos.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -58,8 +58,8 @@ struct Ajustes
 // valores de fábrica do corpo de um modelo (o preset)
 inline void padraoDoModelo (Ajustes& a, int m)
 {
-    m = std::clamp (m, 0, numModelos - 1);
-    const Modelo& M = modelos[m];
+    m = std::clamp (m, 0, numModelos() - 1);
+    const Modelo& M = modelo (m);
     a.modelo = m;
     a.pitchHz = std::round (M.fIni);
     a.dropMs = std::round (M.dropMs);
@@ -71,7 +71,7 @@ inline void padraoDoModelo (Ajustes& a, int m)
 // frequência da cauda do corpo para uma nota MIDI tocada (nota < 0 = nenhuma: a do modelo)
 inline double fCauda (const Ajustes& a, int nota)
 {
-    const Modelo& M = modelos[std::clamp (a.modelo, 0, numModelos - 1)];
+    const Modelo& M = modelo (a.modelo);
     switch (a.modo)
     {
         case modoPreset: return M.fEnd * std::pow (2.0, a.tune / 12.0);
@@ -91,7 +91,7 @@ inline double fCauda (const Ajustes& a, int nota)
 // curvas do corpo (1 ms) para os ajustes: frequência (Hz) e amplitude. Devolve quantos pontos valem.
 inline int curvasCorpo (const Ajustes& a, double fT, float* fq, float* am)
 {
-    const Modelo& M = modelos[std::clamp (a.modelo, 0, numModelos - 1)];
+    const Modelo& M = modelo (a.modelo);
     const double r0 = (double) M.fIni / M.fEnd;
     double gama = 1.0;
     if (r0 > 1.05) gama = std::clamp (std::log (std::max (1.0, (double) a.pitchHz) / fT) / std::log (r0), 0.0, 4.0);
@@ -99,6 +99,7 @@ inline int curvasCorpo (const Ajustes& a, double fT, float* fq, float* am)
     const double sa = std::clamp ((double) a.decayMs / std::max (1.0f, M.decayMs), 0.1, 6.0);
     const double kt = std::clamp ((double) a.tailDb / -20.0, 0.25, 3.0);
     double amax = 1e-9;
+    const int nCurva = (int) M.d.size();
     for (int k = 0; k < nCurva; ++k) amax = std::max (amax, (double) M.a[k]);
     int len = 0;
     for (int k = 0; k < nPts; ++k)
@@ -123,7 +124,7 @@ inline int curvasCorpo (const Ajustes& a, double fT, float* fq, float* am)
 // fase do corpo (ciclos) no início de cada ms: integra a frequência constante por ms a partir da fase do modelo
 inline void faseCorpo (const Ajustes& a, const float* fq, int len, float* fase)
 {
-    const Modelo& M = modelos[std::clamp (a.modelo, 0, numModelos - 1)];
+    const Modelo& M = modelo (a.modelo);
     double ph = M.fase0;
     for (int k = 0; k < len; ++k) { fase[k] = (float) ph; ph += fq[k] * 0.001; }
 }
@@ -148,15 +149,15 @@ struct Voz
     void proxima (const Ajustes& a, double cTom, double gLo, double gHi, double gClick, double& click, double& corpo)
     {
         click = 0.0; corpo = 0.0;
-        const Modelo& M = modelos[modelo];
+        const Modelo& M = chute::modelo (modelo);
         // ataque: o modelo a 44,1 kHz, interpolado (Catmull-Rom)
         double gc = 0.0;
         if (t < clickFim + 0.005)
         {
             gc = t < clickFim ? 1.0 : 1.0 - (t - clickFim) / 0.005;
-            const double p = t * taxaClick;
+            const double p = t * M.taxaClick;
             const int i = (int) p;
-            if (i + 2 < nClick)
+            if (i + 2 < (int) M.click.size())
             {
                 const double f = p - i;
                 auto c = [&] (int k) { return k < 0 ? 0.0 : M.click[k] / 32767.0; };
@@ -222,9 +223,9 @@ public:
             v = &voz[0];
             for (auto& o : voz) if (o.t > v->t) v = &o;
         }
-        const Modelo& M = modelos[std::clamp (a.modelo, 0, numModelos - 1)];
+        const Modelo& M = modelo (a.modelo);
         const double fT = fCauda (a, nota);
-        v->modelo = std::clamp (a.modelo, 0, numModelos - 1);
+        v->modelo = std::clamp (a.modelo, 0, numModelos() - 1);
         v->len = curvasCorpo (a, fT, v->fq, v->am);
         faseCorpo (a, v->fq, v->len, v->ph);
         v->fase = M.fase0;
@@ -329,8 +330,8 @@ public:
     static int previa (const Ajustes& a, int nota, double fs, float* click, float* corpo, int n)
     {
         static Voz v;   // grande demais para a pilha; só a tela (thread da mensagem) usa
-        const Modelo& M = modelos[std::clamp (a.modelo, 0, numModelos - 1)];
-        v.modelo = std::clamp (a.modelo, 0, numModelos - 1);
+        const Modelo& M = modelo (a.modelo);
+        v.modelo = std::clamp (a.modelo, 0, numModelos() - 1);
         v.len = curvasCorpo (a, fCauda (a, nota), v.fq, v.am);
         faseCorpo (a, v.fq, v.len, v.ph);
         v.fase = M.fase0; v.t = 0; v.dt = 1.0 / fs; v.ganho = 1; v.corte = 1; v.corteVel = 0; v.lpTom = 0;

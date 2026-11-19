@@ -1,8 +1,9 @@
-// Bancada do motor do CHUTE (sem JUCE). Compila com Source/Dsp.h + Source/Modelos.h (gerado pelo modelos.cmake, que precisa da chave):
+// Bancada do motor do CHUTE (sem JUCE). Compila com Source/Dsp.h + Source/Bancos.h (sem chave nenhuma):
 //   zig c++ -std=c++17 -O2 -I ../Source teste_dsp.cpp -o teste_dsp.exe
-//   teste_dsp.exe <pasta de saída>
-// Grava em <saída>/modelos_44k.f32 os presets de fábrica (modo PRESET, 450 ms cada, 44,1 kHz) para ouvir/conferir,
-// e confere os knobs (nota da cauda, DECAY, CHOKE, LINK).
+//   teste_dsp.exe ../bancos/fabrica/FABRICA.chutebank [pasta de saída]
+// Lê o banco de fábrica, confere o leitor de bancos (banco extra entra depois da fábrica, nome repetido não entra,
+// arquivo corrompido é recusado) e os knobs (nota da cauda, DECAY, CHOKE, LINK). Com a pasta de saída, grava lá
+// modelos_44k.f32 (os presets em modo PRESET, 450 ms cada, 44,1 kHz) para ouvir/comparar — NUNCA dentro do repo.
 #include "Dsp.h"
 #include "../Source/ChuteLink.h"
 #include <cstdio>
@@ -40,11 +41,39 @@ static std::vector<float> toca (const Ajustes& a, int nota, double fs, double se
 
 int main (int argc, char** argv)
 {
-    const std::string saida = argc > 1 ? argv[1] : ".";
-    // 1) os presets de fábrica
+    if (argc < 2) { std::printf ("uso: teste_dsp <FABRICA.chutebank> [pasta de saída]\n"); return 2; }
+    std::vector<uint8_t> fab;
+    {
+        std::FILE* f = std::fopen (argv[1], "rb");
+        if (f == nullptr) { std::printf ("não abri %s\n", argv[1]); return 2; }
+        std::fseek (f, 0, SEEK_END); fab.resize ((size_t) std::ftell (f)); std::fseek (f, 0, SEEK_SET);
+        if (std::fread (fab.data(), 1, fab.size(), f) != fab.size()) return 2;
+        std::fclose (f);
+    }
+    // 0) leitor de bancos: corrompido é recusado; um "banco extra" (cópia da fábrica com 1 byte trocado = recusado;
+    //    a fábrica de novo = todos repetidos, nenhum entra)
+    {
+        std::vector<Modelo> m;
+        confere (banco::le (fab.data(), fab.size(), m) && m.size() == 50, "fábrica: 50 presets lidos");
+        auto ruim = fab; ruim[ruim.size() / 2] ^= 0x40;
+        std::vector<Modelo> m2;
+        confere (! banco::le (ruim.data(), ruim.size(), m2) && m2.empty(), "banco com 1 byte trocado: recusado (crc)");
+        auto curto = fab; curto.resize (curto.size() - 10);
+        confere (! banco::le (curto.data(), curto.size(), m2), "banco cortado: recusado");
+        std::vector<std::string> rec;
+        Catalogo::get().monta (fab.data(), fab.size(), { fab, ruim }, &rec);
+        confere (numModelos() == 50 && catalogo().fabrica() == 50, "catálogo: fábrica + repetidos = 50 (nada duplicado)");
+        confere (rec.size() == 1, "catálogo: o banco corrompido foi recusado sem derrubar os outros");
+        confere (catalogo().acha (modelo (37).banco, modelo (37).nome) == 37, "catálogo: acha por banco + nome");
+        const auto b = catalogo().bancos();
+        confere (b.size() == 4 && b[0] == "SUB" && b[1] == "PUNCH" && b[2] == "TIGHT" && b[3] == "BOOM", "catálogo: bancos na ordem SUB PUNCH TIGHT BOOM");
+    }
+    const std::string saida = argc > 2 ? argv[2] : "";
+    // 1) os presets de fábrica (só com pasta de saída)
+    if (! saida.empty())
     {
         std::FILE* f = std::fopen ((saida + "/modelos_44k.f32").c_str(), "wb");
-        for (int m = 0; m < numModelos; ++m)
+        for (int m = 0; m < numModelos(); ++m)
         {
             Ajustes a; padraoDoModelo (a, m);
             a.modo = modoPreset; a.volumeDb = 0.0f; a.velo = 0.0f;
@@ -52,14 +81,14 @@ int main (int argc, char** argv)
             std::fwrite (x.data(), sizeof (float), x.size(), f);
         }
         std::fclose (f);
-        std::printf ("modelos_44k.f32 gravado (%d × 450 ms)\n", numModelos);
+        std::printf ("modelos_44k.f32 gravado (%d × 450 ms)\n", numModelos());
     }
     // 2) nota da cauda: PRESET = a do modelo; KEY·MIDI = a classe da nota tocada; TUNE soma semitons
     {
         Ajustes a; padraoDoModelo (a, 19);   // MARTELO, F1 (43,6 Hz)
         a.modo = modoPreset;
         const double f0 = freqEntre (toca (a, -1, 48000.0, 0.4), 48000.0, 0.15, 0.22);
-        confere (std::fabs (f0 / modelos[19].fEnd - 1.0) < 0.04, ("PRESET: cauda " + std::to_string (f0) + " Hz").c_str());
+        confere (std::fabs (f0 / modelo (19).fEnd - 1.0) < 0.04, ("PRESET: cauda " + std::to_string (f0) + " Hz").c_str());
         a.modo = modoKey;
         const double fg = freqEntre (toca (a, 43, 48000.0, 0.4), 48000.0, 0.15, 0.22);   // G (qualquer oitava) → G1 49 Hz
         confere (std::fabs (fg / mtof (31) - 1.0) < 0.04, ("KEY·MIDI G: cauda " + std::to_string (fg) + " Hz (G1 = 49,0)").c_str());

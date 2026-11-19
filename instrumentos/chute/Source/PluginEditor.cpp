@@ -733,30 +733,32 @@ void ChuteEditor::menuPresets()
 {
     juce::PopupMenu m;
     const auto user = proc.presetsUser();
+    constexpr int baseUser = 100000;   // ids do menu: 1 + modelo (fábrica e bancos), baseUser + k (USER)
     for (const auto& banco : ChuteProcessor::bancos())
     {
         m.addSectionHeader (banco);
-        for (int o = 0; o < chute::numModelos; ++o)
+        for (int o = 0; o < chute::numModelos(); ++o)
         {
             const int i = ChuteProcessor::modeloNaOrdem (o);
-            if (banco != chute::modelos[i].banco) continue;
-            juce::PopupMenu::Item it (chute::modelos[i].nome);
+            const auto& M = chute::modelo (i);
+            if (banco != juce::String::fromUTF8 (M.banco.c_str())) continue;
+            juce::PopupMenu::Item it (juce::String::fromUTF8 (M.nome.c_str()));
             it.itemID = 1 + i;
             it.isTicked = ! proc.preset.user && proc.preset.modelo == i;
-            it.shortcutKeyDescription = ChuteProcessor::nomeNota (chute::modelos[i].nota);   // a nota em cifra, à direita
+            it.shortcutKeyDescription = ChuteProcessor::nomeNota (M.nota);   // a nota em cifra, à direita
             m.addItem (it);
         }
     }
     m.addSectionHeader ("USER");
     if (user.isEmpty()) m.addItem (-1, u8 ("(vazio: use o SAVE AS)"), false, false);
     for (int k = 0; k < user.size(); ++k)
-        m.addItem (1000 + k, user[k].getFileNameWithoutExtension(), true, proc.preset.user && proc.preset.arquivo == user[k]);
+        m.addItem (baseUser + k, user[k].getFileNameWithoutExtension(), true, proc.preset.user && proc.preset.arquivo == user[k]);
     juce::Component::SafePointer<ChuteEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
                      [safe, user] (int r)
                      {
                          if (safe == nullptr || r <= 0) return;
-                         if (r >= 1000) safe->proc.carregaUser (user[r - 1000]);
+                         if (r >= baseUser) safe->proc.carregaUser (user[r - baseUser]);
                          else safe->proc.carregaFabrica (r - 1);
                          safe->repaint();
                      });

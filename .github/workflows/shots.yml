@@ -38,7 +38,6 @@ jobs:
       - name: Compilar
         if: steps.quais.outputs.plugins != ''
         env:
-          CHUTE_MODELOS_KEY: ${{ secrets.CHUTE_MODELOS_KEY }}   # abre os modelos do CHUTE (instrumentos/chute/modelos.cmake)
         run: |
           set -o pipefail
           cmake -S shots -B build -DCMAKE_BUILD_TYPE=Release "-DSHOT_SO=${{ steps.quais.outputs.so }}" 2>&1 | tee build.log
