@@ -37,7 +37,6 @@ jobs:
 
       - name: Compilar
         if: steps.quais.outputs.plugins != ''
-        env:
         run: |
           set -o pipefail
           cmake -S shots -B build -DCMAKE_BUILD_TYPE=Release "-DSHOT_SO=${{ steps.quais.outputs.so }}" 2>&1 | tee build.log
