@@ -11,8 +11,10 @@
 //                     −20 dB); TAIL → o nível do corpo no fim do DECAY (−20 dB = como o modelo)
 //    Nos valores do preset o corpo sai igual ao do modelo. A frequência é constante dentro de cada ms (a fase é
 //    exata nos pontos medidos).
-//  - DRIVE (WARM / HARD / FOLD) e TONE (passa-baixa) na soma; VOLUME e VELO no fim.
-//  - CHOKE: batida nova corta a anterior (3 ms); POLY: até 4 batidas soando juntas.
+//  - DRIVE (WARM / HARD / FOLD) na soma; TONE fecha o agudo SÓ do que o DRIVE acrescenta (DRIVE em 0 = o TONE não
+//    mexe em nada). 0.1.2: o DRIVE anda suave amostra a amostra (girar não estala) e entra aos poucos nos primeiros
+//    10% do knob; o ganho máximo caiu de +30 para +18 dB (+12 no FOLD) e o HARD virou um corte de joelho firme.
+//  - Kick é mono: a batida nova sempre corta a anterior em 3 ms (o seletor CHOKE / POLY saiu na 0.1.2).
 // Latência zero. Saída mono (a mesma nos dois canais).
 #include "Modelos.h"
 #include <algorithm>
@@ -48,8 +50,7 @@ struct Ajustes
     float tailDb = -20.0f;     // nível no fim do DECAY (−40..−6)
     int   driveTipo = driveWarm;
     float drive = 0.0f;        // 0..1
-    float toneHz = 20000.0f;   // passa-baixa da saída
-    bool  poly = false;
+    float toneHz = 20000.0f;   // passa-baixa do que o DRIVE acrescenta
     float volumeDb = -3.0f;
     float velo = 0.6f;         // 0..1
 };
@@ -207,17 +208,14 @@ public:
         for (auto& v : voz) { v.ativa = false; v.dt = 1.0 / fs; }
         picoC = std::exp (-1.0 / (0.3 * fs));
         lp1 = lp2 = 0; ic1 = ic2 = 0;
-        volSuave = -1.0;
+        volSuave = -1.0; drvSuave = -1.0;
     }
 
     // dispara uma batida. Devolve a voz (para o LINK copiar as curvas)
     const Voz& noteOn (int nota, float vel, const Ajustes& a)
     {
         Voz* v = nullptr;
-        if (! a.poly)
-        {
-            for (auto& o : voz) if (o.ativa && o.corteVel == 0.0) o.corteVel = 1.0 / (0.003 * fs);
-        }
+        for (auto& o : voz) if (o.ativa && o.corteVel == 0.0) o.corteVel = 1.0 / (0.003 * fs);   // a anterior some em 3 ms
         for (auto& o : voz) if (! o.ativa) { v = &o; break; }
         if (v == nullptr)   // todas ocupadas: a mais velha
         {
@@ -256,14 +254,15 @@ public:
         const double volAlvo = std::pow (10.0, a.volumeDb / 20.0);
         if (volSuave < 0.0) volSuave = volAlvo;
         const double volC = std::exp (-1.0 / (0.01 * fs));
-        // DRIVE: ganho antes do shaper e compensação para um pico de 0,9 sair em ~0,9
-        const double drv = std::clamp ((double) a.drive, 0.0, 1.0);
-        const double pre = std::pow (10.0, drv * 30.0 / 20.0);
-        const double comp = drv > 0.0005 ? 0.9 / std::max (0.3, std::fabs (forma (a.driveTipo, 0.9 * pre))) : 1.0;
-        // TONE: passa-baixa de 2ª ordem (TPT); aberto (≥ 19,5 kHz) = desligado
+        // DRIVE: o knob anda suave (15 ms) e o ganho é recalculado a cada 16 amostras: girar não dá degrau nem estalo
+        const double drvAlvo = std::clamp ((double) a.drive, 0.0, 1.0);
+        if (drvSuave < 0.0) drvSuave = drvAlvo;
+        const double drvC = std::exp (-1.0 / (0.015 * fs));
+        // TONE: passa-baixa de 2ª ordem (TPT) só no que o DRIVE acrescenta; aberto (≥ 19,5 kHz) = não filtra
         const bool tomOn = a.toneHz < 19500.0f;
         const double g = std::tan (pi * std::min ((double) a.toneHz, fs * 0.45) / fs), k = 1.4142135;
         const double a1 = 1.0 / (1.0 + g * (g + k)), a2 = g * a1, a3 = g * a2;
+        double pre = 1.0, comp = 1.0, mol = 0.0;
         float pk = leitura.pico.load (std::memory_order_relaxed);
         for (int i = 0; i < n; ++i)
         {
@@ -275,14 +274,18 @@ public:
                     v.proxima (a, cTom, gLo, gHi, gClick, c, b);
                     x += c + b;
                 }
-            if (drv > 0.0005) x = comp * forma (a.driveTipo, x * pre);
+            drvSuave = drvAlvo + (drvSuave - drvAlvo) * drvC;
+            if ((i & 15) == 0) ganhosDrive (a.driveTipo, drvSuave, pre, comp, mol);
+            // o que o DRIVE acrescenta (ou tira) = saturado − limpo; o TONE filtra só essa diferença
+            double dif = mol > 0.0 ? mol * (comp * forma (a.driveTipo, x * pre) - x) : 0.0;
             if (tomOn)
             {
-                const double v3 = x - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
+                const double v3 = dif - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
                 ic1 = 2 * v1 - ic1; ic2 = 2 * v2 - ic2;
-                x = v2;
+                dif = v2;
             }
             else ic1 = ic2 = 0.0;
+            x += dif;
             volSuave = volAlvo + (volSuave - volAlvo) * volC;
             const float s = (float) (x * volSuave);
             for (int c = 0; c < nch; ++c) out[c][ini + i] = s;
@@ -294,14 +297,32 @@ public:
     bool soando() const { for (auto& v : voz) if (v.ativa) return true; return false; }
     double taxa() const { return fs; }
 
+    // WARM = tanh; HARD = joelho firme (x / (1 + x⁴)^¼: reto até perto de 1 e achata sem a quina do corte seco, que
+    // gerava aliasing áspero); FOLD = seno (dobra a onda quando passa de 1)
     static double forma (int tipo, double x)
     {
         switch (tipo)
         {
-            case driveHard: return std::clamp (x, -1.0, 1.0);
+            case driveHard: { const double x2 = x * x; return x / std::sqrt (std::sqrt (1.0 + x2 * x2)); }
             case driveFold: return std::sin (0.5 * pi * x);
             default:        return std::tanh (x);
         }
+    }
+
+    // ganhos do DRIVE para o knob d (0..1): pre = ganho antes da forma (curva d^1,5 até +18 dB; +12 no FOLD),
+    // comp = um pico de 0,9 sai em ~0,9, mol = quanto do saturado entra (0 → 1 nos primeiros 10% do knob: do 0 para o
+    // 1% não há salto)
+    static void ganhosDrive (int tipo, double d, double& pre, double& comp, double& mol)
+    {
+        d = std::clamp (d, 0.0, 1.0);
+        mol = std::min (1.0, d / 0.1);
+        if (mol < 1.0e-4) { pre = 1.0; comp = 1.0; mol = 0.0; return; }
+        const double maxDb = tipo == driveFold ? 12.0 : 18.0;
+        pre = std::pow (10.0, maxDb * std::pow (d, 1.5) / 20.0);
+        // FOLD: o seno sobe e desce com o ganho; a compensação usa só a subida até o 1º pico (depois fica fixa), senão
+        // ela pularia de ×1 para ×3 a cada dobra enquanto o knob gira
+        if (tipo == driveFold) comp = 0.9 / std::sin (std::min (0.5 * pi * 0.9 * pre, 0.5 * pi));
+        else comp = 0.9 / std::max (0.3, std::fabs (forma (tipo, 0.9 * pre)));
     }
 
     // a batida isolada, para a tela: ataque e corpo separados (antes do DRIVE / TONE / VOLUME), n amostras a fs
@@ -330,6 +351,6 @@ public:
 private:
     double fs = 48000.0;
     Voz voz[maxVozes];
-    double picoC = 0.999, lp1 = 0, lp2 = 0, ic1 = 0, ic2 = 0, volSuave = -1.0;
+    double picoC = 0.999, lp1 = 0, lp2 = 0, ic1 = 0, ic2 = 0, volSuave = -1.0, drvSuave = -1.0;
 };
 } // namespace chute

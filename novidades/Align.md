@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Align`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `align-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.1 — 2026-11-18
+- TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.2.0).
+- LINK mais firme (mesma correção do CHUTE 0.1.2): o kick recriado não some mais na volta do loop, num pulo da régua,
+  com a faixa do kick um bloco na frente ou na exportação, e a ligação não cai mais sozinha (antes caía com 1,5 s
+  sem áudio do CHUTE).
+- Tela no mesmo tamanho do CHUTE e do BAREBASS (1000 × 752, topo e título iguais), com o osciloscópio maior.
+
 ## 0.3.0 — 2026-11-18
 - TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.2.0).
 - LINK com o CHUTE: sem sidechain, o ALIGN acha o CHUTE do mesmo projeto sozinho e recria o corpo de cada batida na

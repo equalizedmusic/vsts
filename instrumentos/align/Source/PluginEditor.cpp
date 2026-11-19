@@ -123,7 +123,7 @@ AlignEditor::AlignEditor (AlignProcessor& p) : AudioProcessorEditor (p), proc (p
     if (auto* c = getConstrainer())
     {
         c->setFixedAspectRatio ((double) baseW / baseH);
-        c->setSizeLimits (700, 487, 2000, 1392);
+        c->setSizeLimits (700, 526, 2000, 1504);
     }
     const int w0 = proc.uiW.load();
     const int w = w0 > 0 ? juce::jlimit (700, 2000, w0) : baseW;
@@ -184,51 +184,55 @@ void AlignEditor::paint (juce::Graphics& g)
     topo (g);
 
     // meio: osciloscópio + zoom (esquerda) e painéis (direita)
-    const juce::Rectangle<float> caixa (16, 68, 704, 446);
+    // 0.3.1: 1000 × 752 com topo de 70, como o CHUTE e o BAREBASS (os três são um time); o osciloscópio ganhou 40
+    const juce::Rectangle<float> caixa (16, 84, 704, 486);
     chapa (g, caixa);
-    osciloscopio (g, { caixa.getX() + 8, caixa.getY() + 30, caixa.getWidth() - 16, 262 });
-    zoom (g, { caixa.getX() + 8, caixa.getY() + 322, caixa.getWidth() - 16, 116 });
+    osciloscopio (g, { caixa.getX() + 8, caixa.getY() + 30, caixa.getWidth() - 16, 302 });
+    zoom (g, { caixa.getX() + 8, caixa.getY() + 362, caixa.getWidth() - 16, 116 });
 
     const float xl = 734, wl = 250;
-    painelLowEnd (g, { xl, 68, wl, 86 });
-    painelCorr (g, { xl, 164, wl, 66 });
-    painelCorrecao (g, { xl, 240, wl, 118 });
-    painelNotas (g, { xl, 368, wl, 146 });
+    painelLowEnd (g, { xl, 84, wl, 86 });
+    painelCorr (g, { xl, 180, wl, 66 });
+    painelCorrecao (g, { xl, 256, wl, 138 });
+    painelNotas (g, { xl, 404, wl, 166 });
 
-    dose (g, { 16, 524, (float) baseW - 32, 66 });
+    dose (g, { 16, 580, (float) baseW - 32, 66 });
     base (g);
 }
 
 void AlignEditor::topo (juce::Graphics& g)
 {
-    const juce::Rectangle<float> r (0, 0, (float) baseW, 54);
-    g.setGradientFill (juce::ColourGradient (cTopoA, 0, 0, cTopoB, 0, 54, false));
+    // 0.3.1: topo de 70 e título 34, como o CHUTE
+    const juce::Rectangle<float> r (0, 0, (float) baseW, 70);
+    g.setGradientFill (juce::ColourGradient (cTopoA, 0, 0, cTopoB, 0, 70, false));
     g.fillRect (r);
     g.setColour (juce::Colours::black);
-    g.drawLine (0, 54, (float) baseW, 54, 1.0f);
+    g.drawLine (0, 70, (float) baseW, 70, 1.0f);
 
     // marca: duas ondas (kick laranja, baixo azul) que se encontram, e o nome com o A roxo
     {
         juce::Path pk, pb;
         for (int i = 0; i <= 40; ++i)
         {
-            const float x = 20 + i * 0.8f, t = i / 40.0f;
-            const float yk = 27 - std::sin (t * 6.2832f * 1.5f) * 9 * (1 - t * 0.4f);
-            const float yb = 27 - std::sin (t * 6.2832f * 1.5f + 2.6f * (1 - t)) * 7;
+            const float x = 18 + i * 0.95f, t = i / 40.0f;
+            const float yk = 35 - std::sin (t * 6.2832f * 1.5f) * 11 * (1 - t * 0.4f);
+            const float yb = 35 - std::sin (t * 6.2832f * 1.5f + 2.6f * (1 - t)) * 8.5f;
             if (i == 0) { pk.startNewSubPath (x, yk); pb.startNewSubPath (x, yb); }
             else { pk.lineTo (x, yk); pb.lineTo (x, yb); }
         }
-        g.setColour (cBaixo); g.strokePath (pb, juce::PathStrokeType (2.0f));
-        g.setColour (cKick);  g.strokePath (pk, juce::PathStrokeType (2.0f));
+        g.setColour (cBaixo); g.strokePath (pb, juce::PathStrokeType (2.2f));
+        g.setColour (cKick);  g.strokePath (pk, juce::PathStrokeType (2.2f));
     }
-    g.setFont (fonte (27.0f, true).withExtraKerningFactor (0.22f));
+    const auto fT = fonte (34.0f, true).withExtraKerningFactor (0.3f);
+    g.setFont (fT);
+    const float wA = largura (fT, "A"), wTot = largura (fT, "ALIGN") - 8;
     g.setColour (cRoxo);
-    g.drawText ("A", juce::Rectangle<float> (62, 10, 24, 34), juce::Justification::centredLeft);
+    g.drawText ("A", juce::Rectangle<float> (66, 12, 40, 42), juce::Justification::centredLeft);
     g.setColour (cSoma);
-    g.drawText ("LIGN", juce::Rectangle<float> (83, 10, 90, 34), juce::Justification::centredLeft);
-    g.setGradientFill (juce::ColourGradient (cKick, 62, 0, cBaixo, 168, 0, false));
-    g.fillRect (62.0f, 43.0f, 106.0f, 2.0f);
-    rotulo (g, { 186, 22, 160, 14 }, "KICK / BASS PHASE");
+    g.drawText ("LIGN", juce::Rectangle<float> (66 + wA, 12, 140, 42), juce::Justification::centredLeft);
+    g.setGradientFill (juce::ColourGradient (cKick, 66, 0, cBaixo, 66 + wTot, 0, false));
+    g.fillRect (66.0f, 56.0f, wTot, 2.5f);
+    rotulo (g, { 66 + wTot + 20, 28, 160, 14 }, "KICK / BASS PHASE");
 
     // chips da direita
     auto& L = proc.engine.leitura;
@@ -240,7 +244,7 @@ void AlignEditor::topo (juce::Graphics& g)
         const auto f = fonte (11.0f).withExtraKerningFactor (0.14f);
         const float w = largura (f, t) + (comLed ? 34.0f : 22.0f);
         x -= w;
-        const juce::Rectangle<float> c (x, 15, w, 24);
+        const juce::Rectangle<float> c (x, 20, w, 32);
         g.setColour (juce::Colour (0xff100e16)); g.fillRoundedRectangle (c, 3.0f);
         g.setColour (cBorda); g.drawRoundedRectangle (c, 3.0f, 1.0f);
         if (comLed) led (g, { c.getX() + 13, c.getCentreY() }, 4.0f, corLed, aceso);
@@ -607,7 +611,7 @@ void AlignEditor::dose (juce::Graphics& g, juce::Rectangle<float> r)
 
 void AlignEditor::base (juce::Graphics& g)
 {
-    const juce::Rectangle<float> r (0, 604, (float) baseW, 92);
+    const juce::Rectangle<float> r (0, 660, (float) baseW, 92);
     g.setGradientFill (juce::ColourGradient (cTopoB, 0, r.getY(), juce::Colour (0xff0f0d15), 0, r.getBottom(), false));
     g.fillRect (r);
     g.setColour (juce::Colours::black); g.drawLine (0, r.getY(), (float) baseW, r.getY(), 1.0f);

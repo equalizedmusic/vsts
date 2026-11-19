@@ -627,7 +627,8 @@ void ChuteEditor::painelMaster (juce::Graphics& g, juce::Rectangle<float> r)
 {
     chapa (g, r);
     tituloLiga (g, r, "MASTER", cAzul, {});
-    seletor (g, { r.getX() + 10, r.getY() + 42, r.getWidth() - 20, 26 }, "poly", { "CHOKE", "POLY" }, cRoxo);
+    // kick é mono: a batida nova sempre corta a anterior (o seletor CHOKE / POLY saiu na 0.1.2)
+    rotulo (g, { r.getX() + 10, r.getY() + 42, r.getWidth() - 20, 26 }, "MONO KICK", cApagado, juce::Justification::centred, 10.5f);
     const float y = r.getY() + 128, w = (r.getWidth() - 12) / 2.0f;
     knob (g, "volume", "VOLUME", { r.getX() + 6 + w * 0.5f, y }, 20.0f, cAzul);
     knob (g, "velo", "VELO", { r.getX() + 6 + w * 1.5f, y }, 18.0f, cAzul);
@@ -802,8 +803,8 @@ void ChuteEditor::menu()
                                      "dizem a nota (KEY · MIDI segue a nota que você toca, FIXED fica na nota do preset, PRESET "
                                      "fica na afinação original); PITCH é onde a queda começa, DROP a velocidade da queda, DECAY o "
                                      "comprimento e TAIL o quanto sobra no fim.\n\n"
-                                     "DRIVE satura (WARM, HARD ou FOLD) e TONE fecha o agudo. CHOKE: a batida nova corta a anterior; "
-                                     "POLY deixa as duas soarem.\n\n"
+                                     "DRIVE satura (WARM, HARD ou FOLD); o TONE fecha o agudo só da saturação (com DRIVE em 0 ele "
+                                     "não muda nada). Kick é mono: a batida nova corta a anterior.\n\n"
                                      "Presets: o menu mostra a nota de cada um. Mexeu em qualquer knob, aparece o * no nome; "
                                      "SAVE AS grava como preset novo no banco USER. Duplo clique no knob volta ao valor do preset.\n\n"
                                      "LINK: o ALIGN e o BAREBASS do mesmo projeto acham o CHUTE sozinhos, sem sidechain.\n\n"

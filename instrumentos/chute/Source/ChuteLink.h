@@ -10,7 +10,9 @@
 // ducking; o ataque não vai). A frequência é constante dentro de cada ms: a fase entre dois pontos é linear e a
 // recriação é exata.
 // Ordem das faixas: se o DAW processar o baixo antes do kick no mesmo bloco, a batida chega um bloco depois e quem lê
-// recria só a parte que falta (a posição continua exata). Tudo é medida: leitura rasgada é detectada (seqlock) e
+// recria só a parte que falta (a posição continua exata); se a faixa do kick andar na frente, a batida espera o bloco
+// dela. 0.1.2: cada batida é ancorada uma vez (linha do tempo, conferida pelo relógio) e depois envelhece bloco a bloco
+// (ancora / avanca), e a vaga só cai depois de 20 s sem áudio: o LINK não "pisca" mais. Tudo é medida: leitura rasgada é detectada (seqlock) e
 // descartada. Versão do formato em kVersao (mudou = não liga).
 #include <algorithm>
 #include <atomic>
@@ -71,7 +73,10 @@ static_assert (std::atomic<uint32_t>::is_always_lock_free && std::atomic<int64_t
 // Abre (cria se não existe) a área deste processo (ChuteLink.cpp). nullptr = não deu (o plugin segue sem link).
 Area* area();
 
-constexpr int64_t vivoAteUs = 1500000;   // vaga sem áudio há mais de 1,5 s = CHUTE parado / apagado
+// vaga sem áudio há mais de 20 s = CHUTE travado (o CHUTE apagado libera a vaga na hora, pelo dono). 0.1.2: era 1,5 s e
+// o LINK caía sozinho quando o DAW deixava a faixa do kick um instante sem processar (o ALIGN e o BAREBASS "perdiam" o
+// CHUTE e voltavam logo depois, sem as batidas que chegaram no meio)
+constexpr int64_t vivoAteUs = 20000000;
 
 inline bool viva (const Vaga& v, int64_t agora)
 {
@@ -163,6 +168,11 @@ struct Local
     bool valida = false;
     int64_t pos = 0; double wallMs = 0; bool tocando = false;
     int len = 0; float fs = 48000, notaMidi = 0, fHz = 0, sinal = 1, t0 = 0;
+    // 0.1.2: ÂNCORA. No 1º bloco em que quem lê vê a batida, o início dela é calculado UMA vez (em amostras a partir do
+    // começo do bloco); depois ele só anda bloco a bloco (−n), igual ao som do kick, que continua tocando aconteça o que
+    // acontecer com a linha do tempo (volta do loop, pulo na régua, exportação mais rápida que o tempo real).
+    bool ancorada = false;
+    double ini = 0.0;
     float fase[NPT] {}, amp[NPT] {};
 
     // corpo no instante t (s desde o início da batida)
@@ -233,7 +243,7 @@ public:
             {
                 const uint32_t s0 = b.seq.load (std::memory_order_acquire);
                 if (s0 & 1u) continue;
-                l.pos = b.pos; l.wallMs = b.wallMs; l.tocando = b.tocando != 0;
+                l.pos = b.pos; l.wallMs = b.wallMs; l.tocando = b.tocando != 0; l.ancorada = false;
                 l.len = std::clamp ((int) b.len, 0, NPT);
                 l.fs = b.fs; l.notaMidi = b.notaMidi; l.fHz = b.fHz; l.sinal = b.sinal; l.t0 = b.t0;
                 std::memcpy (l.fase, b.fase, sizeof (float) * (size_t) l.len);
@@ -249,40 +259,74 @@ public:
 
     // início da batida l, em amostras a partir do começo do bloco atual (taxa fs). posBloco: amostra da linha do
     // tempo no início do bloco (vale se tocando); wallBlocoMs: relógio no início do bloco
+    // 0.1.2: a linha do tempo (exata) só vale se concordar com o relógio (até 150 ms). Discordou = o DAW pulou no tempo
+    // (volta do loop, clique na régua): aí manda o relógio, que diz o que de fato está soando agora na faixa do kick.
     static double inicio (const Local& l, double fs, bool tocando, int64_t posBloco, double wallBlocoMs)
     {
-        if (tocando && l.tocando) return ((double) l.pos / (double) l.fs - (double) posBloco / fs) * fs;
-        return (l.wallMs - wallBlocoMs) * 0.001 * fs;
+        const double w = (l.wallMs - wallBlocoMs) * 0.001 * fs;
+        if (tocando && l.tocando)
+        {
+            const double t = ((double) l.pos / (double) l.fs - (double) posBloco / fs) * fs;
+            if (std::fabs (t - w) <= 0.15 * fs) return t;
+        }
+        return w;
     }
 
-    // soma o corpo das batidas no bloco (out já zerado). Batida que começaria DEPOIS do fim do bloco é de outra
-    // passada do loop (o DAW voltou no tempo): some.
-    void render (float* out, int n, double fs, bool tocando, int64_t posBloco, double wallBlocoMs)
+    // começo de cada bloco (depois do sincroniza): ancora as batidas novas. Batida que ainda vai começar (a faixa do kick
+    // andou um bloco na frente) fica guardada para o bloco dela; só some se for mais de 2 s no futuro (0.1.2: antes ela
+    // era jogada fora como "outra passada do loop" e o kick sumia para quem lê)
+    void ancora (double fs, bool tocando, int64_t posBloco, double wallBlocoMs)
     {
         for (auto& l : local)
-        {
-            if (! l.valida) continue;
-            const double ini = inicio (l, fs, tocando, posBloco, wallBlocoMs);
-            if (ini >= (double) n + 1.0) { if (tocando && l.tocando) l.valida = false; continue; }
-            if (ini + l.duracao() * fs < 0.0) { l.valida = false; continue; }
-            const int i0 = std::max (0, (int) std::ceil (ini));
-            for (int i = i0; i < n; ++i) out[i] += (float) l.corpo ((i - ini) / fs);
-        }
+            if (l.valida && ! l.ancorada)
+            {
+                l.ini = inicio (l, fs, tocando, posBloco, wallBlocoMs);
+                l.ancorada = true;
+                if (l.ini > 2.0 * fs) l.valida = false;
+            }
     }
 
-    // a batida que soa no instante i do bloco (a mais recente que já começou): para o BAREBASS nascer em fase
-    const Local* soando (int i, double fs, bool tocando, int64_t posBloco, double wallBlocoMs, double& t) const
+    // fim de cada bloco (ou trecho) de n amostras: as batidas envelhecem; a que já acabou sai
+    void avanca (int n, double fs)
+    {
+        for (auto& l : local)
+            if (l.valida && l.ancorada)
+            {
+                l.ini -= n;
+                if (l.ini + l.duracao() * fs < 0.0) l.valida = false;
+            }
+    }
+
+    // soma o corpo das batidas no trecho de n amostras (out já zerado) e avança. posBloco / wallBlocoMs = início do trecho
+    void render (float* out, int n, double fs, bool tocando, int64_t posBloco, double wallBlocoMs)
+    {
+        ancora (fs, tocando, posBloco, wallBlocoMs);
+        for (auto& l : local)
+        {
+            if (! l.valida || l.ini >= (double) n) continue;
+            const int i0 = std::max (0, (int) std::ceil (l.ini));
+            for (int i = i0; i < n; ++i) out[i] += (float) l.corpo ((i - l.ini) / fs);
+        }
+        avanca (n, fs);
+    }
+
+    // a batida que soa no instante i do bloco (a mais recente que já começou): para o BAREBASS nascer em fase.
+    // Vale entre ancora() e avanca() do bloco.
+    const Local* soando (int i, double fs, double& t) const
     {
         const Local* melhor = nullptr; double tm = 1e30;
         for (auto& l : local)
         {
-            if (! l.valida) continue;
-            const double dt = (i - inicio (l, fs, tocando, posBloco, wallBlocoMs)) / fs;
+            if (! l.valida || ! l.ancorada) continue;
+            const double dt = (i - l.ini) / fs;
             if (dt >= 0.0 && dt < l.duracao() && dt < tm) { tm = dt; melhor = &l; }
         }
         t = tm;
         return melhor;
     }
+
+    // esquece as batidas guardadas (quem lê ficou blocos sem chamar render / avanca: as âncoras estão velhas)
+    void esquece() { for (auto& l : local) l.valida = false; }
 
     bool ligado() const { return slot >= 0; }
     int vaga() const { return slot; }

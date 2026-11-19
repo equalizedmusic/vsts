@@ -21,7 +21,7 @@ public:
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
-    static constexpr int baseW = 1000, baseH = 606;
+    static constexpr int baseW = 1000, baseH = 752;   // 0.4.1: mesmo tamanho do CHUTE e do ALIGN (era 606)
 
 private:
     struct Knob { juce::String id; juce::Point<float> c; float r; };
@@ -31,6 +31,7 @@ private:
     float escala() const { return (float) getWidth() / (float) baseW; }
 
     void topo (juce::Graphics&);
+    void rodape (juce::Graphics&);
     void painelOnda (juce::Graphics&, juce::Rectangle<float> r);
     void painelCurvaFiltro (juce::Graphics&, juce::Rectangle<float> r);
     void painelCurvaEnv (juce::Graphics&, juce::Rectangle<float> r);

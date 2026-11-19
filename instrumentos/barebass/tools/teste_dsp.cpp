@@ -310,6 +310,58 @@ int main()
         confere (std::abs (db (forte) - db (igual)) < 0.1, "VELO 0%: velocity não muda nada");
     }
 
+    // 13) 0.4.1: o unHUNF só tira os harmônicos graves, o resto da onda sai IDÊNTICO (fase intacta). Na 0.4.0 era um
+    //     crossover de 8ª ordem: o volume batia, mas a fase dos harmônicos perto do corte girava e a onda saía torta.
+    {
+        std::printf ("13) unHUNF não entorta a onda acima do grave\n");
+        auto rende = [&] (float h)
+        {
+            Ajustes a = init(); a.liga[1] = false; a.ligaSub = false; a.nivel[0] = 0.3f; a.onda[0] = ondaSaw; a.hunf = h;
+            e->reset();
+            return toca (*e, a, (int) fs, { { 0, 29, true } }).s;   // F1 43,7 Hz, nota longa
+        };
+        auto hp = [&] (const std::vector<float>& x, double fc)   // 4 polos, 24 dB/oitava
+        {
+            const double c = 1.0 - std::exp (-2.0 * pi * fc / fs);
+            std::vector<double> y (x.size()); double l[4] {};
+            for (size_t i = 0; i < x.size(); ++i) { double s = x[i]; for (auto& v : l) { v += c * (s - v); s -= v; } y[i] = s; }
+            return y;
+        };
+        const auto y0 = rende (0.0f), y5 = rende (0.5f);
+        std::vector<float> d (y0.size()); for (size_t i = 0; i < d.size(); ++i) d[i] = y5[i] - y0[i];
+        const auto hd = hp (d, 150.0), h0 = hp (y0, 150.0);
+        double ed = 0, e0 = 0;
+        for (size_t i = (size_t) (0.6 * fs); i < d.size(); ++i) { ed += hd[i] * hd[i]; e0 += h0[i] * h0[i]; }
+        const double rel = 10 * std::log10 (ed / e0 + 1e-30);
+        std::printf ("   o que o unHUNF 50%% muda acima de 150 Hz: %.1f dB (relativo à onda)\n", rel);
+        confere (rel < -40.0, "acima de 150 Hz a onda sai igual (fase intacta)");
+    }
+
+    // 14) KICK LOCK (0.4.1): trava a camada mais perto da altura do kick, entra sem clique; kick longe = nota normal
+    {
+        std::printf ("14) KICK LOCK\n");
+        Ajustes a; a.onda[0] = ondaSaw; a.oitava[0] = 0; a.onda[1] = ondaSqr; a.oitava[1] = -1; a.oitavaSub = -1;
+        a.cutoff = 600; a.envAmt = 0.3f; a.hunf = 0.0f;
+        auto pulo = [&] (double faseK, double fK, uint32_t& travou)
+        {
+            e->reset(); toca (*e, a, 2400, {});
+            const uint32_t t0 = e->leitura.travadas.load();
+            e->noteOn (30, a, 1.0f, faseK, fK);   // F#1 46,2 Hz
+            auto r = toca (*e, a, (int) (fs * 0.1), {});
+            travou = e->leitura.travadas.load() - t0;
+            double m = 0; for (int i = 1; i < 96; ++i) m = std::max (m, (double) std::fabs (r.s[i] - r.s[i - 1]));   // 2 ms
+            double ms = 0; for (int i = 2400; i < 4800; ++i) ms = std::max (ms, (double) std::fabs (r.s[i] - r.s[i - 1]));
+            return m / ms;
+        };
+        uint32_t tv = 0;
+        const double pTrava = pulo (0.37, 46.2, tv);
+        confere (tv == 1, "kick na altura do OSC 1: trava");
+        std::printf ("   maior salto nos 2 ms do começo / maior salto com a nota soando: %.2f\n", pTrava);
+        confere (pTrava < 1.5, "nota travada entra sem clique");
+        pulo (0.37, 190.0, tv);
+        confere (tv == 0, "kick ainda na queda do pitch (190 Hz): nota nasce normal");
+    }
+
     std::printf (falhas ? "\n%d FALHA(S)\n" : "\nTUDO OK\n", falhas);
     return falhas ? 1 : 0;
 }

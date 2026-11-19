@@ -84,23 +84,107 @@ int main (int argc, char** argv)
         const double curto = fim (toca (a, -1, 48000.0, 1.2), 48000.0);
         confere (curto < base * 0.9, ("TAIL −40: " + std::to_string ((int) curto) + " ms").c_str());
     }
-    // 4) CHOKE corta a anterior (depois de 3 ms sobra só a batida nova); POLY deixa as duas soando
+    // 4) kick mono: a batida nova corta a anterior (depois de 3 ms sobra só a batida nova)
     {
         Ajustes a; padraoDoModelo (a, 19); a.modo = modoPreset;
         std::vector<float> so (48000, 0.0f);
         { Engine e; e.prepare (48000.0); float* p = so.data() + 2400; e.noteOn (-1, 1.0f, a); e.render (&p, 1, 0, 48000 - 2400, a); }
-        for (int poly = 0; poly < 2; ++poly)
+        Engine e; e.prepare (48000.0);
+        std::vector<float> o (48000, 0.0f); float* p = o.data();
+        e.noteOn (-1, 1.0f, a); e.render (&p, 1, 0, 2400, a);   // 50 ms
+        e.noteOn (-1, 1.0f, a); e.render (&p, 1, 2400, 48000 - 2400, a);
+        double err = 0, en = 0;
+        for (int i = 2400 + 200; i < 48000; ++i) { err += (o[i] - so[i]) * (o[i] - so[i]); en += so[i] * (double) so[i]; }
+        const double db = 10 * std::log10 (err / en + 1e-30);
+        confere (db < -60.0, ("CHOKE: sobra só a batida nova (" + std::to_string (db) + " dB)").c_str());
+    }
+    // 4b) DRIVE: girar o knob não estala; TONE com DRIVE 0 não muda nada; TONE fecha só o agudo da saturação
+    {
+        // blocos de 256 amostras, o knob mudando de 1% em 1% a cada bloco (como a mão girando)
+        auto rendeDrive = [] (Ajustes a, int tipo, int modoDrive, std::vector<float>& o)
         {
-            a.poly = poly == 1;
+            a.driveTipo = tipo;
             Engine e; e.prepare (48000.0);
-            std::vector<float> o (48000, 0.0f); float* p = o.data();
-            e.noteOn (-1, 1.0f, a); e.render (&p, 1, 0, 2400, a);   // 50 ms
-            e.noteOn (-1, 1.0f, a); e.render (&p, 1, 2400, 48000 - 2400, a);
-            double err = 0, en = 0;
-            for (int i = 2400 + 200; i < 48000; ++i) { err += (o[i] - so[i]) * (o[i] - so[i]); en += so[i] * (double) so[i]; }
-            const double db = 10 * std::log10 (err / en + 1e-30);
-            if (poly) confere (db > -20.0, ("POLY: a 1ª batida segue soando (" + std::to_string (db) + " dB)").c_str());
-            else      confere (db < -60.0, ("CHOKE: sobra só a batida nova (" + std::to_string (db) + " dB)").c_str());
+            o.assign (48000, 0.0f);
+            e.noteOn (-1, 1.0f, a);
+            for (int b = 0; b < 48000; b += 256)
+            {
+                if (modoDrive == 0) a.drive = 0.0f;
+                else if (modoDrive == 1) a.drive = 1.0f;
+                else a.drive = std::min (1.0f, std::floor (b / 256.0f) * 0.01f);   // 0 → 100% em ~0,5 s
+                float* p = o.data();
+                e.render (&p, 1, b, std::min (256, 48000 - b), a);
+            }
+        };
+        // "aspereza" = maior 2ª diferença depois do ataque (a 1ª batida do corpo já passou)
+        auto aspero = [] (const std::vector<float>& o)
+        {
+            double m = 0;
+            for (int i = 2400; i < (int) o.size(); ++i) m = std::max (m, (double) std::fabs (o[i] - 2 * o[i - 1] + o[i - 2]));
+            return m;
+        };
+        Ajustes a; padraoDoModelo (a, 37); a.modo = modoPreset; a.decayMs = 900.0f; a.volumeDb = 0.0f; a.velo = 0.0f;
+        const char* nomes[] = { "WARM", "HARD", "FOLD" };
+        for (int tipo = 0; tipo < 3; ++tipo)
+        {
+            std::vector<float> o0, o1, og;
+            rendeDrive (a, tipo, 0, o0); rendeDrive (a, tipo, 1, o1); rendeDrive (a, tipo, 2, og);
+            const double ref = std::max (aspero (o0), aspero (o1)), gira = aspero (og);
+            confere (gira <= ref * 1.15, (std::string ("DRIVE ") + nomes[tipo] + " girando 0→100%: aspereza " + std::to_string (gira)
+                                          + " (parado: " + std::to_string (ref) + ")").c_str());
+        }
+        // quanto a saturação muda o som (energia de saturado − limpo, relativa ao limpo), para comparar versões
+        for (int tipo = 0; tipo < 3; ++tipo)
+        {
+            Ajustes b = a; b.driveTipo = tipo; b.drive = 0.0f;
+            const auto limpo = toca (b, -1, 48000.0, 0.6);
+            std::printf ("      %s:", nomes[tipo]);
+            for (float d : { 0.25f, 0.5f, 1.0f })
+            {
+                b.drive = d;
+                const auto x = toca (b, -1, 48000.0, 0.6);
+                double e = 0, en = 0;
+                for (size_t i = 0; i < x.size(); ++i) { e += (x[i] - limpo[i]) * (double) (x[i] - limpo[i]); en += limpo[i] * (double) limpo[i]; }
+                std::printf ("  %d%% %+.1f dB", (int) (d * 100), 10 * std::log10 (e / en + 1e-30));
+            }
+            std::printf ("\n");
+        }
+        // TONE com DRIVE 0: idêntico ao TONE aberto
+        {
+            Ajustes b = a; b.drive = 0.0f; b.toneHz = 20000.0f;
+            const auto x = toca (b, -1, 48000.0, 0.6);
+            b.toneHz = 1000.0f;
+            const auto y = toca (b, -1, 48000.0, 0.6);
+            double d = 0; for (size_t i = 0; i < x.size(); ++i) d = std::max (d, (double) std::fabs (x[i] - y[i]));
+            confere (d < 1.0e-6, ("TONE 1 kHz com DRIVE 0 não muda o som (diferença " + std::to_string (d) + ")").c_str());
+        }
+        // TONE com DRIVE 60%: o grave (< 150 Hz) fica igual ao TONE aberto e o agudo (> 3 kHz) cai
+        {
+            auto banda = [] (const std::vector<float>& x, double fc, bool alta)
+            {
+                const double c = 1.0 - std::exp (-2.0 * 3.141592653589793 * fc / 48000.0);
+                double l[4] {}, en = 0;
+                for (float v : x)
+                {
+                    double s = v;
+                    for (auto& e : l) { e += c * (s - e); s = alta ? s - e : e; }   // 4 polos (24 dB/oitava)
+                    en += s * s;
+                }
+                return 10 * std::log10 (en + 1e-30);
+            };
+            Ajustes b = a; b.drive = 0.0f; b.driveTipo = driveHard;
+            const auto limpo = toca (b, -1, 48000.0, 0.6);
+            b.drive = 0.6f; b.toneHz = 20000.0f;
+            const auto x = toca (b, -1, 48000.0, 0.6);
+            b.toneHz = 1500.0f;
+            const auto y = toca (b, -1, 48000.0, 0.6);
+            std::vector<float> sx (x.size()), sy (y.size());   // o que a saturação acrescenta
+            for (size_t i = 0; i < x.size(); ++i) { sx[i] = x[i] - limpo[i]; sy[i] = y[i] - limpo[i]; }
+            const double dg = banda (y, 150, false) - banda (x, 150, false), da = banda (sy, 3000, true) - banda (sx, 3000, true);
+            const double dl = banda (y, 3000, true) - banda (limpo, 3000, true);
+            confere (std::fabs (dg) < 0.5, ("TONE 1,5 kHz (DRIVE 60%): grave muda " + std::to_string (dg) + " dB").c_str());
+            confere (da < -12.0, ("TONE 1,5 kHz (DRIVE 60%): agudo da saturação cai " + std::to_string (da) + " dB").c_str());
+            std::printf ("      (agudo da saída com TONE 1,5 kHz vs. kick limpo: %+.1f dB: o click do preset fica)\n", dl);
         }
     }
     // 5) LINK: a fase publicada recria o corpo igual ao motor (CLICK desligado)

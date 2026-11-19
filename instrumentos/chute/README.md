@@ -31,8 +31,8 @@ ALIGN e o BAREBASS do mesmo projeto enxergam cada batida sem sidechain. Latênci
 
   Knobs: TUNE (±12 semitons), PITCH (onde a queda começa), DROP (velocidade da queda), DECAY (comprimento) e TAIL
   (quanto sobra no fim).
-- **DRIVE**: WARM, HARD ou FOLD, com DRIVE e TONE (fecha o agudo).
-- **MASTER**: CHOKE (a batida nova corta a anterior) ou POLY (as duas soam), VOLUME e VELO.
+- **DRIVE**: WARM, HARD ou FOLD, com DRIVE e TONE (fecha o agudo só da saturação; com DRIVE em 0 não muda nada).
+- **MASTER**: VOLUME e VELO. Kick é mono: a batida nova sempre corta a anterior (o CHOKE / POLY saiu na 0.1.2).
 - **LINK**: cada batida vai para o ALIGN (0.3.0) e o BAREBASS (0.4.0) do mesmo projeto, sem sidechain. No BAREBASS,
   o KICK LOCK faz cada nota do baixo nascer com o sub em fase com o corpo do kick. O rodapé mostra
   LINK · ALIGN / BAREBASS ou LINK OFF.
@@ -46,7 +46,7 @@ ALIGN e o BAREBASS do mesmo projeto enxergam cada batida sem sidechain. Latênci
 
 ## Código
 
-- `Source/Dsp.h`: o motor (CLICK, BODY, DRIVE, CHOKE / POLY), em C++ puro (sem JUCE).
+- `Source/Dsp.h`: o motor (CLICK, BODY, DRIVE + TONE só na saturação), em C++ puro (sem JUCE).
 - `Source/PluginProcessor.cpp`: parâmetros, presets (fábrica e USER) e a publicação das batidas no LINK.
 - `Source/PluginEditor.cpp`: a tela.
 - `Source/ChuteLink.h` e `Source/ChuteLink.cpp`: o LINK. O CHUTE escreve cada batida numa memória compartilhada do

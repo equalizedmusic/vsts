@@ -66,6 +66,7 @@ private:
     chutelink::Leitor link;
     std::vector<float> kickLink;
     int64_t semScDesde = 1 << 30;   // amostras desde a última vez que o sidechain teve som
+    bool linkNoBlocoAnterior = false;   // o bloco anterior passou pelo render do LINK (senão as âncoras estão velhas)
     juce::String prefNome;
     std::atomic<bool> prefNovo { false };
     juce::SpinLock prefTrava;

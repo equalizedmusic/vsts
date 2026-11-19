@@ -133,7 +133,7 @@ BarebassEditor::BarebassEditor (BarebassProcessor& p) : AudioProcessorEditor (p)
     if (auto* c = getConstrainer())
     {
         c->setFixedAspectRatio ((double) baseW / baseH);
-        c->setSizeLimits (700, 424, 2000, 1212);
+        c->setSizeLimits (700, 526, 2000, 1504);
     }
     const int w0 = proc.uiW.load();
     const int w = w0 > 0 ? juce::jlimit (700, 2000, w0) : baseW;
@@ -209,17 +209,35 @@ void BarebassEditor::paint (juce::Graphics& g)
     knobs.clear();
     botoes.clear();
 
+    // 0.4.1: mesma grade do CHUTE (1000 × 752, topo de 70, telas a partir de 84, rodapé em 700)
     topo (g);
-    painelOnda (g, { 16, 64, 498, 218 });
-    painelCurvaFiltro (g, { 524, 64, 244, 218 });
-    painelCurvaEnv (g, { 778, 64, 206, 218 });
-    painelOsc (g, { 16, 292, 316, 136 }, 0);
-    painelOsc (g, { 342, 292, 316, 136 }, 1);
-    painelSub (g, { 668, 292, 316, 136 });
-    painelFiltro (g, { 16, 438, 280, 152 });
-    painelEnv (g, { 306, 438, 300, 152 });
-    painelHunf (g, { 616, 438, 214, 152 });
-    painelMaster (g, { 840, 438, 144, 152 });
+    painelOnda (g, { 16, 84, 498, 290 });
+    painelCurvaFiltro (g, { 524, 84, 244, 290 });
+    painelCurvaEnv (g, { 778, 84, 206, 290 });
+    painelOsc (g, { 16, 384, 316, 136 }, 0);
+    painelOsc (g, { 342, 384, 316, 136 }, 1);
+    painelSub (g, { 668, 384, 316, 136 });
+    painelFiltro (g, { 16, 530, 280, 160 });
+    painelEnv (g, { 306, 530, 300, 160 });
+    painelHunf (g, { 616, 530, 214, 160 });
+    painelMaster (g, { 840, 530, 144, 160 });
+    rodape (g);
+}
+
+void BarebassEditor::rodape (juce::Graphics& g)
+{
+    const bool lk = proc.linkOn.load(), trava = real ("kicklock") > 0.5f;
+    juce::String t1, t2;
+    if (lk && trava)  { t1 = u8 ("KICK LOCK: cada nota nasce em fase com o corpo do CHUTE (sem sidechain)."); t2 = u8 ("Trava a camada do baixo que está na altura do kick; kick ainda na queda do pitch = a nota nasce normal."); }
+    else if (lk)      { t1 = u8 ("CHUTE achado pelo LINK. KICK LOCK desligado: clique no chip KICK LOCK para ligar."); t2 = u8 ("Com ele ligado, cada nota nasce em fase com o corpo do kick."); }
+    else              { t1 = u8 ("Sem CHUTE no projeto: o BAREBASS toca normal."); t2 = u8 ("Com o CHUTE no kick do mesmo projeto, o BAREBASS acha o kick sozinho (LINK), sem sidechain."); }
+    g.setColour (lk ? cVerde : cTexto); g.setFont (fonte (13.0f, true));
+    g.drawText (t1, juce::Rectangle<float> (16, 700, 760, 18), juce::Justification::centredLeft);
+    g.setColour (cApagado); g.setFont (fonte (11.5f));
+    g.drawText (t2, juce::Rectangle<float> (16, 721, 760, 16), juce::Justification::centredLeft);
+    led (g, { 806, 709 }, 3.5f, cVerde, lk);
+    rotulo (g, { 814, 702, 170, 14 }, lk ? u8 ("LINK · CHUTE") : u8 ("LINK OFF"), lk ? cTexto : cApagado, juce::Justification::centredRight);
+    rotulo (g, { 790, 722, 194, 14 }, "LATENCY 0 SAMPLES", cApagado, juce::Justification::centredRight);
 }
 
 // título com LED que liga / desliga (clique no LED ou no nome)
@@ -245,35 +263,36 @@ void BarebassEditor::apaga (juce::Graphics& g, juce::Rectangle<float> r)
 
 void BarebassEditor::topo (juce::Graphics& g)
 {
-    const juce::Rectangle<float> r (0, 0, (float) baseW, 54);
-    g.setGradientFill (juce::ColourGradient (cTopoA, 0, 0, cTopoB, 0, 54, false));
+    // 0.4.1: topo de 70 e título 34, como o CHUTE (os três são um time)
+    const juce::Rectangle<float> r (0, 0, (float) baseW, 70);
+    g.setGradientFill (juce::ColourGradient (cTopoA, 0, 0, cTopoB, 0, 70, false));
     g.fillRect (r);
     g.setColour (juce::Colours::black);
-    g.drawLine (0, 54, (float) baseW, 54, 1.0f);
+    g.drawLine (0, 70, (float) baseW, 70, 1.0f);
 
     // marca: a serra (laranja) entra no filtro e sai redonda (verde)
     {
         juce::Path ps, pv;
-        ps.startNewSubPath (16, 33); ps.lineTo (24, 19); ps.lineTo (24, 33); ps.lineTo (32, 19); ps.lineTo (32, 33);
+        ps.startNewSubPath (16, 43); ps.lineTo (24, 27); ps.lineTo (24, 43); ps.lineTo (32, 27); ps.lineTo (32, 43);
         for (int i = 0; i <= 16; ++i)
         {
-            const float x = 34 + i * 1.2f, y = 26 - std::sin (i / 16.0f * 6.2832f) * 7.0f;
+            const float x = 34 + i * 1.2f, y = 35 - std::sin (i / 16.0f * 6.2832f) * 8.0f;
             if (i == 0) pv.startNewSubPath (x, y); else pv.lineTo (x, y);
         }
-        g.setColour (cLaranja); g.strokePath (ps, juce::PathStrokeType (1.8f));
-        g.setColour (cVerde); g.strokePath (pv, juce::PathStrokeType (2.4f));
+        g.setColour (cLaranja); g.strokePath (ps, juce::PathStrokeType (2.0f));
+        g.setColour (cVerde); g.strokePath (pv, juce::PathStrokeType (2.6f));
     }
-    const auto fT = fonte (27.0f, true).withExtraKerningFactor (0.22f);
+    const auto fT = fonte (34.0f, true).withExtraKerningFactor (0.3f);
     g.setFont (fT);
     g.setColour (cRoxo);
-    g.drawText ("BARE", juce::Rectangle<float> (64, 10, 90, 34), juce::Justification::centredLeft);
+    g.drawText ("BARE", juce::Rectangle<float> (66, 12, 140, 42), juce::Justification::centredLeft);
     const float wB = largura (fT, "BARE");
     g.setColour (cBranco);
-    g.drawText ("BASS", juce::Rectangle<float> (64 + wB, 10, 100, 34), juce::Justification::centredLeft);
-    const float wTot = largura (fT, "BAREBASS") - 5;
-    g.setGradientFill (juce::ColourGradient (cRoxo, 64, 0, cVerde, 64 + wTot, 0, false));
-    g.fillRect (64.0f, 43.0f, wTot, 2.0f);
-    rotulo (g, { 64 + wTot + 18, 22, 200, 14 }, "SIMPLE BASS SYNTH");
+    g.drawText ("BASS", juce::Rectangle<float> (66 + wB, 12, 140, 42), juce::Justification::centredLeft);
+    const float wTot = largura (fT, "BAREBASS") - 8;
+    g.setGradientFill (juce::ColourGradient (cRoxo, 66, 0, cVerde, 66 + wTot, 0, false));
+    g.fillRect (66.0f, 56.0f, wTot, 2.5f);
+    rotulo (g, { 66 + wTot + 20, 28, 200, 14 }, "SIMPLE BASS SYNTH");
 
     // chips da direita
     auto& L = proc.engine().leitura;
@@ -283,7 +302,7 @@ void BarebassEditor::topo (juce::Graphics& g)
         const auto f = fonte (11.0f).withExtraKerningFactor (0.14f);
         const float w = largura (f, t) + (comLed ? 34.0f : 22.0f);
         x -= w;
-        const juce::Rectangle<float> c (x, 15, w, 24);
+        const juce::Rectangle<float> c (x, 20, w, 32);
         g.setColour (juce::Colour (0xff100e16)); g.fillRoundedRectangle (c, 3.0f);
         g.setColour (cBorda); g.drawRoundedRectangle (c, 3.0f, 1.0f);
         if (comLed) led (g, { c.getX() + 13, c.getCentreY() }, 4.0f, corLed, aceso);
@@ -302,7 +321,8 @@ void BarebassEditor::topo (juce::Graphics& g)
         const bool lk = proc.linkOn.load();
         const bool trava = real ("kicklock") > 0.5f;
         const float kn = proc.kickNota.load();
-        const juce::String kt = lk && kn > 0.0f ? juce::String (nn[((int) std::lround (kn)) % 12]) : juce::String ("NO CHUTE");
+        // ligado mas o kick ainda não tocou = "CHUTE" (antes mostrava NO CHUTE e parecia que o LINK tinha caído)
+        const juce::String kt = ! lk ? juce::String ("NO CHUTE") : (kn > 0.0f ? juce::String (nn[((int) std::lround (kn)) % 12]) : juce::String ("CHUTE"));
         rKick = chip ("KICK LOCK " + u8 ("· ") + kt, cLaranja, lk && trava, true);
     }
 }
@@ -821,8 +841,9 @@ void BarebassEditor::menu()
                                      "MONO redispara o envelope a cada nota; LEGATO não redispara quando as notas se encostam. "
                                      "GLIDE desliza de uma nota para a outra. VELO: quanto a força da nota (velocity) muda "
                                      "o volume e o quanto o ENV abre; em 0 toda nota sai igual.\n\n"
-                                     "KICK LOCK (com o CHUTE no kick do mesmo projeto, sem sidechain): cada nota nasce com o SUB "
-                                     "em fase com o corpo do kick naquele instante, e o chip mostra a nota do kick. Clique no "
-                                     "chip para ligar ou desligar. Sem CHUTE no projeto, nada muda."));
+                                     "KICK LOCK (com o CHUTE no kick do mesmo projeto, sem sidechain): cada nota nasce com a "
+                                     "camada do baixo que está na altura do kick (SUB, OSC 1 ou OSC 2) em fase com o corpo dele "
+                                     "naquele instante, e o chip mostra a nota do kick. Kick ainda na queda do pitch = a nota "
+                                     "nasce normal. Clique no chip para ligar ou desligar. Sem CHUTE no projeto, nada muda."));
                      });
 }

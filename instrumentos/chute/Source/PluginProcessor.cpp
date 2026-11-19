@@ -41,7 +41,6 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<C> (juce::ParameterID { "drivetype", 1 }, "Drive Type", juce::StringArray { "WARM", "HARD", "FOLD" }, 0));
     l.add (std::make_unique<P> (juce::ParameterID { "drive", 1 }, "Drive", faixa (0, 100, 1), 0.0f, A().withLabel ("%")));
     l.add (std::make_unique<P> (juce::ParameterID { "tone", 1 }, "Tone", faixa (1000, 20000, 1, 6000), 20000.0f, A().withLabel ("Hz")));
-    l.add (std::make_unique<C> (juce::ParameterID { "poly", 1 }, "Voice", juce::StringArray { "CHOKE", "POLY" }, 0));
     l.add (std::make_unique<P> (juce::ParameterID { "volume", 1 }, "Volume", faixa (-24, 6, 0.1f), -3.0f, A().withLabel ("dB")));
     l.add (std::make_unique<P> (juce::ParameterID { "velo", 1 }, "Velocity", faixa (0, 100, 1), 60.0f, A().withLabel ("%")));
     return l;
@@ -86,7 +85,6 @@ chute::Ajustes ChuteProcessor::ajustes() const
     a.modo = iv ("mode"); a.tune = v ("tune");
     a.pitchHz = v ("pitch"); a.dropMs = v ("drop"); a.decayMs = v ("decay"); a.tailDb = v ("tail");
     a.driveTipo = iv ("drivetype"); a.drive = v ("drive") * 0.01f; a.toneHz = v ("tone");
-    a.poly = iv ("poly") == 1;
     a.volumeDb = v ("volume"); a.velo = v ("velo") * 0.01f;
     return a;
 }

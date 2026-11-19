@@ -19,7 +19,7 @@ public:
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseUp (const juce::MouseEvent&) override;
 
-    static constexpr int baseW = 1000, baseH = 696;
+    static constexpr int baseW = 1000, baseH = 752;   // 0.3.1: mesmo tamanho do CHUTE e do BAREBASS (era 696)
 
 private:
     void timerCallback() override;

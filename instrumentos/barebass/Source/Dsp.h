@@ -189,8 +189,8 @@ public:
         for (auto& c : conta) c = 0;
         envF.zera(); amp = 0.0; gateOn = false;
         svf[0].zera(); svf[1].zera();
-        for (auto& f : hpH) f.zera();
-        for (auto& f : lpH) f.zera();
+        nTira[0] = nTira[1] = 0;
+        rampa = 1.0; rampaPasso = 0.0;
         for (auto& p : fase) p = 0.0;
         faseSub = faseRef = 0.0;
         tDisparo = 10.0; ganhoHunf = 1.0; vel = velSuave = 1.0;
@@ -202,10 +202,11 @@ public:
     // conta[] = quantas vezes a mesma nota está ligada: com 1/16 encostados alguns DAWs mandam o "liga" da nota nova
     // antes do "solta" da anterior (mesma altura). Esse "solta" atrasado não pode cortar a nota que acabou de começar.
     // velo = velocity 0..1; a.velo = quanto ela pesa (0 = toda nota igual)
-    // faseKick: fase do corpo do kick agora (ciclos, já com o sinal), ou < 0 = sem kick (fase 0, como sempre)
-    void noteOn (int nota, const Ajustes& a, float velo = 1.0f, double faseKick = -1.0)
+    // faseKick: fase do corpo do kick agora (ciclos, já com o sinal), ou < 0 = sem kick (fase 0, como sempre);
+    // fKick: frequência do corpo do kick agora (Hz)
+    void noteOn (int nota, const Ajustes& a, float velo = 1.0f, double faseKick = -1.0, double fKick = 0.0)
     {
-        faseKickNota = faseKick;
+        faseKickNota = faseKick; fKickNota = fKick;
         nota &= 127;
         vel = 1.0 - a.velo * (1.0 - std::clamp ((double) velo, 0.0, 1.0));
         ++conta[nota];
@@ -248,7 +249,7 @@ public:
         // o knob do unHUNF anda suave (20 ms): girar não estala
         const double hunfCoef = std::exp (-1.0 / (0.02 * fs));
         const double velCoef = std::exp (-1.0 / (0.003 * fs));   // em LEGATO a velocity muda sem redisparo: 3 ms, sem estalo
-        double fcH = hunfFim (hunfSuave), gH = std::tan (pi * fcH / fs), gb = 1.0, gOsc[2] { 1.0, 1.0 }, gSub = 1.0;
+        double fcH = hunfFim (hunfSuave), gb = 1.0, gOsc[2] { 1.0, 1.0 }, gSub = 1.0;
         float pk = 0.0f;
         int64_t w = scope.escrito.load (std::memory_order_relaxed);
 
@@ -266,9 +267,20 @@ public:
             if ((i & 7) == 0)
             {
                 fcH = hunfFim (hunfSuave);
-                gH = std::tan (pi * fcH / fs);
-                gb = hunfBaixa (tDisparo, hunfSuave);
-                for (int o = 0; o < 2; ++o) gOsc[o] = a.oitava[o] < 0 ? hunfGanhoEm (f0 * mult[o], fcH, gb) : 1.0;
+                gb =hunfBaixa (tDisparo, hunfSuave);
+                for (int o = 0; o < 2; ++o)
+                {
+                    gOsc[o] = a.oitava[o] < 0 ? hunfGanhoEm (f0 * mult[o], fcH, gb) : 1.0;
+                    // OSC na oitava 0+: quanto tirar de cada harmônico k (só os que caem até 3× o corte; acima disso a
+                    // curva de 48 dB/oitava já deixa passar tudo)
+                    nTira[o] = 0;
+                    if (a.oitava[o] >= 0 && gb < 0.9999)
+                        for (int k = 1; k <= maxHarm && k * f0 * mult[o] < 3.0 * fcH; ++k)
+                        {
+                            tira[o][k] = 1.0 - hunfGanhoEm (k * f0 * mult[o], fcH, gb);
+                            nTira[o] = k;
+                        }
+                }
                 gSub = hunfGanhoEm (f0 * multSub, fcH, gb);
             }
 
@@ -277,21 +289,33 @@ public:
             if (gateOn) amp = 1.0;   // abre na hora: o ataque é o da própria onda saindo do ponto inicial
             else amp *= ampRel;
             velSuave = vel + (velSuave - vel) * velCoef;
-            const double ganho = amp * velSuave;
+            if (rampa < 1.0) rampa = std::min (1.0, rampa + rampaPasso);
+            const double ganho = amp * velSuave * rampa;
 
             // osciladores. O SUB e os OSC em oitava abaixo (camadas de sub) perdem só VOLUME, pela frequência deles: sem
-            // filtro no caminho, a altura fica exata. Os OSC na oitava 0 ou acima vão pelo crossover (abaixo).
+            // filtro no caminho, a altura fica exata. Os OSC na oitava 0 ou acima perdem só os HARMÔNICOS GRAVES (abaixo).
             double cheio = 0.0, sub = 0.0, mixCru = 0.0, sOsc = 0.0;
             for (int o = 0; o < 2; ++o)
             {
                 const double dt = std::min (0.45, f0 * mult[o] / fs);
-                const double s = oscila (a.onda[o], fase[o], dt, inicio[o]);
+                double s = oscila (a.onda[o], fase[o], dt, inicio[o]);
                 inicio[o] = false;
+                if (a.liga[o])
+                {
+                    mixCru += s * a.nivel[o];
+                    if (a.oitava[o] < 0) sub += s * a.nivel[o] * gOsc[o];
+                    else
+                    {
+                        // 0.4.1 unHUNF por harmônico: a onda é conhecida, então cada harmônico grave (série de Fourier da
+                        // onda, na fase exata dela) perde o volume que a curva de 48 dB/oitava manda, e o resto da onda
+                        // passa intacto. Antes era um crossover Linkwitz-Riley de 8ª ordem: o volume batia, mas ele girava
+                        // a fase dos harmônicos perto do corte e a onda saía torta (o timbre perdia o corpo).
+                        for (int k = 1; k <= nTira[o]; ++k)
+                            if (tira[o][k] > 0.0) s -= tira[o][k] * harmonico (a.onda[o], k, fase[o]);
+                        cheio += s * a.nivel[o];
+                    }
+                }
                 fase[o] += dt; if (fase[o] >= 1.0) fase[o] -= 1.0;
-                if (! a.liga[o]) continue;
-                mixCru += s * a.nivel[o];
-                if (a.oitava[o] < 0) sub += s * a.nivel[o] * gOsc[o];
-                else cheio += s * a.nivel[o];
             }
             {
                 const double dt = std::min (0.45, f0 * multSub / fs);
@@ -301,13 +325,7 @@ public:
                 mixCru += sOsc;
                 sub += sOsc * gSub;
             }
-            // OSC na oitava 0+: crossover Linkwitz-Riley de 8ª ordem (Butterworth de 4ª, Q 0,5412 e 1,3066, duas vezes);
-            // só a fundamental de nota bem grave cai nele, e a altura de uma onda cheia vem dos harmônicos de cima
-            constexpr double kA = 1.0 / 0.54119610, kB = 1.0 / 1.30656296;
-            cheio *= ganho;
-            const double baixa = lpH[3].lp (lpH[2].lp (lpH[1].lp (lpH[0].lp (cheio, gH, kA), gH, kB), gH, kA), gH, kB);
-            const double alta = hpH[3].hp (hpH[2].hp (hpH[1].hp (hpH[0].hp (cheio, gH, kA), gH, kB), gH, kA), gH, kB);
-            const double mix = 0.5 * (alta + baixa * gb + sub * ganho);
+            const double mix = 0.5 * ganho * (cheio + sub);
             const double antes = 0.5 * mixCru * ganho;   // a tela mostra a onda crua (antes do unHUNF e do filtro)
 
             // filtro
@@ -363,6 +381,21 @@ private:
         return 0.0;
     }
 
+    // harmônico k da onda na fase p (série de Fourier, mesmo ponto inicial do oscila: todas sobem a partir de +sen)
+    //   SAW 1 − 2p = Σ 2/(πk)·sen(2πkp)   SQR = Σ ímpares 4/(πk)·sen   TRI = Σ ímpares ±8/(π²k²)·sen   SIN = só k = 1
+    static double harmonico (int onda, int k, double p)
+    {
+        switch (onda)
+        {
+            case ondaSen: return k == 1 ? std::sin (2.0 * pi * p) : 0.0;
+            case ondaSaw: return 2.0 / (pi * k) * std::sin (2.0 * pi * k * p);
+            case ondaSqr: return (k & 1) ? 4.0 / (pi * k) * std::sin (2.0 * pi * k * p) : 0.0;
+            default:
+                if (! (k & 1)) return 0.0;
+                return (((k - 1) / 2) & 1 ? -1.0 : 1.0) * 8.0 / (pi * pi * k * k) * std::sin (2.0 * pi * k * p);
+        }
+    }
+
     // fase 0 = o ponto inicial de cada onda: SIN e TRI começam no zero subindo; SAW começa no topo (+1) e desce;
     // SQR começa em +1. Na primeira amostra depois do disparo (inicio) a borda da SAW/SQR sai seca, sem a correção
     // de aliasing do "ciclo anterior" que não existiu: é o clique do ataque.
@@ -406,20 +439,36 @@ private:
             // sem isso a fase "anda" de nota para nota e cada uma bate diferente
             for (auto& p : fase) p = 0.0;
             faseSub = 0.0; faseRef = 0.0;
-            if (faseKickNota >= 0.0)
+            rampa = 1.0; rampaPasso = 0.0;
+            if (faseKickNota >= 0.0 && fKickNota > 1.0)
             {
-                // SUB em fase com o kick: τ = quanto a onda "já andou" para o seno do SUB estar na fase do kick
+                // 0.4.1: trava a camada do baixo que está na MESMA altura do corpo do kick agora (SUB, OSC 1 ou OSC 2,
+                // a mais perto em semitons, até 4 de distância). Na 0.4.0 era sempre o SUB: com o SUB uma oitava abaixo
+                // do kick a "fase igual" não queria dizer nada e cada nota nascia num ponto diferente (som estranho).
+                // Kick longe de todas (ainda na queda do pitch) = a nota nasce normal, do ponto inicial.
                 const double f0 = 440.0 * std::pow (2.0, (nota + bend - 69.0) / 12.0);
-                const double fSub = f0 * std::pow (2.0, a.oitavaSub);
-                const double alvo = faseKickNota - std::floor (faseKickNota);
-                const double tau = alvo / std::max (1.0, fSub);
-                for (int o = 0; o < 2; ++o)
+                double fo[3]; bool usa[3];
+                for (int o = 0; o < 2; ++o) { fo[o] = f0 * std::pow (2.0, a.oitava[o] + a.fino[o] / 1200.0); usa[o] = a.liga[o] && a.nivel[o] > 0.05f; }
+                fo[2] = f0 * std::pow (2.0, a.oitavaSub); usa[2] = a.ligaSub && a.nivelSub > 0.05f;
+                int melhor = -1; double dist = 1e9;
+                for (int c = 0; c < 3; ++c)
+                    if (usa[c])
+                    {
+                        const double d = std::fabs (12.0 * std::log2 (fo[c] / fKickNota));
+                        if (d < dist) { dist = d; melhor = c; }
+                    }
+                if (melhor >= 0 && dist <= 4.0)
                 {
-                    const double fo = f0 * std::pow (2.0, a.oitava[o] + a.fino[o] / 1200.0) * tau;
-                    fase[o] = fo - std::floor (fo);
+                    // τ = quanto a nota "já andou" para a camada escolhida estar na fase do kick; todas andam o mesmo τ
+                    // (o desenho da onda é o mesmo de sempre)
+                    const double alvo = faseKickNota - std::floor (faseKickNota);
+                    const double tau = alvo / fo[melhor];
+                    for (int o = 0; o < 2; ++o) { const double x = fo[o] * tau; fase[o] = x - std::floor (x); }
+                    { const double x = fo[2] * tau; faseSub = x - std::floor (x); }
+                    // nasce no meio do ciclo: entra em 2 ms (sem o degrau / clique)
+                    rampa = 0.0; rampaPasso = 1.0 / (0.002 * fs);
+                    leitura.travadas.fetch_add (1);
                 }
-                faseSub = alvo;
-                leitura.travadas.fetch_add (1);
             }
             inicio[0] = inicio[1] = inicioSub = true;
             envF.dispara();
@@ -435,12 +484,15 @@ private:
     double fs = 48000.0;
     Envelope envF;
     Svf svf[2];
-    Svf hpH[4], lpH[4];   // crossover do unHUNF (4 estágios de cada lado = 8ª ordem)
+    static constexpr int maxHarm = 16;
+    double tira[2][maxHarm + 1] {};   // unHUNF: quanto sai de cada harmônico grave dos OSC na oitava 0+
+    int nTira[2] {};
+    double rampa = 1.0, rampaPasso = 0.0;   // KICK LOCK: a nota que nasce no meio do ciclo entra em ~2 ms (sem clique)
     double fase[2] {}, faseSub = 0, faseRef = 0, hunfSuave = 0;
     bool inicio[2] { true, true }, inicioSub = true;
     double notaGlide = 36, alvoGlide = 36, bend = 0;
     double amp = 0, cutSuave = 18000, volSuave = 0.7, ultimoFc = 18000;
-    double tDisparo = 10, ganhoHunf = 1, vel = 1, velSuave = 1, faseKickNota = -1.0;
+    double tDisparo = 10, ganhoHunf = 1, vel = 1, velSuave = 1, faseKickNota = -1.0, fKickNota = 0.0;
     bool gateOn = false;
 };
 } // namespace barebass

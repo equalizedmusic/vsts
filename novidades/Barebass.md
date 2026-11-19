@@ -4,6 +4,23 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.1 — 2026-11-18
+- TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.3.0).
+- Timbre: com o unHUNF ligado, a onda dos OSC na oitava 0 ou acima saía torta. O divisor de bandas girava a fase
+  dos harmônicos perto do corte e o som perdia o corpo, principalmente com o envelope fechando o filtro. Agora o
+  unHUNF tira só os harmônicos graves de cada onda, na fase exata dela, e o resto passa intacto. Medido com o unHUNF
+  em 50%: o que muda acima de 150 Hz caiu de −4 dB para −42 dB em relação à onda. A força do efeito no grave
+  continua a mesma.
+- KICK LOCK refeito:
+  - trava a camada do baixo que está na altura do corpo do kick (SUB, OSC 1 ou OSC 2, a mais perto, até 4
+    semitons). Antes era sempre o SUB, mesmo uma oitava abaixo do kick, e cada nota nascia num ponto diferente;
+  - com o kick ainda na queda do pitch (longe de todas as camadas), a nota nasce normal;
+  - a nota travada entra em 2 ms, sem clique.
+- LINK mais firme (mesma correção do CHUTE 0.1.2): não "pisca" mais nem perde batidas no loop ou na exportação. O
+  chip mostra "KICK LOCK · CHUTE" enquanto o kick ainda não tocou (antes mostrava NO CHUTE e parecia desligado).
+- Tela no mesmo tamanho do CHUTE e do ALIGN (1000 × 752, topo e título iguais). As telas de onda e de filtro
+  ficaram maiores, e um rodapé novo diz o estado do LINK e do KICK LOCK.
+
 ## 0.4.0 — 2026-11-18
 - TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.3.0).
 - LINK com o CHUTE (sem sidechain): o chip KICK LOCK no alto mostra a nota do kick do projeto.

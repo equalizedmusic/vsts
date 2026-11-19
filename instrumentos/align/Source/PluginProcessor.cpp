@@ -141,6 +141,10 @@ void AlignProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     linkVaga = temLink ? link.vaga() : -1;
     fonte = usaSc ? fonteSidechain : (temLink ? fonteLink : semKick);
 
+    // 0.3.1: bloco sem passar pelo render do LINK (sidechain com som, sem licença) = as batidas guardadas ficaram velhas
+    const bool linkUsado = temLink && licenca->liberada();
+    if (linkUsado && ! linkNoBlocoAnterior) link.esquece();
+    linkNoBlocoAnterior = linkUsado;
     if (! licenca->liberada()) return;   // sem ativação: o som passa direto
     aplicaDose();
     if (! temLink)

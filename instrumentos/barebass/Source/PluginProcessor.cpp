@@ -186,14 +186,17 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     kickNota = temLink ? link.nota() : -1.0f;
     const bool trava = temLink && apvts.getRawParameterValue ("kicklock")->load() > 0.5f;
     bool tocando = false; int64_t posBloco = 0;
-    if (trava)
+    if (temLink)
+    {
         if (auto* ph = getPlayHead())
             if (auto p = ph->getPosition())
             {
                 tocando = p->getIsPlaying();
                 if (auto ts = p->getTimeInSamples()) posBloco = *ts; else tocando = false;
             }
-    const double wallBloco = (double) chutelink::agoraUs() * 0.001;
+        // 0.4.1: as batidas novas ganham a posição uma vez (âncora) e depois só envelhecem bloco a bloco
+        link.ancora (fs, tocando, posBloco, (double) chutelink::agoraUs() * 0.001);
+    }
 
     float* const* out = buffer.getArrayOfWritePointers();
     int pos = 0;
@@ -205,20 +208,26 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         if (m.isNoteOn())
         {
             // nasce em fase com o corpo do kick que está soando agora (se houver e ainda tiver corpo)
-            double faseKick = -1.0;
+            double faseKick = -1.0, fKick = 0.0;
             if (trava)
             {
-                double tk = 0.0, ciclos = 0.0, amp = 0.0;
-                if (const auto* b = link.soando (t, fs, tocando, posBloco, wallBloco, tk))
-                    if (b->faseEm (tk, ciclos, amp) && amp > 1.0e-3) faseKick = ciclos - std::floor (ciclos);
+                double tk = 0.0, ciclos = 0.0, amp = 0.0, c2 = 0.0, a2 = 0.0;
+                if (const auto* b = link.soando (t, fs, tk))
+                    if (b->faseEm (tk, ciclos, amp) && amp > 1.0e-3)
+                    {
+                        faseKick = ciclos - std::floor (ciclos);
+                        // frequência do corpo agora: a fase 1 ms adiante (a curva é constante dentro de cada ms)
+                        if (b->faseEm (tk + 0.001, c2, a2)) fKick = (c2 - ciclos) * 1000.0;
+                    }
             }
-            motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity(), faseKick);
+            motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity(), faseKick, fKick);
         }
         else if (m.isNoteOff()) motor->noteOff (m.getNoteNumber(), a);
         else if (m.isPitchWheel()) motor->pitchBend (m.getPitchWheelValue());
         else if (m.isAllNotesOff() || m.isAllSoundOff()) motor->allNotesOff();
     }
     if (n > pos) motor->render (out, nch, pos, n - pos, a);
+    if (temLink) link.avanca (n, fs);
 }
 
 juce::AudioProcessorEditor* BarebassProcessor::createEditor() { return new BarebassEditor (*this); }

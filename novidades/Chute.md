@@ -4,6 +4,20 @@ Pacote do instalador: `InsideStudioSP-Chute`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `chute-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.1.2 — 2026-11-18
+- Ainda TESTE (sem licença, fora do site).
+- DRIVE: girar o knob não faz mais o ruído de "liga e desliga". O knob anda suave e a saturação entra aos poucos
+  nos primeiros 10%. No FOLD, a compensação de volume pulava a cada dobra da onda.
+- DRIVE menos agressivo nos três modos: até +18 dB (antes +30; +12 no FOLD) numa curva que cresce devagar no
+  começo. O HARD virou um corte de joelho firme, sem a quina seca que deixava o som áspero.
+- TONE agora age só na saturação: ele fecha o agudo do que o DRIVE acrescenta. Com DRIVE em 0 não muda nada, e o
+  click do preset fica intacto.
+- MASTER: saiu o seletor CHOKE / POLY. Kick é mono: a batida nova sempre corta a anterior em 3 ms.
+- LINK mais firme (vale para o ALIGN 0.3.1 e o BAREBASS 0.4.1):
+  - cada batida recebe a posição uma vez e depois só envelhece bloco a bloco, como o som do kick;
+  - volta do loop, pulo na régua, faixa do kick um bloco na frente e exportação não fazem mais a batida sumir;
+  - a ligação só cai depois de 20 s sem áudio do CHUTE (antes caía com 1,5 s e o LINK "piscava").
+
 ## 0.1.1 — 2026-11-18
 - Ainda TESTE (sem licença, fora do site).
 - Tela: o corpo (verde) volta a aparecer na batida desenhada do KICK · NOW (na 0.1.0 só o ataque aparecia).
