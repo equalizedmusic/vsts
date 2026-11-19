@@ -161,14 +161,18 @@ void BarebassEditor::timerCallback()
             const int n = (int) std::lround (2.0 * per);
             if (n > 8 && n < barebass::Scope::size - 4096 && m <= esc && m - n > esc - barebass::Scope::size + 2048)
             {
-                float mx = 0.0f;
+                float mx = 0.0f, mk = 0.0f;
                 for (int j = 0; j < pontos; ++j)
                 {
                     const int64_t s = m - n + (int64_t) ((double) j * (n - 1) / (pontos - 1));
                     const int idx = (int) (((s % barebass::Scope::size) + barebass::Scope::size) % barebass::Scope::size);
                     cAntes[j] = S.antes[idx]; cDepois[j] = S.depois[idx]; cSub[j] = S.sub[idx];
+                    cKickV[j] = S.kick[idx]; cAlin[j] = S.alinhado[idx];
                     mx = juce::jmax (mx, std::abs (cAntes[j]), std::abs (cDepois[j]));
+                    mk = juce::jmax (mk, std::abs (cKickV[j]));
                 }
+                comKick = S.comKick.load (std::memory_order_relaxed);
+                kickPico = mk;
                 escVis += (juce::jmax (0.04f, mx) - escVis) * 0.35f;
                 freqOnda = (float) (e.taxa() / per);
                 temOnda = true;
@@ -227,14 +231,39 @@ void BarebassEditor::paint (juce::Graphics& g)
 void BarebassEditor::rodape (juce::Graphics& g)
 {
     const bool lk = proc.linkOn.load(), trava = real ("kicklock") > 0.5f;
+    const auto& A = proc.dupla.leitura();
     juce::String t1, t2;
-    if (lk && trava)  { t1 = u8 ("KICK LOCK: cada nota nasce em fase com o corpo do CHUTE (sem sidechain)."); t2 = u8 ("Trava a camada do baixo que está na altura do kick; kick ainda na queda do pitch = a nota nasce normal."); }
-    else if (lk)      { t1 = u8 ("CHUTE achado pelo LINK. KICK LOCK desligado: clique no chip KICK LOCK para ligar."); t2 = u8 ("Com ele ligado, cada nota nasce em fase com o corpo do kick."); }
-    else              { t1 = u8 ("Sem CHUTE no projeto: o BAREBASS toca normal."); t2 = u8 ("Com o CHUTE no kick do mesmo projeto, o BAREBASS acha o kick sozinho (LINK), sem sidechain."); }
+    if (lk && trava)
+    {
+        t1 = u8 ("DUPLA COM O CHUTE: fase e nível alinhados nota a nota (o motor do ALIGN).");
+        const int est = A.estado.load();
+        if (est == 0) t2 = u8 ("LINK ligado: esperando o kick tocar.");
+        else
+        {
+            const float rot = A.rotDeg.load(), gu = A.duckDb.load();
+            t2 = (est == 1 ? u8 ("Aprendendo a nota · ") : u8 ("Acompanhando · "))
+               + (A.invertida.load() ? u8 ("polaridade invertida · ") : juce::String())
+               + u8 ("fase ") + juce::String (juce::roundToInt (rot)) + u8 ("° · guard ")
+               + (gu < -0.05f ? juce::String (gu, 1) + " dB" : juce::String ("0 dB"));
+        }
+    }
+    else if (lk) { t1 = u8 ("CHUTE achado pelo LINK. KICK LOCK desligado: clique no chip para ligar."); t2 = u8 ("Ligado, o BAREBASS alinha a fase e o nível com o kick, sem ALIGN. O DUCK vale nos dois."); }
+    else         { t1 = u8 ("Sem CHUTE no projeto: o BAREBASS toca normal."); t2 = u8 ("Com o CHUTE no kick do mesmo projeto, ele acha o kick sozinho (LINK), sem sidechain."); }
     g.setColour (lk ? cVerde : cTexto); g.setFont (fonte (13.0f, true));
-    g.drawText (t1, juce::Rectangle<float> (16, 700, 760, 18), juce::Justification::centredLeft);
+    g.drawFittedText (t1, juce::Rectangle<int> (16, 700, 548, 18), juce::Justification::centredLeft, 1, 0.8f);
     g.setColour (cApagado); g.setFont (fonte (11.5f));
-    g.drawText (t2, juce::Rectangle<float> (16, 721, 760, 16), juce::Justification::centredLeft);
+    g.drawFittedText (t2, juce::Rectangle<int> (16, 721, 548, 16), juce::Justification::centredLeft, 1, 0.8f);
+
+    // DUCK (barra: arraste na horizontal, duplo clique volta a 0). Só age com o CHUTE no projeto
+    rotulo (g, { 580, 701, 120, 13 }, "DUCK", lk ? cTexto : cApagado);
+    rDuck = { 580, 717, 196, 18 };
+    const float dk = real ("duck"), gr = proc.dupla.duckDb.load();
+    g.setColour (cTela); g.fillRect (rDuck);
+    g.setColour ((lk ? cLaranja : cApagado).withAlpha (0.55f)); g.fillRect (rDuck.withWidth (rDuck.getWidth() * dk / 100.0f));
+    g.setColour (juce::Colours::black); g.drawRect (rDuck, 1.0f);
+    g.setColour (dk > 0.5f ? cBranco : cApagado); g.setFont (fonte (11.0f, true));
+    g.drawText (dk > 0.5f ? (lk && gr < -0.05f ? juce::String (gr, 1) + " dB" : juce::String (juce::roundToInt (dk)) + " %") : juce::String ("OFF"),
+                rDuck, juce::Justification::centred);
     led (g, { 806, 709 }, 3.5f, cVerde, lk);
     rotulo (g, { 814, 702, 170, 14 }, lk ? u8 ("LINK · CHUTE") : u8 ("LINK OFF"), lk ? cTexto : cApagado, juce::Justification::centredRight);
     rotulo (g, { 790, 722, 194, 14 }, "LATENCY 0 SAMPLES", cApagado, juce::Justification::centredRight);
@@ -337,7 +366,14 @@ void BarebassEditor::painelOnda (juce::Graphics& g, juce::Rectangle<float> r)
     legenda (g, lx, yt, cLaranja, "PRE-FILTER");
     legenda (g, lx, yt, cVerde, "OUTPUT");
     legenda (g, lx, yt, cRoxo, "SUB", true);
-    if (temOnda)
+    // 0.4.1 DUPLA: com o CHUTE, o kick na mesma tela (e o rótulo da direita encolhe para caber)
+    if (comKick && proc.linkOn.load())
+    {
+        legenda (g, lx, yt, cBranco, "KICK");
+        if (temOnda)
+            rotulo (g, { r.getRight() - 84, yt - 7, 72, 14 }, juce::String (freqOnda, 1) + " Hz", cApagado, juce::Justification::centredRight);
+    }
+    else if (temOnda)
         rotulo (g, { r.getRight() - 152, yt - 7, 140, 14 }, "2 CYCLES " + u8 ("· ") + juce::String (freqOnda, 1) + " Hz", cApagado,
                 juce::Justification::centredRight);
 
@@ -369,7 +405,18 @@ void BarebassEditor::painelOnda (juce::Graphics& g, juce::Rectangle<float> r)
         g.saveState();
         g.reduceClipRegion (t.toNearestInt());
         // saída preenchida até o centro (verde), antes do filtro (laranja fino) e sub (roxo tracejado)
-        auto pd = caminho (cDepois);
+        // 0.4.1 DUPLA: com o CHUTE, a saída verde é a já alinhada (motor do ALIGN + DUCK) e o kick entra em branco,
+        // na escala dele (o que importa é a fase: os picos dos dois juntos = somando)
+        const bool mostraKick = comKick && proc.linkOn.load();
+        auto pd = caminho (mostraKick ? cAlin : cDepois);
+        if (mostraKick && kickPico > 1.0e-4f)
+        {
+            float kv[pontos];
+            const float esc = escVis * 0.9f / kickPico;
+            for (int j = 0; j < pontos; ++j) kv[j] = cKickV[j] * esc;
+            g.setColour (cBranco.withAlpha (0.75f * alfa));
+            g.strokePath (caminho (kv), juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        }
         juce::Path area (pd);
         area.lineTo (t.getRight(), cy); area.lineTo (t.getX(), cy); area.closeSubPath();
         g.setColour (cVerde.withAlpha (0.13f * alfa)); g.fillPath (area);
@@ -727,9 +774,18 @@ void BarebassEditor::painelMaster (juce::Graphics& g, juce::Rectangle<float> r)
     knobRotulado (g, "velo", "VELO", { r.getX() + 118, r.getY() + 96 }, 12.0f, cRoxo, false);
 }
 
+void BarebassEditor::duckEm (float x)
+{
+    if (auto* prm = param ("duck"))
+        prm->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, (x - rDuck.getX()) / rDuck.getWidth()));
+    repaint();
+}
+
 void BarebassEditor::mouseDown (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
+    if (rDuck.expanded (0, 4).contains (p))
+        if (auto* prm = param ("duck")) { arrastando = "duck"; arrastaBarra = true; prm->beginChangeGesture(); duckEm (p.x); return; }
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 7)
         {
@@ -752,6 +808,7 @@ void BarebassEditor::mouseDown (const juce::MouseEvent& e)
 void BarebassEditor::mouseDrag (const juce::MouseEvent& e)
 {
     if (arrastando.isEmpty()) return;
+    if (arrastaBarra) { duckEm (e.position.x / escala()); return; }
     if (auto* prm = param (arrastando))
     {
         const float dy = yIni - e.position.y / escala();
@@ -766,11 +823,19 @@ void BarebassEditor::mouseUp (const juce::MouseEvent&)
     if (arrastando.isNotEmpty())
         if (auto* prm = param (arrastando)) prm->endChangeGesture();
     arrastando.clear();
+    arrastaBarra = false;
 }
 
 void BarebassEditor::mouseDoubleClick (const juce::MouseEvent& e)
 {
     const auto p = e.position / escala();
+    if (rDuck.expanded (0, 4).contains (p))
+        if (auto* prm = param ("duck"))
+        {
+            prm->beginChangeGesture(); prm->setValueNotifyingHost (prm->getDefaultValue()); prm->endChangeGesture();
+            repaint();
+            return;
+        }
     for (auto& k : knobs)
         if (p.getDistanceFrom (k.c) <= k.r + 7)
             if (auto* prm = param (k.id))
@@ -844,6 +909,11 @@ void BarebassEditor::menu()
                                      "KICK LOCK (com o CHUTE no kick do mesmo projeto, sem sidechain): cada nota nasce com a "
                                      "camada do baixo que está na altura do kick (SUB, OSC 1 ou OSC 2) em fase com o corpo dele "
                                      "naquele instante, e o chip mostra a nota do kick. Kick ainda na queda do pitch = a nota "
-                                     "nasce normal. Clique no chip para ligar ou desligar. Sem CHUTE no projeto, nada muda."));
+                                     "nasce normal. Clique no chip para ligar ou desligar. Sem CHUTE no projeto, nada muda.\n\n"
+                                     "DUPLA COM O CHUTE: com o KICK LOCK ligado, o BAREBASS faz o mesmo que o ALIGN, sem ALIGN "
+                                     "na cadeia: aprende nota a nota a fase e a polaridade do grave que mais somam com o kick "
+                                     "e segura o nível (LEVEL GUARD), com latência zero. O rodapé mostra o que ele está fazendo. "
+                                     "DUCK (barra no rodapé): o baixo abaixa junto com o kick, na dose que você escolher; "
+                                     "em OFF não faz nada. Com outro synth de baixo, use o ALIGN."));
                      });
 }

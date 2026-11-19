@@ -62,14 +62,19 @@ private:
     // última onda mostrada (fica na tela, apagada, depois que a nota acaba)
     static constexpr int pontos = 360;
     float cAntes[pontos] {}, cDepois[pontos] {}, cSub[pontos] {};
+    float cKickV[pontos] {}, cAlin[pontos] {};   // 0.4.1 DUPLA: corpo do kick (LINK) e saída já alinhada
+    bool comKick = false;
+    float kickPico = 0.0f;
     bool temOnda = false;
     float escVis = 0.3f, freqOnda = 0.0f;
 
     // alvos de clique (coordenadas da tela base)
-    juce::Rectangle<float> rMenu, rPreset, rKick;
+    juce::Rectangle<float> rMenu, rPreset, rKick, rDuck;
     std::vector<Knob> knobs;
     std::vector<Botao> botoes;
     juce::String arrastando;
+    bool arrastaBarra = false;   // arrastando a barra do DUCK (horizontal)
+    void duckEm (float x);
     float valorIni = 0.0f, yIni = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BarebassEditor)

@@ -91,6 +91,8 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     // 0.4.0: KICK LOCK (LINK com o CHUTE). Ligado em instância nova; projeto salvo antes da 0.4.0 abre desligado
     // (setStateInformation), para soar igual
     l.add (std::make_unique<B> (juce::ParameterID { "kicklock", 2 }, "Kick Lock", true));
+    // 0.4.1: DUCK com o CHUTE (a mesma conta do DUCK do ALIGN). Padrão 0 = desligado (projeto antigo abre igual)
+    l.add (std::make_unique<P> (juce::ParameterID { "duck", 3 }, "Duck", faixa (0, 100, 1), 0.0f, A().withLabel ("%")));
     return l;
 }
 
@@ -100,6 +102,8 @@ BarebassProcessor::BarebassProcessor()
       motor (std::make_unique<barebass::Engine>())
 {
     motor->prepare (fs);
+    dupla.prepare (fs);
+    kickLink.assign (2048, 0.0f);
 }
 
 bool BarebassProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -112,6 +116,7 @@ void BarebassProcessor::prepareToPlay (double sampleRate, int)
 {
     fs = sampleRate;
     motor->prepare (sampleRate);
+    dupla.prepare (sampleRate);
 }
 
 void BarebassProcessor::define (const juce::String& id, float valorReal)
@@ -227,6 +232,33 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         else if (m.isAllNotesOff() || m.isAllSoundOff()) motor->allNotesOff();
     }
     if (n > pos) motor->render (out, nch, pos, n - pos, a);
+
+    // 0.4.1: DUPLA. Com o CHUTE: o motor do ALIGN (KICK LOCK) e o DUCK em cima do corpo do kick recriado (as mesmas
+    // âncoras do noteOn, antes do avanca). Sem CHUTE: o motor fica desligado e o synth sai sem alteração.
+    const double duck = apvts.getRawParameterValue ("duck")->load() * 0.01;
+    // tela: o kick e a saída alinhada nos mesmos índices do scope do synth (o render acabou de escrever as n amostras)
+    auto& S = motor->scope;
+    const int64_t base = S.escrito.load (std::memory_order_relaxed) - n;
+    const float invVol = 1.0f / juce::Decibels::decibelsToGain (a.volumeDb, -200.0f);
+    S.comKick.store (temLink, std::memory_order_relaxed);
+    for (int ini = 0; ini < n; ini += (int) kickLink.size())
+    {
+        const int m = juce::jmin ((int) kickLink.size(), n - ini);
+        float* parte[2] = { out[0] + ini, nch > 1 ? out[1] + ini : nullptr };
+        if (temLink)
+        {
+            std::fill (kickLink.begin(), kickLink.begin() + m, 0.0f);
+            link.soma (kickLink.data(), ini, m, fs);
+        }
+        dupla.process (parte, nch, temLink ? kickLink.data() : nullptr, m, trava, duck);
+        if (temLink && std::isfinite (invVol))
+            for (int i = 0; i < m; ++i)
+            {
+                const int idx = (int) ((base + ini + i) % barebass::Scope::size);
+                S.kick[idx] = kickLink[(size_t) i];
+                S.alinhado[idx] = parte[0][i] * invVol;
+            }
+    }
     if (temLink) link.avanca (n, fs);
 }
 

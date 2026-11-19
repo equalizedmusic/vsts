@@ -301,13 +301,20 @@ public:
     void render (float* out, int n, double fs, bool tocando, int64_t posBloco, double wallBlocoMs)
     {
         ancora (fs, tocando, posBloco, wallBlocoMs);
+        soma (out, 0, n, fs);
+        avanca (n, fs);
+    }
+
+    // soma o corpo das amostras [de, de + n) do bloco atual em out[0..n) (out já zerado), SEM ancorar nem avançar:
+    // para o BAREBASS, que ancora no começo do bloco, toca as notas e só avança no fim. Vale entre ancora() e avanca().
+    void soma (float* out, int de, int n, double fs) const
+    {
         for (auto& l : local)
         {
-            if (! l.valida || l.ini >= (double) n) continue;
-            const int i0 = std::max (0, (int) std::ceil (l.ini));
-            for (int i = i0; i < n; ++i) out[i] += (float) l.corpo ((i - l.ini) / fs);
+            if (! l.valida || ! l.ancorada || l.ini >= (double) (de + n)) continue;
+            const int i0 = std::max (de, (int) std::ceil (l.ini));
+            for (int i = i0; i < de + n; ++i) out[i - de] += (float) l.corpo ((i - l.ini) / fs);
         }
-        avanca (n, fs);
     }
 
     // a batida que soa no instante i do bloco (a mais recente que já começou): para o BAREBASS nascer em fase.

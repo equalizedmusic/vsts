@@ -6,6 +6,17 @@ Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo com
 
 ## 0.4.1 — 2026-11-18
 - TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.3.0).
+- DUPLA COM O CHUTE: com o CHUTE no kick do mesmo projeto, o BAREBASS faz sozinho o que o ALIGN faria no canal
+  dele, sem ALIGN na cadeia e sem sidechain:
+  - KICK LOCK ligado = o mesmo motor do ALIGN dentro do BAREBASS: aprende nota a nota a fase e a polaridade do
+    grave que mais somam com o kick e segura o nível (LEVEL GUARD), com latência zero. Na bancada, com a nota
+    começando em 8 fases diferentes do kick, o grave ficou sempre a até 0,5 dB da soma de potência (sem ele, até
+    1,1 dB fora), e nunca pior que sem ele;
+  - DUCK novo (barra no rodapé): o baixo abaixa junto com o kick, na dose escolhida, com a mesma conta do DUCK do
+    ALIGN (50% ≈ −6 dB no pico do kick). Vale com o KICK LOCK ligado ou não. Em OFF (padrão) não faz nada;
+  - a tela de onda mostra o kick (branco) junto com o baixo, e a saída verde já é a alinhada: dá para ver os dois
+    batendo juntos. O rodapé diz o que o alinhamento está fazendo (fase, polaridade e guard);
+  - sem CHUTE no projeto o BAREBASS toca exatamente como antes (conferido amostra a amostra).
 - Timbre: com o unHUNF ligado, a onda dos OSC na oitava 0 ou acima saía torta. O divisor de bandas girava a fase
   dos harmônicos perto do corte e o som perdia o corpo, principalmente com o envelope fechando o filtro. Agora o
   unHUNF tira só os harmônicos graves de cada onda, na fase exata dela, e o resto passa intacto. Medido com o unHUNF

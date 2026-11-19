@@ -60,6 +60,10 @@ struct Scope
 {
     static constexpr int size = 16384, marcas = 64;
     float antes[size] {}, depois[size] {}, sub[size] {};
+    // 0.4.1 DUPLA: escritos pelo PluginProcessor depois do render, nos mesmos índices: o corpo do kick do LINK e a saída
+    // já alinhada (motor do ALIGN + DUCK), na escala do "depois" (sem o VOLUME)
+    float kick[size] {}, alinhado[size] {};
+    std::atomic<bool> comKick { false };
     std::atomic<int64_t> escrito { 0 };       // total de amostras escritas
     int64_t marca[marcas] {};
     float   periodo[marcas] {};
