@@ -733,7 +733,7 @@ void ChuteEditor::menuPresets()
 {
     juce::PopupMenu m;
     const auto user = proc.presetsUser();
-    constexpr int baseUser = 100000;   // ids do menu: 1 + modelo (fábrica e bancos), baseUser + k (USER)
+    static constexpr int baseUser = 100000;   // ids do menu: 1 + modelo (fábrica e bancos), baseUser + k (USER)
     for (const auto& banco : ChuteProcessor::bancos())
     {
         m.addSectionHeader (banco);
