@@ -1,9 +1,4 @@
-== build/shot_retalho_artefacts/Release/shot_retalho
-RETALHO captura: pronta em 12.5 s
-RETALHO-ESTICA: ok
-RETALHO-GROOVE: ok
-RETALHO: ok
-total 4448
--rw-r--r--  1 runner  staff  848763 Nov 19 09:18 RETALHO-ESTICA.png
--rw-r--r--  1 runner  staff  587821 Nov 19 09:18 RETALHO-GROOVE.png
--rw-r--r--  1 runner  staff  780279 Nov 19 09:18 RETALHO.png
+== build/shot_chute_artefacts/Release/shot_chute
+CHUTE: ok
+total 1024
+-rw-r--r--  1 runner  staff  523574 Nov 19 10:43 CHUTE.png
