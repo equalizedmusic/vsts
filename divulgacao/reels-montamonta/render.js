@@ -1,12 +1,12 @@
 // Renderiza reels.html quadro a quadro em MP4 sem áudio. uso: node render.js x <saida.mp4>  |  node render.js x --frames 1,5.2 <pasta>
-const puppeteer = require('D:/Apps/dou/node_modules/puppeteer');
+const puppeteer = require('puppeteer');
 const { spawn } = require('child_process');
 const path = require('path');
-const FF = process.env.FFMPEG || 'D:/Apps/welcome/node_modules/ffmpeg-static/ffmpeg.exe';
+const FF = process.env.FFMPEG || 'ffmpeg';
 const [p, a2, a3, a4] = process.argv.slice(2);
 (async () => {
   const b = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'],
-    executablePath: process.env.CHROME || 'C:/Users/rogerio.cardoso/.cache/puppeteer/chrome/win64-148.0.7778.97/chrome-win64/chrome.exe' });
+    executablePath: process.env.CHROME });
   const pg = await b.newPage();
   await pg.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
   const errs = []; pg.on('pageerror', e => errs.push(e.message));

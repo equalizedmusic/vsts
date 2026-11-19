@@ -59,5 +59,5 @@ Na barra lateral da console: VU ou PPM (o que a barra ao lado do fader de cada c
 - `Source/Desenho.h`: as peças em vetor (knob, tecla, LED de 7 segmentos, medidor de LED, VU, fader).
   `Source/PluginEditor.*`: as duas janelas. A parte que não mexe é desenhada numa imagem guardada; medidores e agulhas
   vão por cima a 30 Hz.
-- O protótipo do visual (canvas, mesmas medidas e cores) fica em `granular-vst/mockup/mesa-v4`, fora do repositório.
+- O protótipo do visual (canvas, mesmas medidas e cores) fica fora do repositório (`mockup/mesa-v4`).
 - `tools/*.py` (Blender): o visual renderizado da 0.1/0.2, que não é mais usado.

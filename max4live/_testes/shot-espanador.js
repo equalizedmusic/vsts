@@ -21,7 +21,7 @@ const data = { versao: '0.1.0', sig: 4, minBeat: 64, maxBeat: 576, tracks, cfg: 
 const LIC_OK = JSON.stringify({ ok: 1, ocupado: 0, email: 'teste', token: '', msg: '', ate: 0 });
 
 (async () => {
-  const br = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'], executablePath: process.env.CHROME || 'C:/Users/rogerio.cardoso/.cache/puppeteer/chrome/win64-148.0.7778.97/chrome-win64/chrome.exe' });
+  const br = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'], executablePath: process.env.CHROME });
   const p = await br.newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   async function tela(arq, W, H, store, passos, escala = 1) {

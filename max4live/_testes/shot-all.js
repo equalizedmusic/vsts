@@ -42,7 +42,7 @@ const LIC_MEIO = JSON.stringify({ ok: 0, ocupado: 0, email: 'voce@email.com', to
 const LIC_OK = JSON.stringify({ ok: 1, ocupado: 0, email: 'voce@email.com', token: '', msg: '', ate: 1768000000 });
 
 (async () => {
-  const br = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'], executablePath: 'C:/Users/rogerio.cardoso/.cache/puppeteer/chrome/win64-148.0.7778.97/chrome-win64/chrome.exe' });
+  const br = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'], executablePath: process.env.CHROME });
   const p = await br.newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   async function tela(arq, W, H, store, passos, nomePng, escala = 2) {

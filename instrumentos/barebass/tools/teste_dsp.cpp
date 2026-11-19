@@ -1,5 +1,5 @@
 // Mede o Dsp.h do BAREBASS fora do plugin.
-//   D:\Apps\granular-vst\toolchain\zig\ziglang\zig.exe c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
+//   zig c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
 // Confere: baixo rolando em 1/16 a 145 BPM (nível, NaN, estalos, CPU); o filtro corta (cutoff baixo x alto, 12 x 24 dB);
 // o ENV abre o filtro e o DECAY fecha; o unHUNF tira o grave depois do ataque sem mexer acima de 300 Hz;
 // LEGATO não redispara o envelope e MONO redispara; GLIDE desliza; cada nota recomeça a onda do ponto inicial;

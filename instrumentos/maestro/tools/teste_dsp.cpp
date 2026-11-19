@@ -1,6 +1,6 @@
 // Bancada do MAESTRO: mede o Dsp.h fora do plugin com um projeto de psytrance sintético (145 BPM, 11 faixas, cada uma
 // com o próprio Engine no mesmo Registry, como no DAW).
-//   D:\Apps\granular-vst\toolchain\zig\ziglang\zig.exe c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
+//   zig c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
 //
 // Confere:
 //   1. PARADO (sem LEARN/LOCK/FOCUS): saída = entrada, idêntica;

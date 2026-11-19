@@ -17,7 +17,7 @@ def arg(n, d):
 PART, OUTDIR, SAMPLES = arg('--part', 'chapas'), arg('--out', '.'), int(arg('--samples', '64'))
 ONLY = [s for s in arg('--so', '').split(',') if s]
 PPC = float(arg('--ppc', '40'))
-HDRI = 'D:/Apps/_tools/hdri/studio.hdr'
+HDRI = os.environ.get('HDRI', 'studio.hdr')
 FONT_UI = 'C:/Windows/Fonts/arialbd.ttf'
 FONT_LOGO = 'C:/Windows/Fonts/framd.ttf'
 FONT_HAND = 'C:/Windows/Fonts/segoepr.ttf'

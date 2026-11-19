@@ -1,7 +1,7 @@
 ﻿// Mede o Dsp.h fora do plugin com uma voz sintÃ©tica: pulso glotal (soma de harmÃ´nicos com a envoltÃ³ria de uma vogal
 // "a" â€” formantes 700/1220/2600 Hz), melodia em DÃ“ MAIOR cantada desafinada (+35, âˆ’28, +18, âˆ’40 centsâ€¦), vibrato de
 // 5,5 Hz em algumas notas, um slide, "consoantes" (ruÃ­do) e silÃªncios.
-//   D:\Apps\granular-vst\toolchain\zig\ziglang\zig.exe c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
+//   zig c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
 //
 // Confere:
 //   - DESLIGADO: a saÃ­da Ã© a entrada atrasada de D amostras, idÃªntica;

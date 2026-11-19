@@ -1,5 +1,5 @@
 // Mede o Dsp.h do STOMPBOX fora do plugin.
-//   D:\Apps\granular-vst\toolchain\zig\ziglang\zig.exe c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
+//   zig c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe
 // Confere: o meio-banda do oversampling (passa até 20 kHz, rejeita o que dobraria); cada pedal com knobs nos extremos
 // e em todas as chaves (sem NaN, sem estouro, sem DC); o aliasing de um drive em 2x; o bypass sem estalo; o eco no
 // tempo do SYNC; o reverb que morre; os 5 amps limpo/sujo (nível e quanto distorcem); todos os presets (nível, CPU).
