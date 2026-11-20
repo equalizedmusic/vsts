@@ -837,8 +837,11 @@ void ConversationView::paint (juce::Graphics& g)
                     + juce::String::fromUTF8 (" · ") + choiceText (id::rate),
                 RF (14.0f, 8.0f, 240.0f, 16.0f), juce::Justification::centredLeft, false);
     g.setColour (rs::magenta);
-    g.drawText (choiceText (id::root) + " " + choiceText (id::scale), RF (all.getRight() - 170.0f, 8.0f, 156.0f, 16.0f),
-                juce::Justification::centredRight, false);
+    // 0.8.0: com o KEY do LINK a tônica vem da cadeia (CHUTE / BAREBASS)
+    const bool keyLink = st.getRawParameterValue (id::linkKey)->load() > 0.5f && proc.linkRoot.load() >= 0;
+    g.drawText (scales::rootNames[juce::jlimit (0, 11, pp.root)] + " " + choiceText (id::scale)
+                    + (keyLink ? juce::String::fromUTF8 (" · LINK") : juce::String()),
+                RF (all.getRight() - 200.0f, 8.0f, 186.0f, 16.0f), juce::Justification::centredRight, false);
 
     const RF roll (44.0f, 30.0f, all.getWidth() - 56.0f, all.getHeight() - 96.0f);
     rs::screen (g, roll, 3.0f);
@@ -857,7 +860,7 @@ void ConversationView::paint (juce::Graphics& g)
     const float rh = roll.getHeight() / (float) rows;
     const float cw = roll.getWidth() / (float) phrase.steps;
     const int scale = juce::roundToInt (st.getRawParameterValue (id::scale)->load());
-    const int root = juce::roundToInt (st.getRawParameterValue (id::root)->load());
+    const int root = pp.root;
 
     for (int n = lo; n <= hi; ++n)
     {
@@ -1146,6 +1149,11 @@ ResenhaEditor::ResenhaEditor (ResenhaProcessor& p) : AudioProcessorEditor (&p), 
     add<NeonKnob> ({ 900, 640, 70, 70 }, st, id::volume, "VOLUME", rs::ink, 40.0f, true);
     add<NeonKnob> ({ 984, 640, 62, 70 }, st, id::duck,   "DUCK",   rs::magenta, 40.0f);
 
+    // ---- 0.8.0: LINK com o CHUTE e o BAREBASS ----
+    auto* lkKey = add<rs::NeonSwitch> ({ 1062, 660, 36, 36 }, rs::lime);
+    attach (*lkKey, id::linkKey);
+    add<rs::ChoiceBox> ({ 1104, 664, 78, 26 }, st, id::linkBass, rs::lime);
+
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
     openScale = proc.uiScale.load();
     setResizable (true, true);
@@ -1378,6 +1386,16 @@ void ResenhaEditor::timerCallback()
 
     presetName->set (proc.getPresetName(), proc.getPresetIndex(), proc.getNumPresets());
 
+    {
+        const int lk = (proc.linkKick.load() ? 1 : 0) | (proc.linkBassOn.load() ? 2 : 0) | ((proc.linkRoot.load() + 1) << 2)
+                     | ((proc.bassShown.load() + 1) << 8);
+        if (lk != lastLink)
+        {
+            lastLink = lk;
+            canvas.repaint (1056, 694, 130, 22);
+        }
+    }
+
     const float bpm = proc.shownBpm.load();
     const int state = proc.notesMode.load() ? 3 : proc.synced.load() ? (proc.waitingKey.load() ? 2 : 1) : 0;
     if (std::abs (bpm - lastBpm) > 0.05f || state != lastState)
@@ -1458,7 +1476,22 @@ void ResenhaEditor::drawCanvas (juce::Graphics& g)
     rs::label (g, "TIPO", { 22.0f, 650.0f, 90.0f, 12.0f }, juce::Justification::centred);
     rs::sectionTitle (g, 300.0f, 622.0f, 280.0f, "DELAY PING-PONG");
     rs::sectionTitle (g, 620.0f, 622.0f, 230.0f, "REVERB");
-    rs::sectionTitle (g, 890.0f, 622.0f, 292.0f, juce::String::fromUTF8 ("SAÍDA"));
+    rs::sectionTitle (g, 890.0f, 622.0f, 156.0f, juce::String::fromUTF8 ("SAÍDA"));
+
+    // ---- 0.8.0: LINK — KEY (a tônica vem do CHUTE / BAREBASS) e BAIXO (DESL. / SEGUE / RESPONDE) ----
+    rs::sectionTitle (g, 1060.0f, 622.0f, 122.0f, "LINK");
+    rs::label (g, "KEY",   { 1060.0f, 646.0f, 40.0f, 12.0f }, juce::Justification::centred);
+    rs::label (g, "BAIXO", { 1104.0f, 646.0f, 78.0f, 12.0f }, juce::Justification::centred);
+    {
+        const bool k = proc.linkKick.load(), b = proc.linkBassOn.load();
+        juce::String txt = k && b ? juce::String ("CHUTE + BAREBASS") : k ? juce::String ("CHUTE") : b ? juce::String ("BAREBASS")
+                                                                                              : juce::String ("SEM CHUTE / BAIXO");
+        const int bn = proc.bassShown.load();
+        if (bn >= 0) txt << juce::String::fromUTF8 (" · ") << scales::rootNames[bn % 12];
+        g.setFont (theme::sans (8.5f, true, 0.1f));
+        g.setColour (k || b ? rs::lime : rs::dim);
+        g.drawFittedText (txt, juce::Rectangle<int> (1060, 700, 122, 12), juce::Justification::centred, 1, 0.7f);
+    }
 }
 
 void ResenhaEditor::drawHeader (juce::Graphics& g)

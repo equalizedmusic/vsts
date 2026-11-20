@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Groovador`. A versão é o primeiro títul
 ela entra no plugin, no instalador e no release `groovador-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.0 — 2026-11-20
+- LINK com o CHUTE: o GROOVADOR acha o CHUTE do mesmo projeto sozinho, sem sidechain. Bloco LINK · CHUTE novo, entre o REVERB e a SAÍDA, com a nota do kick no visor.
+- KEY (ligado): RIM, SNARE, PERC 1 e PERC 2 afinam na nota do kick, na tônica ou na quinta mais perto (andam no máximo 3,5 semitons). O TUNE de cada peça continua valendo e passa a andar por essas notas. Hats, clap e shaker ficam como estão.
+- DUCK (35%): hats, shaker e percs abaixam com o corpo de cada batida do CHUTE, na dose do knob, sem rotear sidechain. Zero = desligado.
+- Sem o CHUTE no projeto, nada muda. Projetos e presets de antes abrem iguais; o preset não mexe no KEY nem no DUCK.
+
 ## 0.2.0 — 2026-11-11
 - ARRASTAR MIDI agora solta as peças SEPARADAS: um arquivo por peça que tem nota ("GROOVADOR - preset - SNARE.mid"),
   cada um com a nota do pad da peça (C1 rim, D1 snare, E1 clap…). No Ableton, segure Ctrl (Windows) ou Cmd (Mac)

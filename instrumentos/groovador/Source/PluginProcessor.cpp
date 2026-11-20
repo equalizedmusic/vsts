@@ -24,6 +24,7 @@ GroovadorProcessor::GroovadorProcessor()
     pDlOn = raw (id::dlOn);         pDlDiv = raw (id::dlDiv);       pDlFb = raw (id::dlFb);
     pDlMix = raw (id::dlMix);       pRvOn = raw (id::rvOn);         pRvSize = raw (id::rvSize);
     pRvMix = raw (id::rvMix);       pVol = raw (id::volume);
+    pLinkKey = raw (id::linkKey);   pLinkDuck = raw (id::linkDuck);
 
     for (auto& v : varNow) v.store (0.0f);
     factory = factoryPresets();
@@ -47,6 +48,7 @@ void GroovadorProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     const int n = juce::jmax (1, samplesPerBlock);
     bufL.assign ((size_t) n, 0.0f);
     bufR.assign ((size_t) n, 0.0f);
+    duckBuf.assign ((size_t) n, 1.0f);
     engine.prepare (sampleRate);
     fx.prepare (sampleRate, n);
     readSettings();
@@ -110,6 +112,21 @@ Sound GroovadorProcessor::soundFor (int k, float factor) const
     s.model = b.model;
     s.inst  = k;
     s.hz    = baseHz[k] * std::exp2 ((b.tune + d.tune * 7.0f * f) / 12.0f);
+    // 0.3.0: KEY do LINK — a altura vai para a nota mais perto que seja a tônica ou a quinta do kick (o TUNE anda por
+    // elas). Só nas peças com altura (RIM, SNARE, PERC 1, PERC 2); hats, clap e shaker ficam como estão.
+    const int kr = linkRoot.load();
+    if (kr >= 0 && linkTuned (k) && pLinkKey->load() > 0.5f)
+    {
+        const double m = 69.0 + 12.0 * std::log2 ((double) s.hz / 440.0);
+        double best = m, bd = 1.0e9;
+        for (int c = (int) std::floor (m) - 7; c <= (int) std::ceil (m) + 7; ++c)
+        {
+            const int pc = ((c % 12) + 12) % 12;
+            if (pc != kr && pc != (kr + 7) % 12) continue;
+            if (std::abs (c - m) < bd) { bd = std::abs (c - m); best = c; }
+        }
+        s.hz = (float) (440.0 * std::exp2 ((best - 69.0) / 12.0));
+    }
     s.decMs = juce::jlimit (8.0f, 2500.0f, b.dec * std::exp2 (d.dec * f));
     s.tone  = juce::jlimit (150.0f, 18000.0f, b.tone * std::exp2 (d.tone * 1.5f * f));
     s.snap  = juce::jlimit (0.0f, 1.0f, b.snap + d.snap * 0.4f * f);
@@ -177,6 +194,27 @@ void GroovadorProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     readSettings();
     fxs.bpm = bpm;
 
+    // ---- 0.3.0: LINK com o CHUTE — a tônica do kick (KEY) e o corpo de cada batida (DUCK), sem sidechain ----
+    const bool temLink = link.sincroniza();
+    linkOn.store (temLink);
+    linkRoot.store (temLink && link.nota() > 1.0f ? ((int) std::lround (link.nota()) % 12 + 12) % 12 : -1);
+    const float duckAmt = pLinkDuck->load() * 0.01f;
+    const bool usaDuck = temLink && duckAmt > 0.0f;
+    if (temLink)
+    {
+        bool tocando = false; int64_t posBloco = 0;
+        if (auto* ph = getPlayHead())
+            if (auto p = ph->getPosition())
+            {
+                tocando = p->getIsPlaying();
+                if (auto ts = p->getTimeInSamples()) posBloco = *ts; else tocando = false;
+            }
+        link.ancora (currentRate, tocando, posBloco, (double) chutelink::agoraUs() * 0.001);
+        if ((int) duckBuf.size() < n) duckBuf.resize ((size_t) n);
+        for (int i = 0; i < n; ++i)
+            duckBuf[(size_t) i] = usaDuck ? 1.0f - duckAmt * 0.9f * kickEnvelope (i) : 1.0f;
+    }
+
     const bool   padsOnly = choice (pPlay) == 1;
     const int    steps  = stepsNow();
     const int    spb    = stepsPerBarNow();
@@ -206,7 +244,8 @@ void GroovadorProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     {
         if (upTo > rendered)
         {
-            engine.render (bufL.data() + rendered, bufR.data() + rendered, upTo - rendered);
+            engine.render (bufL.data() + rendered, bufR.data() + rendered, upTo - rendered,
+                           usaDuck ? duckBuf.data() + rendered : nullptr);
             rendered = upTo;
         }
     };
@@ -322,6 +361,24 @@ void GroovadorProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         peak = juce::jmax (peak, std::abs (l[i]), std::abs (r[i]));
     }
     meterOut.store (juce::jmax (meterOut.load(), peak));
+    if (temLink) link.avanca (n, currentRate);
+}
+
+// 0.3.0: envelope do kick (0..1) na amostra i do bloco: a amplitude do corpo da batida que soa agora, dividida pelo
+// pico daquela batida (medido uma vez por batida, nos primeiros 300 ms). Vale entre ancora() e avanca() do bloco.
+float GroovadorProcessor::kickEnvelope (int i)
+{
+    double t = 0.0, ciclos = 0.0, a = 0.0;
+    const auto* b = link.soando (i, currentRate, t);
+    if (b == nullptr || ! b->faseEm (t, ciclos, a)) return 0.0f;
+    if (b->wallMs != kickWall)
+    {
+        kickWall = b->wallMs;
+        float pk = 0.0f;
+        for (int k = 0; k < juce::jmin (b->len, 300); ++k) pk = juce::jmax (pk, std::abs (b->amp[k]));
+        kickPeak = juce::jmax (1.0e-4f, pk);
+    }
+    return juce::jlimit (0.0f, 1.0f, (float) std::abs (a) / kickPeak);
 }
 
 juce::AudioProcessorEditor* GroovadorProcessor::createEditor()

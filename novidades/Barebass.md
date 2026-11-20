@@ -4,6 +4,9 @@ Pacote do instalador: `InsideStudioSP-Barebass`. A versão é o primeiro título
 ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.2 — 2026-11-20
+- BASS LINK: o BAREBASS avisa cada nota que toca para o RESENHA (0.8.0) do mesmo projeto, sem rotear MIDI. No RESENHA, BAIXO = SEGUE faz a conversa andar junto com o baixo e BAIXO = RESPONDE toca nos buracos do groove do baixo. O som do BAREBASS não muda.
+
 ## 0.4.1 — 2026-11-18
 - Versão oficial (20/11/2026), aprovada no teste junto com o CHUTE: chega como atualização para quem tem a 0.3.0.
 - DUPLA COM O CHUTE: com o CHUTE no kick do mesmo projeto, o BAREBASS faz sozinho o que o ALIGN faria no canal

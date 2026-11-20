@@ -52,14 +52,21 @@ public:
         for (auto& v : voices) v.choke();
     }
 
-    void render (float* l, float* r, int n)
+    // duck (0.3.0, LINK): ganho por amostra para as peças que abaixam com o kick (linkDucked); nullptr = sem duck
+    void render (float* l, float* r, int n, const float* duck = nullptr)
     {
         for (int i = 0; i < n; ++i)
         {
-            float a = 0.0f, b = 0.0f;
-            for (auto& v : voices) v.render (a, b);
-            l[i] += a;
-            r[i] += b;
+            float a = 0.0f, b = 0.0f, da = 0.0f, db = 0.0f;
+            for (int k = 0; k < numInst; ++k)
+            {
+                const bool d = duck != nullptr && linkDucked (k);
+                voices[(size_t) (k * 2)].render (d ? da : a, d ? db : b);
+                voices[(size_t) (k * 2 + 1)].render (d ? da : a, d ? db : b);
+            }
+            const float g = duck != nullptr ? duck[i] : 1.0f;
+            l[i] += a + da * g;
+            r[i] += b + db * g;
         }
         for (int k = 0; k < numInst; ++k)
         {

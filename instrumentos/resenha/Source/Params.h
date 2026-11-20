@@ -46,6 +46,8 @@ inline const juce::StringArray intervalNames { "MESMA", "+OITAVA", juce::String:
 // PLAY: COM NOTA = a frase toca enquanto há nota segurada; SEMPRE = toca com o play do DAW; NOTAS = o sequenciador
 // desliga e o RESENHA toca o MIDI do clipe como um synth comum (canal 1 a 4 = timbre A a D; os outros canais = A)
 inline const juce::StringArray playNames  { "COM NOTA", "SEMPRE", "NOTAS" };
+inline const juce::StringArray bassNames  { "DESL.", "SEGUE", "RESPONDE" };
+enum class BassMode { off = 0, follow = 1, answer = 2 };
 enum class PlayMode { withNote = 0, always = 1, notes = 2 };
 // CONTORNO do gerador de notas: MOTIVO repete um desenho curto; CORRIDA sobe em escada (arpejo de psy) e
 // recomeça embaixo; QUEDA desce; ONDA sobe e desce; PEDAL alterna uma nota fixa (a tônica) com uma linha que anda
@@ -103,6 +105,10 @@ inline const juce::String drvType = "drvtype", drive = "drive", tone = "tone",
 // NÍVEL e os 4 knobs ligados a parâmetros do plugin (m1..m4)
 inline const juce::String hOct = "hoct", hVel = "hvel", hBend = "hbend", hLvl = "hlvl";
 inline juce::String hMacro (int k) { return "hm" + juce::String (k + 1); }
+// 0.8.0: LINK com o CHUTE e o BAREBASS do mesmo projeto (sem roteamento). KEY = a TÔNICA vem da cadeia (a nota do
+// CHUTE; sem CHUTE, a nota mais tocada pelo BAREBASS). BAIXO = DESL. / SEGUE (a frase anda junto com a nota do baixo) /
+// RESPONDE (segue e só toca nas semicolcheias em que o baixo NÃO toca: a resposta cai nos buracos do groove do baixo)
+inline const juce::String linkKey = "linkkey", linkBass = "linkbass";
 }
 
 // slot com plugin: os ajustes são do slot, não do timbre — preset nenhum mexe
@@ -114,7 +120,7 @@ inline bool isHubParam (const juce::String& pid)
 // o que o preset não muda (performance): travas, o modo de tocar e os ajustes do slot com plugin
 inline bool isPerformanceParam (const juce::String& pid)
 {
-    return pid.startsWith ("lk") || pid == id::play || isHubParam (pid);
+    return pid.startsWith ("lk") || pid.startsWith ("link") || pid == id::play || isHubParam (pid);
 }
 
 // timbre padrão de cada voz (Init): A seno brilhante, B serra, C quadrada, D triângulo.
@@ -273,6 +279,10 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
                                           AudioParameterFloatAttributes().withStringFromValueFunction ([] (float x, int)
                                           { return String (roundToInt (x * 100.0f)) + "%"; })));
     }
+
+    // ---- 0.8.0: LINK (no fim da lista: projetos antigos abrem iguais) ----
+    add (new AudioParameterBool ({ id::linkKey, 1 }, "Link Key", true));
+    add (new AudioParameterChoice ({ id::linkBass, 1 }, "Link Bass", bassNames, 0));
 
     return { p.begin(), p.end() };
 }

@@ -4,6 +4,7 @@
 #include "Dsp.h"
 #include "IspLicenca.h"
 #include "ChuteLink.h"
+#include "BassLink.h"
 #include "Dupla.h"
 
 // BAREBASS: synth de baixo simples (uma voz). OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB com envelope ADSR ->
@@ -12,6 +13,7 @@
 // nascer com o SUB em fase com o corpo do kick naquele instante.
 // 0.4.1: DUPLA — com o CHUTE no projeto o BAREBASS entrega o mesmo que o ALIGN, sem ALIGN na cadeia: KICK LOCK = fase /
 // polaridade nota a nota + LEVEL GUARD (o motor do ALIGN) e DUCK com dosagem (Dupla.h).
+// 0.4.2: BASS LINK — avisa cada nota que toca (nota + posição em tempos) para o RESENHA do mesmo projeto (BassLink.h).
 class BarebassProcessor : public juce::AudioProcessor
 {
 public:
@@ -65,6 +67,8 @@ private:
     std::unique_ptr<barebass::Engine> motor;
     double fs = 48000.0;
     chutelink::Leitor link;
+    basslink::Publicador bassPub;   // 0.4.2: as notas do baixo para o RESENHA
+    int notaSoando = -1;
     std::vector<float> kickLink;   // corpo do kick recriado pelo LINK, em trechos de até 2048 amostras
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o synth fica mudo
 

@@ -18,9 +18,13 @@ juce_add_plugin(Resenha
     VST3_CATEGORIES             Instrument Synth
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
 
+# 0.8.0: LINK com o CHUTE (ChuteLink do CHUTE) e com o BAREBASS (BassLink do BAREBASS)
 target_sources(Resenha PRIVATE
     Source/PluginProcessor.cpp
-    Source/PluginEditor.cpp)
+    Source/PluginEditor.cpp
+    ../chute/Source/ChuteLink.cpp
+    ../barebass/Source/BassLink.cpp)
+target_include_directories(Resenha PRIVATE ../chute/Source ../barebass/Source)
 
 # peças de hardware renderizadas (instrumentos/_hardware/tools/pecas.py): knob, lâmpada, LED, tecla
 file(GLOB resenha_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")

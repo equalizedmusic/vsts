@@ -138,6 +138,7 @@ private:
     float level = 0.0f, shownLevel = -1.0f;
     float lastBpm = 0.0f;
     int   lastState = -1, lastPreset = -2, lastSel = -1;
+    int   lastLink = -2;    // 0.3.0: LINK (achou o CHUTE + tônica) para repintar
 
     isp::TelaAtivacao ativacao;   // por último: por cima de tudo enquanto o pacote não está ativado
 

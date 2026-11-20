@@ -18,9 +18,12 @@ juce_add_plugin(Groovador
     VST3_CATEGORIES             Instrument Drum
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
 
+# 0.3.0: LINK com o CHUTE (o kick sem sidechain): compila o ChuteLink do CHUTE
 target_sources(Groovador PRIVATE
     Source/PluginProcessor.cpp
-    Source/PluginEditor.cpp)
+    Source/PluginEditor.cpp
+    ../chute/Source/ChuteLink.cpp)
+target_include_directories(Groovador PRIVATE ../chute/Source)
 
 isp_licenca(Groovador groovador)
 

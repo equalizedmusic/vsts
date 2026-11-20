@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.8.0 — 2026-11-20
+- LINK: o RESENHA acha o CHUTE e o BAREBASS do mesmo projeto sozinho, sem sidechain e sem rotear MIDI. Bloco LINK novo, ao lado da SAÍDA, com o estado embaixo (CHUTE, BAREBASS ou os dois, e a nota do baixo).
+- KEY (ligado): a TÔNICA da conversa vem da cadeia. Com o CHUTE, é a nota do kick; sem CHUTE, é a nota mais tocada pelo BAREBASS. O título da CONVERSA mostra "· LINK" quando a tônica veio de lá. Desligado, vale a TÔNICA do painel.
+- BAIXO = SEGUE: a frase anda junto com a nota que o BAREBASS está tocando (a tônica vai até a nota do baixo pelo caminho mais curto, até 6 semitons). O baixo muda de nota e a conversa muda junto.
+- BAIXO = RESPONDE: segue o baixo e só toca nas semicolcheias em que o baixo NÃO toca. O RESENHA aprende o desenho do baixo nos últimos 4 compassos e responde nos buracos do groove dele.
+- DUCK: com o CHUTE no projeto, o DUCK abaixa o lead com o corpo de cada batida do kick de verdade (antes era pela posição do tempo, e continua assim sem o CHUTE).
+- Precisa do BAREBASS 0.4.2 (grátis) para o SEGUE e o RESPONDE. Projetos e presets de antes abrem iguais (BAIXO começa em DESL.).
+
 ## 0.7.0 — 2026-11-13
 - PLAY ganhou o modo NOTAS: o sequenciador desliga e o RESENHA toca as notas do clipe como um synth comum. O canal da nota escolhe o timbre (canal 1 a 4 = A a D; os outros canais tocam o A). Cada timbre toca uma nota por vez, com o GLIDE dele. No slot INTERNO, velocity 112 ou mais vira accent; no slot PLUGIN a nota vai com a velocity do clipe e a OITAVA do slot.
 - Dica: arraste a conversa com ARRASTAR MIDI para o clipe (ela já sai com um canal por timbre), mude o PLAY para NOTAS e edite as notas no DAW.

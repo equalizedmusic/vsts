@@ -22,6 +22,7 @@ ResenhaProcessor::ResenhaProcessor()
     pDlMix = raw (id::dlMix);       pRvOn = raw (id::rvOn);         pRvSize = raw (id::rvSize);
     pRvMix = raw (id::rvMix);       pVol = raw (id::volume);
     pContour = raw (id::contour);   pDuck = raw (id::duck);         pTalk = raw (id::talk);
+    pLinkKey = raw (id::linkKey);   pLinkBass = raw (id::linkBass);
 
     for (int v = 0; v < numVoices; ++v)
     {
@@ -141,6 +142,8 @@ PhraseParams ResenhaProcessor::phraseParams() const
     p.steps    = phraseSteps (choice (pBars), choice (pRate));
     p.scale    = choice (pScale);
     p.root     = choice (pRoot);
+    // 0.8.0: KEY do LINK — a tônica vem do CHUTE / BAREBASS do projeto
+    if (pLinkKey->load() > 0.5f && linkRoot.load() >= 0) p.root = linkRoot.load();
     p.voices   = choice (pVoices) + 1;
     p.every    = everyCounts[juce::jlimit (0, numEvery - 1, choice (pEvery))];
     p.stepsPerBeat = 1.0 / rateBeats[juce::jlimit (0, 4, choice (pRate))];
@@ -234,17 +237,46 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     // ---- relógio do host ----
     double bpm = 120.0, ppq0 = 0.0;
     bool playing = false, havePpq = false;
+    int64_t posSamples = 0; bool haveSamples = false;
     if (auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())
         {
             if (auto b = pos->getBpm()) bpm = *b;
             playing = pos->getIsPlaying();
             if (auto p = pos->getPpqPosition()) { ppq0 = *p; havePpq = true; }
+            if (auto ts = pos->getTimeInSamples()) { posSamples = *ts; haveSamples = true; }
         }
     bpm = juce::jlimit (20.0, 400.0, bpm);
     shownBpm.store ((float) bpm);
     const bool hostRun = playing && havePpq;
     synced.store (hostRun);
+
+    // ---- 0.8.0: LINK com o CHUTE (tônica + DUCK pelo kick de verdade) e o BAREBASS (SEGUE / RESPONDE) ----
+    const bool temKick = kick.sincroniza();
+    const bool temBass = bass.sincroniza();
+    linkKick.store (temKick);
+    linkBassOn.store (temBass);
+    {
+        int r = -1;
+        if (temKick && kick.nota() > 1.0f) r = ((int) std::lround (kick.nota()) % 12 + 12) % 12;
+        else if (temBass) r = bass.tonica();
+        linkRoot.store (r);
+    }
+    if (temKick) kick.ancora (currentRate, playing && haveSamples, posSamples, (double) chutelink::agoraUs() * 0.001);
+    const auto bassMode = (BassMode) juce::jlimit (0, 2, choice (pLinkBass));
+    bassShift = 0;
+    {
+        const int bn = temBass && bassMode != BassMode::off ? bass.notaSeguir() : -1;
+        if (bn >= 0)
+        {
+            // a tônica da frase anda até a nota do baixo pelo caminho mais curto (−5 a +6 semitons)
+            const int rootNow = phraseParams().root;
+            int d = ((bn - rootNow) % 12 + 12) % 12;
+            if (d > 6) d -= 12;
+            bassShift = d;
+        }
+        bassShown.store (bn);
+    }
 
     readSettings();
     s.bpm = bpm;
@@ -330,11 +362,14 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             flush (i);
             const int idx = (int) (((absStep % steps) + steps) % steps);
             const int ni  = phrase.atStep[(size_t) idx];
-            if (ni >= 0)
+            // RESPONDE (0.8.0): a nota que cai na semicolcheia em que o baixo toca fica calada (o baixo fala ali)
+            const double stepStart = pair * 2.0 * sb + (second ? sb + sw : 0.0);
+            const bool bassTalks = ni >= 0 && hostRun && temBass && bassMode == BassMode::answer && bass.ocupada (stepStart);
+            if (ni >= 0 && ! bassTalks)
             {
                 const auto& pn = phrase.notes[(size_t) ni];
                 const double lenBeats = sb * ((double) (pn.len - 1) + (double) pn.gate);
-                const double start = pair * 2.0 * sb + (second ? sb + sw : 0.0);
+                const double start = stepStart;
                 const auto vi = (size_t) pn.voice;
                 pendNote[vi] = ni;                                   // dispara já ou, com PAPO, um pouco depois
                 pendPpq[vi]  = start + (double) pn.delay * sb;
@@ -357,7 +392,7 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 const auto& tb = s.t[vi];
                 const double lenBeats = pendEnd[vi] - pendPpq[vi];
                 const int    bendLen = (int) (lenBeats * 60.0 / bpm * currentRate);
-                voiceOn (pn.voice, i, pn.note + transpose, pn.accent, tb.glideMs, pn.last, bendLen);
+                voiceOn (pn.voice, i, pn.note + transpose + bassShift, pn.accent, tb.glideMs, pn.last, bendLen);
                 gateOffPpq[vi] = pendEnd[vi];
                 pendNote[vi] = -1;
             }
@@ -391,7 +426,12 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     for (int i = 0; i < n; ++i)
     {
         float target = 1.0f;
-        if (duck > 0.0f)
+        if (duck > 0.0f && temKick)
+        {
+            // 0.8.0: com o CHUTE no projeto, o DUCK segue o corpo do kick de verdade (a batida que soa agora)
+            target = 1.0f - duck * 0.92f * kickEnvelope (i);
+        }
+        else if (duck > 0.0f)
         {
             const double p = hostRun ? ppq0 + pps * (double) i : freePpq - pps * (double) (n - i);
             const float ph = (float) (p - std::floor (p));
@@ -405,6 +445,24 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         peak = juce::jmax (peak, std::abs (l[i]), std::abs (r[i]));
     }
     meterOut.store (juce::jmax (meterOut.load(), peak));
+    if (temKick) kick.avanca (n, currentRate);
+}
+
+// 0.8.0: envelope do kick (0..1) na amostra i do bloco: a amplitude do corpo da batida que soa agora, dividida pelo
+// pico daquela batida (medido uma vez por batida, nos primeiros 300 ms). Vale entre ancora() e avanca() do bloco.
+float ResenhaProcessor::kickEnvelope (int i)
+{
+    double t = 0.0, ciclos = 0.0, a = 0.0;
+    const auto* b = kick.soando (i, currentRate, t);
+    if (b == nullptr || ! b->faseEm (t, ciclos, a)) return 0.0f;
+    if (b->wallMs != kickWall)
+    {
+        kickWall = b->wallMs;
+        float pk = 0.0f;
+        for (int k = 0; k < juce::jmin (b->len, 300); ++k) pk = juce::jmax (pk, std::abs (b->amp[k]));
+        kickPeak = juce::jmax (1.0e-4f, pk);
+    }
+    return juce::jlimit (0.0f, 1.0f, (float) std::abs (a) / kickPeak);
 }
 
 // =====================================================================

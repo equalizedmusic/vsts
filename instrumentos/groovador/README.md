@@ -1,6 +1,6 @@
 # GROOVADOR
 
-> **Versão atual: 0.2.0** (11/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Groovador.md`](../../novidades/Groovador.md)
+> **Versão atual: 0.3.0** (20/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Groovador.md`](../../novidades/Groovador.md)
 
 ![GROOVADOR](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png)
 
@@ -60,3 +60,12 @@ uma faixa própria. Na saída: DRIVE, DELAY PING-PONG e REVERB.
 
 72 de fábrica (12 por estilo): cada um é estilo + semente; o kit, os ajustes e o groove saem da semente, sempre
 iguais. Presets do usuário guardam tudo (valores + grade). Travas, mudo/solo e o modo de tocar não mudam com o preset.
+
+## LINK com o CHUTE (0.3.0)
+
+Bloco **LINK · CHUTE** entre o REVERB e a SAÍDA; o visor mostra a nota do kick. O GROOVADOR acha o CHUTE do mesmo
+projeto sozinho (`ChuteLink` do CHUTE), sem sidechain.
+- **KEY** (ligado): RIM, SNARE, PERC 1 e PERC 2 vão para a tônica ou a quinta do kick mais perto (até 3,5 semitons);
+  o TUNE anda por essas notas. Hats, clap e shaker não mudam.
+- **DUCK** (35%): hats, shaker e percs abaixam com o corpo de cada batida do CHUTE.
+- Sem CHUTE no projeto, nada muda; o preset não mexe no KEY nem no DUCK.

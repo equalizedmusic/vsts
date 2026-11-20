@@ -7,6 +7,8 @@
 #include "IspLicenca.h"
 #include "Presets.h"
 #include "Hub.h"
+#include "ChuteLink.h"
+#include "BassLink.h"
 
 class ResenhaProcessor : public juce::AudioProcessor, private juce::AsyncUpdater
 {
@@ -99,6 +101,11 @@ public:
     std::atomic<bool>  waitingKey { false };
     std::atomic<bool>  notesMode { false };         // PLAY = NOTAS: o MIDI do clipe toca o RESENHA (sem sequenciador)        // COM NOTA, host tocando, nenhuma tecla: a frase espera
     std::atomic<int>   patternVersion { 0 };
+    // 0.8.0: LINK (lido pela tela). linkRoot = tônica que veio da cadeia (−1 = nenhuma); linkKick / linkBassOn = achou
+    // o CHUTE / o BAREBASS; bassShown = nota do baixo que a frase segue agora (−1 = nenhuma)
+    std::atomic<int>   linkRoot { -1 };
+    std::atomic<bool>  linkKick { false }, linkBassOn { false };
+    std::atomic<int>   bassShown { -1 };
 
 private:
     struct PresetBank
@@ -182,6 +189,13 @@ private:
     std::atomic<float>* pRvMix = nullptr;  std::atomic<float>* pVol = nullptr;
     std::atomic<float>* pContour = nullptr; std::atomic<float>* pDuck = nullptr; std::atomic<float>* pTalk = nullptr;
     float duckGain = 1.0f;
+    // 0.8.0: LINK
+    std::atomic<float>* pLinkKey = nullptr; std::atomic<float>* pLinkBass = nullptr;
+    chutelink::Leitor kick;
+    basslink::Leitor bass;
+    int bassShift = 0;                         // SEGUE: semitons que a frase anda para acompanhar o baixo
+    double kickWall = -1.0; float kickPeak = 1.0f;
+    float kickEnvelope (int sampleInBlock);
     juce::SmoothedValue<float> volSm;
     std::vector<float> bufL, bufR;
 

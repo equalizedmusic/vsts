@@ -1,7 +1,7 @@
 # BAREBASS
 
-> **Versão oficial: 0.3.0** (08/11/2026) · grátis com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br)
-> · **0.4.0** (18/11/2026) em TESTE (pré-release, não chega como atualização) · notas em
+> **Versão oficial: 0.4.2** (20/11/2026) · grátis com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br)
+> · notas em
 > [`novidades/Barebass.md`](../../novidades/Barebass.md)
 
 ![BAREBASS](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BAREBASS.png)
@@ -35,7 +35,12 @@ ficam em fase.
   GLIDE e o seletor MONO / LEGATO (LEGATO não redispara o envelope quando as notas se encostam).
 - A nota na tela segue o Ableton: a nota 60 é C3.
 
-## 0.4.0 (TESTE): LINK com o CHUTE
+## BASS LINK com o RESENHA (0.4.2)
+
+- O BAREBASS avisa cada nota que toca (nota + posição em tempos) para o RESENHA 0.8.0 do mesmo projeto
+  (`Source/BassLink.h`, memória compartilhada pelo PID do DAW). No RESENHA, BAIXO = SEGUE / RESPONDE. O som não muda.
+
+## LINK com o CHUTE (desde a 0.4.0)
 
 - Com o CHUTE no kick do mesmo projeto, o BAREBASS acha o kick sozinho, sem sidechain. O chip **KICK LOCK** no alto
   mostra a nota do kick (NO CHUTE quando não acha).

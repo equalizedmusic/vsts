@@ -1,6 +1,6 @@
 # RESENHA — call & response FM
 
-> **Versão atual: 0.7.0** (13/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
+> **Versão atual: 0.8.0** (20/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
 
 ![RESENHA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png)
 
@@ -57,6 +57,16 @@ nota fixa (a tônica) com uma linha que anda. O RITMO sorteado é um riff que se
 3+3+3+3+4), com virada a cada 2 compassos. **RETA** põe todas as notas na tônica da ROOT (o ritmo, o gate e a troca de timbre
 seguem; a melodia escrita fica guardada para quando voltar a outro contorno; o GERAR CONVERSA não sorteia a RETA). Os dados NOTAS, RITMO, GATE e TIMBRES sorteiam só aquela parte; o cadeado faz o
 GERAR CONVERSA pular a parte (TIMBRES respeita o cadeado do cartão de cada timbre).
+
+## LINK com o CHUTE e o BAREBASS (0.8.0)
+
+Bloco **LINK** ao lado da SAÍDA. Sem sidechain e sem rotear MIDI: o RESENHA acha o CHUTE (`ChuteLink` do CHUTE) e o
+BAREBASS (`BassLink` do BAREBASS, 0.4.2) do mesmo projeto pela memória compartilhada do processo do DAW.
+- **KEY** (ligado): a TÔNICA vem da cadeia — a nota do kick do CHUTE; sem CHUTE, a nota mais tocada pelo BAREBASS.
+  O título da CONVERSA ganha "· LINK".
+- **BAIXO**: DESL. / **SEGUE** (a tônica da frase vai até a nota que o baixo toca agora, até 6 semitons) /
+  **RESPONDE** (segue e cala as notas que caem nas semicolcheias em que o baixo tocou nos últimos 4 compassos).
+- **DUCK** com o CHUTE: abaixa o lead com o corpo de cada batida do kick (sem o CHUTE, continua pela posição do tempo).
 
 ## Conversa
 

@@ -24,13 +24,13 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: PICOTE, ESTICA, GROOVE | 0.2.0 | pago |
 | [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.0 | pago (lançamento 22/11) |
 | [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.1 | grátis |
-| [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.1 | grátis |
+| [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.2 | grátis |
 | [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.0 | à venda |
 | [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.0 | à venda |
 | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.2 | à venda |
 | [MERCÚRIO](instrumentos/mercurio/README.md) | Synth FM | 0.6.0 | à venda |
-| [RESENHA](instrumentos/resenha/README.md) | Call & response / HUB de synths | 0.7.0 | à venda |
-| [GROOVADOR](instrumentos/groovador/README.md) | Percussão com gerador de groove | 0.2.0 | à venda |
+| [RESENHA](instrumentos/resenha/README.md) | Call & response / HUB de synths | 0.8.0 | à venda |
+| [GROOVADOR](instrumentos/groovador/README.md) | Percussão com gerador de groove | 0.3.0 | à venda |
 | SÉRIE CRIATIVO | 10 efeitos criativos | 1.2.1 | à venda |
 | SÉRIE MIX | 10 ferramentas de mix | 1.2.1 | à venda |
 | [SÉRIE KNOB](plugins/knob/README.md) | 10 pedais de um knob | 0.3.1 | à venda |
@@ -59,13 +59,13 @@ ordem de uso: VASSOURA limpa → RODO nivela → ESPANADOR organiza → MAESTRO 
 
 | Prévia | Instrumento | O que é |
 |---|---|---|
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHUTE.png" width="240" alt="CHUTE">](instrumentos/chute/README.md) | [CHUTE](instrumentos/chute/README.md) | Kick designer: bancos SUB, PUNCH, TIGHT e BOOM + USER, corpo afinado por MIDI e knobs para moldar o golpe; publica cada batida pelo LINK para o ALIGN e o BAREBASS. **Pago** |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHUTE.png" width="240" alt="CHUTE">](instrumentos/chute/README.md) | [CHUTE](instrumentos/chute/README.md) | Kick designer: bancos SUB, PUNCH, TIGHT e BOOM + USER, corpo afinado por MIDI e knobs para moldar o golpe; publica cada batida pelo LINK para o ALIGN, o BAREBASS, o RESENHA e o GROOVADOR. **Pago** |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BAREBASS.png" width="240" alt="BAREBASS">](instrumentos/barebass/README.md) | [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo enxuto: 2 osciladores + SUB, filtro 12/24 dB com envelope e unHUNF (o sub bate no começo e some). **Grátis.** Desde a 0.4 trava no kick do CHUTE (KICK LOCK) e tem DUCK |
 | [<img src="https://insidestudiosp.com.br/img/quimera.webp" width="240" alt="QUIMERA">](instrumentos/quimera/README.md) | [QUIMERA](instrumentos/quimera/README.md) | 3 osciladores wavetable, filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador com SCALE/ROOT e 400 presets |
 | [<img src="https://insidestudiosp.com.br/img/limao.webp" width="240" alt="LIMÃO">](instrumentos/limao/README.md) | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido com alma de 303: filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive, delay e reverb, sequenciador de 32 passos com ALEATORIZAR |
 | [<img src="https://insidestudiosp.com.br/img/mercurio.webp" width="240" alt="MERCÚRIO">](instrumentos/mercurio/README.md) | [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, 16 vozes, 8 algoritmos desenhados na tela, razões inarmônicas, RING MOD e FOLD, dois filtros e 360 presets |
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png" width="240" alt="RESENHA">](instrumentos/resenha/README.md) | [RESENHA](instrumentos/resenha/README.md) | Call & response: 4 slots que conversam na escala, cada um com o timbre INTERNO ou um synth seu (HUB: VST3, e AU no Mac); gerador de frase, modo NOTAS (toca o MIDI do clipe), contorno RETA e ARRASTAR MIDI |
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png" width="240" alt="GROOVADOR">](instrumentos/groovador/README.md) | [GROOVADOR](instrumentos/groovador/README.md) | Percussão sintetizada sem bumbo: 8 instrumentos com 5 modelos, grade de até 4 compassos, gerador de groove por estilo e ARRASTAR MIDI |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png" width="240" alt="RESENHA">](instrumentos/resenha/README.md) | [RESENHA](instrumentos/resenha/README.md) | Call & response: 4 slots que conversam na escala, cada um com o timbre INTERNO ou um synth seu (HUB: VST3, e AU no Mac); gerador de frase, modo NOTAS (toca o MIDI do clipe), contorno RETA e ARRASTAR MIDI. Desde a 0.8 o LINK pega a tônica do CHUTE e segue ou responde o BAREBASS |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png" width="240" alt="GROOVADOR">](instrumentos/groovador/README.md) | [GROOVADOR](instrumentos/groovador/README.md) | Percussão sintetizada sem bumbo: 8 instrumentos com 5 modelos, grade de até 4 compassos, gerador de groove por estilo e ARRASTAR MIDI. Desde a 0.3 o LINK afina as peças no kick do CHUTE e faz o DUCK dos hats/percs |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONTAMONTA.png" width="240" alt="MONTA-MONTA">](instrumentos/montamonta/README.md) | [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático: as peças de um Minimoog se encaixam como quebra-cabeça, com lições e modo CABOS |
 
 ## Guitarra
@@ -162,7 +162,7 @@ roda o [pluginval](https://github.com/Tracktion/pluginval) e publica os instalad
 do pacote ou pelo `novidades/<Pacote>.md` dele. Arquivo compartilhado sozinho (`licenca/cliente`, `instalador/`,
 CMake da raiz, workflow) não dispara ninguém: entra no próximo build de cada pacote. `.md` dentro das pastas
 (README) não compila nada. Quem compila o link de outro pacote entra junto quando o link muda (MAGOS e GOGÓ com o
-`MaestroLink` do MAESTRO; ALIGN e BAREBASS com o `ChuteLink` do CHUTE). À mão: *Run workflow* com a lista de pacotes
+`MaestroLink` do MAESTRO; ALIGN, BAREBASS, RESENHA e GROOVADOR com o `ChuteLink` do CHUTE; RESENHA com o `BassLink` do BAREBASS). À mão: *Run workflow* com a lista de pacotes
 ou `todos`. Um push novo cancela o build da mesma linha que estiver rodando, então junte tudo num push só.
 
 **Fotos:** o `shots` só roda quando o push muda algo visual (`Source/` ou `assets/`) e só do plugin alterado

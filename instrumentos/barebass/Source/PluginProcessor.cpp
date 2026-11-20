@@ -191,14 +191,22 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     kickNota = temLink ? link.nota() : -1.0f;
     const bool trava = temLink && apvts.getRawParameterValue ("kicklock")->load() > 0.5f;
     bool tocando = false; int64_t posBloco = 0;
-    if (temLink)
-    {
-        if (auto* ph = getPlayHead())
-            if (auto p = ph->getPosition())
+    // 0.4.2: BASS LINK — posição em tempos para avisar as notas ao RESENHA
+    bool ppqOk = false; double ppq0 = 0.0, bpm = 120.0;
+    if (auto* ph = getPlayHead())
+        if (auto p = ph->getPosition())
+        {
+            if (auto b = p->getBpm()) bpm = juce::jlimit (20.0, 400.0, *b);
+            if (auto q = p->getPpqPosition()) { ppq0 = *q; ppqOk = p->getIsPlaying(); }
+            if (temLink)
             {
                 tocando = p->getIsPlaying();
                 if (auto ts = p->getTimeInSamples()) posBloco = *ts; else tocando = false;
             }
+        }
+    const bool temBassLink = bassPub.ocupa();
+    if (temLink)
+    {
         // 0.4.1: as batidas novas ganham a posição uma vez (âncora) e depois só envelhecem bloco a bloco
         link.ancora (fs, tocando, posBloco, (double) chutelink::agoraUs() * 0.001);
     }
@@ -226,12 +234,15 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
                     }
             }
             motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity(), faseKick, fKick);
+            notaSoando = m.getNoteNumber();
+            if (temBassLink) bassPub.nota (m.getNoteNumber(), ppq0 + (double) t * bpm / 60.0 / fs, ppqOk);
         }
-        else if (m.isNoteOff()) motor->noteOff (m.getNoteNumber(), a);
+        else if (m.isNoteOff()) { motor->noteOff (m.getNoteNumber(), a); if (m.getNoteNumber() == notaSoando) notaSoando = -1; }
         else if (m.isPitchWheel()) motor->pitchBend (m.getPitchWheelValue());
-        else if (m.isAllNotesOff() || m.isAllSoundOff()) motor->allNotesOff();
+        else if (m.isAllNotesOff() || m.isAllSoundOff()) { motor->allNotesOff(); notaSoando = -1; }
     }
     if (n > pos) motor->render (out, nch, pos, n - pos, a);
+    if (temBassLink) bassPub.vivo (notaSoando);
 
     // 0.4.1: DUPLA. Com o CHUTE: o motor do ALIGN (KICK LOCK) e o DUCK em cima do corpo do kick recriado (as mesmas
     // âncoras do noteOn, antes do avanca). Sem CHUTE: o motor fica desligado e o synth sai sem alteração.

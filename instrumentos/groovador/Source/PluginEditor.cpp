@@ -609,7 +609,12 @@ GroovadorEditor::GroovadorEditor (GroovadorProcessor& p) : AudioProcessorEditor 
     add<GKnob> ({ 730, 630, 62, 70 }, st, id::rvSize, "SIZE", gv::yellow, 34.0f);
     add<GKnob> ({ 794, 630, 62, 70 }, st, id::rvMix,  "MIX",  gv::yellow, 34.0f);
 
-    add<GKnob> ({ 1004, 630, 70, 70 }, st, id::volume, "VOLUME", gv::cream, 34.0f);
+    // 0.3.0: LINK com o CHUTE — KEY (as peças com altura afinam no kick) e DUCK (hats/shaker/percs abaixam com ele)
+    auto* lkKey = add<gv::Rocker> ({ 884, 646, 50, 36 });
+    attach (*lkKey, id::linkKey);
+    add<GKnob> ({ 940, 630, 62, 70 }, st, id::linkDuck, "DUCK", gv::red, 34.0f);
+
+    add<GKnob> ({ 1104, 630, 70, 70 }, st, id::volume, "VOLUME", gv::cream, 34.0f);
 
     // janela redimensionável pelo canto, sempre na mesma proporção; o tamanho fica salvo no projeto
     openScale = proc.uiScale.load();
@@ -784,6 +789,14 @@ void GroovadorEditor::timerCallback()
         canvas.repaint (726, 24, 60, 46);
     }
 
+    const int lk = proc.linkOn.load() ? proc.linkRoot.load() + 1 : -1;
+    if (lk != lastLink)
+    {
+        lastLink = lk;
+        canvas.repaint (1004, 632, 80, 62);
+        sound->repaint();   // a forma da batida muda com a afinação do KEY
+    }
+
     const float bpm = proc.shownBpm.load();
     const bool pads = param (proc, id::play) > 0.5f;
     const int state = pads ? 2 : proc.synced.load() ? 1 : 0;
@@ -878,9 +891,28 @@ void GroovadorEditor::drawCanvas (juce::Graphics& g)
     gv::caption (g, "TIPO", { 22.0f, 638.0f, 80.0f, 12.0f });
     gv::section (g, 316.0f, 614.0f, 330.0f, "DELAY PING-PONG");
     gv::caption (g, "ON", { 318.0f, 632.0f, 50.0f, 12.0f });
-    gv::section (g, 670.0f, 614.0f, 300.0f, "REVERB");
+    gv::section (g, 670.0f, 614.0f, 190.0f, "REVERB");
     gv::caption (g, "ON", { 672.0f, 632.0f, 50.0f, 12.0f });
-    gv::section (g, 1004.0f, 614.0f, 176.0f, u8 ("SAÍDA"));
+
+    // ---- 0.3.0: LINK com o CHUTE ----
+    gv::section (g, 880.0f, 614.0f, 204.0f, u8 ("LINK · CHUTE"));
+    gv::caption (g, "KEY", { 884.0f, 632.0f, 50.0f, 12.0f });
+    {
+        const bool lk = proc.linkOn.load();
+        const int kr = proc.linkRoot.load();
+        static const char* const notas[12] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        const RF well (1008.0f, 636.0f, 72.0f, 38.0f);
+        gv::displayWell (g, well);
+        g.setFont (gv::sans (lk && kr >= 0 ? 18.0f : 9.0f, true, 0.1f));
+        g.setColour (lk ? juce::Colour (0xff3dff4a) : gv::dim);
+        g.drawText (lk ? (kr >= 0 ? juce::String (notas[kr]) : juce::String ("CHUTE")) : juce::String ("SEM CHUTE"), well,
+                    juce::Justification::centred, false);
+        g.setFont (gv::sans (8.0f, true, 0.12f));
+        g.setColour (gv::dim);
+        g.drawText (lk ? u8 ("NOTA DO KICK") : u8 ("PÕE O CHUTE"), RF (1008.0f, 678.0f, 72.0f, 12.0f), juce::Justification::centred, false);
+    }
+
+    gv::section (g, 1098.0f, 614.0f, 82.0f, u8 ("SAÍDA"));
 }
 
 void GroovadorEditor::drawHeader (juce::Graphics& g)

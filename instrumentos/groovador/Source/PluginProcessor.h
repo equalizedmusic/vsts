@@ -6,6 +6,7 @@
 #include "Generator.h"
 #include "IspLicenca.h"
 #include "Presets.h"
+#include "ChuteLink.h"
 
 class GroovadorProcessor : public juce::AudioProcessor
 {
@@ -66,6 +67,9 @@ public:
     int  stepsNow() const;
     int  stepsPerBarNow() const;
     float varFactorFor (int inst, long long seg) const;   // quanto do timbre B o instrumento tem no trecho seg
+    // 0.3.0: LINK com o CHUTE (lido pela tela): achou o CHUTE / tônica do kick (0–11, −1 = nenhuma)
+    std::atomic<bool> linkOn { false };
+    std::atomic<int>  linkRoot { -1 };
 
     juce::AudioProcessorValueTreeState apvts;
     grv::Pattern pattern;
@@ -154,6 +158,12 @@ private:
     std::atomic<float>* pRvMix = nullptr;  std::atomic<float>* pVol = nullptr;
     juce::SmoothedValue<float> volSm;
     std::vector<float> bufL, bufR;
+    // 0.3.0: LINK
+    std::atomic<float>* pLinkKey = nullptr; std::atomic<float>* pLinkDuck = nullptr;
+    chutelink::Leitor link;
+    std::vector<float> duckBuf;               // ganho do DUCK por amostra do bloco
+    double kickWall = -1.0; float kickPeak = 1.0f;
+    float kickEnvelope (int sampleInBlock);
 
     juce::SharedResourcePointer<isp::Licenca> licenca;
 

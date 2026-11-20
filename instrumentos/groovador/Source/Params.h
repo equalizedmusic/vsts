@@ -80,12 +80,18 @@ inline const juce::String lockRhythm = "lkrhythm", lockTimbre = "lktimbre", lock
 inline const juce::String drvType = "drvtype", fxDrive = "fxdrive", fxTone = "fxtone",
                           dlOn = "dlon", dlDiv = "dldiv", dlFb = "dlfb", dlMix = "dlmix",
                           rvOn = "rvon", rvSize = "rvsize", rvMix = "rvmix", volume = "volume";
+// 0.3.0: LINK com o CHUTE do mesmo projeto (sem sidechain). KEY = RIM, SNARE, PERC 1 e PERC 2 afinam na nota do kick
+// (tônica ou quinta mais perto); DUCK = hats, shaker e percs abaixam com o corpo de cada batida do CHUTE
+inline const juce::String linkKey = "linkkey", linkDuck = "linkduck";
 }
+// peças que afinam no tom do kick e peças que abaixam com ele
+inline bool linkTuned (int k) { return k == rim || k == snare || k == perc1 || k == perc2; }
+inline bool linkDucked (int k) { return k == hatC || k == hatO || k == shaker || k == perc1 || k == perc2; }
 
 // o que o preset não muda (performance): travas, mudo/solo e o modo de tocar
 inline bool isPerformanceParam (const juce::String& pid)
 {
-    return pid.startsWith ("lk") || pid.startsWith ("mute") || pid.startsWith ("solo") || pid == id::play;
+    return pid.startsWith ("lk") || pid.startsWith ("link") || pid.startsWith ("mute") || pid.startsWith ("solo") || pid == id::play;
 }
 
 // som padrão de cada instrumento (Init)
@@ -199,6 +205,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
                                   AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
     add (new AudioParameterFloat ({ id::volume, 1 }, "Volume", NormalisableRange<float> (-36.0f, 6.0f, 0.1f), -6.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction (db)));
+
+    // ---- 0.3.0: LINK com o CHUTE (no fim da lista: projetos antigos abrem iguais) ----
+    add (new AudioParameterBool ({ id::linkKey, 1 }, "Link Key", true));
+    add (new AudioParameterFloat ({ id::linkDuck, 1 }, "Link Duck", NormalisableRange<float> (0.0f, 100.0f), 35.0f,
+                                  AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
 
     return { p.begin(), p.end() };
 }

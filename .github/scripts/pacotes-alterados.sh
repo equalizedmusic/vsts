@@ -43,7 +43,9 @@ for par in $mapa; do
     if [ "$P" = Magos ] && echo "$arquivos" | grep -qE '^instrumentos/maestro/Source/MaestroLink\.'; then entra=1; fi
     if [ "$P" = Gogo ] && echo "$arquivos" | grep -qE '^instrumentos/maestro/Source/MaestroLink\.'; then entra=1; fi
     # ALIGN e BAREBASS compilam o ChuteLink do CHUTE (LINK sem sidechain): mudou o link, mudam os dois
-    if { [ "$P" = Align ] || [ "$P" = Barebass ]; } && echo "$arquivos" | grep -qE '^instrumentos/chute/Source/ChuteLink\.'; then entra=1; fi
+    if { [ "$P" = Align ] || [ "$P" = Barebass ] || [ "$P" = Resenha ] || [ "$P" = Groovador ]; } && echo "$arquivos" | grep -qE '^instrumentos/chute/Source/ChuteLink\.'; then entra=1; fi
+    # RESENHA compila o BassLink do BAREBASS (as notas do baixo): mudou o link, muda o RESENHA
+    if [ "$P" = Resenha ] && echo "$arquivos" | grep -qE '^instrumentos/barebass/Source/BassLink\.'; then entra=1; fi
   fi
   if [ $entra = 1 ]; then dirs="$dirs${dirs:+;}$d"; pacotes="$pacotes${pacotes:+ }$P"; fi
 done
