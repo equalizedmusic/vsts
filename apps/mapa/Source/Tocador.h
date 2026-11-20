@@ -6,6 +6,7 @@
 #include <atomic>
 #include <vector>
 #include "Projeto.h"
+#include "IA.h"
 
 namespace mapa
 {
@@ -16,7 +17,9 @@ public:
     ~Tocador() override;
 
     // troca a música (buffer estéreo na taxa original) e o projeto (notas). Chamar na thread da mensagem.
-    void carregar (const juce::AudioBuffer<float>& audio, double taxa, const Projeto& projeto);
+    // stems (opcional): tocados nas faixas de áudio com Faixa::stem >= 0
+    void carregar (const juce::AudioBuffer<float>& audio, double taxa, const Projeto& projeto,
+                   std::shared_ptr<const Stems> stems = {});
     void descarregar();
 
     void tocar();
@@ -52,6 +55,7 @@ private:
     juce::AudioBuffer<float> ref;      // estéreo, taxa original
     double taxaRef = 44100, taxaSaida = 44100;
     Projeto proj;
+    std::shared_ptr<const Stems> stems;
     std::vector<std::vector<const Nota*>> notasPorFaixa;   // ordenadas por início
 
     std::atomic<bool> rodando { false };

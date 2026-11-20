@@ -141,6 +141,16 @@ VST não consegue. Ficam em `max4live/<nome>`, não entram em nenhum build nem i
 | [<img src="https://insidestudiosp.com.br/img/rodo.webp" width="240" alt="RODO">](max4live/rodo/README.md) | [RODO](max4live/rodo/README.md) | Nivela todos os clips pelo Clip Gain, por PEAK, RMS ou LUFS, com PEAK GUARD; modos CLIP, TRACK e ALL; RESET volta os ganhos |
 | [<img src="https://insidestudiosp.com.br/img/espanador.webp" width="240" alt="ESPANADOR">](max4live/espanador/README.md) | [ESPANADOR](max4live/espanador/README.md) | Reconhece as faixas pelo nome nos 8 grupos do MAESTRO, pinta faixas e clips e cria um BUS por grupo, já com o MAESTRO dentro; UNDO volta tudo |
 
+## App MAPA (teste)
+
+App standalone (Mac e Windows, em `apps/mapa`, build próprio `build-mapa.yml`, pré-release `mapa-vX.Y.Z`): lê uma
+música de referência, separa em stems (Demucs v4), transcreve baixo, voz, lead e pad (Basic Pitch), acha BPM, tom e
+partes, mostra a prévia com cara de DAW e monta o projeto (Ableton `.als`, Reaper `.rpp`, DAWproject ou pasta MIDI).
+A IA roda no ONNX Runtime embutido no app, sem internet. O modelo de separação (`htdemucs.onnx`, 174 MB) não fica no
+git: o workflow `mapa-modelos.yml` converte e publica no release `mapa-modelos`, e o build baixa de lá. Teste do motor
+sem JUCE: `tools/teste_v2.cpp` (alvo `mapa_teste`, `-DMAPA_TESTES=ON`). Licenças em
+[apps/mapa/TERCEIROS.md](apps/mapa/TERCEIROS.md).
+
 ## Formatos gerados
 
 | | Mac (Intel + Apple Silicon) | Windows 64 bits |

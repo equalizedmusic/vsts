@@ -89,11 +89,11 @@ public:
         juce::AudioFormatManager fm;
         fm.registerBasicFormats();
         std::unique_ptr<juce::AudioFormatReader> rd (fm.createReaderFor (arq));
-        if (rd == nullptr) { fim (false, u8 ("Não consegui ler este arquivo. Use WAV, AIFF, MP3 ou FLAC."), {}, 0, {}, {}); return; }
+        if (rd == nullptr) { falhou (u8 ("Não consegui ler este arquivo. Use WAV, AIFF, MP3 ou FLAC.")); return; }
         const double taxa = rd->sampleRate;
         const auto n = rd->lengthInSamples;
-        if (taxa <= 0 || n < (juce::int64) (taxa * 8)) { fim (false, u8 ("A música é curta demais (menos de 8 segundos)."), {}, 0, {}, {}); return; }
-        if (n > (juce::int64) (taxa * 60 * 20)) { fim (false, u8 ("A música passa de 20 minutos. Use um trecho menor."), {}, 0, {}, {}); return; }
+        if (taxa <= 0 || n < (juce::int64) (taxa * 8)) { falhou (u8 ("A música é curta demais (menos de 8 segundos).")); return; }
+        if (n > (juce::int64) (taxa * 60 * 20)) { falhou (u8 ("A música passa de 20 minutos. Use um trecho menor.")); return; }
 
         dono.mudaEtapa (0.01f, u8 ("lendo o arquivo"));
         auto buf = std::make_shared<juce::AudioBuffer<float>> (2, (int) n);
@@ -120,24 +120,134 @@ public:
             p = std::max (p, std::max (std::abs (l[i]), std::abs (r[i])));
         }
 
+        // ---- 0.2: IA (separação + notas). Sem o modelo, cai na análise simples (0.1).
+        juce::String aviso;
+        const juce::File modelo = arquivoModelo();
+        bool comIA = false;
+        if (modelo.existsAsFile())
+        {
+            std::vector<float> L44, R44;
+            para44k (*buf, taxa, L44, R44);
+            comIA = processarComIA (L44, R44, modelo.getFullPathName().toStdString(), MapaDados::nmp_onnx,
+                                    (size_t) MapaDados::nmp_onnxSize, in,
+                                    [this] (float v, const char* e) { dono.mudaEtapa (0.02f + 0.86f * v, juce::String::fromUTF8 (e)); },
+                                    &cancelar);
+            if (threadShouldExit() || cancelar) return;
+            if (! comIA)
+            {
+                aviso = u8 ("A IA não rodou (") + juce::String::fromUTF8 (in.erroIA.c_str()) + u8 ("): análise simples, sem stems.");
+                in.stems = Stems {};
+                in.notasBaixo.clear(); in.notasVoz.clear(); in.notasOutros.clear();
+            }
+        }
+        else
+            aviso = u8 ("Modelo de IA não encontrado: análise simples, sem stems.");
+
         Projeto p;
-        const bool ok = analisar (in, p, [this] (float v, const char* e) { dono.mudaEtapa (v, juce::String::fromUTF8 (e)); }, &cancelar);
+        const float b0 = comIA ? 0.88f : 0.0f, esc = comIA ? 0.08f : 0.98f;
+        const bool ok = analisar (in, p, [this, b0, esc] (float v, const char* e) { dono.mudaEtapa (b0 + esc * v, juce::String::fromUTF8 (e)); }, &cancelar);
         if (threadShouldExit() || cancelar) return;
+        if (! ok) { falhou (u8 ("Não consegui achar o ritmo desta música.")); return; }
+
+        std::shared_ptr<const Stems> st;
+        std::vector<std::vector<float>> picosSt;
+        if (comIA)
+        {
+            dono.mudaEtapa (0.97f, u8 ("gravando os stems"));
+            const juce::String erroGrava = gravarStems (in.stems, p);
+            if (erroGrava.isNotEmpty()) aviso = erroGrava;
+            picosSt.assign (numStems, std::vector<float> (6000, 0.0f));
+            const size_t ns = in.stems.amostras();
+            for (int k = 0; k < numStems && ns > 0; ++k)
+            {
+                const auto& a = in.stems.canal[(size_t) k][0];
+                const auto& b = in.stems.canal[(size_t) k][1];
+                auto& pk = picosSt[(size_t) k];
+                for (size_t i = 0; i < ns; ++i)
+                {
+                    auto& v = pk[(size_t) ((juce::uint64) i * 6000 / ns)];
+                    v = std::max (v, std::max (std::abs (a[i]), std::abs (b[i])));
+                }
+            }
+            st = std::make_shared<const Stems> (std::move (in.stems));
+        }
         dono.tempoAnalise = (juce::Time::getMillisecondCounterHiRes() - inicio) / 1000.0;
-        if (! ok) { fim (false, u8 ("Não consegui achar o ritmo desta música."), {}, 0, {}, {}); return; }
-        fim (true, {}, buf, taxa, std::move (p), std::move (picos));
+        fim (true, {}, buf, taxa, std::move (p), std::move (picos), st, std::move (picosSt), aviso);
     }
 
     std::atomic<bool> cancelar { false };
 
 private:
-    void fim (bool ok, juce::String erro, std::shared_ptr<juce::AudioBuffer<float>> a, double taxa, Projeto p, std::vector<float> picos)
+    void falhou (const juce::String& erro) { fim (false, erro, {}, 0, {}, {}, {}, {}, {}); }
+
+    void fim (bool ok, juce::String erro, std::shared_ptr<juce::AudioBuffer<float>> a, double taxa, Projeto p, std::vector<float> picos,
+              std::shared_ptr<const Stems> st, std::vector<std::vector<float>> picosSt, juce::String aviso)
     {
         auto sp = seguro;
-        juce::MessageManager::callAsync ([sp, ok, erro, a, taxa, p, picos]
+        auto pp = std::make_shared<Projeto> (std::move (p));
+        auto pc = std::make_shared<std::vector<float>> (std::move (picos));
+        auto ps = std::make_shared<std::vector<std::vector<float>>> (std::move (picosSt));
+        juce::MessageManager::callAsync ([sp, ok, erro, a, taxa, pp, pc, st, ps, aviso]
         {
-            if (auto* t = sp.getComponent()) t->terminouAnalise (ok, erro, a, taxa, p, picos);
+            if (auto* t = sp.getComponent()) t->terminouAnalise (ok, erro, a, taxa, std::move (*pp), std::move (*pc), st, std::move (*ps), aviso);
         });
+    }
+
+    // htdemucs.onnx: Mac = MAPA.app/Contents/Resources; Windows = pasta "modelos" ao lado do MAPA.exe
+    static juce::File arquivoModelo()
+    {
+       #if JUCE_MAC
+        return juce::File::getSpecialLocation (juce::File::currentApplicationFile).getChildFile ("Contents/Resources/htdemucs.onnx");
+       #else
+        return juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory().getChildFile ("modelos/htdemucs.onnx");
+       #endif
+    }
+
+    // estéreo na taxa original -> 44,1 kHz (o Demucs só trabalha em 44,1 kHz), sem atraso
+    static void para44k (const juce::AudioBuffer<float>& b, double taxa, std::vector<float>& L, std::vector<float>& R)
+    {
+        const int n = b.getNumSamples();
+        if (std::abs (taxa - 44100.0) < 0.5)
+        {
+            L.assign (b.getReadPointer (0), b.getReadPointer (0) + n);
+            R.assign (b.getReadPointer (1), b.getReadPointer (1) + n);
+            return;
+        }
+        const double razao = taxa / 44100.0;   // amostras de entrada por amostra de saída
+        const int nOut = (int) std::floor (n / razao);
+        for (int c = 0; c < 2; ++c)
+        {
+            juce::WindowedSincInterpolator it;
+            const int atraso = (int) std::lround (juce::WindowedSincInterpolator::getBaseLatency() / razao);
+            std::vector<float> tmp ((size_t) (nOut + atraso + 1), 0.0f);
+            it.process (razao, b.getReadPointer (c), tmp.data(), (int) tmp.size(), n, 0);
+            auto& v = c == 0 ? L : R;
+            v.assign (tmp.begin() + atraso, tmp.begin() + atraso + nOut);
+        }
+    }
+
+    // stems em WAV 24 bits numa pasta temporária (o exportador copia para <projeto>/Audio). Preenche Faixa::arquivo.
+    juce::String gravarStems (const Stems& st, Projeto& p)
+    {
+        auto pasta = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("MAPA-stems");
+        pasta.deleteRecursively();   // só os stems da música atual
+        pasta = pasta.getChildFile (nomeSeguro (p.nomeMusica));
+        if (! pasta.createDirectory()) return u8 ("Não consegui criar a pasta dos stems: ") + pasta.getFullPathName();
+        juce::WavAudioFormat wav;
+        const size_t ns = st.amostras();
+        for (auto& f : p.faixas)
+        {
+            if (f.tipo != TipoFaixa::audio || f.stem < 0) continue;
+            const auto destino = pasta.getChildFile (nomeSeguro (p.nomeMusica + " - " + f.nome.substr (5)) + ".wav");
+            std::unique_ptr<juce::OutputStream> os = std::make_unique<juce::FileOutputStream> (destino);
+            if (static_cast<juce::FileOutputStream*> (os.get())->failedToOpen()) return u8 ("Não consegui gravar ") + destino.getFullPathName();
+            auto w = wav.createWriterFor (os, juce::AudioFormatWriterOptions {}.withSampleRate (44100).withNumChannels (2).withBitsPerSample (24));
+            if (w == nullptr) return u8 ("Não consegui gravar ") + destino.getFullPathName();
+            const float* canais[2] = { st.canal[(size_t) f.stem][0].data(), st.canal[(size_t) f.stem][1].data() };
+            if (! w->writeFromFloatArrays (canais, 2, (int) ns)) return u8 ("Erro ao gravar ") + destino.getFullPathName();
+            f.arquivo = destino.getFullPathName().toStdString();
+        }
+        return {};
     }
 
     Tela& dono;
@@ -184,7 +294,8 @@ void Tela::carregar (const juce::File& f)
 }
 
 void Tela::terminouAnalise (bool ok, juce::String erro, std::shared_ptr<juce::AudioBuffer<float>> a, double tx,
-                            Projeto p, std::vector<float> pc)
+                            Projeto p, std::vector<float> pc, std::shared_ptr<const Stems> st,
+                            std::vector<std::vector<float>> pcSt, juce::String av)
 {
     trabalho.reset();
     if (! ok)
@@ -198,7 +309,10 @@ void Tela::terminouAnalise (bool ok, juce::String erro, std::shared_ptr<juce::Au
     taxa = tx;
     proj = std::move (p);
     picos = std::move (pc);
-    tocador.carregar (*audio, taxa, proj);
+    stems = st;
+    picosStems = std::move (pcSt);
+    aviso = av;
+    tocador.carregar (*audio, taxa, proj, stems);
     estado = Estado::pronto;
     arranjoSujo = true;
     resized();
@@ -311,11 +425,15 @@ void Tela::resized()
     if (estado == Estado::pronto && ! proj.faixas.empty())
     {
         const int n = (int) proj.faixas.size();
-        const float unid = rFaixas.getHeight() / (n + 0.5f);
+        // referência 1,5; stems 0,75 (são muitos e só mostram a waveform); demais 1
+        auto peso = [this] (int i) { return i == 0 ? 1.5f : (proj.faixas[(size_t) i].stem >= 0 ? 0.75f : 1.0f); };
+        float soma = 0;
+        for (int i = 0; i < n; ++i) soma += peso (i);
+        const float unid = rFaixas.getHeight() / juce::jmax (1.0f, soma);
         float y = (float) rFaixas.getY();
         for (int i = 0; i < n; ++i)
         {
-            const float h = i == 0 ? unid * 1.5f : unid;
+            const float h = unid * peso (i);
             juce::Rectangle<int> lin (rFaixas.getX(), (int) y, rFaixas.getWidth(), (int) (y + h) - (int) y);
             rLinhas.push_back (lin);
             auto cab = lin.withWidth (LARG_CAB);
@@ -825,9 +943,10 @@ void Tela::pintaClipe (juce::Graphics& g, const Faixa& f, const Clipe& c, juce::
     const auto escuro = C::escuro.withAlpha (0.6f);
     g.setColour (escuro);
 
-    // waveform (referência e FX)
+    // waveform (referência, stems e FX)
     if (f.tipo == TipoFaixa::audio || f.elem == Elemento::fx)
     {
+        const auto& picos = (f.stem >= 0 && f.stem < (int) picosStems.size()) ? picosStems[(size_t) f.stem] : this->picos;
         if (picos.empty() || proj.duracaoSeg <= 0) return;
         const float meio = r.getCentreY(), alt = r.getHeight() * 0.48f;
         for (int px = (int) r.getX(); px < (int) r.getRight(); ++px)

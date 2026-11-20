@@ -9,6 +9,7 @@
 #include <cmath>
 #include <complex>
 #include <cstring>
+#include <map>
 #include <numeric>
 #ifdef MAPA_DEBUG
 #include <cstdio>
@@ -103,6 +104,11 @@ std::vector<float> decimar (const std::vector<float>& x, int fator)
         y[(size_t) o] = (float) acc;
     }
     return y;
+}
+
+std::vector<float> somaMonoStem (const Stems& st, int k)
+{
+    return somaMono (st.canal[(size_t) k][0], st.canal[(size_t) k][1]);
 }
 
 struct Espectro
@@ -386,9 +392,11 @@ struct Compasso
     int alturaTempo[4] { -1, -1, -1, -1 };   // nota do baixo em cada tempo
     double cPad[12] {}, cPad1[12] {}, cPad2[12] {};
     double tonalPad = 0, tonalLead = 0, estab = 0, variacao = 0, eLead = -120, eHighRiser = -120;
+    double eBaixoS = -120, eVozS = -120, eOutS = -120, eBatS = -120;   // energia dos stems no compasso (dB), MAPA 0.2
+    int nBaixo = 0, nVoz = 0, nLead = 0, nPad = 0;        // notas transcritas que começam no compasso
     int leadPc[PASSOS];
     // presença detectada
-    bool kickOn = false, baixoOn = false, hatsOn = false, clapOn = false, padOn = false, leadOn = false;
+    bool kickOn = false, baixoOn = false, hatsOn = false, clapOn = false, padOn = false, leadOn = false, vozOn = false;
 };
 
 double topoMedia3 (const double c[12])
@@ -451,6 +459,8 @@ uint32_t corParte (const std::string& n)
     if (n.rfind ("BUILD", 0) == 0) return 0x22e4ff;
     if (n.rfind ("BREAK", 0) == 0) return 0x9b6bff;
     if (n.rfind ("GROOVE", 0) == 0) return 0xffb03a;
+    if (n.rfind ("VOCAL", 0) == 0) return 0xff7a59;
+    if (n.rfind ("INSTRUMENTAL", 0) == 0) return 0xffb03a;
     return 0x5b6170;   // INTRO / OUTRO
 }
 } // namespace
@@ -505,6 +515,54 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     const auto eHighF = energiaBanda (ep, 3000, 10500);
     const auto eLeadF = energiaBanda (et, 400, 4000);
     const auto eRiserF = energiaBanda (ep, 4000, 10500);
+
+    // ---------------- 1b. MAPA 0.2: stems (bateria e baixo limpos) para ler kick/clap/hats/baixo compasso a compasso
+    const bool temStems = ! in.stems.vazio();
+    Espectro eD, eB;   // bateria e baixo, 22.050 Hz, mesma janela do percussivo
+    std::vector<float> fluxKickD, fluxClapD, fluxHatD, fluxBaixoS, eLowS, eVozS, eOutS, eBatS;
+    double srS = 22050;
+    if (temStems)
+    {
+        prog (0.47f, "lendo os stems");
+        const int fS = std::max (1, (int) std::lround (in.stems.sampleRate / 22050.0));
+        srS = in.stems.sampleRate / fS;
+        auto monoDe = [&] (int k) { return decimar (somaMonoStem (in.stems, k), fS); };
+        if (! stft (monoDe (stemBateria), srS, 2048, 256, eD, {}, cancelar)) return false;
+        fluxKickD = fluxoBanda (eD, 30, 120);
+        fluxClapD = fluxoBanda (eD, 1000, 5000);
+        fluxHatD = fluxoBanda (eD, 6500, 10500);
+        if (! stft (monoDe (stemBaixo), srS, 2048, 256, eB, {}, cancelar)) return false;
+        fluxBaixoS = fluxoBanda (eB, 30, 400);
+        eLowS = energiaBanda (eB, 30, 400);
+        const int jmS = (int) std::lround (0.25 * srS / eD.hop);
+        for (auto* v : { &fluxKickD, &fluxClapD, &fluxHatD, &fluxBaixoS }) realcar (*v, jmS);
+        // energia da voz e dos "outros" (RMS em blocos do mesmo tamanho do quadro)
+        auto rmsQuadros = [&] (int k)
+        {
+            const auto m = monoDe (k);
+            std::vector<float> r ((size_t) eD.frames, 0.0f);
+            for (int f = 0; f < eD.frames; ++f)
+            {
+                const size_t a = (size_t) f * (size_t) eD.hop, b = std::min (m.size(), a + (size_t) eD.N);
+                double q = 0;
+                for (size_t i = a; i < b; ++i) q += (double) m[i] * m[i];
+                r[(size_t) f] = (float) (b > a ? q / (double) (b - a) : 0.0);
+            }
+            return r;
+        };
+        eVozS = rmsQuadros (stemVoz);
+        eOutS = rmsQuadros (stemOutros);
+        eBatS = rmsQuadros (stemBateria);
+        if (parar()) return false;
+    }
+    // fontes que a leitura por compasso usa: stem quando há, mistura quando não há
+    const Espectro& eKS = temStems ? eD : ep;
+    const std::vector<float>& fK = temStems ? fluxKickD : fluxKick;
+    const std::vector<float>& fC = temStems ? fluxClapD : fluxClap;
+    const std::vector<float>& fH = temStems ? fluxHatD : fluxHat;
+    const Espectro& eBS = temStems ? eB : ep;
+    const std::vector<float>& fB = temStems ? fluxBaixoS : fluxBaixo;
+    const std::vector<float>& eL = temStems ? eLowS : eLowF;
 
     // envelope para o tempo: total + kick, normalizados
     std::vector<float> envT (fluxTot.size());
@@ -654,6 +712,13 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         if (! c.temAudio) continue;
         const double a = std::max (0.0, ta), b = std::min (dur, tb);
         c.eLow = db (mediaJanela (eLowF, ep, a, b));
+        if (temStems)
+        {
+            c.eBaixoS = db (mediaJanela (eLowS, eB, a, b));
+            c.eVozS = db (mediaJanela (eVozS, eD, a, b));
+            c.eOutS = db (mediaJanela (eOutS, eD, a, b));
+            c.eBatS = db (mediaJanela (eBatS, eD, a, b));
+        }
         c.eMid = db (mediaJanela (eMidF, ep, a, b));
         c.eHigh = db (mediaJanela (eHighF, ep, a, b));
         c.eTot = db (std::pow (10, c.eLow / 10) + std::pow (10, c.eMid / 10) + std::pow (10, c.eHigh / 10));
@@ -663,11 +728,11 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         for (int s = 0; s < PASSOS; ++s)
         {
             const double t = segDe (j * 4.0 + s * 0.25);
-            c.kick[s] = maxJanela (fluxKick, ep, t, -0.03, 0.035);
-            c.hat[s] = maxJanela (fluxHat, ep, t, -0.025, 0.03);
-            c.clap[s] = maxJanela (fluxClap, ep, t, -0.025, 0.035);
-            c.baixoAtq[s] = maxJanela (fluxBaixo, ep, t, -0.025, 0.035);
-            c.low[s] = db (mediaJanela (eLowF, ep, t + 0.3 * passo, t + 0.9 * passo));
+            c.kick[s] = maxJanela (fK, eKS, t, -0.03, 0.035);
+            c.hat[s] = maxJanela (fH, eKS, t, -0.025, 0.03);
+            c.clap[s] = maxJanela (fC, eKS, t, -0.025, 0.035);
+            c.baixoAtq[s] = maxJanela (fB, eBS, t, -0.025, 0.035);
+            c.low[s] = db (mediaJanela (eL, eBS, t + 0.3 * passo, t + 0.9 * passo));
         }
         for (int bt = 0; bt < 4; ++bt)
         {
@@ -703,6 +768,86 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         }
     }
 
+    // ---------------- 5b. MAPA 0.2: notas transcritas (Basic Pitch) -> tempos do projeto, na grade de 1/16
+    struct NotaT { double ini, dur; int tom, vel; float amp; };
+    std::vector<NotaT> nBaixo, nVoz, nLead, nPad;
+    if (temStems)
+    {
+        const double fimProj = J * 4.0;
+        auto aTempos = [&] (double seg) { return (seg - out.audioCorteSeg) / P + out.audioInicioTempos; };
+        auto converter = [&] (const std::vector<NotaAudio>& v, int tomMin, int tomMax, double grade, float ampMin)
+        {
+            std::vector<NotaT> r;
+            for (const NotaAudio& n : v)
+            {
+                if (n.tom < tomMin || n.tom > tomMax || n.amp < ampMin) continue;
+                const double a = std::round (aTempos (n.ini) / grade) * grade;
+                double b = std::round (aTempos (n.fim) / grade) * grade;
+                if (b < a + grade) b = a + grade;
+                if (a < 0 || a >= fimProj) continue;
+                r.push_back ({ a, std::min (b, fimProj) - a, n.tom, std::clamp ((int) std::lround (40 + 110 * n.amp), 30, 127), n.amp });
+            }
+            std::sort (r.begin(), r.end(), [] (const NotaT& x, const NotaT& y) { return x.ini != y.ini ? x.ini < y.ini : x.tom < y.tom; });
+            return r;
+        };
+        // uma nota por vez: no mesmo passo fica a mais forte (baixo: a mais grave entre as fortes; melodia: a mais aguda)
+        auto monofonica = [] (std::vector<NotaT> v, bool grave)
+        {
+            std::vector<NotaT> r;
+            for (size_t i = 0; i < v.size();)
+            {
+                size_t k = i;
+                float mx = 0;
+                while (k < v.size() && std::abs (v[k].ini - v[i].ini) < 1e-6) { mx = std::max (mx, v[k].amp); ++k; }
+                const NotaT* esc = nullptr;
+                for (size_t q = i; q < k; ++q)
+                {
+                    if (v[q].amp < 0.6f * mx) continue;
+                    if (esc == nullptr || (grave ? v[q].tom < esc->tom : v[q].tom > esc->tom)) esc = &v[q];
+                }
+                if (esc) r.push_back (*esc);
+                i = k;
+            }
+            for (size_t i = 0; i + 1 < r.size(); ++i)
+                r[i].dur = std::max (0.125, std::min (r[i].dur, r[i + 1].ini - r[i].ini));
+            return r;
+        };
+        nBaixo = monofonica (converter (in.notasBaixo, 24, 64, 0.25, 0.25f), true);
+        nVoz = monofonica (converter (in.notasVoz, 40, 88, 0.25, 0.3f), false);
+        {
+            // "outros": nota longa com outras soando junto = PAD; o resto = LEAD (linha de cima)
+            const auto todas = converter (in.notasOutros, 36, 100, 0.25, 0.3f);
+            std::vector<NotaT> lead;
+            for (size_t i = 0; i < todas.size(); ++i)
+            {
+                const NotaT& n = todas[i];
+                int juntas = 0;
+                for (size_t k = 0; k < todas.size(); ++k)
+                {
+                    if (k == i) continue;
+                    const double ov = std::min (n.ini + n.dur, todas[k].ini + todas[k].dur) - std::max (n.ini, todas[k].ini);
+                    if (ov >= 0.5 * n.dur) ++juntas;
+                    if (todas[k].ini > n.ini + n.dur) break;
+                }
+                const bool pad = (n.dur >= 1.5 && juntas >= 1) || n.dur >= 4.0;
+                (pad ? nPad : lead).push_back (n);
+            }
+            nLead = monofonica (lead, false);
+            // pad: no máximo 5 notas soando juntas, começo na grade de 1/8
+            for (auto& n : nPad) n.ini = std::round (n.ini * 2) / 2;
+        }
+        auto contar = [&] (const std::vector<NotaT>& v, int Compasso::* campo)
+        {
+            for (const NotaT& n : v)
+            {
+                const int j = (int) (n.ini / 4.0);
+                if (j >= 0 && j < J) cs[(size_t) j].*campo += 1;
+            }
+        };
+        contar (nBaixo, &Compasso::nBaixo); contar (nVoz, &Compasso::nVoz);
+        contar (nLead, &Compasso::nLead); contar (nPad, &Compasso::nPad);
+    }
+
     // ---------------- 6. limiares globais e presença por compasso
     std::vector<double> vk, vh, vc, vtot, vlow, vlead;
     for (auto& c : cs)
@@ -736,6 +881,8 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         for (int s = 0; s < PASSOS; ++s) if (s != 4 && s != 12) resto += c.clap[s];
         resto /= 14;
         c.clapOn = bb > thrC && bb > 1.6 * resto;
+        if (temStems && c.kickOn)   // com kick em todo tempo, compara 2 e 4 com 1 e 3 (o clique do kick está nos quatro)
+            c.clapOn = bb > thrC && bb > 1.5 * (c.clap[0] + c.clap[8]) / 2;
         c.padOn = c.tonalPad > 0.42 && c.estab > 0.88 && c.eMid > topoTot - 24;
         c.leadOn = c.tonalLead > 0.40 && c.variacao >= 0.12 && c.eLead > topoLead - 15;
     }
@@ -764,6 +911,21 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     }
     if (parar()) return false;
 
+    if (temStems)
+    {
+        std::vector<double> vb, vv, vo;
+        for (auto& c : cs) if (c.temAudio) { vb.push_back (c.eBaixoS); vv.push_back (c.eVozS); vo.push_back (c.eOutS); }
+        const double tB = percentil (vb, 0.95), tV = percentil (vv, 0.95), tO = percentil (vo, 0.95);
+        for (auto& c : cs)
+        {
+            if (! c.temAudio) continue;
+            c.baixoOn = c.eBaixoS > tB - 18 && (c.nBaixo > 0 || c.eBaixoS > tB - 10);
+            c.vozOn = c.eVozS > tV - 22 && c.nVoz > 0;
+            c.leadOn = c.eOutS > tO - 24 && c.nLead >= 2;
+            c.padOn = c.eOutS > tO - 24 && c.nPad >= 1;
+        }
+    }
+
     // ---------------- 4. tom (croma do meio + histograma do baixo)
     prog (0.85f, "achando o tom");
     double hist[12] = {};
@@ -783,6 +945,19 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     for (int i = 0; i < 12; ++i) std::fprintf (stderr, "%s:%.3f(b%.3f) ", NOMES[i], hist[i], histB[i]);
     std::fputc ('\n', stderr);
 #endif
+    if (temStems)
+    {
+        // com notas transcritas: histograma de classes de altura pesado pela duração (o baixo pesa mais)
+        double h[12] = {};
+        auto soma = [&] (const std::vector<NotaT>& v, double peso)
+        {
+            for (const NotaT& n : v) h[((n.tom % 12) + 12) % 12] += peso * n.dur * (0.5 + n.amp);
+        };
+        soma (nBaixo, 2.0); soma (nPad, 1.0); soma (nLead, 1.0); soma (nVoz, 1.0);
+        const double tot = std::accumulate (h, h + 12, 0.0);
+        if (tot > 8.0)
+            for (int i = 0; i < 12; ++i) hist[i] = h[i] / tot;
+    }
     double melhorK = -2; int tonica = 0; bool menor = true;
     for (int t = 0; t < 12; ++t)
     {
@@ -823,7 +998,23 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             for (int i = 0; i < 4; ++i) f.push_back (c.temAudio ? std::clamp ((e[i] - mn[(size_t) i]) / sd[(size_t) i], -3.0, 3.0) : -3.0);
             f.push_back (c.kickOn ? 1.6 : 0); f.push_back (c.baixoOn ? 1.2 : 0); f.push_back (c.hatsOn ? 0.9 : 0);
             f.push_back (c.clapOn ? 0.9 : 0); f.push_back (c.padOn ? 0.6 : 0); f.push_back (c.leadOn ? 0.6 : 0);
+            f.push_back (c.vozOn ? 0.8 : 0);
             fv[(size_t) j] = f;
+        }
+        if (temStems)
+        {
+            // 0.2: energia de cada stem (z-score) — acha virada mesmo quando bateria e baixo não param
+            auto zs = [&] (double Compasso::* campo, double peso)
+            {
+                double m = 0, q = 0; int k = 0;
+                for (auto& c : cs) if (c.temAudio) { m += c.*campo; ++k; }
+                m /= std::max (k, 1);
+                for (auto& c : cs) if (c.temAudio) q += (c.*campo - m) * (c.*campo - m);
+                const double sd = std::sqrt (q / std::max (k, 1)) + 1.5;   // +1,5 dB: stem quase constante não vira ruído
+                for (int j = 0; j < J; ++j)
+                    fv[(size_t) j].push_back (cs[(size_t) j].temAudio ? peso * std::clamp ((cs[(size_t) j].*campo - m) / sd, -3.0, 3.0) : -3.0 * peso);
+            };
+            zs (&Compasso::eBatS, 1.0); zs (&Compasso::eBaixoS, 1.0); zs (&Compasso::eVozS, 1.2); zs (&Compasso::eOutS, 1.0);
         }
     }
     auto distBlocos = [&] (int b, int L)
@@ -843,19 +1034,26 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         return std::sqrt (d);
     };
     std::vector<std::pair<double, int>> cand;
-    for (int b = j0 + 4; b <= J - 4; b += 4)
+    for (int b = j0 + 4; b <= J - 8; b += 4)   // os últimos 8 compassos (rabo/fade) nunca viram parte: nem entram na conta do limiar
     {
         double nv = 0.6 * distBlocos (b, 8) + 0.4 * distBlocos (b, 4);
         if (((b - j0) % 8) == 0) nv *= 1.1;   // frase de 8 compassos é o mais comum
         cand.push_back ({ nv, b });
     }
     std::vector<int> cortes;
+    std::map<int, double> forcaCorte;
+    double forcaMax = 1e-9;
+    for (auto& c : cand) { forcaCorte[c.second] = c.first; forcaMax = std::max (forcaMax, c.first); }
     if (! cand.empty())
     {
         std::vector<double> nvs;
         for (auto& c : cand) nvs.push_back (c.first);
         const double mx = *std::max_element (nvs.begin(), nvs.end());
         const double thr = std::max (0.28 * mx, 1.4 * mediana (nvs));
+#ifdef MAPA_DEBUG
+        for (auto& c : cand) std::fprintf (stderr, "corte %d nv %.2f\n", c.second + 1, c.first);
+        std::fprintf (stderr, "thr %.2f mx %.2f\n", thr, mx);
+#endif
         std::sort (cand.begin(), cand.end(), [] (auto& a, auto& b) { return a.first > b.first; });
         for (auto& c : cand)
         {
@@ -874,17 +1072,23 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     for (int k : cortes) lim.push_back (k);
     lim.push_back (J);
 
-    struct InfoParte { int a, b; double e, kick; std::string nome; };
+    struct InfoParte { int a, b; double e, kick, voz; std::string nome; };
     std::vector<InfoParte> ps;
     double eMax = -200;
     for (size_t i = 0; i + 1 < lim.size(); ++i)
     {
-        InfoParte p { lim[i], lim[i + 1], 0, 0, "" };
-        int n = 0, nk = 0;
+        InfoParte p { lim[i], lim[i + 1], 0, 0, 0, "" };
+        int n = 0, nk = 0, nv = 0;
         for (int j = p.a; j < p.b; ++j)
-            if (cs[(size_t) j].temAudio) { p.e += std::pow (10, cs[(size_t) j].eTot / 10); ++n; if (cs[(size_t) j].kickOn) ++nk; }
+            if (cs[(size_t) j].temAudio)
+            {
+                p.e += std::pow (10, cs[(size_t) j].eTot / 10); ++n;
+                if (cs[(size_t) j].kickOn) ++nk;
+                if (cs[(size_t) j].vozOn) ++nv;
+            }
         p.e = n ? db (p.e / n) : -120;
         p.kick = n ? (double) nk / n : 0;
+        p.voz = n ? (double) nv / n : 0;
         eMax = std::max (eMax, p.e);
         ps.push_back (p);
     }
@@ -897,6 +1101,15 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         if (p.kick >= 0.5 && rel >= -3.5) p.nome = "DROP";
         else if (p.kick < 0.5) p.nome = "BREAK";
         else p.nome = "GROOVE";
+    }
+    // 0.2: música em que o kick não para (nenhuma parte do meio sem kick): o que muda é a voz
+    if (temStems && np > 2)
+    {
+        bool semBreak = true;
+        for (int i = 1; i + 1 < np; ++i) if (ps[(size_t) i].kick < 0.5) semBreak = false;
+        if (semBreak)
+            for (auto& p : ps)
+                if (p.kick >= 0.5) p.nome = p.voz >= 0.5 ? "VOCAL" : "INSTRUMENTAL";
     }
     for (int i = 0; i < np; ++i)
     {
@@ -913,11 +1126,13 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         if (ps[(size_t) np - 1].nome != "DROP") ps[(size_t) np - 1].nome = "OUTRO";
     }
     else ps[0].nome = "INTRO";
-    // junta vizinhas de mesmo nome
+    // junta vizinhas de mesmo nome (com stems, só se a virada entre elas foi fraca: música que não para o kick
+    // ainda tem verso/refrão e break de voz)
     std::vector<InfoParte> pj;
     for (auto& p : ps)
     {
-        if (! pj.empty() && pj.back().nome == p.nome) pj.back().b = p.b;
+        const bool viradaForte = temStems && forcaCorte.count (p.a) && forcaCorte[p.a] >= 0.55 * forcaMax;
+        if (! pj.empty() && pj.back().nome == p.nome && ! viradaForte) pj.back().b = p.b;
         else pj.push_back (p);
     }
     // numera repetidas (DROP, DROP 2 ...)
@@ -975,7 +1190,8 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         return std::string (padraoTxt);
     };
 
-    auto faixaBateria = [&] (const char* nome, uint32_t cor, Elemento el, int nota, auto presente, auto ativo, const char* txt)
+    auto faixaBateria = [&] (const char* nome, uint32_t cor, Elemento el, int nota, auto presente, auto ativo, const char* txt,
+                             auto forca, double topoForca)
     {
         std::vector<bool> on ((size_t) J);
         for (int j = 0; j < J; ++j) on[(size_t) j] = presente (cs[(size_t) j]);
@@ -989,8 +1205,22 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             const auto pat = padrao (t.first, t.second, ativo);
             if (desc.empty()) desc = descreveBateria (pat, txt);
             for (int j = t.first; j < t.second; ++j)
-                for (int s = 0; s < PASSOS; ++s)
-                    if (pat[(size_t) s]) cl.notas.push_back ({ j * 4.0 + s * 0.25, 0.125, nota, s % 4 == 0 ? 110 : 90 });
+            {
+                if (temStems)
+                {
+                    // 0.2: o que tocou DE VERDADE em cada compasso (stem de bateria limpo), com a força do golpe
+                    if (! cs[(size_t) j].temAudio) continue;
+                    for (int s = 0; s < PASSOS; ++s)
+                        if (ativo (cs[(size_t) j], s))
+                        {
+                            const double v = std::min (1.0, forca (cs[(size_t) j], s) / (topoForca + 1e-9));
+                            cl.notas.push_back ({ j * 4.0 + s * 0.25, 0.125, nota, std::clamp ((int) std::lround (55 + 72 * v), 40, 127) });
+                        }
+                }
+                else
+                    for (int s = 0; s < PASSOS; ++s)
+                        if (pat[(size_t) s]) cl.notas.push_back ({ j * 4.0 + s * 0.25, 0.125, nota, s % 4 == 0 ? 110 : 90 });
+            }
             f.clipes.push_back (cl);
         }
         f.desc = "MIDI · " + desc;
@@ -1000,10 +1230,60 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     faixaBateria ("KICK", 0xb8ff3a, Elemento::kick, 36,
                   [] (const Compasso& c) { return c.kickOn; },
                   [&] (const Compasso& c, int s) { const float mx = *std::max_element (c.kick, c.kick + PASSOS);
-                                                   return c.kick[s] > thrK && c.kick[s] > 0.55f * mx; },
-                  "padrão próprio");
+                                                   return c.kick[s] > thrK && c.kick[s] > (temStems ? 0.7f : 0.55f) * mx; },
+                  "padrão próprio", [] (const Compasso& c, int s) { return (double) c.kick[s]; }, percentil (vk, 0.99));
 
+    // 0.2: faixas de notas transcritas. Clipes = compassos com a parte tocando (buracos de até 2 compassos juntam;
+    // encosta nas viradas de parte a até 2 compassos).
+    auto faixaDeNotas = [&] (const char* nome, const std::string& desc, uint32_t cor, Elemento el,
+                             const std::vector<NotaT>& v, auto presente)
+    {
+        std::vector<bool> on ((size_t) J);
+        for (int j = 0; j < J; ++j) on[(size_t) j] = presente (cs[(size_t) j]);
+        std::vector<std::pair<int, int>> tr;
+        for (int j = 0; j < J;)
+        {
+            if (! on[(size_t) j]) { ++j; continue; }
+            int k = j + 1;
+            while (k < J && (on[(size_t) k] || (k + 1 < J && on[(size_t) k + 1]) || (k + 2 < J && on[(size_t) k + 2]))) ++k;
+            tr.push_back ({ j, k });
+            j = k;
+        }
+        for (auto& t : tr)
+            for (int c : cortesFinais)
+            {
+                if (std::abs (t.first - c) <= 2) t.first = std::min (t.first, c);
+                if (std::abs (t.second - c) <= 2) t.second = std::max (t.second, c);
+            }
+        Faixa f { nome, desc, cor, TipoFaixa::midi, el, false, {} };
+        for (auto& t : tr)
+        {
+            Clipe cl { t.first * 4.0, t.second * 4.0, {} };
+            if (! f.clipes.empty() && cl.inicio < f.clipes.back().fim) cl.inicio = f.clipes.back().fim;
+            if (cl.fim <= cl.inicio) continue;
+            for (const NotaT& n : v)
+                if (n.ini >= cl.inicio && n.ini < cl.fim)
+                    cl.notas.push_back ({ n.ini, std::max (0.05, std::min (n.dur, cl.fim - n.ini) - 0.01), n.tom, n.vel });
+            if (! cl.notas.empty()) f.clipes.push_back (cl);
+        }
+        if (! f.clipes.empty()) out.faixas.push_back (f);
+    };
+    auto faixaExtensao = [&] (const std::vector<NotaT>& v)
+    {
+        int lo = 127, hi = 0;
+        for (auto& n : v) { lo = std::min (lo, n.tom); hi = std::max (hi, n.tom); }
+        return v.empty() ? std::string() : std::string (" · ") + NOMES[lo % 12] + std::to_string (lo / 12 - 1) + "-" + NOMES[hi % 12] + std::to_string (hi / 12 - 1);
+    };
+
+    if (temStems)
+    {
+        faixaDeNotas ("BAIXO", "MIDI · do stem" + faixaExtensao (nBaixo), 0x8fd16a, Elemento::baixo, nBaixo,
+                      [] (const Compasso& c) { return c.baixoOn && c.nBaixo > 0; });
+        faixaDeNotas ("VOZ", "MIDI · melodia da voz" + faixaExtensao (nVoz), 0xff7a59, Elemento::voz, nVoz,
+                      [] (const Compasso& c) { return c.vozOn; });
+    }
     // BAIXO: ritmo por maioria, altura de cada tempo do próprio compasso
+    if (! temStems)
     {
         std::vector<bool> on ((size_t) J);
         for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].baixoOn;
@@ -1056,7 +1336,8 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
 
     faixaBateria ("HATS", 0x22e4ff, Elemento::hats, 42,
                   [] (const Compasso& c) { return c.hatsOn; },
-                  [&] (const Compasso& c, int s) { return c.hat[s] > thrH; }, "padrão próprio");
+                  [&] (const Compasso& c, int s) { return c.hat[s] > thrH; }, "padrão próprio",
+                  [] (const Compasso& c, int s) { return (double) c.hat[s]; }, percentil (vh, 0.99));
     faixaBateria ("CLAP", 0xffb03a, Elemento::clap, 39,
                   [] (const Compasso& c) { return c.clapOn; },
                   [&] (const Compasso& c, int s)
@@ -1064,10 +1345,27 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
                       double resto = 0;
                       for (int p = 0; p < PASSOS; ++p) resto += c.clap[p];
                       resto /= PASSOS;
+                      if (temStems && c.kickOn)
+                      {
+                          // clique do kick = o menor "clap" entre os passos com kick neste compasso
+                          const float mxK = *std::max_element (c.kick, c.kick + PASSOS);
+                          float clique = 1e30f;
+                          for (int p = 0; p < PASSOS; ++p)
+                              if (c.kick[p] > thrK && c.kick[p] > 0.55f * mxK) clique = std::min (clique, c.clap[p]);
+                          if (clique < 1e29f && c.clap[s] < 1.6f * clique + 0.25f * (float) thrC) return false;
+                      }
                       return c.clap[s] > thrC && c.clap[s] > 1.6 * resto;
-                  }, "padrão próprio");
+                  }, "padrão próprio", [] (const Compasso& c, int s) { return (double) c.clap[s]; }, percentil (vc, 0.99));
 
+    if (temStems)
+    {
+        faixaDeNotas ("LEAD", "MIDI · melodia" + faixaExtensao (nLead), 0xff3dbb, Elemento::lead, nLead,
+                      [] (const Compasso& c) { return c.leadOn; });
+        faixaDeNotas ("PAD", "MIDI · acordes" + faixaExtensao (nPad), 0x9b6bff, Elemento::pad, nPad,
+                      [] (const Compasso& c) { return c.padOn; });
+    }
     // LEAD: nota dominante por passo, juntando passos iguais
+    if (! temStems)
     {
         std::vector<bool> on ((size_t) J);
         for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].leadOn;
@@ -1101,6 +1399,7 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     }
 
     // PAD: um acorde da escala por compasso (tríade), compassos iguais viram nota longa
+    if (! temStems)
     {
         std::vector<bool> on ((size_t) J);
         for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].padOn;
@@ -1169,7 +1468,66 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         if (! f.clipes.empty()) out.faixas.push_back (f);
     }
 
+    // 0.2: os stems como faixas de áudio (mutadas: a referência já toca a música inteira)
+    if (temStems)
+    {
+        struct InfoStem { int k; const char* nome; uint32_t cor; };
+        const InfoStem lista[] = { { stemBateria, "STEM BATERIA", 0xb8ff3a }, { stemBaixo, "STEM BAIXO", 0x8fd16a },
+                                   { stemVoz, "STEM VOZ", 0xff7a59 }, { stemOutros, "STEM OUTROS", 0xff3dbb } };
+        for (const InfoStem& st : lista)
+        {
+            const auto& Lc = in.stems.canal[(size_t) st.k][0];
+            const auto& Rc = in.stems.canal[(size_t) st.k][1];
+            double q = 0;
+            for (size_t i = 0; i < Lc.size(); i += 4) q += 0.5 * ((double) Lc[i] * Lc[i] + (double) Rc[i] * Rc[i]);
+            const double rmsDb = db (q / (double) std::max<size_t> (1, Lc.size() / 4));
+            if (rmsDb < -50) continue;   // stem praticamente vazio (ex.: música sem voz)
+            Faixa f { st.nome, "ÁUDIO · stem separado", st.cor, TipoFaixa::audio, Elemento::stem, false, {} };
+            f.stem = st.k;
+            f.mudo = true;
+            f.clipes.push_back ({ ini, fim, {} });
+            out.faixas.push_back (f);
+        }
+        out.comIA = true;
+    }
+
     prog (1.0f, "pronto");
+    return true;
+}
+bool processarComIA (const std::vector<float>& L, const std::vector<float>& R,
+                     const std::string& caminhoDemucs, const void* modeloNotas, size_t bytesModeloNotas,
+                     EntradaAnalise& in, std::function<void (float, const char*)> progresso,
+                     const std::atomic<bool>* cancelar)
+{
+    auto prog = [&] (float p, const char* e) { if (progresso) progresso (std::clamp (p, 0.0f, 1.0f), e); };
+    std::string erro;
+    prog (0.0f, "abrindo a IA de separação");
+    {
+        Separador sep;
+        if (! sep.carregar (caminhoDemucs, erro)) { in.erroIA = erro; return false; }
+        if (! sep.separar (L, R, in.stems, [&] (float p) { prog (0.02f + 0.80f * p, "separando bateria, baixo, voz e instrumentos"); },
+                           cancelar, erro))
+        { in.erroIA = erro; return false; }
+    }
+    Transcritor tr;
+    if (! tr.carregar (modeloNotas, bytesModeloNotas, erro)) { in.erroIA = erro; return false; }
+    struct Tarefa { int stem; std::vector<NotaAudio>* destino; double fMin, fMax; const char* etapa; };
+    const Tarefa tarefas[] = {
+        { stemBaixo, &in.notasBaixo, 25, 420, "lendo as notas do baixo" },
+        { stemVoz, &in.notasVoz, 70, 1400, "lendo a melodia da voz" },
+        { stemOutros, &in.notasOutros, 50, 5000, "lendo leads e pads" } };
+    float base = 0.82f;
+    for (const Tarefa& t : tarefas)
+    {
+        ParametrosNotas par;
+        par.fMin = t.fMin; par.fMax = t.fMax;
+        const auto mono = somaMono (in.stems.canal[(size_t) t.stem][0], in.stems.canal[(size_t) t.stem][1]);
+        const auto m22 = in.stems.sampleRate > 30000 ? metadeDaTaxa (mono) : mono;
+        if (! tr.transcrever (m22, par, *t.destino, [&] (float p) { prog (base + 0.06f * p, t.etapa); }, cancelar, erro))
+        { in.erroIA = erro; return false; }
+        base += 0.06f;
+    }
+    prog (1.0f, "IA pronta");
     return true;
 }
 } // namespace mapa

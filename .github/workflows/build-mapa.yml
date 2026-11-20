@@ -1,7 +1,9 @@
 name: build-mapa
 
 # MAPA (app standalone, apps/mapa): build próprio, separado dos plugins. Só roda quando apps/mapa/ ou novidades/Mapa.md
-# mudam. Mac: MAPA.app universal num .dmg (assinatura ad-hoc). Windows: MAPA.exe num .zip.
+# mudam. Mac: MAPA.app universal num .dmg (assinatura ad-hoc). Windows: pasta MAPA (exe + onnxruntime.dll + modelos/)
+# num .zip. 0.2: a IA (htdemucs.onnx) vem do release "mapa-modelos" e vai embutida; no Mac o motor roda num teste
+# (música sintética de psytrance a 140 BPM) e o relatório sai no artefato.
 # Sai o pré-release "mapa-vX.Y.Z" (X.Y.Z = o primeiro "## x.y.z" de novidades/Mapa.md), trocando o anterior da mesma versão.
 on:
   push:
@@ -31,17 +33,53 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Modelo de IA (release mapa-modelos)
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          set -e
+          gh release download mapa-modelos -R "$GITHUB_REPOSITORY" -p 'htdemucs.onnx*' -D apps/mapa/modelos
+          cd apps/mapa/modelos
+          if [ "${{ matrix.name }}" = mac ]; then shasum -a 256 -c htdemucs.onnx.sha256; else sha256sum -c htdemucs.onnx.sha256; fi
+          ls -l
+
       - name: Compilar
         id: build
         run: |
           set -o pipefail
           if [ "${{ matrix.name }}" = mac ]; then
-            cmake -S apps/mapa -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake -S apps/mapa -B build -DCMAKE_BUILD_TYPE=Release -DMAPA_TESTES=ON "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
             cmake --build build --config Release -j 4 2>&1 | tee -a build.log
           else
             cmake -S apps/mapa -B build -A x64 2>&1 | tee build.log
             cmake --build build --config Release --parallel 2>&1 | tee -a build.log
           fi
+
+      - name: Teste do motor (Mac)
+        if: matrix.name == 'mac'
+        run: |
+          set -e
+          python3 -m pip install --quiet --break-system-packages numpy scipy || python3 -m pip install --quiet numpy scipy
+          python3 apps/mapa/tools/gera_teste.py psy140.wav 140 9 1 0 psy
+          cp apps/mapa/modelos/htdemucs.onnx apps/mapa/Recursos/nmp.onnx build/
+          mkdir -p teste
+          T=$(find build -type f -name mapa_teste -perm -u+x | head -1)
+          /usr/bin/time -p "$T" mapa psy140.wav build teste 2> teste/log.txt || (cat teste/log.txt; exit 1)
+          tail -5 teste/log.txt
+          cat teste/relatorio.txt
+          sysctl -n machdep.cpu.brand_string hw.ncpu >> teste/log.txt
+          python3 - <<'PY'
+          import csv, collections
+          r = list(csv.DictReader(open('teste/notas.csv')))
+          k = [float(x['inicio_tempos']) for x in r if x['faixa'] == 'KICK']
+          pos = collections.Counter(int(round(v * 4)) % 4 for v in k)
+          print('KICK por posição no tempo (1..4):', [pos.get(i, 0) for i in range(4)])
+          bpm = open('teste/relatorio.txt').read().split()[1]
+          assert abs(float(bpm) - 140) < 0.5, 'BPM errado: ' + bpm
+          assert pos.get(0, 0) > 0.9 * len(k), 'kick fora do tempo (dobrado?)'
+          print('OK: 140 BPM e kick 1 por tempo')
+          PY
+          rm -f teste/stem_*.wav
 
       - name: Empacotar
         id: pack
@@ -51,6 +89,9 @@ jobs:
           if [ "${{ matrix.name }}" = mac ]; then
             APP=$(find build -type d -name 'MAPA.app' | head -1)
             [ -n "$APP" ]
+            ls -l "$APP/Contents/Frameworks" "$APP/Contents/Resources"
+            otool -L "$APP/Contents/MacOS/MAPA" | grep onnxruntime
+            codesign --force --sign - "$APP/Contents/Frameworks/libonnxruntime.dylib"
             codesign --force --deep --sign - "$APP"
             mkdir -p dmg
             cp -R "$APP" dmg/
@@ -59,8 +100,10 @@ jobs:
           else
             EXE=$(find build -type f -name 'MAPA.exe' | head -1)
             [ -n "$EXE" ]
-            mkdir -p pk/MAPA
-            cp "$EXE" pk/MAPA/
+            D=$(dirname "$EXE")
+            mkdir -p pk/MAPA/modelos
+            cp "$EXE" "$D/onnxruntime.dll" pk/MAPA/
+            cp "$D/modelos/htdemucs.onnx" pk/MAPA/modelos/
             (cd pk && 7z a ../dist/InsideStudioSP-Mapa-win.zip MAPA > /dev/null)
           fi
           ls -l dist | tee pack.log
@@ -71,6 +114,7 @@ jobs:
           mkdir -p report
           cp build.log "report/build-${{ matrix.name }}.log" 2>/dev/null || true
           cp dist/* report/ 2>/dev/null || true
+          cp -R teste "report/teste-${{ matrix.name }}" 2>/dev/null || true
           echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }}" > "report/status-${{ matrix.name }}.txt"
 
       - uses: actions/upload-artifact@v5
