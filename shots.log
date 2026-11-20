@@ -1,4 +1,7 @@
-== build/shot_chute_artefacts/Release/shot_chute
-CHUTE: ok
-total 1024
--rw-r--r--  1 runner  staff  524018 Nov 20 10:54 CHUTE.png
+== build/shot_resenha_artefacts/Release/shot_resenha
+RESENHA: ok
+== build/shot_groovador_artefacts/Release/shot_groovador
+GROOVADOR: ok
+total 3568
+-rw-r--r--  1 runner  staff   786278 Nov 20 11:33 GROOVADOR.png
+-rw-r--r--  1 runner  staff  1040140 Nov 20 11:33 RESENHA.png
