@@ -89,6 +89,8 @@ void ResenhaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     lastAbsStep = -1;
     gateOffPpq.fill (-1.0);
     pendNote.fill (-1);
+    pendAcc.fill (-1);
+    lastNi = -1;
     liveNote.fill (-1);
     wasNotes = false;
     wasRunning = false;
@@ -321,6 +323,8 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         lastAbsStep = -1;
         gateOffPpq.fill (-1.0);
         pendNote.fill (-1);
+        pendAcc.fill (-1);
+        lastNi = -1;
         playStep = -1;
     };
 
@@ -362,21 +366,69 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             flush (i);
             const int idx = (int) (((absStep % steps) + steps) % steps);
             const int ni  = phrase.atStep[(size_t) idx];
-            // RESPONDE (0.8.0): a nota que cai na semicolcheia em que o baixo toca fica calada (o baixo fala ali)
             const double stepStart = pair * 2.0 * sb + (second ? sb + sw : 0.0);
-            const bool bassTalks = ni >= 0 && hostRun && temBass && bassMode == BassMode::answer && bass.ocupada (stepStart);
-            if (ni >= 0 && ! bassTalks)
+            // RESPONDE (0.8.1): call & response com o groove do baixo. A frase NUNCA é calada (na 0.8.0 a nota que caía
+            // onde o baixo toca sumia, e com baixo rolando o lead quase não tocava). Agora o baixo PERGUNTA e o lead
+            // RESPONDE: o acento vai para os pontos de resposta do groove, onde o baixo toca a nota fica sem acento
+            // (e curta, com baixo de buracos), e se o lead está calado num ponto de resposta ele entra com uma nota curta
+            // acentuada (a altura da última nota da frase). Ponto de resposta: baixo com buracos = o buraco dele (fora
+            // da cabeça do tempo, que é do kick); baixo rolando (11+ semicolcheias no compasso, o psy) = o contratempo
+            // 3-3-2 (casas 2, 5, 7, 10, 13 e 15), que nunca cai no kick e anda contra o baixo.
+            const double gridPos = pair * 2.0 * sb + (second ? sb : 0.0);      // sem swing: casa da grade do baixo
+            int  dense = -1;                                                   // −1 = sem baixo aprendido (toca a frase)
+            bool spot = false, bassHere = false;
+            if (hostRun && temBass && bassMode == BassMode::answer)
             {
-                const auto& pn = phrase.notes[(size_t) ni];
-                const double lenBeats = sb * ((double) (pn.len - 1) + (double) pn.gate);
+                const double bar = std::floor (gridPos / 4.0) * 4.0;
+                int nb = 0;
+                for (int c = 0; c < 16; ++c) nb += bass.ocupada (bar + 0.25 * (double) c) ? 1 : 0;
+                if (nb > 0)
+                {
+                    dense    = nb >= 11 ? 1 : 0;
+                    bassHere = bass.ocupada (gridPos);
+                    spot     = answerSpot (gridPos, dense == 1);
+                }
+            }
+            int  useNi = ni;
+            bool fill = false;
+            // preenchimento: baixo rolando = em todo contratempo 3-3-2; baixo com buracos = só nas 2 casas DEPOIS de
+            // uma nota do baixo (ele pergunta, o lead responde em seguida) e nunca em 2 casas seguidas (sem metralhar)
+            const bool fillHere = spot && (dense == 1
+                                           || ((bass.ocupada (gridPos - 0.25) || bass.ocupada (gridPos - 0.5))
+                                               && lastFillStep != absStep - 1));
+            if (useNi < 0 && fillHere && lastNi >= 0 && lastNi < phrase.count)
+            {
+                bool soando = false;
+                for (int v = 0; v < numVoices; ++v)
+                    if (gateOffPpq[(size_t) v] > stepStart + 1.0e-6 || pendNote[(size_t) v] >= 0) soando = true;
+                if (! soando) { useNi = lastNi; fill = true; }
+            }
+            if (useNi >= 0)
+            {
+                const auto& pn = phrase.notes[(size_t) useNi];
+                double lenBeats = sb * ((double) (pn.len - 1) + (double) pn.gate);
+                int acc = -1;                                        // −1 = o acento da frase
+                if (dense >= 0)
+                {
+                    if (fill)        { acc = 2; lenBeats = sb * 0.45; }
+                    else if (spot)   acc = 1;
+                    else if (bassHere)
+                    {
+                        acc = 0;
+                        if (dense == 0) lenBeats = juce::jmin (lenBeats, sb * 0.5);
+                    }
+                }
                 const double start = stepStart;
                 const auto vi = (size_t) pn.voice;
-                pendNote[vi] = ni;                                   // dispara já ou, com PAPO, um pouco depois
-                pendPpq[vi]  = start + (double) pn.delay * sb;
+                pendNote[vi] = useNi;                                // dispara já ou, com PAPO, um pouco depois
+                pendAcc[vi]  = acc;
+                pendPpq[vi]  = start + (fill ? 0.0 : (double) pn.delay * sb);
                 // gate cheio (legato/POR CIMA): segura um pouco além do passo, para a próxima nota — que com PAPO pode
                 // chegar atrasada — pegar a voz ainda soando e deslizar (o noteOn novo troca o gateOff)
-                const double tail = pn.gate >= 0.999f ? sb * 0.45 : 0.0;
+                const double tail = (! fill && pn.gate >= 0.999f && ! (dense == 0 && acc == 0)) ? sb * 0.45 : 0.0;
                 pendEnd[vi]  = juce::jmax (start + lenBeats + tail, pendPpq[vi] + sb * 0.25);
+                if (! fill) lastNi = useNi;
+                else        lastFillStep = absStep;
             }
             lastAbsStep = absStep;
             playStep    = idx;
@@ -392,9 +444,12 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 const auto& tb = s.t[vi];
                 const double lenBeats = pendEnd[vi] - pendPpq[vi];
                 const int    bendLen = (int) (lenBeats * 60.0 / bpm * currentRate);
-                voiceOn (pn.voice, i, pn.note + transpose + bassShift, pn.accent, tb.glideMs, pn.last, bendLen);
+                const bool acc = pendAcc[vi] < 0 ? pn.accent : pendAcc[vi] > 0;
+                const bool closes = pn.last && pendAcc[vi] != 2;     // a resposta de preenchimento não faz o BEND
+                voiceOn (pn.voice, i, pn.note + transpose + bassShift, acc, tb.glideMs, closes, bendLen);
                 gateOffPpq[vi] = pendEnd[vi];
                 pendNote[vi] = -1;
+                pendAcc[vi]  = -1;
             }
         }
         for (int v = 0; v < numVoices; ++v)
@@ -446,6 +501,19 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     }
     meterOut.store (juce::jmax (meterOut.load(), peak));
     if (temKick) kick.avanca (n, currentRate);
+}
+
+// 0.8.1: RESPONDE — a casa da grade em gridPos (tempos, sem swing) é ponto de resposta ao baixo?
+// Baixo com buracos: o buraco dele, menos a cabeça do tempo (lá fala o kick e o DUCK abaixa o lead).
+// Baixo rolando: contratempo 3-3-2 dentro do compasso (casas 2, 5, 7, 10, 13, 15), nunca na cabeça do tempo.
+bool ResenhaProcessor::answerSpot (double gridPos, bool dense) const
+{
+    const long long q = (long long) std::floor (gridPos * 4.0 + 0.5);
+    const int c = (int) (((q % 16) + 16) % 16);
+    if (! dense) return c % 4 != 0 && ! bass.ocupada (gridPos);
+    static constexpr bool contra[16] = { false, false, true,  false, false, true,  false, true,
+                                         false, false, true,  false, false, true,  false, true };
+    return contra[c];
 }
 
 // 0.8.0: envelope do kick (0..1) na amostra i do bloco: a amplitude do corpo da batida que soa agora, dividida pelo

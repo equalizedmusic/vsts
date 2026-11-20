@@ -4,6 +4,12 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.8.1 — 2026-11-20
+- BAIXO = RESPONDE refeito como call & response de verdade. Na 0.8.0 ele calava a nota do lead em toda semicolcheia em que o baixo tocava; com baixo rolando (psy) o lead quase não tocava. Agora a frase toca inteira e responde ao groove do baixo.
+- Baixo rolando (11 ou mais semicolcheias no compasso): o acento do lead vai para o contratempo 3-3-2 (casas 3, 6, 8, 11, 14 e 16 do compasso), que nunca cai no kick e anda contra o baixo. Onde o lead estaria calado nessas casas, ele entra com uma nota curta acentuada.
+- Baixo com buracos (funk, piseiro): o baixo pergunta e o lead responde logo depois, nas duas semicolcheias seguintes à nota do baixo, sem duas respostas seguidas. Onde o baixo toca, a nota do lead fica curta e sem acento; nos buracos, com acento. A cabeça do tempo fica para o kick.
+- A resposta nova repete a altura da última nota da frase e segue o baixo como no SEGUE. Sem BAREBASS tocando, a frase sai como está escrita.
+
 ## 0.8.0 — 2026-11-20
 - LINK: o RESENHA acha o CHUTE e o BAREBASS do mesmo projeto sozinho, sem sidechain e sem rotear MIDI. Bloco LINK novo, ao lado da SAÍDA, com o estado embaixo (CHUTE, BAREBASS ou os dois, e a nota do baixo).
 - KEY (ligado): a TÔNICA da conversa vem da cadeia. Com o CHUTE, é a nota do kick; sem CHUTE, é a nota mais tocada pelo BAREBASS. O título da CONVERSA mostra "· LINK" quando a tônica veio de lá. Desligado, vale a TÔNICA do painel.

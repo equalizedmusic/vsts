@@ -107,7 +107,7 @@ inline const juce::String hOct = "hoct", hVel = "hvel", hBend = "hbend", hLvl = 
 inline juce::String hMacro (int k) { return "hm" + juce::String (k + 1); }
 // 0.8.0: LINK com o CHUTE e o BAREBASS do mesmo projeto (sem roteamento). KEY = a TÔNICA vem da cadeia (a nota do
 // CHUTE; sem CHUTE, a nota mais tocada pelo BAREBASS). BAIXO = DESL. / SEGUE (a frase anda junto com a nota do baixo) /
-// RESPONDE (segue e só toca nas semicolcheias em que o baixo NÃO toca: a resposta cai nos buracos do groove do baixo)
+// RESPONDE (0.8.1: segue e conversa com o groove do baixo — acento e notas de resposta no contratempo / nos buracos dele)
 inline const juce::String linkKey = "linkkey", linkBass = "linkbass";
 }
 

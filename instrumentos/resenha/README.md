@@ -1,6 +1,6 @@
 # RESENHA — call & response FM
 
-> **Versão atual: 0.8.0** (20/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
+> **Versão atual: 0.8.1** (20/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
 
 ![RESENHA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png)
 
@@ -65,7 +65,8 @@ BAREBASS (`BassLink` do BAREBASS, 0.4.2) do mesmo projeto pela memória comparti
 - **KEY** (ligado): a TÔNICA vem da cadeia — a nota do kick do CHUTE; sem CHUTE, a nota mais tocada pelo BAREBASS.
   O título da CONVERSA ganha "· LINK".
 - **BAIXO**: DESL. / **SEGUE** (a tônica da frase vai até a nota que o baixo toca agora, até 6 semitons) /
-  **RESPONDE** (segue e cala as notas que caem nas semicolcheias em que o baixo tocou nos últimos 4 compassos).
+  **RESPONDE** (segue e faz call & response com o groove do baixo dos últimos 4 compassos: baixo rolando = acento e
+  respostas no contratempo 3-3-2; baixo com buracos = resposta logo depois da nota do baixo; a frase nunca é calada).
 - **DUCK** com o CHUTE: abaixa o lead com o corpo de cada batida do kick (sem o CHUTE, continua pela posição do tempo).
 
 ## Conversa

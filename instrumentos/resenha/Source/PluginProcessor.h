@@ -194,6 +194,12 @@ private:
     chutelink::Leitor kick;
     basslink::Leitor bass;
     int bassShift = 0;                         // SEGUE: semitons que a frase anda para acompanhar o baixo
+    // RESPONDE (0.8.1): acento decidido pelo groove do baixo (−1 = o da frase) e a última nota da frase que tocou
+    // (a resposta que preenche o silêncio do lead repete a altura dela)
+    std::array<int, resenha::numVoices> pendAcc {};
+    int lastNi = -1;
+    long long lastFillStep = -10;
+    bool answerSpot (double gridPos, bool dense) const;
     double kickWall = -1.0; float kickPeak = 1.0f;
     float kickEnvelope (int sampleInBlock);
     juce::SmoothedValue<float> volSm;

@@ -29,7 +29,7 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.0 | à venda |
 | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.2 | à venda |
 | [MERCÚRIO](instrumentos/mercurio/README.md) | Synth FM | 0.6.0 | à venda |
-| [RESENHA](instrumentos/resenha/README.md) | Call & response / HUB de synths | 0.8.0 | à venda |
+| [RESENHA](instrumentos/resenha/README.md) | Call & response / HUB de synths | 0.8.1 | à venda |
 | [GROOVADOR](instrumentos/groovador/README.md) | Percussão com gerador de groove | 0.3.0 | à venda |
 | SÉRIE CRIATIVO | 10 efeitos criativos | 1.2.1 | à venda |
 | SÉRIE MIX | 10 ferramentas de mix | 1.2.1 | à venda |
