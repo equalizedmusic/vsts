@@ -143,13 +143,17 @@ VST não consegue. Ficam em `max4live/<nome>`, não entram em nenhum build nem i
 
 ## App MAPA (teste)
 
-App standalone (Mac e Windows, em `apps/mapa`, build próprio `build-mapa.yml`, pré-release `mapa-vX.Y.Z`): lê uma
-música de referência, separa em stems (Demucs v4), transcreve baixo, voz, lead e pad (Basic Pitch), acha BPM, tom e
-partes, mostra a prévia com cara de DAW e monta o projeto (Ableton `.als`, Reaper `.rpp`, DAWproject ou pasta MIDI).
+App standalone GRÁTIS (Mac e Windows, em `apps/mapa`, build próprio `build-mapa.yml`, pré-release `mapa-vX.Y.Z`):
+lê uma música de referência e monta o ESQUELETO dela na DAW, como um mapa de produção. Acha BPM, tom e partes, e marca
+onde cada elemento entra e sai (KICK, CLAP, HATS, BAIXO, LEAD, PAD, VOZ, SWEEP UP, SWEEP DOWN, IMPACTO), com um clipe
+MIDI vazio por trecho, sem notas. Sai como Ableton `.als`, Reaper `.rpp`, DAWproject ou pasta MIDI, e o LEIA-ME traz o
+mapa em texto. Para ler a música, separa os stems por dentro (Demucs v4) e usa as notas do Basic Pitch só para decidir
+o que é lead, pad e voz. Os stems não vão para o projeto.
 A IA roda no ONNX Runtime embutido no app, sem internet. O modelo de separação (`htdemucs.onnx`, 174 MB) não fica no
 git: o workflow `mapa-modelos.yml` converte e publica no release `mapa-modelos`, e o build baixa de lá. Teste do motor
-sem JUCE: `tools/teste_v2.cpp` (alvo `mapa_teste`, `-DMAPA_TESTES=ON`). Licenças em
-[apps/mapa/TERCEIROS.md](apps/mapa/TERCEIROS.md).
+sem JUCE: `tools/teste_v2.cpp` (alvo `mapa_teste`, `-DMAPA_TESTES=ON`). Precisão: `tools/gera_mapa.py` gera uma
+música com gabarito por elemento e `tools/nota_mapa.py` compara com o relatório do teste, compasso a compasso.
+Licenças em [apps/mapa/TERCEIROS.md](apps/mapa/TERCEIROS.md).
 
 ## Formatos gerados
 

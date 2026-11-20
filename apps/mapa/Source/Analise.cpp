@@ -11,9 +11,8 @@
 #include <cstring>
 #include <map>
 #include <numeric>
-#ifdef MAPA_DEBUG
 #include <cstdio>
-#endif
+#include <cstdlib>
 
 namespace mapa
 {
@@ -202,6 +201,20 @@ void realcar (std::vector<float>& v, int janela)
     v.swap (o);
 }
 
+// centroide espectral (Hz) por quadro, numa faixa de frequência
+std::vector<float> centroide (const Espectro& e, double lo, double hi)
+{
+    std::vector<float> out ((size_t) e.frames, 0.0f);
+    const int a = e.binDe (lo), b = std::max (a, e.binDe (hi));
+    for (int f = 0; f < e.frames; ++f)
+    {
+        double s = 0, sw = 0;
+        for (int k = a; k <= b; ++k) { const double v = (double) e.at (f, k) * e.at (f, k); s += v * e.hzDe (k); sw += v; }
+        out[(size_t) f] = (float) (sw > 0 ? s / sw : 0.0);
+    }
+    return out;
+}
+
 // valor interpolado de um envelope por quadro, num instante t (segundos)
 float noTempo (const std::vector<float>& env, const Espectro& e, double t)
 {
@@ -231,6 +244,28 @@ double mediaJanela (const std::vector<float>& env, const Espectro& e, double t0,
     double s = 0;
     for (int q = qa; q <= qb; ++q) s += env[(size_t) q];
     return s / (qb - qa + 1);
+}
+
+// média de v ponderada por w numa janela [t0, t1] (ex.: centroide pesado pela energia)
+double mediaPond (const std::vector<float>& v, const std::vector<float>& w, const Espectro& e, double t0, double t1)
+{
+    int qa = (int) std::floor (e.quadroDe (t0)), qb = (int) std::ceil (e.quadroDe (t1));
+    qa = std::max (qa, 0); qb = std::min (qb, (int) std::min (v.size(), w.size()) - 1);
+    double s = 0, sw = 0;
+    for (int q = qa; q <= qb; ++q) { s += (double) v[(size_t) q] * w[(size_t) q]; sw += w[(size_t) q]; }
+    return sw > 0 ? s / sw : 0.0;
+}
+
+// percentil p dos quadros de env numa janela (dB)
+double percJanela (const std::vector<float>& env, const Espectro& e, double t0, double t1, double p)
+{
+    int qa = (int) std::floor (e.quadroDe (t0)), qb = (int) std::ceil (e.quadroDe (t1));
+    qa = std::max (qa, 0); qb = std::min (qb, (int) env.size() - 1);
+    if (qb < qa) return -120;
+    std::vector<double> v;
+    for (int q = qa; q <= qb; ++q) v.push_back (env[(size_t) q]);
+    std::sort (v.begin(), v.end());
+    return 10.0 * std::log10 (v[(size_t) (p * (double) (v.size() - 1))] + 1e-12);
 }
 
 // ------------------------------------------------------------------ tempo
@@ -395,6 +430,10 @@ struct Compasso
     double eBaixoS = -120, eVozS = -120, eOutS = -120, eBatS = -120;   // energia dos stems no compasso (dB), MAPA 0.2
     int nBaixo = 0, nVoz = 0, nLead = 0, nPad = 0;        // notas transcritas que começam no compasso
     int leadPc[PASSOS];
+    // 0.3: stem "outros" — ataques por passo (lead tem, pad quase não) e piso de energia no compasso (pad sustenta)
+    float outAtq[PASSOS] {};
+    double pisoO = -60, eOutTon = -120;
+    int atqO = 0;
     // presença detectada
     bool kickOn = false, baixoOn = false, hatsOn = false, clapOn = false, padOn = false, leadOn = false, vozOn = false;
 };
@@ -415,13 +454,21 @@ double cosseno (const double* a, const double* b)
     return n / std::sqrt (da * dbb + 1e-12);
 }
 
-// liga/desliga por compasso -> trechos [ini, fim) limpos
-std::vector<std::pair<int, int>> trechos (std::vector<bool> on, const std::vector<int>& cortes)
+// liga/desliga por compasso -> trechos [ini, fim) limpos. buraco = maior pausa (compassos) que ainda junta dois
+// trechos (voz respira entre frases). Encosta na virada de parte só a 1 compasso dela (o mapa tem que ser fiel).
+std::vector<std::pair<int, int>> trechos (std::vector<bool> on, const std::vector<int>& cortes, int buraco = 1)
 {
     const int n = (int) on.size();
-    // tapa buraco de 1 compasso e tira compasso solto
-    for (int j = 1; j + 1 < n; ++j)
-        if (! on[(size_t) j] && on[(size_t) j - 1] && on[(size_t) j + 1]) on[(size_t) j] = true;
+    // tapa buraco curto e tira compasso solto
+    for (int j = 1; j < n; ++j)
+        if (on[(size_t) j - 1] && ! on[(size_t) j])
+        {
+            int k = j;
+            while (k < n && ! on[(size_t) k]) ++k;
+            if (k < n && k - j <= buraco)
+                for (int q = j; q < k; ++q) on[(size_t) q] = true;
+            j = k;
+        }
     for (int j = 0; j < n; ++j)
     {
         const bool ant = j > 0 && on[(size_t) j - 1], dep = j + 1 < n && on[(size_t) j + 1];
@@ -436,12 +483,12 @@ std::vector<std::pair<int, int>> trechos (std::vector<bool> on, const std::vecto
         r.push_back ({ j, k });
         j = k;
     }
-    // encosta nas viradas de parte quando está a até 2 compassos delas
+    // encosta nas viradas de parte quando está a 1 compasso delas
     for (auto& t : r)
         for (int c : cortes)
         {
-            if (std::abs (t.first - c) <= 2) t.first = c;
-            if (std::abs (t.second - c) <= 2) t.second = c;
+            if (std::abs (t.first - c) <= 1) t.first = c;
+            if (std::abs (t.second - c) <= 1) t.second = c;
         }
     std::vector<std::pair<int, int>> ok;
     for (auto& t : r)
@@ -520,6 +567,7 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     const bool temStems = ! in.stems.vazio();
     Espectro eD, eB;   // bateria e baixo, 22.050 Hz, mesma janela do percussivo
     std::vector<float> fluxKickD, fluxClapD, fluxHatD, fluxBaixoS, eLowS, eVozS, eOutS, eBatS;
+    std::vector<float> fluxOutS, eOutTonS, hiBatS, bandaBatS, centBatS, hiOutS, bandaOutS, centOutS;   // 0.3
     double srS = 22050;
     if (temStems)
     {
@@ -553,6 +601,20 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         eVozS = rmsQuadros (stemVoz);
         eOutS = rmsQuadros (stemOutros);
         eBatS = rmsQuadros (stemBateria);
+        // 0.3: "outros" — ataques (300 Hz-6 kHz) e energia tonal (200 Hz-3 kHz); bateria — agudo e centroide (crash)
+        {
+            Espectro eO;
+            if (! stft (monoDe (stemOutros), srS, 2048, 256, eO, {}, cancelar)) return false;
+            fluxOutS = fluxoBanda (eO, 300, 6000);
+            realcar (fluxOutS, jmS);
+            eOutTonS = energiaBanda (eO, 200, 3000);
+            hiOutS = energiaBanda (eO, 3000, 10500);
+            bandaOutS = energiaBanda (eO, 500, 10500);
+            centOutS = centroide (eO, 500, 10500);
+        }
+        hiBatS = energiaBanda (eD, 3000, 10500);
+        bandaBatS = energiaBanda (eD, 500, 10500);
+        centBatS = centroide (eD, 500, 10500);
         if (parar()) return false;
     }
     // fontes que a leitura por compasso usa: stem quando há, mistura quando não há
@@ -718,6 +780,10 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             c.eVozS = db (mediaJanela (eVozS, eD, a, b));
             c.eOutS = db (mediaJanela (eOutS, eD, a, b));
             c.eBatS = db (mediaJanela (eBatS, eD, a, b));
+            c.eOutTon = db (mediaJanela (eOutTonS, eD, a, b));
+            c.pisoO = percJanela (eOutTonS, eD, a, b, 0.2) - c.eOutTon;
+            for (int s = 0; s < PASSOS; ++s)
+                c.outAtq[s] = maxJanela (fluxOutS, eD, segDe (j * 4.0 + s * 0.25), -0.025, 0.035);
         }
         c.eMid = db (mediaJanela (eMidF, ep, a, b));
         c.eHigh = db (mediaJanela (eHighF, ep, a, b));
@@ -916,14 +982,37 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         std::vector<double> vb, vv, vo;
         for (auto& c : cs) if (c.temAudio) { vb.push_back (c.eBaixoS); vv.push_back (c.eVozS); vo.push_back (c.eOutS); }
         const double tB = percentil (vb, 0.95), tV = percentil (vv, 0.95), tO = percentil (vo, 0.95);
+        // ataques no stem "outros": limiar global
+        std::vector<double> va;
+        for (auto& c : cs) if (c.temAudio) for (int s = 0; s < PASSOS; ++s) va.push_back (c.outAtq[s]);
+        const double thrO = 0.30 * percentil (va, 0.97);
+        std::vector<double> vt;
+        for (auto& c : cs) if (c.temAudio) vt.push_back (c.eOutTon);
+        const double tT = percentil (vt, 0.95);
+        // música sem voz: o stem de voz é só chiado/vazamento, muito abaixo dos outros stems
+        const bool temVoz = tV > std::max ({ tB, tO, percentil ([&] { std::vector<double> v; for (auto& c : cs) if (c.temAudio) v.push_back (c.eBatS); return v; }(), 0.95) }) - 30;
         for (auto& c : cs)
         {
             if (! c.temAudio) continue;
+            c.atqO = 0;
+            for (int s = 0; s < PASSOS; ++s) if (c.outAtq[s] > thrO) ++c.atqO;
             c.baixoOn = c.eBaixoS > tB - 18 && (c.nBaixo > 0 || c.eBaixoS > tB - 10);
-            c.vozOn = c.eVozS > tV - 22 && c.nVoz > 0;
-            c.leadOn = c.eOutS > tO - 24 && c.nLead >= 2;
-            c.padOn = c.eOutS > tO - 24 && c.nPad >= 1;
+            // voz: o stem de voz tem que ter corpo PRÓPRIO — synth que vaza para a voz fica bem abaixo dos "outros"
+            c.vozOn = temVoz && c.eVozS > tV - 22 && c.nVoz > 0 && c.eVozS > c.eOutS - 18;
+            const bool outrosVivos = c.eOutTon > tT - 26;
+            // lead: frase com ataques (notas articuladas) no registro de melodia
+            c.leadOn = outrosVivos && c.atqO >= 4 && c.nLead >= 2;
+            // pad: som que sustenta o compasso inteiro (piso perto da média) com acorde, ou piso alto sem ataques
+            c.padOn = outrosVivos && ((c.pisoO > -7 && c.nPad >= 1) || (c.pisoO > -4 && c.atqO <= 3));
         }
+        if (std::getenv ("MAPA_DEBUG_COMP"))
+            for (int j = 0; j < J; ++j)
+            {
+                const auto& c = cs[(size_t) j];
+                std::fprintf (stderr, "c%3d out %6.1f ton %6.1f(%5.1f) piso %5.1f atq %2d nL %3d nP %2d | voz %6.1f nV %2d | L%d P%d V%d\n",
+                              j + 1, c.eOutS, c.eOutTon, c.eOutTon - tT, c.pisoO, c.atqO, c.nLead, c.nPad, c.eVozS, c.nVoz,
+                              (int) c.leadOn, (int) c.padOn, (int) c.vozOn);
+            }
     }
 
     // ---------------- 4. tom (croma do meio + histograma do baixo)
@@ -1155,341 +1244,184 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     }
     if (parar()) return false;
 
-    // ---------------- 8. faixas, clipes e notas
-    prog (0.92f, "montando as faixas");
+    // ---------------- 8. o MAPA: uma faixa por elemento, um clipe MIDI VAZIO por trecho em que ele toca (sem notas:
+    // é o esqueleto da música para o produtor montar o dele por cima)
+    prog (0.92f, "montando o mapa");
     const double ini = out.audioInicioTempos, fim = out.audioFimTempos();
     {
         Faixa ref { "REFERÊNCIA", "ÁUDIO · original", 0xcfd3dc, TipoFaixa::audio, Elemento::referencia, false, {} };
         ref.clipes.push_back ({ ini, fim, {} });
         out.faixas.push_back (ref);
     }
-    // padrão de 16 passos por maioria dentro do trecho (loop limpo, sem o ruído compasso a compasso)
-    auto padrao = [&] (int a, int b, auto ativo)
+    auto descTrechos = [] (const Faixa& f)
     {
-        std::array<bool, PASSOS> pat {};
-        int n = 0;
-        int cont[PASSOS] = {};
-        for (int j = a; j < b; ++j)
-        {
-            if (! cs[(size_t) j].temAudio) continue;
-            ++n;
-            for (int s = 0; s < PASSOS; ++s) if (ativo (cs[(size_t) j], s)) ++cont[s];
-        }
-        for (int s = 0; s < PASSOS; ++s) pat[(size_t) s] = n > 0 && cont[s] * 2 >= n;
-        return pat;
+        double comp = 0;
+        for (auto& c : f.clipes) comp += (c.fim - c.inicio) / 4.0;
+        const int n = (int) f.clipes.size();
+        return std::to_string (n) + (n == 1 ? " trecho · " : " trechos · ") + std::to_string ((int) std::lround (comp)) + " comp.";
     };
-    auto descreveBateria = [] (const std::array<bool, PASSOS>& p, const char* padraoTxt)
-    {
-        int n = 0, tempos = 0, contra = 0;
-        for (int s = 0; s < PASSOS; ++s) { if (p[(size_t) s]) { ++n; if (s % 4 == 0) ++tempos; if (s % 4 == 2) ++contra; } }
-        if (n == 4 && tempos == 4) return std::string ("1 por tempo");
-        if (n == 4 && contra == 4) return std::string ("contratempo");
-        if (n >= 14) return std::string ("1/16");
-        if (n == 8 && tempos + contra == 8) return std::string ("1/8");
-        if (n == 2 && p[4] && p[12]) return std::string ("2 e 4");
-        return std::string (padraoTxt);
-    };
-
-    auto faixaBateria = [&] (const char* nome, uint32_t cor, Elemento el, int nota, auto presente, auto ativo, const char* txt,
-                             auto forca, double topoForca)
+    auto faixaMapa = [&] (const char* nome, uint32_t cor, Elemento el, int buraco, auto presente)
     {
         std::vector<bool> on ((size_t) J);
-        for (int j = 0; j < J; ++j) on[(size_t) j] = presente (cs[(size_t) j]);
-        auto tr = trechos (on, cortesFinais);
+        for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].temAudio && presente (cs[(size_t) j]);
+        const auto tr = trechos (on, cortesFinais, buraco);
         if (tr.empty()) return;
-        Faixa f { nome, "", cor, TipoFaixa::midi, el, true, {} };
-        std::string desc;
-        for (auto& t : tr)
-        {
-            Clipe cl { t.first * 4.0, t.second * 4.0, {} };
-            const auto pat = padrao (t.first, t.second, ativo);
-            if (desc.empty()) desc = descreveBateria (pat, txt);
-            for (int j = t.first; j < t.second; ++j)
-            {
-                if (temStems)
-                {
-                    // 0.2: o que tocou DE VERDADE em cada compasso (stem de bateria limpo), com a força do golpe
-                    if (! cs[(size_t) j].temAudio) continue;
-                    for (int s = 0; s < PASSOS; ++s)
-                        if (ativo (cs[(size_t) j], s))
-                        {
-                            const double v = std::min (1.0, forca (cs[(size_t) j], s) / (topoForca + 1e-9));
-                            cl.notas.push_back ({ j * 4.0 + s * 0.25, 0.125, nota, std::clamp ((int) std::lround (55 + 72 * v), 40, 127) });
-                        }
-                }
-                else
-                    for (int s = 0; s < PASSOS; ++s)
-                        if (pat[(size_t) s]) cl.notas.push_back ({ j * 4.0 + s * 0.25, 0.125, nota, s % 4 == 0 ? 110 : 90 });
-            }
-            f.clipes.push_back (cl);
-        }
-        f.desc = "MIDI · " + desc;
+        Faixa f { nome, "", cor, TipoFaixa::midi, el, el == Elemento::kick || el == Elemento::clap || el == Elemento::hats, {} };
+        for (auto& t : tr) f.clipes.push_back ({ t.first * 4.0, t.second * 4.0, {} });
+        f.desc = descTrechos (f);
         out.faixas.push_back (f);
     };
+    faixaMapa ("KICK", 0xb8ff3a, Elemento::kick, 1, [] (const Compasso& c) { return c.kickOn; });
+    faixaMapa ("CLAP", 0xffb03a, Elemento::clap, 1, [] (const Compasso& c) { return c.clapOn; });
+    faixaMapa ("HATS", 0x22e4ff, Elemento::hats, 1, [] (const Compasso& c) { return c.hatsOn; });
+    faixaMapa ("BAIXO", 0x8fd16a, Elemento::baixo, 1, [] (const Compasso& c) { return c.baixoOn; });
+    faixaMapa ("LEAD", 0xff3dbb, Elemento::lead, 1, [] (const Compasso& c) { return c.leadOn; });
+    faixaMapa ("PAD", 0x9b6bff, Elemento::pad, 1, [] (const Compasso& c) { return c.padOn; });
+    faixaMapa ("VOZ", 0xff7a59, Elemento::voz, 2, [] (const Compasso& c) { return c.vozOn; });
 
-    faixaBateria ("KICK", 0xb8ff3a, Elemento::kick, 36,
-                  [] (const Compasso& c) { return c.kickOn; },
-                  [&] (const Compasso& c, int s) { const float mx = *std::max_element (c.kick, c.kick + PASSOS);
-                                                   return c.kick[s] > thrK && c.kick[s] > (temStems ? 0.7f : 0.55f) * mx; },
-                  "padrão próprio", [] (const Compasso& c, int s) { return (double) c.kick[s]; }, percentil (vk, 0.99));
-
-    // 0.2: faixas de notas transcritas. Clipes = compassos com a parte tocando (buracos de até 2 compassos juntam;
-    // encosta nas viradas de parte a até 2 compassos).
-    auto faixaDeNotas = [&] (const char* nome, const std::string& desc, uint32_t cor, Elemento el,
-                             const std::vector<NotaT>& v, auto presente)
+    // ---------------- 9. efeitos: SWEEP UP (agudo subindo até a virada), SWEEP DOWN (agudo descendo depois dela) e
+    // IMPACTO (crash/boom no 1 do compasso). Lidos TEMPO A TEMPO: agudo da mistura (3-10,5 kHz) e centroide.
+    prog (0.95f, "achando sweeps e impactos");
     {
-        std::vector<bool> on ((size_t) J);
-        for (int j = 0; j < J; ++j) on[(size_t) j] = presente (cs[(size_t) j]);
-        std::vector<std::pair<int, int>> tr;
-        for (int j = 0; j < J;)
+        const int K = J * 4;
+        const auto bandaMix = energiaBanda (ep, 500, 10500);
+        const auto centMix = centroide (ep, 500, 10500);
+        const Espectro& eBt = temStems ? eD : ep;
+        const std::vector<float>& hiB = temStems ? hiBatS : eHighF;
+        const std::vector<float>& bandaB = temStems ? bandaBatS : bandaMix;
+        const std::vector<float> centB = temStems ? centBatS : centMix;
+        std::vector<double> hm ((size_t) K, -120), cm ((size_t) K, 0), hb ((size_t) K, -120), cb ((size_t) K, 0);
+        std::vector<double> ho ((size_t) K, -120), co ((size_t) K, 0);   // stem "outros" (riser de synth)
+        for (int k = 0; k < K; ++k)
         {
-            if (! on[(size_t) j]) { ++j; continue; }
-            int k = j + 1;
-            while (k < J && (on[(size_t) k] || (k + 1 < J && on[(size_t) k + 1]) || (k + 2 < J && on[(size_t) k + 2]))) ++k;
-            tr.push_back ({ j, k });
-            j = k;
-        }
-        for (auto& t : tr)
-            for (int c : cortesFinais)
+            double a = segDe (k), b = segDe (k + 1.0);
+            if (b <= 0 || a >= dur) continue;
+            a = std::max (0.0, a); b = std::min (dur, b);
+            hm[(size_t) k] = db (mediaJanela (eHighF, ep, a, b));
+            cm[(size_t) k] = mediaPond (centMix, bandaMix, ep, a, b);
+            hb[(size_t) k] = db (mediaJanela (hiB, eBt, a, b));
+            cb[(size_t) k] = mediaPond (centB, bandaB, eBt, a, b);
+            if (temStems)
             {
-                if (std::abs (t.first - c) <= 2) t.first = std::min (t.first, c);
-                if (std::abs (t.second - c) <= 2) t.second = std::max (t.second, c);
+                ho[(size_t) k] = db (mediaJanela (hiOutS, eD, a, b));
+                co[(size_t) k] = mediaPond (centOutS, bandaOutS, eD, a, b);
             }
-        Faixa f { nome, desc, cor, TipoFaixa::midi, el, false, {} };
-        for (auto& t : tr)
-        {
-            Clipe cl { t.first * 4.0, t.second * 4.0, {} };
-            if (! f.clipes.empty() && cl.inicio < f.clipes.back().fim) cl.inicio = f.clipes.back().fim;
-            if (cl.fim <= cl.inicio) continue;
-            for (const NotaT& n : v)
-                if (n.ini >= cl.inicio && n.ini < cl.fim)
-                    cl.notas.push_back ({ n.ini, std::max (0.05, std::min (n.dur, cl.fim - n.ini) - 0.01), n.tom, n.vel });
-            if (! cl.notas.empty()) f.clipes.push_back (cl);
         }
-        if (! f.clipes.empty()) out.faixas.push_back (f);
-    };
-    auto faixaExtensao = [&] (const std::vector<NotaT>& v)
-    {
-        int lo = 127, hi = 0;
-        for (auto& n : v) { lo = std::min (lo, n.tom); hi = std::max (hi, n.tom); }
-        return v.empty() ? std::string() : std::string (" · ") + NOMES[lo % 12] + std::to_string (lo / 12 - 1) + "-" + NOMES[hi % 12] + std::to_string (hi / 12 - 1);
-    };
-
-    if (temStems)
-    {
-        faixaDeNotas ("BAIXO", "MIDI · do stem" + faixaExtensao (nBaixo), 0x8fd16a, Elemento::baixo, nBaixo,
-                      [] (const Compasso& c) { return c.baixoOn && c.nBaixo > 0; });
-        faixaDeNotas ("VOZ", "MIDI · melodia da voz" + faixaExtensao (nVoz), 0xff7a59, Elemento::voz, nVoz,
-                      [] (const Compasso& c) { return c.vozOn; });
-    }
-    // BAIXO: ritmo por maioria, altura de cada tempo do próprio compasso
-    if (! temStems)
-    {
-        std::vector<bool> on ((size_t) J);
-        for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].baixoOn;
-        auto tr = trechos (on, cortesFinais);
-        if (! tr.empty())
+        auto correlReta = [&] (const std::vector<double>& hm, int s, int e)
         {
-            Faixa f { "BAIXO", "", 0x8fd16a, TipoFaixa::midi, Elemento::baixo, false, {} };
-            int rolling = 0, total = 0;
-            for (auto& t : tr)
+            const int n = e - s + 1;
+            double mx = 0, my = 0;
+            for (int k = s; k <= e; ++k) { mx += k; my += hm[(size_t) k]; }
+            mx /= n; my /= n;
+            double sxy = 0, sxx = 0, syy = 0;
+            for (int k = s; k <= e; ++k)
             {
-                Clipe cl { t.first * 4.0, t.second * 4.0, {} };
-                auto ativo = [&] (const Compasso& c, int s)
-                {
-                    if (c.kickOn && passoKick[s]) return false;
-                    double mx = -200;
-                    for (int p = 0; p < PASSOS; ++p) if (! (c.kickOn && passoKick[p])) mx = std::max (mx, c.low[p]);
-                    return c.low[s] > mx - 6;
-                };
-                const auto pat = padrao (t.first, t.second, ativo);
-                // ataque por passo: separa notas repetidas de nota longa
-                const auto atq = padrao (t.first, t.second, [&] (const Compasso& c, int s)
-                                         { return c.baixoAtq[s] > 0.25 * percentil (std::vector<double> (c.baixoAtq, c.baixoAtq + PASSOS), 1.0); });
-                for (int s = 0; s < PASSOS; ++s) if (pat[(size_t) s]) { ++total; if (s % 4 != 0) ++rolling; }
-                for (int j = t.first; j < t.second; ++j)
-                {
-                    const auto& c = cs[(size_t) j];
-                    int s = 0;
-                    while (s < PASSOS)
-                    {
-                        if (! pat[(size_t) s]) { ++s; continue; }
-                        int e = s + 1;
-                        while (e < PASSOS && pat[(size_t) e] && ! atq[(size_t) e] && (e % 4) != 0) ++e;
-                        int alt = c.alturaTempo[s / 4];
-                        if (alt >= 0 && ! naEscala[alt % 12])
-                        {
-                            if (naEscala[(alt + 1) % 12] && ! naEscala[(alt + 11) % 12]) ++alt;
-                            else if (naEscala[(alt + 11) % 12] && ! naEscala[(alt + 1) % 12]) --alt;
-                        }
-                        if (alt < 0) alt = 36 + (tonica + 12 - 0) % 12 - (tonica > 7 ? 12 : 0);
-                        cl.notas.push_back ({ j * 4.0 + s * 0.25, (e - s) * 0.25 - 0.02, alt, 100 });
-                        s = e;
-                    }
-                }
-                f.clipes.push_back (cl);
+                const double dx = k - mx, dy = hm[(size_t) k] - my;
+                sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
             }
-            f.desc = total > 0 && rolling * 4 >= total * 3 && total >= 10 ? "MIDI · rolling" : "MIDI · " + out.tomTexto;
+            return sxy / std::sqrt (sxx * syy + 1e-12);
+        };
+        std::vector<std::pair<double, double>> ups, downs, imps;   // tempos do projeto
+        const bool dbg = std::getenv ("MAPA_DEBUG_FX") != nullptr;
+
+        // SWEEP UP: termina no último tempo antes de um compasso; volta enquanto o agudo vinha subindo. Procura na
+        // mistura, no stem de bateria (ruído) e no de "outros" (riser de synth, escondido atrás dos pratos na mistura)
+        auto achaSubida = [&] (const std::vector<double>& hm, const std::vector<double>& cm, const char* fonte)
+        {
+        for (int b = 3; b < J - 8; ++b)
+        {
+            const int e = 4 * b - 1;
+            if (hm[(size_t) e] < -100) continue;
+            int s = e;
+            while (s - 1 >= 0 && e - s < 64 && hm[(size_t) s - 1] < hm[(size_t) s] + 1.5) --s;
+            double mn = 1e9;
+            for (int k = s; k <= e; ++k) mn = std::min (mn, hm[(size_t) k]);
+            int s2 = s;
+            for (int k = s; k <= e; ++k) if (hm[(size_t) k] <= mn + 2.0) s2 = k;
+            const int L = e - s2 + 1;
+            const double sobe = hm[(size_t) e] - mn;
+            if (L < 4 || sobe < 10 || mn < -90) continue;   // mn < -90: subida a partir do silêncio (começo da música)
+            const double r = correlReta (hm, s2, e);
+            const double razC = cm[(size_t) e] / std::max (1.0, cm[(size_t) s2]);
+            if (dbg) std::fprintf (stderr, "up? %s fim c%d  L %d  sobe %.1f  r %.2f  centr x%.2f\n", fonte, b, L, sobe, r, razC);
+            if (r < 0.85 || razC < 1.3) continue;
+            // o sweep começa baixinho, por baixo do resto: o começo vai para o 1 do compasso em que ele aparece
+            const double a = std::floor (s2 / 4.0) * 4.0;
+            ups.push_back ({ a, 4.0 * b });
+        }
+        };
+        achaSubida (hm, cm, "mix");
+        if (temStems) { achaSubida (hb, cb, "bat"); achaSubida (ho, co, "out"); }
+
+        // SWEEP DOWN: começa no 1 do compasso (ou no 2º tempo) e o agudo cai aos poucos, com o centroide descendo
+        for (int b = 0; b < J; ++b)
+        {
+            const int s = 4 * b;
+            if (s + 4 >= K) break;
+            const int p = hm[(size_t) s] >= hm[(size_t) s + 1] ? s : s + 1;
+            int e = p;
+            while (e + 1 < K && e - p < 32 && hm[(size_t) e + 1] <= hm[(size_t) e] + 1.0) ++e;
+            const double cai = hm[(size_t) p] - hm[(size_t) e];
+            if (cai < 12 || e - p < 3) continue;
+            double degrau = 0;
+            for (int k = p; k < e; ++k) degrau = std::max (degrau, hm[(size_t) k] - hm[(size_t) k + 1]);
+            int k60 = p;
+            while (k60 < e && hm[(size_t) k60] > hm[(size_t) p] - 0.6 * cai) ++k60;
+            const double razC = cm[(size_t) k60] / std::max (1.0, cm[(size_t) p]);
+            if (dbg) std::fprintf (stderr, "down? c%d  cai %.1f em %d  degrau %.1f  centr x%.2f\n", b + 1, cai, e - p, degrau, razC);
+            if (degrau > 0.5 * cai || razC > 0.7 || b >= J - 8) continue;   // fim da música: é fade, não sweep
+            int kf = p;
+            while (kf < e && hm[(size_t) kf] > hm[(size_t) e] + 3) ++kf;
+            const double fimB = std::ceil ((kf + 1) / 4.0) * 4.0;
+            downs.push_back ({ 4.0 * b, std::max (fimB, 4.0 * b + 4) });
+        }
+
+        // IMPACTO: golpe no 1 do compasso que fica soando (crash/boom) bem acima do que vem depois, sem perder o brilho
+        double golpeAnt = 0;
+        for (int b = 1; b < J; ++b)
+        {
+            const int s = 4 * b;
+            if (s + 16 >= K) break;
+            std::vector<double> dep;
+            for (int k = s + 8; k < s + 16; ++k) dep.push_back (hb[(size_t) k]);
+            const double base = mediana (dep);
+            const double golpe = hb[(size_t) s] - base, segue = hb[(size_t) s + 1] - base, antes = hb[(size_t) s] - hb[(size_t) s - 1];
+            const double razC = cb[(size_t) s + 1] / std::max (1.0, cb[(size_t) s]);
+            if (dbg && golpe > 5) std::fprintf (stderr, "imp? c%d  golpe %.1f  segue %.1f  antes %.1f  centr %.0f x%.2f\n", b + 1, golpe, segue, antes, cb[(size_t) s], razC);
+            // segue < golpe: o crash começa no golpe e decai (o fim de um riser ainda está subindo)
+            if (golpe < 6 || segue < 1 || segue >= golpe || antes < 1.5 || cb[(size_t) s] < 4500 || razC < 0.8) continue;
+            // dois compassos seguidos: fica o golpe mais forte
+            if (! imps.empty() && imps.back().first == 4.0 * (b - 1))
+            {
+                if (golpe <= golpeAnt) continue;
+                imps.pop_back();
+            }
+            golpeAnt = golpe;
+            imps.push_back ({ 4.0 * b, 4.0 * b + 4 });
+        }
+
+        auto juntar = [] (std::vector<std::pair<double, double>> v)
+        {
+            std::sort (v.begin(), v.end());
+            std::vector<std::pair<double, double>> r;
+            for (auto& x : v)
+                if (! r.empty() && x.first <= r.back().second) r.back().second = std::max (r.back().second, x.second);
+                else r.push_back (x);
+            return r;
+        };
+        auto faixaFx = [&] (const char* nome, uint32_t cor, Elemento el, const std::vector<std::pair<double, double>>& v)
+        {
+            if (v.empty()) return;
+            Faixa f { nome, "", cor, TipoFaixa::midi, el, false, {} };
+            for (auto& x : juntar (v)) f.clipes.push_back ({ x.first, x.second, {} });
+            f.desc = descTrechos (f);
             out.faixas.push_back (f);
-        }
+        };
+        faixaFx ("SWEEP UP", 0xe6e6e6, Elemento::sweepUp, ups);
+        faixaFx ("SWEEP DOWN", 0xa9b0bd, Elemento::sweepDown, downs);
+        faixaFx ("IMPACTO", 0xffe14d, Elemento::impacto, imps);
     }
-
-    faixaBateria ("HATS", 0x22e4ff, Elemento::hats, 42,
-                  [] (const Compasso& c) { return c.hatsOn; },
-                  [&] (const Compasso& c, int s) { return c.hat[s] > thrH; }, "padrão próprio",
-                  [] (const Compasso& c, int s) { return (double) c.hat[s]; }, percentil (vh, 0.99));
-    faixaBateria ("CLAP", 0xffb03a, Elemento::clap, 39,
-                  [] (const Compasso& c) { return c.clapOn; },
-                  [&] (const Compasso& c, int s)
-                  {
-                      double resto = 0;
-                      for (int p = 0; p < PASSOS; ++p) resto += c.clap[p];
-                      resto /= PASSOS;
-                      if (temStems && c.kickOn)
-                      {
-                          // clique do kick = o menor "clap" entre os passos com kick neste compasso
-                          const float mxK = *std::max_element (c.kick, c.kick + PASSOS);
-                          float clique = 1e30f;
-                          for (int p = 0; p < PASSOS; ++p)
-                              if (c.kick[p] > thrK && c.kick[p] > 0.55f * mxK) clique = std::min (clique, c.clap[p]);
-                          if (clique < 1e29f && c.clap[s] < 1.6f * clique + 0.25f * (float) thrC) return false;
-                      }
-                      return c.clap[s] > thrC && c.clap[s] > 1.6 * resto;
-                  }, "padrão próprio", [] (const Compasso& c, int s) { return (double) c.clap[s]; }, percentil (vc, 0.99));
-
-    if (temStems)
-    {
-        faixaDeNotas ("LEAD", "MIDI · melodia" + faixaExtensao (nLead), 0xff3dbb, Elemento::lead, nLead,
-                      [] (const Compasso& c) { return c.leadOn; });
-        faixaDeNotas ("PAD", "MIDI · acordes" + faixaExtensao (nPad), 0x9b6bff, Elemento::pad, nPad,
-                      [] (const Compasso& c) { return c.padOn; });
-    }
-    // LEAD: nota dominante por passo, juntando passos iguais
-    if (! temStems)
-    {
-        std::vector<bool> on ((size_t) J);
-        for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].leadOn;
-        auto tr = trechos (on, cortesFinais);
-        if (! tr.empty())
-        {
-            Faixa f { "LEAD", "MIDI · " + out.tomTexto, 0xff3dbb, TipoFaixa::midi, Elemento::lead, false, {} };
-            for (auto& t : tr)
-            {
-                Clipe cl { t.first * 4.0, t.second * 4.0, {} };
-                for (int j = t.first; j < t.second; ++j)
-                {
-                    const auto& c = cs[(size_t) j];
-                    int s = 0;
-                    while (s < PASSOS)
-                    {
-                        const int pc = c.leadPc[s];
-                        if (pc < 0) { ++s; continue; }
-                        int e = s + 1;
-                        while (e < PASSOS && c.leadPc[e] == pc) ++e;
-                        int nota = 72 + pc;
-                        if (! naEscala[pc]) nota += naEscala[(pc + 1) % 12] ? 1 : -1;   // puxa para a escala
-                        cl.notas.push_back ({ j * 4.0 + s * 0.25, (e - s) * 0.25 - 0.02, nota, 96 });
-                        s = e;
-                    }
-                }
-                f.clipes.push_back (cl);
-            }
-            out.faixas.push_back (f);
-        }
-    }
-
-    // PAD: um acorde da escala por compasso (tríade), compassos iguais viram nota longa
-    if (! temStems)
-    {
-        std::vector<bool> on ((size_t) J);
-        for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].padOn;
-        auto tr = trechos (on, cortesFinais);
-        if (! tr.empty())
-        {
-            Faixa f { "PAD", "MIDI · acordes", 0x9b6bff, TipoFaixa::midi, Elemento::pad, false, {} };
-            int esc[7];
-            {
-                const int maior[7] = { 0, 2, 4, 5, 7, 9, 11 }, men[7] = { 0, 2, 3, 5, 7, 8, 10 };
-                for (int i = 0; i < 7; ++i) esc[i] = (tonica + (menor ? men[i] : maior[i])) % 12;
-            }
-            for (auto& t : tr)
-            {
-                Clipe cl { t.first * 4.0, t.second * 4.0, {} };
-                int grauAnt = -1; double inicioAnt = 0;
-                auto fecha = [&] (int grau, double a, double b)
-                {
-                    if (grau < 0) return;
-                    const int r = esc[grau], t3 = esc[(grau + 2) % 7], t5 = esc[(grau + 4) % 7];
-                    int base = 48 + r;
-                    if (base > 55) base -= 12;
-                    int n3 = 48 + t3; while (n3 <= base) n3 += 12;
-                    int n5 = 48 + t5; while (n5 <= n3) n5 += 12;
-                    for (int n : { base, n3, n5 }) cl.notas.push_back ({ a, b - a - 0.05, n, 80 });
-                };
-                for (int j = t.first; j < t.second; ++j)
-                {
-                    const auto& c = cs[(size_t) j];
-                    int grau = 0; double melhor = -1;
-                    for (int g = 0; g < 7; ++g)
-                    {
-                        const double s = c.cPad[esc[g]] + 0.6 * c.cPad[esc[(g + 2) % 7]] + 0.5 * c.cPad[esc[(g + 4) % 7]];
-                        if (s > melhor) { melhor = s; grau = g; }
-                    }
-                    if (grau != grauAnt) { fecha (grauAnt, inicioAnt, j * 4.0); grauAnt = grau; inicioAnt = j * 4.0; }
-                }
-                fecha (grauAnt, inicioAnt, t.second * 4.0);
-                f.clipes.push_back (cl);
-            }
-            out.faixas.push_back (f);
-        }
-    }
-
-    // FX: riser = agudo subindo nos 2–4 compassos antes de uma virada para parte mais forte
-    {
-        Faixa f { "FX", "MIDI · risers", 0xe6e6e6, TipoFaixa::midi, Elemento::fx, false, {} };
-        for (size_t i = 1; i < out.partes.size(); ++i)
-        {
-            const int b = out.partes[i].compIni;
-            if (b < 4) continue;
-            double sx = 0, sy = 0, sxx = 0, sxy = 0;
-            for (int k = 0; k < 4; ++k)
-            {
-                const double y = cs[(size_t) (b - 4 + k)].eHighRiser;
-                sx += k; sy += y; sxx += k * k; sxy += k * y;
-            }
-            const double incl = (4 * sxy - sx * sy) / (4 * sxx - sx * sx);
-            const double sobe = cs[(size_t) b - 1].eHighRiser - cs[(size_t) b - 4].eHighRiser;
-            if (incl > 1.2 && sobe > 3.5)
-            {
-                const int a = incl > 2.5 ? b - 4 : b - 2;
-                f.clipes.push_back ({ a * 4.0, b * 4.0, {} });
-            }
-        }
-        if (! f.clipes.empty()) out.faixas.push_back (f);
-    }
-
-    // 0.2: os stems como faixas de áudio (mutadas: a referência já toca a música inteira)
-    if (temStems)
-    {
-        struct InfoStem { int k; const char* nome; uint32_t cor; };
-        const InfoStem lista[] = { { stemBateria, "STEM BATERIA", 0xb8ff3a }, { stemBaixo, "STEM BAIXO", 0x8fd16a },
-                                   { stemVoz, "STEM VOZ", 0xff7a59 }, { stemOutros, "STEM OUTROS", 0xff3dbb } };
-        for (const InfoStem& st : lista)
-        {
-            const auto& Lc = in.stems.canal[(size_t) st.k][0];
-            const auto& Rc = in.stems.canal[(size_t) st.k][1];
-            double q = 0;
-            for (size_t i = 0; i < Lc.size(); i += 4) q += 0.5 * ((double) Lc[i] * Lc[i] + (double) Rc[i] * Rc[i]);
-            const double rmsDb = db (q / (double) std::max<size_t> (1, Lc.size() / 4));
-            if (rmsDb < -50) continue;   // stem praticamente vazio (ex.: música sem voz)
-            Faixa f { st.nome, "ÁUDIO · stem separado", st.cor, TipoFaixa::audio, Elemento::stem, false, {} };
-            f.stem = st.k;
-            f.mudo = true;
-            f.clipes.push_back ({ ini, fim, {} });
-            out.faixas.push_back (f);
-        }
-        out.comIA = true;
-    }
+    out.comIA = temStems;
 
     prog (1.0f, "pronto");
     return true;
