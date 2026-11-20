@@ -39,7 +39,7 @@ jobs:
           from torch.nn import functional as F
           from demucs.pretrained import get_model
           from demucs.htdemucs import standalone_spec, standalone_magnitude
-          m = get_model("htdemucs"); m.eval()
+          m = get_model("htdemucs"); m = m.models[0] if hasattr(m, "models") else m; m.eval()
           torch.manual_seed(1)
           w = torch.randn(1, 2, 343980) * 0.1
           L = int(m.segment * m.samplerate)
