@@ -5,7 +5,7 @@ ela entra no plugin, no instalador e no release `barebass-vx.y.z` do GitHub (com
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
 ## 0.4.1 — 2026-11-18
-- TESTE (pré-lançamento: não chega como atualização para quem já tem a 0.3.0).
+- Versão oficial (20/11/2026), aprovada no teste junto com o CHUTE: chega como atualização para quem tem a 0.3.0.
 - DUPLA COM O CHUTE: com o CHUTE no kick do mesmo projeto, o BAREBASS faz sozinho o que o ALIGN faria no canal
   dele, sem ALIGN na cadeia e sem sidechain:
   - KICK LOCK ligado = o mesmo motor do ALIGN dentro do BAREBASS: aprende nota a nota a fase e a polaridade do
