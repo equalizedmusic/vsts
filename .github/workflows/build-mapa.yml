@@ -1,0 +1,105 @@
+name: build-mapa
+
+# MAPA (app standalone, apps/mapa): build próprio, separado dos plugins. Só roda quando apps/mapa/ ou novidades/Mapa.md
+# mudam. Mac: MAPA.app universal num .dmg (assinatura ad-hoc). Windows: MAPA.exe num .zip.
+# Sai o pré-release "mapa-vX.Y.Z" (X.Y.Z = o primeiro "## x.y.z" de novidades/Mapa.md), trocando o anterior da mesma versão.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/mapa/**', 'novidades/Mapa.md', '.github/workflows/build-mapa.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-mapa
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest,   name: mac }
+          - { os: windows-latest, name: win }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compilar
+        id: build
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.name }}" = mac ]; then
+            cmake -S apps/mapa -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" 2>&1 | tee build.log
+            cmake --build build --config Release -j 4 2>&1 | tee -a build.log
+          else
+            cmake -S apps/mapa -B build -A x64 2>&1 | tee build.log
+            cmake --build build --config Release --parallel 2>&1 | tee -a build.log
+          fi
+
+      - name: Empacotar
+        id: pack
+        run: |
+          set -e
+          mkdir -p dist
+          if [ "${{ matrix.name }}" = mac ]; then
+            APP=$(find build -type d -name 'MAPA.app' | head -1)
+            [ -n "$APP" ]
+            codesign --force --deep --sign - "$APP"
+            mkdir -p dmg
+            cp -R "$APP" dmg/
+            ln -s /Applications dmg/Applications
+            hdiutil create -volname "MAPA" -srcfolder dmg -ov -format UDZO dist/InsideStudioSP-Mapa-mac.dmg
+          else
+            EXE=$(find build -type f -name 'MAPA.exe' | head -1)
+            [ -n "$EXE" ]
+            mkdir -p pk/MAPA
+            cp "$EXE" pk/MAPA/
+            (cd pk && 7z a ../dist/InsideStudioSP-Mapa-win.zip MAPA > /dev/null)
+          fi
+          ls -l dist | tee pack.log
+
+      - name: Relatório
+        if: always()
+        run: |
+          mkdir -p report
+          cp build.log "report/build-${{ matrix.name }}.log" 2>/dev/null || true
+          cp dist/* report/ 2>/dev/null || true
+          echo "${{ matrix.name }}: build=${{ steps.build.outcome }} pacote=${{ steps.pack.outcome }}" > "report/status-${{ matrix.name }}.txt"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: mapa-${{ matrix.name }}
+          path: report/
+          retention-days: 7
+
+  publish:
+    needs: build
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v5
+        with:
+          path: report
+          merge-multiple: true
+
+      - name: Pré-release mapa-vX.Y.Z
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          set -e
+          V=$(grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' novidades/Mapa.md | cut -c4-)
+          awk -v v="## $V" 'index($0, v) == 1 {on=1; next} /^## [0-9]/ {if (on) exit} on' novidades/Mapa.md > notas.md
+          ls -l report
+          gh release delete "mapa-v$V" -R "$GITHUB_REPOSITORY" --cleanup-tag -y || true
+          gh release create "mapa-v$V" report/*.dmg report/*.zip -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "MAPA $V (teste)" --notes-file notas.md
