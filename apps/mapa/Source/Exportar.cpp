@@ -180,9 +180,10 @@ std::string parteEm (const Projeto& p, double t)
     return std::string();
 }
 
-// Clipe recebe o nome da parte em que começa (ex.: "DROP"); sem parte, o nome da faixa.
+// 0.3: clipe do mapa = nome do elemento (ex.: "VOZ"); as partes já vão nos marcadores. Referência: nome da parte.
 juce::String nomeClipe (const Projeto& p, const Faixa& f, const Clipe& c)
 {
+    if (f.tipo == TipoFaixa::midi) return U (f.nome);
     const std::string pa = parteEm (p, c.inicio);
     return U (pa.empty() ? f.nome : pa);
 }
@@ -324,13 +325,27 @@ juce::String textoLeiaMe (const Projeto& p, bool comNotas, const juce::File& aud
         }
     t << nl;
 
+    t << tx ("MAPA: onde cada elemento entra e sai (compassos contados a partir de 1)") << nl;
+    for (const Faixa& f : p.faixas)
+    {
+        if (f.tipo != TipoFaixa::midi || f.clipes.empty()) continue;
+        t << "  " << U (f.nome).paddedRight (' ', 11) << ":";
+        for (const Clipe& c : f.clipes)
+        {
+            const double a = c.inicio / tpc + 1.0, b = c.fim / tpc;
+            t << " " << fmtNum (std::round (a * 4.0) / 4.0) << "-" << fmtNum (std::round (b * 4.0) / 4.0);
+        }
+        t << nl;
+    }
+    t << nl;
+
     t << "ARQUIVOS MIDI (pasta MIDI)" << nl
       << "  00 ESTRUTURA.mid = tempo, compasso e um marcador por parte." << nl;
     if (comNotas)
         t << "  Os demais = uma faixa cada, com as notas." << nl;
     else
-        t << tx ("  Os demais = uma faixa cada, só com a estrutura (marcador no início de cada trecho, sem notas).") << nl;
-    t << "  Bateria vem no canal 10 (GM: 36 kick, 39 clap, 42 hat)." << nl << nl;
+        t << tx ("  Os demais = uma faixa por elemento, sem notas: um marcador onde cada trecho começa (veja o MAPA acima).") << nl;
+    t << nl;
 
     t << "COMO ABRIR" << nl
       << "FL Studio:" << nl

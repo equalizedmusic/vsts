@@ -24,7 +24,7 @@ struct Clipe
 
 enum class TipoFaixa { audio, midi };
 
-enum class Elemento { referencia, kick, baixo, hats, clap, lead, pad, fx, voz, stem };
+enum class Elemento { referencia, kick, baixo, hats, clap, lead, pad, fx, voz, stem, sweepUp, sweepDown, impacto };
 
 struct Faixa
 {

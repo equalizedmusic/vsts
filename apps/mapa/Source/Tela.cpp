@@ -135,13 +135,13 @@ public:
             if (threadShouldExit() || cancelar) return;
             if (! comIA)
             {
-                aviso = u8 ("A IA não rodou (") + juce::String::fromUTF8 (in.erroIA.c_str()) + u8 ("): análise simples, sem stems.");
+                aviso = u8 ("A IA não rodou (") + juce::String::fromUTF8 (in.erroIA.c_str()) + u8 ("): mapa pela mistura, menos preciso.");
                 in.stems = Stems {};
                 in.notasBaixo.clear(); in.notasVoz.clear(); in.notasOutros.clear();
             }
         }
         else
-            aviso = u8 ("Modelo de IA não encontrado: análise simples, sem stems.");
+            aviso = u8 ("Modelo de IA não encontrado: mapa pela mistura, menos preciso.");
 
         Projeto p;
         const float b0 = comIA ? 0.88f : 0.0f, esc = comIA ? 0.08f : 0.98f;
@@ -149,28 +149,10 @@ public:
         if (threadShouldExit() || cancelar) return;
         if (! ok) { falhou (u8 ("Não consegui achar o ritmo desta música.")); return; }
 
+        // 0.3: os stems só servem para LER a música; não vão para o projeto (a DAW já separa, se o produtor quiser)
         std::shared_ptr<const Stems> st;
         std::vector<std::vector<float>> picosSt;
-        if (comIA)
-        {
-            dono.mudaEtapa (0.97f, u8 ("gravando os stems"));
-            const juce::String erroGrava = gravarStems (in.stems, p);
-            if (erroGrava.isNotEmpty()) aviso = erroGrava;
-            picosSt.assign (numStems, std::vector<float> (6000, 0.0f));
-            const size_t ns = in.stems.amostras();
-            for (int k = 0; k < numStems && ns > 0; ++k)
-            {
-                const auto& a = in.stems.canal[(size_t) k][0];
-                const auto& b = in.stems.canal[(size_t) k][1];
-                auto& pk = picosSt[(size_t) k];
-                for (size_t i = 0; i < ns; ++i)
-                {
-                    auto& v = pk[(size_t) ((juce::uint64) i * 6000 / ns)];
-                    v = std::max (v, std::max (std::abs (a[i]), std::abs (b[i])));
-                }
-            }
-            st = std::make_shared<const Stems> (std::move (in.stems));
-        }
+        in.stems = Stems {};
         dono.tempoAnalise = (juce::Time::getMillisecondCounterHiRes() - inicio) / 1000.0;
         fim (true, {}, buf, taxa, std::move (p), std::move (picos), st, std::move (picosSt), aviso);
     }
@@ -490,7 +472,6 @@ void Tela::mouseDown (const juce::MouseEvent& e)
     // pronto
     for (size_t i = 0; i < rDaws.size(); ++i)
         if (rDaws[i].contains (p)) { dawSel = (int) i; repaint(); return; }
-    if (MAPA_TESTE && rOptPro.contains (p)) { comNotas = ! comNotas; repaint(); return; }
     if (rIr.contains (p)) { abrirNaDawEscolhida (false); return; }
     if (rSoPasta.contains (p)) { abrirNaDawEscolhida (true); return; }
 
@@ -556,7 +537,7 @@ void Tela::abrirNaDawEscolhida (bool soPasta)
         repaint();
         return;
     }
-    const bool notas = MAPA_TESTE ? comNotas : false;
+    const bool notas = false;   // 0.3: o MAPA é só o esqueleto (clipes vazios)
     auto r = exportarPasta (proj, pasta, notas);
     if (r.ok)
     {
@@ -638,11 +619,11 @@ void Tela::pintaTopo (juce::Graphics& g)
     g.setFont (fonte (26, true).withExtraKerningFactor (0.18f));
     g.drawText ("MAPA", logo, juce::Justification::centredLeft);
     auto selo = t.removeFromLeft (70).toFloat().withSizeKeepingCentre (62, 18);
-    const auto corSelo = MAPA_TESTE ? juce::Colour (0xffffb03a) : juce::Colour (0xff8fd16a);
+    const auto corSelo = juce::Colour (0xff8fd16a);
     g.setColour (corSelo);
     g.drawRoundedRectangle (selo, 9, 1);
     g.setFont (fonte (9.5f, true).withExtraKerningFactor (0.15f));
-    g.drawText (MAPA_TESTE ? juce::String ("TESTE") : u8 ("GRÁTIS"), selo, juce::Justification::centred);
+    g.drawText (u8 ("GRÁTIS"), selo, juce::Justification::centred);
 
     const bool pronto = estado == Estado::pronto;
     auto botao = [&] (juce::Rectangle<int> r, bool destaque)
@@ -753,8 +734,8 @@ void Tela::pintaVazio (juce::Graphics& g, juce::Rectangle<int> a)
     g.setColour (estado == Estado::erro ? juce::Colour (0xffff7a7a) : C::mu);
     g.setFont (fonte (14));
     g.drawFittedText (estado == Estado::erro ? erroMsg
-                                             : u8 ("WAV, AIFF, MP3 ou FLAC. O MAPA acha o BPM, o tom, as partes e os elementos "
-                                                   "da música e monta o projeto pronto na sua DAW."),
+                                             : u8 ("WAV, AIFF, MP3 ou FLAC. O MAPA acha o BPM, o tom e as partes, marca onde cada elemento "
+                                                   "entra e sai (kick, baixo, voz, sweeps...) e monta o esqueleto na sua DAW."),
                       c.removeFromTop (60), juce::Justification::centredTop, 3);
     g.setColour (C::gr);
     g.fillRoundedRectangle (rBtnEscolher.toFloat(), 10);
@@ -962,6 +943,18 @@ void Tela::pintaClipe (juce::Graphics& g, const Faixa& f, const Clipe& c, juce::
         }
         return;
     }
+    // 0.3: efeitos com o desenho do que fazem (rampa subindo, rampa descendo, golpe)
+    if (f.elem == Elemento::sweepUp || f.elem == Elemento::sweepDown || f.elem == Elemento::impacto)
+    {
+        juce::Path forma;
+        const float x0 = r.getX() + 2, x1 = r.getRight() - 2, yb = r.getBottom() - 2, yt = r.getY() + 2;
+        if (f.elem == Elemento::sweepUp) { forma.startNewSubPath (x0, yb); forma.lineTo (x1, yt); forma.lineTo (x1, yb); }
+        else if (f.elem == Elemento::sweepDown) { forma.startNewSubPath (x0, yt); forma.lineTo (x1, yb); forma.lineTo (x0, yb); }
+        else { forma.startNewSubPath (x0, yt); forma.quadraticTo (x0 + 2, yb, x1, yb); forma.lineTo (x0, yb); }
+        forma.closeSubPath();
+        g.fillPath (forma);
+        return;
+    }
     if (c.notas.empty()) return;
     // bateria: traço por batida (kick inteiro, clap no meio, hats em cima)
     if (f.bateria)
@@ -1084,11 +1077,12 @@ void Tela::pintaPainel (juce::Graphics& g)
     opcao (u8 ("Marcadores de cada parte"), true, false, false);
     opcao (u8 ("Áudio da referência na grade"), true, false, false);
     opcao (u8 ("Uma faixa por elemento, com cor e nome"), true, false, false);
-    {
-        const int y = p.getY();
-        opcao (u8 ("Notas MIDI (bateria, baixo, lead…)"), MAPA_TESTE ? comNotas : false, ! MAPA_TESTE, true);
-        rOptPro = juce::Rectangle<int> (p.getX(), y, p.getWidth(), 22);
-    }
+    opcao (u8 ("Clipe onde cada elemento entra e sai"), true, false, false);
+    opcao (u8 ("Sweeps e impactos marcados"), true, false, false);
+    g.setColour (C::mu);
+    g.setFont (fonte (10.5f));
+    g.drawFittedText (u8 ("Clipes vazios, sem notas: é o mapa da referência. O som e a melodia são seus."),
+                      p.removeFromTop (34).withTrimmedTop (6), juce::Justification::topLeft, 2);
 
     // botão principal
     const bool pronto = estado == Estado::pronto;
@@ -1125,7 +1119,7 @@ void Tela::pintaRodape (juce::Graphics& g)
     else if (ultimaPasta.exists()) t = u8 ("Salvo em ") + ultimaPasta.getFullPathName();
     else if (estado == Estado::pronto)
         t = u8 ("Análise: ") + juce::String (tempoAnalise, 1) + u8 (" s   ·   clique numa parte para ouvir só ela   ·   "
-                                                                   "M / S nas faixas MIDI tocam as notas achadas   ·   espaço = tocar/parar");
+                                                                   "S numa faixa = ouvir só onde ela toca   ·   espaço = tocar/parar");
     else t = u8 ("InsideStudioSP");
     g.drawText (t, r, juce::Justification::centredLeft, true);
 }

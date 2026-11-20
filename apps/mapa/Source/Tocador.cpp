@@ -121,6 +121,9 @@ float Tocador::sintetiza (Elemento el, const Nota& n, double t) const
         case Elemento::referencia:
         case Elemento::fx:
         case Elemento::stem:
+        case Elemento::sweepUp:
+        case Elemento::sweepDown:
+        case Elemento::impacto:
             break;
     }
     return 0;
@@ -150,7 +153,20 @@ void Tocador::getNextAudioBlock (const juce::AudioSourceChannelInfo& info)
         return algumSolo ? solos[f].load() : ! mudos[f].load();
     };
 
-    const bool ouveRef = audivel (0);
+    // 0.3: S numa faixa do mapa = ouve a referência só nos trechos em que aquele elemento toca (confere o mapa de ouvido)
+    std::vector<const Faixa*> soloMapa;
+    if (algumSolo)
+        for (size_t f = 1; f < proj.faixas.size() && f < solos.size(); ++f)
+            if (solos[f].load() && proj.faixas[f].tipo == TipoFaixa::midi) soloMapa.push_back (&proj.faixas[f]);
+    auto dentroDoMapa = [&] (double p)
+    {
+        for (const Faixa* fx : soloMapa)
+            for (const Clipe& c : fx->clipes)
+                if (p >= c.inicio && p < c.fim) return true;
+        return false;
+    };
+    const bool ouveRefSempre = audivel (0);
+    bool ouveRef = ouveRefSempre;
     const float* r0 = ref.getReadPointer (0);
     const float* r1 = ref.getReadPointer (ref.getNumChannels() > 1 ? 1 : 0);
     const int nRef = ref.getNumSamples();
@@ -160,6 +176,7 @@ void Tocador::getNextAudioBlock (const juce::AudioSourceChannelInfo& info)
         if (lb > la && pos >= lb) pos = la;
         if (pos >= fimProj) { rodando = false; break; }
         float sl0 = 0, sr0 = 0;
+        if (! soloMapa.empty() && (i & 63) == 0) ouveRef = ouveRefSempre || dentroDoMapa (pos);
         if (ouveRef)
         {
             const double s = proj.temposParaSegAudio (pos) * taxaRef;

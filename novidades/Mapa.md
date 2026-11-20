@@ -2,6 +2,18 @@
 
 App standalone (Mac e Windows) da InsideStudioSP: lê uma música de referência e monta o projeto pronto na sua DAW.
 
+## 0.3.0
+
+O MAPA virou só o esqueleto da música, e é grátis. Ele não cria nenhuma nota nem melodia. Marca onde cada coisa entra e sai na referência, como um mapa de produção.
+
+- **Uma faixa por elemento, com clipes MIDI vazios**: KICK, CLAP, HATS, BAIXO, LEAD, PAD e VOZ. Cada clipe começa onde o elemento entra e termina onde ele sai, e leva o nome do elemento. As partes vão nos marcadores.
+- **Efeitos marcados**: SWEEP UP (o riser antes da virada), SWEEP DOWN (o agudo descendo depois dela) e IMPACTO (o crash ou boom no 1 do compasso).
+- **Mais fiel**: o trecho só encosta na virada da parte quando está a 1 compasso dela (antes eram 2). A voz só aparece quando o stem de voz tem corpo próprio: synth que vaza para a voz não vira mais VOZ falsa. LEAD e PAD são separados pelos ataques e pela sustentação do som.
+- **Sem stems no projeto**: a separação continua por dentro, só para ler a música. Separar stems a sua DAW já faz.
+- **Na prévia**: S numa faixa toca a referência só nos trechos daquele elemento, para você conferir o mapa de ouvido.
+- **LEIA-ME com o mapa em texto**: cada elemento com os compassos em que entra e sai (útil no FL Studio, Logic e Pro Tools).
+- Medido numa música de teste com gabarito, sem voz: KICK, CLAP, HATS, BAIXO, LEAD e PAD acertaram 100% dos compassos. Os sweeps e o impacto saem no lugar certo, às vezes um pouco mais curtos.
+
 ## 0.2.0
 
 Versão de TESTE com IA: o MAPA agora separa a música e transcreve as notas de verdade.
