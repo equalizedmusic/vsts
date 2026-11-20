@@ -1,0 +1,1 @@
+win: build=success pacote=success pluginval=success
