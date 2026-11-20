@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 
 // Tela do CHUTE (base 1000 × 752, escala junto com a janela), no molde do esboço v3 aprovado. Tudo desenhado no
 // paint, a 30 Hz. Em cima: a batida do preset atual (ataque laranja, corpo verde, curva de pitch tracejada), o
@@ -74,6 +75,8 @@ private:
     std::vector<Botao> botoes;
     juce::String arrastando;
     float valorIni = 0.0f, yIni = 0.0f;
+
+    isp::TelaAtivacao ativacao;   // 0.2.0: sem licença cobre a tela e pede e-mail + token
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChuteEditor)
 };

@@ -99,6 +99,7 @@ void ChuteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     const int nch = juce::jmin (2, buffer.getNumChannels());
     buffer.clear();
     if (n == 0 || nch == 0) return;
+    if (! licenca->liberada()) return;   // 0.2.0: sem ativação fica mudo (o buffer já foi zerado) e não publica no LINK
 
     // posição na linha do tempo (para o LINK casar a batida com o bloco de quem lê)
     bool tocando = false; int64_t posBloco = 0;

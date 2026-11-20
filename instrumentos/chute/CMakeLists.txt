@@ -3,7 +3,7 @@ vsts_versao(Chute.md CHUTE_VERSAO)
 
 # CHUTE: kick designer (synth de kick, uma nota = uma batida). Presets em bancos .chutebank: a FÁBRICA vai dentro do plugin (bancos.cmake) e os outros (bancos/*.chutebank) vão no instalador. ChuteLink.cpp: memória compartilhada que avisa cada batida ao ALIGN e ao BAREBASS (LINK, sem
 # sidechain); os dois compilam o mesmo arquivo.
-# 0.1.0 = TESTE, sem licença (a licença entra na versão oficial: isp_licenca(Chute chute)).
+# 0.2.0 = oficial, paga: licença do pacote chute (sem ativação fica mudo e não publica no LINK).
 juce_add_plugin(Chute
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.chute
@@ -21,6 +21,8 @@ juce_add_plugin(Chute
     COPY_PLUGIN_AFTER_BUILD     FALSE
     VST3_CATEGORIES             Instrument Drum
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
+
+isp_licenca(Chute chute)
 
 target_sources(Chute PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/ChuteLink.cpp)
 include(${CMAKE_CURRENT_SOURCE_DIR}/bancos.cmake)

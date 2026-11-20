@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "Dsp.h"
 #include "ChuteLink.h"
+#include "IspLicenca.h"
 
 // CHUTE: kick designer. Cada nota MIDI dispara uma batida: ATAQUE do preset + CORPO sintetizado (afinável). Latência
 // zero. Presets = os modelos do catálogo (Bancos.h): os 50 de fábrica (SUB / PUNCH / TIGHT / BOOM, de dentro do
@@ -80,6 +81,7 @@ public:
 
 private:
     void snapshot();
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // 0.2.0: sem licença o CHUTE fica mudo
     double fs = 48000.0;
     std::unique_ptr<chute::Engine> motor;
     chutelink::Publicador link;

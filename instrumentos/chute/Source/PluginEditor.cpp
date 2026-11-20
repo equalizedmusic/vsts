@@ -10,7 +10,7 @@ const juce::Colour cFundoA { 0xff1b1726 }, cFundoB { 0xff110f18 }, cTopoA { 0xff
                    cLaranja { 0xffff8a3d }, cVerde { 0xff3fd68a }, cRoxo { 0xffa77bff },
                    cRoxoClaro { 0xffc9b0ff }, cBranco { 0xfff3efff }, cAzul { 0xff4fa3ff }, cRuim { 0xffff4f8b };
 
-constexpr int menuSobre = 1;
+constexpr int menuSobre = 1, menuLicenca = 3;
 
 juce::Font fonte (float h, bool negrito = false)
 {
@@ -108,6 +108,7 @@ ChuteEditor::ChuteEditor (ChuteProcessor& p) : AudioProcessorEditor (p), proc (p
     setSize (w, juce::roundToInt (w * (double) baseH / baseW));
     atualizaPrevia();
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void ChuteEditor::resized() { proc.uiW = getWidth(); }
@@ -788,6 +789,7 @@ void ChuteEditor::menu()
     juce::PopupMenu m;
     m.addItem (menuSobre, "Como funciona");
     m.addItem (2, u8 ("Abrir a pasta dos presets USER"));
+    m.addItem (menuLicenca, u8 ("Licença…"));
     m.addSeparator();
    #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     m.addItem (-1, "CHUTE " + juce::String (JucePlugin_VersionString), false, false);
@@ -798,6 +800,7 @@ void ChuteEditor::menu()
                      {
                          if (safe == nullptr) return;
                          if (r == 2) { auto d = ChuteProcessor::pastaUser(); d.createDirectory(); d.startAsProcess(); }
+                         if (r == menuLicenca) safe->ativacao.mostrarInfo();
                          if (r == menuSobre)
                              juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "CHUTE",
                                  u8 ("Kick designer: cada nota MIDI toca uma batida.\n\n"

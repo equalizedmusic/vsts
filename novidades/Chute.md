@@ -4,6 +4,15 @@ Pacote do instalador: `InsideStudioSP-Chute`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `chute-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.0 — 2026-11-20
+- Versão oficial, à venda no site (R$ 49,90; quem entrou na lista de pré-venda paga R$ 24,90 até 27/11 com o mesmo
+  e-mail). O som, os presets e as telas são os da 0.1.3, aprovada no teste.
+- Ativação por licença: na primeira vez o plugin pede o e-mail e o token da licença. O mesmo token vale em até 2
+  computadores, e desativar num computador libera a vaga para outro. Sem ativar, o CHUTE fica mudo e não aparece no
+  LINK.
+- Menu ≡ > Licença… mostra a licença ativa.
+- Para o LINK: ALIGN 0.3.1 e BAREBASS 0.4.1 (grátis) saíram como versões oficiais junto com esta.
+
 ## 0.1.3 — 2026-11-19
 - Ainda TESTE (sem licença, fora do site). O som dos 50 presets não muda (conferido amostra por amostra).
 - BANCOS DE PRESETS: os presets agora vêm de bancos (arquivo .chutebank). Os 50 de fábrica (SUB, PUNCH, TIGHT,

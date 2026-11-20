@@ -21,10 +21,10 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [MAESTRO](instrumentos/maestro/README.md) | Mix automática (8 grupos) | 0.2.2 | à venda |
 | [MASTER DOS MAGOS](instrumentos/magos/README.md) | Masterização | 0.2.0 | à venda |
 | [GOGÓ](instrumentos/gogo/README.md) | Cadeia de voz | 0.2.0 | à venda |
-| [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: PICOTE, ESTICA, GROOVE | 0.1.5 | teste (lançamento 23/11) |
-| [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.1.1 | teste |
-| [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.2.0 · 0.3.0 teste | grátis |
-| [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.3.0 · 0.4.0 teste | grátis |
+| [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: PICOTE, ESTICA, GROOVE | 0.2.0 | pago |
+| [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.0 | pago (lançamento 22/11) |
+| [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.1 | grátis |
+| [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.1 | grátis |
 | [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.0 | à venda |
 | [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.0 | à venda |
 | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.2 | à venda |
@@ -51,16 +51,16 @@ ordem de uso: VASSOURA limpa → RODO nivela → ESPANADOR organiza → MAESTRO 
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MAESTRO.png" width="240" alt="MAESTRO">](instrumentos/maestro/README.md) | [MAESTRO](instrumentos/maestro/README.md) | Um MAESTRO em cada um dos 8 grupos da mix (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX); as cópias conversam sem sidechain. LEARN ouve o drop, LOCK acerta nível e tom pelo STYLE, LOW-END GUARD abre espaço para kick e baixo e FOCUS destaca quem você escolher com EQ dinâmica. Latência zero |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MAGOS.png" width="240" alt="MASTER DOS MAGOS">](instrumentos/magos/README.md) | [MASTER DOS MAGOS](instrumentos/magos/README.md) | Master num clique com o ouvido na referência: TONE MATCH, multibanda de 4 bandas, EQ dinâmica e limiter true peak até o loudness alvo (teto −0,3 dBTP), em fase linear; A/B com volume igualado, simulador de plataformas e modo MANUAL. Com o MAESTRO no projeto, aponta de qual grupo vem cada problema |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GOGO.png" width="240" alt="GOGÓ">](instrumentos/gogo/README.md) | [GOGÓ](instrumentos/gogo/README.md) | A cadeia de voz inteira: CLEAN → TUNE → RIDE → FET → OPTO → TONE → DE-ESS → WARMTH → SPACE, cada bloco com power. LEARN acerta o nível pela sua voz, macros fazem o resto; TRACKING zera a latência para gravar e o MAESTRO LINK abre espaço para a voz |
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RETALHO.png" width="240" alt="RETALHO">](instrumentos/retalho/README.md) | [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: a voz entra por arquivo, ABRIR ou CAPTURAR e vira stutter (PICOTE), esticada (ESTICA) ou groove de one-shots (GROOVE), no tempo do projeto; pads por MIDI e arrastar para o DAW. **Teste** |
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ALIGN.png" width="240" alt="ALIGN">](instrumentos/align/README.md) | [ALIGN](instrumentos/align/README.md) | Fase kick/baixo com um botão só: no canal do baixo, o corretor escolhe polaridade e rotação de fase do grave a cada batida e guarda por nota; LEVEL GUARD para alinhar sem virar soma; latência zero. **Grátis.** A 0.3.0 (teste) acha o CHUTE pelo LINK, sem sidechain, e ganha DUCK |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RETALHO.png" width="240" alt="RETALHO">](instrumentos/retalho/README.md) | [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: a voz entra por arquivo, ABRIR ou CAPTURAR e vira stutter (PICOTE), esticada (ESTICA) ou groove de one-shots (GROOVE), no tempo do projeto; pads por MIDI e arrastar para o DAW. **Pago** |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ALIGN.png" width="240" alt="ALIGN">](instrumentos/align/README.md) | [ALIGN](instrumentos/align/README.md) | Fase kick/baixo com um botão só: no canal do baixo, o corretor escolhe polaridade e rotação de fase do grave a cada batida e guarda por nota; LEVEL GUARD para alinhar sem virar soma; latência zero. **Grátis.** Desde a 0.3 acha o CHUTE pelo LINK, sem sidechain, e tem DUCK |
 | [<img src="https://insidestudiosp.com.br/img/mesa.webp" width="240" alt="MESA">](instrumentos/mesa/README.md) | [MESA](instrumentos/mesa/README.md) | Console analógica em dois plugins: a MESA CANAL em cada faixa e a MESA no master, cuja janela é o mixer inteiro (canais, grupos e MASTER), com pré, EQ de 4 bandas e compressores. Fora do site desde 14/11 |
 
 ## Synths e instrumentos
 
 | Prévia | Instrumento | O que é |
 |---|---|---|
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHUTE.png" width="240" alt="CHUTE">](instrumentos/chute/README.md) | [CHUTE](instrumentos/chute/README.md) | Kick designer: bancos SUB, PUNCH, TIGHT e BOOM + USER, corpo afinado por MIDI e knobs para moldar o golpe; publica cada batida pelo LINK para o ALIGN e o BAREBASS. **Teste** |
-| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BAREBASS.png" width="240" alt="BAREBASS">](instrumentos/barebass/README.md) | [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo enxuto: 2 osciladores + SUB, filtro 12/24 dB com envelope e unHUNF (o sub bate no começo e some). **Grátis.** A 0.4.0 (teste) trava no kick do CHUTE (KICK LOCK) |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHUTE.png" width="240" alt="CHUTE">](instrumentos/chute/README.md) | [CHUTE](instrumentos/chute/README.md) | Kick designer: bancos SUB, PUNCH, TIGHT e BOOM + USER, corpo afinado por MIDI e knobs para moldar o golpe; publica cada batida pelo LINK para o ALIGN e o BAREBASS. **Pago** |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/BAREBASS.png" width="240" alt="BAREBASS">](instrumentos/barebass/README.md) | [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo enxuto: 2 osciladores + SUB, filtro 12/24 dB com envelope e unHUNF (o sub bate no começo e some). **Grátis.** Desde a 0.4 trava no kick do CHUTE (KICK LOCK) e tem DUCK |
 | [<img src="https://insidestudiosp.com.br/img/quimera.webp" width="240" alt="QUIMERA">](instrumentos/quimera/README.md) | [QUIMERA](instrumentos/quimera/README.md) | 3 osciladores wavetable, filtro ladder, mod matrix de 16 slots, MPE, 8 efeitos, arpejador com SCALE/ROOT e 400 presets |
 | [<img src="https://insidestudiosp.com.br/img/limao.webp" width="240" alt="LIMÃO">](instrumentos/limao/README.md) | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido com alma de 303: filtro ladder de 18 dB/oit, ACCENT que acumula, SLIDE, macro ÁCIDO, drive, delay e reverb, sequenciador de 32 passos com ALEATORIZAR |
 | [<img src="https://insidestudiosp.com.br/img/mercurio.webp" width="240" alt="MERCÚRIO">](instrumentos/mercurio/README.md) | [MERCÚRIO](instrumentos/mercurio/README.md) | FM de 4 operadores, 16 vozes, 8 algoritmos desenhados na tela, razões inarmônicas, RING MOD e FOLD, dois filtros e 360 presets |
@@ -208,7 +208,7 @@ Número: `X.Y.Z`. Z = correção, Y = recurso novo, X = mudança grande (preset 
 Os pacotes à venda pedem ativação na 1ª vez: e-mail + token da compra, válido em até 2 computadores. O código do
 lado do plugin está em [`licenca/`](licenca/README.md); o servidor de licenças, a loja e o site ficam no repositório
 privado `site`. ALIGN e BAREBASS são grátis, com licença gratuita pela página de cada um no site; CHUTE e
-RETALHO, em teste, ainda saem sem licença.
+RETALHO são pagos, com licença desde a 0.2.0.
 
 ## Instalar
 
