@@ -1,0 +1,66 @@
+name: mapa-modelos
+
+# MAPA: converte os modelos de IA usados pela análise e publica no release "mapa-modelos" (assets baixados pelo
+# build-mapa.yml e embutidos no app). Roda só à mão (workflow_dispatch) ou quando este arquivo muda.
+#  - htdemucs.onnx: Demucs v4 (Meta, MIT) exportado para ONNX com o STFT fora da rede (sevagh/demucs.onnx, MIT).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/mapa-modelos.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  converter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Demucs -> ONNX
+        run: |
+          set -e
+          git clone --depth 1 https://github.com/sevagh/demucs.onnx ext
+          cd ext
+          python -m pip install --quiet torch==2.4.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --quiet "numpy<2" onnx==1.16.2 onnxruntime==1.20.1 dora-search einops julius lameenc openunmix pyyaml tqdm
+          python -m pip install --quiet --no-deps -e ./demucs-for-onnx
+          python scripts/convert-pth-to-onnx.py ../modelos
+          ls -l ../modelos
+      - name: Conferir ONNX x PyTorch
+        run: |
+          cd ext
+          cat > confere.py <<'PY'
+          import torch, numpy as np, onnxruntime as ort
+          from torch.nn import functional as F
+          from demucs.pretrained import get_model
+          from demucs.htdemucs import standalone_spec, standalone_magnitude
+          m = get_model("htdemucs"); m.eval()
+          torch.manual_seed(1)
+          w = torch.randn(1, 2, 343980) * 0.1
+          L = int(m.segment * m.samplerate)
+          w = F.pad(w, (0, L - w.shape[-1]))
+          x = standalone_magnitude(standalone_spec(w))
+          with torch.no_grad():
+              a, b = m(w, x)
+          s = ort.InferenceSession("../modelos/htdemucs.onnx", providers=["CPUExecutionProvider"])
+          print([(i.name, i.shape) for i in s.get_inputs()], [(o.name, o.shape) for o in s.get_outputs()])
+          o = s.run(None, {s.get_inputs()[0].name: w.numpy(), s.get_inputs()[1].name: x.numpy()})
+          print("dif freq", float(np.abs(o[0] - a.numpy()).max()), "dif tempo", float(np.abs(o[1] - b.numpy()).max()))
+          print("fontes", m.sources)
+          PY
+          python confere.py
+      - name: Publicar release mapa-modelos
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          set -e
+          cd modelos
+          sha256sum htdemucs.onnx | tee htdemucs.onnx.sha256
+          gh release view mapa-modelos -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create mapa-modelos -R "$GITHUB_REPOSITORY" --prerelease --title "MAPA - modelos de IA" \
+              --notes "Modelos usados pelo MAPA (não é um app). htdemucs.onnx: Demucs v4 (Meta, MIT), exportado com sevagh/demucs.onnx (MIT)."
+          gh release upload mapa-modelos htdemucs.onnx htdemucs.onnx.sha256 -R "$GITHUB_REPOSITORY" --clobber
