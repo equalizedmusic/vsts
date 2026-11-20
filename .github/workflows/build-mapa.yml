@@ -96,7 +96,12 @@ jobs:
             mkdir -p dmg
             cp -R "$APP" dmg/
             ln -s /Applications dmg/Applications
-            hdiutil create -volname "MAPA" -srcfolder dmg -ov -format UDZO dist/InsideStudioSP-Mapa-mac.dmg
+            # hdiutil às vezes falha com "Resource busy" no runner: tenta de novo
+            for t in 1 2 3 4 5; do
+              hdiutil create -volname "MAPA" -srcfolder dmg -ov -format UDZO dist/InsideStudioSP-Mapa-mac.dmg && break
+              [ "$t" = 5 ] && exit 1
+              sleep 15
+            done
           else
             EXE=$(find build -type f -name 'MAPA.exe' | head -1)
             [ -n "$EXE" ]
