@@ -5,6 +5,7 @@
 #include "Projeto.h"
 #include "Daws.h"
 #include "Tocador.h"
+#include "IA.h"
 
 namespace mapa
 {
@@ -39,7 +40,8 @@ private:
     void mudaEtapa (float p, const juce::String& e);   // chamada pela thread da análise
     void escolherArquivo();
     void terminouAnalise (bool ok, juce::String erro, std::shared_ptr<juce::AudioBuffer<float>> audio, double taxa,
-                          Projeto p, std::vector<float> picos);
+                          Projeto p, std::vector<float> picos, std::shared_ptr<const Stems> stems,
+                          std::vector<std::vector<float>> picosStems, juce::String aviso);
     void abrirNaDawEscolhida (bool soPasta);
     void montarArranjo();   // redesenha a imagem do arranjo (cache)
 
@@ -68,6 +70,8 @@ private:
     double taxa = 44100;
     Projeto proj;
     std::vector<float> picos;   // máximo absoluto por bloco, para a waveform
+    std::shared_ptr<const Stems> stems;                // 0.2: stems da IA (44,1 kHz), tocados na prévia
+    std::vector<std::vector<float>> picosStems;        // waveform de cada stem (índice = Stem)
 
     juce::Array<Daw> daws;
     int dawSel = 0;

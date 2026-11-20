@@ -24,7 +24,7 @@ struct Clipe
 
 enum class TipoFaixa { audio, midi };
 
-enum class Elemento { referencia, kick, baixo, hats, clap, lead, pad, fx };
+enum class Elemento { referencia, kick, baixo, hats, clap, lead, pad, fx, voz, stem };
 
 struct Faixa
 {
@@ -35,6 +35,11 @@ struct Faixa
     Elemento elem = Elemento::kick;
     bool bateria = false; // notas de bateria (GM: 36 kick, 39 clap, 42 hat)
     std::vector<Clipe> clipes;
+    // faixas de ÁUDIO: stem >= 0 = stem separado pela IA (0 bateria, 1 baixo, 2 outros, 3 voz; ver IA.h);
+    // arquivo = WAV do stem (UTF-8, gravado pelo app depois da análise). Referência: stem = -1, arquivo vazio.
+    int stem = -1;
+    std::string arquivo;
+    bool mudo = false;    // começa mutada na DAW (os stems: a referência já toca a música inteira)
 };
 
 struct Parte
@@ -69,6 +74,7 @@ struct Projeto
 
     std::vector<Parte> partes;
     std::vector<Faixa> faixas;  // faixas[0] = REFERÊNCIA (áudio, 1 clipe com o arquivo inteiro)
+    bool comIA = false;         // análise com separação (stems) e transcrição de notas
 
     double temposPorCompasso() const { return numerador * 4.0 / denominador; }
     double segPorTempo() const { return 60.0 / bpm; }

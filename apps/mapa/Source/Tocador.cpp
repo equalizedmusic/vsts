@@ -31,13 +31,15 @@ Tocador::~Tocador()
     player.setSource (nullptr);
 }
 
-void Tocador::carregar (const juce::AudioBuffer<float>& audio, double taxa, const Projeto& projeto)
+void Tocador::carregar (const juce::AudioBuffer<float>& audio, double taxa, const Projeto& projeto,
+                        std::shared_ptr<const Stems> st)
 {
     rodando = false;
     const juce::ScopedLock sl (trava);
     ref.makeCopyOf (audio);
     taxaRef = taxa;
     proj = projeto;
+    stems = st;
     notasPorFaixa.assign (proj.faixas.size(), {});
     for (size_t f = 0; f < proj.faixas.size(); ++f)
     {
@@ -57,6 +59,7 @@ void Tocador::descarregar()
     const juce::ScopedLock sl (trava);
     ref.setSize (0, 0);
     proj = Projeto {};
+    stems.reset();
     notasPorFaixa.clear();
 }
 
@@ -101,6 +104,7 @@ float Tocador::sintetiza (Elemento el, const Nota& n, double t) const
         }
         case Elemento::baixo:
         case Elemento::lead:
+        case Elemento::voz:
         case Elemento::pad:
         {
             if (t > dur + 0.03) return 0;
@@ -110,12 +114,13 @@ float Tocador::sintetiza (Elemento el, const Nota& n, double t) const
             const double x = DOIS_PI * f * t;
             if (el == Elemento::baixo)
                 return (float) ((std::sin (x) + 0.35 * std::sin (2 * x) + 0.15 * std::sin (3 * x)) * env * 0.32 * vel);
-            if (el == Elemento::lead)
+            if (el == Elemento::lead || el == Elemento::voz)
                 return (float) ((std::sin (x) + 0.3 * std::sin (3 * x) + 0.12 * std::sin (5 * x)) * env * 0.12 * vel);
             return (float) ((std::sin (x) + 0.2 * std::sin (2 * x)) * env * 0.07 * vel);
         }
         case Elemento::referencia:
         case Elemento::fx:
+        case Elemento::stem:
             break;
     }
     return 0;
@@ -166,6 +171,23 @@ void Tocador::getNextAudioBlock (const juce::AudioSourceChannelInfo& info)
                 sr0 = (r1[k] * (1 - fr) + r1[k + 1] * fr) * 0.85f;
             }
         }
+        // 0.2: stems audíveis (44,1 kHz, mesma posição da referência)
+        if (stems != nullptr)
+            for (size_t f = 1; f < proj.faixas.size(); ++f)
+            {
+                const int k = proj.faixas[f].stem;
+                if (k < 0 || k >= numStems || ! audivel (f)) continue;
+                const auto& a0 = stems->canal[(size_t) k][0];
+                const auto& a1 = stems->canal[(size_t) k][1];
+                const double s = proj.temposParaSegAudio (pos) * stems->sampleRate;
+                if (s >= 0 && s < (double) a0.size() - 1)
+                {
+                    const size_t q = (size_t) s;
+                    const float fr = (float) (s - (double) q);
+                    sl0 += (a0[q] * (1 - fr) + a0[q + 1] * fr) * 0.85f;
+                    sr0 += (a1[q] * (1 - fr) + a1[q + 1] * fr) * 0.85f;
+                }
+            }
         L[i] = sl0;
         if (R) R[i] = sr0;
         pos += passo;
@@ -177,7 +199,7 @@ void Tocador::getNextAudioBlock (const juce::AudioSourceChannelInfo& info)
     {
         for (size_t f = 1; f < proj.faixas.size(); ++f)
         {
-            if (! audivel (f)) continue;
+            if (! audivel (f) || proj.faixas[f].tipo != TipoFaixa::midi) continue;
             const auto el = proj.faixas[f].elem;
             const auto& ns = notasPorFaixa[f];
             for (const Nota* nt : ns)

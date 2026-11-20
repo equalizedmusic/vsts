@@ -81,10 +81,10 @@ juce::String nomeProjeto (const Projeto& p)
     return nomeSeguro (p.nomeMusica.empty() ? std::string ("MAPA") : p.nomeMusica);
 }
 
-// Copia o áudio de referência para pasta/Audio/<nome original>; devolve a cópia em `destino`.
-bool copiarAudio (const Projeto& p, const juce::File& pasta, juce::File& destino, juce::String& erro)
+// Copia um áudio para pasta/Audio/<nome original>; devolve a cópia em `destino`.
+bool copiarArquivoAudio (const std::string& caminhoUtf8, const juce::File& pasta, juce::File& destino, juce::String& erro)
 {
-    const juce::String caminho = U (p.caminhoAudio);
+    const juce::String caminho = U (caminhoUtf8);
     if (caminho.isEmpty() || ! juce::File::isAbsolutePath (caminho))
     {
         erro = tx ("Caminho do áudio de referência inválido.");
@@ -109,6 +109,42 @@ bool copiarAudio (const Projeto& p, const juce::File& pasta, juce::File& destino
     {
         erro = tx ("Não consegui copiar o áudio para ") + destino.getFullPathName();
         return false;
+    }
+    return true;
+}
+
+bool copiarAudio (const Projeto& p, const juce::File& pasta, juce::File& destino, juce::String& erro)
+{
+    return copiarArquivoAudio (p.caminhoAudio, pasta, destino, erro);
+}
+
+// Arquivo de cada faixa de áudio (referência ou stem), já copiado para pasta/Audio, com taxa e tamanho.
+struct ArquivoFaixa
+{
+    juce::File arquivo;
+    double sr = 44100;
+    juce::int64 amostras = 0;
+    int canais = 2;
+};
+
+// Copia todos os áudios (referência + stems). arquivos[i] corresponde a p.faixas[i] (vazio nas faixas MIDI e nas
+// faixas de áudio sem arquivo).
+bool copiarAudios (const Projeto& p, const juce::File& pasta, std::vector<ArquivoFaixa>& arquivos, juce::String& erro)
+{
+    arquivos.assign (p.faixas.size(), ArquivoFaixa {});
+    for (size_t i = 0; i < p.faixas.size(); ++i)
+    {
+        const Faixa& f = p.faixas[i];
+        if (f.tipo != TipoFaixa::audio)
+            continue;
+        const bool ref = f.stem < 0;
+        if (! ref && f.arquivo.empty())
+            continue;
+        ArquivoFaixa& a = arquivos[i];
+        if (! copiarArquivoAudio (ref ? p.caminhoAudio : f.arquivo, pasta, a.arquivo, erro))
+            return false;
+        if (ref) { a.sr = p.sampleRate; a.amostras = (juce::int64) std::llround (p.duracaoSeg * p.sampleRate); a.canais = p.canais; }
+        else     { a.sr = 44100; a.amostras = (juce::int64) std::llround (p.duracaoSeg * 44100.0); a.canais = 2; }
     }
     return true;
 }
@@ -277,6 +313,15 @@ juce::String textoLeiaMe (const Projeto& p, bool comNotas, const juce::File& aud
         t << tx ("  ATENÇÃO: o clipe começa ") << fmtNum (p.audioCorteSeg) << " s DENTRO do arquivo: corte esse"
           << tx (" trecho do início do áudio (ou deslize o arquivo ") << fmtNum (p.audioCorteSeg)
           << tx (" s para a esquerda da posição acima).") << nl;
+    bool temStem = false;
+    for (const Faixa& f : p.faixas)
+        if (f.tipo == TipoFaixa::audio && f.stem >= 0 && ! f.arquivo.empty())
+        {
+            if (! temStem)
+                t << tx ("  STEMS separados pela IA (mesma posição e mesmo corte da referência):") << nl;
+            temStem = true;
+            t << "    Audio/" << juce::File (U (f.arquivo)).getFileName() << nl;
+        }
     t << nl;
 
     t << "ARQUIVOS MIDI (pasta MIDI)" << nl
@@ -414,7 +459,8 @@ void timeSignatureClipe (juce::XmlElement& clipe, const Projeto& p)
 // Clipe de áudio da referência, SEM warp (toca no tempo original do arquivo, imune a erro de BPM).
 // Sem warp, Loop/LoopStart e LoopEnd ficam em SEGUNDOS do arquivo e CurrentStart/CurrentEnd em tempos do
 // arranjo (convenção que o logic2ableton conferiu num set salvo pelo Live 12.4.3). O corte vira LoopStart.
-juce::XmlElement* clipeAudioLive (const Projeto& p, int cor, const juce::File& audio, const juce::String& relativo)
+juce::XmlElement* clipeAudioLive (const Projeto& p, int cor, const juce::File& audio, const juce::String& relativo,
+                                  double srArq, juce::int64 amostrasArq, const juce::String& nomeClipeAudio)
 {
     const double ini = p.audioInicioTempos;
     const double fim = p.audioFimTempos();
@@ -432,7 +478,7 @@ juce::XmlElement* clipeAudioLive (const Projeto& p, int cor, const juce::File& a
     sub (*loop, "LoopEnd", fmtNum (p.duracaoSeg));
     sub (*loop, "StartRelative", "0");
     sub (*loop, "LoopOn", "false");
-    sub (*c, "Name", U (p.nomeMusica));
+    sub (*c, "Name", nomeClipeAudio);
     sub (*c, "Annotation", "");
     sub (*c, "Color", juce::String (cor));
     sub (*c, "LaunchMode", "0");
@@ -462,8 +508,8 @@ juce::XmlElement* clipeAudioLive (const Projeto& p, int cor, const juce::File& a
     sub (*sr, "LastModDate", juce::String (audio.getLastModificationTime().toMilliseconds() / 1000));
     subVazio (*sr, "SourceContext");
     sub (*sr, "SampleUsageHint", "0");
-    sub (*sr, "DefaultDuration", juce::String ((juce::int64) std::llround (p.duracaoSeg * p.sampleRate)));
-    sub (*sr, "DefaultSampleRate", juce::String (juce::roundToInt (p.sampleRate)));
+    sub (*sr, "DefaultDuration", juce::String (amostrasArq));
+    sub (*sr, "DefaultSampleRate", juce::String (juce::roundToInt (srArq)));
 
     sub (*c, "WarpMode", "0");
     juce::XmlElement* fades = subVazio (*c, "Fades");
@@ -728,6 +774,9 @@ ResultadoExport exportarPasta (const Projeto& p, const juce::File& pasta, bool c
     juce::File audio;
     if (! copiarAudio (p, pasta, audio, erro))
         return falha (erro);
+    std::vector<ArquivoFaixa> arquivos;   // stems também vão para Audio/
+    if (! copiarAudios (p, pasta, arquivos, erro))
+        return falha (erro);
     const juce::File pastaMidi = pasta.getChildFile ("MIDI");
     if (! garantirPasta (pastaMidi, erro))
         return falha (erro);
@@ -804,8 +853,8 @@ ResultadoExport exportarAbleton (const Projeto& p, const juce::File& pasta, bool
     juce::String erro;
     if (! garantirPasta (pasta, erro))
         return falha (erro);
-    juce::File audio;
-    if (! copiarAudio (p, pasta, audio, erro))
+    std::vector<ArquivoFaixa> arquivos;
+    if (! copiarAudios (p, pasta, arquivos, erro))
         return falha (erro);
 
     // 1. descompacta o modelo embutido
@@ -847,8 +896,6 @@ ResultadoExport exportarAbleton (const Projeto& p, const juce::File& pasta, bool
     tracks->deleteAllChildElements();
     int proximoIdFaixa = maiorIdFaixa + 1;   // Ids de faixa são um espaço à parte dos alvos
 
-    const juce::String relativo = "Audio/" + audio.getFileName();
-
     // 4. uma faixa clonada por faixa do Projeto
     for (size_t i = 0; i < p.faixas.size(); ++i)
     {
@@ -884,6 +931,8 @@ ResultadoExport exportarAbleton (const Projeto& p, const juce::File& pasta, bool
         const int cor = corLive (f.cor);
         setValor (t, "Color", juce::String (cor));
         setValor (t, "TrackGroupId", "-1");
+        if (f.mudo)
+            setValor (t, "DeviceChain/Mixer/Speaker/Manual", "false");
 
         juce::XmlElement* eventos = eventosArranjo (t, ! ehAudio);
         if (eventos == nullptr)
@@ -891,8 +940,10 @@ ResultadoExport exportarAbleton (const Projeto& p, const juce::File& pasta, bool
 
         if (ehAudio)
         {
-            if (i == 0)   // só a referência (faixas[0]) tem o arquivo
-                eventos->addChildElement (clipeAudioLive (p, cor, audio, relativo));
+            const ArquivoFaixa& a = arquivos[i];
+            if (a.arquivo != juce::File())
+                eventos->addChildElement (clipeAudioLive (p, cor, a.arquivo, "Audio/" + a.arquivo.getFileName(), a.sr, a.amostras,
+                                                          f.stem < 0 ? U (p.nomeMusica) : U (f.nome)));
         }
         else
         {
@@ -950,8 +1001,8 @@ ResultadoExport exportarReaper (const Projeto& p, const juce::File& pasta, bool 
     juce::String erro;
     if (! garantirPasta (pasta, erro))
         return falha (erro);
-    juce::File audio;
-    if (! copiarAudio (p, pasta, audio, erro))
+    std::vector<ArquivoFaixa> arquivos;
+    if (! copiarAudios (p, pasta, arquivos, erro))
         return falha (erro);
 
     const double spb = p.segPorTempo();
@@ -972,10 +1023,13 @@ ResultadoExport exportarReaper (const Projeto& p, const juce::File& pasta, bool 
         r << "  <TRACK" << nl
           << "    NAME " << aspasRpp (U (f.nome)) << nl
           << "    PEAKCOL " << corReaper (f.cor) << nl;
+        if (f.mudo)
+            r << "    MUTESOLO 1 0 0" << nl;
 
         if (f.tipo == TipoFaixa::audio)
         {
-            if (i == 0)
+            const juce::File audio = arquivos[i].arquivo;
+            if (audio != juce::File())
             {
                 const double corte = std::max (0.0, p.audioCorteSeg);
                 r << "    <ITEM" << nl
@@ -983,7 +1037,7 @@ ResultadoExport exportarReaper (const Projeto& p, const juce::File& pasta, bool 
                   << "      LENGTH " << fmtNum (p.duracaoSeg - corte) << nl
                   << "      LOOP 0" << nl
                   << "      SOFFS " << fmtNum (corte) << nl
-                  << "      NAME " << aspasRpp (U (p.nomeMusica)) << nl
+                  << "      NAME " << aspasRpp (f.stem < 0 ? U (p.nomeMusica) : U (f.nome)) << nl
                   << "      <SOURCE " << tipoFonteReaper (audio) << nl
                   << "        FILE " << aspasRpp ("Audio/" + audio.getFileName()) << nl
                   << "      >" << nl
@@ -1057,13 +1111,12 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
     juce::String erro;
     if (! garantirPasta (pasta, erro))
         return falha (erro);
-    juce::File audio;
-    if (! copiarAudio (p, pasta, audio, erro))
+    std::vector<ArquivoFaixa> arquivos;
+    if (! copiarAudios (p, pasta, arquivos, erro))
         return falha (erro);
 
     GeradorIds ids;
     const double tpc = p.temposPorCompasso();
-    const juce::String caminhoNoZip = "audio/" + audio.getFileName();
 
     juce::XmlElement projeto ("Project");
     projeto.setAttribute ("version", juce::String ("1.0"));
@@ -1091,6 +1144,7 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
     for (const Faixa& f : p.faixas)
     {
         juce::XmlElement* tr = estrutura->createNewChildElement ("Track");
+        const bool mudo = f.mudo;
         tr->setAttribute ("contentType", juce::String (f.tipo == TipoFaixa::audio ? "audio" : "notes"));
         tr->setAttribute ("loaded", juce::String ("true"));
         const juce::String idT = ids.proximo();
@@ -1104,6 +1158,9 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
         ch->setAttribute ("solo", juce::String ("false"));
         ch->setAttribute ("id", ids.proximo());
         canalDawproject (*ch, ids);
+        if (mudo)
+            if (juce::XmlElement* m = ch->getChildByName ("Mute"))
+                m->setAttribute ("value", juce::String ("true"));
         canais.push_back (ch);
     }
     juce::XmlElement* master = estrutura->createNewChildElement ("Track");
@@ -1140,8 +1197,10 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
 
         if (f.tipo == TipoFaixa::audio)
         {
-            if (i != 0)
+            const ArquivoFaixa& arqF = arquivos[i];
+            if (arqF.arquivo == juce::File())
                 continue;
+            const juce::String caminhoNoZip = "audio/" + arqF.arquivo.getFileName();
             // Mesmo desenho que o Bitwig exporta: clipe externo no arranjo; clipe interno com Warps
             // (tempos <-> segundos do arquivo, coerentes com o BPM). O corte vira playStart do clipe interno.
             const double corte = std::max (0.0, p.audioCorteSeg);
@@ -1151,7 +1210,7 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
             ce->setAttribute ("time", fmtNum (p.audioInicioTempos));
             ce->setAttribute ("duration", fmtNum (durTempos));
             ce->setAttribute ("playStart", juce::String ("0"));
-            ce->setAttribute ("name", U (p.nomeMusica));
+            ce->setAttribute ("name", f.stem < 0 ? U (p.nomeMusica) : U (f.nome));
             juce::XmlElement* internos = ce->createNewChildElement ("Clips");
             internos->setAttribute ("id", ids.proximo());
             juce::XmlElement* ci = internos->createNewChildElement ("Clip");
@@ -1165,9 +1224,9 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
             warps->setAttribute ("id", ids.proximo());
             juce::XmlElement* au = warps->createNewChildElement ("Audio");
             au->setAttribute ("algorithm", juce::String ("stretch"));
-            au->setAttribute ("channels", juce::String (juce::jmax (1, p.canais)));
+            au->setAttribute ("channels", juce::String (juce::jmax (1, arqF.canais)));
             au->setAttribute ("duration", fmtNum (p.duracaoSeg));
-            au->setAttribute ("sampleRate", juce::String (juce::roundToInt (p.sampleRate)));
+            au->setAttribute ("sampleRate", juce::String (juce::roundToInt (arqF.sr)));
             au->setAttribute ("id", ids.proximo());
             juce::XmlElement* arqEl = au->createNewChildElement ("File");
             arqEl->setAttribute ("path", caminhoNoZip);
@@ -1240,7 +1299,9 @@ ResultadoExport exportarDawproject (const Projeto& p, const juce::File& pasta, b
     juce::ZipFile::Builder zip;
     addTextoZip (zip, "project.xml", projeto.toString (formatoXml()));
     addTextoZip (zip, "metadata.xml", meta.toString (formatoXml()));
-    zip.addFile (audio, 0, caminhoNoZip);
+    for (const ArquivoFaixa& a : arquivos)
+        if (a.arquivo != juce::File())
+            zip.addFile (a.arquivo, 0, "audio/" + a.arquivo.getFileName());
 
     const juce::File arq = pasta.getChildFile (nomeProjeto (p) + ".dawproject");
     std::unique_ptr<juce::FileOutputStream> out = abrirSaida (arq);
