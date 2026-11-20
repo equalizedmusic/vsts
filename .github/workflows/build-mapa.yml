@@ -60,25 +60,17 @@ jobs:
         run: |
           set -e
           python3 -m pip install --quiet --break-system-packages numpy scipy || python3 -m pip install --quiet numpy scipy
-          python3 apps/mapa/tools/gera_teste.py psy140.wav 140 9 1 0 psy
+          # 0.3: música com gabarito por elemento (sem voz, 128 BPM, começa 1,5 tempo depois): o mapa tem que bater
+          python3 apps/mapa/tools/gera_mapa.py gab.wav gab.json 128 1.5 --sem-voz
           cp apps/mapa/modelos/htdemucs.onnx apps/mapa/Recursos/nmp.onnx build/
           mkdir -p teste
           T=$(find build -type f -name mapa_teste -perm -u+x | head -1)
-          /usr/bin/time -p "$T" mapa psy140.wav build teste 2> teste/log.txt || (cat teste/log.txt; exit 1)
+          /usr/bin/time -p "$T" mapa gab.wav build teste 2> teste/log.txt || (cat teste/log.txt; exit 1)
           tail -5 teste/log.txt
           cat teste/relatorio.txt
           sysctl -n machdep.cpu.brand_string hw.ncpu >> teste/log.txt
-          python3 - <<'PY'
-          import csv, collections
-          r = list(csv.DictReader(open('teste/notas.csv')))
-          k = [float(x['inicio_tempos']) for x in r if x['faixa'] == 'KICK']
-          pos = collections.Counter(int(round(v * 4)) % 4 for v in k)
-          print('KICK por posição no tempo (1..4):', [pos.get(i, 0) for i in range(4)])
-          bpm = open('teste/relatorio.txt').read().split()[1]
-          assert abs(float(bpm) - 140) < 0.5, 'BPM errado: ' + bpm
-          assert pos.get(0, 0) > 0.9 * len(k), 'kick fora do tempo (dobrado?)'
-          print('OK: 140 BPM e kick 1 por tempo')
-          PY
+          python3 -c "b = open('teste/relatorio.txt').read().split()[1]; assert abs(float(b) - 128) < 0.5, 'BPM errado: ' + b; print('BPM ok', b)"
+          python3 apps/mapa/tools/nota_mapa.py teste/relatorio.txt gab.json --exigir 0.9
           rm -f teste/stem_*.wav
 
       - name: Empacotar
