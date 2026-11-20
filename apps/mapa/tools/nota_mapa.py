@@ -23,6 +23,7 @@ for ln in rel:
         bars |= set(range(int(round(a)) - 1 - desloc, int(round(b)) - desloc))
     achado[nome] = bars
 tot = []
+notas = {}
 print(f"{'elemento':12s} {'gab':>4s} {'achou':>5s} {'certo':>5s} {'falta':>5s} {'sobra':>5s}   F1")
 for el, tr in gab.items():
     g = set()
@@ -34,5 +35,15 @@ for el, tr in gab.items():
     r = certo / len(g) if g else 1.0
     f1 = 2 * p * r / (p + r) if p + r else 0
     tot.append(f1)
+    notas[el] = f1
     print(f"{el:12s} {len(g):4d} {len(a):5d} {certo:5d} {len(g - a):5d} {len(a - g):5d}  {f1:.2f}")
-print(f"MÉDIA F1 {sum(tot) / len(tot):.3f}")
+media = sum(tot) / len(tot)
+print(f"MEDIA F1 {media:.3f}")
+# --exigir X: cada elemento de base (bateria, baixo, lead, pad) com F1 >= X e média >= X - 0.1 (CI)
+if "--exigir" in sys.argv:
+    x = float(sys.argv[sys.argv.index("--exigir") + 1])
+    ruins = [e for e in ("KICK", "CLAP", "HATS", "BAIXO", "LEAD", "PAD") if notas.get(e, 0) < x]
+    if ruins or media < x - 0.1:
+        print("FALHOU:", ruins, f"media {media:.3f}")
+        sys.exit(1)
+    print("OK")
