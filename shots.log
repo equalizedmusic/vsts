@@ -1,7 +1,4 @@
-== build/shot_resenha_artefacts/Release/shot_resenha
-RESENHA: ok
-== build/shot_groovador_artefacts/Release/shot_groovador
-GROOVADOR: ok
-total 3568
--rw-r--r--  1 runner  staff   786278 Nov 20 11:33 GROOVADOR.png
--rw-r--r--  1 runner  staff  1040140 Nov 20 11:33 RESENHA.png
+== build/shot_curva_artefacts/Release/shot_curva
+CURVA: ok
+total 1480
+-rw-r--r--  1 runner  staff  754156 Nov 21 23:47 CURVA.png
