@@ -7,7 +7,7 @@
     python3 instalador/versao.py Limao --notas     -> o texto da seção da versão atual (vira a nota do release)
     python3 instalador/versao.py Quimera --arquivo -> Quimera (nome do instalador publicado no release)
 
-<pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Knob, Quimera, Limao, Mercurio, Resenha, MontaMonta, Groovador, Mesa, Align, Onkey, Barebass, Stompbox, Maestro, Magos, Gogo, Retalho, Chute).
+<pacote> é o mesmo nome do --pacote do montar.py (Criativo, Mix, Knob, Quimera, Limao, Mercurio, Resenha, MontaMonta, Groovador, Mesa, Align, Onkey, Barebass, Stompbox, Maestro, Magos, Gogo, Retalho, Chute, Curva).
 O CMake lê a mesma versão (instrumentos/CMakeLists.txt e CMakeLists.txt da raiz), então plugin, instalador e
 release andam juntos: para lançar, basta escrever a seção nova no topo do arquivo de novidades.
 """
@@ -39,6 +39,7 @@ PACOTES = {
     "Gogo":         ("Gogo.md", "gogo", "GOGÓ"),
     "Retalho":      ("Retalho.md", "retalho", "RETALHO"),
     "Chute":        ("Chute.md", "chute", "CHUTE"),
+    "Curva":        ("Curva.md", "curva", "CURVA"),
     # pacote SÓ de presets do CHUTE (bancos .chutebank, sem plugin): .github/workflows/release-chute-bancos.yml
     "ChuteBancos":  ("ChuteBancos.md", "chute-bancos", "CHUTE · BANCOS DE PRESETS"),
 }

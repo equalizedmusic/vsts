@@ -25,6 +25,7 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.0 | pago (lançamento 22/11) |
 | [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.1 | grátis |
 | [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.2 | grátis |
+| [CURVA](instrumentos/curva/README.md) | Monitor de volume (Fletcher-Munson / ISO 226) | 0.1.0 | teste (grátis) |
 | [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.0 | à venda |
 | [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.0 | à venda |
 | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.2 | à venda |
@@ -53,6 +54,7 @@ ordem de uso: VASSOURA limpa → RODO nivela → ESPANADOR organiza → MAESTRO 
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GOGO.png" width="240" alt="GOGÓ">](instrumentos/gogo/README.md) | [GOGÓ](instrumentos/gogo/README.md) | A cadeia de voz inteira: CLEAN → TUNE → RIDE → FET → OPTO → TONE → DE-ESS → WARMTH → SPACE, cada bloco com power. LEARN acerta o nível pela sua voz, macros fazem o resto; TRACKING zera a latência para gravar e o MAESTRO LINK abre espaço para a voz |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RETALHO.png" width="240" alt="RETALHO">](instrumentos/retalho/README.md) | [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: a voz entra por arquivo, ABRIR ou CAPTURAR e vira stutter (PICOTE), esticada (ESTICA) ou groove de one-shots (GROOVE), no tempo do projeto; pads por MIDI e arrastar para o DAW. **Pago** |
 | [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ALIGN.png" width="240" alt="ALIGN">](instrumentos/align/README.md) | [ALIGN](instrumentos/align/README.md) | Fase kick/baixo com um botão só: no canal do baixo, o corretor escolhe polaridade e rotação de fase do grave a cada batida e guarda por nota; LEVEL GUARD para alinhar sem virar soma; latência zero. **Grátis.** Desde a 0.3 acha o CHUTE pelo LINK, sem sidechain, e tem DUCK |
+| [<img src="https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CURVA.png" width="240" alt="CURVA">](instrumentos/curva/README.md) | [CURVA](instrumentos/curva/README.md) | Monitor de volume pela curva de mesma audibilidade (ISO 226): por último no master, devolve o grave e o agudo que o ouvido perde quando você ouve baixinho; SPECTRUM detalhado, LEVELS, LOUDNESS (R128), TRUE PEAK e STEREO. Só para ouvir. **Teste, grátis** |
 | [<img src="https://insidestudiosp.com.br/img/mesa.webp" width="240" alt="MESA">](instrumentos/mesa/README.md) | [MESA](instrumentos/mesa/README.md) | Console analógica em dois plugins: a MESA CANAL em cada faixa e a MESA no master, cuja janela é o mixer inteiro (canais, grupos e MASTER), com pré, EQ de 4 bandas e compressores. Fora do site desde 14/11 |
 
 ## Synths e instrumentos
@@ -140,20 +142,6 @@ VST não consegue. Ficam em `max4live/<nome>`, não entram em nenhum build nem i
 | [<img src="https://insidestudiosp.com.br/img/vassoura.webp" width="240" alt="VASSOURA">](max4live/vassoura/README.md) | [VASSOURA](max4live/vassoura/README.md) | Acha os trechos vazios dos clips de áudio de todas as faixas e muta (MUTE) ou apaga (CUT) só o silêncio; THRESHOLD, MIN LENGTH, PRE/POST e SNAP |
 | [<img src="https://insidestudiosp.com.br/img/rodo.webp" width="240" alt="RODO">](max4live/rodo/README.md) | [RODO](max4live/rodo/README.md) | Nivela todos os clips pelo Clip Gain, por PEAK, RMS ou LUFS, com PEAK GUARD; modos CLIP, TRACK e ALL; RESET volta os ganhos |
 | [<img src="https://insidestudiosp.com.br/img/espanador.webp" width="240" alt="ESPANADOR">](max4live/espanador/README.md) | [ESPANADOR](max4live/espanador/README.md) | Reconhece as faixas pelo nome nos 8 grupos do MAESTRO, pinta faixas e clips e cria um BUS por grupo, já com o MAESTRO dentro; UNDO volta tudo |
-
-## App MAPA (teste)
-
-App standalone GRÁTIS (Mac e Windows, em `apps/mapa`, build próprio `build-mapa.yml`, pré-release `mapa-vX.Y.Z`):
-lê uma música de referência e monta o ESQUELETO dela na DAW, como um mapa de produção. Acha BPM, tom e partes, e marca
-onde cada elemento entra e sai (KICK, CLAP, HATS, BAIXO, LEAD, PAD, VOZ, SWEEP UP, SWEEP DOWN, IMPACTO), com um clipe
-MIDI vazio por trecho, sem notas. Sai como Ableton `.als`, Reaper `.rpp`, DAWproject ou pasta MIDI, e o LEIA-ME traz o
-mapa em texto. Para ler a música, separa os stems por dentro (Demucs v4) e usa as notas do Basic Pitch só para decidir
-o que é lead, pad e voz. Os stems não vão para o projeto.
-A IA roda no ONNX Runtime embutido no app, sem internet. O modelo de separação (`htdemucs.onnx`, 174 MB) não fica no
-git: o workflow `mapa-modelos.yml` converte e publica no release `mapa-modelos`, e o build baixa de lá. Teste do motor
-sem JUCE: `tools/teste_v2.cpp` (alvo `mapa_teste`, `-DMAPA_TESTES=ON`). Precisão: `tools/gera_mapa.py` gera uma
-música com gabarito por elemento e `tools/nota_mapa.py` compara com o relatório do teste, compasso a compasso.
-Licenças em [apps/mapa/TERCEIROS.md](apps/mapa/TERCEIROS.md).
 
 ## Formatos gerados
 

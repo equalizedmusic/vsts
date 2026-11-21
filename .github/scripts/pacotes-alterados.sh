@@ -11,7 +11,7 @@ tipo=$1; base=${2:-}; head=$3; escolha=${4:-}
 
 if [ "$tipo" = instrumentos ]; then
   mapa="quimera:Quimera limao:Limao mercurio:Mercurio resenha:Resenha montamonta:MontaMonta groovador:Groovador
-        mesa:Mesa align:Align onkey:Onkey barebass:Barebass stompbox:Stompbox maestro:Maestro magos:Magos gogo:Gogo retalho:Retalho chute:Chute"
+        mesa:Mesa align:Align onkey:Onkey barebass:Barebass stompbox:Stompbox maestro:Maestro magos:Magos gogo:Gogo retalho:Retalho chute:Chute curva:Curva"
   raiz=instrumentos
 else
   mapa="criativo:Criativo mix:Mix knob:Knob"

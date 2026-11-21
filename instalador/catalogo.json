@@ -46,5 +46,6 @@
   "MASTER-DOS-MAGOS": ["MASTER DOS MAGOS", "masterizador par do MAESTRO: referência, TONE MATCH, EQ dinâmica, multibanda e limitador true peak"],
   "GOGO": ["GOGÓ", "cadeia de voz automática: afinação (motor do ONKEY), rider, FET + OPTO, EQ dinâmica, de-ess, warmth e plate + delay com duck"],
   "RETALHO": ["RETALHO", "sampler de vocal em 3 modos: PICOTE (a frase limpa com efeito nos pedaços que você marca), ESTICA (granular com MOVIMENTO) e GROOVE (as sílabas numa grade melódica)"],
-  "CHUTE": ["CHUTE", "kick designer: 50 presets (SUB, PUNCH, TIGHT, BOOM) com ataque + corpo afinável na nota; LINK com ALIGN e BAREBASS sem sidechain"]
+  "CHUTE": ["CHUTE", "kick designer: 50 presets (SUB, PUNCH, TIGHT, BOOM) com ataque + corpo afinável na nota; LINK com ALIGN e BAREBASS sem sidechain"],
+  "CURVA": ["CURVA", "monitor de volume pela curva de mesma audibilidade (Fletcher-Munson / ISO 226): ouve baixinho como se estivesse alto; spectrum, loudness, true peak e stereo"]
 }

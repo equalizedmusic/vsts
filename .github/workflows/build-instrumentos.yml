@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
     # só a pasta de cada instrumento e o novidades dele; o job detectar escolhe QUAIS compilam (só os atualizados)
-    paths: ['instrumentos/**', '!instrumentos/chute/bancos/*.chutebank', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md', 'novidades/Resenha.md', 'novidades/MontaMonta.md', 'novidades/Groovador.md', 'novidades/Mesa.md', 'novidades/Align.md', 'novidades/Onkey.md', 'novidades/Barebass.md', 'novidades/Stompbox.md', 'novidades/Maestro.md', 'novidades/Magos.md', 'novidades/Gogo.md', 'novidades/Retalho.md', 'novidades/Chute.md']
+    paths: ['instrumentos/**', '!instrumentos/chute/bancos/*.chutebank', 'novidades/Quimera.md', 'novidades/Limao.md', 'novidades/Mercurio.md', 'novidades/Resenha.md', 'novidades/MontaMonta.md', 'novidades/Groovador.md', 'novidades/Mesa.md', 'novidades/Align.md', 'novidades/Onkey.md', 'novidades/Barebass.md', 'novidades/Stompbox.md', 'novidades/Maestro.md', 'novidades/Magos.md', 'novidades/Gogo.md', 'novidades/Retalho.md', 'novidades/Chute.md', 'novidades/Curva.md']
   workflow_dispatch:
     inputs:
       pacotes:
@@ -84,7 +84,7 @@ jobs:
             done
           done
           find dist \( -name '*.exp' -o -name '*.lib' \) -delete
-          # LIMÃO, MERCÚRIO, RESENHA, MONTA-MONTA, GROOVADOR, MESA, ALIGN, ONKEY, BAREBASS, STOMPBOX, MAESTRO, MASTER DOS MAGOS, GOGÓ, RETALHO e CHUTE têm instalador próprio (não vão no pacote da QUIMERA)
+          # LIMÃO, MERCÚRIO, RESENHA, MONTA-MONTA, GROOVADOR, MESA, ALIGN, ONKEY, BAREBASS, STOMPBOX, MAESTRO, MASTER DOS MAGOS, GOGÓ, RETALHO, CHUTE e CURVA têm instalador próprio (não vão no pacote da QUIMERA)
           for fmt in VST3 AU; do
             for b in dist/$fmt/LIMAO.*; do
               if [ -e "$b" ]; then mkdir -p "dist-limao/$fmt"; mv "$b" "dist-limao/$fmt/"; fi
@@ -131,9 +131,12 @@ jobs:
             for b in dist/$fmt/CHUTE.*; do
               if [ -e "$b" ]; then mkdir -p "dist-chute/$fmt"; mv "$b" "dist-chute/$fmt/"; fi
             done
+            for b in dist/$fmt/CURVA.*; do
+              if [ -e "$b" ]; then mkdir -p "dist-curva/$fmt"; mv "$b" "dist-curva/$fmt/"; fi
+            done
           done
           if [ "${{ matrix.name }}" = mac ]; then
-            for b in dist/*/* dist-limao/*/* dist-mercurio/*/* dist-resenha/*/* dist-montamonta/*/* dist-groovador/*/* dist-mesa/*/* dist-align/*/* dist-onkey/*/* dist-barebass/*/* dist-stompbox/*/* dist-maestro/*/* dist-magos/*/* dist-gogo/*/* dist-retalho/*/* dist-chute/*/*; do if [ -e "$b" ]; then codesign --force --deep --sign - "$b"; fi; done
+            for b in dist/*/* dist-limao/*/* dist-mercurio/*/* dist-resenha/*/* dist-montamonta/*/* dist-groovador/*/* dist-mesa/*/* dist-align/*/* dist-onkey/*/* dist-barebass/*/* dist-stompbox/*/* dist-maestro/*/* dist-magos/*/* dist-gogo/*/* dist-retalho/*/* dist-chute/*/* dist-curva/*/*; do if [ -e "$b" ]; then codesign --force --deep --sign - "$b"; fi; done
           fi
           if [ "${{ matrix.name }}" = win ] && [ ! -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ]; then
             choco install innosetup -y --no-progress > /dev/null
@@ -206,7 +209,11 @@ jobs:
           if [ -d dist-chute/VST3 ]; then
             $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Chute --origem dist-chute --bancos instrumentos/chute/bancos --versao "$(versao Chute)" --saida .
           fi
-          { find dist -maxdepth 2; find dist-limao dist-mercurio dist-resenha dist-montamonta dist-groovador dist-mesa dist-align dist-onkey dist-barebass dist-stompbox dist-maestro dist-magos dist-gogo dist-retalho dist-chute -maxdepth 2 2>/dev/null || true; ls -l InsideStudioSP-*; } | tee pack.log
+          # CURVA: InsideStudioSP-Curva-mac.dmg / -win.exe
+          if [ -d dist-curva/VST3 ]; then
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote Curva --origem dist-curva --versao "$(versao Curva)" --saida .
+          fi
+          { find dist -maxdepth 2; find dist-limao dist-mercurio dist-resenha dist-montamonta dist-groovador dist-mesa dist-align dist-onkey dist-barebass dist-stompbox dist-maestro dist-magos dist-gogo dist-retalho dist-chute dist-curva -maxdepth 2 2>/dev/null || true; ls -l InsideStudioSP-*; } | tee pack.log
 
       - name: pluginval
         id: pluginval
@@ -228,7 +235,7 @@ jobs:
           # estourou o tempo) nenhum pacote sai, porque não dá para saber quem passou.
           : > pv-falhou.txt
           falha=0
-          for par in dist:Quimera dist-limao:Limao dist-mercurio:Mercurio dist-resenha:Resenha dist-montamonta:MontaMonta dist-groovador:Groovador dist-mesa:Mesa dist-align:Align dist-onkey:Onkey dist-barebass:Barebass dist-stompbox:Stompbox dist-maestro:Maestro dist-magos:Magos dist-gogo:Gogo dist-retalho:Retalho dist-chute:Chute; do
+          for par in dist:Quimera dist-limao:Limao dist-mercurio:Mercurio dist-resenha:Resenha dist-montamonta:MontaMonta dist-groovador:Groovador dist-mesa:Mesa dist-align:Align dist-onkey:Onkey dist-barebass:Barebass dist-stompbox:Stompbox dist-maestro:Maestro dist-magos:Magos dist-gogo:Gogo dist-retalho:Retalho dist-chute:Chute dist-curva:Curva; do
             d=${par%%:*}; pac=${par#*:}
             for p in "$d"/VST3/*.vst3; do
               [ -e "$p" ] || continue
@@ -301,7 +308,7 @@ jobs:
           mv report/*.dmg report/*.exe pacotes/ 2>/dev/null || true
           cd report
           { echo "commit=${GITHUB_SHA}"; echo "run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"; cat status-*.txt 2>/dev/null
-            for p in Quimera Limao Mercurio Resenha MontaMonta Groovador Mesa Align Onkey Barebass Stompbox Maestro Magos Gogo Retalho Chute; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
+            for p in Quimera Limao Mercurio Resenha MontaMonta Groovador Mesa Align Onkey Barebass Stompbox Maestro Magos Gogo Retalho Chute Curva; do echo "versao $(python3 ../src/instalador/versao.py $p --titulo)"; done; } > status.txt
           cat status.txt
           git init -q
           git checkout -q -b builds-instrumentos
@@ -312,7 +319,7 @@ jobs:
       # sem release "latest-instrumentos": em Releases fica só a última versão de cada pacote. O instalador de um
       # build sem versão nova fica nos artefatos do run (report-mac / report-win), na aba Actions.
       # RELEASE_TOKEN: o token automático toma 403 ao criar o release quando o commit mexe em .github/workflows
-      - name: Releases das versões (quimera-v…, limao-v…, mercurio-v…, resenha-v…, montamonta-v…, groovador-v…, mesa-v…, align-v…, onkey-v…, barebass-v…, stompbox-v…, maestro-v…, magos-v…, gogo-v…, retalho-v…, chute-v…)
+      - name: Releases das versões (quimera-v…, limao-v…, mercurio-v…, resenha-v…, montamonta-v…, groovador-v…, mesa-v…, align-v…, onkey-v…, barebass-v…, stompbox-v…, maestro-v…, magos-v…, gogo-v…, retalho-v…, chute-v…, curva-v…)
         if: hashFiles('pacotes/*') != ''
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
