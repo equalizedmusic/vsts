@@ -2,6 +2,19 @@
 
 App standalone (Mac e Windows) da InsideStudioSP: lê uma música de referência e monta o projeto pronto na sua DAW.
 
+## 0.4.0
+
+Mapa mais fiel numa música real. Testado com um psytrance de 8 minutos.
+
+- **Bateria lida golpe a golpe**: o MAPA mede a energia de cada semicolcheia no stem de bateria, com janela exata, em vez de uma média borrada de 93 ms.
+  - O CLAP do drop voltou. Antes o clique do kick escondia o clap.
+  - O KICK filtrado do intro agora aparece.
+  - O kick longo do psy e o rolo de kick do build também são lidos.
+- **Viradas no compasso certo**: a parte começa onde a bateria e o baixo realmente mudam, mesmo quando a música tem uma frase torta, como um break de 35 compassos. Antes, tudo depois dela ficava 1 compasso fora.
+- **Nada de pedaço solto**: LEAD, PAD e VOZ entram e saem em blocos de 4 compassos, contados do começo da parte, como numa produção de verdade. Um bloco só é marcado quando o elemento toca em pelo menos 3 dos 4 compassos. Trechos de 1 ou 2 compassos sumiram.
+- **Efeitos só nas viradas**: SWEEP UP, SWEEP DOWN e IMPACTO só aparecem no fim ou no começo de uma parte, ou numa frase de 8 compassos dentro dela. O barulho do drop não vira mais sweep.
+- **Medido na música real**: KICK, CLAP, HATS e BAIXO acertaram 99% dos compassos, comparados com a leitura compasso a compasso. Antes, o CLAP acertava 22%.
+
 ## 0.3.0
 
 O MAPA virou só o esqueleto da música, e é grátis. Ele não cria nenhuma nota nem melodia. Marca onde cada coisa entra e sai na referência, como um mapa de produção.
