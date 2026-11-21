@@ -268,6 +268,45 @@ double percJanela (const std::vector<float>& env, const Espectro& e, double t0, 
     return 10.0 * std::log10 (v[(size_t) (p * (double) (v.size() - 1))] + 1e-12);
 }
 
+// 0.4: energia de uma banda no TEMPO (biquads RBJ em cascata, 4ª ordem): janela exata por passo, sem o borrão de
+// 93 ms da STFT (que misturava o clap do 2/4 com o kick do 1/3). lo = 0: só passa-baixa; hi = 0: só passa-alta.
+std::vector<float> quadradoBanda (const std::vector<float>& x, double sr, double lo, double hi)
+{
+    std::vector<float> y (x);
+    auto biquad = [&] (bool alta, double f0)
+    {
+        const double w = 2 * 3.14159265358979 * f0 / sr, cw = std::cos (w), al = std::sin (w) / (2 * 0.7071);
+        double b0, b1, b2;
+        if (alta) { b0 = (1 + cw) / 2; b1 = -(1 + cw); b2 = b0; }
+        else { b0 = (1 - cw) / 2; b1 = 1 - cw; b2 = b0; }
+        const double a0 = 1 + al, a1 = -2 * cw, a2 = 1 - al;
+        b0 /= a0; b1 /= a0; b2 /= a0;
+        const double A1 = a1 / a0, A2 = a2 / a0;
+        double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (auto& v : y)
+        {
+            const double xi = v, yi = b0 * xi + b1 * x1 + b2 * x2 - A1 * y1 - A2 * y2;
+            x2 = x1; x1 = xi; y2 = y1; y1 = yi; v = (float) yi;
+        }
+    };
+    for (int k = 0; k < 2; ++k)
+    {
+        if (lo > 0) biquad (true, lo);
+        if (hi > 0) biquad (false, hi);
+    }
+    for (auto& v : y) v = v * v;
+    return y;
+}
+
+double mediaAmostras (const std::vector<float>& q, double sr, double t0, double t1)
+{
+    const long a = std::max (0L, (long) (t0 * sr)), b = std::min ((long) q.size(), (long) (t1 * sr));
+    if (b <= a) return 0;
+    double s = 0;
+    for (long i = a; i < b; ++i) s += q[(size_t) i];
+    return s / (double) (b - a);
+}
+
 // ------------------------------------------------------------------ tempo
 // nota de fase: média do envelope nas posições phi + k*P (k = 0..), para o período P
 double notaFase (const std::vector<float>& env, const Espectro& e, double P, double phi, double dur)
@@ -432,6 +471,9 @@ struct Compasso
     int leadPc[PASSOS];
     // 0.3: stem "outros" — ataques por passo (lead tem, pad quase não) e piso de energia no compasso (pad sustenta)
     float outAtq[PASSOS] {};
+    // 0.4: energia (dB) por passo no stem de bateria — kick (grave), clap (médio) e hats (agudo)
+    double kE[PASSOS] {}, cE[PASSOS] {}, hE[PASSOS] {};
+    double kBat[4] {}, kVale[4] {};   // grave no tempo (com folga de fase) e no vale antes do próximo tempo
     double pisoO = -60, eOutTon = -120;
     int atqO = 0;
     // presença detectada
@@ -568,6 +610,7 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     Espectro eD, eB;   // bateria e baixo, 22.050 Hz, mesma janela do percussivo
     std::vector<float> fluxKickD, fluxClapD, fluxHatD, fluxBaixoS, eLowS, eVozS, eOutS, eBatS;
     std::vector<float> fluxOutS, eOutTonS, hiBatS, bandaBatS, centBatS, hiOutS, bandaOutS, centOutS;   // 0.3
+    std::vector<float> eKickE, eClapE, eHatE;   // 0.4
     double srS = 22050;
     if (temStems)
     {
@@ -611,6 +654,12 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             hiOutS = energiaBanda (eO, 3000, 10500);
             bandaOutS = energiaBanda (eO, 500, 10500);
             centOutS = centroide (eO, 500, 10500);
+        }
+        {
+            const auto bat = monoDe (stemBateria);
+            eKickE = quadradoBanda (bat, srS, 0, 120);
+            eClapE = quadradoBanda (bat, srS, 1000, 5000);
+            eHatE = quadradoBanda (bat, srS, 7000, 0);
         }
         hiBatS = energiaBanda (eD, 3000, 10500);
         bandaBatS = energiaBanda (eD, 500, 10500);
@@ -783,7 +832,19 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             c.eOutTon = db (mediaJanela (eOutTonS, eD, a, b));
             c.pisoO = percJanela (eOutTonS, eD, a, b, 0.2) - c.eOutTon;
             for (int s = 0; s < PASSOS; ++s)
-                c.outAtq[s] = maxJanela (fluxOutS, eD, segDe (j * 4.0 + s * 0.25), -0.025, 0.035);
+            {
+                const double t = segDe (j * 4.0 + s * 0.25), ps = P / 4;
+                c.outAtq[s] = maxJanela (fluxOutS, eD, t, -0.025, 0.035);
+                c.kE[s] = db (mediaAmostras (eKickE, srS, t, t + 0.5 * ps));
+                c.cE[s] = db (mediaAmostras (eClapE, srS, t + 0.03, t + 0.03 + 0.6 * ps));   // depois do clique do kick
+                c.hE[s] = db (mediaAmostras (eHatE, srS, t, t + ps));
+                if (s % 4 == 0)
+                {
+                    // kick longo (psy a 133) soa por 3 semicolcheias: o vale é o fim do tempo, não o resto do compasso
+                    c.kBat[s / 4] = db (mediaAmostras (eKickE, srS, t - 0.25 * ps, t + ps));
+                    c.kVale[s / 4] = db (mediaAmostras (eKickE, srS, t + 2.6 * ps, t + 3.6 * ps));
+                }
+            }
         }
         c.eMid = db (mediaJanela (eMidF, ep, a, b));
         c.eHigh = db (mediaJanela (eHighF, ep, a, b));
@@ -951,6 +1012,53 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             c.clapOn = bb > thrC && bb > 1.5 * (c.clap[0] + c.clap[8]) / 2;
         c.padOn = c.tonalPad > 0.42 && c.estab > 0.88 && c.eMid > topoTot - 24;
         c.leadOn = c.tonalLead > 0.40 && c.variacao >= 0.12 && c.eLead > topoLead - 15;
+    }
+    // 0.4: com stems, bateria lida pela ENERGIA de cada passo no stem de bateria, contra o resto do compasso.
+    // O limiar global de fluxo perdia o kick filtrado do intro e o clap do drop (fluxo do kick mascarava os dois).
+    if (temStems)
+    {
+        auto lin = [] (double d) { return std::pow (10.0, d / 10.0); };
+        auto mediaDb = [&] (const double* e, std::initializer_list<int> ps)
+        {
+            double s = 0;
+            for (int p : ps) s += lin (e[p]);
+            return db (s / (double) ps.size());
+        };
+        std::vector<double> vK, vC, vH;
+        for (auto& c : cs)
+        {
+            if (! c.temAudio) continue;
+            vK.push_back (*std::max_element (c.kBat, c.kBat + 4));
+            vC.push_back (std::max (c.cE[4], c.cE[12]));
+            vH.push_back (mediaDb (c.hE, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }));
+        }
+        const double topK = percentil (vK, 0.95), topC = percentil (vC, 0.95), topH = percentil (vH, 0.95);
+        for (auto& c : cs)
+        {
+            if (! c.temAudio) continue;
+            int nk = 0;
+            for (int bt = 0; bt < 4; ++bt)
+                if ((c.kBat[bt] > topK - 30 && c.kBat[bt] > c.kVale[bt] + 10)
+                    || (c.kBat[bt] > topK - 8 && c.kVale[bt] > topK - 8))   // rolo de kick no build (sem vale)
+                    ++nk;
+            c.kickOn = nk >= 2;
+            // clap/caixa no 2 ou no 4 (basta um: intro com clap a cada 2 compassos), acima do 1 e do 3
+            const double base13 = mediaDb (c.cE, { 0, 8 });
+            c.clapOn = (c.cE[4] > topC - 25 && c.cE[4] > base13 + 8) || (c.cE[12] > topC - 25 && c.cE[12] > base13 + 8);
+            const double hTot = mediaDb (c.hE, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+            const double hOff = mediaDb (c.hE, { 2, 6, 10, 14 }), hOn = mediaDb (c.hE, { 0, 4, 8, 12 });
+            c.hatsOn = hTot > topH - 22 || (hOff > topH - 35 && hOff > hOn + 8);
+        }
+        if (std::getenv ("MAPA_DEBUG_BAT"))
+            for (int j = 0; j < J; ++j)
+            {
+                const auto& c = cs[(size_t) j];
+                std::fprintf (stderr, "b%3d kick %5.1f/%5.1f  clap %5.1f %5.1f/%5.1f  hats %5.1f off %5.1f on %5.1f | K%d C%d H%d\n", j + 1,
+                              *std::max_element (c.kBat, c.kBat + 4) - topK, *std::max_element (c.kVale, c.kVale + 4) - topK, c.cE[4] - topC, c.cE[12] - topC, mediaDb (c.cE, { 0, 8 }) - topC,
+                              mediaDb (c.hE, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }) - topH,
+                              mediaDb (c.hE, { 2, 6, 10, 14 }) - topH, mediaDb (c.hE, { 0, 4, 8, 12 }) - topH,
+                              (int) c.kickOn, (int) c.clapOn, (int) c.hatsOn);
+            }
     }
     // baixo: energia grave nos passos SEM kick, comparada ao topo da música
     bool passoKick[PASSOS];
@@ -1155,6 +1263,35 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         }
     }
     std::sort (cortes.begin(), cortes.end());
+    // 0.4: a virada vai para o compasso em que a bateria/baixo REALMENTE muda (até 3 compassos da grade de 4):
+    // música com frase torta (break de 35 compassos, por exemplo) deslocava todo o resto em 1 compasso
+    {
+        auto mudancas = [&] (int d)
+        {
+            if (d <= 0 || d >= J) return 0;
+            const Compasso &a = cs[(size_t) d - 1], &b = cs[(size_t) d];
+            return (int) (a.kickOn != b.kickOn) * 2 + (int) (a.baixoOn != b.baixoOn) * 2 + (int) (a.clapOn != b.clapOn) + (int) (a.hatsOn != b.hatsOn);
+        };
+        for (auto& c : cortes)
+        {
+            int melhor = c, nota = mudancas (c);
+            for (int d = std::max (1, c - 3); d <= std::min (J - 8, c + 3); ++d)
+                if (mudancas (d) > nota) { nota = mudancas (d); melhor = d; }
+            if (melhor != c)
+            {
+                const double f = forcaCorte.count (c) ? forcaCorte[c] : 0;
+                forcaCorte[melhor] = std::max (f, forcaCorte.count (melhor) ? forcaCorte[melhor] : 0.0);
+                c = melhor;
+            }
+        }
+        std::sort (cortes.begin(), cortes.end());
+        // dois cortes a menos de 4 compassos: fica o que tem mais mudança (parte de 1 compasso não existe)
+        std::vector<int> r;
+        for (int c : cortes)
+            if (! r.empty() && c - r.back() < 4) { if (mudancas (c) > mudancas (r.back())) r.back() = c; }
+            else r.push_back (c);
+        cortes = r;
+    }
     // última parte com menos de 8 compassos é o rabo do fim (reverb/fade): junta com a anterior
     while (! cortes.empty() && J - cortes.back() < 8) cortes.pop_back();
     std::vector<int> lim { 0 };
@@ -1260,11 +1397,45 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
         const int n = (int) f.clipes.size();
         return std::to_string (n) + (n == 1 ? " trecho · " : " trechos · ") + std::to_string ((int) std::lround (comp)) + " comp.";
     };
+    // 0.4: elemento melódico (lead, pad, voz) entra e sai em bloco de 4 compassos contado do começo da parte, como
+    // o produtor arranja: o bloco só liga com 3 dos 4 compassos tocando. Mata o pedaço solto de 1-2 compassos.
+    std::vector<int> iniBloco ((size_t) J, 0);
+    for (auto& p : out.partes)
+        for (int j = p.compIni; j < p.compFim && j < J; ++j) iniBloco[(size_t) j] = p.compIni + ((j - p.compIni) / 4) * 4;
+    auto emBlocos = [&] (std::vector<bool> on, int buraco)
+    {
+        // a voz respira: tapa a pausa curta antes de contar
+        for (int j = 1; j < J; ++j)
+            if (on[(size_t) j - 1] && ! on[(size_t) j])
+            {
+                int k = j;
+                while (k < J && ! on[(size_t) k]) ++k;
+                if (k < J && k - j <= buraco - 1) for (int q = j; q < k; ++q) on[(size_t) q] = true;
+                j = k;
+            }
+        std::vector<bool> r ((size_t) J, false);
+        for (int j = 0; j < J;)
+        {
+            const int a = iniBloco[(size_t) j];
+            int b = a + 4;
+            for (auto& p : out.partes) if (a >= p.compIni && a < p.compFim) b = std::min (b, p.compFim);
+            b = std::min (b, J);
+            int n = 0;
+            for (int q = a; q < b; ++q) n += on[(size_t) q] ? 1 : 0;
+            const bool liga = n * 4 >= 3 * (b - a);
+            for (int q = a; q < b; ++q) r[(size_t) q] = liga;
+            j = std::max (b, j + 1);
+        }
+        return r;
+    };
     auto faixaMapa = [&] (const char* nome, uint32_t cor, Elemento el, int buraco, auto presente)
     {
         std::vector<bool> on ((size_t) J);
         for (int j = 0; j < J; ++j) on[(size_t) j] = cs[(size_t) j].temAudio && presente (cs[(size_t) j]);
-        const auto tr = trechos (on, cortesFinais, buraco);
+        const bool melodico = temStems && (el == Elemento::lead || el == Elemento::pad || el == Elemento::voz);
+        if (melodico) on = emBlocos (on, buraco);
+        auto tr = trechos (on, cortesFinais, melodico ? 0 : buraco);
+        if (melodico) tr.erase (std::remove_if (tr.begin(), tr.end(), [] (auto& t) { return t.second - t.first < 4; }), tr.end());
         if (tr.empty()) return;
         Faixa f { nome, "", cor, TipoFaixa::midi, el, el == Elemento::kick || el == Elemento::clap || el == Elemento::hats, {} };
         for (auto& t : tr) f.clipes.push_back ({ t.first * 4.0, t.second * 4.0, {} });
@@ -1400,6 +1571,41 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             imps.push_back ({ 4.0 * b, 4.0 * b + 4 });
         }
 
+        // 0.4: efeito de transição só existe em VIRADA (corte de parte ou frase de 8 compassos dentro dela): o resto era
+        // barulho do drop virando sweep solto
+        {
+            std::vector<int> viradas;
+            for (auto& p : out.partes)
+                for (int j = p.compIni; j < p.compFim; j += 8) viradas.push_back (j);
+            viradas.push_back (J);
+            auto perto = [&] (double tempos, int tol) -> int
+            {
+                const int b = (int) std::lround (tempos / 4.0);
+                int melhor = -1, dist = tol + 1;
+                for (int v : viradas) if (std::abs (v - b) < dist) { dist = std::abs (v - b); melhor = v; }
+                return melhor;
+            };
+            std::vector<std::pair<double, double>> u2, d2, i2;
+            for (auto& x : ups)
+            {
+                const int v = perto (x.second, 1);
+                if (v < 0) continue;
+                const double fimV = 4.0 * v, ini = std::min (x.first, fimV - 4.0);
+                if (fimV - ini >= 8.0 || (fimV - ini >= 4.0 && x.second - x.first >= 6.0)) u2.push_back ({ ini, fimV });
+            }
+            for (auto& x : downs)
+            {
+                const int v = perto (x.first, 1);
+                if (v >= 0) d2.push_back ({ 4.0 * v, 4.0 * v + std::max (4.0, x.second - x.first) });
+            }
+            for (auto& x : imps)
+            {
+                const int v = perto (x.first, 0);
+                if (v >= 0) i2.push_back (x);
+            }
+            if (dbg) std::fprintf (stderr, "fx: ups %zu->%zu downs %zu->%zu imps %zu->%zu\n", ups.size(), u2.size(), downs.size(), d2.size(), imps.size(), i2.size());
+            ups = u2; downs = d2; imps = i2;
+        }
         auto juntar = [] (std::vector<std::pair<double, double>> v)
         {
             std::sort (v.begin(), v.end());
