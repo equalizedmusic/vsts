@@ -2,6 +2,15 @@
 
 App standalone (Mac e Windows) da InsideStudioSP: lê uma música de referência e monta o projeto pronto na sua DAW.
 
+## 0.5.0
+
+HATS, LEAD, PAD e VOZ revistos depois do teste com um psytrance de 8 minutos.
+
+- **HATS só onde tem hat**: o MAPA agora olha o agudo entre os tempos, longe do kick. Antes, o clique do kick e o chiado do baixo contavam como hat, e o HATS copiava o KICK. Começo de drop só com kick e baixo agora fica sem HATS.
+- **Synth não vira mais VOZ**: o MAPA mede a afinação dentro de cada nota. Voz de verdade oscila (vibrato, deslize). Synth fica parado na nota e vai para o LEAD. Ruído e riser no stem de voz não marcam nada.
+- **LEAD e PAD pelo jeito do som**: PAD é o som escuro e liso que sustenta. LEAD é o som articulado, com ataques. Riser e ruído ficam de fora dos dois, porque já são SWEEP. Antes, o MAPA separava pelas notas transcritas, e no psy o acorde do pad virava lead.
+- **Medido na música real**: KICK, CLAP, HATS e BAIXO acertaram 99% dos compassos. LEAD, PAD e VOZ ainda não têm gabarito de uma música real.
+
 ## 0.4.0
 
 Mapa mais fiel numa música real. Testado com um psytrance de 8 minutos.

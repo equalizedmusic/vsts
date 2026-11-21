@@ -13,6 +13,7 @@
 #include <numeric>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 
 namespace mapa
 {
@@ -454,8 +455,70 @@ int alturaBaixo (const std::vector<float>& x, double sr, double t0, double t1, c
     return midi;
 }
 
+// 0.5: altura (MIDI fracionado) quadro a quadro no stem de voz, por YIN; NaN onde não há período claro.
+// Serve para separar voz de verdade (afinação viva: vibrato, deslize) de synth que vaza para o stem de voz
+// (afinação parada dentro da nota).
+std::vector<float> alturaQuadros (const std::vector<float>& x, double sr, int hop, int W, const std::atomic<bool>* cancelar)
+{
+    const int tauMin = std::max (2, (int) (sr / 1000.0)), tauMax = (int) (sr / 80.0) + 2;
+    const long n = (long) x.size();
+    const int frames = n > W + tauMax + 1 ? (int) ((n - W - tauMax - 1) / hop) : 0;
+    std::vector<float> out ((size_t) frames, std::numeric_limits<float>::quiet_NaN());
+    std::vector<double> d ((size_t) tauMax + 2), cm ((size_t) tauMax + 2);
+    double eMax = 0;
+    std::vector<float> en ((size_t) frames, 0.0f);
+    for (int f = 0; f < frames; ++f)
+    {
+        double s = 0;
+        for (int i = 0; i < W; ++i) { const double v = x[(size_t) (f * hop + i)]; s += v * v; }
+        en[(size_t) f] = (float) (s / W);
+        eMax = std::max (eMax, s / W);
+    }
+    for (int f = 0; f < frames; ++f)
+    {
+        if ((f & 1023) == 0 && cancelar && cancelar->load()) return {};
+        if (en[(size_t) f] < eMax * 1e-5) continue;   // silêncio (-50 dB do pico)
+        const float* p = x.data() + (size_t) f * (size_t) hop;
+        double soma = 0;
+        cm[0] = 1;
+        for (int tau = 1; tau <= tauMax + 1; ++tau)
+        {
+            double s = 0;
+            for (int i = 0; i < W; ++i) { const double v = (double) p[i] - p[i + tau]; s += v * v; }
+            d[(size_t) tau] = s; soma += s;
+            cm[(size_t) tau] = soma > 0 ? s * tau / soma : 1.0;
+        }
+        int tau = -1;
+        for (int t = tauMin; t <= tauMax; ++t)
+            if (cm[(size_t) t] < 0.15)
+            {
+                while (t + 1 <= tauMax && cm[(size_t) t + 1] < cm[(size_t) t]) ++t;
+                tau = t;
+                break;
+            }
+        if (tau < 0)
+        {
+            double mn = 1e9;
+            for (int t = tauMin; t <= tauMax; ++t) if (cm[(size_t) t] < mn) { mn = cm[(size_t) t]; tau = t; }
+            if (mn > 0.5) continue;   // sem período (ruído, prato)
+        }
+        double off = 0;
+        const double y0 = cm[(size_t) tau - 1], y1 = cm[(size_t) tau], y2 = cm[(size_t) tau + 1];
+        const double den = y0 - 2 * y1 + y2;
+        if (std::abs (den) > 1e-12) off = std::clamp (0.5 * (y0 - y2) / den, -0.5, 0.5);
+        out[(size_t) f] = (float) (69 + 12 * std::log2 (sr / (tau + off) / 440.0));
+    }
+    return out;
+}
+
 // ------------------------------------------------------------------ estruturas por compasso
 constexpr int PASSOS = 16;   // 1/16 por compasso de 4/4
+
+// 0.5: limiares do LEAD/PAD/VOZ (variável de ambiente MAPA_L_* só para calibrar no teste)
+double limiar (const char* nome, double padrao) { const char* v = std::getenv (nome); return v ? std::atof (v) : padrao; }
+const double LIM_RUIDO_POLY = limiar ("MAPA_L_POLY", 5.0), LIM_PAD_FLUXO = limiar ("MAPA_L_PADF", 0.54),
+             LIM_LEAD_FLUXO = limiar ("MAPA_L_LEADF", 0.60), LIM_VOZ_DESVIO = limiar ("MAPA_L_VOZ", 8.0),
+             LIM_SYNTH_DESVIO = limiar ("MAPA_L_SYN", 5.0);
 
 struct Compasso
 {
@@ -476,6 +539,9 @@ struct Compasso
     double kBat[4] {}, kVale[4] {};   // grave no tempo (com folga de fase) e no vale antes do próximo tempo
     double pisoO = -60, eOutTon = -120;
     int atqO = 0;
+    // 0.5: hats entre os tempos (passos 2 e 3 de cada tempo, longe do clique do kick e do rabo do baixo);
+    // "outros": centroide, polifonia do croma e fluxo médio; voz: fração de altura estável e desvio dentro da nota
+    double hMeio = -120, oCent = 0, oPoly = 0, oFlux = 0, vEstavel = 0, vDesvio = -1;
     // presença detectada
     bool kickOn = false, baixoOn = false, hatsOn = false, clapOn = false, padOn = false, leadOn = false, vozOn = false;
 };
@@ -611,6 +677,8 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
     std::vector<float> fluxKickD, fluxClapD, fluxHatD, fluxBaixoS, eLowS, eVozS, eOutS, eBatS;
     std::vector<float> fluxOutS, eOutTonS, hiBatS, bandaBatS, centBatS, hiOutS, bandaOutS, centOutS;   // 0.3
     std::vector<float> eKickE, eClapE, eHatE;   // 0.4
+    std::vector<float> centTotO, fluxBrutoO, polyO, pesoO, desvioV;   // 0.5
+    double srV = 11025; int hopV = 256;
     double srS = 22050;
     if (temStems)
     {
@@ -654,6 +722,44 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             hiOutS = energiaBanda (eO, 3000, 10500);
             bandaOutS = energiaBanda (eO, 500, 10500);
             centOutS = centroide (eO, 500, 10500);
+            // 0.5: pad = som escuro e liso; lead = articulado; ruído (riser) = croma espalhado e brilhante
+            centTotO = centroide (eO, 60, 10500);
+            fluxBrutoO = fluxoBanda (eO, 100, 10500);
+            const auto cr = croma (eO, 100, 4000);
+            polyO.assign ((size_t) eO.frames, 0.0f);
+            for (int f = 0; f < eO.frames; ++f)
+            {
+                const float* c = cr.data() + (size_t) f * 12;
+                const float mx = *std::max_element (c, c + 12);
+                int k = 0;
+                if (mx > 0) for (int i = 0; i < 12; ++i) if (c[i] > 0.6f * mx) ++k;
+                polyO[(size_t) f] = (float) k;
+            }
+            pesoO = energiaBanda (eO, 60, 10500);
+        }
+        {
+            // 0.5: altura da voz quadro a quadro (~11 kHz, salto de 23 ms) e desvio dentro da nota (centésimos)
+            const int fV = std::max (1, (int) std::lround (in.stems.sampleRate / 11025.0));
+            srV = in.stems.sampleRate / fV;
+            hopV = 128;
+            const auto alt = alturaQuadros (decimar (somaMonoStem (in.stems, stemVoz), fV), srV, hopV, 512, cancelar);
+            if (parar()) return false;
+            const int W = 5;
+            desvioV.assign (alt.size(), -1.0f);
+            for (size_t i = W; i + W < alt.size(); ++i)
+            {
+                float w[2 * W + 1];
+                bool ok = true;
+                for (int k = -W; k <= W && ok; ++k) { w[k + W] = alt[i + (size_t) k]; ok = ! std::isnan (w[k + W]); }
+                if (! ok) continue;
+                float o[2 * W + 1];
+                std::copy (w, w + 2 * W + 1, o);
+                std::nth_element (o, o + W, o + 2 * W + 1);
+                const float med = o[W];
+                double s = 0;
+                for (int k = 0; k < 2 * W + 1 && ok; ++k) { if (std::abs (w[k] - med) >= 0.6f) ok = false; s += std::abs (w[k] - med); }
+                if (ok) desvioV[i] = (float) (100.0 * s / (2 * W + 1));
+            }
         }
         {
             const auto bat = monoDe (stemBateria);
@@ -831,6 +937,22 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             c.eBatS = db (mediaJanela (eBatS, eD, a, b));
             c.eOutTon = db (mediaJanela (eOutTonS, eD, a, b));
             c.pisoO = percJanela (eOutTonS, eD, a, b, 0.2) - c.eOutTon;
+            {
+                // 0.5: centroide (pesado pela energia) e polifonia mediana do "outros"; fluxo médio
+                c.oCent = mediaPond (centTotO, pesoO, eD, a, b);
+                c.oPoly = mediaPond (polyO, pesoO, eD, a, b);
+                c.oFlux = mediaJanela (fluxBrutoO, eD, a, b);
+                // voz: fração de quadros com altura estável e desvio mediano dentro da nota
+                const long qa = std::max (0L, (long) (a * srV / hopV)), qb = std::min ((long) desvioV.size(), (long) (b * srV / hopV));
+                std::vector<float> dv;
+                for (long q = qa; q < qb; ++q) if (desvioV[(size_t) q] >= 0) dv.push_back (desvioV[(size_t) q]);
+                c.vEstavel = qb > qa ? (double) dv.size() / (double) (qb - qa) : 0.0;
+                if (dv.size() >= 4)
+                {
+                    std::nth_element (dv.begin(), dv.begin() + (long) dv.size() / 2, dv.end());
+                    c.vDesvio = dv[dv.size() / 2];
+                }
+            }
             for (int s = 0; s < PASSOS; ++s)
             {
                 const double t = segDe (j * 4.0 + s * 0.25), ps = P / 4;
@@ -1048,6 +1170,15 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             const double hTot = mediaDb (c.hE, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
             const double hOff = mediaDb (c.hE, { 2, 6, 10, 14 }), hOn = mediaDb (c.hE, { 0, 4, 8, 12 });
             c.hatsOn = hTot > topH - 22 || (hOff > topH - 35 && hOff > hOn + 8);
+            c.hMeio = mediaDb (c.hE, { 1, 2, 5, 6, 9, 10, 13, 14 });
+        }
+        // 0.5: hats pelo agudo ENTRE os tempos. O agudo total acendia hats em todo compasso com kick: o clique do
+        // kick e o chiado do baixo rolando também passam de 7 kHz. Entre os tempos (2ª e 3ª semicolcheia) só sobra hat.
+        {
+            std::vector<double> vM;
+            for (auto& c : cs) if (c.temAudio) vM.push_back (c.hMeio);
+            const double topM = percentil (vM, 0.95);
+            for (auto& c : cs) if (c.temAudio) c.hatsOn = c.hMeio > topM - 16;
         }
         if (std::getenv ("MAPA_DEBUG_BAT"))
             for (int j = 0; j < J; ++j)
@@ -1113,12 +1244,31 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
             // pad: som que sustenta o compasso inteiro (piso perto da média) com acorde, ou piso alto sem ataques
             c.padOn = outrosVivos && ((c.pisoO > -7 && c.nPad >= 1) || (c.pisoO > -4 && c.atqO <= 3));
         }
+        // 0.5: LEAD/PAD pelo CARÁTER do som no "outros" (as notas transcritas erravam muito no psy: acorde de
+        // pad virava lead e vice-versa); VOZ só com afinação viva — synth no stem de voz vira LEAD.
+        {
+            std::vector<double> vf;
+            for (auto& c : cs) if (c.temAudio) vf.push_back (c.oFlux);
+            const double tF = percentil (vf, 0.95) + 1e-12;
+            for (auto& c : cs)
+            {
+                if (! c.temAudio) continue;
+                const bool vivo = c.eOutS > tO - 20;
+                const bool ruido = c.oPoly >= LIM_RUIDO_POLY && c.oCent > 2500;   // riser/varredura: é FX
+                const double fr = c.oFlux / tF;
+                c.padOn = vivo && ! ruido && c.oCent < 1900 && fr < LIM_PAD_FLUXO;
+                c.leadOn = vivo && ! ruido && fr >= LIM_LEAD_FLUXO && c.oPoly < LIM_RUIDO_POLY - 0.5 && c.oCent < 4000;
+                const bool vozViva = temVoz && c.eVozS > tV - 22 && c.vEstavel >= 0.08;
+                c.vozOn = vozViva && c.vDesvio >= LIM_VOZ_DESVIO;
+                if (vozViva && c.vEstavel >= 0.15 && c.vDesvio >= 0 && c.vDesvio < LIM_SYNTH_DESVIO) c.leadOn = true;
+            }
+        }
         if (std::getenv ("MAPA_DEBUG_COMP"))
             for (int j = 0; j < J; ++j)
             {
                 const auto& c = cs[(size_t) j];
-                std::fprintf (stderr, "c%3d out %6.1f ton %6.1f(%5.1f) piso %5.1f atq %2d nL %3d nP %2d | voz %6.1f nV %2d | L%d P%d V%d\n",
-                              j + 1, c.eOutS, c.eOutTon, c.eOutTon - tT, c.pisoO, c.atqO, c.nLead, c.nPad, c.eVozS, c.nVoz,
+                std::fprintf (stderr, "c%3d out %6.1f ton %6.1f(%5.1f) piso %5.1f atq %2d nL %3d nP %2d | cen %5.0f poly %4.1f flux %8.4f | voz %6.1f est %4.2f dsv %5.1f | H %6.1f | L%d P%d V%d\n",
+                              j + 1, c.eOutS, c.eOutTon, c.eOutTon - tT, c.pisoO, c.atqO, c.nLead, c.nPad, c.oCent, c.oPoly, c.oFlux, c.eVozS, c.vEstavel, c.vDesvio, c.hMeio,
                               (int) c.leadOn, (int) c.padOn, (int) c.vozOn);
             }
     }
