@@ -1256,7 +1256,7 @@ bool analisar (const EntradaAnalise& in, Projeto& out, std::function<void (float
                 const bool vivo = c.eOutS > tO - 20;
                 const bool ruido = c.oPoly >= LIM_RUIDO_POLY && c.oCent > 2500;   // riser/varredura: é FX
                 const double fr = c.oFlux / tF;
-                c.padOn = vivo && ! ruido && c.oCent < 1900 && fr < LIM_PAD_FLUXO;
+                c.padOn = vivo && ! ruido && ((c.oCent < 1900 && fr < LIM_PAD_FLUXO) || (c.pisoO > -3 && c.nPad >= 1));   // 2º caso: pad por baixo do lead (piso alto + acorde)
                 c.leadOn = vivo && ! ruido && fr >= LIM_LEAD_FLUXO && c.oPoly < LIM_RUIDO_POLY - 0.5 && c.oCent < 4000;
                 const bool vozViva = temVoz && c.eVozS > tV - 22 && c.vEstavel >= 0.08;
                 c.vozOn = vozViva && c.vDesvio >= LIM_VOZ_DESVIO;
