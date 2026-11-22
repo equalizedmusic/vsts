@@ -87,6 +87,21 @@ ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
 hm = menuItem(tipoRen);
 ev(`onclick(${hm.x + 10}, ${hm.y + 8}, 1, 0, 0, 0, 0, 0); paint()`);
 confere(!D().partes[iBr].nome && D().partes[iBr].p === tipoRen, 'tipo padrão no menu volta ao nome do tipo');
+// 0.3.1: o [dialog] do Max manda "symbol <texto>" — o nome não pode virar "symbol Meu Drop"
+ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
+hm = menuItem('RENOMEAR…');
+ev(`onclick(${hm.x + 10}, ${hm.y + 8}, 1, 0, 0, 0, 0, 0); paint()`);
+ev('nome_parte("symbol", "Meu", "Drop"); paint()');
+confere(D().partes[iBr].nome === 'Meu Drop', 'nome vindo como "symbol Meu Drop" fica só "Meu Drop" (' + D().partes[iBr].nome + ')');
+// 0.3.1: a seta do canto da parte abre o mesmo menu com clique esquerdo (no Mac o botão direito não chega ao jsui)
+ev('paint()');
+const hs = ev('hits').find((x) => x.tipo === 'pmenu' && x.i === iBr);
+confere(!!hs, 'parte tem a seta do menu no canto');
+if (hs) {
+  ev(`onclick(${hs.x + 8}, ${hs.y + 8}, 1, 0, 0, 0, 0, 0); paint()`);
+  confere(!!ev('menu') && ev('menu.id') === D().partes[iBr].id, 'clique esquerdo na seta abre o menu da parte');
+  ev('onclick(5, 5, 1, 0, 0, 0, 0, 0); paint()');
+}
 // clique fora do menu só fecha
 ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
 const antes4d = JSON.stringify(D());

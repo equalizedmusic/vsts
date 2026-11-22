@@ -55,5 +55,9 @@ montado depois do loop. Grátis, sem licença (`LIC_TESTE = true`) e sem página
 
 Testado pelo Rogério na 0.1 (22/11): leitura da referência e cópia dos clips; os locators não ficaram bons (trocados pela
 faixa ESTRUTURA). Na 0.2 (22/11): janela, ESTRUTURA e APAGAR REF funcionaram; o UNDO não trazia a REF (resolvido na 0.3).
-NÃO testado no Live ainda (0.3): botão direito no jsui (`ctrl` = 1), `[dialog]` do RENOMEAR, `create_audio_track` +
+Na 0.3 (22/11): RENOMEAR funcionou com Ctrl+clique no Mac, mas o nome vinha como `symbol <nome>` (o `[dialog]` manda o tipo
+da mensagem); o botão direito não chegou ao jsui no Mac; a REF não foi apagada (motivo não visto) e o UNDO não tinha o que trazer.
+**0.3.1**: seta ▾ no canto de cada parte abre o menu com clique esquerdo; `nome_parte` tira `symbol`/`list`; foto da REF
+também no ANALYZE (reserva se a do BUILD falhar) e log de cada passo do APAGAR REF (sim com `FALHA_FOTO=1`).
+NÃO testado no Live ainda (0.3.1): `create_audio_track` +
 `Track.create_audio_clip` + `add_warp_marker` no UNDO.

@@ -16,7 +16,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela   3: eco dos control
 
 var BUF = "desenrola_ref";
 var DICT = "desenrola_data";
-var VERSAO = "0.3.0";
+var VERSAO = "0.3.1";
 var BUILD = "teste";      // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = true;     // grátis: sem licença
 var LIC_PACOTE = "desenrola", LIC_NOME = "DESENROLA";
@@ -44,6 +44,7 @@ var cfg = { est: 1, apaga: 1 };
 var ready = false, busy = false;
 var result = null;
 var refCache = null;     // { chave, ref } — mesma referência não é relida
+var fotoAnalise = null;  // foto da REF tirada no ANALYZE (reserva do APAGAR REF)
 var criado = null;       // último BUILD: { faixas: {id: 1}, ini, fim, est: id da faixa da estrutura, ref: foto da REF apagada }
 
 // ---------------------------------------------------------------- tarefas com referência guardada (ver VASSOURA 0.2.3)
@@ -642,6 +643,9 @@ function fimRef(ref) {
 		cores: CORES, coresParte: CORES_PARTE, regras: REGRAS, cfg: cfg, fora: an.fora, feito: criado ? 1 : 0
 	};
 	log("DESENROLA: referência " + ref.bpm + " BPM" + (ref.warp ? " (warp)" : "") + ", " + ref.compassos + " compassos · " + descrevePartes(partes) + "\n");
+	// foto reserva da REF já no ANALYZE (set parado): se a do BUILD falhar, o APAGAR REF usa esta
+	fotoAnalise = null;
+	try { var ix = indiceDaFaixa(an.ref.tr.id); if (ix >= 0) fotoAnalise = fotoRef(an.ref.tr.id, ix); } catch (e) { log("DESENROLA: foto da REF no ANALYZE falhou: " + e + "\n"); }
 	publica();
 	status(partes.length + " partes · " + totalBars(partes) + " compassos · " + an.faixas.length + " faixas · monte a música na janela e clique BUILD");
 }
@@ -860,15 +864,23 @@ function umClipEstrutura(p) {
 }
 // apaga a faixa REF (pedido dele: depois de montar, a referência sai do set). Não apaga se o DESENROLA está nela.
 function apagaRef() {
+	try { apagaRef2(); } catch (e) { bd.refMotivo = "erro: " + e; log("DESENROLA: APAGAR REF deu erro: " + e + "\n"); }
+}
+function apagaRef2() {
 	var rid = result.refId;
-	if (!rid) return;
+	log("DESENROLA: APAGAR REF · faixa id " + rid + "\n");
+	if (!rid) { bd.refMotivo = "não sei qual é a faixa REF (refaça o ANALYZE)"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
 	var meu = 0;
 	try { meu = Number(new LiveAPI("this_device canonical_parent").id); } catch (e) { }
 	if (meu && meu == Number(rid)) { bd.refMotivo = "o DESENROLA está na faixa REF"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
 	var idx = indiceDaFaixa(rid);
-	if (idx < 0) { bd.refMotivo = "não achei a faixa REF"; return; }
+	if (idx < 0) { bd.refMotivo = "não achei a faixa REF"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
 	var foto = null;
-	try { foto = fotoRef(rid, idx); } catch (e) { log("DESENROLA: não consegui tirar a foto da REF: " + e + "\n"); }
+	try { foto = fotoRef(rid, idx); } catch (e) { log("DESENROLA: não consegui tirar a foto da REF no BUILD: " + e + "\n"); }
+	if ((!foto || !foto.clips.length) && fotoAnalise && fotoAnalise.clips.length) {
+		foto = fotoAnalise; foto.idx = idx;
+		log("DESENROLA: usei a foto da REF tirada no ANALYZE\n");
+	}
 	if (!foto || !foto.clips.length) { bd.refMotivo = "não consegui guardar a REF para o UNDO"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
 	try { new LiveAPI("live_set").call("delete_track", idx); bd.refApagada = 1; bd.refFoto = foto; log("DESENROLA: faixa REF apagada (era a faixa " + (idx + 1) + ")\n"); }
 	catch (e) { bd.refMotivo = String(e); log("DESENROLA: não consegui apagar a REF: " + e + "\n"); }
@@ -885,8 +897,9 @@ function fotoRef(rid, idx) {
 	var ids = idsDe(t, "arrangement_clips");
 	for (var j = 0; j < ids.length; j++) {
 		var c = new LiveAPI("id " + ids[j]), o = { file: "" };
-		try { o.file = str(c.get("file_path")); } catch (e) { }
-		if (!o.file) continue;
+		var erroF = "";
+		try { o.file = str(c.get("file_path")); } catch (e) { erroF = String(e); }
+		if (!o.file) { log("  REF: clip " + ids[j] + " sem arquivo (" + (erroF || "file_path vazio") + "), fica fora da foto\n"); continue; }
 		for (var k = 0; k < PROPS_CLIP.length; k++) {
 			try { var v = c.get(PROPS_CLIP[k]); o[PROPS_CLIP[k]] = PROPS_CLIP[k] == "name" ? str(v) : num(v); } catch (e) { }
 		}

@@ -125,6 +125,7 @@ class LiveAPI {
       const m = { start_time: r.s, end_time: r.e, looping: r.looping, warping: r.warping, is_audio_clip: r.audio, start_marker: r.sm, end_marker: r.em,
         loop_start: r.ls, loop_end: r.le, file_path: r.file, sample_rate: r.sr, name: r.name, color: r.color, gain: r.gain == null ? 0.4 : r.gain,
         warp_mode: r.warp_mode == null ? 0 : r.warp_mode, pitch_coarse: 0, pitch_fine: 0, muted: 0 };
+      if (k === 'file_path' && global.FALHA_FOTO) throw new Error('file_path indisponível (simulado)');
       if (k in m) return [m[k]];
       if (k === 'warp_markers') return [JSON.stringify({ warp_markers: r.wm || [] })];
       throw new Error('get clip ' + k);
@@ -237,6 +238,7 @@ esperaLivre(() => {
   dicts.desenrola_data = JSON.stringify(d);
   ctx.marcas();
   const t1 = Date.now();
+  if (process.env.FALHA_FOTO) global.FALHA_FOTO = 1;   // foto do BUILD falha: o APAGAR REF tem que usar a do ANALYZE
   ctx.build();
   esperaLivre(() => {
     console.log('BUILD (' + (Date.now() - t1) + ' ms): ' + ctx._st);

@@ -38,7 +38,7 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [VASSOURA](max4live/vassoura/README.md) | Max for Live: limpa os vazios dos clips | 0.3.6 | à venda |
 | [RODO](max4live/rodo/README.md) | Max for Live: nivela os clips | 0.3.5 | à venda |
 | [ESPANADOR](max4live/espanador/README.md) | Max for Live: organiza o set nos grupos do MAESTRO | 0.2.1 | à venda |
-| [DESENROLA](max4live/desenrola/README.md) | Max for Live: loop → música pela estrutura de uma referência | 0.3.0 | teste (grátis) |
+| [DESENROLA](max4live/desenrola/README.md) | Max for Live: loop → música pela estrutura de uma referência | 0.3.1 | teste (grátis) |
 | [MESA](instrumentos/mesa/README.md) | Console analógica | 0.5.1 | fora do site (licenças seguem) |
 | [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático | 0.1.1 | não está à venda |
 | [ONKEY](instrumentos/onkey/README.md) | Afinação de voz | 0.1.0 | virou o bloco TUNE do GOGÓ |

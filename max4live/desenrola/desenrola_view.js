@@ -15,7 +15,7 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "desenrola_data";
-var VERSAO = "0.3.0";
+var VERSAO = "0.3.1";
 var msgNova = "";
 var HEAD_H = 72, BAR_H = 86, TB_Y = 168, RUL_Y = 200, TL_Y = 216, TL_H = 46, TOP = 272, FOOT_H = 40, SB_W = 14, HS_H = 10;
 var XN = 16, XG = 206, X0 = 300;
@@ -317,7 +317,10 @@ function trocaTipo(i, tipo) {
 }
 // o [dialog] da janela devolve o nome digitado (vazio = volta ao nome do tipo)
 function nome_parte() {
-	var s = arrayfromargs(arguments).join(" ").replace(/^\s+|\s+$/g, "").substring(0, 24);
+	// o [dialog] manda "symbol <texto>" (ou "list ..."): a primeira palavra é o tipo da mensagem do Max, não o nome
+	var a = arrayfromargs(arguments);
+	while (a.length && (String(a[0]) == "symbol" || String(a[0]) == "list")) a.shift();
+	var s = a.join(" ").replace(/^\s+|\s+$/g, "").substring(0, 24);
 	var id = renomeando;
 	renomeando = 0;
 	if (!data || !id) return;
@@ -413,7 +416,7 @@ function linhaTempo(W) {
 	}
 	rgb(0.55, 0.55, 0.58); texto("PARTES", 16, y + 10, 11, true);
 	rgb(0.45, 0.45, 0.48);
-	texto("botão direito = tipo / renomear", 16, y + 23, 10, false);
+	texto("seta do canto / botão direito = menu", 16, y + 23, 10, false);
 	texto("arraste = muda de lugar · borda = tamanho", 16, y + 34, 10, false);
 	texto("Alt: vizinha cede · duplo clique = divide", 16, y + 45, 10, false);
 	for (var i = 0; i < data.partes.length; i++) {
@@ -425,11 +428,19 @@ function linhaTempo(W) {
 			if (arrastando || p.id == sel) contorno(fx[0] + 1, y, Math.max(2, w - 2), TL_H, 4, [1, 1, 1], 0.9, 2);
 			if (w > 26) {
 				tinta(c);
-				texto(cabeFim(rot[i], w - 10, 12, true), fx[0] + 6, y + 17, 12, true);
+				texto(cabeFim(rot[i], w > 44 && !arrastando ? w - 32 : w - 10, 12, true), fx[0] + 6, y + 17, 12, true);   // não passa por baixo da seta
 				texto(cabeFim(p.n + (w > 90 ? " compassos" : ""), w - 10, 11, false), fx[0] + 6, y + 32, 11, false);
 				if (p.a != null && p.b != null && w > 70) { rgb(0, 0, 0, 0.45); texto(cabeFim("ref " + (p.a + 1) + "–" + p.b, w - 10, 9, false), fx[0] + 6, y + 43, 9, false); }
 			}
 			hits.push({ x: fx[0], y: y, w: w, h: TL_H, tipo: "parte", i: i });
+			// botão ▾ no canto da parte: abre o mesmo menu do botão direito (no Mac o botão direito nem sempre chega ao jsui)
+			if (w > 44 && !arrastando) {
+				var bx = fx[1] - 22, by = y + 4, hvm = hov && hov.tipo == "pmenu" && hov.i == i;
+				caixaR(bx, by, 18, 16, 3, [0, 0, 0], hvm ? 0.55 : 0.3);
+				rgb(1, 1, 1, hvm ? 1 : 0.85);
+				mgraphics.move_to(bx + 5, by + 6); mgraphics.line_to(bx + 13, by + 6); mgraphics.line_to(bx + 9, by + 11); mgraphics.line_to(bx + 5, by + 6); mgraphics.fill();
+				hits.push({ x: bx - 2, y: by - 2, w: 22, h: 20, tipo: "pmenu", i: i });
+			}
 		}
 		// borda direita (fim da parte i)
 		var xb = xDe(ini[i] + p.n);
@@ -568,7 +579,7 @@ function acha(x, y, tipos) {
 }
 // prioridade: botões, bordas (parte e bloco), depois o corpo
 function alvo(x, y) {
-	return acha(x, y, ["cmd"]) || acha(x, y, ["borda", "bE", "bD"]) || acha(x, y, ["parte", "bloco", "grupo", "hs", "trilha"]);
+	return acha(x, y, ["cmd"]) || acha(x, y, ["pmenu"]) || acha(x, y, ["borda", "bE", "bD"]) || acha(x, y, ["parte", "bloco", "grupo", "hs", "trilha"]);
 }
 function grade(shift) { return shift ? 1 : 4; }
 function parteEm(bar) {
@@ -610,6 +621,7 @@ function onclick(x, y, but, cmd, shift, caps, opt, ctrl) {
 	}
 	if (!hb) return;
 	var P = data.partes;
+	if (hb.tipo == "pmenu") { abreMenu(x, y, hb.i); return; }
 	if (hb.tipo == "borda") {
 		op = { tipo: "pBorda", i: hb.i, x0: x, alt: !!opt, vP: copia(P), vT: fotoT(), n0: P[hb.i].n, nViz: P[hb.i + 1] ? P[hb.i + 1].n : 0 };
 		return;

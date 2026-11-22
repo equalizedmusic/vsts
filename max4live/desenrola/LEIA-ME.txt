@@ -31,7 +31,7 @@ PASSO A PASSO
 4. MONTE A MÚSICA na janela, antes do BUILD:
    PARTES (a barra colorida em cima):
    - clique = seleciona a parte
-   - botão direito (no Mac: Ctrl+clique) = menu da parte:
+   - seta no canto da parte (ou botão direito; no Mac também Ctrl+clique) = menu da parte:
        INTRO / BREAK / BUILDUP / DROP / FINAL = troca o tipo (as faixas dessa parte voltam ao padrão do tipo novo)
        RENOMEAR… = dá o nome que você quiser (ex.: "Drop Final"); o tipo continua o mesmo. Nome vazio = volta ao do tipo
        DIVIDIR = divide em duas · TIRAR = tira a parte
@@ -55,7 +55,8 @@ PASSO A PASSO
    ESTRUTURA ON: cria uma faixa MIDI chamada ESTRUTURA, no topo, com um clip vazio por parte, com o nome
    (Intro, Break, Buildup, Drop 1, Drop 2, Drop 3, Final, ou o nome que você deu) e a cor da parte. Serve de mapa da música.
    APAGAR REF ON: no fim, apaga a faixa REF. (Se o DESENROLA estiver na própria faixa REF, ela fica.)
-   Antes de apagar, ele guarda tudo da REF (música, posição, warp, volume) para o UNDO.
+   Antes de apagar, ele guarda tudo da REF (música, posição, warp, volume) para o UNDO. Se não conseguir guardar,
+   a REF fica e a barra de status diz o motivo (o detalhe vai para o DESENROLA-log.txt).
 6. UNDO apaga o rascunho e a faixa ESTRUTURA e traz a REF de volta, no mesmo lugar, com a mesma música, warp,
    cor e volume. (Efeitos que estavam na faixa REF não voltam.) O loop original nunca é mexido.
 
