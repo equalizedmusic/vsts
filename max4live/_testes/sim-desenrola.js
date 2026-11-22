@@ -41,6 +41,9 @@ const REF_IDX = tracks.length - 1;
 tracks[REF_IDX].mixer.volume.value = 0.6; tracks[REF_IDX].mixer.panning.value = -0.2;
 const LEAD = +(process.env.LEAD || 2.2), BPM_REF = 124;
 if (WARP) refClip.wm = [{ sample_time: LEAD, beat_time: 0 }, { sample_time: LEAD + 400 * 60 / BPM_REF, beat_time: 400 }];
+// SEM_REF=1: set sem a faixa REF ⇒ MODO LIVRE (0.4)
+const SEM_REF = !!process.env.SEM_REF;
+if (SEM_REF) tracks = tracks.filter((t) => t.name !== 'REF');
 const cues = [];
 const DEV_TRACK = () => tracks[0];   // o DESENROLA está na 1ª faixa (Kick)
 let songTime = 0;
@@ -155,7 +158,7 @@ class LiveAPI {
   }
 }
 // buffer~ falso: lê a música de teste (f32 estéreo)
-const raw = fs.readFileSync(process.env.REF_F32);
+const raw = SEM_REF ? new Uint8Array(16) : fs.readFileSync(process.env.REF_F32);
 const st = new Float32Array(raw.buffer, raw.byteOffset, raw.length / 4);
 class Buffer {
   framecount() { return st.length / 2; }
@@ -188,6 +191,12 @@ ctx = {
 };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(process.env.MOTOR, 'utf8'), ctx);
+// a versão publicada pede licença: TRAVADO=1 confere que sem licença nada roda; senão libera como no pacote de teste
+if (process.env.TRAVADO) {
+  ctx.init(); ctx.analyze();
+  setTimeout(() => { const ok = /ATIVE A LICEN/.test(ctx._st || '') && !dicts.desenrola_data; console.log((ok ? '  ok   ' : '  ERRO ') + 'sem licença o ANALYZE não roda (' + ctx._st + ')'); console.log(ok ? 'TUDO OK' : '1 ERRO(S)'); process.exit(ok ? 0 : 1); }, 300);
+} else vm.runInContext('LIC_TESTE = true', ctx);
+if (!process.env.TRAVADO) {
 const esperaLivre = (fn) => { const h = setInterval(() => { if (!vm.runInContext('busy', ctx)) { clearInterval(h); setTimeout(fn, 50); } }, 20); };
 let erros = 0;
 const confere = (ok, txt) => { console.log((ok ? '  ok   ' : '  ERRO ') + txt); if (!ok) erros++; };
@@ -201,11 +210,79 @@ const junta = (iv) => {
 const fotoLoop = () => JSON.stringify(tracks.filter((t) => !/^(REF|ESTRUTURA)$/.test(t.name)).map((t) => t.clips.filter((c) => c.s < L1 + 1).map((c) => [c.s, c.e])));
 const antes = fotoLoop();
 
+// cada faixa toca exatamente nos seus blocos (loop recomeça no começo de cada bloco, aparado no fim)
+function confereBlocos(tracksD, I, fim, txt) {
+  const bar = 4; let ok = true; const det = [];
+  for (const t of tracksD) {
+    const loopC = t.clips.map((c) => [c.s - L0, c.e - L0]);
+    const real = junta(intervalos(tr(t.name), I, fim + 1000));
+    let esp = [];
+    for (const b of (t.blocos || [])) {
+      const A = I + b.a * bar, B = I + b.b * bar;
+      for (let x = 0; A + x < B; x += 32) for (const c of loopC) if (A + x + c[0] < B) esp.push([A + x + c[0], Math.min(B, A + x + c[1])]);
+    }
+    esp = junta(esp);
+    if (JSON.stringify(real) !== JSON.stringify(esp)) { ok = false; det.push(t.name + ' real ' + JSON.stringify(real) + ' esperado ' + JSON.stringify(esp)); }
+  }
+  det.slice(0, 6).forEach((x) => console.log('     ' + x));
+  confere(ok, txt);
+}
+// MODO LIVRE: sem REF a janela abre com o esqueleto e as faixas vazias; a pessoa monta; BUILD/UNDO sem falar de REF
+function fluxoLivre() {
+  const d = JSON.parse(dicts.desenrola_data || '{}');
+  console.log('ANALYZE (sem REF): ' + ctx._st);
+  if (process.env.DUMP) fs.writeFileSync(process.env.DUMP, dicts.desenrola_data);
+  confere(d.livre === 1 && !d.ref && !d.refId && /MODO LIVRE/.test(ctx._st), 'sem REF o ANALYZE abre o MODO LIVRE (não dá erro)');
+  const partes = (d.partes || []).map((p) => p.p + ' ' + p.n).join(' · ');
+  console.log('  partes: ' + partes);
+  confere(partes === 'INTRO 16 · BUILDUP 8 · DROP 16 · BREAK 16 · BUILDUP 8 · DROP 16 · FINAL 16', 'esqueleto de partes para a pessoa mudar');
+  confere(Array.isArray(d.modelo) && d.modelo.length === 7, 'esqueleto vai junto para o RESET da janela');
+  confere(d.tracks.length === 8 && d.tracks.every((t) => !t.blocos || t.blocos.length === 0), 'as 8 faixas do loop vêm SEM blocos (a pessoa pinta)');
+  // a pessoa monta: 3 partes (uma renomeada) e pinta 3 faixas; as outras ficam sem tocar
+  d.partes = [{ id: 1, p: 'INTRO', n: 8 }, { id: 2, p: 'DROP', n: 16, nome: 'Minha Parte' }, { id: 3, p: 'FINAL', n: 8 }];
+  d.proxId = 4;
+  const T = (n) => d.tracks.find((t) => t.name === n);
+  T('Kick').blocos = [{ a: 8, b: 24 }]; T('Hats').blocos = [{ a: 0, b: 32 }]; T('Pad Long').blocos = [{ a: 0, b: 12 }];
+  T('Kick').manual = 1; T('Hats').manual = 1; T('Pad Long').manual = 1;
+  dicts.desenrola_data = JSON.stringify(d);
+  ctx.marcas();
+  ctx.analyze();   // ANALYZE de novo, ainda sem REF: não pode jogar fora o que ela montou
+  esperaLivre(() => {
+    const d1 = JSON.parse(dicts.desenrola_data);
+    confere(d1.partes.map((p) => p.p + ' ' + p.n).join(' · ') === 'INTRO 8 · DROP 16 · FINAL 8' && d1.partes[1].nome === 'Minha Parte', 'ANALYZE de novo (sem REF) mantém as partes montadas');
+    confere(JSON.stringify(d1.tracks.find((t) => t.name === 'Kick').blocos) === JSON.stringify([{ a: 8, b: 24 }]) &&
+      d1.tracks.find((t) => t.name === 'Lead Acid').blocos.length === 0, 'e mantém os blocos pintados (e as faixas vazias vazias)');
+    ctx.build();
+    esperaLivre(() => {
+      console.log('BUILD (livre): ' + ctx._st);
+      const d2 = JSON.parse(dicts.desenrola_data), I = d2.inicio, fim = I + 32 * 4;
+      confereBlocos(d2.tracks, I, fim, 'cada faixa toca só onde foi pintada; faixa sem bloco fica vazia no rascunho');
+      confere(fotoLoop() === antes, 'loop original intacto');
+      const est = tracks.find((t) => t.name === 'ESTRUTURA');
+      const nomes = est ? est.clips.map((c) => c.name + '@' + (c.s - I) / 4 + '+' + (c.e - c.s) / 4).join(' ') : '';
+      console.log('  estrutura: ' + nomes);
+      confere(nomes === 'Intro@0+8 Minha Parte@8+16 Final@24+8', 'faixa ESTRUTURA com as partes que a pessoa montou');
+      confere(!/REF/.test(ctx._st), 'BUILD sem REF não fala de REF (nada para apagar)');
+      ctx.undo();
+      esperaLivre(() => {
+        console.log('UNDO (livre): ' + ctx._st);
+        confere(tracks.every((t) => t.clips.every((c) => c.s < I - 1e-6)), 'UNDO apagou todo o rascunho');
+        confere(!tracks.some((t) => t.name === 'ESTRUTURA'), 'UNDO apagou a faixa ESTRUTURA');
+        confere(!tracks.some((t) => t.name === 'REF') && !/REF/.test(ctx._st), 'UNDO não inventa faixa REF');
+        confere(fotoLoop() === antes, 'loop original intacto depois do UNDO');
+        console.log(erros ? erros + ' ERRO(S)' : 'TUDO OK');
+        process.exit(erros ? 1 : 0);
+      });
+    });
+  });
+}
+
 ctx.init();
 const t0 = Date.now();
 ctx.analyze();
 const regraBlocos = (d, g, partes) => { const o = []; let pos = 0; for (const p of partes) { if (d.regras[p.p][g]) o.push({ a: pos, b: pos + p.n }); pos += p.n; } return o; };
 esperaLivre(() => {
+  if (SEM_REF) return fluxoLivre();
   const d = JSON.parse(dicts.desenrola_data || '{}');
   console.log('ANALYZE (' + (WARP ? 'warp' : 'sem warp') + ', ' + (Date.now() - t0) + ' ms): ' + ctx._st);
   confere(d.ref && Math.abs(d.ref.bpm - BPM_REF) < 0.05, 'andamento da referência ' + (d.ref && d.ref.bpm) + ' BPM');
@@ -293,3 +370,4 @@ esperaLivre(() => {
     });
   });
 });
+}

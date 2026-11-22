@@ -378,6 +378,7 @@ void CurvaEditor::menu()
 {
     juce::PopupMenu m;
     m.addItem (1, "Como funciona");
+    m.addItem (2, u8 ("Licença…"));
     m.addSeparator();
    #ifdef JucePlugin_VersionString   // o programa da foto (shots) não é plugin e não tem a versão
     m.addItem (-1, "CURVA " + juce::String (JucePlugin_VersionString), false, false);
@@ -386,7 +387,9 @@ void CurvaEditor::menu()
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
                      [safe] (int r)
                      {
-                         if (safe == nullptr || r != 1) return;
+                         if (safe == nullptr) return;
+                         if (r == 2) { safe->ativacao.mostrarInfo(); return; }
+                         if (r != 1) return;
                          juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "CURVA",
                              u8 ("O ouvido não escuta grave e agudo do mesmo jeito em todo volume: baixinho, o grave e o "
                                  "agudo somem (curvas de mesma audibilidade, Fletcher-Munson / ISO 226). Por isso a mix "

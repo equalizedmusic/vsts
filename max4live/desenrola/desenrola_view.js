@@ -49,6 +49,7 @@ function load() {
 		data.tracks = arr(data.tracks);
 		data.partes = arr(data.partes);
 		if (data.ref) data.ref.partes = arr(data.ref.partes);
+		if (data.modelo) data.modelo = arr(data.modelo);
 		var maxId = 0;
 		for (var p = 0; p < data.partes.length; p++) { if (!data.partes[p].id) data.partes[p].id = 1000 + p; maxId = Math.max(maxId, data.partes[p].id); }
 		data.proxId = Math.max(Number(data.proxId) || 0, maxId + 1);
@@ -56,7 +57,7 @@ function load() {
 			var t = data.tracks[i];
 			t.clips = arr(t.clips);
 			t.g = t.g == null ? 8 : Number(t.g);
-			if (t.blocos == null) t.blocos = blocosDaRegra(t.g, data.partes);
+			if (t.blocos == null) t.blocos = data.livre ? [] : blocosDaRegra(t.g, data.partes);
 			t.blocos = arr(t.blocos);
 		}
 		if (data.cfg) cfg = data.cfg;
@@ -354,6 +355,13 @@ function barra(W) {
 		x += largura(tb, 12, true) + 30;
 		rgb(0.55, 0.55, 0.58); texto("LOOP", x, y + 4, 11, true);
 		rgb(0.91, 0.91, 0.91); texto(Math.round(data.loop.bars * 100) / 100 + " compassos · " + data.tracks.length + " faixas" + (data.fora ? " · " + data.fora + (data.fora > 1 ? " clips cruzam" : " clip cruza") + " a borda (fica de fora)" : ""), x + 40, y + 4, 12, true);
+	} else if (data && data.livre) {
+		rgb(0.55, 0.55, 0.58); texto("REFERENCE", 16, y + 4, 11, true);
+		rgbv(AC); var tl = "MODO LIVRE · sem faixa REF: monte as partes e pinte onde cada faixa toca";
+		texto(tl, 100, y + 4, 12, true);
+		var xl = 100 + largura(tl, 12, true) + 30;
+		rgb(0.55, 0.55, 0.58); texto("LOOP", xl, y + 4, 11, true);
+		rgb(0.91, 0.91, 0.91); texto(Math.round(data.loop.bars * 100) / 100 + " compassos · " + data.tracks.length + " faixas", xl + 40, y + 4, 12, true);
 	} else { rgb(0.55, 0.55, 0.58); texto("REFERENCE  —", 16, y + 4, 11, true); }
 
 	y = HEAD_H + 62;
@@ -396,6 +404,7 @@ function vazio(W, H) {
 	var passos = [
 		"1.  No Arrangement, deixe o seu loop com todas as faixas (kick, bass, drums, synths…) e marque o loop brace em volta dele.",
 		"2.  Crie uma faixa de áudio chamada REF e arraste a música de referência para ela (fora do loop). Warp ligado ajuda no andamento.",
+		"     Sem REF: o ANALYZE abre o MODO LIVRE, com um esqueleto de partes para você mudar e as faixas vazias para você pintar.",
 		"3.  Clique ANALYZE: o DESENROLA lê as partes da referência (INTRO, BREAK, BUILDUP, DROP, FINAL) e as faixas do loop.",
 		"4.  Monte a música na janela: botão direito numa parte troca o tipo ou renomeia; arraste partes e blocos. BUILD: o rascunho vem depois do loop,",
 		"     com a faixa ESTRUTURA (um clip com nome e cor por parte). Com APAGAR REF ON, a faixa REF sai no fim.",
@@ -558,7 +567,15 @@ function cmdLocal(m) {
 		mudou(); return true;
 	}
 	if (m[0] == "__reset") {
-		if (!data.ref) return true;
+		if (!data.ref) {
+			// modo livre: volta ao esqueleto e limpa os blocos
+			if (!data.modelo) return true;
+			data.partes = [];
+			for (var i0 = 0; i0 < data.modelo.length; i0++) data.partes.push({ id: data.proxId++, p: data.modelo[i0].p, n: data.modelo[i0].n });
+			for (var t0 = 0; t0 < data.tracks.length; t0++) { data.tracks[t0].blocos = []; data.tracks[t0].manual = 0; }
+			ajusta();
+			mudou(); return true;
+		}
 		data.partes = [];
 		for (var i = 0; i < data.ref.partes.length; i++) { var r = data.ref.partes[i]; data.partes.push({ id: data.proxId++, p: r.p, n: arred(r.b - r.a), a: r.a, b: r.b }); }
 		for (var t = 0; t < data.tracks.length; t++) { data.tracks[t].blocos = blocosDaRegra(data.tracks[t].g, data.partes); data.tracks[t].manual = 0; }

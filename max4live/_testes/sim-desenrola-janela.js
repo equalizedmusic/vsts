@@ -38,6 +38,23 @@ function arrasta(x0, y0, x1, y1, mods = {}) {
 }
 const clica = (x, y, mods) => arrasta(x, y, null, null, mods);
 
+// LIVRE=1 (DATA = dump do sim-desenrola com SEM_REF): faixas vazias, a pessoa pinta; RESET volta ao esqueleto e limpa
+if (process.env.LIVRE) {
+  confere(D().livre && !D().ref && D().tracks.every((t) => t.blocos.length === 0), 'modo livre abre com as faixas vazias');
+  arrasta(xDe(2), yFaixa(T('Kick')), xDe(14), yFaixa(T('Kick')));
+  confere(D().tracks[T('Kick')].blocos.length === 1, 'pintar no vazio cria o bloco ' + blocos('Kick'));
+  confere(D().tracks.filter((t) => t.blocos.length).length === 1, 'só a faixa pintada ganhou bloco');
+  ev('cmdLocal(["__mais"]); paint()');
+  confere(D().partes.length === 8, '+ PART no modo livre');
+  ev('cmdLocal(["__reset"]); paint()');
+  confere(D().partes.map((p) => p.p + ' ' + p.n).join(' · ') === 'INTRO 16 · BUILDUP 8 · DROP 16 · BREAK 16 · BUILDUP 8 · DROP 16 · FINAL 16', 'RESET volta ao esqueleto');
+  confere(D().tracks.every((t) => t.blocos.length === 0), 'RESET limpa os blocos (não aplica o padrão do grupo)');
+  ev('load(); paint()');
+  confere(D().tracks.every((t) => t.blocos.length === 0), 'recarregar a janela não preenche sozinho as faixas vazias');
+  console.log(erros ? erros + ' ERRO(S)' : 'TUDO OK');
+  process.exit(erros ? 1 : 0);
+}
+
 const p0 = D().partes.map((p) => p.p + ' ' + p.n).join(' · ');
 console.log('partes: ' + p0);
 confere(valido(), 'blocos válidos ao abrir');

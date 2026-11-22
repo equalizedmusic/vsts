@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include "Curva.h"
+#include "IspLicenca.h"
 
 // CURVA: monitor de volume pela curva de mesma audibilidade (Fletcher-Munson / ISO 226:2003). Vai no MASTER, por
 // último, só para OUVIR: quem mixa baixinho (LISTEN) escuta o equilíbrio que ouviria no volume de referência
@@ -62,6 +63,8 @@ public:
     // estado só da tela (salvo no projeto)
     std::atomic<int> uiW { 0 }, suave { 2 }, tilt { 2 };   // suave: 1/3, 1/6, 1/12, 1/24 oct; tilt: 0, 3, 4.5 dB/oct
     std::atomic<bool> verIn { true }, verOut { true }, verHold { true };
+
+    juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 
 private:
     void timerCallback() override;           // refaz o filtro quando LISTEN/TARGET/AMOUNT mudam

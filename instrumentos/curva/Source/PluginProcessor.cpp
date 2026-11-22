@@ -111,6 +111,7 @@ void CurvaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     const int total = buffer.getNumSamples();
     if (nch == 0 || total == 0) return;
     for (int c = nch; c < buffer.getNumChannels(); ++c) buffer.clear (c, 0, total);
+    if (! licenca->liberada()) return;   // sem ativação: o som passa direto
 
     const bool temSafe = pSafe->load() > 0.5f;
     mistura.setTargetValue (ligado() ? 1.0f : 0.0f);

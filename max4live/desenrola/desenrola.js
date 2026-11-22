@@ -1,4 +1,4 @@
-// DESENROLA 0.3 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
+// DESENROLA 0.4 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
 // com o loop brace) e uma faixa REF com a música de referência. ANALYZE:
 //   1. lê a referência (o arquivo do clip da faixa REF) e acha as partes: INTRO, BREAK, BUILDUP, DROP, FINAL;
 //   2. lê as faixas que têm clip dentro do loop e põe cada uma num grupo pelo nome (os 8 do MAESTRO).
@@ -8,6 +8,7 @@
 // escrita. O loop original não é mexido. ESTRUTURA ON cria uma faixa MIDI com um clip vazio por parte (nome e cor da
 // parte); APAGAR REF ON apaga a faixa da referência no fim (antes, tira uma foto dela). UNDO apaga o rascunho e a faixa
 // da estrutura e recria a REF pela foto (arquivo, posição, warp, markers, volume).
+// Sem faixa REF: MODO LIVRE (a janela abre com um esqueleto de partes e as faixas sem blocos; a pessoa monta tudo).
 // Roda no [v8] (Max 9 / Live 12.2+).
 
 autowatch = 1;
@@ -16,9 +17,9 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela   3: eco dos control
 
 var BUF = "desenrola_ref";
 var DICT = "desenrola_data";
-var VERSAO = "0.3.1";
-var BUILD = "teste";      // marca do pacote de teste; vazio na versão publicada
-var LIC_TESTE = true;     // grátis: sem licença
+var VERSAO = "0.4.0";
+var BUILD = "";              // marca do pacote de teste; vazio na versão publicada
+var LIC_TESTE = false;    // grátis, mas com licença (token grátis na página /desenrola)
 var LIC_PACOTE = "desenrola", LIC_NOME = "DESENROLA";
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/desenrola/zip";
 var URL_NOVIDADES = "https://insidestudiosp.com.br/desenrola/";
@@ -511,7 +512,6 @@ function fimFaixas() {
 		faixas.push(tr);
 	}
 	if (!faixas.length) { falhou("nenhuma faixa com clip dentro do loop · marque o loop brace em volta do seu loop"); return; }
-	if (!ref) { falhou("não achei a referência · crie uma faixa de áudio chamada REF com a música (ou selecione a faixa dela) e clique ANALYZE"); return; }
 	// início do rascunho: depois do loop e de tudo o que já existe nas faixas do loop, no compasso, + 4 compassos
 	var bar = an.sig * 4 / an.den;
 	an.inicio = Math.ceil(fimSet / bar - 1e-6) * bar + 4 * bar;
@@ -524,8 +524,43 @@ function fimFaixas() {
 		for (var v = 0; v < result.tracks.length; v++) velho[result.tracks[v].id] = result.tracks[v];
 		for (var f = 0; f < faixas.length; f++) { var o = velho[faixas[f].id]; if (o) { faixas[f].g = o.g; faixas[f].auto = o.auto; } }
 	}
+	// sem referência: MODO LIVRE (0.4) — a pessoa monta as partes e pinta os blocos na janela
+	if (!ref) { modoLivre(); return; }
 	log("DESENROLA: " + faixas.length + " faixas no loop · referência [" + ref.tr.name + "] · rascunho começa no beat " + an.inicio + (an.fora ? " · " + an.fora + " clip(s) cruzam a borda do loop (ficam de fora)" : "") + "\n");
 	leRef();
+}
+
+// MODO LIVRE: sem faixa REF a janela abre com um esqueleto de partes (a pessoa muda tudo) e as faixas SEM blocos
+// (ela pinta onde cada uma toca). Se o ANALYZE anterior já era livre, mantém as partes e os blocos que ela montou.
+var MODELO_LIVRE = [["INTRO", 16], ["BUILDUP", 8], ["DROP", 16], ["BREAK", 16], ["BUILDUP", 8], ["DROP", 16], ["FINAL", 16]];
+function partesModelo() {
+	var out = [];
+	for (var i = 0; i < MODELO_LIVRE.length; i++) out.push({ id: i + 1, p: MODELO_LIVRE[i][0], n: MODELO_LIVRE[i][1] });
+	return out;
+}
+function modoLivre() {
+	busy = false;
+	vigiaDesliga();
+	fotoAnalise = null;
+	var partes = partesModelo(), proxId = partes.length + 1, manteve = 0, velho = {};
+	if (result && !result.ref && result.partes && result.partes.length) {
+		partes = result.partes; proxId = result.proxId || partes.length + 1; manteve = 1;
+		for (var v = 0; v < result.tracks.length; v++) velho[result.tracks[v].id] = result.tracks[v];
+	}
+	for (var f = 0; f < an.faixas.length; f++) {
+		var tr = an.faixas[f], o = velho[tr.id];
+		tr.blocos = o ? arr(o.blocos) : [];
+		tr.manual = o ? o.manual : 0;
+	}
+	result = {
+		versao: VERSAO, sig: an.sig, bar: an.bar, tempo: an.tempo, loop: { s: an.loop.s, e: an.loop.e, bars: (an.loop.e - an.loop.s) / an.bar },
+		inicio: an.inicio, ref: null, livre: 1, refId: 0, partes: partes, proxId: proxId, modelo: partesModelo(), tracks: an.faixas, partesNomes: PARTES,
+		grupos: GRUPOS, cores: CORES, coresParte: CORES_PARTE, regras: REGRAS, cfg: cfg, fora: an.fora, feito: criado ? 1 : 0
+	};
+	log("DESENROLA: sem faixa REF · MODO LIVRE · " + an.faixas.length + " faixas no loop · rascunho começa no beat " + an.inicio +
+		(manteve ? " · mantive as partes e os blocos do ANALYZE anterior" : " · esqueleto " + descrevePartes(partes)) + "\n");
+	publica();
+	status("MODO LIVRE (sem REF) · " + partes.length + " partes · " + an.faixas.length + " faixas · monte as partes, pinte onde cada faixa toca e clique BUILD");
 }
 
 // referência: o arquivo do maior clip da faixa REF
@@ -702,7 +737,7 @@ function lerMarcas() {
 			result.tracks[q].g = o.g == null ? result.tracks[q].g : Number(o.g);
 			result.tracks[q].auto = o.auto ? 1 : 0;
 			result.tracks[q].manual = o.manual ? 1 : 0;
-			if (o.blocos != null) {
+			{   // blocos vazios podem voltar do dict como nulos: vale como faixa sem bloco
 				var bl = arr(o.blocos), ok = [];
 				for (var z = 0; z < bl.length; z++) {
 					var a = Math.max(0, Number(bl[z].a)), b = Math.min(tot, Number(bl[z].b));
@@ -752,7 +787,7 @@ function build() {
 		pos += pt.n * bar;
 	}
 	bd = { ops: ops, i: 0, feitos: 0, falhas: 0, aparados: 0, sobra: 0, apagados: 0, est: cfg.est ? est : [], ie: -1, estId: 0, estFeitos: 0,
-		apagaRef: cfg.apaga ? 1 : 0, refApagada: 0, refMotivo: "", refFoto: null, inicio: agora(), ini: ini, fim: fim, faixas: {} };
+		apagaRef: cfg.apaga && result.refId ? 1 : 0, refApagada: 0, refMotivo: "", refFoto: null, inicio: agora(), ini: ini, fim: fim, faixas: {} };
 	for (var t = 0; t < result.tracks.length; t++) bd.faixas[result.tracks[t].id] = 1;
 	log("DESENROLA: BUILD · " + result.partes.length + " partes · " + ops.length + " cópias · beats " + ini + "-" + fim + " · " + descrevePartes(result.partes) + "\n");
 	outlet(2, "varre", ops.length);

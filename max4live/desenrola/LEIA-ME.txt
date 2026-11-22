@@ -1,8 +1,8 @@
 DESENROLA — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
-Suporte: contato@insidestudiosp.com.br
+Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/desenrola/
 Tira a música do loop: lê a estrutura de uma música de referência (INTRO, BREAK, BUILDUP, DROP, FINAL) e
 espalha os clips do seu loop pelo Arrangement seguindo essa estrutura. Sai um rascunho de música pronto para você
-fazer as variações e as automações.
+fazer as variações e as automações. Sem referência, você monta a estrutura do seu jeito (MODO LIVRE).
 
 ======================================================================
 INSTALAR (uma vez)
@@ -14,6 +14,16 @@ INSTALAR (uma vez)
 2. No Live, arraste o Desenrola.amxd para qualquer faixa de áudio do projeto. Não ponha no MASTER.
 
 ======================================================================
+ATIVAR (1ª vez · o DESENROLA é GRÁTIS, mas tem licença)
+======================================================================
+1. Pegue o token grátis em https://insidestudiosp.com.br/desenrola/ (nome + e-mail; o token chega no e-mail).
+2. No device, clique OPEN THE MAGIC. A janela abre na tela ACTIVATE DESENROLA.
+3. Clique no campo E-MAIL e digite o seu e-mail; clique em TOKEN e cole o token (ISP-XXXX-XXXX-XXXX-XXXX-XXXX).
+   Clique ACTIVATE (precisa de internet).
+4. Vale em até 2 computadores. Sem internet, segue valendo por 45 dias. LICENSE (canto da janela) mostra a
+   licença e DEACTIVATE THIS COMPUTER libera a vaga para outro computador.
+
+======================================================================
 PASSO A PASSO
 ======================================================================
 1. O LOOP. No Arrangement, deixe o seu loop com todas as faixas tocando juntas (kick, bass, drums, hats, synths,
@@ -23,7 +33,11 @@ PASSO A PASSO
 2. A REFERÊNCIA. Crie uma faixa de áudio chamada REF e arraste a música de referência para ela, fora do loop
    (por exemplo, depois do fim do set). Warp ligado ajuda: o DESENROLA usa as marcas de warp do Live para saber o
    andamento e o 1 do compasso. Sem warp, ele acha o andamento pelo próprio áudio.
-   (Sem faixa REF, vale a faixa selecionada, se o clip dela estiver fora do loop.)
+   (Sem faixa REF, vale a faixa de áudio selecionada, se o clip dela estiver fora do loop.)
+   SEM REFERÊNCIA (MODO LIVRE): sem faixa REF, o ANALYZE abre a janela com um esqueleto de partes
+   (INTRO 16, BUILDUP 8, DROP 16, BREAK 16, BUILDUP 8, DROP 16, FINAL 16) e as faixas VAZIAS. Você muda as partes
+   como quiser e pinta onde cada faixa toca. RESET volta ao esqueleto e limpa os blocos. ANALYZE de novo (ainda sem
+   REF) não apaga o que você montou. APAGAR REF não faz nada nesse modo.
 3. ANALYZE. Clique OPEN THE MAGIC e depois ANALYZE. Ele lê a referência e mostra as partes com o tamanho em
    compassos (o rascunho arredonda para 4 ou 8). Também lê as faixas do loop e põe cada uma num grupo pelo nome
    (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX; o resto vira OTHER). Cada faixa já vem com blocos onde ela
@@ -40,6 +54,7 @@ PASSO A PASSO
      com Alt (Option no Mac) a vizinha cede e o total não muda
    - Alt+clique = tira a parte · duplo clique = divide em duas
    - + PART põe uma parte de 16 compassos no fim (depois arraste para onde quiser) · RESET volta ao que foi lido
+     (no MODO LIVRE, ao esqueleto, com as faixas vazias)
    FAIXAS (os blocos de cada faixa, como no Arrangement):
    - arraste no vazio = pinta um bloco do tamanho que você arrastar
    - clique no vazio = pinta do tamanho do PINCEL (4, 8, 16, 32 compassos ou a PARTE inteira)
@@ -76,6 +91,8 @@ COMO ELE LÊ A REFERÊNCIA
 SE ALGO DER ERRADO
 ======================================================================
 - O DESENROLA grava um log (DESENROLA-log.txt) na pasta do device. Mande esse arquivo para o suporte.
-- "não achei a referência": crie a faixa REF (nome exato) com a música, ou selecione a faixa dela antes do ANALYZE.
+- Abriu o MODO LIVRE sem querer: a faixa da referência precisa se chamar REF (ou estar selecionada) e ter o clip
+  fora do loop. Depois clique ANALYZE de novo.
+- "ATIVE A LICENÇA": clique OPEN THE MAGIC e ative com o e-mail e o token (veja ATIVAR).
 - "nenhuma faixa com clip dentro do loop": marque o loop brace em volta do loop.
 - Andamento errado na referência: ligue o warp do clip da REF e confira o 1.1.1 no Live; depois ANALYZE de novo.

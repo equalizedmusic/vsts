@@ -3,7 +3,7 @@ vsts_versao(Curva.md CURVA_VERSAO)
 
 # CURVA: monitor de volume pela curva de mesma audibilidade (Fletcher-Munson / ISO 226). É efeito (vai por último no
 # master, só para ouvir), mas fica em instrumentos/ para ter build, instalador e release próprios, como o ALIGN.
-# 0.1.0 é TESTE: sem ativação por licença e fora do site.
+# Licença (0.2.0): pacote curva, grátis como o ALIGN (sem ativar, o som passa direto).
 juce_add_plugin(Curva
     COMPANY_NAME                "InsideStudioSP"
     BUNDLE_ID                   com.insidestudiosp.curva
@@ -23,6 +23,7 @@ juce_add_plugin(Curva
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
 target_sources(Curva PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/EditorPaineis.cpp)
+isp_licenca(Curva curva)
 target_compile_definitions(Curva PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

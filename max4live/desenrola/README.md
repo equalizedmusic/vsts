@@ -2,7 +2,7 @@
 
 Tira a música do loop. Lê a estrutura de uma música de referência (INTRO, BREAK, BUILDUP, DROP, FINAL) e
 espalha os clips do loop que está no Arrangement seguindo essa estrutura. O resultado é um rascunho de música
-montado depois do loop. Grátis, sem licença (`LIC_TESTE = true`) e sem página no site até o teste do Rogério.
+montado depois do loop. Grátis com licença (pacote `desenrola`, token grátis em insidestudiosp.com.br/desenrola/). 0.4.0: sem faixa REF abre o MODO LIVRE (esqueleto de partes, faixas vazias).
 
 ## Arquivos
 

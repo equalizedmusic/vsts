@@ -22,6 +22,7 @@ CurvaEditor::CurvaEditor (CurvaProcessor& p) : AudioProcessorEditor (p), proc (p
     const int w = w0 > 0 ? juce::jlimit (750, 2000, w0) : baseW;
     setSize (w, juce::roundToInt (w * (double) baseH / baseW));
     startTimerHz (30);
+    ativacao.anexar (*this);
 }
 
 void CurvaEditor::resized() { proc.uiW = getWidth(); }

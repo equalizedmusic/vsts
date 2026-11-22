@@ -7,7 +7,7 @@ name: release-max4live
 on:
   push:
     branches: [main]
-    paths: ['max4live/**', 'novidades/Vassoura.md', 'novidades/Rodo.md', 'novidades/Espanador.md','.github/workflows/release-max4live.yml']
+    paths: ['max4live/**', 'novidades/Vassoura.md', 'novidades/Rodo.md', 'novidades/Espanador.md','novidades/Desenrola.md','.github/workflows/release-max4live.yml']
   workflow_dispatch:
 
 permissions:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "IspTelaAtivacao.h"
 #include <functional>
 
 // Tela da CURVA (base 1000 × 752, escala junto com a janela; tudo desenhado no paint, a 30 Hz).
@@ -63,6 +64,7 @@ private:
     juce::Rectangle<float> rPlot;            // área do gráfico do espectro (para a leitura no mouse)
 
     CurvaProcessor& proc;
+    isp::TelaAtivacao ativacao;
 
     // espectro
     juce::dsp::FFT fft { 13 };

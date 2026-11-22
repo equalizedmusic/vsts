@@ -1,5 +1,10 @@
 # CURVA — novidades
 
+## 0.2.0 — 2026-11-22
+- Versão oficial, GRÁTIS com licença: na 1ª vez a CURVA pede o e-mail e o token grátis da página insidestudiosp.com.br/curva/. Sem ativar, o som passa direto.
+- Menu (botão direito na tela): Licença… mostra a licença e libera o computador.
+- O som e a tela são os da 0.1.1, aprovada no teste.
+
 ## 0.1.1 — 2026-11-21
 - SPECTRUM: o agudo não some mais da tela. A soma da potência perdia precisão quando o grave era forte, e o OUT
   parecia cortado acima de ~3 kHz (o som estava certo; era só o desenho). O IN também fazia degraus no agudo.
