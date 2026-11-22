@@ -493,6 +493,13 @@ PREINSTALL_M4L = """#!/bin/bash
 D="${{2%/}}"
 case "$D" in */"Max Audio Effect") ;; *) exit 0;; esac
 rm -rf "$D/{pacote}" "$D/{pacote}"-[0-9]*
+# o instalador de 22/11/2026 gravou sem o "Ableton" (~/Music/User Library/...): tira a pasta de lá e as pastas que ficarem vazias
+case "$D" in */Ableton/"User Library"/*)
+  E="${{D%%/Ableton/User Library/*}}/User Library"
+  rm -rf "$E/Presets/Audio Effects/Max Audio Effect/{pacote}"
+  rmdir "$E/Presets/Audio Effects/Max Audio Effect" "$E/Presets/Audio Effects" "$E/Presets" "$E" 2>/dev/null
+  ;;
+esac
 exit 0
 """
 
@@ -545,7 +552,7 @@ def montar_m4l_mac(a):
     arq = f"{ident_pkg}.pkg"
     # domínio "home do usuário": o install-location é relativo a ~ (sem senha de administrador)
     rodar("pkgbuild", "--root", raiz, "--identifier", ident_pkg, "--version", a.versao, "--scripts", scripts,
-          "--install-location", "/Music/" + "/".join(M4L_SUB[1:]), os.path.join(pkgs, arq))
+          "--install-location", "/Music/" + "/".join(M4L_SUB), os.path.join(pkgs, arq))
     dist = os.path.join(trabalho, "distribution.xml")
     with open(dist, "w", encoding="utf-8") as f:
         f.write("\n".join([
