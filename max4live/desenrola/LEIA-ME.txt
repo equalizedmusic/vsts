@@ -1,0 +1,61 @@
+DESENROLA — Max for Live (Live 12.2 ou mais novo, Suite ou Standard com Max for Live)
+Suporte: contato@insidestudiosp.com.br
+Tira a música do loop: lê a estrutura de uma música de referência (INTRO, GROOVE, BUILD, DROP, BREAK, OUTRO) e
+espalha os clips do seu loop pelo Arrangement seguindo essa estrutura. Sai um rascunho de música pronto para você
+fazer as variações e as automações.
+
+======================================================================
+INSTALAR (uma vez)
+======================================================================
+1. Copie a pasta inteira (Desenrola-<versão>) para:
+   Windows: Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
+   Mac:     Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/
+   O Desenrola.amxd e os 4 arquivos .js (desenrola.js, desenrola_view.js, desenrola_strip.js e desenrola_http.js) PRECISAM ficar juntos.
+2. No Live, arraste o Desenrola.amxd para qualquer faixa de áudio do projeto. Não ponha no MASTER.
+
+======================================================================
+PASSO A PASSO
+======================================================================
+1. O LOOP. No Arrangement, deixe o seu loop com todas as faixas tocando juntas (kick, bass, drums, hats, synths,
+   pads, voz, FX…). Pode ser de 4, 8, 16 ou 32 compassos, com clips de áudio e de MIDI. Marque o loop brace
+   (a barra de loop em cima do Arrangement) exatamente em volta dele.
+   Só entram os clips que estão INTEIROS dentro do loop brace.
+2. A REFERÊNCIA. Crie uma faixa de áudio chamada REF e arraste a música de referência para ela, fora do loop
+   (por exemplo, depois do fim do set). Warp ligado ajuda: o DESENROLA usa as marcas de warp do Live para saber o
+   andamento e o 1 do compasso. Sem warp, ele acha o andamento pelo próprio áudio.
+   (Sem faixa REF, vale a faixa selecionada, se o clip dela estiver fora do loop.)
+3. ANALYZE. Clique OPEN THE MAGIC e depois ANALYZE. Ele lê a referência e mostra as partes com o tamanho em
+   compassos (o rascunho arredonda para 4 ou 8). Também lê as faixas do loop e põe cada uma num grupo pelo nome
+   (KICK, BASS, DRUMS, HATS, SYNTHS, AMBIENCE, VOCAL, FX; o resto vira OTHER).
+4. CONFIRA. Na janela:
+   - Partes: clique = troca o tipo · arraste a borda direita = tamanho (de 4 em 4; com Shift, de 1 em 1)
+     · Shift+clique = tira a parte · duplo clique = divide em duas · + PART põe uma no fim · RESET PARTS volta ao que foi lido.
+   - Faixas: clique no grupo = troca o grupo (o que a faixa toca volta ao padrão do grupo).
+     Clique numa célula (ou na prévia) = liga/desliga a faixa naquele tipo de parte.
+   - A prévia mostra, faixa por faixa, onde ela vai tocar no rascunho.
+5. BUILD. O rascunho é montado DEPOIS do loop (e de tudo o que já existe nessas faixas), com 4 compassos de folga.
+   Cada parte recebe cópias dos clips das faixas ligadas nela, repetidas até encher a parte. Se a parte não fecha
+   com o tamanho do loop, a última cópia é aparada no fim da parte. LOCATORS ON põe um locator com o nome de cada parte.
+   Nada é criado do zero e nenhuma nota é escrita: são cópias dos seus clips.
+6. UNDO apaga o rascunho e os locators que o DESENROLA criou. O loop original nunca é mexido.
+
+PADRÃO DO QUE TOCA EM CADA PARTE (dá para mudar na janela)
+  INTRO   kick, drums, hats, ambience
+  GROOVE  kick, drums, hats, synths, vocal, other
+  BUILD   drums, hats, synths, ambience, vocal, fx
+  DROP    kick, bass, drums, hats, synths, vocal, other
+  BREAK   synths, ambience, vocal, other
+  OUTRO   kick, drums, hats, ambience
+
+COMO ELE LÊ A REFERÊNCIA
+  DROP = kick + baixo · GROOVE = kick sem baixo · BREAK = sem kick · antes do 1º DROP = INTRO ·
+  depois do último DROP = OUTRO · o fim de um BREAK que desemboca num DROP = BUILD.
+  Funciona melhor em música eletrônica 4/4 (house, techno, psy, trance). Em outros gêneros, ajuste as partes à mão.
+
+======================================================================
+SE ALGO DER ERRADO
+======================================================================
+- O DESENROLA grava um log (DESENROLA-log.txt) na pasta do device. Mande esse arquivo para o suporte.
+- "não achei a referência": crie a faixa REF (nome exato) com a música, ou selecione a faixa dela antes do ANALYZE.
+- "nenhuma faixa com clip dentro do loop": marque o loop brace em volta do loop.
+- Andamento errado na referência: ligue o warp do clip da REF e confira o 1.1.1 no Live; depois ANALYZE de novo.

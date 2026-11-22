@@ -36,11 +36,13 @@ function cabeFim(s, w, size, bold) {
 // ondas estilizadas (fixas: semente própria) — "antes" altas e desiguais, "depois" niveladas/limpas
 function ondas(x0, x1, cy, h, nivelado, cor, seed) {
 	var s = seed;
+	var rolo = DEV.tipo == "desenrola";
 	function r2() { s = (s * 16807) % 2147483647; return s / 2147483647; }
 	mgraphics.set_line_width(2);
 	for (var x = x0; x < x1; x += 4) {
 		var bloco = Math.floor((x - x0) / 46);
-		var vazio = DEV.tipo == "vassoura" && (bloco % 3 == 1);
+		if (rolo && !nivelado) s = seed * 131 + ((x - x0) % 46) * 17 + 1;   // DESENROLA: o mesmo loop se repete
+		var vazio = (DEV.tipo == "vassoura" && (bloco % 3 == 1)) || (rolo && nivelado && ((bloco + seed) % 5 < (seed % 3)));
 		var a = r2();
 		var amp = (0.35 + 0.65 * a) * (0.45 + 0.55 * Math.abs(Math.sin(bloco * 1.7 + seed)));
 		if (nivelado) amp = DEV.tipo == "rodo" ? 0.55 + 0.25 * a : amp;
@@ -101,6 +103,20 @@ function desenhaEspanador(x, top, bot) {
 	for (var k = 0; k < 16; k++) { var yy = top + 4 + ((k * 29) % (bot - top - 8)); rgb(0.72, 0.68, 0.62, 0.6); mgraphics.ellipse(x + 10 + (k % 4) * 3, yy, 2.5, 2.5); mgraphics.fill(); }
 }
 
+// DESENROLA: um rolo (o loop enrolado) que se abre numa fita (a música) para a direita
+function desenhaDesenrola(x, top, bot) {
+	var mid = (top + bot) / 2, r = (bot - top) / 2 - 2;
+	rgb(0, 0, 0, 0.35); mgraphics.ellipse(x - r + 3, mid - r + 4, r * 2, r * 2); mgraphics.fill();
+	rgbv(DEV.cor); mgraphics.ellipse(x - r, mid - r, r * 2, r * 2); mgraphics.fill();
+	mgraphics.set_line_width(2);
+	for (var k = 1; k <= 4; k++) { var rr = r * (1 - k * 0.2); rgb(0.07, 0.07, 0.08, 0.55); mgraphics.ellipse(x - rr, mid - rr, rr * 2, rr * 2); mgraphics.stroke(); }
+	rgb(1, 1, 1, 0.25); mgraphics.ellipse(x - r * 0.6, mid - r * 0.85, r * 0.7, r * 0.35); mgraphics.fill();
+	// fita saindo por baixo para a direita
+	rgbv(DEV.cor, 0.9); mgraphics.rectangle(x, bot - 6, 26, 6); mgraphics.fill();
+	rgb(0.07, 0.07, 0.08); mgraphics.set_line_width(1);
+	for (var t = 4; t < 26; t += 6) { mgraphics.move_to(x + t, bot - 6); mgraphics.line_to(x + t, bot); mgraphics.stroke(); }
+}
+
 function paint() {
 	var W = box.rect[2] - box.rect[0], H = box.rect[3] - box.rect[1];
 	var AC = DEV.cor;
@@ -121,6 +137,7 @@ function paint() {
 		ondas(xm + 14, sx1 - 6, cy, lh / 2 - 2, 1, coresDepois[i], 11 + i * 7);
 	}
 	if (DEV.tipo == "espanador") desenhaEspanador(xm, sy - 6, sy + lh * 3 + 4);
+	else if (DEV.tipo == "desenrola") desenhaDesenrola(xm, sy - 6, sy + lh * 3 + 4);
 	else if (DEV.tipo == "rodo") {
 		rgbv(AC, 0.5); mgraphics.set_line_width(1);
 		for (var xd = xm + 14; xd < sx1 - 6; xd += 7) { mgraphics.move_to(xd, sy + 1.5); mgraphics.line_to(xd + 4, sy + 1.5); }
