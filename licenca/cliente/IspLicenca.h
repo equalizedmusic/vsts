@@ -71,6 +71,7 @@ public:
         if (p == "gogo") return utf8 ("GOGÓ");
         if (p == "retalho") return "RETALHO";
         if (p == "chute") return "CHUTE";
+        if (p == "curva") return "CURVA";
         return p.toUpperCase();
     }
 

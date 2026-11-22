@@ -23,7 +23,7 @@ juce_add_plugin(Curva
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
 target_sources(Curva PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/EditorPaineis.cpp)
-isp_licenca(Curva curva)
+isp_licenca(Curva curva)   # pacote 'curva' registrado em licenca/cliente (licenca.cmake + IspLicenca.h)
 target_compile_definitions(Curva PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
