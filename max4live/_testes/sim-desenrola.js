@@ -1,6 +1,7 @@
 // Simula o Live para testar o DESENROLA (ANALYZE + BUILD + UNDO) no Node.
 // set MOTOR=<build>/desenrola.js & set REF_F32=<música de teste f32 estéreo 44,1 kHz> & node sim-desenrola.js [warp]
-// A música de teste sai de gera-ref-teste.py (gabarito: INTRO 16 · DROP 32 · BREAK 16 · BUILD 8 · DROP 32 · GROOVE 8 · DROP 16 · OUTRO 16).
+// A música de teste sai de gera-ref-teste.py (gabarito 0.2: INTRO 16 · DROP 32 · BREAK 16 · BUILDUP 8 · DROP 32 · BREAK 8 · DROP 16 · FINAL 16;
+// o GROOVE entre dois DROPs vira BREAK).
 // Live falso: arranjo com sobrescrita (cópia por cima corta/divide o que estava lá, como no Live real),
 // clip em loop só encurta desligando o loop (o pior caso para o aparar).
 const fs = require('fs'), vm = require('vm'), path = require('path'), os = require('os');
@@ -19,7 +20,7 @@ const mkTrack = (name, o, clips) => {
 };
 // loop de 8 compassos (32 beats) em 16..48
 const L0 = 16, L1 = 48;
-const tracks = [
+let tracks = [
   mkTrack('Kick', {}, [{ s: L0, e: L1 }]),
   mkTrack('Bass FM', { has_midi_input: 1 }, [{ s: L0, e: L0 + 16 }, { s: L0 + 16, e: L1 }]),
   mkTrack('Hats', {}, [0, 4, 8, 12, 16, 20, 24, 28].map((x) => ({ s: L0 + x, e: L0 + x + 4 }))),
@@ -37,6 +38,7 @@ const refClip = tracks[tracks.length - 1].clips[0];
 const LEAD = +(process.env.LEAD || 2.2), BPM_REF = 124;
 if (WARP) refClip.wm = [{ sample_time: LEAD, beat_time: 0 }, { sample_time: LEAD + 400 * 60 / BPM_REF, beat_time: 400 }];
 const cues = [];
+const DEV_TRACK = () => tracks[0];   // o DESENROLA está na 1ª faixa (Kick)
 let songTime = 0;
 const byId = (id) => objs[id];
 
@@ -59,7 +61,8 @@ function resolve(p) {
   const w = p.split(' ');
   if (w[0] === 'id') return byId(+w[1]) || { kind: 'none', id: 0 };
   if (p === 'live_set') return { kind: 'set' };
-  if (p === 'live_set view selected_track') return tracks[0];
+  if (p === 'live_set view selected_track') return tracks.find((t) => t.name === 'Kick');
+  if (p === 'this_device canonical_parent') return DEV_TRACK();
   if (w[1] === 'tracks' && w.length === 3) return tracks[+w[2]];
   throw new Error('path ' + p);
 }
@@ -79,9 +82,12 @@ class LiveAPI {
         if (k >= 0) { delete objs[cues[k].id]; cues.splice(k, 1); } else { const c = { kind: 'cue', id: nextId++, time: songTime, name: '' }; objs[c.id] = c; cues.push(c); }
         return;
       }
+      if (fn === 'create_midi_track') { const t = mkTrack('MIDI', { has_midi_input: 1 }); tracks.splice(a[0], 0, t); return; }
+      if (fn === 'delete_track') { const t = tracks[a[0]]; if (!t) throw new Error('delete_track sem faixa ' + a[0]); t.clips.forEach((c) => delete objs[c.id]); delete objs[t.id]; tracks.splice(a[0], 1); return; }
       throw new Error('call set ' + fn);
     }
     const t = this.r;
+    if (fn === 'create_midi_clip') { if (!t.has_midi_input) throw new Error('create_midi_clip em faixa de áudio'); poe(t, mkClip({ s: a[0], e: a[0] + a[1], audio: 0, name: '' })); return; }
     if (a[0] !== 'id') throw new Error('call sem "id": ' + a.join(' '));
     const c = byId(a[1]);
     if (!c || c.kind !== 'clip') throw new Error('clip inválido ' + a[1]);
@@ -117,7 +123,10 @@ class LiveAPI {
     const r = this.r;
     if (r.kind === 'set') { if (k === 'current_song_time') { songTime = v; return; } throw new Error('set set ' + k); }
     if (r.kind === 'cue') { if (k === 'name') { r.name = String(v); return; } }
+    if (r.kind === 'track') { if (k === 'name') { r.name = String(v); return; } if (k === 'color') { r.color = v; return; } throw new Error('set track ' + k); }
     if (r.kind === 'clip') {
+      if (k === 'name') { r.name = String(v); return; }
+      if (k === 'color') { r.color = v; return; }
       const k2 = { looping: 'looping', end_marker: 'em', loop_end: 'le', start_marker: 'sm', loop_start: 'ls' }[k];
       if (!k2) throw new Error('set clip ' + k);
       r[k2] = v;
@@ -172,29 +181,40 @@ const junta = (iv) => {
   for (const v of iv) { const u = o[o.length - 1]; if (u && v[0] <= u[1] + 1e-6) u[1] = Math.max(u[1], v[1]); else o.push(v.slice()); }
   return o;
 };
-const fotoLoop = () => JSON.stringify(tracks.map((t) => t.clips.filter((c) => c.s < L1 + 1).map((c) => [c.s, c.e])));
+const fotoLoop = () => JSON.stringify(tracks.filter((t) => !/^(REF|ESTRUTURA)$/.test(t.name)).map((t) => t.clips.filter((c) => c.s < L1 + 1).map((c) => [c.s, c.e])));
 const antes = fotoLoop();
 
 ctx.init();
 const t0 = Date.now();
 ctx.analyze();
+const regraBlocos = (d, g, partes) => { const o = []; let pos = 0; for (const p of partes) { if (d.regras[p.p][g]) o.push({ a: pos, b: pos + p.n }); pos += p.n; } return o; };
 esperaLivre(() => {
   const d = JSON.parse(dicts.desenrola_data || '{}');
   console.log('ANALYZE (' + (WARP ? 'warp' : 'sem warp') + ', ' + (Date.now() - t0) + ' ms): ' + ctx._st);
   confere(d.ref && Math.abs(d.ref.bpm - BPM_REF) < 0.05, 'andamento da referência ' + (d.ref && d.ref.bpm) + ' BPM');
   const partes = (d.partes || []).map((p) => p.p + ' ' + p.n).join(' · ');
   console.log('  partes: ' + partes);
-  confere(partes === 'INTRO 16 · DROP 32 · BREAK 16 · BUILD 8 · DROP 32 · GROOVE 8 · DROP 16 · OUTRO 16', 'partes = gabarito da música de teste');
+  confere(partes === 'INTRO 16 · DROP 32 · BREAK 16 · BUILDUP 8 · DROP 32 · BREAK 8 · DROP 16 · FINAL 16', 'partes = gabarito da música de teste (nomes 0.2)');
+  confere(d.partes.every((p, i) => p.id === i + 1), 'cada parte com id');
   if (!d.tracks) { console.log('sem faixas'); process.exit(1); }
   console.log('  faixas: ' + d.tracks.map((t) => t.name + ':' + d.grupos[t.g]).join(' '));
   confere(d.tracks.length === 8 && !d.tracks.some((t) => /REF|Coisa|Drums|Sem clip/.test(t.name)), 'faixas do loop: 8 (sem REF, sem a que cruza a borda, sem grupo, sem a sem clip no loop)');
+  confere(d.tracks.every((t) => JSON.stringify(t.blocos) === JSON.stringify(regraBlocos(d, t.g, d.partes))), 'blocos de cada faixa = padrão do grupo, um por parte');
   confere(d.fora === 1, 'clip que cruza a borda do loop contado como fora');
   confere(d.inicio === 232 + 16, 'rascunho começa depois de tudo nas faixas do loop + 4 compassos (beat ' + d.inicio + ')');
-  // janela: Pad Long também no DROP; Vox Chop fora do GROOVE; a 1ª parte (INTRO) fica com 12 compassos (não fecha o loop de 8)
   if (process.env.DUMP) fs.writeFileSync(process.env.DUMP, dicts.desenrola_data);
-  d.tracks.find((t) => t.name === 'Pad Long').on[3] = 1;
-  d.tracks.find((t) => t.name === 'Vox Chop').on[1] = 0;
+  // janela: INTRO com 12 (não fecha o loop de 8); Pad Long também nos DROPs; Vox Chop num bloco solto no meio da INTRO;
+  // Kick sem o 2º DROP; Lead Acid num bloco só que atravessa DROP 1 + BREAK
   d.partes[0].n = 12;
+  const ini = []; let acc = 0; for (const p of d.partes) { ini.push(acc); acc += p.n; }
+  for (const t of d.tracks) t.blocos = regraBlocos(d, t.g, d.partes);
+  const T = (n) => d.tracks.find((t) => t.name === n);
+  d.partes.forEach((p, i) => { if (p.p === 'DROP') T('Pad Long').blocos.push({ a: ini[i], b: ini[i] + p.n }); });
+  T('Pad Long').blocos.sort((x, y) => x.a - y.a);
+  T('Vox Chop').blocos = [{ a: 4, b: 10 }];
+  T('Kick').blocos = T('Kick').blocos.filter((b) => b.a !== ini[4]);
+  T('Lead Acid').blocos = [{ a: ini[1], b: ini[3] }];
+  T('Pad Long').manual = 1; T('Vox Chop').manual = 1; T('Kick').manual = 1; T('Lead Acid').manual = 1;
   dicts.desenrola_data = JSON.stringify(d);
   ctx.marcas();
   const t1 = Date.now();
@@ -202,36 +222,44 @@ esperaLivre(() => {
   esperaLivre(() => {
     console.log('BUILD (' + (Date.now() - t1) + ' ms): ' + ctx._st);
     const d2 = JSON.parse(dicts.desenrola_data);
-    const PARTES = d2.partesNomes;
-    let pos = d2.inicio, ok = true;
-    const det = [], loopClips = {};
-    for (const t of d2.tracks) loopClips[t.name] = t.clips.map((c) => [c.s - L0, c.e - L0]);
-    for (const p of d2.partes) {
-      const L = p.n * 4, k = PARTES.indexOf(p.p);
-      for (const t of d2.tracks) {
-        const real = junta(intervalos(tr(t.name), pos, pos + L));
-        let esp = [];
-        if (t.on[k]) for (let x = 0; x < L; x += 32) for (const c of loopClips[t.name]) if (pos + x + c[0] < pos + L) esp.push([pos + x + c[0], Math.min(pos + L, pos + x + c[1])]);
-        esp = junta(esp);
-        if (JSON.stringify(real) !== JSON.stringify(esp)) { ok = false; det.push(p.p + '@' + pos + ' ' + t.name + ' real ' + JSON.stringify(real) + ' esperado ' + JSON.stringify(esp)); }
+    const bar = 4, I = d2.inicio, fim = I + d2.partes.reduce((s, p) => s + p.n, 0) * bar;
+    let ok = true;
+    const det = [];
+    for (const t of d2.tracks) {
+      const loopC = t.clips.map((c) => [c.s - L0, c.e - L0]);
+      const real = junta(intervalos(tr(t.name), I, fim + 1000));
+      let esp = [];
+      for (const b of t.blocos) {
+        const A = I + b.a * bar, B = I + b.b * bar;
+        for (let x = 0; A + x < B; x += 32) for (const c of loopC) if (A + x + c[0] < B) esp.push([A + x + c[0], Math.min(B, A + x + c[1])]);
       }
-      pos += L;
+      esp = junta(esp);
+      if (JSON.stringify(real) !== JSON.stringify(esp)) { ok = false; det.push(t.name + ' real ' + JSON.stringify(real) + ' esperado ' + JSON.stringify(esp)); }
     }
     det.slice(0, 6).forEach((x) => console.log('     ' + x));
-    confere(ok, 'cada faixa toca exatamente nas partes ligadas, repetindo o loop até encher a parte (INTRO de 12 com loop de 8 = aparar)');
-    const fimRasc = pos;
-    confere(tracks.every((t) => t.clips.every((c) => c.e <= Math.max(fimRasc, 1000) + 1e-6)), 'nada passa do fim do rascunho (beat ' + fimRasc + ')');
+    confere(ok, 'cada faixa toca exatamente nos seus blocos, o loop recomeçando no começo de cada bloco e aparado no fim (bloco solto, atravessando partes, INTRO de 12)');
+    confere(tracks.every((t) => t.clips.every((c) => c.e <= Math.max(fim, 1000) + 1e-6)), 'nada passa do fim do rascunho (beat ' + fim + ')');
     confere(fotoLoop() === antes, 'loop original intacto');
-    console.log('  locators: ' + cues.slice().sort((a, b) => a.time - b.time).map((c) => c.name + '@' + c.time).join(' '));
-    confere(cues.length === d2.partes.length && cues.some((c) => c.name === 'INTRO' && c.time === d2.inicio), 'um locator por parte, com o nome dela');
-    confere(songTime === 0, 'posição de play voltou para onde estava');
+    const est = tracks.find((t) => t.name === 'ESTRUTURA');
+    confere(!!est && tracks[0] === est && est.has_midi_input, 'faixa MIDI ESTRUTURA criada no topo');
+    const nomes = est ? est.clips.map((c) => c.name + '@' + (c.s - I) / bar + '+' + (c.e - c.s) / bar).join(' ') : '';
+    console.log('  estrutura: ' + nomes);
+    let esperado = [], pos = 0;
+    const rot = { INTRO: 'Intro', BREAK: 'Break', BUILDUP: 'Buildup', FINAL: 'Final' };
+    let nd = 0;
+    for (const p of d2.partes) { esperado.push((p.p === 'DROP' ? 'Drop ' + (++nd) : rot[p.p]) + '@' + pos + '+' + p.n); pos += p.n; }
+    confere(nomes === esperado.join(' '), 'um clip por parte com o nome (Drop 1, 2, 3…) no lugar certo');
+    confere(est && est.clips.every((c) => c.color === d2.coresParte[d2.partesNomes.indexOf(d2.partes[est.clips.indexOf(c)].p)]), 'clip da estrutura com a cor da parte');
+    confere(!tracks.some((t) => t.name === 'REF'), 'faixa REF apagada no fim (APAGAR REF ON)');
+    confere(cues.length === 0, 'nenhum locator criado');
+    confere(songTime === 0, 'posição de play não mexida');
     ctx.build();
     confere(/UNDO antes/.test(ctx._st), 'BUILD de novo pede UNDO antes');
     ctx.undo();
     esperaLivre(() => {
       console.log('UNDO: ' + ctx._st);
-      confere(tracks.filter((t) => t.name !== 'REF').every((t) => t.clips.every((c) => c.s < d2.inicio - 1e-6)), 'UNDO apagou todo o rascunho');
-      confere(cues.length === 0, 'UNDO apagou os locators');
+      confere(tracks.every((t) => t.clips.every((c) => c.s < d2.inicio - 1e-6)), 'UNDO apagou todo o rascunho');
+      confere(!tracks.some((t) => t.name === 'ESTRUTURA'), 'UNDO apagou a faixa ESTRUTURA');
       confere(fotoLoop() === antes, 'loop original intacto depois do UNDO');
       console.log(erros ? erros + ' ERRO(S)' : 'TUDO OK');
       process.exit(erros ? 1 : 0);

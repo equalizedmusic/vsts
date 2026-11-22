@@ -38,7 +38,7 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [VASSOURA](max4live/vassoura/README.md) | Max for Live: limpa os vazios dos clips | 0.3.6 | à venda |
 | [RODO](max4live/rodo/README.md) | Max for Live: nivela os clips | 0.3.5 | à venda |
 | [ESPANADOR](max4live/espanador/README.md) | Max for Live: organiza o set nos grupos do MAESTRO | 0.2.1 | à venda |
-| [DESENROLA](max4live/desenrola/README.md) | Max for Live: loop → música pela estrutura de uma referência | 0.1.0 | teste (grátis) |
+| [DESENROLA](max4live/desenrola/README.md) | Max for Live: loop → música pela estrutura de uma referência | 0.2.0 | teste (grátis) |
 | [MESA](instrumentos/mesa/README.md) | Console analógica | 0.5.1 | fora do site (licenças seguem) |
 | [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático | 0.1.1 | não está à venda |
 | [ONKEY](instrumentos/onkey/README.md) | Afinação de voz | 0.1.0 | virou o bloco TUNE do GOGÓ |
@@ -143,7 +143,7 @@ VST não consegue. Ficam em `max4live/<nome>`, não entram em nenhum build nem i
 | [<img src="https://insidestudiosp.com.br/img/vassoura.webp" width="240" alt="VASSOURA">](max4live/vassoura/README.md) | [VASSOURA](max4live/vassoura/README.md) | Acha os trechos vazios dos clips de áudio de todas as faixas e muta (MUTE) ou apaga (CUT) só o silêncio; THRESHOLD, MIN LENGTH, PRE/POST e SNAP |
 | [<img src="https://insidestudiosp.com.br/img/rodo.webp" width="240" alt="RODO">](max4live/rodo/README.md) | [RODO](max4live/rodo/README.md) | Nivela todos os clips pelo Clip Gain, por PEAK, RMS ou LUFS, com PEAK GUARD; modos CLIP, TRACK e ALL; RESET volta os ganhos |
 | [<img src="https://insidestudiosp.com.br/img/espanador.webp" width="240" alt="ESPANADOR">](max4live/espanador/README.md) | [ESPANADOR](max4live/espanador/README.md) | Reconhece as faixas pelo nome nos 8 grupos do MAESTRO, pinta faixas e clips e cria um BUS por grupo, já com o MAESTRO dentro; UNDO volta tudo |
-| | [DESENROLA](max4live/desenrola/README.md) | Lê a estrutura de uma música de referência (INTRO, BUILD, DROP, BREAK…) e espalha os clips do loop do Arrangement nela; sai um rascunho de música com locators; UNDO apaga |
+| | [DESENROLA](max4live/desenrola/README.md) | Lê a estrutura de uma música de referência (INTRO, BREAK, BUILDUP, DROP, FINAL) e espalha os clips do loop do Arrangement nela; na janela dá para mexer nas partes e nos blocos de cada faixa antes do BUILD; sai um rascunho com a faixa MIDI ESTRUTURA e a REF apagada; UNDO apaga |
 
 ## Formatos gerados
 

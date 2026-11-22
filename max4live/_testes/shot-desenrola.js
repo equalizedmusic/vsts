@@ -8,9 +8,11 @@ const out = process.argv[3] || require('os').tmpdir() + '/shots-des'; fs.mkdirSy
 const data = JSON.parse(fs.readFileSync(process.env.DATA, 'utf8'));
 const extra = [['Kick Top', 0], ['Sub Bass', 1], ['Snare Roll', 2], ['Perc Loop', 2], ['HH Open', 3], ['Ride', 3], ['Chords', 4], ['Arp 16th', 4], ['Pluck', 4],
   ['Atmo Rain', 5], ['Vox Main', 6], ['Vox Dobra', 6], ['FX Impact', 7], ['Downlifter', 7], ['Foley', 8], ['Guitar', 4]];
-const REG = data.regras, PN = data.partesNomes;
+const REG = data.regras;
 extra.forEach(([n, g], i) => data.tracks.push({ id: 900 + i, name: n, color: [0x9a9a9a, 0x7aa7ff, 0x5fd3e8, 0xb48cff, 0xd9b38c, 0x4ee6a8][i % 6], g, auto: i % 4 ? 1 : 0, midi: i % 3 == 0 ? 1 : 0,
-  clips: [{ s: 16, e: 48 }], on: PN.map((p) => REG[p][g]) }));
+  clips: [{ s: 16, e: 48 }], blocos: (() => { const o = []; let pos = 0; for (const p of data.partes) { if (REG[p.p][g]) o.push({ a: pos, b: pos + p.n }); pos += p.n; } return o; })() }));
+// uma faixa editada à mão (blocos soltos) para a foto mostrar
+if (data.tracks[7]) data.tracks[7].blocos = [{ a: 4, b: 12 }, { a: 24, b: 40 }, { a: 76, b: 84 }], data.tracks[7].manual = 1;
 const LIC_OK = JSON.stringify({ ok: 1, ocupado: 0, email: 'teste', token: '', msg: '', ate: 0 });
 
 (async () => {
@@ -47,7 +49,7 @@ const LIC_OK = JSON.stringify({ ok: 1, ocupado: 0, email: 'teste', token: '', ms
   }
   await tela('desenrola_strip.js', 420, 166, {}, [['lic(1); status("PRONTO · clique OPEN e depois ANALYZE")', 'desenrola-device.png']], 2);
   await tela('desenrola_view.js', 1360, 840, { desenrola_data: JSON.stringify(data) }, [
-    [`lic(${JSON.stringify(LIC_OK)}); loadbang(); status('11 partes · 280 compassos · 24 faixas · confira e clique BUILD')`, 'desenrola-janela.png'],
+    [`lic(${JSON.stringify(LIC_OK)}); loadbang(); status('8 partes · 144 compassos · 24 faixas · monte a música na janela e clique BUILD')`, 'desenrola-janela.png'],
     ['varre(900); progresso(380, 900)', 'desenrola-build.png'],
     ['fim(); data=null; status("PRONTO · clique ANALYZE")', 'desenrola-vazio.png']]);
   console.log('ok', out, 'erros:', errs);

@@ -1,11 +1,12 @@
-// DESENROLA 0.1 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
+// DESENROLA 0.2 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
 // com o loop brace) e uma faixa REF com a música de referência. ANALYZE:
-//   1. lê a referência (o arquivo do clip da faixa REF) e acha as partes: INTRO, GROOVE, BUILD, DROP, BREAK, OUTRO;
+//   1. lê a referência (o arquivo do clip da faixa REF) e acha as partes: INTRO, BREAK, BUILDUP, DROP, FINAL;
 //   2. lê as faixas que têm clip dentro do loop e põe cada uma num grupo pelo nome (os 8 do MAESTRO).
-// Na janela você ajusta as partes (tipo e tamanho) e o que toca em cada uma (faixa × parte). BUILD monta o rascunho
-// DEPOIS do loop, na mesma linha do tempo: cada parte recebe cópias dos clips das faixas ligadas nela
-// (duplicate_clip_to_arrangement), repetidas até encher a parte. Nada é criado do zero, nenhuma nota é escrita.
-// O loop original não é mexido. LOCATORS ON põe um locator com o nome de cada parte. UNDO apaga o rascunho.
+// Na janela você monta a música: partes (tipo, tamanho, ordem) e, faixa por faixa, os blocos onde ela toca (arrastar
+// começo/fim, mover, pintar). BUILD monta o rascunho DEPOIS do loop, na mesma linha do tempo: cada bloco recebe cópias
+// dos clips da faixa (duplicate_clip_to_arrangement), repetidas desde o começo do bloco até encher. Nenhuma nota é
+// escrita. O loop original não é mexido. ESTRUTURA ON cria uma faixa MIDI com um clip vazio por parte (nome e cor da
+// parte); APAGAR REF ON apaga a faixa da referência no fim. UNDO apaga o rascunho e a faixa da estrutura.
 // Roda no [v8] (Max 9 / Live 12.2+).
 
 autowatch = 1;
@@ -14,7 +15,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela   3: eco dos control
 
 var BUF = "desenrola_ref";
 var DICT = "desenrola_data";
-var VERSAO = "0.1.0";
+var VERSAO = "0.2.0";
 var BUILD = "teste";      // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = true;     // grátis: sem licença
 var LIC_PACOTE = "desenrola", LIC_NOME = "DESENROLA";
@@ -26,22 +27,23 @@ var PATCHER = (typeof this != "undefined" && this && this.patcher) ? this.patche
 
 var GRUPOS = ["KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "AMBIENCE", "VOCAL", "FX", "OTHER"];
 var CORES = [0xff8a3d, 0x45a6ff, 0xf5c451, 0xe6e1f5, 0xc9b0ff, 0x4fd1c5, 0xff7fb5, 0xc4e86b, 0x9a9aa0];
-var CORES_PARTE = [0x6fa8dc, 0x93c47d, 0xf6b26b, 0xe06666, 0x8e7cc3, 0x76a5af];
+var CORES_PARTE = [0x6fa8dc, 0x8e7cc3, 0xf6b26b, 0xe06666, 0x76a5af];
 // o que toca em cada parte, por grupo (KICK BASS DRUMS HATS SYNTHS AMBIENCE VOCAL FX OTHER)
 var REGRAS = {
-	INTRO:  [1, 0, 1, 1, 0, 1, 0, 0, 0],
-	GROOVE: [1, 0, 1, 1, 1, 0, 1, 0, 1],
-	BUILD:  [0, 0, 1, 1, 1, 1, 1, 1, 0],
-	DROP:   [1, 1, 1, 1, 1, 0, 1, 0, 1],
-	BREAK:  [0, 0, 0, 0, 1, 1, 1, 0, 1],
-	OUTRO:  [1, 0, 1, 1, 0, 1, 0, 0, 0]
+	INTRO:   [1, 0, 1, 1, 0, 1, 0, 0, 0],
+	BREAK:   [0, 0, 0, 0, 1, 1, 1, 0, 1],
+	BUILDUP: [0, 0, 1, 1, 1, 1, 1, 1, 0],
+	DROP:    [1, 1, 1, 1, 1, 0, 1, 0, 1],
+	FINAL:   [1, 0, 1, 1, 0, 1, 0, 0, 0]
 };
+var NOME_CLIP = { INTRO: "Intro", BREAK: "Break", BUILDUP: "Buildup", DROP: "Drop", FINAL: "Final" };
+var NOME_ESTRUTURA = "ESTRUTURA";
 
-var cfg = { loc: 1 };
+var cfg = { est: 1, apaga: 1 };
 var ready = false, busy = false;
 var result = null;
 var refCache = null;     // { chave, ref } — mesma referência não é relida
-var criado = null;       // último BUILD: { faixas: [ids], ini, fim, cues: [tempos] }
+var criado = null;       // último BUILD: { faixas: {id: 1}, ini, fim, est: id da faixa da estrutura }
 
 // ---------------------------------------------------------------- tarefas com referência guardada (ver VASSOURA 0.2.3)
 var T = {};
@@ -101,11 +103,13 @@ function licMudou() {
 	if (lic.ok && !busy && !result) status("PRONTO · clique ANALYZE");
 	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
 }
-function enviaCfg() { outlet(2, "valores", cfg.loc); }
+function enviaCfg() { outlet(2, "valores", cfg.est, cfg.apaga); }
 function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
 
-function loc(v) { cfg.loc = num(v) ? 1 : 0; if (result) { result.cfg = cfg; } }
-function ui_loc(v) { loc(v); outlet(3, "loc", cfg.loc); enviaCfg(); }
+function est(v) { cfg.est = num(v) ? 1 : 0; if (result) { result.cfg = cfg; } }
+function apaga(v) { cfg.apaga = num(v) ? 1 : 0; if (result) { result.cfg = cfg; } }
+function ui_est(v) { est(v); outlet(3, "est", cfg.est); enviaCfg(); }
+function ui_apaga(v) { apaga(v); outlet(3, "apaga", cfg.apaga); enviaCfg(); }
 
 function num(v) {
 	if (v instanceof Array) v = v[0];
@@ -143,10 +147,15 @@ function ehRef(nome) {
 	var s = String(nome || "").replace(/^\s+|\s+$/g, "").toUpperCase();
 	return /^(REF|REFS|REFERENCE|REFERÊNCIA|REFERENCIA)(\b|\s|$)/.test(s) || /\bREF\b/.test(s);
 }
-function onDaRegra(g) {
-	var on = [];
-	for (var p = 0; p < PARTES.length; p++) on.push(REGRAS[PARTES[p]][g < 0 ? 8 : g]);
-	return on;
+// blocos (em compassos, a partir do começo do rascunho) onde a faixa toca, pelo padrão do grupo: um por parte
+function blocosDaRegra(g, partes) {
+	var out = [], pos = 0;
+	for (var i = 0; i < partes.length; i++) {
+		var p = partes[i];
+		if (REGRAS[p.p] && REGRAS[p.p][g < 0 ? 8 : g]) out.push({ a: pos, b: pos + p.n });
+		pos += p.n;
+	}
+	return out;
 }
 
 // ---------------------------------------------------------------- LiveAPI reaproveitado (ver VASSOURA)
@@ -238,8 +247,8 @@ function versaoMax() { try { return String(max.version); } catch (e) { return "?
 // Passo 1 (em pedaços, para não travar o Live): o áudio vira 3 curvas de 10 ms: grave (até ~110 Hz), agudo (acima de
 // ~5 kHz) e cheio. Passo 2: andamento e batida (marcas de warp do Live, se houver; senão pela pulsação do grave).
 // Passo 3: cada compasso ganha kick (pulso do grave na batida), energia e brilho; os blocos de 8 compassos viram
-// INTRO / GROOVE / BUILD / DROP / BREAK / OUTRO pela presença de kick e pela energia (o que o MAPA acertava).
-var PARTES = ["INTRO", "GROOVE", "BUILD", "DROP", "BREAK", "OUTRO"];
+// INTRO / BREAK / BUILDUP / DROP / FINAL pela presença de kick e pela energia (o que o MAPA acertava).
+var PARTES = ["INTRO", "BREAK", "BUILDUP", "DROP", "FINAL"];
 
 function refNovo(sr, nFrames) {
 	var hop = Math.max(1, Math.round(sr * 0.01));
@@ -366,7 +375,8 @@ function quantil(lista, q) {
 //  kick  = pulso do grave na batida (>= 25% do kick forte da música e mais forte que o meio dos tempos)
 //  baixo = grave ENTRE as batidas (baixo rolante/offbeat do psy, house, techno)
 //  DROP = kick + baixo · GROOVE = kick sem baixo (ou fraco) · BREAK = sem kick
-//  antes do 1º DROP = INTRO · depois do último DROP = OUTRO · o fim de um BREAK que desemboca no DROP = BUILD
+//  antes do 1º DROP = INTRO · depois do último DROP = FINAL · o fim de um BREAK que desemboca no DROP = BUILDUP
+//  GROOVE que sobra entre dois DROPs vira BREAK (a janela só tem INTRO, BREAK, BUILDUP, DROP e FINAL)
 function refPartes(bars) {
 	var nb = bars.length, i;
 	var kOnL = [], fuL = [];
@@ -404,21 +414,21 @@ function refPartes(bars) {
 	for (var w = 0; w < tr.length; w++) if (tr[w].p == "DROP") { if (prim < 0) prim = w; ult = w; }
 	for (w = 0; w < tr.length; w++) {
 		if (prim >= 0 && w < prim) tr[w].p = "INTRO";
-		if (ult >= 0 && w > ult) tr[w].p = "OUTRO";
+		if (ult >= 0 && w > ult) tr[w].p = "FINAL";
 	}
-	if (prim < 0 && tr.length) { tr[0].p = "INTRO"; if (tr.length > 1) tr[tr.length - 1].p = "OUTRO"; }
-	// BUILD: o trecho logo antes de cada DROP (menos o 1º, que vem da INTRO): BREAK de 12+ compassos perde os
-	// últimos 8 para o BUILD; BREAK curto (até 8) depois de outro BREAK/GROOVE vira BUILD inteiro;
-	// GROOVE (kick sem baixo) entre um BREAK e o DROP vira BUILD
+	if (prim < 0 && tr.length) { tr[0].p = "INTRO"; if (tr.length > 1) tr[tr.length - 1].p = "FINAL"; }
+	// BUILDUP: o trecho logo antes de cada DROP (menos o 1º, que vem da INTRO): BREAK de 12+ compassos perde os
+	// últimos 8 para o BUILDUP; BREAK curto (até 8) depois de outro BREAK/GROOVE vira BUILDUP inteiro;
+	// GROOVE (kick sem baixo) entre um BREAK e o DROP vira BUILDUP
 	var out = [];
 	for (w = 0; w < tr.length; w++) {
 		var t = tr[w], prox = tr[w + 1];
 		if (prox && prox.p == "DROP" && t.p == "BREAK") {
 			var tam = t.b - t.a;
-			if (tam >= 12) { out.push({ p: "BREAK", a: t.a, b: t.b - 8 }); out.push({ p: "BUILD", a: t.b - 8, b: t.b }); continue; }
+			if (tam >= 12) { out.push({ p: "BREAK", a: t.a, b: t.b - 8 }); out.push({ p: "BUILDUP", a: t.b - 8, b: t.b }); continue; }
 		}
-		if (prox && prox.p == "DROP" && t.p == "GROOVE" && w > 0 && tr[w - 1].p == "BREAK") { out.push({ p: "BUILD", a: t.a, b: t.b }); continue; }
-		out.push({ p: t.p, a: t.a, b: t.b });
+		if (prox && prox.p == "DROP" && t.p == "GROOVE" && w > 0 && tr[w - 1].p == "BREAK") { out.push({ p: "BUILDUP", a: t.a, b: t.b }); continue; }
+		out.push({ p: t.p == "GROOVE" ? "BREAK" : t.p, a: t.a, b: t.b });
 	}
 	for (w = 1; w < out.length; w++) if (out[w].p == out[w - 1].p) { out[w - 1].b = out[w].b; out.splice(w, 1); w--; }
 	return { partes: out, cls: cls.join("") };
@@ -496,7 +506,6 @@ function fimFaixas() {
 		if (!tr.clips.length) continue;
 		var g = grupoDoNome(tr.name);
 		tr.g = g < 0 ? 8 : g; tr.auto = g >= 0 ? 1 : 0;
-		tr.on = onDaRegra(tr.g);
 		faixas.push(tr);
 	}
 	if (!faixas.length) { falhou("nenhuma faixa com clip dentro do loop · marque o loop brace em volta do seu loop"); return; }
@@ -507,11 +516,11 @@ function fimFaixas() {
 	an.faixas = faixas;
 	an.ref = ref;
 	an.bar = bar;
-	// marcas da janela que valem de novo (mesma faixa): grupo e liga/desliga
+	// marca da janela que vale de novo (mesma faixa): o grupo (os blocos saem do padrão do grupo nas partes novas)
 	if (result && result.tracks) {
 		var velho = {};
 		for (var v = 0; v < result.tracks.length; v++) velho[result.tracks[v].id] = result.tracks[v];
-		for (var f = 0; f < faixas.length; f++) { var o = velho[faixas[f].id]; if (o) { faixas[f].g = o.g; faixas[f].auto = o.auto; faixas[f].on = o.on; } }
+		for (var f = 0; f < faixas.length; f++) { var o = velho[faixas[f].id]; if (o) { faixas[f].g = o.g; faixas[f].auto = o.auto; } }
 	}
 	log("DESENROLA: " + faixas.length + " faixas no loop · referência [" + ref.tr.name + "] · rascunho começa no beat " + an.inicio + (an.fora ? " · " + an.fora + " clip(s) cruzam a borda do loop (ficam de fora)" : "") + "\n");
 	leRef();
@@ -624,19 +633,31 @@ function fimRef(ref) {
 	busy = false;
 	vigiaDesliga();
 	var partes = [];
-	for (var i = 0; i < ref.partes.length; i++) { var p = ref.partes[i]; partes.push({ p: p.p, n: arredonda(p.b - p.a), a: p.a, b: p.b }); }
+	for (var i = 0; i < ref.partes.length; i++) { var p = ref.partes[i]; partes.push({ id: i + 1, p: p.p, n: arredonda(p.b - p.a), a: p.a, b: p.b }); }
+	for (var f = 0; f < an.faixas.length; f++) { var tr = an.faixas[f]; tr.blocos = blocosDaRegra(tr.g, partes); tr.manual = 0; }
 	result = {
 		versao: VERSAO, sig: an.sig, bar: an.bar, tempo: an.tempo, loop: { s: an.loop.s, e: an.loop.e, bars: (an.loop.e - an.loop.s) / an.bar },
-		inicio: an.inicio, ref: ref, partes: partes, tracks: an.faixas, partesNomes: PARTES, grupos: GRUPOS, cores: CORES, coresParte: CORES_PARTE,
-		regras: REGRAS, cfg: cfg, fora: an.fora, feito: criado ? 1 : 0
+		inicio: an.inicio, ref: ref, refId: an.ref.tr.id, partes: partes, proxId: partes.length + 1, tracks: an.faixas, partesNomes: PARTES, grupos: GRUPOS,
+		cores: CORES, coresParte: CORES_PARTE, regras: REGRAS, cfg: cfg, fora: an.fora, feito: criado ? 1 : 0
 	};
 	log("DESENROLA: referência " + ref.bpm + " BPM" + (ref.warp ? " (warp)" : "") + ", " + ref.compassos + " compassos · " + descrevePartes(partes) + "\n");
 	publica();
-	status(partes.length + " partes · " + totalBars(partes) + " compassos · " + an.faixas.length + " faixas · confira e clique BUILD");
+	status(partes.length + " partes · " + totalBars(partes) + " compassos · " + an.faixas.length + " faixas · monte a música na janela e clique BUILD");
+}
+// "Drop 1", "Drop 2"… (os outros tipos sem número)
+function rotulos(partes) {
+	var out = [], nd = 0, tot = 0, i;
+	for (i = 0; i < partes.length; i++) if (partes[i].p == "DROP") tot++;
+	for (i = 0; i < partes.length; i++) {
+		var p = partes[i].p;
+		if (p == "DROP" && tot > 1) out.push(NOME_CLIP[p] + " " + (++nd));
+		else out.push(NOME_CLIP[p] || p);
+	}
+	return out;
 }
 function descrevePartes(partes) {
-	var s = [];
-	for (var i = 0; i < partes.length; i++) s.push(partes[i].p + " " + partes[i].n);
+	var s = [], r = rotulos(partes);
+	for (var i = 0; i < partes.length; i++) s.push(r[i].toUpperCase() + " " + partes[i].n);
 	return s.join(" · ");
 }
 function totalBars(partes) { var n = 0; for (var i = 0; i < partes.length; i++) n += partes[i].n; return n; }
@@ -649,8 +670,8 @@ function publica() {
 	d.parse(JSON.stringify(result));
 	outlet(2, "bang");
 }
-function arr(x) { if (x == null) return []; return (x instanceof Array) ? x : [x]; }
-// o que a janela mudou: partes (tipo/tamanho), grupo e liga/desliga de cada faixa
+function arr(x) { if (x == null) return []; return Array.isArray(x) ? x : [x]; }
+// o que a janela mudou: partes (tipo/tamanho/ordem), grupo e blocos de cada faixa
 function lerMarcas() {
 	var d = new Dict(DICT), j = null;
 	try { j = JSON.parse(d.stringify()); } catch (e) { j = null; }
@@ -659,10 +680,12 @@ function lerMarcas() {
 		var ps = arr(j.partes), novas = [];
 		for (var i = 0; i < ps.length; i++) {
 			var tipo = String(ps[i].p), n = Math.max(1, Math.round(Number(ps[i].n) || 0));
-			if (REGRAS[tipo]) novas.push({ p: tipo, n: n, a: ps[i].a, b: ps[i].b });
+			if (REGRAS[tipo]) novas.push({ id: Number(ps[i].id) || 0, p: tipo, n: n, a: ps[i].a, b: ps[i].b });
 		}
 		if (novas.length) result.partes = novas;
+		if (j.proxId) result.proxId = Number(j.proxId);
 	}
+	var tot = totalBars(result.partes);
 	if (j.tracks) {
 		var tr = arr(j.tracks), porId = {};
 		for (var k = 0; k < tr.length; k++) porId[tr[k].id] = tr[k];
@@ -671,8 +694,16 @@ function lerMarcas() {
 			if (!o) continue;
 			result.tracks[q].g = o.g == null ? result.tracks[q].g : Number(o.g);
 			result.tracks[q].auto = o.auto ? 1 : 0;
-			var on = arr(o.on);
-			if (on.length == PARTES.length) { var oo = []; for (var z = 0; z < on.length; z++) oo.push(Number(on[z]) ? 1 : 0); result.tracks[q].on = oo; }
+			result.tracks[q].manual = o.manual ? 1 : 0;
+			if (o.blocos != null) {
+				var bl = arr(o.blocos), ok = [];
+				for (var z = 0; z < bl.length; z++) {
+					var a = Math.max(0, Number(bl[z].a)), b = Math.min(tot, Number(bl[z].b));
+					if (!isNaN(a) && !isNaN(b) && b > a + 1e-6) ok.push({ a: a, b: b });
+				}
+				ok.sort(function (x, y) { return x.a - y.a; });
+				result.tracks[q].blocos = ok;
+			}
 		}
 	}
 }
@@ -689,30 +720,34 @@ function build() {
 	if (!result) { status("clique ANALYZE antes do BUILD"); return; }
 	if (criado) { status("já existe um rascunho · clique UNDO antes de montar outro"); return; }
 	lerMarcas();
-	var R = result.loop.e - result.loop.s, bar = result.bar;
-	var ops = [], pos = result.inicio, cues = [];
-	for (var i = 0; i < result.partes.length; i++) {
-		var pt = result.partes[i], L = pt.n * bar, ip = PARTES.indexOf(pt.p), prox = result.partes[i + 1];
-		var ipProx = prox ? PARTES.indexOf(prox.p) : -1;
-		cues.push({ t: pos, nome: pt.p });
-		for (var f = 0; f < result.tracks.length; f++) {
-			var tr = result.tracks[f];
-			if (!tr.on[ip]) continue;
-			for (var k = 0; pos + k * R < pos + L - 0.001; k++) {
+	var R = result.loop.e - result.loop.s, bar = result.bar, ini = result.inicio;
+	var ops = [], fim = ini + totalBars(result.partes) * bar;
+	for (var f = 0; f < result.tracks.length; f++) {
+		var tr = result.tracks[f], bl = arr(tr.blocos);
+		for (var b = 0; b < bl.length; b++) {
+			var A = ini + bl[b].a * bar, B = ini + bl[b].b * bar, segue = 0;
+			for (var s2 = 0; s2 < bl.length; s2++) if (Math.abs(bl[s2].a - bl[b].b) < 1e-6) segue = 1;
+			for (var k = 0; A + k * R < B - 0.001; k++) {
 				for (var c = 0; c < tr.clips.length; c++) {
-					var cl = tr.clips[c], dest = pos + k * R + (cl.s - result.loop.s);
-					if (dest >= pos + L - 0.001) continue;
-					ops.push({ tid: tr.id, nome: tr.name, cid: cl.id, dest: dest, len: cl.e - cl.s, fimParte: pos + L, segue: ipProx >= 0 && tr.on[ipProx] ? 1 : 0 });
+					var cl = tr.clips[c], dest = A + k * R + (cl.s - result.loop.s);
+					if (dest >= B - 0.001) continue;
+					ops.push({ tid: tr.id, nome: tr.name, cid: cl.id, dest: dest, len: cl.e - cl.s, fimParte: B, segue: segue });
 				}
 			}
 		}
-		pos += L;
 	}
-	if (!ops.length) { status("nenhuma faixa ligada em nenhuma parte"); return; }
+	if (!ops.length) { status("nenhuma faixa tem bloco no rascunho · pinte os blocos na janela"); return; }
 	busy = true;
-	bd = { ops: ops, i: 0, feitos: 0, falhas: 0, aparados: 0, sobra: 0, apagados: 0, cues: cfg.loc ? cues : [], ic: 0, cuesFeitos: [], inicio: agora(), ini: result.inicio, fim: pos, faixas: {} };
+	var est = [], pos = ini, rot = rotulos(result.partes);
+	for (var i = 0; i < result.partes.length; i++) {
+		var pt = result.partes[i];
+		est.push({ t: pos, len: pt.n * bar, nome: rot[i], cor: CORES_PARTE[Math.max(0, PARTES.indexOf(pt.p))] });
+		pos += pt.n * bar;
+	}
+	bd = { ops: ops, i: 0, feitos: 0, falhas: 0, aparados: 0, sobra: 0, apagados: 0, est: cfg.est ? est : [], ie: -1, estId: 0, estFeitos: 0,
+		apagaRef: cfg.apaga ? 1 : 0, refApagada: 0, refMotivo: "", inicio: agora(), ini: ini, fim: fim, faixas: {} };
 	for (var t = 0; t < result.tracks.length; t++) bd.faixas[result.tracks[t].id] = 1;
-	log("DESENROLA: BUILD · " + result.partes.length + " partes · " + ops.length + " cópias · beats " + result.inicio + "-" + pos + " · " + descrevePartes(result.partes) + "\n");
+	log("DESENROLA: BUILD · " + result.partes.length + " partes · " + ops.length + " cópias · beats " + ini + "-" + fim + " · " + descrevePartes(result.partes) + "\n");
 	outlet(2, "varre", ops.length);
 	vigiaLiga();
 	proximo(passoBuild, 0);
@@ -727,7 +762,14 @@ function passoBuild() {
 			proximo(passoBuild, PAUSA);
 			return;
 		}
-		if (bd.ic < bd.cues.length) { umLocator(bd.cues[bd.ic++]); onde = "locators"; proximo(passoBuild, PAUSA); return; }
+		if (bd.est.length && bd.ie < bd.est.length) {
+			onde = "estrutura";
+			if (bd.ie < 0) { bd.ie = 0; if (!criaEstrutura()) bd.ie = bd.est.length; }
+			else umClipEstrutura(bd.est[bd.ie++]);
+			proximo(passoBuild, PAUSA);
+			return;
+		}
+		if (bd.apagaRef) { bd.apagaRef = 0; onde = "apagar REF"; apagaRef(); }
 		fimBuild();
 	} catch (e) { bd.falhas++; log("DESENROLA erro no BUILD: " + e + "\n"); proximo(passoBuild, PAUSA); }
 }
@@ -745,15 +787,15 @@ function umaCopia(op) {
 	if (Number(t.id) != op.tid) { bd.falhas++; log("  [" + op.nome + "]: a faixa não existe mais\n"); return; }
 	t.call("duplicate_clip_to_arrangement", "id", op.cid, op.dest);
 	if (op.dest + op.len <= op.fimParte + 0.002) { bd.feitos++; return; }
-	// passou do fim da parte: apara a cópia; se não der e a faixa segue na próxima parte, a próxima cobre por cima
+	// passou do fim do bloco: apara a cópia; se não der e a faixa segue no bloco seguinte, ele cobre por cima
 	var nova = achaClip(op.tid, op.dest);
 	if (!nova) { bd.falhas++; log("  [" + op.nome + "]: o Live não criou a cópia no beat " + op.dest + "\n"); return; }
 	bd.feitos++;
 	if (apara(nova.id, op.fimParte - op.dest)) { bd.aparados++; return; }
-	if (op.segue) { bd.sobra++; log("  [" + op.nome + "]: cópia no beat " + op.dest + " passou da parte; a próxima parte cobre por cima\n", 1); return; }
+	if (op.segue) { bd.sobra++; log("  [" + op.nome + "]: cópia no beat " + op.dest + " passou do bloco; o bloco seguinte cobre por cima\n", 1); return; }
 	t.call("delete_clip", "id", nova.id);
 	bd.apagados++;
-	log("  [" + op.nome + "]: clip de " + op.len + " beats não coube no fim da parte (beat " + op.dest + "), tirei\n");
+	log("  [" + op.nome + "]: clip de " + op.len + " beats não coube no fim do bloco (beat " + op.dest + "), tirei\n");
 }
 // encurta o clip para 'len' beats no arranjo (fim dos markers) e confere; volta como estava se não deu
 var fmtApara = -1;
@@ -782,31 +824,59 @@ function apara(id, len) {
 	if (Math.abs(num(c.get("end_time")) - e0) > 0.01) log("  clip " + id + ": não voltou ao tamanho de antes\n");
 	return false;
 }
-// locator com o nome da parte (o LOM cria o locator na posição de play)
-function umLocator(cue) {
-	var set = new LiveAPI("live_set");
-	var antes = num(set.get("current_song_time"));
-	var ids = idsDe(set, "cue_points");
-	for (var i = 0; i < ids.length; i++) if (Math.abs(num(aponta("id " + ids[i]).get("time")) - cue.t) < 0.01) { log("  locator: já existe um no beat " + cue.t + "\n", 1); return; }
+
+// ---------------------------------------------------------------- faixa da ESTRUTURA (MIDI, um clip vazio por parte)
+function indiceDaFaixa(tid) {
+	var set = new LiveAPI("live_set"), n = set.getcount("tracks");
+	for (var i = 0; i < n; i++) if (Number(aponta("live_set tracks " + i).id) == Number(tid)) return i;
+	return -1;
+}
+function criaEstrutura() {
 	try {
-		set.set("current_song_time", cue.t);
-		set.call("set_or_delete_cue");
-		var ids2 = idsDe(set, "cue_points");
-		for (var j = 0; j < ids2.length; j++) {
-			var cp = new LiveAPI("id " + ids2[j]);
-			if (Math.abs(num(cp.get("time")) - cue.t) < 0.01) { cp.set("name", cue.nome); bd.cuesFeitos.push(cue.t); break; }
-		}
-	} catch (e) { log("  locator " + cue.nome + ": " + e + "\n"); }
-	try { set.set("current_song_time", antes); } catch (e) { }
+		var set = new LiveAPI("live_set");
+		set.call("create_midi_track", 0);
+		var t = new LiveAPI("live_set tracks 0");
+		bd.estId = Number(t.id);
+		t.set("name", NOME_ESTRUTURA);
+		try { t.set("color", CORES_PARTE[3]); } catch (e) { }
+		log("DESENROLA: faixa " + NOME_ESTRUTURA + " criada (id " + bd.estId + ")\n");
+		return true;
+	} catch (e) { log("DESENROLA: não consegui criar a faixa da estrutura: " + e + "\n"); bd.falhas++; return false; }
+}
+function umClipEstrutura(p) {
+	try {
+		var t = new LiveAPI("id " + bd.estId);
+		t.call("create_midi_clip", p.t, p.len);
+		var c = achaClip(bd.estId, p.t);
+		if (!c) { bd.falhas++; log("  estrutura: o Live não criou o clip " + p.nome + " no beat " + p.t + " (create_midi_clip precisa do Live 12.1+)\n"); return; }
+		var api = new LiveAPI("id " + c.id);
+		api.set("name", p.nome);
+		try { api.set("color", p.cor); } catch (e) { }
+		bd.estFeitos++;
+	} catch (e) { bd.falhas++; log("  estrutura " + p.nome + ": " + e + "\n"); }
+}
+// apaga a faixa REF (pedido dele: depois de montar, a referência sai do set). Não apaga se o DESENROLA está nela.
+function apagaRef() {
+	var rid = result.refId;
+	if (!rid) return;
+	var meu = 0;
+	try { meu = Number(new LiveAPI("this_device canonical_parent").id); } catch (e) { }
+	if (meu && meu == Number(rid)) { bd.refMotivo = "o DESENROLA está na faixa REF"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
+	var idx = indiceDaFaixa(rid);
+	if (idx < 0) { bd.refMotivo = "não achei a faixa REF"; return; }
+	try { new LiveAPI("live_set").call("delete_track", idx); bd.refApagada = 1; log("DESENROLA: faixa REF apagada (era a faixa " + (idx + 1) + ")\n"); }
+	catch (e) { bd.refMotivo = String(e); log("DESENROLA: não consegui apagar a REF: " + e + "\n"); }
 }
 function fimBuild() {
 	busy = false;
 	vigiaDesliga();
-	criado = { faixas: bd.faixas, ini: bd.ini, fim: bd.fim, cues: bd.cuesFeitos };
+	criado = { faixas: bd.faixas, ini: bd.ini, fim: bd.fim, est: bd.estId };
+	if (bd.refApagada) refCache = null;
 	var bar = result.bar;
 	var txt = "BUILD FEITO · " + result.partes.length + " partes, " + Math.round((bd.fim - bd.ini) / bar) + " compassos a partir do compasso " + (Math.round(bd.ini / bar) + 1) +
-		" · " + bd.feitos + " clips" + (bd.aparados ? " (" + bd.aparados + " aparados)" : "") + (bd.cuesFeitos.length ? " · " + bd.cuesFeitos.length + " locators" : "") +
-		(bd.apagados ? " · " + bd.apagados + " não couberam" : "") + (bd.falhas ? " · " + bd.falhas + " falhas (ver console)" : "") + " · UNDO apaga o rascunho";
+		" · " + bd.feitos + " clips" + (bd.aparados ? " (" + bd.aparados + " aparados)" : "") + (bd.estFeitos ? " · faixa " + NOME_ESTRUTURA + " com " + bd.estFeitos + " partes" : "") +
+		(bd.refApagada ? " · REF apagada" : bd.refMotivo ? " · REF não apagada (" + bd.refMotivo + ")" : "") +
+		(bd.apagados ? " · " + bd.apagados + " não couberam" : "") + (bd.falhas ? " · " + bd.falhas + " falhas (ver DESENROLA-log.txt)" : "") + " · UNDO apaga o rascunho";
 	log("DESENROLA: " + txt + " · " + ((agora() - bd.inicio) / 1000).toFixed(1) + " s\n");
 	status(txt);
 	publica();
@@ -814,7 +884,7 @@ function fimBuild() {
 	depois("aviso", function () { outlet(2, "aviso", txt); }, 300);
 }
 
-// ---------------------------------------------------------------- UNDO: apaga os clips do rascunho e os locators criados
+// ---------------------------------------------------------------- UNDO: apaga os clips do rascunho e a faixa da estrutura
 var ud = null;
 function undo() {
 	if (busy || travado()) return;
@@ -830,8 +900,8 @@ function undo() {
 		}
 	}
 	busy = true;
-	ud = { lista: lista, i: 0, apagados: 0, cues: criado.cues.slice(), ic: 0, cuesApagados: 0 };
-	log("DESENROLA: UNDO · " + lista.length + " clips · " + ud.cues.length + " locators\n");
+	ud = { lista: lista, i: 0, apagados: 0, est: criado.est, estApagada: 0 };
+	log("DESENROLA: UNDO · " + lista.length + " clips" + (ud.est ? " · faixa " + NOME_ESTRUTURA : "") + "\n");
 	vigiaLiga();
 	proximo(passoUndo, 0);
 }
@@ -842,20 +912,15 @@ function passoUndo() {
 			try { new LiveAPI("id " + it.tid).call("delete_clip", "id", it.cid); ud.apagados++; } catch (e) { }
 		}
 		if (ud.i < ud.lista.length) { onde = "UNDO"; status("UNDO " + ud.i + "/" + ud.lista.length); proximo(passoUndo, PAUSA); return; }
-		if (ud.ic < ud.cues.length) {
-			var t = ud.cues[ud.ic++], set = new LiveAPI("live_set"), antes = num(set.get("current_song_time"));
-			var ids = idsDe(set, "cue_points");
-			for (var i = 0; i < ids.length; i++) if (Math.abs(num(new LiveAPI("id " + ids[i]).get("time")) - t) < 0.01) {
-				set.set("current_song_time", t); set.call("set_or_delete_cue"); ud.cuesApagados++; break;
-			}
-			try { set.set("current_song_time", antes); } catch (e) { }
-			proximo(passoUndo, PAUSA);
-			return;
+		if (ud.est) {
+			var idx = indiceDaFaixa(ud.est);
+			ud.est = 0;
+			if (idx >= 0) { try { new LiveAPI("live_set").call("delete_track", idx); ud.estApagada = 1; } catch (e) { log("  UNDO: não apaguei a faixa " + NOME_ESTRUTURA + ": " + e + "\n"); } }
 		}
 		busy = false;
 		vigiaDesliga();
 		criado = null;
-		var txt = "UNDO FEITO · " + ud.apagados + " clips apagados" + (ud.cuesApagados ? " · " + ud.cuesApagados + " locators" : "") + " · o loop ficou como estava";
+		var txt = "UNDO FEITO · " + ud.apagados + " clips apagados" + (ud.estApagada ? " · faixa " + NOME_ESTRUTURA + " apagada" : "") + " · o loop ficou como estava";
 		log("DESENROLA: " + txt + "\n");
 		status(txt);
 		publica();

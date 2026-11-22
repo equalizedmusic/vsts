@@ -1,10 +1,12 @@
-// DESENROLA — janela flutuante (jsui). Desenha "desenrola_data": as partes lidas da referência (linha do tempo) e as
-// faixas do loop com o que cada uma toca em cada tipo de parte (grade) + a prévia do rascunho alinhada às partes.
-// Partes: clique = troca o tipo · arrastar a borda direita = tamanho (de 4 em 4; Shift = de 1 em 1) ·
-//         Shift+clique = tira a parte · duplo clique = divide em duas · + PART põe uma no fim.
-// Faixas: clique no grupo = troca o grupo (volta ao padrão do grupo) · clique na célula = liga/desliga a faixa naquele
-//         tipo de parte · clique na prévia = liga/desliga naquele tipo também.
-// ANALYZE, BUILD, UNDO e LOCATORS vão para o motor.
+// DESENROLA — janela flutuante (jsui). Desenha "desenrola_data": as partes lidas da referência (linha do tempo) e,
+// faixa por faixa, os BLOCOS onde ela toca no rascunho (como um mini Arrangement).
+// Partes: clique = troca o tipo · arrastar = muda de lugar · arrastar a borda = tamanho (o resto anda junto; com Alt,
+//         a vizinha cede) · Alt+clique = tira · duplo clique = divide · + PART põe uma de 16 no fim.
+// Blocos: arrastar no vazio = pinta · clique no vazio = pinta do tamanho do PINCEL · arrastar o bloco = move ·
+//         arrastar a borda = começo/fim · Alt+clique = apaga. Grade de 4 compassos (Shift = de 1 em 1).
+// Grupo: clique = troca o grupo (os blocos da faixa voltam ao padrão do grupo).
+// Zoom: − / + / ALL, roda do mouse em cima das partes; roda na horizontal (ou Shift+roda) anda na linha do tempo.
+// ANALYZE, BUILD, UNDO, ESTRUTURA e APAGAR REF vão para o motor.
 
 mgraphics.init();
 mgraphics.relative_coords = 0;
@@ -12,25 +14,29 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "desenrola_data";
-var VERSAO = "0.1.0";
+var VERSAO = "0.2.0";
 var msgNova = "";
-var HEAD_H = 72, BAR_H = 86, TL_Y = 172, TL_H = 64, MAT_Y = 290, TOP = 318, FOOT_H = 40, SB_W = 14;
-var XN = 16, XG = 236, XC = 330, CW = 50, X0 = 650;
+var HEAD_H = 72, BAR_H = 86, TB_Y = 168, RUL_Y = 200, TL_Y = 216, TL_H = 46, TOP = 272, FOOT_H = 40, SB_W = 14, HS_H = 10;
+var XN = 16, XG = 206, X0 = 300;
 var LANE_MIN = 18, LANE_MAX = 26;
 var AC = [0.98, 0.62, 0.20], OK = [0.37, 0.75, 0.48], WARN = [0.88, 0.33, 0.31], CINZA = [0.55, 0.55, 0.58];
-var PARTES = ["INTRO", "GROOVE", "BUILD", "DROP", "BREAK", "OUTRO"];
-var CORES_PARTE = [0x6fa8dc, 0x93c47d, 0xf6b26b, 0xe06666, 0x8e7cc3, 0x76a5af];
+var PARTES = ["INTRO", "BREAK", "BUILDUP", "DROP", "FINAL"];
+var CORES_PARTE = [0x6fa8dc, 0x8e7cc3, 0xf6b26b, 0xe06666, 0x76a5af];
 var GRUPOS = ["KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "AMBIENCE", "VOCAL", "FX", "OTHER"];
 var CORES = [0xff8a3d, 0x45a6ff, 0xf5c451, 0xe6e1f5, 0xc9b0ff, 0x4fd1c5, 0xff7fb5, 0xc4e86b, 0x9a9aa0];
-var cfg = { loc: 1 };
+var PINCEIS = [4, 8, 16, 32, 0];   // 0 = a parte inteira
+var cfg = { est: 1, apaga: 1 };
 var data = null;
 var msgStatus = "", msgAviso = "";
 var hits = [];
-var first = 0, lay = null, arrasto = -1, hover = -1, hoverParte = -1;
-var bordaArr = null;   // { i, x0, n0, shift } arrastando a borda de uma parte
-var prog = null;       // { feitos, total, fim }
+var first = 0, lay = null, arrasto = -1, hover = -1, hov = null;
+var op = null;         // arrasto em andamento (parte, borda, bloco, pintura, barra de rolagem)
+var prog = null;       // { feitos, total }
+var vista = { s: 0, n: 64 };   // compassos visíveis: de s até s+n
+var pincel = 0;
+var ciclo = null;      // último clique que trocou o tipo de uma parte (para o duplo clique desfazer)
 
-function arr(x) { if (x == null) return []; return (x instanceof Array) ? x : [x]; }
+function arr(x) { if (x == null) return []; return Array.isArray(x) ? x : [x]; }
 function load() {
 	var d = new Dict(DICT);
 	try { data = JSON.parse(d.stringify()); } catch (e) { data = null; }
@@ -39,27 +45,32 @@ function load() {
 		data.tracks = arr(data.tracks);
 		data.partes = arr(data.partes);
 		if (data.ref) data.ref.partes = arr(data.ref.partes);
+		var maxId = 0;
+		for (var p = 0; p < data.partes.length; p++) { if (!data.partes[p].id) data.partes[p].id = 1000 + p; maxId = Math.max(maxId, data.partes[p].id); }
+		data.proxId = Math.max(Number(data.proxId) || 0, maxId + 1);
 		for (var i = 0; i < data.tracks.length; i++) {
 			var t = data.tracks[i];
 			t.clips = arr(t.clips);
-			t.on = arr(t.on);
 			t.g = t.g == null ? 8 : Number(t.g);
+			if (t.blocos == null) t.blocos = blocosDaRegra(t.g, data.partes);
+			t.blocos = arr(t.blocos);
 		}
 		if (data.cfg) cfg = data.cfg;
 	}
 }
 function save() { var d = new Dict(DICT); d.parse(JSON.stringify(data)); }
 function mudou() { save(); outlet(0, "marcas"); mgraphics.redraw(); }
+function ajusta() { vista.s = 0; vista.n = Math.max(8, total()); }
 
 // mensagens do motor
-function bang() { load(); mgraphics.redraw(); }
-function loadbang() { load(); mgraphics.redraw(); }
+function bang() { load(); ajusta(); mgraphics.redraw(); }
+function loadbang() { load(); ajusta(); mgraphics.redraw(); }
 function status() { msgStatus = arrayfromargs(arguments).join(" "); mgraphics.redraw(); }
 function aviso() { msgAviso = arrayfromargs(arguments).join(" "); prog = null; mgraphics.redraw(); }
 function varre(total) { msgAviso = ""; prog = { feitos: 0, total: total }; mgraphics.redraw(); }
 function progresso(i, total) { if (!prog) prog = {}; prog.feitos = i; prog.total = total; mgraphics.redraw(); }
 function fim() { prog = null; mgraphics.redraw(); }
-function valores(l) { cfg = { loc: l | 0 }; mgraphics.redraw(); }
+function valores(e, a) { cfg = { est: e | 0, apaga: a == null ? 1 : a | 0 }; mgraphics.redraw(); }
 function nova(v) { msgNova = String(v || ""); mgraphics.redraw(); }
 
 // ---------------------------------------------------------------- desenho (helpers)
@@ -106,17 +117,105 @@ function botaoP(x, y, w, h, txt, cmd, cor) {
 	hits.push({ x: x, y: y, w: w, h: h, tipo: "cmd", msg: cmd });
 }
 
+// ---------------------------------------------------------------- partes e blocos (modelo)
+var REGRAS = {
+	INTRO:   [1, 0, 1, 1, 0, 1, 0, 0, 0],
+	BREAK:   [0, 0, 0, 0, 1, 1, 1, 0, 1],
+	BUILDUP: [0, 0, 1, 1, 1, 1, 1, 1, 0],
+	DROP:    [1, 1, 1, 1, 1, 0, 1, 0, 1],
+	FINAL:   [1, 0, 1, 1, 0, 1, 0, 0, 0]
+};
 function total() { var n = 0; if (data) for (var i = 0; i < data.partes.length; i++) n += data.partes[i].n; return n; }
-// posição x de um compasso do rascunho (0 = início do rascunho)
-function geo(W) {
-	var x1 = W - SB_W - 10, tot = Math.max(1, total());
-	return { x1: x1, k: (x1 - X0) / tot };
+function inicios(partes) { var o = [], pos = 0; for (var i = 0; i < partes.length; i++) { o.push(pos); pos += partes[i].n; } return o; }
+function toca(g, tipo) { return REGRAS[tipo] && REGRAS[tipo][g < 0 ? 8 : g] ? 1 : 0; }
+function blocosDaRegra(g, partes) {
+	var out = [], pos = 0;
+	for (var i = 0; i < partes.length; i++) { if (toca(g, partes[i].p)) out.push({ a: pos, b: pos + partes[i].n }); pos += partes[i].n; }
+	return out;
+}
+// "DROP 1", "DROP 2"… (os outros tipos sem número)
+function rotulos(partes) {
+	var out = [], nd = 0, tot = 0, i;
+	for (i = 0; i < partes.length; i++) if (partes[i].p == "DROP") tot++;
+	for (i = 0; i < partes.length; i++) out.push(partes[i].p == "DROP" && tot > 1 ? "DROP " + (++nd) : partes[i].p);
+	return out;
+}
+// ordena e junta o que se sobrepõe (blocos que só encostam ficam separados: o loop recomeça no começo de cada bloco)
+function arruma(bl) {
+	var tot = total(), v = [];
+	for (var i = 0; i < bl.length; i++) {
+		var a = Math.max(0, bl[i].a), b = Math.min(tot, bl[i].b);
+		if (b - a >= 0.25) v.push({ a: a, b: b });
+	}
+	v.sort(function (x, y) { return x.a - y.a || x.b - y.b; });
+	var o = [];
+	for (var j = 0; j < v.length; j++) {
+		var u = o[o.length - 1];
+		if (u && v[j].a < u.b - 1e-6) u.b = Math.max(u.b, v[j].b); else o.push(v[j]);
+	}
+	return o;
+}
+function copia(x) { return JSON.parse(JSON.stringify(x)); }
+// as partes mudaram (tamanho, ordem, tipo, tiradas, novas): os blocos andam com a parte em que estão.
+// Pedaço que ia até o fim da parte continua indo até o fim; parte nova ou que trocou de tipo recebe o padrão do grupo.
+function remapeia(velhasP, velhosT, novasP) {
+	var iniV = inicios(velhasP), iniN = inicios(novasP), porId = {};
+	for (var i = 0; i < velhasP.length; i++) porId[velhasP[i].id] = { s: iniV[i], n: velhasP[i].n, p: velhasP[i].p };
+	for (var t = 0; t < data.tracks.length; t++) {
+		var tr = data.tracks[t], velhos = velhosT[t] || [], novos = [], comeco = {};
+		for (var k = 0; k < novasP.length; k++) {
+			var np = novasP[k], S = iniN[k], N = np.n, v = porId[np.id];
+			if (!v || v.p != np.p) { if (toca(tr.g, np.p)) { novos.push({ a: S, b: S + N }); comeco[Math.round(S * 1000)] = 1; } continue; }
+			for (var b = 0; b < velhos.length; b++) {
+				var a0 = Math.max(velhos[b].a, v.s), b0 = Math.min(velhos[b].b, v.s + v.n);
+				if (b0 <= a0 + 1e-6) continue;
+				var oa = a0 - v.s, ob = b0 - v.s;
+				var na = Math.min(oa, N), nb = Math.abs(ob - v.n) < 1e-6 ? N : Math.min(ob, N);
+				if (nb <= na + 1e-6) continue;
+				novos.push({ a: S + na, b: S + nb });
+				if (Math.abs(a0 - velhos[b].a) < 1e-6) comeco[Math.round((S + na) * 1000)] = 1;   // aqui começava um bloco
+			}
+		}
+		// pedaços colados de um bloco que atravessava partes voltam a ser um bloco só; começo de bloco fica separado
+		var o = arruma(novos), r = [];
+		for (var j = 0; j < o.length; j++) {
+			var u = r[r.length - 1];
+			if (u && Math.abs(o[j].a - u.b) < 1e-6 && !comeco[Math.round(o[j].a * 1000)]) u.b = o[j].b; else r.push(o[j]);
+		}
+		tr.blocos = r;
+	}
+}
+function fotoT() { var o = []; for (var t = 0; t < data.tracks.length; t++) o.push(copia(data.tracks[t].blocos)); return o; }
+
+// ---------------------------------------------------------------- vista (zoom / rolagem horizontal)
+function x1() { return (lay ? lay.W : 1360) - SB_W - 10; }
+function K() { return (x1() - X0) / Math.max(1, vista.n); }
+function xDe(bar) { return X0 + (bar - vista.s) * K(); }
+function barDe(x) { return vista.s + (x - X0) / K(); }
+function limitaVista() {
+	var tot = Math.max(8, total());
+	vista.n = Math.max(4, Math.min(tot, vista.n));
+	vista.s = Math.max(0, Math.min(tot - vista.n, vista.s));
+}
+function zoom(fator, xc) {
+	var bc = xc == null ? vista.s + vista.n / 2 : barDe(xc);
+	var n = vista.n * fator, f = xc == null ? 0.5 : (xc - X0) / (x1() - X0);
+	vista.n = n; vista.s = bc - f * n;
+	limitaVista();
+	mgraphics.redraw();
+}
+// trecho [a, b) em compassos → [xa, xb] recortado na área visível (null se não aparece)
+function faixaX(a, b) {
+	var xa = Math.max(X0, xDe(a)), xb = Math.min(x1(), xDe(b));
+	return xb > xa + 0.5 ? [xa, xb] : null;
 }
 
 // ---------------------------------------------------------------- pintura
 function paint() {
 	var W = box.rect[2] - box.rect[0], H = box.rect[3] - box.rect[1];
 	hits = [];
+	lay = lay || {};
+	lay.W = W; lay.H = H;
 	caixa(0, 0, W, H, 0.12, 0.12, 0.13);
 	caixa(0, 0, W, HEAD_H, 0.08, 0.09, 0.09);
 	rgbv(AC); texto("DESENROLA", 16, 33, 26, true);
@@ -135,8 +234,10 @@ function paint() {
 
 	barra(W);
 	if (!data) { vazio(W, H); rodape(W, H); return; }
+	limitaVista();
+	ferramentas(W);
 	linhaTempo(W);
-	matriz(W, H);
+	faixas(W, H);
 	rodape(W, H);
 }
 
@@ -158,10 +259,12 @@ function barra(W) {
 
 	y = HEAD_H + 62;
 	var x2 = 16;
-	rgb(0.55, 0.55, 0.58); texto("LOCATORS", x2, y + 4, 11, true); x2 += 70;
-	botao(x2, y - 13, 44, 26, "ON", cfg.loc == 1, AC, ["ui_loc", 1]); x2 += 46;
-	botao(x2, y - 13, 44, 26, "OFF", cfg.loc == 0, CINZA, ["ui_loc", 0]); x2 += 64;
-	if (data && !prog) { botaoP(x2, y - 12, 84, 24, "+ PART", ["__mais"]); x2 += 96; botaoP(x2, y - 12, 110, 24, "RESET PARTS", ["__reset"]); }
+	rgb(0.55, 0.55, 0.58); texto("ESTRUTURA", x2, y + 4, 11, true); x2 += 74;
+	botao(x2, y - 13, 44, 26, "ON", cfg.est == 1, AC, ["ui_est", 1]); x2 += 46;
+	botao(x2, y - 13, 44, 26, "OFF", cfg.est == 0, CINZA, ["ui_est", 0]); x2 += 64;
+	rgb(0.55, 0.55, 0.58); texto("APAGAR REF", x2, y + 4, 11, true); x2 += 80;
+	botao(x2, y - 13, 44, 26, "ON", cfg.apaga == 1, AC, ["ui_apaga", 1]); x2 += 46;
+	botao(x2, y - 13, 44, 26, "OFF", cfg.apaga == 0, CINZA, ["ui_apaga", 0]); x2 += 64;
 	var wU = 90, wB = 150, wA = 110, xU = W - 18 - wU, xB = xU - 8 - wB, xA = xB - 8 - wA;
 	var feito = data && data.feito;
 	botao(xA, y - 15, wA, 30, "ANALYZE", false, AC, prog ? null : ["analyze"]);
@@ -169,118 +272,132 @@ function barra(W) {
 	botao(xU, y - 15, wU, 30, "UNDO", false, AC, prog ? null : ["undo"]);
 }
 
+function ferramentas(W) {
+	var y = TB_Y, x = 16;
+	rgb(0.91, 0.91, 0.91); texto(data.partes.length + " partes · " + total() + " compassos", x, y + 17, 13, true);
+	if (data.inicio != null && data.bar) { rgb(0.55, 0.55, 0.58); texto("começa no compasso " + (Math.round(data.inicio / data.bar) + 1), x, y + 31, 10, false); }
+	x = X0;
+	if (!prog) { botaoP(x, y + 2, 76, 24, "+ PART", ["__mais"]); x += 84; botaoP(x, y + 2, 76, 24, "RESET", ["__reset"]); x += 100; }
+	rgb(0.55, 0.55, 0.58); texto("PINCEL", x, y + 19, 11, true); x += 50;
+	for (var i = 0; i < PINCEIS.length; i++) {
+		var lb = PINCEIS[i] ? PINCEIS[i] + "" : "PARTE", w = PINCEIS[i] ? 34 : 56;
+		botao(x, y + 2, w, 24, lb, pincel == PINCEIS[i], AC, ["__pincel", PINCEIS[i]]); x += w + 3;
+	}
+	x += 24;
+	rgb(0.55, 0.55, 0.58); texto("ZOOM", x, y + 19, 11, true); x += 42;
+	botao(x, y + 2, 30, 24, "−", false, AC, ["__zoom", 1.5]); x += 33;
+	botao(x, y + 2, 30, 24, "+", false, AC, ["__zoom", 1 / 1.5]); x += 33;
+	botao(x, y + 2, 44, 24, "ALL", false, AC, ["__zoom", 0]); x += 60;
+	rgb(0.45, 0.45, 0.48); texto("compassos " + (Math.floor(vista.s) + 1) + "–" + Math.round(vista.s + vista.n), x, y + 19, 11, false);
+}
+
 function vazio(W, H) {
-	var y = TL_Y + 10;
+	var y = TB_Y + 20;
 	rgb(0.91, 0.91, 0.91); texto("Como usar", 16, y, 18, true);
 	var passos = [
 		"1.  No Arrangement, deixe o seu loop com todas as faixas (kick, bass, drums, synths…) e marque o loop brace em volta dele.",
 		"2.  Crie uma faixa de áudio chamada REF e arraste a música de referência para ela (fora do loop). Warp ligado ajuda no andamento.",
-		"3.  Clique ANALYZE: o DESENROLA lê as partes da referência (INTRO, BUILD, DROP, BREAK…) e as faixas do loop.",
-		"4.  Confira as partes e o que toca em cada uma. Clique BUILD: o rascunho aparece depois do loop, com locators.",
-		"5.  Não gostou? UNDO apaga o rascunho. O loop original nunca é mexido."
+		"3.  Clique ANALYZE: o DESENROLA lê as partes da referência (INTRO, BREAK, BUILDUP, DROP, FINAL) e as faixas do loop.",
+		"4.  Monte a música na janela: arraste as partes e os blocos de cada faixa. Clique BUILD: o rascunho aparece depois do loop,",
+		"     com a faixa ESTRUTURA (um clip com nome e cor por parte). Com APAGAR REF ON, a faixa REF sai no fim.",
+		"5.  Não gostou? UNDO apaga o rascunho e a faixa ESTRUTURA. O loop original nunca é mexido."
 	];
 	for (var i = 0; i < passos.length; i++) { rgb(0.7, 0.7, 0.72); texto(passos[i], 16, y + 34 + i * 26, 14, false); }
 }
 
 function linhaTempo(W) {
-	var G = geo(W), x = X0, y = TL_Y;
-	rgb(0.55, 0.55, 0.58); texto("PARTES DO RASCUNHO", 16, y + 18, 11, true);
+	var X1 = x1(), y = TL_Y, ini = inicios(data.partes), rot = rotulos(data.partes), tot = total();
+	// régua
+	var step = 1; while (vista.n / step > 32) step *= 2;
+	for (var b = Math.ceil(vista.s / step) * step; b <= vista.s + vista.n; b += step) {
+		var xr = xDe(b);
+		if (xr < X0 - 0.5 || xr > X1 + 0.5) continue;
+		caixa(xr, RUL_Y + 6, 1, 8, 0.35, 0.35, 0.38);
+		if (xr < X1 - 14) { rgb(0.5, 0.5, 0.53); texto(b + 1, xr + 2, RUL_Y + 12, 9, false); }
+	}
+	rgb(0.55, 0.55, 0.58); texto("PARTES", 16, y + 10, 11, true);
 	rgb(0.45, 0.45, 0.48);
-	texto("clique = tipo · arraste a borda = tamanho", 16, y + 36, 11, false);
-	texto("Shift+clique = tira · duplo clique = divide", 16, y + 52, 11, false);
-	var resumo = data.partes.length + " partes · " + total() + " compassos";
-	rgb(0.91, 0.91, 0.91); texto(resumo, 330, y + 18, 13, true);
-	if (data.inicio != null && data.bar) { rgb(0.55, 0.55, 0.58); texto("começa no compasso " + (Math.round(data.inicio / data.bar) + 1) + ", depois do loop", 330, y + 36, 11, false); }
-	var acum = 0;
+	texto("clique = tipo · arraste = muda de lugar", 16, y + 23, 10, false);
+	texto("borda = tamanho (Alt: a vizinha cede)", 16, y + 34, 10, false);
+	texto("Alt+clique = tira · duplo clique = divide", 16, y + 45, 10, false);
 	for (var i = 0; i < data.partes.length; i++) {
-		var p = data.partes[i], w = p.n * G.k, c = corP(p.p);
-		var hov = i == hoverParte && !prog;
-		caixaR(x + 1, y, Math.max(2, w - 2), TL_H, 4, c, hov ? 1 : 0.85);
-		if (w > 30) {
-			tinta(c);
-			texto(cabeFim(p.p, w - 10, 12, true), x + 6, y + 18, 12, true);
-			texto(p.n + "", x + 6, y + 36, 11, false);
-			if (p.a != null && p.b != null && w > 60) { rgb(0, 0, 0, 0.45); texto(cabeFim("ref " + (p.a + 1) + "–" + p.b, w - 10, 9, false), x + 6, y + 54, 9, false); }
+		var p = data.partes[i], c = corP(p.p), fx = faixaX(ini[i], ini[i] + p.n);
+		var arrastando = op && op.tipo == "pMove" && op.id == p.id && op.mexeu;
+		if (fx) {
+			var w = fx[1] - fx[0], hv = hov && hov.tipo == "parte" && hov.i == i && !prog;
+			caixaR(fx[0] + 1, y, Math.max(2, w - 2), TL_H, 4, c, arrastando ? 0.55 : hv ? 1 : 0.85);
+			if (arrastando) contorno(fx[0] + 1, y, Math.max(2, w - 2), TL_H, 4, [1, 1, 1], 0.9, 2);
+			if (w > 26) {
+				tinta(c);
+				texto(cabeFim(rot[i], w - 10, 12, true), fx[0] + 6, y + 17, 12, true);
+				texto(cabeFim(p.n + (w > 90 ? " compassos" : ""), w - 10, 11, false), fx[0] + 6, y + 32, 11, false);
+				if (p.a != null && p.b != null && w > 70) { rgb(0, 0, 0, 0.45); texto(cabeFim("ref " + (p.a + 1) + "–" + p.b, w - 10, 9, false), fx[0] + 6, y + 43, 9, false); }
+			}
+			hits.push({ x: fx[0], y: y, w: w, h: TL_H, tipo: "parte", i: i });
 		}
-		hits.push({ x: x, y: y, w: w, h: TL_H, tipo: "parte", i: i });
-		// borda direita (arrastar = tamanho)
-		hits.push({ x: x + w - 5, y: y, w: 10, h: TL_H, tipo: "borda", i: i, xb: x + w });
-		if (hov) caixa(x + w - 3, y + 8, 2, TL_H - 16, 1, 1, 1, 0.8);
-		x += w; acum += p.n;
+		// borda direita (fim da parte i)
+		var xb = xDe(ini[i] + p.n);
+		if (xb >= X0 - 4 && xb <= X1 + 4) {
+			hits.push({ x: xb - 5, y: y, w: 10, h: TL_H, tipo: "borda", i: i });
+			if (hov && hov.tipo == "borda" && hov.i == i) caixa(xb - 2, y - 3, 4, TL_H + 6, 1, 1, 1, 0.9);
+		}
 	}
-	// régua de compassos
-	var step = 8; while (total() / step > 24) step *= 2;
-	for (var b = 0; b <= total(); b += step) {
-		var xr = X0 + b * G.k;
-		caixa(xr, y + TL_H + 2, 1, 6, 0.35, 0.35, 0.38);
-		rgb(0.5, 0.5, 0.53); texto(b + 1, xr + 2, y + TL_H + 16, 9, false);
-	}
-	lay = lay || {};
-	lay.G = G;
+	// fim do rascunho (dá para puxar a última parte)
+	var xf = xDe(tot);
+	if (xf < X1 - 2) { rgb(0.45, 0.45, 0.48); texto("fim", xf + 6, y + 28, 10, false); }
 }
 
-function matriz(W, H) {
-	var G = geo(W), tracks = data.tracks;
-	var y = MAT_Y;
-	caixa(0, y - 8, W, 1, 0.22, 0.23, 0.25);
-	rgb(0.55, 0.55, 0.58); texto("TRACK", XN + 14, y + 14, 10, true); texto("GROUP", XG, y + 14, 10, true);
-	for (var p = 0; p < PARTES.length; p++) {
-		var cp = corP(PARTES[p]);
-		caixaR(XC + p * CW + 2, y, CW - 4, 20, 3, cp, 0.9);
-		tinta(cp); textoC(PARTES[p].substring(0, 5), XC + p * CW + CW / 2, y + 14, 9, true);
-	}
-	rgb(0.55, 0.55, 0.58); texto("PRÉVIA DO RASCUNHO", X0, y + 14, 10, true);
-
-	var listH = H - TOP - FOOT_H;
+function faixas(W, H) {
+	var tracks = data.tracks, X1 = x1(), ini = inicios(data.partes);
+	caixa(0, TOP - 6, W, 1, 0.22, 0.23, 0.25);
+	var listH = H - TOP - FOOT_H - HS_H - 8;
 	var laneH = Math.max(LANE_MIN, Math.min(LANE_MAX, Math.floor(listH / Math.max(1, tracks.length))));
 	var vis = Math.max(1, Math.floor(listH / laneH));
 	var maxFirst = Math.max(0, tracks.length - vis);
 	if (first > maxFirst) first = maxFirst;
 	var last = Math.min(tracks.length, first + vis);
 	var fundo = TOP + (last - first) * laneH;
-	lay = { listH: listH, vis: vis, n: tracks.length, maxFirst: maxFirst, W: W, laneH: laneH, G: G };
+	lay.listH = listH; lay.vis = vis; lay.n = tracks.length; lay.maxFirst = maxFirst; lay.laneH = laneH;
 	var fs = Math.max(11, Math.min(13, laneH - 7));
 
-	// colunas das partes na prévia
-	var xx = X0;
-	for (var q = 0; q < data.partes.length; q++) { var wq = data.partes[q].n * G.k; caixa(xx, TOP, 1, fundo - TOP, 0.22, 0.22, 0.25); xx += wq; }
-	// progresso do BUILD: cortina na prévia
+	// linhas das partes e do fim
+	for (var q = 0; q <= data.partes.length; q++) {
+		var xq = xDe(q < data.partes.length ? ini[q] : total());
+		if (xq >= X0 && xq <= X1) caixa(xq, TOP, 1, fundo - TOP, 0.26, 0.26, 0.3);
+	}
 	for (var i = first; i < last; i++) {
 		var tr = tracks[i];
 		var yl = TOP + (i - first) * laneH, cy = yl + laneH / 2;
-		if (i == hover && !prog) caixa(0, yl, W - SB_W - 4, laneH - 1, 0.19, 0.19, 0.22);
+		if (i == hover && !prog) caixa(0, yl, W - SB_W - 4, laneH - 1, 0.17, 0.17, 0.2);
 		else caixa(0, yl, X0 - 8, laneH - 1, i % 2 ? 0.15 : 0.135, i % 2 ? 0.15 : 0.137, i % 2 ? 0.17 : 0.15);
 		var ct = corInt(tr.color);
 		caixa(6, yl + 3, 4, laneH - 7, ct[0], ct[1], ct[2]);
 		rgb(0.91, 0.91, 0.91);
-		texto(cabe((tr.midi ? "♪ " : "") + tr.name, XG - XN - 24, fs - 1, true), XN + 4, cy + fs / 2 - 2, fs - 1, true);
-		// grupo
+		texto(cabe((tr.midi ? "♪ " : "") + tr.name, XG - XN - 14, fs - 1, true), XN + 4, cy + fs / 2 - 2, fs - 1, true);
 		var cg = corG(tr.g), wc = 82;
 		caixaR(XG, cy - 9, wc, 18, 4, cg); tinta(cg);
 		textoC(GRUPOS[tr.g], XG + wc / 2, cy + 4, 10, true);
 		hits.push({ x: XG, y: cy - 9, w: wc, h: 18, tipo: "grupo", t: i });
-		// células
-		for (var k = 0; k < PARTES.length; k++) {
-			var on = tr.on[k] == 1, cx = XC + k * CW + 8, cw = CW - 16, cpk = corP(PARTES[k]);
-			if (on) caixaR(cx, cy - 7, cw, 14, 3, cpk);
-			else contorno(cx, cy - 7, cw, 14, 3, [0.4, 0.4, 0.43], 1, 1);
-			hits.push({ x: XC + k * CW, y: yl, w: CW, h: laneH, tipo: "cel", t: i, k: k });
-		}
-		// prévia: blocos onde a faixa toca
-		var x0 = X0;
-		for (var m = 0; m < data.partes.length; m++) {
-			var pm = data.partes[m], wm = pm.n * G.k, kk = PARTES.indexOf(pm.p);
-			if (tr.on[kk] == 1) {
-				caixa(x0 + 1, yl + 3, Math.max(1, wm - 2), laneH - 7, ct[0], ct[1], ct[2], 0.55);
-				caixa(x0 + 1, yl + 3, Math.max(1, wm - 2), 2, ct[0], ct[1], ct[2], 1);
-			}
-			hits.push({ x: x0, y: yl, w: wm, h: laneH, tipo: "cel", t: i, k: kk });
-			x0 += wm;
+		// trilha: vazio (pinta) + blocos
+		if (!prog) hits.push({ x: X0, y: yl, w: X1 - X0, h: laneH, tipo: "trilha", t: i });
+		var bl = tr.blocos;
+		for (var b = 0; b < bl.length; b++) {
+			var fx = faixaX(bl[b].a, bl[b].b);
+			if (!fx) continue;
+			var w = fx[1] - fx[0], hv = hov && (hov.tipo == "bloco" || hov.tipo == "bE" || hov.tipo == "bD") && hov.t == i && hov.j == b;
+			caixa(fx[0] + 1, yl + 3, Math.max(1, w - 2), laneH - 7, ct[0], ct[1], ct[2], hv ? 0.85 : 0.6);
+			caixa(fx[0] + 1, yl + 3, Math.max(1, w - 2), 2, ct[0], ct[1], ct[2], 1);
+			if (hv && hov.tipo != "bloco") caixa(hov.tipo == "bE" ? fx[0] + 1 : fx[1] - 3, yl + 2, 2, laneH - 5, 1, 1, 1, 0.95);
+			if (prog) continue;
+			var e = Math.min(6, w / 3);
+			hits.push({ x: fx[0], y: yl, w: w, h: laneH, tipo: "bloco", t: i, j: b });
+			if (xDe(bl[b].a) >= X0 - 1) hits.push({ x: fx[0] - 2, y: yl, w: e + 2, h: laneH, tipo: "bE", t: i, j: b });
+			if (xDe(bl[b].b) <= X1 + 1) hits.push({ x: fx[1] - e, y: yl, w: e + 2, h: laneH, tipo: "bD", t: i, j: b });
 		}
 	}
 	if (prog && prog.total) {
-		var xp = X0 + (G.x1 - X0) * Math.min(1, prog.feitos / prog.total);
-		caixa(xp, TOP, G.x1 - xp, fundo - TOP, 0.12, 0.12, 0.13, 0.75);
+		var xp = X0 + (X1 - X0) * Math.min(1, prog.feitos / prog.total);
+		caixa(xp, TOP, X1 - xp, fundo - TOP, 0.12, 0.12, 0.13, 0.75);
 		caixa(xp - 1, TOP - 4, 3, fundo - TOP + 8, AC[0], AC[1], AC[2], 1);
 	}
 	if (maxFirst > 0) {
@@ -288,6 +405,15 @@ function matriz(W, H) {
 		caixa(sx, TOP, SB_W, listH, 0.16, 0.16, 0.18);
 		var tth = Math.max(30, listH * vis / tracks.length);
 		caixa(sx + 2, TOP + (listH - tth) * first / maxFirst, SB_W - 4, tth, 0.55, 0.55, 0.58);
+	}
+	// barra de rolagem horizontal
+	var tot = Math.max(8, total()), hy = H - FOOT_H - HS_H - 4;
+	lay.hy = hy;
+	caixa(X0, hy, X1 - X0, HS_H, 0.16, 0.16, 0.18);
+	if (vista.n < tot - 1e-6) {
+		var hw = Math.max(30, (X1 - X0) * vista.n / tot), hx = X0 + (X1 - X0 - hw) * vista.s / (tot - vista.n);
+		caixa(hx, hy + 2, hw, HS_H - 4, 0.55, 0.55, 0.58);
+		hits.push({ x: X0, y: hy - 2, w: X1 - X0, h: HS_H + 4, tipo: "hs", hw: hw });
 	}
 }
 
@@ -298,110 +424,148 @@ function rodape(W, H) {
 	if (msgAviso && hover < 0) { rgbv(OK); texto(cabeFim(msgAviso, W - 32, 13, true), 16, y, 13, true); return; }
 	if (!data) return;
 	if (hover >= 0 && hover < data.tracks.length) {
-		var tr = data.tracks[hover];
-		rgb(0.91, 0.91, 0.91); texto(cabe(tr.name, W - 560, 13, true), 16, y, 13, true);
-		var toca = [];
-		for (var k = 0; k < PARTES.length; k++) if (tr.on[k] == 1) toca.push(PARTES[k]);
+		var tr = data.tracks[hover], soma = 0;
+		for (var b = 0; b < tr.blocos.length; b++) soma += tr.blocos[b].b - tr.blocos[b].a;
+		rgb(0.91, 0.91, 0.91); texto(cabe(tr.name, W - 620, 13, true), 16, y, 13, true);
 		rgb(0.62, 0.62, 0.65);
-		textoD((tr.midi ? "MIDI · " : "áudio · ") + tr.clips.length + " clips no loop · grupo " + GRUPOS[tr.g] + (tr.auto ? " (pelo nome)" : "") + " · toca em: " + (toca.length ? toca.join(", ") : "nenhuma"), W - 16, y, 12, false);
+		textoD((tr.midi ? "MIDI · " : "áudio · ") + tr.clips.length + " clips no loop · grupo " + GRUPOS[tr.g] + (tr.auto ? " (pelo nome)" : "") + " · " +
+			tr.blocos.length + " blocos, " + Math.round(soma) + " compassos" + (tr.manual ? " · editada à mão" : ""), W - 16, y, 12, false);
 		return;
 	}
 	rgb(0.75, 0.75, 0.78);
-	texto("grupo: clique troca (o que toca volta ao padrão do grupo) · célula ou prévia: liga/desliga a faixa naquele tipo de parte", 16, y, 12, false);
+	texto("faixas: arraste no vazio = pinta · clique no vazio = PINCEL · arraste o bloco = move · borda = começo/fim · Alt+clique = apaga · Shift = de 1 em 1 · grupo: clique troca", 16, y, 12, false);
 	if (lay && lay.maxFirst > 0) { rgb(0.55, 0.55, 0.58); textoD("FAIXAS " + (first + 1) + "–" + Math.min(data.tracks.length, first + lay.vis) + " DE " + data.tracks.length, W - 16, y, 12, false); }
 }
 
-// ---------------------------------------------------------------- edição das partes
-var REGRAS = {
-	INTRO:  [1, 0, 1, 1, 0, 1, 0, 0, 0],
-	GROOVE: [1, 0, 1, 1, 1, 0, 1, 0, 1],
-	BUILD:  [0, 0, 1, 1, 1, 1, 1, 1, 0],
-	DROP:   [1, 1, 1, 1, 1, 0, 1, 0, 1],
-	BREAK:  [0, 0, 0, 0, 1, 1, 1, 0, 1],
-	OUTRO:  [1, 0, 1, 1, 0, 1, 0, 0, 0]
-};
+// ---------------------------------------------------------------- comandos locais
 function arred(n) { var r8 = Math.round(n / 8) * 8; if (r8 >= 8 && Math.abs(n - r8) <= 1) return r8; return Math.max(4, Math.round(n / 4) * 4); }
 function cmdLocal(m) {
-	if (m == "__mais") { data.partes.push({ p: "DROP", n: 8 }); mudou(); return true; }
-	if (m == "__reset") {
+	if (m[0] == "__pincel") { pincel = Number(m[1]) || 0; mgraphics.redraw(); return true; }
+	if (m[0] == "__zoom") { if (!Number(m[1])) { ajusta(); mgraphics.redraw(); } else zoom(Number(m[1])); return true; }
+	if (m[0] == "__mais") {
+		var vP = copia(data.partes), vT = fotoT();
+		data.partes.push({ id: data.proxId++, p: "BREAK", n: 16 });
+		remapeia(vP, vT, data.partes);
+		var tot = total();
+		if (tot > vista.s + vista.n) { if (vista.n >= tot - 16) vista.n = tot; vista.s = tot - vista.n; }
+		mudou(); return true;
+	}
+	if (m[0] == "__reset") {
 		if (!data.ref) return true;
 		data.partes = [];
-		for (var i = 0; i < data.ref.partes.length; i++) { var r = data.ref.partes[i]; data.partes.push({ p: r.p, n: arred(r.b - r.a), a: r.a, b: r.b }); }
+		for (var i = 0; i < data.ref.partes.length; i++) { var r = data.ref.partes[i]; data.partes.push({ id: data.proxId++, p: r.p, n: arred(r.b - r.a), a: r.a, b: r.b }); }
+		for (var t = 0; t < data.tracks.length; t++) { data.tracks[t].blocos = blocosDaRegra(data.tracks[t].g, data.partes); data.tracks[t].manual = 0; }
+		ajusta();
 		mudou(); return true;
 	}
 	return false;
 }
 
-// Max chama onclick(x, y, botão, cmd, shift, capslock, option, ctrl)
-function onclick(x, y, but, cmd, shift) {
-	arrasto = -1; bordaArr = null;
+// ---------------------------------------------------------------- mouse
+function acha(x, y, tipos) {
 	for (var b = hits.length - 1; b >= 0; b--) {
 		var hb = hits[b];
 		if (x < hb.x || x > hb.x + hb.w || y < hb.y || y > hb.y + hb.h) continue;
-		if (hb.tipo == "cmd") {
-			var m = hb.msg;
-			if (licCliqueLocal(m)) return;
-			if (cmdLocal(m[0])) return;
-			if (m[0] == "ui_loc") cfg.loc = m[1];
-			if (m[0] == "build" || m[0] == "analyze" || m[0] == "undo") { msgAviso = ""; if (data) save(); }
-			outlet(0, m);
-			mgraphics.redraw();
-			return;
-		}
-		if (!data || prog) return;
-		if (hb.tipo == "borda") { bordaArr = { i: hb.i, x0: x, n0: data.partes[hb.i].n }; return; }
-		if (hb.tipo == "parte") {
-			if (shift) { if (data.partes.length > 1) data.partes.splice(hb.i, 1); }
-			else { var p = data.partes[hb.i], k = PARTES.indexOf(p.p); p.p = PARTES[(k + 1) % PARTES.length]; }
-			mudou(); return;
-		}
-		if (hb.tipo == "grupo") {
-			var t = data.tracks[hb.t];
-			t.g = (t.g + 1) % GRUPOS.length; t.auto = 0;
-			t.on = []; for (var q = 0; q < PARTES.length; q++) t.on.push(REGRAS[PARTES[q]][t.g]);
-			mudou(); return;
-		}
-		if (hb.tipo == "cel") {
-			var tc = data.tracks[hb.t];
-			tc.on[hb.k] = tc.on[hb.k] == 1 ? 0 : 1;
-			mudou(); return;
-		}
+		if (!tipos || tipos.indexOf(hb.tipo) >= 0) return hb;
+	}
+	return null;
+}
+// prioridade: botões, bordas (parte e bloco), depois o corpo
+function alvo(x, y) {
+	return acha(x, y, ["cmd"]) || acha(x, y, ["borda", "bE", "bD"]) || acha(x, y, ["parte", "bloco", "grupo", "hs", "trilha"]);
+}
+function grade(shift) { return shift ? 1 : 4; }
+function parteEm(bar) {
+	var ini = inicios(data.partes);
+	for (var i = 0; i < data.partes.length; i++) if (bar >= ini[i] && bar < ini[i] + data.partes[i].n) return { i: i, s: ini[i], n: data.partes[i].n };
+	return null;
+}
+
+// Max chama onclick(x, y, botão, cmd, shift, capslock, option, ctrl)
+function onclick(x, y, but, cmd, shift, caps, opt, ctrl) {
+	if (op) solta();
+	arrasto = -1;
+	var hb = alvo(x, y), apaga = !!(opt || ctrl);
+	if (hb && hb.tipo == "cmd") {
+		var m = hb.msg;
+		if (licCliqueLocal(m)) return;
+		if (data && cmdLocal(m)) return;
+		if (m[0] == "ui_est") cfg.est = m[1];
+		if (m[0] == "ui_apaga") cfg.apaga = m[1];
+		if (m[0] == "build" || m[0] == "analyze" || m[0] == "undo") { msgAviso = ""; if (data) save(); }
+		outlet(0, m);
+		mgraphics.redraw();
+		return;
 	}
 	if (!data || prog || !licPronta() || licInfo) return;
-	if (lay && lay.maxFirst > 0 && x >= lay.W - SB_W - 4 && y >= TOP) {
+	if (lay && lay.maxFirst > 0 && x >= lay.W - SB_W - 4 && y >= TOP && y < TOP + lay.listH) {
 		arrasto = y;
 		rolar(lay.maxFirst * (y - TOP) / Math.max(1, lay.listH));
+		return;
+	}
+	if (!hb) return;
+	var P = data.partes;
+	if (hb.tipo == "borda") {
+		op = { tipo: "pBorda", i: hb.i, x0: x, alt: !!opt, vP: copia(P), vT: fotoT(), n0: P[hb.i].n, nViz: P[hb.i + 1] ? P[hb.i + 1].n : 0 };
+		return;
+	}
+	if (hb.tipo == "parte") {
+		if (apaga) {
+			if (P.length > 1) { var vP = copia(P), vT = fotoT(); P.splice(hb.i, 1); remapeia(vP, vT, P); mudou(); }
+			return;
+		}
+		op = { tipo: "pMove", i: hb.i, id: P[hb.i].id, x0: x, mexeu: false, vP: copia(P), vT: fotoT() };
+		return;
+	}
+	if (hb.tipo == "grupo") {
+		var t = data.tracks[hb.t];
+		t.g = (t.g + 1) % GRUPOS.length; t.auto = 0; t.manual = 0;
+		t.blocos = blocosDaRegra(t.g, P);
+		mudou(); return;
+	}
+	if (hb.tipo == "hs") { op = { tipo: "hs", x0: x, s0: vista.s, hw: hb.hw }; return; }
+	if (hb.tipo == "bloco" || hb.tipo == "bE" || hb.tipo == "bD") {
+		var tr = data.tracks[hb.t], bl = tr.blocos[hb.j];
+		if (apaga) { tr.blocos.splice(hb.j, 1); tr.manual = 1; mudou(); return; }
+		op = { tipo: hb.tipo, t: hb.t, j: hb.j, x0: x, a0: bl.a, b0: bl.b, mexeu: false };
+		return;
+	}
+	if (hb.tipo == "trilha") {
+		var bar = Math.max(0, Math.min(total(), barDe(x)));
+		op = { tipo: "pinta", t: hb.t, x0: x, bar0: bar, mexeu: false, j: -1, shift: !!shift };
+		return;
 	}
 }
 onclick.local = 1;
 
 function ondblclick(x, y) {
+	if (op) solta();
 	if (!data || prog) return;
-	for (var b = hits.length - 1; b >= 0; b--) {
-		var hb = hits[b];
-		if (hb.tipo != "parte" || x < hb.x || x > hb.x + hb.w || y < hb.y || y > hb.y + hb.h) continue;
-		var p = data.partes[hb.i];
-		if (p.n < 2) return;
-		var n1 = p.n >= 8 ? Math.round(p.n / 8) * 4 : Math.floor(p.n / 2);
-		if (n1 < 1 || n1 >= p.n) n1 = Math.floor(p.n / 2);
-		data.partes.splice(hb.i + 1, 0, { p: p.p, n: p.n - n1 });
-		p.n = n1; p.a = null; p.b = null;
-		mudou();
-		return;
+	var hb = acha(x, y, ["parte"]);
+	if (!hb) return;
+	// os dois cliques trocaram o tipo: volta como estava antes do 1º
+	if (ciclo && ciclo.id == data.partes[hb.i].id && new Date().getTime() - ciclo.t < 800) {
+		data.partes = ciclo.vP;
+		for (var t = 0; t < data.tracks.length; t++) data.tracks[t].blocos = ciclo.vT[t];
 	}
+	ciclo = null;
+	var p = data.partes[hb.i];
+	if (p.n < 2) { mudou(); return; }
+	var n1 = p.n >= 8 ? Math.round(p.n / 8) * 4 : Math.floor(p.n / 2);
+	if (n1 < 1 || n1 >= p.n) n1 = Math.floor(p.n / 2);
+	// dividir não mexe em nada no tempo: os blocos ficam onde estão
+	data.partes.splice(hb.i + 1, 0, { id: data.proxId++, p: p.p, n: p.n - n1 });
+	p.n = n1; p.a = null; p.b = null;
+	mudou();
 }
 ondblclick.local = 1;
 
-function ondrag(x, y, but, cmd, shift) {
-	if (bordaArr && data) {
-		var G = geo(lay ? lay.W : 1360);
-		var passo = shift ? 1 : 4;
-		var d = (x - bordaArr.x0) / G.k;
-		var n = Math.max(passo, Math.round((bordaArr.n0 + d) / passo) * passo);
-		if (!shift && bordaArr.n0 % 4 && Math.abs(d) < 2) n = bordaArr.n0;
-		var p = data.partes[bordaArr.i];
-		if (n != p.n) { p.n = n; mgraphics.redraw(); }
-		if (!but) { bordaArr = null; mudou(); }
+function ondrag(x, y, but, cmd, shift, caps, opt) {
+	if (op && data) {
+		// no "solto" o Max pode não mandar Shift/Alt: usa os do último arrasto
+		if (but) { op.sh = shift; op.op = opt; arrastaOp(x, y, shift, opt); }
+		else { if (x != op.ux) arrastaOp(x, y, op.sh, op.op); solta(); }
+		if (op) op.ux = x;
 		return;
 	}
 	if (arrasto >= 0 && lay) {
@@ -410,6 +574,113 @@ function ondrag(x, y, but, cmd, shift) {
 	}
 }
 ondrag.local = 1;
+
+function arrastaOp(x, y, shift, opt) {
+	var P = data.partes, k = K(), d = (x - op.x0) / k, g = grade(shift);
+	if (Math.abs(x - op.x0) > 3) op.mexeu = true;
+	if (op.tipo == "hs") {
+		var tot = Math.max(8, total()), livre = (x1() - X0) - op.hw;
+		if (livre > 0) { vista.s = op.s0 + (x - op.x0) / livre * (tot - vista.n); limitaVista(); mgraphics.redraw(); }
+		return;
+	}
+	if (op.tipo == "pBorda") {
+		var P0 = op.vP, i = op.i, novas = copia(P0);
+		var n = Math.max(1, Math.round((op.n0 + d) / g) * g);
+		if (!shift && op.n0 % 4 && Math.abs(d) < 2) n = op.n0;
+		if (op.alt && novas[i + 1]) {
+			var soma = op.n0 + op.nViz;
+			n = Math.min(soma - 1, n);
+			novas[i].n = n; novas[i + 1].n = soma - n;
+		} else novas[i].n = n;
+		data.partes = novas;
+		remapeia(P0, op.vT, novas);
+		mgraphics.redraw();
+		return;
+	}
+	if (op.tipo == "pMove") {
+		if (!op.mexeu) return;
+		// muda de lugar quando passa do meio da vizinha
+		var P1 = copia(op.vP), de = op.i, item = P1.splice(de, 1)[0], ini = inicios(op.vP);
+		var centro = ini[de] + item.n / 2 + d, para = 0, acum = 0;
+		for (var q = 0; q < P1.length; q++) { if (centro > acum + P1[q].n / 2) para = q + 1; acum += P1[q].n; }
+		P1.splice(para, 0, item);
+		data.partes = P1;
+		remapeia(op.vP, op.vT, P1);
+		mgraphics.redraw();
+		return;
+	}
+	var tot = total(), tr = op.t != null ? data.tracks[op.t] : null;
+	if (op.tipo == "bloco") {
+		if (!op.mexeu) return;
+		var L = op.b0 - op.a0, a = Math.round((op.a0 + d) / g) * g;
+		a = Math.max(0, Math.min(tot - L, a));
+		tr.blocos[op.j] = { a: a, b: a + L };
+		mgraphics.redraw();
+		return;
+	}
+	if (op.tipo == "bE") {
+		var na = Math.round((op.a0 + d) / g) * g;
+		na = Math.max(0, Math.min(op.b0 - 1, na));
+		tr.blocos[op.j] = { a: na, b: op.b0 };
+		mgraphics.redraw();
+		return;
+	}
+	if (op.tipo == "bD") {
+		var nb = Math.round((op.b0 + d) / g) * g;
+		nb = Math.min(tot, Math.max(op.a0 + 1, nb));
+		tr.blocos[op.j] = { a: op.a0, b: nb };
+		mgraphics.redraw();
+		return;
+	}
+	if (op.tipo == "pinta") {
+		if (!op.mexeu) return;
+		var b1 = Math.max(0, Math.min(tot, barDe(x)));
+		var lo = Math.min(op.bar0, b1), hi = Math.max(op.bar0, b1);
+		var A = Math.floor(lo / g) * g, B = Math.ceil(hi / g) * g;
+		if (B - A < g) B = A + g;
+		B = Math.min(tot, B);
+		var novo = { a: A, b: B };
+		if (op.j < 0) { tr.blocos.push(novo); op.j = tr.blocos.length - 1; } else tr.blocos[op.j] = novo;
+		mgraphics.redraw();
+	}
+}
+// fim do arrasto (botão solto; ou o mouse já se mexeu sem botão e o Max não mandou o "solto")
+function solta() {
+	var o = op;
+	op = null;
+	if (!o || !data) return;
+	var P = data.partes;
+	if (o.tipo == "pMove" && !o.mexeu) {
+		// clique simples numa parte: troca o tipo (as faixas dessa parte voltam ao padrão do tipo novo)
+		var p = P[o.i];
+		if (!p) return;
+		var agora = new Date().getTime();
+		if (!ciclo || ciclo.id != p.id || agora - ciclo.t > 800) ciclo = { id: p.id, vP: copia(o.vP), vT: copia(o.vT) };
+		ciclo.t = agora;
+		var vP = copia(P), vT = fotoT();
+		p.p = PARTES[(PARTES.indexOf(p.p) + 1) % PARTES.length];
+		p.id = data.proxId++;   // id novo = tipo novo: o remapeia dá o padrão do grupo só nessa parte
+		remapeia(vP, vT, P);
+		ciclo.id = p.id;
+		mudou();
+		return;
+	}
+	if (o.tipo == "pinta" && !o.mexeu) {
+		var tr = data.tracks[o.t], g = grade(o.shift), A, B;
+		if (!pincel) { var pe = parteEm(o.bar0); if (!pe) return; A = pe.s; B = pe.s + pe.n; }
+		else { A = Math.floor(o.bar0 / g) * g; B = Math.min(total(), A + pincel); }
+		if (B > A) tr.blocos.push({ a: A, b: B });
+	}
+	if (o.tipo == "bloco" || o.tipo == "bE" || o.tipo == "bD" || o.tipo == "pinta") {
+		var t2 = data.tracks[o.t];
+		t2.blocos = arruma(t2.blocos);
+		t2.manual = 1;
+		mudou();
+		return;
+	}
+	if (o.tipo == "pBorda" || o.tipo == "pMove") { mudou(); return; }
+	mgraphics.redraw();
+}
 
 function rolar(n) {
 	if (!lay) return;
@@ -421,16 +692,28 @@ function faixaEm(x, y) {
 	var i = first + Math.floor((y - TOP) / lay.laneH);
 	return i < Math.min(lay.n, first + lay.vis) ? i : -1;
 }
+function mesmo(a, b) { return (!a && !b) || (a && b && a.tipo == b.tipo && a.i == b.i && a.t == b.t && a.j == b.j); }
 function onidle(x, y) {
+	if (op) { solta(); }
 	if (prog) return;
-	var h = faixaEm(x, y), hp = -1;
-	for (var b = 0; b < hits.length; b++) { var hb = hits[b]; if (hb.tipo == "parte" && x >= hb.x && x <= hb.x + hb.w && y >= hb.y && y <= hb.y + hb.h) { hp = hb.i; break; } }
-	if (h != hover || hp != hoverParte) { hover = h; hoverParte = hp; mgraphics.redraw(); }
+	var h = faixaEm(x, y), hb = alvo(x, y);
+	var hv = hb && hb.tipo != "cmd" && hb.tipo != "trilha" && hb.tipo != "hs" ? { tipo: hb.tipo, i: hb.i, t: hb.t, j: hb.j } : null;
+	if (h != hover || !mesmo(hv, hov)) { hover = h; hov = hv; mgraphics.redraw(); }
 }
 onidle.local = 1;
-function onidleout() { if (hover != -1 || hoverParte != -1) { hover = -1; hoverParte = -1; mgraphics.redraw(); } }
+function onidleout() { if (hover != -1 || hov) { hover = -1; hov = null; mgraphics.redraw(); } }
 onidleout.local = 1;
-function onwheel(x, y, wx, wy) {
+// onwheel(x, y, wheel_x, wheel_y, cmd, shift, capslock, option, ctrl)
+function onwheel(x, y, wx, wy, cmd, shift, caps, opt, ctrl) {
+	if (!data) return;
+	var naLinha = y >= RUL_Y && y < TL_Y + TL_H + 4 && x >= X0;
+	if (naLinha || cmd || ctrl) { if (wy) zoom(wy > 0 ? 1 / 1.25 : 1.25, x >= X0 ? x : null); return; }
+	if (wx || shift) {
+		var dv = wx ? -wx : -wy;
+		vista.s += (dv > 0 ? 1 : -1) * Math.max(1, vista.n / 16);
+		limitaVista(); mgraphics.redraw();
+		return;
+	}
 	if (!lay || lay.maxFirst <= 0) return;
 	rolar(first - (wy > 0 ? 3 : wy < 0 ? -3 : 0));
 	hover = faixaEm(x, y);

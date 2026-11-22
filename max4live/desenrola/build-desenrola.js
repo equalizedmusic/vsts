@@ -49,7 +49,7 @@ line(buf, 1, mLoaded, 0);
 line(mLoaded, 0, v8, 0);
 
 // eco da janela para o controle escondido do device (só guarda o valor no set)
-const rEco = obj('route loc', 1, 2, [200, 300, 120, 22]);
+const rEco = obj('route est apaga', 1, 3, [200, 300, 140, 22]);
 line(v8, 3, rEco, 0);
 
 let px = 500, ty = 0;
@@ -69,7 +69,8 @@ function tab(varname, longname, opcoes, inicial, msgName, outRoute) {
   line(s, 0, t, 0);
   ty += 70;
 }
-tab('loc', 'Locators', ['OFF', 'ON'], 1, 'loc', 0);
+tab('est', 'Estrutura', ['OFF', 'ON'], 1, 'est', 0);
+tab('apaga', 'ApagaRef', ['OFF', 'ON'], 1, 'apaga', 1);
 
 const send = obj('s ---desenrola_ref', 1, 0, [370, 290, 130, 22]);
 line(v8, 2, send, 0);
