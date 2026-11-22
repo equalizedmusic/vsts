@@ -8,7 +8,7 @@ CurvaEditor::CurvaEditor (CurvaProcessor& p) : AudioProcessorEditor (p), proc (p
     janela.resize ((size_t) N);
     for (int i = 0; i < N; ++i) janela[(size_t) i] = 0.5f - 0.5f * std::cos (2.0f * juce::MathConstants<float>::pi * (float) i / (float) N);
     buf.assign ((size_t) N * 2, 0.0f);
-    acum.assign ((size_t) N / 2 + 2, 0.0f);
+    acum.assign ((size_t) N / 2 + 2, 0.0);
     for (int i = 0; i < NP; ++i) freq[(size_t) i] = (float) (fMin * std::pow (fMax / fMin, i / (double) (NP - 1)));
     specIn.fill (-120); specOut.fill (-120); holdIn.fill (-120); holdOut.fill (-120);
 
@@ -40,11 +40,11 @@ void CurvaEditor::espectro (const std::vector<float>& anel, int fim, std::array<
     std::fill (buf.begin() + N, buf.end(), 0.0f);
     fft.performFrequencyOnlyForwardTransform (buf.data(), true);
     // potência por bin (seno de amplitude 1 = 0 dB) e soma acumulada para a média por faixa de oitava
-    const float k = 2.0f / soma;
-    acum[0] = 0.0f;
+    const double k = 2.0 / soma;
+    acum[0] = 0.0;
     for (int b = 0; b <= N / 2; ++b)
     {
-        const float m = buf[(size_t) b] * k;
+        const double m = buf[(size_t) b] * k;
         acum[(size_t) b + 1] = acum[(size_t) b] + m * m;
     }
     auto potencia = [this] (double b)   // potência interpolada num bin fracionário
@@ -266,7 +266,7 @@ void CurvaEditor::chip (juce::Graphics& g, juce::Rectangle<float> r, const juce:
 
 void CurvaEditor::painelEspectro (juce::Graphics& g, juce::Rectangle<float> r)
 {
-    chapa (g, r, "SPECTRUM", proc.ligado() ? u8 ("IN = mix  ·  OUT = monitor  ·  magenta = correção") : u8 ("CURVA desligada: OUT = IN"));
+    chapa (g, r, "SPECTRUM", proc.ligado() ? u8 ("IN = mix  ·  OUT = monitor") : u8 ("CURVA desligada: OUT = IN"));
 
     // botões do cabeçalho (da direita para a esquerda)
     {
@@ -342,11 +342,6 @@ void CurvaEditor::painelEspectro (juce::Graphics& g, juce::Rectangle<float> r)
         g.setColour (cCurva.withAlpha (0.55f));
         g.drawText (db == 0.0f ? juce::String ("0") : sinal (db, 0), juce::Rectangle<float> (p.getRight() + 4, y - 7, 32, 14), juce::Justification::centredLeft);
     }
-    g.setColour (cApagado.withAlpha (0.8f));
-    g.setFont (fonte (8.0f).withExtraKerningFactor (0.1f));
-    g.drawText ("dBFS", juce::Rectangle<float> (r.getX() + 2, p.getBottom() + 4, 34, 14), juce::Justification::centredRight);
-    g.setColour (cCurva.withAlpha (0.6f));
-    g.drawText ("dB EQ", juce::Rectangle<float> (p.getRight() + 2, p.getBottom() + 4, 36, 14), juce::Justification::centredLeft);
 
     g.saveState();
     g.reduceClipRegion (p.toNearestInt());

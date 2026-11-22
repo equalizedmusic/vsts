@@ -25,7 +25,7 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.0 | pago (lançamento 22/11) |
 | [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.1 | grátis |
 | [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.2 | grátis |
-| [CURVA](instrumentos/curva/README.md) | Monitor de volume (Fletcher-Munson / ISO 226) | 0.1.0 | teste (grátis) |
+| [CURVA](instrumentos/curva/README.md) | Monitor de volume (Fletcher-Munson / ISO 226) | 0.1.1 | teste (grátis) |
 | [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.0 | à venda |
 | [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.0 | à venda |
 | [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.2 | à venda |

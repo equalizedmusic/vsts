@@ -1,7 +1,7 @@
 # CURVA
 
 Monitor de volume pela curva de mesma audibilidade (Fletcher-Munson / ISO 226:2003). Grátis, na linha do ALIGN e do
-BAREBASS. **0.1.0 é TESTE**: sem ativação por licença, fora do site, release como pré-release (`instalador/pre-release.txt`).
+BAREBASS. **0.1.x é TESTE**: sem ativação por licença, fora do site, release como pré-release (`instalador/pre-release.txt`).
 
 ![CURVA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CURVA.png)
 

@@ -67,7 +67,8 @@ private:
     // espectro
     juce::dsp::FFT fft { 13 };
     static constexpr int N = 8192;
-    std::vector<float> janela, buf, acum;
+    std::vector<float> janela, buf;
+    std::vector<double> acum;                // soma acumulada da potência em double: em float o agudo some no arredondamento
     std::array<float, NP> freq {}, specIn {}, specOut {}, holdIn {}, holdOut {};
     bool specPrimeiro = true;
 

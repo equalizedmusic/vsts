@@ -25,8 +25,10 @@ inline juce::String u8 (const char* s) { return juce::String::fromUTF8 (s); }
 
 inline juce::String sinal (float v, int casas = 1)
 {
-    if (std::abs (v) < 0.5f * std::pow (10.0f, (float) -casas)) return juce::String (0.0f, casas);
-    return (v > 0 ? juce::String ("+") : u8 ("−")) + juce::String (std::abs (v), casas);
+    // casas = 0: inteiro (no JUCE, String (float, 0) quer dizer "todas as casas")
+    const auto num = [casas] (float x) { return casas == 0 ? juce::String (juce::roundToInt (x)) : juce::String (x, casas); };
+    if (std::abs (v) < 0.5f * std::pow (10.0f, (float) -casas)) return num (0.0f);
+    return (v > 0 ? juce::String ("+") : u8 ("−")) + num (std::abs (v));
 }
 inline juce::String lufs (float v) { return v <= -69.9f ? u8 ("—") : sinal (v); }
 

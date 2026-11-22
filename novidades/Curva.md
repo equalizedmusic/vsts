@@ -1,5 +1,12 @@
 # CURVA — novidades
 
+## 0.1.1 — 2026-11-21
+- SPECTRUM: o agudo não some mais da tela. A soma da potência perdia precisão quando o grave era forte, e o OUT
+  parecia cortado acima de ~3 kHz (o som estava certo; era só o desenho). O IN também fazia degraus no agudo.
+- Tela: valores inteiros em O QUE A CURVA DEVOLVE (saíam com várias casas), o knob OUTPUT não encosta mais na
+  borda e o texto do SPECTRUM não fica mais por baixo dos botões IN/OUT/HOLD.
+- Ainda TESTE: sem ativação por licença e fora do site.
+
 ## 0.1.0 — 2026-11-21
 - Primeira versão da CURVA, para TESTE (sem ativação por licença e fora do site): monitor de volume pela curva de
   mesma audibilidade (Fletcher-Munson, ISO 226:2003). Vai por ÚLTIMO no master, só para ouvir.

@@ -211,7 +211,7 @@ void CurvaEditor::painelControles (juce::Graphics& g, juce::Rectangle<float> r)
     g.drawLine (r.getX() + 222, r.getY() + 16, r.getX() + 222, r.getBottom() - 16, 1.0f);
 
     // TARGET, AMOUNT, OUTPUT
-    const float y = r.getY() + 64, x0 = r.getX() + 268, dx = 82;
+    const float y = r.getY() + 64, x0 = r.getX() + 262, dx = 76;
     knob (g, { x0, y }, 24, "target", "TARGET", juce::String (a.target, 1), "phon", cAlvo, false);
     knob (g, { x0 + dx, y }, 24, "amount", "AMOUNT", juce::String ((int) std::lround (a.amount * 100)), "%", cCurva, false);
     knob (g, { x0 + 2 * dx, y }, 24, "output", "OUTPUT", sinal (valor ("output")), "dB", cViol, false);
@@ -274,9 +274,9 @@ void CurvaEditor::painelOuvido (juce::Graphics& g, juce::Rectangle<float> r)
     g.strokePath (cl, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved));
     g.setFont (fonte (8.5f, true));
     g.setColour (cOut);
-    g.drawText (juce::String (a.listen, 0) + " phon", juce::Rectangle<float> (p.getRight() - 64, p.getY() + 4, 60, 11), juce::Justification::centredRight);
+    g.drawText (juce::String (juce::roundToInt (a.listen)) + " phon", juce::Rectangle<float> (p.getRight() - 64, p.getY() + 4, 60, 11), juce::Justification::centredRight);
     g.setColour (cAlvo);
-    g.drawText (juce::String (a.target, 0) + " phon", juce::Rectangle<float> (p.getRight() - 64, p.getY() + 15, 60, 11), juce::Justification::centredRight);
+    g.drawText (juce::String (juce::roundToInt (a.target)) + " phon", juce::Rectangle<float> (p.getRight() - 64, p.getY() + 15, 60, 11), juce::Justification::centredRight);
     g.setColour (cApagado);
     g.setFont (fonte (8.0f));
     g.drawText ("100", juce::Rectangle<float> (xDe (100) - 12, p.getBottom() - 12, 24, 10), juce::Justification::centred);
