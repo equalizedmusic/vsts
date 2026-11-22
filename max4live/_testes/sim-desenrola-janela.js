@@ -57,13 +57,42 @@ arrasta(xDe(ii[3] + 4), yParte(), xDe(ii[2] + 2), yParte());
 confere(D().partes[2].id === idB && D().partes[2].p === 'BUILDUP', 'BUILDUP arrastado para antes do BREAK');
 const riser = D().tracks[T('Riser')].blocos;
 confere(riser.length === 1 && riser[0].a === ini()[2] && riser[0].b === ini()[2] + 8, 'Riser (FX, só no BUILDUP) andou junto com a parte ' + blocos('Riser'));
-// 4. clique troca o tipo (BREAK → BUILDUP) e as faixas dessa parte vão para o padrão do tipo novo
+// 4. clique esquerdo só seleciona (não troca o tipo)
 const iBr = D().partes.findIndex((p) => p.p === 'BREAK'), xb = xDe(ini()[iBr] + 2);
+const antes4 = JSON.stringify(D().partes);
 clica(xb, yParte());
-confere(D().partes[iBr].p === 'BUILDUP', 'clique na parte troca o tipo: BREAK → BUILDUP');
+confere(JSON.stringify(D().partes) === antes4 && ev('sel') === D().partes[iBr].id, 'clique esquerdo na parte só seleciona (tipo igual: ' + D().partes[iBr].p + ')');
+// 4b. botão direito (ctrl = 1 no Max) abre o menu; escolher BUILDUP troca o tipo e as faixas vão para o padrão do tipo novo
+const menuItem = (txt) => { ev('paint()'); const h = ev('hits').find((x) => x.tipo === 'menu' && ev('menu').itens[x.k].t === txt); return h; };
+ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
+confere(!!ev('menu') && JSON.stringify(D().partes) === antes4, 'botão direito abre o menu sem mexer na parte');
+const itens = ev('menu.itens.map((i) => i.t || "-").join(" ")');
+confere(itens === 'INTRO BREAK BUILDUP DROP FINAL - RENOMEAR… DIVIDIR TIRAR', 'menu: ' + itens);
+let hm = menuItem('BUILDUP');
+ev(`onclick(${hm.x + 10}, ${hm.y + 8}, 1, 0, 0, 0, 0, 0); paint()`);
+confere(D().partes[iBr].p === 'BUILDUP' && !ev('menu'), 'menu → BUILDUP: a parte vira BUILDUP e o menu fecha');
 confere(D().tracks[T('Riser')].blocos.some((b) => b.a === ini()[iBr]), 'Riser ganhou bloco na parte que virou BUILDUP');
-// 5. duplo clique: os 2 cliques não trocam o tipo; a parte divide em duas
-ev('ciclo = null');   // o teste roda rápido: o clique do passo 4 ainda valeria como 1º do duplo
+// 4c. RENOMEAR: a janela pede o [dialog] (dlg_nome) e o nome volta como nome_parte
+ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
+hm = menuItem('RENOMEAR…');
+saidas.length = 0;
+ev(`onclick(${hm.x + 10}, ${hm.y + 8}, 1, 0, 0, 0, 0, 0); paint()`);
+confere(saidas.some((s) => s[1] === 'dlg_nome'), 'RENOMEAR abre o diálogo (dlg_nome)');
+const tipoRen = D().partes[iBr].p, blocosRen = JSON.stringify(D().tracks.map((t) => t.blocos));
+ev('nome_parte("Drop", "Final"); paint()');
+confere(D().partes[iBr].nome === 'Drop Final' && D().partes[iBr].p === tipoRen && ev('rotulos(data.partes)[' + iBr + ']') === 'Drop Final', 'nome próprio "Drop Final" (tipo continua ' + tipoRen + ')');
+confere(JSON.stringify(D().tracks.map((t) => t.blocos)) === blocosRen, 'renomear não mexe nos blocos');
+// escolher um tipo padrão no menu tira o nome próprio
+ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
+hm = menuItem(tipoRen);
+ev(`onclick(${hm.x + 10}, ${hm.y + 8}, 1, 0, 0, 0, 0, 0); paint()`);
+confere(!D().partes[iBr].nome && D().partes[iBr].p === tipoRen, 'tipo padrão no menu volta ao nome do tipo');
+// clique fora do menu só fecha
+ev(`onclick(${xb}, ${yParte()}, 1, 0, 0, 0, 0, 1); paint()`);
+const antes4d = JSON.stringify(D());
+ev('onclick(5, 5, 1, 0, 0, 0, 0, 0); paint()');
+confere(!ev('menu') && JSON.stringify(D()) === antes4d, 'clique fora fecha o menu sem mudar nada');
+// 5. duplo clique: a parte divide em duas, sem trocar o tipo
 const nAntes = D().partes.length, tipoAntes = D().partes[iBr].p;
 clica(xb, yParte()); clica(xb, yParte()); ev(`ondblclick(${xb}, ${yParte()}); paint()`);
 confere(D().partes.length === nAntes + 1 && D().partes[iBr].p === tipoAntes && D().partes[iBr + 1].p === tipoAntes, 'duplo clique divide e não troca o tipo (' + tipoAntes + ')');

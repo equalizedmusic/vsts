@@ -1,4 +1,4 @@
-// DESENROLA 0.2 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
+// DESENROLA 0.3 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
 // com o loop brace) e uma faixa REF com a música de referência. ANALYZE:
 //   1. lê a referência (o arquivo do clip da faixa REF) e acha as partes: INTRO, BREAK, BUILDUP, DROP, FINAL;
 //   2. lê as faixas que têm clip dentro do loop e põe cada uma num grupo pelo nome (os 8 do MAESTRO).
@@ -6,7 +6,8 @@
 // começo/fim, mover, pintar). BUILD monta o rascunho DEPOIS do loop, na mesma linha do tempo: cada bloco recebe cópias
 // dos clips da faixa (duplicate_clip_to_arrangement), repetidas desde o começo do bloco até encher. Nenhuma nota é
 // escrita. O loop original não é mexido. ESTRUTURA ON cria uma faixa MIDI com um clip vazio por parte (nome e cor da
-// parte); APAGAR REF ON apaga a faixa da referência no fim. UNDO apaga o rascunho e a faixa da estrutura.
+// parte); APAGAR REF ON apaga a faixa da referência no fim (antes, tira uma foto dela). UNDO apaga o rascunho e a faixa
+// da estrutura e recria a REF pela foto (arquivo, posição, warp, markers, volume).
 // Roda no [v8] (Max 9 / Live 12.2+).
 
 autowatch = 1;
@@ -15,7 +16,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela   3: eco dos control
 
 var BUF = "desenrola_ref";
 var DICT = "desenrola_data";
-var VERSAO = "0.2.0";
+var VERSAO = "0.3.0";
 var BUILD = "teste";      // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = true;     // grátis: sem licença
 var LIC_PACOTE = "desenrola", LIC_NOME = "DESENROLA";
@@ -43,7 +44,7 @@ var cfg = { est: 1, apaga: 1 };
 var ready = false, busy = false;
 var result = null;
 var refCache = null;     // { chave, ref } — mesma referência não é relida
-var criado = null;       // último BUILD: { faixas: {id: 1}, ini, fim, est: id da faixa da estrutura }
+var criado = null;       // último BUILD: { faixas: {id: 1}, ini, fim, est: id da faixa da estrutura, ref: foto da REF apagada }
 
 // ---------------------------------------------------------------- tarefas com referência guardada (ver VASSOURA 0.2.3)
 var T = {};
@@ -647,10 +648,11 @@ function fimRef(ref) {
 // "Drop 1", "Drop 2"… (os outros tipos sem número)
 function rotulos(partes) {
 	var out = [], nd = 0, tot = 0, i;
-	for (i = 0; i < partes.length; i++) if (partes[i].p == "DROP") tot++;
+	for (i = 0; i < partes.length; i++) if (partes[i].p == "DROP" && !partes[i].nome) tot++;
 	for (i = 0; i < partes.length; i++) {
 		var p = partes[i].p;
-		if (p == "DROP" && tot > 1) out.push(NOME_CLIP[p] + " " + (++nd));
+		if (partes[i].nome) out.push(String(partes[i].nome));
+		else if (p == "DROP" && tot > 1) out.push(NOME_CLIP[p] + " " + (++nd));
 		else out.push(NOME_CLIP[p] || p);
 	}
 	return out;
@@ -680,7 +682,8 @@ function lerMarcas() {
 		var ps = arr(j.partes), novas = [];
 		for (var i = 0; i < ps.length; i++) {
 			var tipo = String(ps[i].p), n = Math.max(1, Math.round(Number(ps[i].n) || 0));
-			if (REGRAS[tipo]) novas.push({ id: Number(ps[i].id) || 0, p: tipo, n: n, a: ps[i].a, b: ps[i].b });
+			var nome = ps[i].nome == null ? "" : String(ps[i].nome).replace(/^\s+|\s+$/g, "").substring(0, 24);
+			if (REGRAS[tipo]) { var np = { id: Number(ps[i].id) || 0, p: tipo, n: n, a: ps[i].a, b: ps[i].b }; if (nome) np.nome = nome; novas.push(np); }
 		}
 		if (novas.length) result.partes = novas;
 		if (j.proxId) result.proxId = Number(j.proxId);
@@ -745,7 +748,7 @@ function build() {
 		pos += pt.n * bar;
 	}
 	bd = { ops: ops, i: 0, feitos: 0, falhas: 0, aparados: 0, sobra: 0, apagados: 0, est: cfg.est ? est : [], ie: -1, estId: 0, estFeitos: 0,
-		apagaRef: cfg.apaga ? 1 : 0, refApagada: 0, refMotivo: "", inicio: agora(), ini: ini, fim: fim, faixas: {} };
+		apagaRef: cfg.apaga ? 1 : 0, refApagada: 0, refMotivo: "", refFoto: null, inicio: agora(), ini: ini, fim: fim, faixas: {} };
 	for (var t = 0; t < result.tracks.length; t++) bd.faixas[result.tracks[t].id] = 1;
 	log("DESENROLA: BUILD · " + result.partes.length + " partes · " + ops.length + " cópias · beats " + ini + "-" + fim + " · " + descrevePartes(result.partes) + "\n");
 	outlet(2, "varre", ops.length);
@@ -864,19 +867,116 @@ function apagaRef() {
 	if (meu && meu == Number(rid)) { bd.refMotivo = "o DESENROLA está na faixa REF"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
 	var idx = indiceDaFaixa(rid);
 	if (idx < 0) { bd.refMotivo = "não achei a faixa REF"; return; }
-	try { new LiveAPI("live_set").call("delete_track", idx); bd.refApagada = 1; log("DESENROLA: faixa REF apagada (era a faixa " + (idx + 1) + ")\n"); }
+	var foto = null;
+	try { foto = fotoRef(rid, idx); } catch (e) { log("DESENROLA: não consegui tirar a foto da REF: " + e + "\n"); }
+	if (!foto || !foto.clips.length) { bd.refMotivo = "não consegui guardar a REF para o UNDO"; log("DESENROLA: não apaguei a REF: " + bd.refMotivo + "\n"); return; }
+	try { new LiveAPI("live_set").call("delete_track", idx); bd.refApagada = 1; bd.refFoto = foto; log("DESENROLA: faixa REF apagada (era a faixa " + (idx + 1) + ")\n"); }
 	catch (e) { bd.refMotivo = String(e); log("DESENROLA: não consegui apagar a REF: " + e + "\n"); }
+}
+// foto da faixa REF antes de apagar: o que o UNDO precisa para recriar (arquivo, posição, warp, markers, mixer)
+var PROPS_CLIP = ["start_time", "end_time", "name", "color", "warping", "warp_mode", "looping", "loop_start", "loop_end",
+	"start_marker", "end_marker", "gain", "pitch_coarse", "pitch_fine", "muted"];
+function fotoRef(rid, idx) {
+	var t = new LiveAPI("id " + rid);
+	var f = { idx: idx, nome: str(t.get("name")), cor: num(t.get("color")), mixer: {}, clips: [] };
+	try { f.mute = num(t.get("mute")); } catch (e) { }
+	var mx = ["volume", "panning"];
+	for (var m = 0; m < mx.length; m++) { try { f.mixer[mx[m]] = num(new LiveAPI("live_set tracks " + idx + " mixer_device " + mx[m]).get("value")); } catch (e) { } }
+	var ids = idsDe(t, "arrangement_clips");
+	for (var j = 0; j < ids.length; j++) {
+		var c = new LiveAPI("id " + ids[j]), o = { file: "" };
+		try { o.file = str(c.get("file_path")); } catch (e) { }
+		if (!o.file) continue;
+		for (var k = 0; k < PROPS_CLIP.length; k++) {
+			try { var v = c.get(PROPS_CLIP[k]); o[PROPS_CLIP[k]] = PROPS_CLIP[k] == "name" ? str(v) : num(v); } catch (e) { }
+		}
+		if (o.warping) { var wm = leDict(c, "warp_markers"); o.wm = wm ? arr(wm) : null; }
+		f.clips.push(o);
+	}
+	try { if (Number(new LiveAPI("live_set tracks " + idx + " devices 0").id) > 0) f.devices = 1; } catch (e) { }
+	log("DESENROLA: foto da REF [" + f.nome + "] · faixa " + (idx + 1) + " · " + f.clips.length + " clip(s)" + (f.devices ? " · tem device (não volta no UNDO)" : "") + "\n");
+	return f;
+}
+// recria a REF pela foto (Live 12: create_audio_track + Track.create_audio_clip no Arrangement)
+function voltaRef(f) {
+	var set = new LiveAPI("live_set"), n = set.getcount("tracks");
+	var idx = f.idx >= 0 && f.idx < n ? f.idx : n;
+	set.call("create_audio_track", idx < n ? idx : -1);
+	if (idx >= n) idx = set.getcount("tracks") - 1;
+	var t = new LiveAPI("live_set tracks " + idx), tid = Number(t.id), r = { ok: 0, total: f.clips.length, tid: tid };
+	try { t.set("name", f.nome); } catch (e) { }
+	try { t.set("color", f.cor); } catch (e) { }
+	try { if (f.mute) t.set("mute", 1); } catch (e) { }
+	for (var m in f.mixer) if (f.mixer.hasOwnProperty(m)) { try { new LiveAPI("live_set tracks " + idx + " mixer_device " + m).set("value", f.mixer[m]); } catch (e) { } }
+	log("DESENROLA: UNDO · REF recriada na faixa " + (idx + 1) + " (id " + tid + ")\n");
+	for (var j = 0; j < f.clips.length; j++) {
+		var o = f.clips[j];
+		try { t.call("create_audio_clip", o.file, o.start_time); } catch (e) { log("  REF: create_audio_clip falhou: " + e + "\n"); continue; }
+		var nc = achaClip(tid, o.start_time);
+		if (!nc) { log("  REF: o Live não criou o clip de " + o.file + " no beat " + o.start_time + " (Track.create_audio_clip precisa do Live 12)\n"); continue; }
+		restauraClip(nc.id, o);
+		r.ok++;
+	}
+	return r;
+}
+function restauraClip(id, o) {
+	var a = new LiveAPI("id " + id);
+	function poe(k) { if (o[k] == null) return; try { a.set(k, o[k]); } catch (e) { } }
+	poe("warping"); poe("warp_mode");
+	if (o.warping && o.wm && o.wm.length) marcasWarp(a, o.wm);
+	// markers: a ordem certa depende do que cresce e do que encolhe; duas voltas resolvem
+	for (var v = 0; v < 2; v++) { poe("looping"); poe("loop_end"); poe("loop_start"); poe("end_marker"); poe("start_marker"); poe("loop_end"); poe("end_marker"); }
+	poe("name"); poe("color"); poe("gain"); poe("pitch_coarse"); poe("pitch_fine"); poe("muted");
+	var fim = num(a.get("end_time"));
+	if (o.end_time != null && Math.abs(fim - o.end_time) > 0.01) log("  REF: clip voltou com fim no beat " + fim + " (era " + o.end_time + ")\n");
+}
+// warp markers da foto: põe os que faltam e tira os que o Live criou sozinho (jeito do add_warp_marker descoberto na hora)
+var fmtWarp = -1;
+function marcasWarp(a, wm) {
+	function le() { var x = leDict(a, "warp_markers"); return x ? arr(x) : []; }
+	function tem(lista, bt) { for (var i = 0; i < lista.length; i++) if (Math.abs(Number(lista[i].beat_time) - bt) < 0.001) return true; return false; }
+	function poeUm(mk) {
+		var bt = Number(mk.beat_time), st = Number(mk.sample_time);
+		var jeitos = [
+			function () { a.call("add_warp_marker", { beat_time: bt, sample_time: st }); },
+			function () { var d = new Dict(); d.set("beat_time", bt); d.set("sample_time", st); a.call("add_warp_marker", d); },
+			function () { var d = new Dict(); d.set("beat_time", bt); d.set("sample_time", st); a.call("add_warp_marker", "dictionary", d.name); }
+		];
+		var ordem = fmtWarp >= 0 ? [fmtWarp] : [0, 1, 2];
+		for (var q = 0; q < ordem.length; q++) {
+			try { jeitos[ordem[q]](); } catch (e) { }
+			if (tem(le(), bt)) { if (fmtWarp < 0) { fmtWarp = ordem[q]; log("DESENROLA: add_warp_marker funcionou pelo jeito " + fmtWarp + "\n"); } return true; }
+		}
+		return false;
+	}
+	function igual(lista, mk) {
+		for (var i = 0; i < lista.length; i++) if (Math.abs(Number(lista[i].beat_time) - Number(mk.beat_time)) < 0.001 && Math.abs(Number(lista[i].sample_time) - Number(mk.sample_time)) < 0.0005) return true;
+		return false;
+	}
+	var postos = 0, tirados = 0, k;
+	for (k = 0; k < wm.length; k++) {
+		var atual = le(), bk = Number(wm[k].beat_time);
+		if (igual(atual, wm[k])) continue;
+		if (tem(atual, bk)) { try { a.call("remove_warp_marker", bk); } catch (e) { } }   // mesma batida, outro ponto do áudio
+		if (poeUm(wm[k])) postos++;
+	}
+	var agoraWm = le();
+	for (k = 0; k < agoraWm.length; k++) {
+		var bt = Number(agoraWm[k].beat_time);
+		if (!tem(wm, bt)) { try { a.call("remove_warp_marker", bt); tirados++; } catch (e) { } }
+	}
+	log("  REF: warp markers · " + postos + " postos, " + tirados + " tirados (foto tinha " + wm.length + ")\n", 1);
 }
 function fimBuild() {
 	busy = false;
 	vigiaDesliga();
-	criado = { faixas: bd.faixas, ini: bd.ini, fim: bd.fim, est: bd.estId };
+	criado = { faixas: bd.faixas, ini: bd.ini, fim: bd.fim, est: bd.estId, ref: bd.refFoto };
 	if (bd.refApagada) refCache = null;
 	var bar = result.bar;
 	var txt = "BUILD FEITO · " + result.partes.length + " partes, " + Math.round((bd.fim - bd.ini) / bar) + " compassos a partir do compasso " + (Math.round(bd.ini / bar) + 1) +
 		" · " + bd.feitos + " clips" + (bd.aparados ? " (" + bd.aparados + " aparados)" : "") + (bd.estFeitos ? " · faixa " + NOME_ESTRUTURA + " com " + bd.estFeitos + " partes" : "") +
 		(bd.refApagada ? " · REF apagada" : bd.refMotivo ? " · REF não apagada (" + bd.refMotivo + ")" : "") +
-		(bd.apagados ? " · " + bd.apagados + " não couberam" : "") + (bd.falhas ? " · " + bd.falhas + " falhas (ver DESENROLA-log.txt)" : "") + " · UNDO apaga o rascunho";
+		(bd.apagados ? " · " + bd.apagados + " não couberam" : "") + (bd.falhas ? " · " + bd.falhas + " falhas (ver DESENROLA-log.txt)" : "") + " · UNDO apaga o rascunho" + (bd.refApagada ? " e traz a REF de volta" : "");
 	log("DESENROLA: " + txt + " · " + ((agora() - bd.inicio) / 1000).toFixed(1) + " s\n");
 	status(txt);
 	publica();
@@ -900,7 +1000,7 @@ function undo() {
 		}
 	}
 	busy = true;
-	ud = { lista: lista, i: 0, apagados: 0, est: criado.est, estApagada: 0 };
+	ud = { lista: lista, i: 0, apagados: 0, est: criado.est, estApagada: 0, ref: criado.ref, refVolta: null };
 	log("DESENROLA: UNDO · " + lista.length + " clips" + (ud.est ? " · faixa " + NOME_ESTRUTURA : "") + "\n");
 	vigiaLiga();
 	proximo(passoUndo, 0);
@@ -915,12 +1015,24 @@ function passoUndo() {
 		if (ud.est) {
 			var idx = indiceDaFaixa(ud.est);
 			ud.est = 0;
-			if (idx >= 0) { try { new LiveAPI("live_set").call("delete_track", idx); ud.estApagada = 1; } catch (e) { log("  UNDO: não apaguei a faixa " + NOME_ESTRUTURA + ": " + e + "\n"); } }
+			if (idx >= 0) { try { new LiveAPI("live_set").call("delete_track", idx); ud.estApagada = 1; ud.estIdx = idx; } catch (e) { log("  UNDO: não apaguei a faixa " + NOME_ESTRUTURA + ": " + e + "\n"); } }
+			if (ud.ref) { onde = "UNDO · REF"; status("UNDO · trazendo a REF de volta"); proximo(passoUndo, PAUSA); return; }
+		}
+		if (ud.ref) {
+			var f = ud.ref;
+			ud.ref = null;
+			// a ESTRUTURA (faixa 0) saiu: a REF volta uma posição acima de onde estava quando foi apagada
+			if (ud.estApagada && ud.estIdx < f.idx) f.idx--;
+			try { ud.refVolta = voltaRef(f); } catch (e) { ud.refVolta = { ok: 0, total: f.clips.length }; log("  UNDO: erro recriando a REF: " + e + "\n"); }
 		}
 		busy = false;
 		vigiaDesliga();
 		criado = null;
-		var txt = "UNDO FEITO · " + ud.apagados + " clips apagados" + (ud.estApagada ? " · faixa " + NOME_ESTRUTURA + " apagada" : "") + " · o loop ficou como estava";
+		var rv = ud.refVolta;
+		var txt = "UNDO FEITO · " + ud.apagados + " clips apagados" + (ud.estApagada ? " · faixa " + NOME_ESTRUTURA + " apagada" : "") +
+			(rv ? (rv.ok ? " · REF de volta (" + rv.ok + (rv.ok < rv.total ? " de " + rv.total : "") + (rv.total > 1 ? " clips)" : " clip)") : " · a REF NÃO voltou (ver DESENROLA-log.txt)") : "") +
+			" · o loop ficou como estava";
+		if (rv && rv.tid && result) { result.refId = rv.tid; refCache = null; }
 		log("DESENROLA: " + txt + "\n");
 		status(txt);
 		publica();

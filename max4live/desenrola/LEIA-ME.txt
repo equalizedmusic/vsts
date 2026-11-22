@@ -30,7 +30,11 @@ PASSO A PASSO
    toca, pelo padrão do grupo (tabela abaixo).
 4. MONTE A MÚSICA na janela, antes do BUILD:
    PARTES (a barra colorida em cima):
-   - clique = troca o tipo (INTRO, BREAK, BUILDUP, DROP, FINAL); as faixas dessa parte voltam ao padrão do tipo novo
+   - clique = seleciona a parte
+   - botão direito (no Mac: Ctrl+clique) = menu da parte:
+       INTRO / BREAK / BUILDUP / DROP / FINAL = troca o tipo (as faixas dessa parte voltam ao padrão do tipo novo)
+       RENOMEAR… = dá o nome que você quiser (ex.: "Drop Final"); o tipo continua o mesmo. Nome vazio = volta ao do tipo
+       DIVIDIR = divide em duas · TIRAR = tira a parte
    - arraste a parte = muda de lugar (os blocos das faixas vão junto)
    - arraste a borda entre duas partes = tamanho da parte da esquerda (o resto anda junto);
      com Alt (Option no Mac) a vizinha cede e o total não muda
@@ -49,10 +53,11 @@ PASSO A PASSO
    encher. Se o bloco não fecha com o tamanho do loop, a última cópia é aparada no fim do bloco.
    Nenhuma nota é escrita: são cópias dos seus clips.
    ESTRUTURA ON: cria uma faixa MIDI chamada ESTRUTURA, no topo, com um clip vazio por parte, com o nome
-   (Intro, Break, Buildup, Drop 1, Drop 2, Drop 3, Final) e a cor da parte. Serve de mapa da música.
+   (Intro, Break, Buildup, Drop 1, Drop 2, Drop 3, Final, ou o nome que você deu) e a cor da parte. Serve de mapa da música.
    APAGAR REF ON: no fim, apaga a faixa REF. (Se o DESENROLA estiver na própria faixa REF, ela fica.)
-   Se quiser a REF de volta, Ctrl+Z (Cmd+Z) do Live ou arraste a música de novo.
-6. UNDO apaga o rascunho e a faixa ESTRUTURA. O loop original nunca é mexido. (A REF apagada não volta pelo UNDO.)
+   Antes de apagar, ele guarda tudo da REF (música, posição, warp, volume) para o UNDO.
+6. UNDO apaga o rascunho e a faixa ESTRUTURA e traz a REF de volta, no mesmo lugar, com a mesma música, warp,
+   cor e volume. (Efeitos que estavam na faixa REF não voltam.) O loop original nunca é mexido.
 
 PADRÃO DO QUE TOCA EM CADA PARTE (dá para mudar na janela)
   INTRO    kick, drums, hats, ambience

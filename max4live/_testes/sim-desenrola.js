@@ -15,7 +15,8 @@ const mkClip = (o) => {
   objs[c.id] = c; return c;
 };
 const mkTrack = (name, o, clips) => {
-  const t = Object.assign({ kind: 'track', id: nextId++, name, color: 0x808080, is_foldable: 0, has_midi_input: 0 }, o || {});
+  const t = Object.assign({ kind: 'track', id: nextId++, name, color: 0x808080, is_foldable: 0, has_midi_input: 0, mute: 0 }, o || {});
+  t.mixer = { volume: { kind: 'param', id: nextId++, value: 0.85 }, panning: { kind: 'param', id: nextId++, value: 0 } };
   t.clips = (clips || []).map((c) => mkClip(Object.assign({ audio: t.has_midi_input ? 0 : 1 }, c))); objs[t.id] = t; return t;
 };
 // loop de 8 compassos (32 beats) em 16..48
@@ -32,9 +33,12 @@ let tracks = [
   mkTrack('Coisa', {}, [{ s: L0 - 4, e: L0 + 8 }]),       // cruza a borda: fica de fora
   mkTrack('Drums', { is_foldable: 1 }),
   mkTrack('Sem clip no loop', {}, [{ s: 200, e: 232 }]),
-  mkTrack('REF', {}, [{ s: 400, e: 400 + 600, looping: 0, warping: WARP ? 1 : 0, file: 'C:/musicas/ref teste.wav', name: 'House Teste' }]),
+  mkTrack('REF', { color: 0x123456 }, [{ s: 400, e: 400 + 600, looping: 0, warping: WARP ? 1 : 0, file: 'C:/musicas/ref teste.wav', name: 'House Teste', gain: 0.7, warp_mode: 4,
+    sm: 0, em: WARP ? 600 : 600 * 60 / TEMPO, ls: 0, le: WARP ? 600 : 600 * 60 / TEMPO }]),
 ];
 const refClip = tracks[tracks.length - 1].clips[0];
+const REF_IDX = tracks.length - 1;
+tracks[REF_IDX].mixer.volume.value = 0.6; tracks[REF_IDX].mixer.panning.value = -0.2;
 const LEAD = +(process.env.LEAD || 2.2), BPM_REF = 124;
 if (WARP) refClip.wm = [{ sample_time: LEAD, beat_time: 0 }, { sample_time: LEAD + 400 * 60 / BPM_REF, beat_time: 400 }];
 const cues = [];
@@ -64,6 +68,8 @@ function resolve(p) {
   if (p === 'live_set view selected_track') return tracks.find((t) => t.name === 'Kick');
   if (p === 'this_device canonical_parent') return DEV_TRACK();
   if (w[1] === 'tracks' && w.length === 3) return tracks[+w[2]];
+  if (w[1] === 'tracks' && w[3] === 'mixer_device' && w.length === 5) return tracks[+w[2]].mixer[w[4]];
+  if (w[1] === 'tracks' && w[3] === 'devices') return { kind: 'none', id: 0 };
   throw new Error('path ' + p);
 }
 class LiveAPI {
@@ -83,11 +89,16 @@ class LiveAPI {
         return;
       }
       if (fn === 'create_midi_track') { const t = mkTrack('MIDI', { has_midi_input: 1 }); tracks.splice(a[0], 0, t); return; }
+      if (fn === 'create_audio_track') { const t = mkTrack('Audio'); if (a[0] < 0) tracks.push(t); else tracks.splice(a[0], 0, t); return; }
       if (fn === 'delete_track') { const t = tracks[a[0]]; if (!t) throw new Error('delete_track sem faixa ' + a[0]); t.clips.forEach((c) => delete objs[c.id]); delete objs[t.id]; tracks.splice(a[0], 1); return; }
       throw new Error('call set ' + fn);
     }
     const t = this.r;
     if (fn === 'create_midi_clip') { if (!t.has_midi_input) throw new Error('create_midi_clip em faixa de áudio'); poe(t, mkClip({ s: a[0], e: a[0] + a[1], audio: 0, name: '' })); return; }
+    // Live 12: clip de áudio novo no Arrangement (warp automático, sem loop, arquivo inteiro: 700 beats; markers automáticos)
+    if (fn === 'create_audio_clip') { if (t.has_midi_input) throw new Error('create_audio_clip em faixa MIDI'); poe(t, mkClip({ s: a[1], e: a[1] + 700, looping: 0, warping: 1, file: a[0], name: 'novo', sm: 0, em: 700, ls: 0, le: 700, wm: [{ sample_time: 0, beat_time: 0 }, { sample_time: 333, beat_time: 700 }] })); return; }
+    if (fn === 'add_warp_marker') { const m = a[0]; if (!m || typeof m !== 'object' || m.beat_time == null) throw new Error('add_warp_marker: dict'); t.wm = (t.wm || []).concat([{ beat_time: m.beat_time, sample_time: m.sample_time }]).sort((x, y) => x.beat_time - y.beat_time); return; }
+    if (fn === 'remove_warp_marker') { t.wm = (t.wm || []).filter((x) => Math.abs(x.beat_time - a[0]) > 1e-6); return; }
     if (a[0] !== 'id') throw new Error('call sem "id": ' + a.join(' '));
     const c = byId(a[1]);
     if (!c || c.kind !== 'clip') throw new Error('clip inválido ' + a[1]);
@@ -106,27 +117,32 @@ class LiveAPI {
     if (r.kind === 'cue') { if (k === 'time') return [r.time]; if (k === 'name') return [r.name]; }
     if (r.kind === 'track') {
       if (k === 'arrangement_clips') return r.clips.flatMap((c) => ['id', c.id]);
-      const m = { name: r.name, color: r.color, is_foldable: r.is_foldable, has_midi_input: r.has_midi_input };
+      const m = { name: r.name, color: r.color, is_foldable: r.is_foldable, has_midi_input: r.has_midi_input, mute: r.mute };
       if (k in m) return [m[k]];
       throw new Error('get track ' + k);
     }
     if (r.kind === 'clip') {
       const m = { start_time: r.s, end_time: r.e, looping: r.looping, warping: r.warping, is_audio_clip: r.audio, start_marker: r.sm, end_marker: r.em,
-        loop_start: r.ls, loop_end: r.le, file_path: r.file, sample_rate: r.sr, name: r.name };
+        loop_start: r.ls, loop_end: r.le, file_path: r.file, sample_rate: r.sr, name: r.name, color: r.color, gain: r.gain == null ? 0.4 : r.gain,
+        warp_mode: r.warp_mode == null ? 0 : r.warp_mode, pitch_coarse: 0, pitch_fine: 0, muted: 0 };
       if (k in m) return [m[k]];
       if (k === 'warp_markers') return [JSON.stringify({ warp_markers: r.wm || [] })];
       throw new Error('get clip ' + k);
     }
+    if (r.kind === 'param' && k === 'value') return [r.value];
     throw new Error('get ' + r.kind + ' ' + k);
   }
   set(k, v) {
     const r = this.r;
     if (r.kind === 'set') { if (k === 'current_song_time') { songTime = v; return; } throw new Error('set set ' + k); }
     if (r.kind === 'cue') { if (k === 'name') { r.name = String(v); return; } }
-    if (r.kind === 'track') { if (k === 'name') { r.name = String(v); return; } if (k === 'color') { r.color = v; return; } throw new Error('set track ' + k); }
+    if (r.kind === 'track') { if (k === 'name') { r.name = String(v); return; } if (k === 'color') { r.color = v; return; } if (k === 'mute') { r.mute = v; return; } throw new Error('set track ' + k); }
+    if (r.kind === 'param' && k === 'value') { r.value = v; return; }
     if (r.kind === 'clip') {
       if (k === 'name') { r.name = String(v); return; }
       if (k === 'color') { r.color = v; return; }
+      if (k === 'gain' || k === 'warp_mode' || k === 'pitch_coarse' || k === 'pitch_fine' || k === 'muted') { r[k] = v; return; }
+      if (k === 'warping') { r.warping = v; return; }
       const k2 = { looping: 'looping', end_marker: 'em', loop_end: 'le', start_marker: 'sm', loop_start: 'ls' }[k];
       if (!k2) throw new Error('set clip ' + k);
       r[k2] = v;
@@ -215,6 +231,9 @@ esperaLivre(() => {
   T('Kick').blocos = T('Kick').blocos.filter((b) => b.a !== ini[4]);
   T('Lead Acid').blocos = [{ a: ini[1], b: ini[3] }];
   T('Pad Long').manual = 1; T('Vox Chop').manual = 1; T('Kick').manual = 1; T('Lead Acid').manual = 1;
+  d.partes[2].nome = 'Respiro';   // BREAK renomeado na janela
+  const refAntes = JSON.stringify({ i: REF_IDX, n: tracks[REF_IDX].name, c: tracks[REF_IDX].color, v: tracks[REF_IDX].mixer.volume.value, p: tracks[REF_IDX].mixer.panning.value,
+    clips: tracks[REF_IDX].clips.map((c) => [c.s, c.e, c.file, c.warping, c.name, c.gain, c.warp_mode, c.sm, c.em, c.warping ? JSON.stringify((c.wm || []).map((m) => [m.beat_time, m.sample_time])) : '-']) });
   dicts.desenrola_data = JSON.stringify(d);
   ctx.marcas();
   const t1 = Date.now();
@@ -247,8 +266,8 @@ esperaLivre(() => {
     let esperado = [], pos = 0;
     const rot = { INTRO: 'Intro', BREAK: 'Break', BUILDUP: 'Buildup', FINAL: 'Final' };
     let nd = 0;
-    for (const p of d2.partes) { esperado.push((p.p === 'DROP' ? 'Drop ' + (++nd) : rot[p.p]) + '@' + pos + '+' + p.n); pos += p.n; }
-    confere(nomes === esperado.join(' '), 'um clip por parte com o nome (Drop 1, 2, 3…) no lugar certo');
+    for (const p of d2.partes) { esperado.push((p.nome ? p.nome : p.p === 'DROP' ? 'Drop ' + (++nd) : rot[p.p]) + '@' + pos + '+' + p.n); pos += p.n; }
+    confere(nomes === esperado.join(' '), 'um clip por parte com o nome (Drop 1, 2, 3…; parte renomeada = Respiro) no lugar certo');
     confere(est && est.clips.every((c) => c.color === d2.coresParte[d2.partesNomes.indexOf(d2.partes[est.clips.indexOf(c)].p)]), 'clip da estrutura com a cor da parte');
     confere(!tracks.some((t) => t.name === 'REF'), 'faixa REF apagada no fim (APAGAR REF ON)');
     confere(cues.length === 0, 'nenhum locator criado');
@@ -258,9 +277,15 @@ esperaLivre(() => {
     ctx.undo();
     esperaLivre(() => {
       console.log('UNDO: ' + ctx._st);
-      confere(tracks.every((t) => t.clips.every((c) => c.s < d2.inicio - 1e-6)), 'UNDO apagou todo o rascunho');
+      confere(tracks.filter((t) => t.name !== 'REF').every((t) => t.clips.every((c) => c.s < d2.inicio - 1e-6)), 'UNDO apagou todo o rascunho');
       confere(!tracks.some((t) => t.name === 'ESTRUTURA'), 'UNDO apagou a faixa ESTRUTURA');
       confere(fotoLoop() === antes, 'loop original intacto depois do UNDO');
+      const ri = tracks.findIndex((t) => t.name === 'REF'), rt = tracks[ri];
+      const refDepois = rt ? JSON.stringify({ i: ri, n: rt.name, c: rt.color, v: rt.mixer.volume.value, p: rt.mixer.panning.value,
+        clips: rt.clips.map((c) => [c.s, c.e, c.file, c.warping, c.name, c.gain, c.warp_mode, c.sm, c.em, c.warping ? JSON.stringify((c.wm || []).map((m) => [m.beat_time, m.sample_time])) : '-']) }) : '';
+      if (refDepois !== refAntes) { console.log('     antes  ' + refAntes); console.log('     depois ' + refDepois); }
+      confere(refDepois === refAntes, 'UNDO trouxe a REF de volta igual: mesma posição, nome, cor, volume, pan, clip (arquivo, lugar, warp, markers, ganho)');
+      confere(/REF de volta/.test(ctx._st), 'aviso do UNDO diz que a REF voltou');
       console.log(erros ? erros + ' ERRO(S)' : 'TUDO OK');
       process.exit(erros ? 1 : 0);
     });

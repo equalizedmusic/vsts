@@ -50,7 +50,8 @@ const LIC_OK = JSON.stringify({ ok: 1, ocupado: 0, email: 'teste', token: '', ms
   await tela('desenrola_strip.js', 420, 166, {}, [['lic(1); status("PRONTO · clique OPEN e depois ANALYZE")', 'desenrola-device.png']], 2);
   await tela('desenrola_view.js', 1360, 840, { desenrola_data: JSON.stringify(data) }, [
     [`lic(${JSON.stringify(LIC_OK)}); loadbang(); status('8 partes · 144 compassos · 24 faixas · monte a música na janela e clique BUILD')`, 'desenrola-janela.png'],
-    ['varre(900); progresso(380, 900)', 'desenrola-build.png'],
+    ['data.partes[2].nome = "Respiro"; sel = data.partes[4].id; abreMenu(xDe(inicios(data.partes)[4] + 6), TL_Y + 30, 4); menu.hov = 2', 'desenrola-menu.png'],
+    ['menu = null; sel = 0; varre(900); progresso(380, 900)', 'desenrola-build.png'],
     ['fim(); data=null; status("PRONTO · clique ANALYZE")', 'desenrola-vazio.png']]);
   console.log('ok', out, 'erros:', errs);
   await br.close();

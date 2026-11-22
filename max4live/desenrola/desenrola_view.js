@@ -1,7 +1,8 @@
 // DESENROLA — janela flutuante (jsui). Desenha "desenrola_data": as partes lidas da referência (linha do tempo) e,
 // faixa por faixa, os BLOCOS onde ela toca no rascunho (como um mini Arrangement).
-// Partes: clique = troca o tipo · arrastar = muda de lugar · arrastar a borda = tamanho (o resto anda junto; com Alt,
-//         a vizinha cede) · Alt+clique = tira · duplo clique = divide · + PART põe uma de 16 no fim.
+// Partes: clique = seleciona · botão direito (ou Ctrl+clique no Mac) = menu: tipo padrão, RENOMEAR, DIVIDIR, TIRAR ·
+//         arrastar = muda de lugar · arrastar a borda = tamanho (o resto anda junto; com Alt, a vizinha cede) ·
+//         Alt+clique = tira · duplo clique = divide · + PART põe uma de 16 no fim. RENOMEAR abre o [dialog] da janela.
 // Blocos: arrastar no vazio = pinta · clique no vazio = pinta do tamanho do PINCEL · arrastar o bloco = move ·
 //         arrastar a borda = começo/fim · Alt+clique = apaga. Grade de 4 compassos (Shift = de 1 em 1).
 // Grupo: clique = troca o grupo (os blocos da faixa voltam ao padrão do grupo).
@@ -14,7 +15,7 @@ mgraphics.autofill = 0;
 outlets = 1;
 
 var DICT = "desenrola_data";
-var VERSAO = "0.2.0";
+var VERSAO = "0.3.0";
 var msgNova = "";
 var HEAD_H = 72, BAR_H = 86, TB_Y = 168, RUL_Y = 200, TL_Y = 216, TL_H = 46, TOP = 272, FOOT_H = 40, SB_W = 14, HS_H = 10;
 var XN = 16, XG = 206, X0 = 300;
@@ -34,7 +35,10 @@ var op = null;         // arrasto em andamento (parte, borda, bloco, pintura, ba
 var prog = null;       // { feitos, total }
 var vista = { s: 0, n: 64 };   // compassos visíveis: de s até s+n
 var pincel = 0;
-var ciclo = null;      // último clique que trocou o tipo de uma parte (para o duplo clique desfazer)
+var sel = 0;           // id da parte selecionada
+var menu = null;       // menu do botão direito: { x, y, id, itens, hov }
+var renomeando = 0;    // id da parte que espera o nome do [dialog]
+var MENU_W = 176, MENU_IH = 24;
 
 function arr(x) { if (x == null) return []; return Array.isArray(x) ? x : [x]; }
 function load() {
@@ -63,7 +67,7 @@ function mudou() { save(); outlet(0, "marcas"); mgraphics.redraw(); }
 function ajusta() { vista.s = 0; vista.n = Math.max(8, total()); }
 
 // mensagens do motor
-function bang() { load(); ajusta(); mgraphics.redraw(); }
+function bang() { menu = null; load(); ajusta(); mgraphics.redraw(); }
 function loadbang() { load(); ajusta(); mgraphics.redraw(); }
 function status() { msgStatus = arrayfromargs(arguments).join(" "); mgraphics.redraw(); }
 function aviso() { msgAviso = arrayfromargs(arguments).join(" "); prog = null; mgraphics.redraw(); }
@@ -133,11 +137,14 @@ function blocosDaRegra(g, partes) {
 	for (var i = 0; i < partes.length; i++) { if (toca(g, partes[i].p)) out.push({ a: pos, b: pos + partes[i].n }); pos += partes[i].n; }
 	return out;
 }
-// "DROP 1", "DROP 2"… (os outros tipos sem número)
+// "DROP 1", "DROP 2"… (os outros tipos sem número); parte renomeada mostra o nome dela
 function rotulos(partes) {
 	var out = [], nd = 0, tot = 0, i;
-	for (i = 0; i < partes.length; i++) if (partes[i].p == "DROP") tot++;
-	for (i = 0; i < partes.length; i++) out.push(partes[i].p == "DROP" && tot > 1 ? "DROP " + (++nd) : partes[i].p);
+	for (i = 0; i < partes.length; i++) if (partes[i].p == "DROP" && !partes[i].nome) tot++;
+	for (i = 0; i < partes.length; i++) {
+		if (partes[i].nome) out.push(String(partes[i].nome));
+		else out.push(partes[i].p == "DROP" && tot > 1 ? "DROP " + (++nd) : partes[i].p);
+	}
 	return out;
 }
 // ordena e junta o que se sobrepõe (blocos que só encostam ficam separados: o loop recomeça no começo de cada bloco)
@@ -239,6 +246,95 @@ function paint() {
 	linhaTempo(W);
 	faixas(W, H);
 	rodape(W, H);
+	desenhaMenu(W, H);
+}
+
+// ---------------------------------------------------------------- menu do botão direito numa parte
+function abreMenu(x, y, i) {
+	var p = data.partes[i], itens = [];
+	for (var k = 0; k < PARTES.length; k++) itens.push({ t: PARTES[k], tipo: PARTES[k], on: p.p == PARTES[k] && !p.nome });
+	itens.push({ sep: 1 });
+	itens.push({ t: "RENOMEAR…", acao: "ren" });
+	itens.push({ t: "DIVIDIR", acao: "div" });
+	if (data.partes.length > 1) itens.push({ t: "TIRAR", acao: "tira" });
+	menu = { x: x, y: y, id: p.id, itens: itens, hov: -1 };
+	sel = p.id;
+	mgraphics.redraw();
+}
+function idxDaParte(id) { for (var i = 0; i < data.partes.length; i++) if (data.partes[i].id == id) return i; return -1; }
+function desenhaMenu(W, H) {
+	if (!menu || !data) return;
+	var i = idxDaParte(menu.id);
+	if (i < 0) { menu = null; return; }
+	var TIT = 28, h = TIT + 6, k;
+	for (k = 0; k < menu.itens.length; k++) h += menu.itens[k].sep ? 9 : MENU_IH;
+	var x = Math.max(4, Math.min(W - MENU_W - 4, menu.x)), y = Math.max(4, Math.min(H - h - 4, menu.y));
+	caixaR(x + 3, y + 4, MENU_W, h, 6, [0, 0, 0], 0.45);
+	caixaR(x, y, MENU_W, h, 6, [0.17, 0.17, 0.19]);
+	contorno(x, y, MENU_W, h, 6, [0.36, 0.36, 0.4], 1);
+	var cp = corP(data.partes[i].p);
+	caixaR(x + 8, y + 9, 10, 10, 2, cp);
+	rgb(0.91, 0.91, 0.91); texto(cabeFim(rotulos(data.partes)[i], MENU_W - 34, 12, true), x + 24, y + 19, 12, true);
+	caixa(x + 6, y + TIT, MENU_W - 12, 1, 0.3, 0.3, 0.33);
+	var yy = y + TIT + 3;
+	for (k = 0; k < menu.itens.length; k++) {
+		var it = menu.itens[k];
+		if (it.sep) { caixa(x + 6, yy + 4, MENU_W - 12, 1, 0.3, 0.3, 0.33); yy += 9; continue; }
+		if (menu.hov == k) caixaR(x + 4, yy, MENU_W - 8, MENU_IH, 4, AC, 0.9);
+		if (it.tipo) { caixaR(x + 12, yy + 7, 10, 10, 2, corP(it.tipo)); }
+		if (menu.hov == k) rgb(0.07, 0.07, 0.08); else if (it.acao == "tira") rgbv(WARN); else rgb(0.91, 0.91, 0.91);
+		texto(it.t, x + (it.tipo ? 30 : 14), yy + 16, 12, true);
+		if (it.on) { if (menu.hov == k) rgb(0.07, 0.07, 0.08); else rgbv(AC); textoD("✓", x + MENU_W - 12, yy + 16, 12, true); }
+		hits.push({ x: x + 4, y: yy, w: MENU_W - 8, h: MENU_IH, tipo: "menu", k: k });
+		yy += MENU_IH;
+	}
+	hits.push({ x: x, y: y, w: MENU_W, h: h, tipo: "menuFundo" });
+}
+function aplicaMenu(it) {
+	var id = menu.id, i = idxDaParte(id);
+	menu = null;
+	if (i < 0) { mgraphics.redraw(); return; }
+	var P = data.partes, p = P[i];
+	if (it.tipo) { trocaTipo(i, it.tipo); return; }
+	if (it.acao == "ren") { renomeando = id; outlet(0, "dlg_nome"); mgraphics.redraw(); return; }
+	if (it.acao == "div") { divide(i); return; }
+	if (it.acao == "tira" && P.length > 1) { var vP = copia(P), vT = fotoT(); P.splice(i, 1); remapeia(vP, vT, P); if (sel == id) sel = 0; mudou(); return; }
+	mgraphics.redraw();
+}
+// tipo padrão escolhido no menu: tira o nome próprio; se o tipo mudou, as faixas dessa parte vão para o padrão do tipo novo
+function trocaTipo(i, tipo) {
+	var P = data.partes, p = P[i];
+	if (p.p == tipo && !p.nome) { mgraphics.redraw(); return; }
+	delete p.nome;
+	if (p.p != tipo) {
+		var vP = copia(P), vT = fotoT();
+		p.p = tipo;
+		p.id = data.proxId++;   // id novo = tipo novo: o remapeia dá o padrão do grupo só nessa parte
+		sel = p.id;
+		remapeia(vP, vT, P);
+	}
+	mudou();
+}
+// o [dialog] da janela devolve o nome digitado (vazio = volta ao nome do tipo)
+function nome_parte() {
+	var s = arrayfromargs(arguments).join(" ").replace(/^\s+|\s+$/g, "").substring(0, 24);
+	var id = renomeando;
+	renomeando = 0;
+	if (!data || !id) return;
+	var i = idxDaParte(id);
+	if (i < 0) return;
+	if (s && s.toUpperCase() != data.partes[i].p) data.partes[i].nome = s; else delete data.partes[i].nome;
+	mudou();
+}
+function divide(i) {
+	var p = data.partes[i];
+	if (p.n < 2) { mgraphics.redraw(); return; }
+	var n1 = p.n >= 8 ? Math.round(p.n / 8) * 4 : Math.floor(p.n / 2);
+	if (n1 < 1 || n1 >= p.n) n1 = Math.floor(p.n / 2);
+	// dividir não mexe em nada no tempo: os blocos ficam onde estão
+	data.partes.splice(i + 1, 0, { id: data.proxId++, p: p.p, n: p.n - n1 });
+	p.n = n1; p.a = null; p.b = null;
+	mudou();
 }
 
 function barra(W) {
@@ -298,9 +394,9 @@ function vazio(W, H) {
 		"1.  No Arrangement, deixe o seu loop com todas as faixas (kick, bass, drums, synths…) e marque o loop brace em volta dele.",
 		"2.  Crie uma faixa de áudio chamada REF e arraste a música de referência para ela (fora do loop). Warp ligado ajuda no andamento.",
 		"3.  Clique ANALYZE: o DESENROLA lê as partes da referência (INTRO, BREAK, BUILDUP, DROP, FINAL) e as faixas do loop.",
-		"4.  Monte a música na janela: arraste as partes e os blocos de cada faixa. Clique BUILD: o rascunho aparece depois do loop,",
+		"4.  Monte a música na janela: botão direito numa parte troca o tipo ou renomeia; arraste partes e blocos. BUILD: o rascunho vem depois do loop,",
 		"     com a faixa ESTRUTURA (um clip com nome e cor por parte). Com APAGAR REF ON, a faixa REF sai no fim.",
-		"5.  Não gostou? UNDO apaga o rascunho e a faixa ESTRUTURA. O loop original nunca é mexido."
+		"5.  Não gostou? UNDO apaga o rascunho e a faixa ESTRUTURA e traz a REF de volta. O loop original nunca é mexido."
 	];
 	for (var i = 0; i < passos.length; i++) { rgb(0.7, 0.7, 0.72); texto(passos[i], 16, y + 34 + i * 26, 14, false); }
 }
@@ -317,16 +413,16 @@ function linhaTempo(W) {
 	}
 	rgb(0.55, 0.55, 0.58); texto("PARTES", 16, y + 10, 11, true);
 	rgb(0.45, 0.45, 0.48);
-	texto("clique = tipo · arraste = muda de lugar", 16, y + 23, 10, false);
-	texto("borda = tamanho (Alt: a vizinha cede)", 16, y + 34, 10, false);
-	texto("Alt+clique = tira · duplo clique = divide", 16, y + 45, 10, false);
+	texto("botão direito = tipo / renomear", 16, y + 23, 10, false);
+	texto("arraste = muda de lugar · borda = tamanho", 16, y + 34, 10, false);
+	texto("Alt: vizinha cede · duplo clique = divide", 16, y + 45, 10, false);
 	for (var i = 0; i < data.partes.length; i++) {
 		var p = data.partes[i], c = corP(p.p), fx = faixaX(ini[i], ini[i] + p.n);
 		var arrastando = op && op.tipo == "pMove" && op.id == p.id && op.mexeu;
 		if (fx) {
 			var w = fx[1] - fx[0], hv = hov && hov.tipo == "parte" && hov.i == i && !prog;
 			caixaR(fx[0] + 1, y, Math.max(2, w - 2), TL_H, 4, c, arrastando ? 0.55 : hv ? 1 : 0.85);
-			if (arrastando) contorno(fx[0] + 1, y, Math.max(2, w - 2), TL_H, 4, [1, 1, 1], 0.9, 2);
+			if (arrastando || p.id == sel) contorno(fx[0] + 1, y, Math.max(2, w - 2), TL_H, 4, [1, 1, 1], 0.9, 2);
 			if (w > 26) {
 				tinta(c);
 				texto(cabeFim(rot[i], w - 10, 12, true), fx[0] + 6, y + 17, 12, true);
@@ -485,6 +581,15 @@ function parteEm(bar) {
 function onclick(x, y, but, cmd, shift, caps, opt, ctrl) {
 	if (op) solta();
 	arrasto = -1;
+	if (menu) {
+		// menu aberto: clique num item aplica; em qualquer outro lugar só fecha
+		var hm = acha(x, y, ["menu"]);
+		if (hm && !menu.itens[hm.k].sep) aplicaMenu(menu.itens[hm.k]);
+		else { menu = null; mgraphics.redraw(); }
+		return;
+	}
+	// botão direito: o Max manda ctrl = 1 (botão direito no Windows, Ctrl+clique/botão direito no Mac)
+	var direito = !!ctrl || but > 1;
 	var hb = alvo(x, y), apaga = !!(opt || ctrl);
 	if (hb && hb.tipo == "cmd") {
 		var m = hb.msg;
@@ -510,7 +615,8 @@ function onclick(x, y, but, cmd, shift, caps, opt, ctrl) {
 		return;
 	}
 	if (hb.tipo == "parte") {
-		if (apaga) {
+		if (direito) { abreMenu(x, y, hb.i); return; }
+		if (opt) {
 			if (P.length > 1) { var vP = copia(P), vT = fotoT(); P.splice(hb.i, 1); remapeia(vP, vT, P); mudou(); }
 			return;
 		}
@@ -540,23 +646,10 @@ onclick.local = 1;
 
 function ondblclick(x, y) {
 	if (op) solta();
-	if (!data || prog) return;
+	if (!data || prog || menu) return;
 	var hb = acha(x, y, ["parte"]);
 	if (!hb) return;
-	// os dois cliques trocaram o tipo: volta como estava antes do 1º
-	if (ciclo && ciclo.id == data.partes[hb.i].id && new Date().getTime() - ciclo.t < 800) {
-		data.partes = ciclo.vP;
-		for (var t = 0; t < data.tracks.length; t++) data.tracks[t].blocos = ciclo.vT[t];
-	}
-	ciclo = null;
-	var p = data.partes[hb.i];
-	if (p.n < 2) { mudou(); return; }
-	var n1 = p.n >= 8 ? Math.round(p.n / 8) * 4 : Math.floor(p.n / 2);
-	if (n1 < 1 || n1 >= p.n) n1 = Math.floor(p.n / 2);
-	// dividir não mexe em nada no tempo: os blocos ficam onde estão
-	data.partes.splice(hb.i + 1, 0, { id: data.proxId++, p: p.p, n: p.n - n1 });
-	p.n = n1; p.a = null; p.b = null;
-	mudou();
+	divide(hb.i);
 }
 ondblclick.local = 1;
 
@@ -651,20 +744,12 @@ function solta() {
 	if (!o || !data) return;
 	var P = data.partes;
 	if (o.tipo == "pMove" && !o.mexeu) {
-		// clique simples numa parte: troca o tipo (as faixas dessa parte voltam ao padrão do tipo novo)
-		var p = P[o.i];
-		if (!p) return;
-		var agora = new Date().getTime();
-		if (!ciclo || ciclo.id != p.id || agora - ciclo.t > 800) ciclo = { id: p.id, vP: copia(o.vP), vT: copia(o.vT) };
-		ciclo.t = agora;
-		var vP = copia(P), vT = fotoT();
-		p.p = PARTES[(PARTES.indexOf(p.p) + 1) % PARTES.length];
-		p.id = data.proxId++;   // id novo = tipo novo: o remapeia dá o padrão do grupo só nessa parte
-		remapeia(vP, vT, P);
-		ciclo.id = p.id;
-		mudou();
+		// clique simples numa parte: só seleciona (tipo e nome ficam no botão direito)
+		sel = o.id;
+		mgraphics.redraw();
 		return;
 	}
+	if (o.tipo == "pMove") sel = o.id;
 	if (o.tipo == "pinta" && !o.mexeu) {
 		var tr = data.tracks[o.t], g = grade(o.shift), A, B;
 		if (!pincel) { var pe = parteEm(o.bar0); if (!pe) return; A = pe.s; B = pe.s + pe.n; }
@@ -696,6 +781,11 @@ function mesmo(a, b) { return (!a && !b) || (a && b && a.tipo == b.tipo && a.i =
 function onidle(x, y) {
 	if (op) { solta(); }
 	if (prog) return;
+	if (menu) {
+		var hm = acha(x, y, ["menu"]), k = hm ? hm.k : -1;
+		if (k != menu.hov) { menu.hov = k; mgraphics.redraw(); }
+		return;
+	}
 	var h = faixaEm(x, y), hb = alvo(x, y);
 	var hv = hb && hb.tipo != "cmd" && hb.tipo != "trilha" && hb.tipo != "hs" ? { tipo: hb.tipo, i: hb.i, t: hb.t, j: hb.j } : null;
 	if (h != hover || !mesmo(hv, hov)) { hover = h; hov = hv; mgraphics.redraw(); }
@@ -706,6 +796,7 @@ onidleout.local = 1;
 // onwheel(x, y, wheel_x, wheel_y, cmd, shift, capslock, option, ctrl)
 function onwheel(x, y, wx, wy, cmd, shift, caps, opt, ctrl) {
 	if (!data) return;
+	if (menu) { menu = null; mgraphics.redraw(); return; }
 	var naLinha = y >= RUL_Y && y < TL_Y + TL_H + 4 && x >= X0;
 	if (naLinha || cmd || ctrl) { if (wy) zoom(wy > 0 ? 1 / 1.25 : 1.25, x >= X0 ? x : null); return; }
 	if (wx || shift) {

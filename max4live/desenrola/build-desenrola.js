@@ -78,6 +78,24 @@ line(v8, 2, send, 0);
 const comum = require('../_comum/m4l_comum.js');
 comum.faixaEJanela({ box, obj, msg, line, v8, dev: 'desenrola', NOME: 'DESENROLA', boxes });
 
+// RENOMEAR (menu do botão direito numa parte): a janela manda "dlg_nome", o [dialog] abre e o nome digitado volta
+// para a própria janela como "nome_parte <texto>" (não passa pelo motor). Só no DESENROLA: o _comum fica igual.
+(function () {
+  const pj = boxes.find((b) => b.box.patcher && b.box.text === 'p DESENROLA');
+  if (!pj) throw new Error('subpatcher da janela não achado');
+  const sub = pj.box.patcher, rt = sub.boxes.find((b) => b.box.id === 'obj-6').box;
+  if (rt.text !== 'route dlg_email dlg_token') throw new Error('route da janela mudou: ' + rt.text);
+  rt.text = 'route dlg_email dlg_token dlg_nome';
+  rt.numoutlets = 4; rt.outlettype = ['', '', '', ''];
+  const resto = sub.lines.find((l) => l.patchline.source[0] === 'obj-6' && l.patchline.source[1] === 2);
+  resto.patchline.source = ['obj-6', 3];
+  sub.boxes.push({ box: { id: 'obj-11', maxclass: 'newobj', text: 'dialog Nome da parte (vazio = nome do tipo)', numinlets: 2, numoutlets: 1, outlettype: [''], patching_rect: [660, 1010, 260, 22] } });
+  sub.boxes.push({ box: { id: 'obj-12', maxclass: 'newobj', text: 'prepend nome_parte', numinlets: 1, numoutlets: 1, outlettype: [''], patching_rect: [660, 1050, 120, 22] } });
+  sub.lines.push({ patchline: { source: ['obj-6', 2], destination: ['obj-11', 0] } });
+  sub.lines.push({ patchline: { source: ['obj-11', 0], destination: ['obj-12', 0] } });
+  sub.lines.push({ patchline: { source: ['obj-12', 0], destination: ['obj-4', 0] } });
+})();
+
 const patcher = {
   patcher: {
     fileversion: 1,
