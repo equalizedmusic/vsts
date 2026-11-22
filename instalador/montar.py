@@ -433,6 +433,142 @@ Ajustes do Sistema > Privacidade e Segurança > role até o aviso do instalador 
 """
 
 
+# ---------------------------------------------------------------- Max for Live (VASSOURA, RODO, ESPANADOR, DESENROLA)
+# --m4l <pasta montada pelo build-<device>.js>: o instalador põe a pasta inteira, com nome FIXO (<Pacote>), na
+# User Library do Ableton (Presets/Audio Effects/Max Audio Effect) e apaga as pastas de versões antigas (<Pacote>-x.y.z,
+# do tempo do zip). Só para o usuário atual, sem senha de administrador.
+M4L_SUB = ("Ableton", "User Library", "Presets", "Audio Effects", "Max Audio Effect")
+
+
+def iss_m4l(pacote, versao, origem, saida, nome_arquivo):
+    origem = os.path.abspath(origem)
+    P = pacote.upper()
+    L = [
+        "[Setup]",
+        f"AppId={MARCA}.M4L.{pacote}",
+        f"AppName={MARCA} {P} (Max for Live)",
+        f"AppVersion={versao}",
+        f"AppVerName={MARCA} {P} {versao} (Max for Live)",
+        f"AppPublisher={MARCA}",
+        "DefaultDirName={userdocs}\\" + "\\".join(M4L_SUB),
+        "AppendDefaultDirName=no",
+        "DirExistsWarning=no",
+        "UsePreviousAppDir=yes",
+        "DisableProgramGroupPage=yes",
+        "DisableReadyPage=no",
+        rf"UninstallFilesDir={{localappdata}}\{MARCA}\M4L\{pacote}",
+        f"UninstallDisplayName={MARCA} {P} (Max for Live)",
+        "PrivilegesRequired=lowest",
+        "WizardStyle=modern",
+        "Compression=lzma2/max",
+        "SolidCompression=yes",
+        f"OutputDir={os.path.abspath(saida)}",
+        f"OutputBaseFilename={nome_arquivo}",
+        "",
+        "[Languages]",
+        r'Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"',
+        "",
+        "[Messages]",
+        f"SelectDirLabel3=O {P} vai para a pasta Max Audio Effect da sua User Library do Ableton. A pasta abaixo é a padrão; "
+        "só troque se você mudou a User Library de lugar no Live (Preferences > Library). Feche o Live antes de continuar.",
+        f"FinishedLabel=Pronto. No Live, no navegador da esquerda: User Library > Presets > Audio Effects > Max Audio Effect > {P}. "
+        f"Arraste o {pacote}.amxd para a primeira faixa de áudio do projeto e clique OPEN THE MAGIC para ativar.",
+        "",
+        "[InstallDelete]",
+        # versões antigas instaladas pelo zip (pasta com a versão no nome) e a pasta fixa anterior (arquivo que saiu)
+        rf'Type: filesandordirs; Name: "{{app}}\{pacote}-*"',
+        rf'Type: filesandordirs; Name: "{{app}}\{pacote}"',
+        "",
+        "[Icons]",
+        rf'Name: "{{autoprograms}}\{MARCA}\Desinstalar {MARCA} {P}"; Filename: "{{uninstallexe}}"',
+        "",
+        "[Files]",
+        rf'Source: "{origem}\*"; DestDir: "{{app}}\{pacote}"; Flags: ignoreversion recursesubdirs createallsubdirs',
+    ]
+    return "\r\n".join(L) + "\r\n"
+
+
+PREINSTALL_M4L = """#!/bin/bash
+# $2 = pasta de destino (~/Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect): apaga as versões antigas
+D="${{2%/}}"
+case "$D" in */"Max Audio Effect") ;; *) exit 0;; esac
+rm -rf "$D/{pacote}" "$D/{pacote}"-[0-9]*
+exit 0
+"""
+
+LEIAME_M4L = """{marca} {P} {versao} (Max for Live)
+
+1. Feche o Live.
+2. Abra "Instalar {P}.pkg" e clique em Instalar. Não pede senha: vai só para o seu usuário.
+   A pasta {pacote} vai para ~/Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/
+   (as pastas de versões antigas são apagadas).
+3. Abra o Live. No navegador da esquerda: User Library > Presets > Audio Effects > Max Audio Effect > {P}.
+   Arraste o {pacote}.amxd para a primeira faixa de áudio do projeto e clique OPEN THE MAGIC para ativar.
+
+Mudou a User Library de lugar (Live > Preferences > Library)? Copie a pasta de ~/Music/Ableton/User Library/...
+para a sua User Library, no mesmo caminho.
+
+Se o Mac disser que não pode abrir o instalador (desenvolvedor não identificado):
+Ajustes do Sistema > Privacidade e Segurança > role até o aviso do instalador > "Abrir Mesmo Assim".
+
+Para desinstalar: apague a pasta {pacote} de ~/Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/.
+"""
+
+
+def montar_m4l_win(a):
+    nome = f"{MARCA}-{a.pacote}-win"
+    script = iss_m4l(a.pacote, a.versao, a.m4l, a.saida, nome)
+    caminho = os.path.join(tempfile.mkdtemp(), f"{nome}.iss")
+    with open(caminho, "w", encoding="utf-8-sig") as f:
+        f.write(script)
+    print(script)
+    if a.so_script:
+        return
+    rodar(achar_iscc(), "/Q", caminho)
+    print("gerado:", os.path.join(a.saida, nome + ".exe"))
+
+
+def montar_m4l_mac(a):
+    from xml.sax.saxutils import escape
+    trabalho = tempfile.mkdtemp()
+    pkgs = os.path.join(trabalho, "pkgs")
+    os.makedirs(pkgs)
+    P = a.pacote.upper()
+    ident_pkg = f"com.insidestudiosp.pkg.m4l.{ident(a.pacote)}"
+    raiz = os.path.join(trabalho, "raiz")
+    shutil.copytree(a.m4l, os.path.join(raiz, a.pacote))
+    scripts = os.path.join(trabalho, "scripts")
+    os.makedirs(scripts)
+    with open(os.path.join(scripts, "preinstall"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(PREINSTALL_M4L.format(pacote=a.pacote))
+    os.chmod(os.path.join(scripts, "preinstall"), 0o755)
+    arq = f"{ident_pkg}.pkg"
+    # domínio "home do usuário": o install-location é relativo a ~ (sem senha de administrador)
+    rodar("pkgbuild", "--root", raiz, "--identifier", ident_pkg, "--version", a.versao, "--scripts", scripts,
+          "--install-location", "/Music/" + "/".join(M4L_SUB[1:]), os.path.join(pkgs, arq))
+    dist = os.path.join(trabalho, "distribution.xml")
+    with open(dist, "w", encoding="utf-8") as f:
+        f.write("\n".join([
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<installer-gui-script minSpecVersion="2">',
+            f"  <title>{escape(MARCA + ' ' + P)} (Max for Live)</title>",
+            '  <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>',
+            '  <domains enable_localSystem="false" enable_currentUserHome="true" enable_anywhere="false"/>',
+            '  <allowed-os-versions><os-version min="11.0"/></allowed-os-versions>',
+            '  <choices-outline><line choice="m4l"/></choices-outline>',
+            f'  <choice id="m4l" title="{escape(P)}"><pkg-ref id="{ident_pkg}"/></choice>',
+            f'  <pkg-ref id="{ident_pkg}" version="{a.versao}" onConclusion="none">#{arq}</pkg-ref>',
+            "</installer-gui-script>", ""]))
+    print(open(dist, encoding="utf-8").read())
+    palco = os.path.join(trabalho, "dmg")
+    os.makedirs(palco)
+    rodar("productbuild", "--distribution", dist, "--package-path", pkgs, "--version", a.versao,
+          os.path.join(palco, f"Instalar {P}.pkg"))
+    with open(os.path.join(palco, "LEIA-ME.txt"), "w", encoding="utf-8") as f:
+        f.write(LEIAME_M4L.format(marca=MARCA, P=P, pacote=a.pacote, versao=a.versao))
+    gerar_dmg(a, palco)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sistema", choices=["mac", "win"], required=True)
@@ -443,8 +579,13 @@ def main():
     ap.add_argument("--bancos", help="pasta com os .chutebank do CHUTE (vão junto, ou sozinhos com --so-bancos)")
     ap.add_argument("--so-bancos", action="store_true", help="pacote só de presets do CHUTE, sem plugin")
     ap.add_argument("--so-script", action="store_true", help="Windows: só mostra o .iss, sem compilar")
+    ap.add_argument("--m4l", help="pasta de um device Max for Live montada pelo build-<device>.js (instalador do device)")
     a = ap.parse_args()
     os.makedirs(a.saida, exist_ok=True)
+    if a.m4l:
+        print(f"{MARCA} {a.pacote} {a.versao} ({a.sistema}): Max for Live")
+        (montar_m4l_mac if a.sistema == "mac" else montar_m4l_win)(a)
+        return
     if a.so_bancos:
         if not bancos_da_pasta(a.bancos):
             sys.exit(f"nenhum .chutebank em {a.bancos}")

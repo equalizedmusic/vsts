@@ -7,7 +7,7 @@ name: release-max4live
 on:
   push:
     branches: [main]
-    paths: ['max4live/**', 'novidades/Vassoura.md', 'novidades/Rodo.md', 'novidades/Espanador.md','novidades/Desenrola.md','.github/workflows/release-max4live.yml']
+    paths: ['max4live/**', 'novidades/Vassoura.md', 'novidades/Rodo.md', 'novidades/Espanador.md','novidades/Desenrola.md','instalador/montar.py','.github/workflows/release-max4live.yml']
   workflow_dispatch:
 
 permissions:
@@ -52,7 +52,7 @@ jobs:
               echo
               echo "Download: \`$pasta.zip\` aqui embaixo em Assets. Max for Live (Live Suite, ou Standard com Max for Live)."
               echo "Ativar: na 1ª vez, OPEN THE MAGIC > e-mail + token da compra > ACTIVATE."
-              echo "Instalar: copie a pasta \`$pasta\` inteira para \`User Library/Presets/Audio Effects/Max Audio Effect/\` e arraste o \`.amxd\` para a primeira faixa de áudio do projeto (no master ele não analisa)."
+              echo "Instalar: rode o instalador InsideStudioSP-$Nome-win.exe ou InsideStudioSP-$Nome-mac.dmg (sobem aqui alguns minutos depois; põem a pasta na User Library do Ableton e apagam as versões antigas). À mão: copie a pasta \`$pasta\` inteira para \`User Library/Presets/Audio Effects/Max Audio Effect/\` e arraste o \`.amxd\` para a primeira faixa de áudio do projeto (no master ele não analisa)."
             } > "$notas"
             gh release create "$tag" "$pub/$pasta.zip" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
               --title "${Nome^^} $ver (Max for Live)" --notes-file "$notas"
@@ -63,4 +63,54 @@ jobs:
                   gh release delete "$antiga" --yes --cleanup-tag -R "$GITHUB_REPOSITORY"
                   echo "versão antiga $antiga apagada"
                 done || true
+          done
+
+  # INSTALADORES (22/11/2026): exe (Inno Setup, só o usuário, sem admin) e dmg (pkg na home do usuário) de cada device,
+  # anexados ao release da versão atual. Põem a pasta <Device> na User Library do Ableton
+  # (Presets/Audio Effects/Max Audio Effect) e apagam as pastas <Device>-x.y.z antigas. Roda em todo disparo e
+  # substitui (--clobber): mudança no instalador vale para os devices já lançados sem subir a versão deles.
+  instaladores:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest,   name: mac }
+          - { os: windows-latest, name: win }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instaladores dos devices
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.name }}" = win ]; then
+            [ -e "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ] || choco install innosetup -y --no-progress > /dev/null
+            PY=python; ext=exe
+          else
+            PY=python3; ext=dmg
+          fi
+          for build in max4live/[!_]*/build-*.js; do
+            dir=$(dirname "$build"); dev=$(basename "$dir")
+            Nome="$(tr '[:lower:]' '[:upper:]' <<< "${dev:0:1}")${dev:1}"
+            nov="novidades/$Nome.md"
+            [ -f "$nov" ] || continue
+            ver=$(grep -m1 -E '^## [0-9]+.[0-9]+.[0-9]+' "$nov" | awk '{print $2}')
+            tag="$dev-v$ver"
+            if ! gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then echo "$tag não existe: sem instalador"; continue; fi
+            pub="$RUNNER_TEMP/m4l-$dev"; rm -rf "$pub"; mkdir -p "$pub"
+            node "$build" "$pub/$Nome"
+            [ -f "$dir/LEIA-ME.txt" ] && cp "$dir/LEIA-ME.txt" "$pub/$Nome/"
+            $PY instalador/montar.py --sistema ${{ matrix.name }} --pacote "$Nome" --versao "$ver" --m4l "$pub/$Nome" --saida "$pub/out"
+            arq="$pub/out/InsideStudioSP-$Nome-${{ matrix.name }}.$ext"
+            ls -l "$arq"
+            gh release upload "$tag" "$arq" --clobber -R "$GITHUB_REPOSITORY"
+            echo "$tag: instalador ${{ matrix.name }} anexado"
           done

@@ -3,7 +3,9 @@ Suporte: contato@insidestudiosp.com.br · https://insidestudiosp.com.br/rodo/
 Nivela os clips de áudio do Arrangement pelo Clip Gain, medindo por PICO, RMS ou LUFS (SENSOR). Par da VASSOURA.
 
 INSTALAR
-1. Copie a pasta inteira (Rodo-<versão>) para:
+1. Jeito fácil: rode o instalador (InsideStudioSP-Rodo-win.exe no Windows, InsideStudioSP-Rodo-mac.dmg no Mac).
+   Ele põe a pasta no lugar certo e apaga as versões antigas. Pule para o passo 2.
+   À mão: copie a pasta inteira (Rodo-<versão>) para:
    Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
    O Rodo.amxd e os 4 arquivos .js (rodo.js, rodo_view.js, rodo_strip.js e rodo_http.js) PRECISAM ficar juntos.
 2. No Live, arraste o Rodo.amxd para a PRIMEIRA faixa de áudio do projeto.

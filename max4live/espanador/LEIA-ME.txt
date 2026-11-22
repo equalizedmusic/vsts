@@ -14,7 +14,9 @@ Cada um funciona sozinho; juntos, o set sai da bagunça e chega à master pronta
 ======================================================================
 INSTALAR (uma vez)
 ======================================================================
-1. Copie a pasta inteira (Espanador-<versão>) para:
+1. Jeito fácil: rode o instalador (InsideStudioSP-Espanador-win.exe no Windows, InsideStudioSP-Espanador-mac.dmg no Mac).
+   Ele põe a pasta no lugar certo e apaga as versões antigas. Pule para o passo 2.
+   À mão: copie a pasta inteira (Espanador-<versão>) para:
    Windows: Documentos\Ableton\User Library\Presets\Audio Effects\Max Audio Effect\
    Mac:     Music/Ableton/User Library/Presets/Audio Effects/Max Audio Effect/
    O Espanador.amxd e os 4 arquivos .js (espanador.js, espanador_view.js, espanador_strip.js e espanador_http.js) PRECISAM ficar juntos.
