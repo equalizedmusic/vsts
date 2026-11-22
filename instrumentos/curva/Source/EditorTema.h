@@ -89,7 +89,7 @@ inline juce::ColourGradient comAlfa (juce::ColourGradient cg, float a)   // o me
 
 inline juce::String nomeHz (double hz)
 {
-    return hz >= 1000.0 ? juce::String (hz / 1000.0, hz >= 10000.0 ? 1 : 2) + " kHz" : juce::String (hz, hz < 100 ? 1 : 0) + " Hz";
+    return hz >= 1000.0 ? juce::String (hz / 1000.0, hz >= 10000.0 ? 1 : 2) + " kHz" : (hz < 100 ? juce::String (hz, 1) : juce::String (juce::roundToInt (hz))) + " Hz";
 }
 
 inline juce::String nota (double hz)

@@ -4,7 +4,8 @@
 - SPECTRUM: o agudo não some mais da tela. A soma da potência perdia precisão quando o grave era forte, e o OUT
   parecia cortado acima de ~3 kHz (o som estava certo; era só o desenho). O IN também fazia degraus no agudo.
 - Tela: valores inteiros em O QUE A CURVA DEVOLVE (saíam com várias casas), o knob OUTPUT não encosta mais na
-  borda e o texto do SPECTRUM não fica mais por baixo dos botões IN/OUT/HOLD.
+  borda e o texto do SPECTRUM não fica mais por baixo dos botões IN/OUT/HOLD; o pico do espectro mostra o Hz sem casas
+  sobrando (saía "112.874 Hz").
 - Ainda TESTE: sem ativação por licença e fora do site.
 
 ## 0.1.0 — 2026-11-21
