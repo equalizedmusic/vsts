@@ -18,6 +18,7 @@ node t-persist.js %TEMP%/m4l/rodo/rodo.js         # recarga offline, adulterada,
 node t-antigo.js  <rodo.js 0.3.1> %TEMP%/m4l/rodo/rodo.js   # DEACTIVATE não volta pelo .lic antigo
 set MOTOR=%TEMP%/m4l/rodo/rodo.js & node sim-rodo.js & node sim-rodo-sensor.js
 set MOTOR=%TEMP%/m4l/vassoura/vassoura.js & node sim-vassoura.js MUTE & node sim-vassoura.js CUT
+node t-atualiza.js %TEMP%/m4l                      # UPDATE: botão, andamento, erro/Node mudo = navegador (4 devices)
 ```
 
 Os mesmos `t-*.js` servem para a VASSOURA (passe o `vassoura.js`). Cada um termina com `RESULTADO: OK` ou a lista de erros.

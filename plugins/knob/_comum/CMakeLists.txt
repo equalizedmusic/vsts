@@ -35,7 +35,7 @@ function(serie_knob_pedal alvo codigo produto bundle)
         ${CMAKE_CURRENT_SOURCE_DIR}/Source/Pedal.cpp)
     target_include_directories(${alvo} PRIVATE ${SERIE_KNOB_COMUM}/Source ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
-    isp_licenca(${alvo} knob)
+    isp_licenca(${alvo} knob ATUALIZAR)
 
     target_compile_definitions(${alvo} PUBLIC
         JUCE_WEB_BROWSER=0

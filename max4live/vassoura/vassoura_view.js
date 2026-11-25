@@ -12,6 +12,7 @@ outlets = 1;
 var DICT = "vassoura_data";
 var VERSAO = "0.3.1";
 var msgNova = "";     // versão nova disponível (vem do motor)
+var msgAtu = "";      // andamento da atualização automática (vem do motor: atu <texto>)
 var NAME_W = 250;
 var HEAD_H = 150;
 var AC = [0.40, 0.78, 0.95];   // cor da marca da VASSOURA na janela (botões, licença)
@@ -55,6 +56,11 @@ function status() {
 
 function aviso() {
 	msgAviso = arrayfromargs(arguments).join(" ");
+	mgraphics.redraw();
+}
+
+function atu(t) {
+	msgAtu = arrayfromargs(arguments).join(" ");
 	mgraphics.redraw();
 }
 
@@ -324,7 +330,7 @@ function paint() {
 		botao(W - 16 - wL, 12, wL, 26, tL, [0.19, 0.19, 0.21], [0.85, 0.85, 0.88], ["lic_info"]);
 		fimStatus = W - 16 - wL - 8;
 		if (msgNova) {
-			var tNova = "NEW VERSION " + msgNova + " · DOWNLOAD", wNova = largura(tNova, 12, true) + 24;
+			var tNova = msgAtu || ("NEW VERSION " + msgNova + " · UPDATE"), wNova = largura(tNova, 12, true) + 24;
 			botao(fimStatus - wNova, 12, wNova, 26, tNova, [0.18, 0.55, 0.30], [1, 1, 1], ["baixar_nova"]);
 			fimStatus -= wNova + 16;
 		}

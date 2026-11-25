@@ -24,7 +24,7 @@ target_sources(ConsoleIsp PRIVATE
 file(GLOB console_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(ConsoleImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${console_img})
 
-isp_licenca(ConsoleIsp mix)
+isp_licenca(ConsoleIsp mix ATUALIZAR)
 
 target_compile_definitions(ConsoleIsp PUBLIC
     JUCE_WEB_BROWSER=0

@@ -18,6 +18,7 @@ outlets = 1;
 var DICT = "desenrola_data";
 var VERSAO = "0.3.1";
 var msgNova = "";
+var msgAtu = "";
 var HEAD_H = 72, BAR_H = 86, TB_Y = 168, RUL_Y = 200, TL_Y = 216, TL_H = 46, TOP = 272, FOOT_H = 40, SB_W = 14, HS_H = 10;
 var XN = 16, XG = 206, X0 = 300;
 var LANE_MIN = 18, LANE_MAX = 26;
@@ -77,6 +78,7 @@ function varre(total) { msgAviso = ""; prog = { feitos: 0, total: total }; mgrap
 function progresso(i, total) { if (!prog) prog = {}; prog.feitos = i; prog.total = total; mgraphics.redraw(); }
 function fim() { prog = null; mgraphics.redraw(); }
 function valores(e, a) { cfg = { est: e | 0, apaga: a == null ? 1 : a | 0 }; mgraphics.redraw(); }
+function atu(t) { msgAtu = arrayfromargs(arguments).join(" "); mgraphics.redraw(); }   // andamento da atualização automática
 function nova(v) { msgNova = String(v || ""); mgraphics.redraw(); }
 
 // ---------------------------------------------------------------- desenho (helpers)
@@ -233,7 +235,7 @@ function paint() {
 	tx += largura(VERSAO, 12, false) + 18;
 	var fimSt = W - 20;
 	if (msgNova) {
-		var tn = "NEW VERSION " + msgNova + " · DOWNLOAD", wn = largura(tn, 11, true) + 22;
+		var tn = msgAtu || ("NEW VERSION " + msgNova + " · UPDATE"), wn = largura(tn, 11, true) + 22;
 		botaoP(fimSt - wn, 14, wn, 24, tn, ["baixar_nova"], OK);
 		fimSt -= wn + 10;
 	}

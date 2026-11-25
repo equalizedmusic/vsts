@@ -5,6 +5,14 @@ MASTIGA). A versão é o primeiro título `## x.y.z` deste arquivo: ela entra no
 `knob-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.3 — 2026-11-25
+- **Atualização automática:** o aviso de versão nova no pé da janela ganha o botão **ATUALIZAR**: o plugin baixa o
+  instalador, confere a assinatura e o arquivo e instala sozinho. No Windows ele espera você fechar o DAW e roda o
+  instalador (o Windows pede permissão uma vez); no Mac pede a senha de administrador e instala na hora. Depois é só
+  abrir o DAW de novo. O **BAIXAR** pelo navegador continua lá para quem preferir.
+- Vale a partir da próxima versão: esta ainda se instala pelo aviso de sempre.
+- O som e as funções não mudam.
+
 ## 0.3.2 — 2026-11-24
 - **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
   se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o

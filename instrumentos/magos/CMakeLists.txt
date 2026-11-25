@@ -23,7 +23,7 @@ juce_add_plugin(Magos
     VST3_CATEGORIES             Fx Mastering Dynamics EQ
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
-isp_licenca(Magos magos)
+isp_licenca(Magos magos ATUALIZAR)
 
 target_sources(Magos PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Link.cpp)
 target_compile_definitions(Magos PUBLIC

@@ -23,7 +23,7 @@ juce_add_plugin(Retalho
     VST3_CATEGORIES             Fx Delay
     AU_MAIN_TYPE                kAudioUnitType_MusicEffect)
 
-isp_licenca(Retalho retalho)
+isp_licenca(Retalho retalho ATUALIZAR)
 
 target_sources(Retalho PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
 target_compile_definitions(Retalho PUBLIC

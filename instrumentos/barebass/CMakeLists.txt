@@ -25,7 +25,7 @@ juce_add_plugin(Barebass
 # 0.4.2: BASS LINK (as notas do baixo para o RESENHA)
 target_sources(Barebass PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/BassLink.cpp ../chute/Source/ChuteLink.cpp)
 target_include_directories(Barebass PRIVATE ../chute/Source)
-isp_licenca(Barebass barebass)
+isp_licenca(Barebass barebass ATUALIZAR)
 target_compile_definitions(Barebass PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

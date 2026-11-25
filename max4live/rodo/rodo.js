@@ -26,7 +26,7 @@ var BUF = "rodo_scan";
 var DICT = "rodo_data";   // leve: faixas, clips, picos e ganhos (republicado a cada mudança de TARGET/MODE)
 var DICT_ENV = "rodo_env"; // pesado: contorno das ondas (só depois do ANALYZE)
 var WIN_MS = 10;
-var VERSAO = "0.3.6";
+var VERSAO = "0.3.7";
 var BUILD = "";           // marca do pacote de teste no log ("teste"...); vazio na versão publicada
 var LIC_PACOTE = "rodo", LIC_NOME = "RODO";   // licença: bloco LICENÇA no fim (colado pelo build-rodo.js)
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/rodo/zip";
@@ -130,7 +130,7 @@ function licMudou() {
 }
 // valores atuais para a janela (ela pode abrir antes do 1º ANALYZE)
 function enviaCfg() { outlet(2, "valores", cfg.target, cfg.mode, cfg.scope, cfg.sensor, cfg.guard, cfg.trms, cfg.tlufs); }
-function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
+function janela() { enviaCfg(); outlet(2, "lic", licEstado()); atuReenvia(); }
 
 // ---------------------------------------------------------------- controles
 function limT(s, v) { return Math.max(FAIXA[s][0], Math.min(FAIXA[s][1], num(v))); }

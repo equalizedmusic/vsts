@@ -26,7 +26,7 @@ function(mesa_plugin alvo nome produto codigo bundle console)
         VST3_CATEGORIES             Fx EQ Dynamics
         AU_MAIN_TYPE                kAudioUnitType_Effect)
     target_sources(${alvo} PRIVATE ${mesa_fontes})
-    isp_licenca(${alvo} mesa)
+    isp_licenca(${alvo} mesa ATUALIZAR)
     target_compile_definitions(${alvo} PUBLIC
         MESA_CONSOLE=${console}
         ISP_INDICE_FAIXA=1

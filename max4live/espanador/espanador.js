@@ -19,7 +19,7 @@ inlets = 1;
 outlets = 4; // 0: (livre)   1: status (device)   2: janela   3: eco dos controles (prefix/bus/auto)
 
 var DICT = "espanador_data";
-var VERSAO = "0.2.2";
+var VERSAO = "0.2.3";
 var BUILD = "";           // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = false;    // true só em pacote de teste (sem licença)
 var LIC_PACOTE = "espanador", LIC_NOME = "ESPANADOR";
@@ -106,7 +106,7 @@ function licMudou() {
 	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
 }
 function enviaCfg() { outlet(2, "valores", cfg.prefix, cfg.bus, cfg.auto, cfg.clips); }
-function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
+function janela() { enviaCfg(); outlet(2, "lic", licEstado()); atuReenvia(); }
 
 // ---------------------------------------------------------------- controles
 function prefix(v) { cfg.prefix = num(v) ? 1 : 0; publica(); }

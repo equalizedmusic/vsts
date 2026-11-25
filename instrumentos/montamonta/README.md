@@ -1,6 +1,6 @@
 # MONTA-MONTA
 
-> **Versão atual: 0.1.2** (24/11/2026) · não está à venda (synth didático) · notas em [`novidades/MontaMonta.md`](../../novidades/MontaMonta.md)
+> **Versão atual: 0.1.3** (25/11/2026) · não está à venda (synth didático) · notas em [`novidades/MontaMonta.md`](../../novidades/MontaMonta.md)
 
 ![MONTA-MONTA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MONTAMONTA.png)
 

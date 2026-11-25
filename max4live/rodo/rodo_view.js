@@ -14,6 +14,7 @@ outlets = 1;
 var DICT = "rodo_data", DICT_ENV = "rodo_env";
 var VERSAO = "0.3.0";
 var msgNova = "";
+var msgAtu = "";
 var W0 = 1360, H0 = 840;
 var HEAD_H = 72, BAR_H = 86, RULER_Y = 160, TOP = 188, FOOT_H = 40, SB_W = 14;
 var X0 = 340;
@@ -69,6 +70,7 @@ function valores(t, m, s, sen, g, trms, tlufs) {
 	cfg = cfgOk({ target: Number(t), mode: m | 0, scope: s | 0, sensor: sen, guard: g, trms: trms == null ? null : Number(trms), tlufs: tlufs == null ? null : Number(tlufs) });
 	if (!anim) mgraphics.redraw();
 }
+function atu(t) { msgAtu = arrayfromargs(arguments).join(" "); mgraphics.redraw(); }   // andamento da atualização automática
 function nova(v) { msgNova = String(v || ""); if (!anim) mgraphics.redraw(); }
 
 // ---------------------------------------------------------------- desenho (helpers)
@@ -131,7 +133,7 @@ function paint() {
 		botaoP(W - 16 - wl, 14, wl, 24, "LICENSE", ["lic_info"]);
 		fimSt = W - 16 - wl - 10;
 		if (msgNova) {
-			var tn = "NEW VERSION " + msgNova + " · DOWNLOAD", wn = largura(tn, 11, true) + 22;
+			var tn = msgAtu || ("NEW VERSION " + msgNova + " · UPDATE"), wn = largura(tn, 11, true) + 22;
 			botaoP(fimSt - wn, 14, wn, 24, tn, ["baixar_nova"], OK);
 			fimSt -= wn + 10;
 		}

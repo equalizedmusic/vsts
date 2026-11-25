@@ -1,6 +1,6 @@
 # MERCÚRIO — FM de 4 operadores, polifônico
 
-> **Versão atual: 0.6.1** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mercurio.md`](../../novidades/Mercurio.md)
+> **Versão atual: 0.6.2** (25/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Mercurio.md`](../../novidades/Mercurio.md)
 
 ![MERCÚRIO](https://insidestudiosp.com.br/img/mercurio.webp)
 

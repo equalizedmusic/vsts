@@ -1,6 +1,6 @@
 # CHUTE — KICK DESIGNER
 
-> **Versão atual: 0.2.1** (24/11/2026) · oficial, paga, com licença (pacote `chute`; lançamento no site 22/11) · notas em
+> **Versão atual: 0.2.2** (25/11/2026) · oficial, paga, com licença (pacote `chute`; lançamento no site 22/11) · notas em
 > [`novidades/Chute.md`](../../novidades/Chute.md)
 
 ![CHUTE](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CHUTE.png)

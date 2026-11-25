@@ -22,7 +22,7 @@ juce_add_plugin(Maestro
     VST3_CATEGORIES             Fx EQ Dynamics
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
-isp_licenca(Maestro maestro)
+isp_licenca(Maestro maestro ATUALIZAR)
 
 target_sources(Maestro PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Janela.cpp Source/MaestroLink.cpp)
 target_compile_definitions(Maestro PUBLIC

@@ -25,7 +25,7 @@ Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
    Repo privado ou GitHub fora = nenhum aviso, nada quebra (com repo privado dá para pôr um token só leitura no
    segredo `GITHUB_TOKEN` do Worker). Para testar, `-DISP_LICENCA_VERSAO_TESTE=1.0.0` faz o plugin fingir ser 1.0.0
    (o workflow do piloto usa isso).
-7. **Atualização automática** (só plugins com `isp_licenca(<alvo> <pacote> ATUALIZAR)`; hoje o LIMÃO e o RESENHA): a
+7. **Atualização automática** (plugins com `isp_licenca(<alvo> <pacote> ATUALIZAR)`: TODOS desde 25/11/2026; antes só LIMÃO e RESENHA): a
    resposta do `/v1/versao` traz `instalador: { dados, assinatura }` — `{ v, tipo:"instalador", pacote, sistema,
    versao, sha256, tamanho, url }` assinado com a MESMA chave Ed25519 das licenças (sha256 = `digest` do asset no
    GitHub; url = `/baixar/<pacote>/<sistema>?tag=<pacote>-vX.Y.Z`, a versão exata). O plugin confere a assinatura,
@@ -34,6 +34,16 @@ Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
    log em `%TEMP%\InsideStudioSP-atualizacao\`). Mac: `osascript … with administrator privileges` monta o .dmg e
    roda o .pkg com `installer -target /`. Falhou = mensagem na faixa e o BAIXAR continua. `ISP_CANAL_TESTE=1` manda
    `teste=1` e o servidor passa a considerar os pré-lançamentos do pacote.
+8. **Atualização automática dos devices Max for Live** (25/11/2026): o `[v8]`/`[js]` do Max não roda instalador, então
+   cada device tem um `[node.script <dev>_atualiza.js]` (fonte `max4live/_comum/isp_atualiza.js`). O motor guarda o
+   `instalador` do `/v1/versao` e, no clique em **UPDATE**, manda `atualizar <pacote> <versão> <dados> <assinatura>`;
+   o Node confere a assinatura Ed25519 e os campos (pacote, sistema, versão maior), baixa, confere o SHA-256 e roda o
+   instalador do device sem janela: Windows `InsideStudioSP-<Nome>-win.exe /VERYSILENT /NOCLOSEAPPLICATIONS` (sem
+   admin; usa a pasta da instalação anterior), Mac `hdiutil attach` + `installer -pkg … -target CurrentUserHomeDirectory`
+   (sem senha). Responde `atu_estado <baixando|conferindo|instalando|pronto|erro>`; o texto do botão vem do motor
+   (`atu`). Erro ou Node mudo por 8 s = abre `/baixar/<device>/zip` (que entrega o instalador) no navegador.
+   O device aberto continua o antigo até ser carregado de novo. Teste fora do Live: imitar `max-api` e usar
+   `ISP_ATUALIZA_DIR=<pasta>` (instala lá em vez da User Library).
 
 Isso segura o repasse casual de instalador + token; não segura quem quiser craquear o binário.
 

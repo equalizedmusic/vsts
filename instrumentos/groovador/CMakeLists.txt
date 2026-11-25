@@ -25,7 +25,7 @@ target_sources(Groovador PRIVATE
     ../chute/Source/ChuteLink.cpp)
 target_include_directories(Groovador PRIVATE ../chute/Source)
 
-isp_licenca(Groovador groovador)
+isp_licenca(Groovador groovador ATUALIZAR)
 
 target_compile_definitions(Groovador PUBLIC
     JUCE_WEB_BROWSER=0

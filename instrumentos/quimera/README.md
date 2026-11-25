@@ -1,6 +1,6 @@
 # QUIMERA — sintetizador
 
-> **Versão atual: 0.5.1** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Quimera.md`](../../novidades/Quimera.md)
+> **Versão atual: 0.5.2** (25/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Quimera.md`](../../novidades/Quimera.md)
 
 ![QUIMERA](https://insidestudiosp.com.br/img/quimera.webp)
 

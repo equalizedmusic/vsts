@@ -22,7 +22,7 @@ juce_add_plugin(Gogo
     VST3_CATEGORIES             Fx Dynamics EQ "Pitch Shift" Reverb
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
-isp_licenca(Gogo gogo)
+isp_licenca(Gogo gogo ATUALIZAR)
 
 target_sources(Gogo PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/Link.cpp)
 target_compile_definitions(Gogo PUBLIC

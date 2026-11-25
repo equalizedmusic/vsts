@@ -23,7 +23,7 @@ target_sources(Lixa PRIVATE
 file(GLOB lixa_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(LixaImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${lixa_img})
 
-isp_licenca(Lixa mix)
+isp_licenca(Lixa mix ATUALIZAR)
 
 target_compile_definitions(Lixa PUBLIC
     JUCE_WEB_BROWSER=0

@@ -18,7 +18,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela   3: eco dos control
 
 var BUF = "desenrola_ref";
 var DICT = "desenrola_data";
-var VERSAO = "0.4.1";
+var VERSAO = "0.4.2";
 var BUILD = "";              // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = false;    // grátis, mas com licença (token grátis na página /desenrola)
 var LIC_PACOTE = "desenrola", LIC_NOME = "DESENROLA";
@@ -108,7 +108,7 @@ function licMudou() {
 	else if (!lic.ok) status("ATIVE A LICENÇA · clique OPEN");
 }
 function enviaCfg() { outlet(2, "valores", cfg.est, cfg.apaga); }
-function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
+function janela() { enviaCfg(); outlet(2, "lic", licEstado()); atuReenvia(); }
 
 function est(v) { cfg.est = num(v) ? 1 : 0; if (result) { result.cfg = cfg; } }
 function apaga(v) { cfg.apaga = num(v) ? 1 : 0; if (result) { result.cfg = cfg; } }

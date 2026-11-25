@@ -23,7 +23,7 @@ target_sources(Ringer PRIVATE
 file(GLOB ringer_img CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Source/img/*")
 juce_add_binary_data(RingerImg HEADER_NAME PluginImg.h NAMESPACE PluginImg SOURCES ${ringer_img})
 
-isp_licenca(Ringer criativo)
+isp_licenca(Ringer criativo ATUALIZAR)
 
 target_compile_definitions(Ringer PUBLIC
     JUCE_WEB_BROWSER=0

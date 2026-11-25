@@ -16,7 +16,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela (bang / status)   3:
 var BUF = "vassoura_scan";
 var DICT = "vassoura_data";
 var WIN_MS = 10;
-var VERSAO = "0.3.7";
+var VERSAO = "0.3.8";
 var BUILD = "";  // marca de pacote de teste no log ("teste2"...); vazio na versão publicada
 var PAUSA_ARQ = 40;    // ms entre um arquivo e outro (Live respira, memória é liberada)
 var PAUSA_APPLY = 15;  // ms entre um passo do APPLY e outro
@@ -111,7 +111,7 @@ function licMudou() {
 }
 // valores atuais para a janela (ela pode abrir antes do 1º ANALYZE)
 function enviaCfg() { outlet(2, "valores", cfg.threshold, cfg.minlen, cfg.pre, cfg.post, cfg.snap, cfg.mode, cfg.scope); }
-function janela() { enviaCfg(); outlet(2, "lic", licEstado()); if (nova) outlet(2, "nova", nova); }
+function janela() { enviaCfg(); outlet(2, "lic", licEstado()); atuReenvia(); }
 // ---------------------------------------------------------------- controles
 function threshold(v) { cfg.threshold = num(v); agendaRecalc(); }
 function minlength(v) { cfg.minlen = num(v); agendaRecalc(); }

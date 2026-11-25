@@ -22,7 +22,7 @@ juce_add_plugin(Chute
     VST3_CATEGORIES             Instrument Drum
     AU_MAIN_TYPE                kAudioUnitType_MusicDevice)
 
-isp_licenca(Chute chute)
+isp_licenca(Chute chute ATUALIZAR)
 
 target_sources(Chute PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/ChuteLink.cpp)
 include(${CMAKE_CURRENT_SOURCE_DIR}/bancos.cmake)

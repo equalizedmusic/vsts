@@ -1,6 +1,6 @@
 # STOMPBOX
 
-> **Versão atual: 0.2.1** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Stompbox.md`](../../novidades/Stompbox.md)
+> **Versão atual: 0.2.2** (25/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Stompbox.md`](../../novidades/Stompbox.md)
 
 ![STOMPBOX](https://insidestudiosp.com.br/img/stompbox.webp)
 

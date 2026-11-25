@@ -1,6 +1,6 @@
 # MAESTRO — MIX CONDUCTOR
 
-> **Versão atual: 0.2.3** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br)
+> **Versão atual: 0.2.4** (25/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br)
 > · notas em [`novidades/Maestro.md`](../../novidades/Maestro.md)
 
 ![MAESTRO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/MAESTRO.png)

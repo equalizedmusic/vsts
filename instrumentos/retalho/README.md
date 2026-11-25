@@ -1,6 +1,6 @@
 # RETALHO
 
-> **Versão atual: 0.2.1** (24/11/2026) · pago, com licença, no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (lançado em 19/11/2026) · notas em [`novidades/Retalho.md`](../../novidades/Retalho.md)
+> **Versão atual: 0.2.2** (25/11/2026) · pago, com licença, no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (lançado em 19/11/2026) · notas em [`novidades/Retalho.md`](../../novidades/Retalho.md)
 
 ![RETALHO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RETALHO.png)
 

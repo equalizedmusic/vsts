@@ -1,6 +1,6 @@
 # ESPANADOR (Max for Live)
 
-> **Versão atual: 0.2.2** (24/11/2026) · Max for Live (Ableton Live 12.2+) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Espanador.md`](../../novidades/Espanador.md)
+> **Versão atual: 0.2.3** (25/11/2026) · Max for Live (Ableton Live 12.2+) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Espanador.md`](../../novidades/Espanador.md)
 
 ![ESPANADOR](https://insidestudiosp.com.br/img/espanador.webp)
 

@@ -1,6 +1,6 @@
 # SÉRIE KNOB
 
-> Pacote da **SÉRIE KNOB** · versão atual do pacote: **0.3.2** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Knob.md`](../../novidades/Knob.md)
+> Pacote da **SÉRIE KNOB** · versão atual do pacote: **0.3.3** (25/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Knob.md`](../../novidades/Knob.md)
 
 Dez pedais de efeito de **um knob grandão**, todos no tempo do DAW. O knob vai de 0 (nada) a 10 (tudo) e as
 lâmpadas em volta dele acendem até o valor e respiram junto com o efeito.

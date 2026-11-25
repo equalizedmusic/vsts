@@ -21,7 +21,7 @@ juce_add_plugin(Stompbox
     VST3_CATEGORIES             Fx Distortion
     AU_MAIN_TYPE                kAudioUnitType_Effect)
 
-isp_licenca(Stompbox stompbox)
+isp_licenca(Stompbox stompbox ATUALIZAR)
 
 target_sources(Stompbox PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp Source/EditorPedal.cpp
                                 Source/EditorPainel.cpp Source/EditorMouse.cpp)

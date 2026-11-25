@@ -491,6 +491,7 @@ function licEstado() {
 // ---------------------------------------------------------------- versão nova (GET /v1/versao, mesma rota dos VSTs)
 // O motor define URL_BAIXAR (zip fixo do site) e URL_NOVIDADES. Sem internet ou com erro: fica quieto.
 var nova = "";
+var novaInst = null;   // dados do instalador assinados pelo servidor (atualização automática, isp_atualiza.js)
 var versaoChecada = false;
 function checaVersao() {
 	if (versaoChecada) return;
@@ -503,6 +504,7 @@ function checaVersao() {
 				var v = r && r.ok && r.atualizacao ? String(r.atualizacao.versao || "") : "";
 				if (!/^\d+\.\d+\.\d+$/.test(v) || comparaVersao(v, VERSAO) <= 0) return;
 				nova = v;
+				novaInst = r.atualizacao.instalador && r.atualizacao.instalador.dados ? r.atualizacao.instalador : null;
 				log(LIC_NOME + ": versão nova " + v + " disponível · " + URL_BAIXAR + "\n");
 				outlet(2, "nova", v);
 				outlet(1, "nova", v);
@@ -515,7 +517,47 @@ function comparaVersao(a, b) {
 	for (var i = 0; i < 3; i++) { var d = (parseInt(pa[i], 10) || 0) - (parseInt(pb[i], 10) || 0); if (d) return d; }
 	return 0;
 }
-function baixar_nova() { if (nova) max.launchbrowser(URL_BAIXAR); }
+// UPDATE (25/11/2026): o [node.script <dev>_atualiza.js] baixa, confere e instala sozinho; o texto do botão vem daqui
+// (outlet 2 "atu <texto>"). Sem os dados assinados, sem resposta do Node em 8 s ou com erro: abre o navegador.
+var atuEstado = "", atuTexto = "", atuTask = null;
+function atuMostra(t) { atuTexto = t; outlet(2, "atu", t); }
+function atuReenvia() { if (nova) outlet(2, "nova", nova); if (atuTexto) outlet(2, "atu", atuTexto); }
+function atuNavegador() { try { max.launchbrowser(URL_BAIXAR); } catch (e) { } }
+function baixar_nova() {
+	if (!nova) return;
+	if (atuEstado == "pronto" || atuEstado == "espera") return;
+	if (atuEstado == "erro" || !novaInst) { atuNavegador(); return; }
+	if (atuEstado) return;   // já em andamento
+	atuEstado = "espera";
+	atuMostra("UPDATING " + nova + "…");
+	try { atuTask && atuTask.cancel(); } catch (e) { }
+	atuTask = new Task(function () {
+		if (atuEstado != "espera") return;
+		log(LIC_NOME + ": o componente de atualização não respondeu; abrindo o navegador\n");
+		atuEstado = "erro"; atuMostra("UPDATE " + nova + " · DOWNLOAD"); atuNavegador();
+	});
+	atuTask.schedule(8000);
+	outlet(1, "atualizar", LIC_PACOTE, VERSAO, String(novaInst.dados), String(novaInst.assinatura));
+}
+// vindo do [node.script]: atu_estado <baixando|conferindo|instalando|pronto|erro|vivo> <texto>
+function atu_estado(e, t) {
+	e = String(e); t = t == null ? "" : String(t);
+	if (e == "vivo" || !nova) return;
+	try { atuTask && atuTask.cancel(); } catch (x) { }
+	if (e == "baixando") { atuEstado = "baixando"; atuMostra("DOWNLOADING " + nova + (t ? " · " + t : "") + "…"); }
+	else if (e == "conferindo") { atuEstado = "conferindo"; atuMostra("CHECKING " + nova + "…"); }
+	else if (e == "instalando") { atuEstado = "instalando"; atuMostra("INSTALLING " + nova + "…"); }
+	else if (e == "pronto") {
+		atuEstado = "pronto";
+		log(LIC_NOME + ": versão " + nova + " instalada. Carregue o device de novo (ou reabra o set) para usar.\n");
+		atuMostra("UPDATED TO " + nova + " · RELOAD THE DEVICE");
+	} else if (e == "erro") {
+		atuEstado = "erro";
+		log(LIC_NOME + ": atualização automática falhou (" + t + "); abrindo o navegador\n");
+		atuMostra("UPDATE " + nova + " · DOWNLOAD");
+		atuNavegador();
+	}
+}
 function novidades() { max.launchbrowser(URL_NOVIDADES); }
 
 // ---------------------------------------------------------------- utilidades de bytes

@@ -14,6 +14,7 @@ outlets = 1;
 var DICT = "espanador_data";
 var VERSAO = "0.2.0";
 var msgNova = "";
+var msgAtu = "";
 var HEAD_H = 72, BAR_H = 86, RULER_Y = 160, TOP = 188, FOOT_H = 40, SB_W = 14;
 var X0 = 540;
 var LANE_MIN = 18, LANE_MAX = 28;
@@ -66,6 +67,7 @@ function varre(total) {
 function progresso(i, total, linha) { if (!anim) return; anim.feitos = i; anim.total = total; if (linha + 1 > anim.alvo) anim.alvo = linha + 1; }
 function fim() { if (anim) anim.motorFim = 1; }
 function valores(p, b, a, c) { cfg = { prefix: p | 0, bus: b | 0, auto: a | 0, clips: c == null ? 1 : c | 0 }; if (!anim) mgraphics.redraw(); }
+function atu(t) { msgAtu = arrayfromargs(arguments).join(" "); mgraphics.redraw(); }   // andamento da atualização automática
 function nova(v) { msgNova = String(v || ""); if (!anim) mgraphics.redraw(); }
 
 // ---------------------------------------------------------------- desenho (helpers)
@@ -132,7 +134,7 @@ function paint() {
 		botaoP(W - 16 - wl, 14, wl, 24, "LICENSE", ["lic_info"]);
 		fimSt = W - 16 - wl - 10;
 		if (msgNova) {
-			var tn = "NEW VERSION " + msgNova + " · DOWNLOAD", wn = largura(tn, 11, true) + 22;
+			var tn = msgAtu || ("NEW VERSION " + msgNova + " · UPDATE"), wn = largura(tn, 11, true) + 22;
 			botaoP(fimSt - wn, 14, wn, 24, tn, ["baixar_nova"], OK);
 			fimSt -= wn + 10;
 		}

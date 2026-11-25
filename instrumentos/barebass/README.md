@@ -1,6 +1,6 @@
 # BAREBASS
 
-> **Versão oficial: 0.4.3** (24/11/2026) · grátis com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br)
+> **Versão oficial: 0.4.4** (25/11/2026) · grátis com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br)
 > · notas em
 > [`novidades/Barebass.md`](../../novidades/Barebass.md)
 

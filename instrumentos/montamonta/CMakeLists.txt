@@ -23,7 +23,7 @@ target_sources(MontaMonta PRIVATE
     Source/PluginEditor.cpp
     Source/Panels.cpp)
 
-isp_licenca(MontaMonta montamonta)
+isp_licenca(MontaMonta montamonta ATUALIZAR)
 
 target_compile_definitions(MontaMonta PUBLIC
     JUCE_WEB_BROWSER=0
