@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "Engine.h"
 #include "WaveBank.h"
 
@@ -334,7 +335,7 @@ inline double warpSpeed (int w, float a)
 {
     switch (w)
     {
-        case 1:  return 1.0 + 7.0 * a;
+        case 1:  return 1.0 + 7.0000000000000000585180 * a;
         case 2:
         case 3:  return 1.0 + 8.0 * a;
         case 4:  return 0.5 / (0.5 - 0.45 * a);
@@ -1160,7 +1161,7 @@ struct Engine::Impl : public juce::MPEInstrument::Listener
                        + F.env * 0.01f * env2 * 7.0f
                        + m[cd] * 7.0f
                        + d01 * v.drift[3] / 6.0f;
-        const float fc  = juce::jlimit (20.0f, topHz, std::exp2 (juce::jlimit (4.0f, 15.0f, lg)));
+        const float fc  = juce::jlimit (20.000000000000000584084f, topHz, std::exp2 (juce::jlimit (4.0f, 15.0f, lg)));
         const float res = clamp01 (F.res * 0.01f + m[cd + 1]);
         const float drv = clamp01 (F.drive * 0.01f + m[cd + 2]);
         const float mix = clamp01 (F.mix * 0.01f);

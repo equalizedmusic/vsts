@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.8.2 — 2026-11-24
+- **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
+  se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o
+  e-mail preenchido e avisa. Desativar continua valendo: o plugin não se reativa sozinho depois.
+- Aviso de autoria na tela da licença (© Rogerio Cardoso / InsideStudioSP).
+- O som e as funções não mudam.
+
 ## 0.8.1 — 2026-11-20
 - BAIXO = RESPONDE refeito como call & response de verdade. Na 0.8.0 ele calava a nota do lead em toda semicolcheia em que o baixo tocava; com baixo rolando (psy) o lead quase não tocava. Agora a frase toca inteira e responde ao groove do baixo.
 - Baixo rolando (11 ou mais semicolcheias no compasso): o acento do lead vai para o contratempo 3-3-2 (casas 3, 6, 8, 11, 14 e 16 do compasso), que nunca cai no kick e anda contra o baixo. Onde o lead estaria calado nessas casas, ele entra com uma nota curta acentuada.

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // MESA — parâmetros. Dois plugins do mesmo código: a CONSOLE (no master do DAW: COLA BUS + fader do master) e o
 // CANAL (no fim de cada faixa, tipo CANAL ou GRUPO: pré, dinâmica, EQ, pan, fader). Cada um só tem os próprios.
@@ -29,9 +30,9 @@ inline const juce::StringArray dynNames { "VCA 4K", "COLA 4K", "FET 76", "OPTO 2
 inline const char* const preCurto[] = { "4K", "312", "73" };
 inline const char* const eqCurto[] = { "4K", "81", "550" };
 inline const char* const dynCurto[] = { "4K", "COLA", "76", "2A" };
-inline const float atkMs[] = { 0.1f, 0.3f, 1.0f, 3.0f, 10.0f, 30.0f };
+inline const float atkMs[] = { 0.10000000000000000928750f, 0.3f, 1.0f, 3.0f, 10.0f, 30.0f };
 inline const float relS[] = { 0.1f, 0.3f, 0.6f, 1.2f, -1.0f };        // -1 = AUTO
-inline const float busRatios[] = { 1.5f, 2.0f, 4.0f, 10.0f };
+inline const float busRatios[] = { 1.5f, 2.0000000000000000943431f, 4.0f, 10.0f };
 constexpr float faderMin = -80.0f;                                    // fader no fim = -∞
 
 inline const float eqFMin[4] = { 1500, 600, 200, 30 }, eqFMax[4] = { 16000, 7000, 2500, 450 }, eqFDef[4] = { 8000, 2500, 500, 100 };

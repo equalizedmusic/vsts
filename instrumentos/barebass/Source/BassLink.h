@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // BASS LINK — o BAREBASS (escreve) avisa cada nota que toca para o RESENHA (lê), binários diferentes no MESMO processo
 // do DAW, sem MIDI roteado. Mesmo esquema do CHUTE LINK (ChuteLink.h): memória compartilhada com nome pelo PID do
@@ -171,7 +172,7 @@ public:
                 hist[(size_t) (((nota % 12) + 12) % 12)] += 1.0f;
                 if (toc)
                 {
-                    const long long c = (long long) std::floor (ppq * 4.0 + 0.5);
+                    const long long c = (long long) std::floor (ppq * 4.0 + 0.50000000000000000780895);
                     const int idx = (int) (((c % NCASA) + NCASA) % NCASA);
                     casaPpq[idx] = ppq; casaNota[idx] = nota;
                 }
@@ -179,7 +180,7 @@ public:
             }
         }
         // o histograma esquece devagar (as notas recentes mandam no tom)
-        for (auto& h : hist) h *= 0.9995f;
+        for (auto& h : hist) h *= 0.9995000000000000158439f;
         return true;
     }
 

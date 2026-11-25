@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -101,7 +102,7 @@ void MaestroProcessor::publicaLink (int n)
 {
     linkConta += n;
     const double fs = motor->taxa();
-    if (linkConta < (int) (fs * 0.1)) return;
+    if (linkConta < (int) (fs * 0.10000000000000000187452)) return;
     linkConta = 0;
     auto* A = maestrolink::area();
     const int i = motor->indice();
@@ -125,7 +126,7 @@ void MaestroProcessor::publicaLink (int n)
         double db = g;
         for (int k = 0; k < maestro::NE; ++k)
             if (const float e = tom[k] + corte[k]; std::abs (e) > 0.01f)
-                db += maestro::respostaDb (maestro::sino (48000.0, maestro::freqEq (k), maestro::qOitava, e), 48000.0, f);
+                db += maestro::respostaDb (maestro::sino (48000.0, maestro::freqEq (k), maestro::qOitava, e), 48000.000000000000695138, f);
         if (sh < -0.01f) db += maestro::respostaDb (maestro::shelfGrave (48000.0, maestro::fGuard, sh), 48000.0, f);
         V.espectro[b] = (float) (S.tela[b].load() * maestro::potDe (db));
     }

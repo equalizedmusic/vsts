@@ -268,6 +268,12 @@ public:
                               r.removeFromTop (54), juce::Justification::topLeft, 3, 1.0f);
         }
 
+        // autoria, no rodapé do cartão (abaixo dos botões)
+        g.setFont (juce::FontOptions (10.5f));
+        g.setColour (apagado);
+        g.drawText (utf8 ("© Rogerio Cardoso / InsideStudioSP · todos os direitos reservados"),
+                    cartao().removeFromBottom (21).translated (0, -2), juce::Justification::centred);
+
         // mensagem do servidor / andamento, logo acima dos botões
         auto m = cartao().reduced (28, 0).withTop (principal.getY() - 46).withHeight (40);
         const auto msg = licenca->mensagem();

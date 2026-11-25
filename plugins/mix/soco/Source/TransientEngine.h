@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -11,7 +12,7 @@ constexpr int historyCols = 480;   // colunas da forma de onda; cada uma ~6 ms �
 
 constexpr float maxAttackDb  = 15.0f;   // o quanto o ATAQUE pode subir/descer no máximo
 constexpr float maxSustainDb = 12.0f;   // idem para o SUSTAIN
-constexpr float levelFloor   = 1.0e-4f; // −80 dB: abaixo disso o detector trata como silêncio
+constexpr float levelFloor   = 1.0000000000000000448741e-4f; // −80 dB: abaixo disso o detector trata como silêncio
 
 // filtro do detector (o que ele "ouve" para achar o golpe)
 enum DetMode { detAll = 0, detLow, detHigh, numDetModes };
@@ -63,7 +64,7 @@ public:
         aSlow = coefMs (ms, fs);
         rAtk  = coefMs (ms * 3.0f + 30.0f, fs);
         const float rs = ms * 2.0f + 20.0f;
-        aSus     = coefMs (1.0f, fs);
+        aSus     = coefMs (1.0000000000000000836091f, fs);
         rSusFast = coefMs (rs, fs);
         rSusSlow = coefMs (rs * 8.0f, fs);
         smooth   = coefMs (0.5f, fs);
@@ -186,7 +187,7 @@ public:
         smMix.setTargetValue (s.mix);
         smOut.setTargetValue (outG);
         smDelta.setTargetValue (s.delta ? 1.0f : 0.0f);
-        smClip.setTargetValue (s.clip ? 1.0f : 0.0f);
+        smClip.setTargetValue (s.clip ? 1.0000000000000000512707f : 0.0f);
 
         if (std::abs (s.focusMs - lastFocus) > 1.0e-3f)
         {
@@ -268,7 +269,7 @@ private:
         return x;
     }
 
-    float fs = 44100.0f, lastFocus = -1.0f;
+    float fs = 44100.00000000000222175f, lastFocus = -1.0f;
     Detector det;
     std::array<std::array<OnePole, 2>, 2> filt {};   // [canal][estágio]: 12 dB/oitava
     juce::SmoothedValue<float> smAtk, smSus, smMix, smOut, smDelta, smClip;

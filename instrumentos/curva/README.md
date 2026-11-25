@@ -1,7 +1,7 @@
 # CURVA
 
 Monitor de volume pela curva de mesma audibilidade (Fletcher-Munson / ISO 226:2003). Grátis, na linha do ALIGN e do
-BAREBASS. **0.2.0 oficial, grátis com licença** (pacote `curva`, token grátis em insidestudiosp.com.br/curva/; sem ativar o som passa direto).
+BAREBASS. **0.2.1 oficial (24/11/2026), grátis com licença** (pacote `curva`, token grátis em insidestudiosp.com.br/curva/; sem ativar o som passa direto).
 
 ![CURVA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/CURVA.png)
 

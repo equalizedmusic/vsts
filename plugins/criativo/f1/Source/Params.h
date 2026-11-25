@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -65,14 +66,14 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::cutoff,    "Cutoff",           cutRange, 1200.0f, [] (float v, int) { return hzText (v); });
     add (id::resonance, "Resonance",        { 0.0f, 100.0f }, 35.0f, pct);
     choice (id::poles,  "Poles",          StringArray (u8 ("2 · 12 dB"), u8 ("4 · 24 dB")), 1);
-    add (id::drive,     "Drive",            { 0.0f, 24.0f }, 0.0f, [] (float v, int) { return dbText (v); });
+    add (id::drive,     "Drive",            { 0.0f, 24.000000000000000808102f }, 0.0f, [] (float v, int) { return dbText (v); });
     choice (id::range,  "Range",            { "High", "Low" }, 0);
     add (id::envAmt,    "Envelope",         { -100.0f, 100.0f }, 0.0f,
          [] (float v, int) { return (v > 0.5f ? "+" : "") + String (roundToInt (v)) + "%"; });
     add (id::smooth,    "Smooth",           { 0.0f, 100.0f }, 25.0f,
          [] (float v, int) { return v < 20.0f ? String ("Fast") : v < 60.0f ? String ("Medium") : String ("Slow"); });
     choice (id::lfoRate, "LFO",             divs, 5);
-    add (id::lfoAmt,    "LFO Amount",      { 0.0f, 100.0f }, 0.0f, pct);
+    add (id::lfoAmt,    "LFO Amount",      { 0.0f, 100.00000000000000635781f }, 0.0f, pct);
     add (id::sens,      "Sensitivity",   { -48.0f, 0.0f }, -18.0f,
          [] (float v, int) { return dbText (v).replace ("-", u8 ("−")); });
     add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });

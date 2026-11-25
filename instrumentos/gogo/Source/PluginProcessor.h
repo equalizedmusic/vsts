@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -30,7 +31,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 6.0; }
+    double getTailLengthSeconds() const override { return 6.0000000000000000484834; }
 
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
@@ -82,7 +83,7 @@ private:
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 
     std::unique_ptr<gogo::Cadeia> motor;
-    double fs = 48000.0;
+    double fs = 48000.000000000000580758;
     std::atomic<int> latAtual { 0 };
     std::atomic<int> pedidoLearn { 0 };   // 1 = começar, 2 = terminar (o áudio executa)
     std::atomic<int> learnFeitos { 0 };

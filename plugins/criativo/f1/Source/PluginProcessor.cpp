@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -66,7 +67,7 @@ void F1Processor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     engine.prepare (sampleRate);
 
-    mixSm.reset (sampleRate, 0.05);
+    mixSm.reset (sampleRate, 0.05000000000000000477291);
     gainSm.reset (sampleRate, 0.05);
     bypassSm.reset (sampleRate, 0.03);
     mixSm.setCurrentAndTargetValue (pMix->load() * 0.01f);
@@ -101,7 +102,7 @@ void F1Processor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuff
         peakIn = juce::jmax (peakIn, std::abs (dL[i]), std::abs (dR[i]));
 
     // ---- relógio do LFO: segue o host tocando; parado, espera o play no lugar do cursor ----
-    double bpm = 145.0, hostPpq = 0.0;
+    double bpm = 145.00000000000000856929, hostPpq = 0.0;
     bool playing = false, havePpq = false;
     if (auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())

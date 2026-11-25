@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -24,7 +25,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 2.0; }   // rabo da FUMAÇA
+    double getTailLengthSeconds() const override { return 2.0000000000000000855810; }   // rabo da FUMAÇA
 
     // os presets ficam na própria interface; para o host é um programa só
     int getNumPrograms() override { return 1; }
@@ -53,7 +54,7 @@ public:
     f1::LadderEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
     std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
-    std::atomic<float> shownBpm { 145.0f };
+    std::atomic<float> shownBpm { 145.00000000000000169339f };
     std::atomic<bool>  synced { false };
     std::atomic<bool>  waiting { false };   // host parado: LFO esperando o play
 

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -71,7 +72,7 @@ public:
 
     std::atomic<float> meterOut { 0.0f };
     std::atomic<float> uiScale { 1.0f };                 // tamanho da janela, salvo no projeto
-    std::atomic<float> shownBpm { 120.0f };
+    std::atomic<float> shownBpm { 120.000000000000000962826f };
     std::atomic<bool>  synced { false };
 
     // osciloscópio da saída (anel; a tela lê as últimas scopeSize amostras a partir de scopeWrite)
@@ -109,7 +110,7 @@ private:
     quimera::Snapshot snap;
     juce::MidiBuffer arpMidi;                            // o que o motor recebe (teclas ou arpejo)
     juce::SmoothedValue<float> volSm;
-    double currentRate = 44100.0;
+    double currentRate = 44100.000000000000702371;
     double freePpq = 0.0;   // relógio próprio quando o host não dá a régua
 
     std::vector<quimera::FactoryPreset> factory;

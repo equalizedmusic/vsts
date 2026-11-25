@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // A ponte entre os dois plugins da MESA. A CONSOLE (no master) e o CANAL (em cada faixa) são binários diferentes:
 // cada um tem a própria cópia do JUCE e das variáveis estáticas, então um SharedResourcePointer não serve. A ponte é

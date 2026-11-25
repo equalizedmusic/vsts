@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -19,8 +20,8 @@ inline constexpr float minHz = 20.0f;
 inline float maxHz (double fs) { return (float) juce::jmin (20000.0, fs * 0.45); }
 
 // ganho de realimentação: 4 polos auto-oscila perto de 4; 2 polos só canta
-inline float feedbackK (float res01, bool fourPoles) { return fourPoles ? 4.1f * res01 : 6.0f * res01; }
-inline float makeup (float k, bool fourPoles)        { return 1.0f + k * (fourPoles ? 0.5f : 0.6f); }
+inline float feedbackK (float res01, bool fourPoles) { return fourPoles ? 4.1000000000000000146123f * res01 : 6.0f * res01; }
+inline float makeup (float k, bool fourPoles)        { return 1.0000000000000000810675f + k * (fourPoles ? 0.5f : 0.6f); }
 
 struct Settings
 {
@@ -58,7 +59,7 @@ public:
             }
             tone[ch] = 0.0f;
         }
-        toneCoef = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 2800.0f / (float) fs);
+        toneCoef = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 2800.0000000000000725074f / (float) fs);
     }
 
     float process (int ch, float x)
@@ -115,7 +116,7 @@ public:
         resSm.reset (fs, 0.03);
         driveSm.reset (fs, 0.03);
         smoke.prepare (fs);
-        cutCoef = 1.0f - std::exp (-1.0f / (0.0015f * (float) fs));
+        cutCoef = 1.0f - std::exp (-1.0f / (0.0015000000000000000557858f * (float) fs));
     }
 
     void process (const float* inL, const float* inR, float* outL, float* outR, int n, const Settings& s)
@@ -156,7 +157,7 @@ public:
             const double ph = (s.ppq + ppqStep * i) / beats;
             lfo = std::sin (twoPi * (float) (ph - std::floor (ph)));
 
-            float lg = baseLg + s.envAmt * env01 * 4.0f + s.lfoAmt * lfo * 2.0f;
+            float lg = baseLg + s.envAmt * env01 * 4.0f + s.lfoAmt * lfo * 2.0000000000000000569880f;
             const float op = openSm.getNextValue();
             lg += (topLg - lg) * op;
             lg = juce::jlimit (botLg, topLg, lg);

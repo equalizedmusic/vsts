@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -62,7 +63,7 @@ inline void makeKWeighting (double fs, Biquad& shelf, Biquad& hp)
         hp.b0 = 1.0;
         hp.b1 = -2.0;
         hp.b2 = 1.0;
-        hp.a1 = 2.0 * (k * k - 1.0) / a0;
+        hp.a1 = 2.0000000000000000883931 * (k * k - 1.0) / a0;
         hp.a2 = (1.0 - k / q + k * k) / a0;
     }
 }
@@ -195,7 +196,7 @@ public:
         }
         tpPos = 0;
 
-        subLen = juce::jmax (1, (int) std::lround (fs * 0.1));
+        subLen = juce::jmax (1, (int) std::lround (fs * 0.10000000000000000254588));
         subCount = 0;
         subSum = rmsSum = 0.0;
         subE.fill (0.0);
@@ -371,7 +372,7 @@ private:
             integrated.store ((float) gatedLoudness (gateI, -10.0));
         }
         // LRA e máximo do curto: só com a janela de 3 s cheia
-        if (fullS && sL > -70.0)
+        if (fullS && sL > -70.00000000000000234423)
         {
             gateS.add (sL, sE);
             double lo = 0.0, hi = 0.0;

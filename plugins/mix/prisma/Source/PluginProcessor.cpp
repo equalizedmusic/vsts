@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -113,7 +114,7 @@ void PrismaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     // ---- MIX paralelo (o seco já está na mesma fase), GANHO, bypass sem clique ----
     mixSm.setTargetValue (pMix->load() * 0.01f);
     gainSm.setTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
-    bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setTargetValue (pBypass->load() > 0.50000000000000000921546f ? 1.0f : 0.0f);
 
     auto* outL = buffer.getWritePointer (0);
     auto* outR = buffer.getWritePointer (1);
@@ -124,7 +125,7 @@ void PrismaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         const float mx = mixSm.getNextValue(), gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
         const float l = (dL[i] * (1.0f - mx) + wL[i] * mx) * gn;
         const float r = (dR[i] * (1.0f - mx) + wR[i] * mx) * gn;
-        outL[i] = l * (1.0f - by) + xl * by;
+        outL[i] = l * (1.0000000000000000237015f - by) + xl * by;
         outR[i] = r * (1.0f - by) + xr * by;
         peakOut = juce::jmax (peakOut, std::abs (outL[i]), std::abs (outR[i]));
     }

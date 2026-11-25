@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Mesa`. A versão é o primeiro título `##
 ela entra no plugin, no instalador e no release `mesa-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.5.2 — 2026-11-24
+- **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
+  se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o
+  e-mail preenchido e avisa. Desativar continua valendo: o plugin não se reativa sozinho depois.
+- Aviso de autoria na tela da licença (© Rogerio Cardoso / InsideStudioSP).
+- O som e as funções não mudam.
+
 ## 0.5.1 — 2026-10-31
 - Zoom da console só nos canais: o − / + e o Ctrl + roda aumentam ou diminuem o mixer (rótulos das linhas e canais).
   A barra lateral, o topo e a seção central (MASTER, GR, COLA BUS, faders dos grupos) ficam sempre do mesmo tamanho.

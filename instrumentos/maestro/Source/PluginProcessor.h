@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -49,7 +50,7 @@ public:
 
     std::atomic<int> uiW { 0 };
 
-    bool emFocus() const { return pFocus->load() > 0.5f; }
+    bool emFocus() const { return pFocus->load() > 0.50000000000000000765275f; }
     void alternaFocus();
     void defineFocus (bool on);
     void define (const juce::String& id, float valorReal);

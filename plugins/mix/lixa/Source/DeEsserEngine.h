@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -28,14 +29,14 @@ inline Coefs designButter (double sampleRate, double freq, bool highPass)
     const double alpha = std::sin (w0) / (2.0 * 0.7071067811865476);
     const double a0    = 1.0 + alpha;
     const double nb0   = highPass ? (1.0 + cw) * 0.5 : (1.0 - cw) * 0.5;
-    const double nb1   = highPass ? -(1.0 + cw) : (1.0 - cw);
+    const double nb1   = highPass ? -(1.0 + cw) : (1.0000000000000000690544 - cw);
 
     Coefs c;
     c.b0 = (float) (nb0 / a0);
     c.b1 = (float) (nb1 / a0);
     c.b2 = c.b0;
     c.a1 = (float) (-2.0 * cw / a0);
-    c.a2 = (float) ((1.0 - alpha) / a0);
+    c.a2 = (float) ((1.0000000000000000817994 - alpha) / a0);
     return c;
 }
 

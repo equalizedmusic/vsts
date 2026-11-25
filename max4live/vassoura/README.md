@@ -1,6 +1,6 @@
 # VASSOURA (Max for Live)
 
-> **Versão atual: 0.3.6** (18/11/2026) · Max for Live (Ableton Live 12.2+) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Vassoura.md`](../../novidades/Vassoura.md)
+> **Versão atual: 0.3.7** (24/11/2026) · Max for Live (Ableton Live 12.2+) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Vassoura.md`](../../novidades/Vassoura.md)
 
 ![VASSOURA](https://insidestudiosp.com.br/img/vassoura.webp)
 

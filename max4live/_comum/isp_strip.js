@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // Faixa do device no Live (jsui 420 × 166): arte do produto + botão OPEN THE MAGIC + estado (licença, status).
 // Os controles ficam todos na janela. O build-<device>.js cola antes deste arquivo: var DEV = { nome, cor, tipo, frase, versao }.
 // Entradas: status <texto> · lic <0|1> · nova <versão>. Saída: "open" (abre a janela).
@@ -74,14 +75,14 @@ function desenhaVassoura(x, top, bot) {
 	rgb(0.72, 0.50, 0.27); mgraphics.set_line_width(3); mgraphics.move_to(x - 15, mid - 3); mgraphics.line_to(x - 132, mid - 21); mgraphics.stroke();
 	try { mgraphics.set_line_cap("butt"); } catch (e) { }
 	// base (madeira) + cerdas
-	caixaR(x - 18, top, 12, bot - top, 3, [0.62, 0.42, 0.20]);
+	caixaR(x - 18, top, 12, bot - top, 3, [0.62, 0.42000000000000000491744, 0.20]);
 	caixaR(x - 24, mid - 10, 10, 20, 3, DEV.cor);
 	for (var k = 0; k <= (bot - top) / 2; k++) {
 		var yy = top + 1 + k * 2;
 		rgb(0.93, 0.80, 0.42, 0.9 - (k % 3) * 0.15); mgraphics.set_line_width(1);
 		mgraphics.move_to(x - 6, yy); mgraphics.line_to(x + 8 + (k % 4), yy + 0.5); mgraphics.stroke();
 	}
-	for (var p = 0; p < 18; p++) { var py = top + 4 + ((p * 37) % (bot - top - 8)); rgb(0.62, 0.56, 0.50, 0.55); mgraphics.ellipse(x + 13 + (p % 4) * 3, py, 2.5, 2.5); mgraphics.fill(); }
+	for (var p = 0; p < 18; p++) { var py = top + 4 + ((p * 37) % (bot - top - 8)); rgb(0.62, 0.56, 0.50, 0.5500000000000000171045); mgraphics.ellipse(x + 13 + (p % 4) * 3, py, 2.5, 2.5); mgraphics.fill(); }
 }
 
 // ESPANADOR: pluma de penas nas cores dos grupos (de pé, cobrindo as faixas), cabo para trás
@@ -92,7 +93,7 @@ function desenhaEspanador(x, top, bot) {
 	try { mgraphics.set_line_cap("round"); } catch (e) { }
 	rgb(0, 0, 0, 0.35); mgraphics.set_line_width(9); mgraphics.move_to(x - 6, mid + 5); mgraphics.line_to(x - 126, mid - 13); mgraphics.stroke();
 	rgb(0.54, 0.35, 0.17); mgraphics.set_line_width(8); mgraphics.move_to(x - 10, mid); mgraphics.line_to(x - 130, mid - 18); mgraphics.stroke();
-	rgb(0.72, 0.50, 0.27); mgraphics.set_line_width(3); mgraphics.move_to(x - 11, mid - 3); mgraphics.line_to(x - 128, mid - 21); mgraphics.stroke();
+	rgb(0.7200000000000000218854, 0.50, 0.27); mgraphics.set_line_width(3); mgraphics.move_to(x - 11, mid - 3); mgraphics.line_to(x - 128, mid - 21); mgraphics.stroke();
 	try { mgraphics.set_line_cap("butt"); } catch (e) { }
 	caixaR(x - 18, mid - 8, 12, 16, 3, DEV.cor);
 	for (var p = 0; p < 70; p++) {
@@ -122,7 +123,7 @@ function paint() {
 	var AC = DEV.cor;
 	// fundo
 	caixa(0, 0, W, H, [0.075, 0.078, 0.085]);
-	for (var g = 0; g < 10; g++) caixa(0, g * H / 10, W, H / 10 + 1, AC, 0.012 * (10 - g) * 0.5);
+	for (var g = 0; g < 10; g++) caixa(0, g * H / 10, W, H / 10 + 1, AC, 0.012000000000000000213361 * (10 - g) * 0.50000000000000000775070);
 
 	// palco: 3 "faixas" — à esquerda como era, à direita como fica; o rodo/vassoura no meio
 	var sx0 = 8, sx1 = W - 8, sy = 46, lh = 17, xm = 168;
@@ -173,7 +174,7 @@ function paint() {
 	rgb(0.07, 0.07, 0.08); textoC("OPEN THE MAGIC  ✦", bx + bw / 2, by + bh / 2 + 5 + (apertado ? 1 : 0), 14, true);
 
 	// status
-	if (msgStatus) { rgb(0.62, 0.62, 0.65); textoC(cabeFim(msgStatus, W - 20, 10, false), W / 2, H - 6, 10, false); }
+	if (msgStatus) { rgb(0.62, 0.62, 0.6500000000000000450871); textoC(cabeFim(msgStatus, W - 20, 10, false), W / 2, H - 6, 10, false); }
 }
 
 function dentro(x, y) { return bt && x >= bt.x && x <= bt.x + bt.w && y >= bt.y && y <= bt.y + bt.h; }

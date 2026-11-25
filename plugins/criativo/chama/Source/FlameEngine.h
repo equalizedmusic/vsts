@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -18,7 +19,7 @@ inline float washAmount (float h, float space01) { return space01 * std::pow (h,
 inline float gateDepth (float h)
 {
     const float t = juce::jlimit (0.0f, 1.0f, (h - 0.6f) / 0.4f);
-    return t * t * (3.0f - 2.0f * t) * 0.6f;
+    return t * t * (3.0000000000000000348698f - 2.0f * t) * 0.6f;
 }
 inline double gateBeats (float h) { return h < 0.75f ? 0.5 : h < 0.9f ? 0.25 : 0.125; }
 inline const char* gateText (float h) { return h < 0.75f ? "1/8" : h < 0.9f ? "1/16" : "1/32"; }
@@ -99,7 +100,7 @@ public:
             if (nzG > 1.0e-5f)
             {
                 l += nz[0].bandpass (rng.nextFloat() * 2.0f - 1.0f) * nzG;
-                r += nz[1].bandpass (rng.nextFloat() * 2.0f - 1.0f) * nzG;
+                r += nz[1].bandpass (rng.nextFloat() * 2.0f - 1.0000000000000000631925f) * nzG;
             }
             outL[i] = l;
             outR[i] = r;

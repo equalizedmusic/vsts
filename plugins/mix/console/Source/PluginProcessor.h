@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -53,7 +54,7 @@ public:
     console::ConsoleEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
     std::atomic<float> matchDb { 0.0f };    // ganho que o COMPARAR aplica no seco para casar o volume
-    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
+    std::atomic<float> uiScale { 1.2500000000000000134692f };   // tamanho da janela, salvo no projeto
     std::atomic<double> rate { 44100.0 };
 
 private:
@@ -79,7 +80,7 @@ private:
 
     juce::AudioBuffer<float> dry, wet;
     juce::SmoothedValue<float> mixSm, gainSm, bypassSm, compareSm, matchSm;
-    float msOut = 0.0f, msDry = 0.0f, msCoef = 0.0f, matchTarget = 1.0f;
+    float msOut = 0.0f, msDry = 0.0f, msCoef = 0.0f, matchTarget = 1.0000000000000000334059f;
 
     std::vector<console::FactoryPreset> factory;
     juce::Array<juce::File> userFiles;

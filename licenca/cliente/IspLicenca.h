@@ -12,6 +12,14 @@
 // A licença assinada vale 45 dias; com mais de 3 dias o plugin confirma de novo pela internet, em segundo plano.
 // Com a licença valendo, ao carregar ele pergunta uma vez ao servidor se há versão nova do pacote (GET /v1/versao);
 // a TelaAtivacao mostra o aviso. ISP_VERSAO_ATUAL (opcional) finge outra versão, só para testar o aviso.
+//
+// Ativação AUTOMÁTICA (24/11/2026): o token é um só por e-mail e vale para todos os pacotes da pessoa. Pacote sem licença
+// neste computador procura o e-mail+token gravado por OUTRO plugin InsideStudioSP (os .lic desta pasta e as licenças dos
+// devices Max for Live) e tenta ativar sozinho, com "auto": true no pedido. Deu certo = a pessoa nem vê a tela de ativação.
+// Não tem este pacote = a tela abre com o e-mail já preenchido e um aviso. Cada conjunto de candidatos é tentado UMA vez
+// (<pacote>.auto guarda o hash): abrir o DAW de novo não repete o pedido, e DESATIVAR não é desfeito na próxima abertura.
+//
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "IspEd25519.h"
@@ -133,6 +141,7 @@ public:
     {
         if (emAndamento) return;
         msg = utf8 ("Ativando…");
+        candidatos.clear();
         pedir ("ativar", email.trim().toLowerCase(), token.trim().toUpperCase(), true);
     }
 
@@ -203,6 +212,115 @@ private:
         }
         else if (f.existsAsFile())
             msg = erro;
+        else if (! tentouAuto)
+        {
+            tentouAuto = true;
+            tentarAutomatica();
+        }
+        sendChangeMessage();
+    }
+
+    // ---- ativação automática com o e-mail+token de outro plugin InsideStudioSP deste computador
+    struct Candidato { juce::String email, token; juce::Time quando; };
+
+    static juce::String normToken (const juce::String& t)
+    {
+        return t.toUpperCase().retainCharacters ("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    }
+
+    // { email, token } de uma licença gravada: .lic dos VST (JSON) ou dos devices M4L (.txt = JSON; .json = { "v": JSON })
+    static void lerCandidato (const juce::File& arq, juce::Array<Candidato>& lista)
+    {
+        if (! arq.existsAsFile() || arq.getSize() > 64 * 1024) return;
+        auto j = juce::JSON::parse (arq.loadFileAsString());
+        if (j.isObject() && j["v"].isString() && ! j["email"].isString())
+            j = juce::JSON::parse (j["v"].toString());
+        const auto email = j["email"].toString().trim().toLowerCase();
+        const auto token = j["token"].toString().trim().toUpperCase();
+        if (! email.containsChar ('@') || normToken (token).length() < 20) return;
+        for (auto& c : lista)
+            if (c.email == email && normToken (c.token) == normToken (token))
+            {
+                c.quando = juce::jmax (c.quando, arq.getLastModificationTime());
+                return;
+            }
+        lista.add ({ email, token, arq.getLastModificationTime() });
+    }
+
+    static juce::Array<Candidato> procurarCandidatos()
+    {
+        juce::Array<Candidato> lista;
+        const auto pasta = arquivo().getParentDirectory();
+        const juce::String meu = juce::String (pacote) + ".lic";
+        for (const auto& e : juce::RangedDirectoryIterator (pasta, false, "*.lic", juce::File::findFiles))
+            if (e.getFile().getFileName() != meu)
+                lerCandidato (e.getFile(), lista);
+        // devices Max for Live: pasta comum fixa e a pasta do usuário (isp_licenca.js)
+       #if JUCE_MAC
+        const juce::File m4l[] { juce::File ("/Users/Shared"), pasta.getParentDirectory().getParentDirectory() };
+       #else
+        const juce::File m4l[] { juce::File ("C:\\Users\\Public\\Documents"), pasta.getParentDirectory().getParentDirectory() };
+       #endif
+        for (const auto& p : m4l)
+            for (const auto& e : juce::RangedDirectoryIterator (p, false, "InsideStudioSP-*-licenca.*", juce::File::findFiles))
+                lerCandidato (e.getFile(), lista);
+        std::sort (lista.begin(), lista.end(), [] (const Candidato& a, const Candidato& b) { return a.quando > b.quando; });
+        while (lista.size() > 3) lista.removeLast();
+        return lista;
+    }
+
+    static juce::File arquivoAuto() { return arquivo().withFileExtension ("auto"); }
+
+    static juce::String hashCandidatos (const juce::Array<Candidato>& lista)
+    {
+        juce::StringArray partes;
+        for (const auto& c : lista) partes.add (c.email + "|" + normToken (c.token));
+        partes.sort (false);
+        const auto txt = ("InsideStudioSP|auto|" + juce::String (pacote) + "|" + partes.joinIntoString (",")).toStdString();
+        std::uint8_t h[64];
+        ed25519::sha512 (h, txt.data(), txt.size());
+        return juce::String::toHexString (h, 16, 0);
+    }
+
+    // estes candidatos já foram tentados (ou a pessoa desativou com eles por aqui): não pede de novo
+    static void marcarTentados (const juce::Array<Candidato>& lista)
+    {
+        if (lista.isEmpty()) return;
+        const auto f = arquivoAuto();
+        f.getParentDirectory().createDirectory();
+        f.replaceWithText (hashCandidatos (lista));
+    }
+
+    void tentarAutomatica()
+    {
+        candidatos = procurarCandidatos();
+        if (candidatos.isEmpty()) return;
+        if (arquivoAuto().loadFileAsString().trim() == hashCandidatos (candidatos))
+        {
+            candidatos.clear();
+            return;
+        }
+        candidatosTentados = candidatos;
+        autoIndice = 0;
+        msg = utf8 ("Procurando a licença dos seus outros plugins InsideStudioSP…");
+        pedir ("ativar", candidatos[0].email, candidatos[0].token, false, true);
+    }
+
+    // a tentativa automática não deu: próximo candidato, ou a tela com o e-mail já preenchido
+    void automaticaFalhou (const juce::String& erro, bool respondeu)
+    {
+        if (respondeu && ++autoIndice < candidatos.size())
+        {
+            pedir ("ativar", candidatos[autoIndice].email, candidatos[autoIndice].token, false, true);
+            return;
+        }
+        if (respondeu) marcarTentados (candidatosTentados);   // sem internet: tenta de novo na próxima abertura
+        if (emailAtual.isEmpty() && candidatosTentados.size() > 0) emailAtual = candidatosTentados[0].email;
+        msg = erro == "pacote_nao_incluido"
+                ? utf8 ("Seu e-mail já tem outros plugins InsideStudioSP, mas não o ") + nomePacote()
+                      + utf8 (". Se você comprou ou pegou este, digite o token que chegou no e-mail.")
+                : juce::String();
+        candidatos.clear();
         sendChangeMessage();
     }
 
@@ -273,7 +391,8 @@ private:
     }
 
     // chamada ao servidor numa thread à parte; a resposta volta para a thread da interface
-    void pedir (const juce::String& acao, const juce::String& email, const juce::String& token, bool mostrarErro)
+    void pedir (const juce::String& acao, const juce::String& email, const juce::String& token, bool mostrarErro,
+                bool automatica = false)
     {
         emAndamento = true;
         sendChangeMessage();
@@ -285,11 +404,12 @@ private:
         corpo->setProperty ("maquina", maquina());
         corpo->setProperty ("nome_maquina", juce::SystemStats::getComputerName());
         corpo->setProperty ("versao", juce::String (ISP_NOME_PLUGIN) + " " + ISP_VERSAO_PLUGIN);
+        if (automatica) corpo->setProperty ("auto", true);
         const auto json = juce::JSON::toString (juce::var (corpo), true);
         const juce::String url = juce::String (ISP_LICENCA_URL) + "/v1/" + acao;
 
         juce::WeakReference<Licenca> eu (this);
-        pool.addJob ([eu, acao, email, token, json, url, mostrarErro]
+        pool.addJob ([eu, acao, email, token, json, url, mostrarErro, automatica]
         {
             int status = 0;
             juce::String texto;
@@ -301,10 +421,10 @@ private:
                 texto = in->readEntireStreamAsString();
             const auto resp = juce::JSON::parse (texto);
 
-            juce::MessageManager::callAsync ([eu, acao, email, token, resp, mostrarErro]
+            juce::MessageManager::callAsync ([eu, acao, email, token, resp, mostrarErro, automatica]
             {
                 if (auto* l = eu.get())
-                    l->resposta (acao, email, token, resp, mostrarErro);
+                    l->resposta (acao, email, token, resp, mostrarErro, automatica);
             });
         });
     }
@@ -363,10 +483,17 @@ private:
     }
 
     void resposta (const juce::String& acao, const juce::String& email, const juce::String& token,
-                   const juce::var& resp, bool mostrarErro)
+                   const juce::var& resp, bool mostrarErro, bool automatica = false)
     {
         emAndamento = false;
         const auto f = arquivo();
+
+        // ativação automática que não deu: segue quieta (sem mensagem de erro do servidor)
+        if (automatica && ! (resp.isObject() && (bool) resp["ok"]))
+        {
+            automaticaFalhou (resp["erro"].toString(), resp.isObject());
+            return;
+        }
 
         if (! resp.isObject())
         {
@@ -381,6 +508,7 @@ private:
         {
             if (acao == "desativar")
             {
+                marcarTentados (procurarCandidatos());   // não reativa sozinho na próxima abertura
                 f.deleteFile();
                 ok = false;
                 emailAtual = tokenAtual = {};
@@ -400,7 +528,8 @@ private:
             if (! ok && msg.isEmpty())
                 msg = utf8 ("A resposta do servidor não conferiu. Tente de novo.");
             if (ok && acao == "ativar")
-                msg = utf8 ("Ativado. Bom som!");
+                msg = utf8 (automatica ? "Ativado sozinho com a licença dos seus outros plugins InsideStudioSP. Bom som!" : "Ativado. Bom som!");
+            if (automatica) candidatos.clear();
             sendChangeMessage();
             return;
         }
@@ -428,7 +557,9 @@ private:
     }
 
     std::atomic<bool> ok { false };
-    bool emAndamento = false, jaConfirmou = false, versaoPerguntada = false;
+    bool emAndamento = false, jaConfirmou = false, versaoPerguntada = false, tentouAuto = false;
+    juce::Array<Candidato> candidatos, candidatosTentados;
+    int autoIndice = 0;
     juce::String msg, emailAtual, tokenAtual, novaVersao, urlNova, dispensada;
     juce::int64 emitidaSeg = 0, validaAteSeg = 0;
     juce::Time ultimaData;

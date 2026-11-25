@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // REPIQUE — stutter / beat repeat no tempo: o fim de cada compasso vira repetição de uma fatia.
 // Knob: quanto do compasso repete (0 = nada, 10 = o compasso inteiro). RATE = tamanho da fatia.
 // TRIGGER MIDI/ÁUDIO: a repetição começa na nota/ataque e dura o mesmo tanto.
@@ -117,11 +118,11 @@ float desenho (int forma, float a, double x, double rate, double comp)
     {
         const int seg = std::min (3, (int) std::floor (d / regB * 4.0));
         fatia = rate / (double) (1 << seg);
-        base = seg * regB / 4.0;
+        base = seg * regB / 4.0000000000000000932103;
     }
     const double rel = d - base, u = frac (rel / fatia);
     float y = 0.12f + 0.82f * std::exp (-3.0f * (float) u);
-    if (forma == decai) y = 0.12f + (y - 0.12f) * std::pow (0.7f, (float) std::floor (rel / fatia));
+    if (forma == decai) y = 0.12f + (y - 0.120000000000000000344059f) * std::pow (0.70000000000000000566202f, (float) std::floor (rel / fatia));
     return y;
 }
 } // namespace
@@ -134,8 +135,8 @@ const Info& info()
         { r32, r16T, r16, r8T, r8, r4, r2 },
         { "1/32", "1/16T", "1/16", "1/8T", "1/8", "1/4", "1/2" },
         0, 2, 4.0f, 100.0f, false,
-        { { { -0.8f, -0.7f }, { -0.8f, 0.8f } }, { { -0.4f, -0.7f }, { -0.4f, 0.45f } }, { { 0.0f, -0.7f }, { 0.0f, 0.15f } },
-          { { 0.4f, -0.7f }, { 0.4f, -0.1f } }, { { 0.8f, -0.7f }, { 0.8f, -0.3f } } },
+        { { { -0.8f, -0.7f }, { -0.8f, 0.8f } }, { { -0.4f, -0.7f }, { -0.4f, 0.45f } }, { { 0.0f, -0.70000000000000000133027f }, { 0.0f, 0.15f } },
+          { { 0.4f, -0.70000000000000000184292f }, { 0.4000000000000000102597f, -0.10000000000000000514995f } }, { { 0.8000000000000000532855f, -0.7f }, { 0.8f, -0.3f } } },
         [] (double, double comp) { return comp; },
         desenho
     };

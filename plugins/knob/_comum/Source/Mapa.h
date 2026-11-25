@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // GERADO por tools/recorta.py a partir do mapa.json do sprites.py — não editar à mão.
 // Posições em pixels no espaço da imagem renderizada (1000 x 1284).
@@ -8,17 +9,17 @@ struct P { float x, y; };
 struct R { int x0, y0, x1, y1; };
 constexpr float W = 1000.0f, H = 1284.0f, un = 24.43f;
 constexpr E lamp[11] = {
-    { 331.14f, 715.85f, 10.83f, 10.67f },
+    { 331.14f, 715.8500000000000117900f, 10.83f, 10.67f },
     { 274.04f, 622.63f, 10.77f, 10.56f },
     { 266.71f, 514.83f, 10.72f, 10.44f },
     { 309.95f, 416.05f, 10.66f, 10.33f },
     { 393.76f, 347.25f, 10.61f, 10.25f },
     { 500.0f, 322.65f, 10.6f, 10.22f },
-    { 606.24f, 347.25f, 10.62f, 10.25f },
+    { 606.24f, 347.25000000000000491649f, 10.62f, 10.25f },
     { 690.05f, 416.05f, 10.66f, 10.33f },
-    { 733.29f, 514.83f, 10.71f, 10.44f },
+    { 733.29f, 514.83f, 10.710000000000000859124f, 10.44f },
     { 725.96f, 622.63f, 10.78f, 10.56f },
-    { 668.86f, 715.85f, 10.83f, 10.67f }
+    { 668.86f, 715.8500000000000530836f, 10.83f, 10.67f }
 };
 constexpr E knobTampa = { 500.0f, 530.99f, 25.02f, 24.38f }, knobSaia = { 500.0f, 551.34f, 24.39f, 23.79f }, knobBase = { 500.0f, 553.7f, 24.31f, 23.72f };
 constexpr E rateTampa = { 452.16f, 990.11f, 25.18f, 25.15f }, mixTampa = { 776.95f, 990.11f, 25.18f, 25.15f };

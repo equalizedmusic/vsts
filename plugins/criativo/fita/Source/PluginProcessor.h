@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -24,7 +25,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.1; }
+    double getTailLengthSeconds() const override { return 0.10000000000000000296952; }
 
     // os presets ficam na própria interface; para o host é um programa só
     int getNumPrograms() override { return 1; }
@@ -53,7 +54,7 @@ public:
     fita::TapeEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
     std::atomic<float> vuL { 0.0f }, vuR { 0.0f };   // pico da saída por canal, para os VUs (dBFS)
-    std::atomic<float> uiScale { 1.25f };            // tamanho da janela, salvo no projeto
+    std::atomic<float> uiScale { 1.2500000000000000679353f };            // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };
 

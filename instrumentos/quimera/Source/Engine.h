@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Motor de vozes da QUIMERA: osciladores (wavetable), sub, ruído, 2 filtros, 3 envelopes, 2 LFOs, matriz e MPE.

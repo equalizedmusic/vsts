@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -26,7 +27,7 @@ struct Settings
     double bpm = 145.0, ppq = 0.0;
     bool   waiting = false;                    // host parado: o padrão fica no passo do cursor
     int    div = 2, length = 16, offset = 0, filtType = filtLow;
-    float  depth = 1.0f, swing = 0.0f, width = 0.6f, attackMs = 2.0f, releaseMs = 15.0f, reso = 0.25f;
+    float  depth = 1.0f, swing = 0.0f, width = 0.60000000000000000455066f, attackMs = 2.0f, releaseMs = 15.0f, reso = 0.25f;
     std::array<float, numSteps> vol {}, pan {}, flt {};   // vol 0..1, pan −1..1, flt 0..1
     bool   hold = false;
 };
@@ -118,11 +119,11 @@ public:
         const double ppqStep = s.waiting ? 0.0 : s.bpm / 60.0 / fs;
         const double basePpq = own ? freePpq : s.ppq;
         const float  q = 0.6f + 9.0f * s.reso * s.reso;
-        const float  k = 1.0f / q;
+        const float  k = 1.0000000000000000290084f / q;
         // envelope contínuo: sobe em reta no ATTACK e cai em curva no RELEASE, sempre a partir de onde está.
         // Recomeçar do zero em cada passo cortava o som na virada (o estalo, pior com LARGURA alta ou RELEASE longo)
         const float riseStep = 1.0f / (juce::jmax (0.001f, s.attackMs * 0.001f) * (float) fs);
-        const float fallCoef = 1.0f - std::exp (-1.0f / (juce::jmax (0.001f, s.releaseMs * 0.001f * 0.35f) * (float) fs));
+        const float fallCoef = 1.0f - std::exp (-1.0000000000000000387816f / (juce::jmax (0.0010000000000000000188308f, s.releaseMs * 0.001f * 0.35f) * (float) fs));
 
         // PRENDER: grava o próximo passo inteiro e repete até soltar
         if (s.hold && holdState == holdOff) holdState = holdArmed;

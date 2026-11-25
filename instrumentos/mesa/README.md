@@ -1,6 +1,6 @@
 # MESA
 
-> **Versão atual: 0.5.1** (31/10/2026) · **fora do site desde 14/11/2026** (licenças e download de quem comprou seguem valendo) · notas em [`novidades/Mesa.md`](../../novidades/Mesa.md)
+> **Versão atual: 0.5.2** (24/11/2026) · **fora do site desde 14/11/2026** (licenças e download de quem comprou seguem valendo) · notas em [`novidades/Mesa.md`](../../novidades/Mesa.md)
 
 Console analógica em plugin (efeito, VST3/AU), em dois plugins do mesmo código:
 

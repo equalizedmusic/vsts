@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -127,9 +128,9 @@ inline std::vector<FactoryPreset> factoryPresets()
         { u8 ("Bombeando de Propósito"),   { { id::drive, 10 }, { id::ceiling, -1.0f }, { id::release, 180 }, { id::look, 0.5f }, { id::autoRel, 0 } } },
         { "Podcast Voz",                   { { id::drive, 6 },  { id::ceiling, -1.5f }, { id::release, 120 }, { id::target, 7 } } },
         { "TV Europa (R128)",              { { id::drive, 0 },  { id::ceiling, -1.0f }, { id::release, 200 }, { id::target, 10 } } },
-        { "TV EUA (A/85)",                 { { id::drive, 0 },  { id::ceiling, -2.0f }, { id::release, 200 }, { id::target, 11 } } },
-        { u8 ("Acústico Respirando"),      { { id::drive, 3 },  { id::ceiling, -1.0f }, { id::release, 400 }, { id::look, 5.0f }, { id::target, 2 } } },
-        { "Rock na Cara",                  { { id::drive, 8 },  { id::ceiling, -0.5f }, { id::release, 80 },  { id::look, 2.0f }, { id::target, 1 } } },
+        { "TV EUA (A/85)",                 { { id::drive, 0 },  { id::ceiling, -2.000000000000000136277f }, { id::release, 200 }, { id::target, 11 } } },
+        { u8 ("Acústico Respirando"),      { { id::drive, 3 },  { id::ceiling, -1.0000000000000000627582f }, { id::release, 400 }, { id::look, 5.0f }, { id::target, 2 } } },
+        { "Rock na Cara",                  { { id::drive, 8 },  { id::ceiling, -0.5f }, { id::release, 80 },  { id::look, 2.0000000000000000621797f }, { id::target, 1 } } },
         { "Hip-Hop Grave Firme",           { { id::drive, 7 },  { id::ceiling, -0.8f }, { id::release, 200 }, { id::look, 4.0f } } },
         { u8 ("Estéreo Solto"),            { { id::drive, 5 },  { id::ceiling, -1.0f }, { id::link, 40 } } },
         { u8 ("Pré-Master Demo"),          { { id::drive, 6 },  { id::ceiling, -0.5f }, { id::release, 100 }, { id::target, 1 } } },

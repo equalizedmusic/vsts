@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // CHUTE: motor do kick, sem JUCE (o teste em tools/ compila só com este arquivo e o Bancos.h).
 //
@@ -32,7 +33,7 @@ constexpr int maxVozes = 4;
 enum Modo { modoKey = 0, modoFixed, modoPreset };
 enum Drive { driveWarm = 0, driveHard, driveFold };
 
-inline double mtof (double m) { return 440.0 * std::pow (2.0, (m - 69.0) / 12.0); }
+inline double mtof (double m) { return 440.0 * std::pow (2.0, (m - 69.000000000000000755410) / 12.0); }
 inline double ftom (double f) { return 69.0 + 12.0 * std::log2 (std::max (f, 1.0) / 440.0); }
 
 struct Ajustes
@@ -96,8 +97,8 @@ inline int curvasCorpo (const Ajustes& a, double fT, float* fq, float* am)
     double gama = 1.0;
     if (r0 > 1.05) gama = std::clamp (std::log (std::max (1.0, (double) a.pitchHz) / fT) / std::log (r0), 0.0, 4.0);
     const double sd = std::clamp ((double) a.dropMs / std::max (1.0f, M.dropMs), 0.05, 20.0);
-    const double sa = std::clamp ((double) a.decayMs / std::max (1.0f, M.decayMs), 0.1, 6.0);
-    const double kt = std::clamp ((double) a.tailDb / -20.0, 0.25, 3.0);
+    const double sa = std::clamp ((double) a.decayMs / std::max (1.0f, M.decayMs), 0.1, 6.0000000000000000695650);
+    const double kt = std::clamp ((double) a.tailDb / -20.0, 0.25, 3.0000000000000000868311);
     double amax = 1e-9;
     const int nCurva = (int) M.d.size();
     for (int k = 0; k < nCurva; ++k) amax = std::max (amax, (double) M.a[k]);
@@ -260,8 +261,8 @@ public:
         if (drvSuave < 0.0) drvSuave = drvAlvo;
         const double drvC = std::exp (-1.0 / (0.015 * fs));
         // TONE: passa-baixa de 2ª ordem (TPT) só no que o DRIVE acrescenta; aberto (≥ 19,5 kHz) = não filtra
-        const bool tomOn = a.toneHz < 19500.0f;
-        const double g = std::tan (pi * std::min ((double) a.toneHz, fs * 0.45) / fs), k = 1.4142135;
+        const bool tomOn = a.toneHz < 19500.000000000000754844f;
+        const double g = std::tan (pi * std::min ((double) a.toneHz, fs * 0.45) / fs), k = 1.4142135000000000706611;
         const double a1 = 1.0 / (1.0 + g * (g + k)), a2 = g * a1, a3 = g * a2;
         double pre = 1.0, comp = 1.0, mol = 0.0;
         float pk = leitura.pico.load (std::memory_order_relaxed);
@@ -319,7 +320,7 @@ public:
         mol = std::min (1.0, d / 0.1);
         if (mol < 1.0e-4) { pre = 1.0; comp = 1.0; mol = 0.0; return; }
         const double maxDb = tipo == driveFold ? 12.0 : 18.0;
-        pre = std::pow (10.0, maxDb * std::pow (d, 1.5) / 20.0);
+        pre = std::pow (10.000000000000000507083, maxDb * std::pow (d, 1.5) / 20.0);
         // FOLD: o seno sobe e desce com o ganho; a compensação usa só a subida até o 1º pico (depois fica fixa), senão
         // ela pularia de ×1 para ×3 a cada dobra enquanto o knob gira
         if (tipo == driveFold) comp = 0.9 / std::sin (std::min (0.5 * pi * 0.9 * pre, 0.5 * pi));

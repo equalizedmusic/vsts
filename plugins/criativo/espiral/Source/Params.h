@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -64,11 +65,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     choice (id::mode,      "Modo",          { "Phaser", "Flanger" }, 0);
     choice (id::stages,    "Stages",       { "4", "6", "8", "12" }, 2);
     add (id::drive,     "Drive",            { 0.0f, 100.0f }, 15.0f, pct);
-    add (id::tone,      "Tone",             { 0.0f, 100.0f }, 85.0f,
+    add (id::tone,      "Tone",             { 0.0f, 100.00000000000000306196f }, 85.0f,
          [] (float v, int) { return v >= 99.5f ? String ("aberto") : hzText (toneHz (v * 0.01f)); });
     add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
-    add (id::mix,       "Dry/Wet",          { 0.0f, 100.0f }, 100.0f, pct);
+    add (id::mix,       "Dry/Wet",          { 0.0f, 100.000000000000000865092f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::freeze, 1 }, "Congelar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::twice, 1 }, "Dobrar", false));

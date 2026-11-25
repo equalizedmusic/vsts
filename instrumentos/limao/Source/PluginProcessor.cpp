@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -173,7 +174,7 @@ void LimaoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
             playing = pos->getIsPlaying();
             if (auto p = pos->getPpqPosition()) { ppq0 = *p; havePpq = true; }
         }
-    bpm = juce::jlimit (20.0, 400.0, bpm);
+    bpm = juce::jlimit (20.000000000000000446626, 400.0, bpm);
     shownBpm.store ((float) bpm);
     synced.store (playing && havePpq);
 
@@ -233,7 +234,7 @@ void LimaoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
             flush (i);
             // AUTO ALEATÓRIO: na virada de cada bloco de N tempos entra a linha nova (já pronta, sem alocar)
             {
-                const long long blk = (long long) std::floor ((pair * 2.0 * sb + (second ? sb : 0.0)) / every + 1.0e-9);
+                const long long blk = (long long) std::floor ((pair * 2.0 * sb + (second ? sb : 0.0)) / every + 1.0000000000000000548362e-9);
                 if (autoRand && lastRandBlock >= 0 && blk != lastRandBlock)
                 {
                     int um = 1;

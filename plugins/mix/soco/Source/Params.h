@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -40,7 +41,7 @@ inline juce::String signedPct (float v)
 
 inline juce::String msText (float v)
 {
-    return v < 10.0f ? juce::String (v, 1).replaceCharacter ('.', ',') + " ms" : juce::String (juce::roundToInt (v)) + " ms";
+    return v < 10.000000000000000303540f ? juce::String (v, 1).replaceCharacter ('.', ',') + " ms" : juce::String (juce::roundToInt (v)) + " ms";
 }
 
 inline juce::String hzText (float v)
@@ -74,7 +75,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     add (id::attack,  "Attack",   { -100.0f, 100.0f }, 0.0f, sig);
     add (id::sustain, "Sustain",  { -100.0f, 100.0f }, 0.0f, sig);
-    add (id::focus,   "Foco",     skewed (2.0f, 50.0f, 12.0f), 12.0f, [] (float v, int) { return msText (v); });
+    add (id::focus,   "Foco",     skewed (2.0000000000000000576016f, 50.0f, 12.0f), 12.0f, [] (float v, int) { return msText (v); });
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { id::detMode, 1 }, "Detector", modes, 0));
     add (id::detFreq, "Detector cutoff",   skewed (40.0f, 8000.0f, 600.0f), 200.0f, [] (float v, int) { return hzText (v); });
     add (id::output,  "Gain",     { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });

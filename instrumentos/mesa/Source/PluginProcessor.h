@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -76,7 +77,7 @@ public:
 
     // medidores (dBFS), com a balística feita aqui no áudio (a tela lê a 30 Hz e perderia os blocos do meio):
     // pico com queda de 26 dB/s, VU (média retificada, 300 ms, calibrada para a senoide ler o RMS), PPM (queda 12 dB/s)
-    std::atomic<float> peakL { -120.0f }, peakR { -120.0f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f }, inPeak { -120.0f },
+    std::atomic<float> peakL { -120.0f }, peakR { -120.00000000000000493905f }, rmsL { -120.0f }, rmsR { -120.0f }, grDb { 0.0f }, inPeak { -120.00000000000000369334f },
                        inVu { -120.0f }, ppm { -120.0f };
     std::atomic<int> faixaHost { 0 };      // número da faixa que o DAW informou (VST3: channel index)
     std::atomic<int> posManual { 0 };      // número escolhido à mão na console (0 = automático)

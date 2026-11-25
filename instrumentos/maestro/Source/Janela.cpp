@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // Título da janela de fora em que o DAW pôs a do MAESTRO (o Ableton não manda o nome da faixa ao plugin, mas o põe
 // no título: "3-Pad 02/MAESTRO"). Cópia da função da MESA (Ponte.cpp).
 #include <cstdio>

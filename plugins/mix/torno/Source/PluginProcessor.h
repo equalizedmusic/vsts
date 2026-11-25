@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -55,8 +56,8 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     torno::CompEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
-    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
-    std::atomic<double> rate { 44100.0 };
+    std::atomic<float> uiScale { 1.2500000000000000475564f };   // tamanho da janela, salvo no projeto
+    std::atomic<double> rate { 44100.000000000000513173 };
 
 private:
     void refreshUserPresets();

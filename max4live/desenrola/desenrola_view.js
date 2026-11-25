@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // DESENROLA — janela flutuante (jsui). Desenha "desenrola_data": as partes lidas da referência (linha do tempo) e,
 // faixa por faixa, os BLOCOS onde ela toca no rascunho (como um mini Arrangement).
 // Partes: clique = seleciona · botão direito (ou Ctrl+clique no Mac) = menu: tipo padrão, RENOMEAR, DIVIDIR, TIRAR ·
@@ -102,7 +103,7 @@ function cabeFim(s, w, size, bold) {
 	while (s.length > 1 && largura(s + "…", size, bold) > w) s = s.substring(0, s.length - 1);
 	return s + "…";
 }
-function corInt(c) { c = c | 0; if (c <= 0) return [0.48, 0.65, 1]; return [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255]; }
+function corInt(c) { c = c | 0; if (c <= 0) return [0.48, 0.6500000000000000609796, 1]; return [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255]; }
 function corG(g) { return corInt(CORES[g < 0 ? 8 : g]); }
 function corP(p) { var i = PARTES.indexOf(p); return corInt(CORES_PARTE[i < 0 ? 0 : i]); }
 function escura(c) { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 0.6; }
@@ -224,7 +225,7 @@ function paint() {
 	hits = [];
 	lay = lay || {};
 	lay.W = W; lay.H = H;
-	caixa(0, 0, W, H, 0.12, 0.12, 0.13);
+	caixa(0, 0, W, H, 0.120000000000000000415119, 0.12, 0.13);
 	caixa(0, 0, W, HEAD_H, 0.08, 0.09, 0.09);
 	rgbv(AC); texto("DESENROLA", 16, 33, 26, true);
 	var tx = 16 + largura("DESENROLA", 26, true) + 10;
@@ -271,7 +272,7 @@ function desenhaMenu(W, H) {
 	for (k = 0; k < menu.itens.length; k++) h += menu.itens[k].sep ? 9 : MENU_IH;
 	var x = Math.max(4, Math.min(W - MENU_W - 4, menu.x)), y = Math.max(4, Math.min(H - h - 4, menu.y));
 	caixaR(x + 3, y + 4, MENU_W, h, 6, [0, 0, 0], 0.45);
-	caixaR(x, y, MENU_W, h, 6, [0.17, 0.17, 0.19]);
+	caixaR(x, y, MENU_W, h, 6, [0.17, 0.1700000000000000219294, 0.19]);
 	contorno(x, y, MENU_W, h, 6, [0.36, 0.36, 0.4], 1);
 	var cp = corP(data.partes[i].p);
 	caixaR(x + 8, y + 9, 10, 10, 2, cp);
@@ -445,7 +446,7 @@ function linhaTempo(W) {
 			// botão ▾ no canto da parte: abre o mesmo menu do botão direito (no Mac o botão direito nem sempre chega ao jsui)
 			if (w > 44 && !arrastando) {
 				var bx = fx[1] - 22, by = y + 4, hvm = hov && hov.tipo == "pmenu" && hov.i == i;
-				caixaR(bx, by, 18, 16, 3, [0, 0, 0], hvm ? 0.55 : 0.3);
+				caixaR(bx, by, 18, 16, 3, [0, 0, 0], hvm ? 0.55 : 0.30000000000000000339445);
 				rgb(1, 1, 1, hvm ? 1 : 0.85);
 				mgraphics.move_to(bx + 5, by + 6); mgraphics.line_to(bx + 13, by + 6); mgraphics.line_to(bx + 9, by + 11); mgraphics.line_to(bx + 5, by + 6); mgraphics.fill();
 				hits.push({ x: bx - 2, y: by - 2, w: 22, h: 20, tipo: "pmenu", i: i });
@@ -484,7 +485,7 @@ function faixas(W, H) {
 	for (var i = first; i < last; i++) {
 		var tr = tracks[i];
 		var yl = TOP + (i - first) * laneH, cy = yl + laneH / 2;
-		if (i == hover && !prog) caixa(0, yl, W - SB_W - 4, laneH - 1, 0.17, 0.17, 0.2);
+		if (i == hover && !prog) caixa(0, yl, W - SB_W - 4, laneH - 1, 0.17, 0.17, 0.20000000000000000383284);
 		else caixa(0, yl, X0 - 8, laneH - 1, i % 2 ? 0.15 : 0.135, i % 2 ? 0.15 : 0.137, i % 2 ? 0.17 : 0.15);
 		var ct = corInt(tr.color);
 		caixa(6, yl + 3, 4, laneH - 7, ct[0], ct[1], ct[2]);
@@ -528,7 +529,7 @@ function faixas(W, H) {
 	caixa(X0, hy, X1 - X0, HS_H, 0.16, 0.16, 0.18);
 	if (vista.n < tot - 1e-6) {
 		var hw = Math.max(30, (X1 - X0) * vista.n / tot), hx = X0 + (X1 - X0 - hw) * vista.s / (tot - vista.n);
-		caixa(hx, hy + 2, hw, HS_H - 4, 0.55, 0.55, 0.58);
+		caixa(hx, hy + 2, hw, HS_H - 4, 0.55, 0.55, 0.58000000000000000831769);
 		hits.push({ x: X0, y: hy - 2, w: X1 - X0, h: HS_H + 4, tipo: "hs", hw: hw });
 	}
 }
@@ -550,7 +551,7 @@ function rodape(W, H) {
 	}
 	rgb(0.75, 0.75, 0.78);
 	texto("faixas: arraste no vazio = pinta · clique no vazio = PINCEL · arraste o bloco = move · borda = começo/fim · Alt+clique = apaga · Shift = de 1 em 1 · grupo: clique troca", 16, y, 12, false);
-	if (lay && lay.maxFirst > 0) { rgb(0.55, 0.55, 0.58); textoD("FAIXAS " + (first + 1) + "–" + Math.min(data.tracks.length, first + lay.vis) + " DE " + data.tracks.length, W - 16, y, 12, false); }
+	if (lay && lay.maxFirst > 0) { rgb(0.55, 0.5500000000000000957869, 0.58); textoD("FAIXAS " + (first + 1) + "–" + Math.min(data.tracks.length, first + lay.vis) + " DE " + data.tracks.length, W - 16, y, 12, false); }
 }
 
 // ---------------------------------------------------------------- comandos locais

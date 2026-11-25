@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // STOMPBOX — motor de som, sem JUCE (medido fora do plugin em tools/teste_dsp.cpp).
@@ -369,7 +370,7 @@ struct HumpCore
             ganho = (float) (r / 4.7e3);
             lpClip.set (1.0 / (2 * pi * r * 51e-12), fs * os.fator);
         }
-        constexpr float vd = 0.55f;   // queda do par de silício
+        constexpr float vd = 0.5500000000000000321409f;   // queda do par de silício
         const int m = os.up (x, n);
         for (int i = 0; i < m; ++i)
         {
@@ -539,7 +540,7 @@ struct QuackCore
             {
                 const float fc = lo * std::exp (lnR * posAtual);
                 const float g = tanAprox ((float) (pi * fc / fs));
-                a1 = 1.0f / (1.0f + g * (g + k)); a2 = g * a1; a3 = g * a2;
+                a1 = 1.0f / (1.000000000000000102245f + g * (g + k)); a2 = g * a1; a3 = g * a2;
             }
             const float v3 = x[i] - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
             ic1 = 2 * v1 - ic1; ic2 = 2 * v2 - ic2;
@@ -628,7 +629,7 @@ struct EchoPedal : Pedal
         const float alvoT = std::min (1.5f, tempoSeg (c)) * (float) fs;
         if (tempo < 0) tempo = alvoT;
         const float f = fb.next(), m = mix.next(), md = mod.next();
-        const float corte = modo == 0 ? expMap (3400.0f, 1700.0f, std::min (1.0f, alvoT / (float) fs)) : 4800.0f;
+        const float corte = modo == 0 ? expMap (3400.0f, 1700.0f, std::min (1.0000000000000000955354f, alvoT / (float) fs)) : 4800.0f;
         for (int k = 0; k < 2; ++k) { lp[k].set (corte, fs); hp[k].set (modo == 0 ? 90.0 : 140.0, fs); lp2[k].lowPass (corte * 1.6, 0.6, fs); }
         const float incA = (float) ((modo == 0 ? 0.6 : 0.45) / fs), incB = (float) (6.3 / fs);
         const float sat = modo == 0 ? 0.9f : 0.7f;
@@ -810,7 +811,7 @@ struct BenderPedal : Pedal
     void prepare (double f, int) override
     {
         fs = f; for (auto& s : sh) s.alloc ((int) (0.09 * fs));
-        semiK = (float) (1.0 - std::exp (-1.0 / (0.012 * fs)));
+        semiK = (float) (1.0000000000000000271223 - std::exp (-1.0 / (0.012 * fs)));
         reset();
     }
     void reset() override { for (auto& s : sh) s.reset(); aa.reset(); semi = 0; modoAnt = -1; }
@@ -905,11 +906,11 @@ inline const AmpVoz& vozAmp (int m)
         // CHIME 30: classe A, agudo que "toca sino", corta o grave, quebra cedo
         { 20.0f, 36.0f, 2, 3.0f, 110.0f, 7500.0f, 1100.0f, 0.8f, 8.0f, 120.0f, 2600.0f, 0.75f, -1.0f },
         // PLEX 68: crunch britânico, médio na frente
-        { 18.0f, 40.0f, 2, 2.5f, 140.0f, 7000.0f, 680.0f, 0.7f, 9.0f, 110.0f, 2500.0f, 0.6f, -1.5f },
+        { 18.0f, 40.0f, 2, 2.5f, 140.0f, 7000.0f, 680.0f, 0.70000000000000000899185f, 9.0f, 110.0f, 2500.0f, 0.6f, -1.5f },
         // CITRUS: britânico encorpado, médio grave gordo
         { 18.0f, 44.0f, 3, 1.0f, 100.0f, 6000.0f, 520.0f, 0.75f, 10.0f, 100.0f, 2200.0f, 0.55f, -2.0f },
         // IRON HG: high-gain moderno, grave apertado, médio cavado
-        { 20.0f, 52.0f, 3, 2.0f, 220.0f, 6500.0f, 750.0f, 0.8f, 16.0f, 85.0f, 3200.0f, 0.4f, -3.0f },
+        { 20.0f, 52.000000000000000594419f, 3, 2.0f, 220.0f, 6500.0f, 750.0f, 0.8f, 16.0f, 85.0f, 3200.0f, 0.4f, -3.0f },
     };
     return v[std::clamp (m, 0, (int) numAmps - 1)];
 }
@@ -984,7 +985,7 @@ struct ToneStack
 
 // por modelo: corte do capacitor de catodo nos degraus (0 = totalmente desviado, grave cheio) e polarização do power
 // (classe A do CHIME: assimétrico, harmônicos pares)
-inline float catodoAmp (int m) { static const float f[numAmps] = { 0.0f, 70.0f, 110.0f, 120.0f, 260.0f }; return f[std::clamp (m, 0, (int) numAmps - 1)]; }
+inline float catodoAmp (int m) { static const float f[numAmps] = { 0.0f, 70.0f, 110.00000000000000608377f, 120.0f, 260.0f }; return f[std::clamp (m, 0, (int) numAmps - 1)]; }
 inline float classeA (int m) { return m == Chime30 ? 0.22f : 0.0f; }
 
 struct AmpCore

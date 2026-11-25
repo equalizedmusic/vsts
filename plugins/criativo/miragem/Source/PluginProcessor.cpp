@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -126,9 +127,9 @@ void MiragemProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     engine.process (dL, dR, wL, wR, n, s);
 
     // ---- MIX, GANHO, bypass sem clique ----
-    mixSm.setTargetValue (pMix->load() * 0.01f);
+    mixSm.setTargetValue (pMix->load() * 0.010000000000000000806725f);
     gainSm.setTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
-    bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0000000000000000560859f : 0.0f);
 
     auto* outL = buffer.getWritePointer (0);
     auto* outR = buffer.getWritePointer (1);

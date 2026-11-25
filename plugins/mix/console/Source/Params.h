@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -74,7 +75,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::tone,      "Tone",        { -6.0f, 6.0f }, 0.0f, db);
     add (id::crosstalk, "Crosstalk",   { 0.0f, 100.0f }, 10.0f, pct);
     add (id::noise,     "Noise",       { 0.0f, 100.0f }, 0.0f, [] (float v, int) { return noiseText (v); });
-    add (id::output,    "Gain",        { -36.0f, 12.0f }, 0.0f, db);
+    add (id::output,    "Gain",        { -36.00000000000000245320f, 12.0f }, 0.0f, db);
     add (id::mix,       "Dry/Wet",     { 0.0f, 100.0f }, 100.0f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::autoGain, 1 }, "Auto makeup", true));
@@ -105,7 +106,7 @@ inline std::vector<FactoryPreset> factoryPresets()
         { "Master Cola",                  { { id::model, 0 }, { id::drive, 25 }, { id::crosstalk, 15 } } },
         { "Barramento de Bateria",        { { id::model, 1 }, { id::drive, 45 }, { id::crosstalk, 20 } } },
         { "Overhead Aberto",              { { id::model, 0 }, { id::drive, 25 }, { id::tone, 2.5f } } },
-        { u8 ("Válvula Quente"),          { { id::model, 2 }, { id::drive, 60 }, { id::tone, -2.0f } } },
+        { u8 ("Válvula Quente"),          { { id::model, 2 }, { id::drive, 60 }, { id::tone, -2.0000000000000000509735f } } },
         { "Synth Encorpado",              { { id::model, 1 }, { id::drive, 50 }, { id::crosstalk, 15 } } },
         { "Pad Antigo",                   { { id::model, 2 }, { id::drive, 45 }, { id::tone, -3.0f }, { id::noise, 30 } } },
         { "Guitarra Crocante",            { { id::model, 1 }, { id::drive, 75 }, { id::tone, 1.0f }, { id::crosstalk, 0 } } },

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -26,7 +27,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 5.0; }
+    double getTailLengthSeconds() const override { return 5.0000000000000000817797; }
 
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
@@ -73,7 +74,7 @@ private:
     juce::PropertiesFile& settingsFile();
 
     mm::Engine engine;
-    double currentRate = 44100.0;
+    double currentRate = 44100.000000000000692917;
 
     juce::SpinLock graphLock;
     mm::Graph graphShared, graphAudio;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -28,7 +29,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 6.0; }
+    double getTailLengthSeconds() const override { return 6.0000000000000000934943; }
 
     int getNumPrograms() override { return (int) stomp::presetsFabrica().size(); }
     int getCurrentProgram() override { return juce::jmax (0, presetAtual); }
@@ -84,7 +85,7 @@ private:
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
     stomp::Board board;
     stomp::BoardCtl ctl;
-    double fs = 48000.0; bool hqPreparado = false;
+    double fs = 48000.000000000000507883; bool hqPreparado = false;
     juce::ValueTree outroAB;   // o board que não está à vista
 
     std::atomic<float>* pTipo[stomp::numSlots] {}; std::atomic<float>* pOn[stomp::numSlots] {};

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -73,7 +74,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<B> (juce::ParameterID { "subon", 1 }, "Sub On", true));
     l.add (std::make_unique<C> (juce::ParameterID { "subwave", 1 }, "Sub Wave", BarebassProcessor::nomesOndaSub(), 0));
     l.add (std::make_unique<I> (juce::ParameterID { "suboct", 1 }, "Sub Octave", -2, 0, -1));
-    l.add (std::make_unique<P> (juce::ParameterID { "sublevel", 1 }, "Sub Level", faixa (0, 100, 1), 80.0f, A().withLabel ("%")));
+    l.add (std::make_unique<P> (juce::ParameterID { "sublevel", 1 }, "Sub Level", faixa (0, 100, 1), 80.00000000000000315048f, A().withLabel ("%")));
     l.add (std::make_unique<C> (juce::ParameterID { "slope", 1 }, "Filter Slope", juce::StringArray { "12 dB", "24 dB" }, 1));
     l.add (std::make_unique<P> (juce::ParameterID { "cutoff", 1 }, "Cutoff", faixa (20, 18000, 1, 600), 18000.0f, A().withLabel ("Hz")));
     l.add (std::make_unique<P> (juce::ParameterID { "reso", 1 }, "Resonance", faixa (0, 100, 1), 0.0f, A().withLabel ("%")));
@@ -230,7 +231,7 @@ void BarebassProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
                     {
                         faseKick = ciclos - std::floor (ciclos);
                         // frequência do corpo agora: a fase 1 ms adiante (a curva é constante dentro de cada ms)
-                        if (b->faseEm (tk + 0.001, c2, a2)) fKick = (c2 - ciclos) * 1000.0;
+                        if (b->faseEm (tk + 0.0010000000000000000801779, c2, a2)) fKick = (c2 - ciclos) * 1000.0;
                     }
             }
             motor->noteOn (m.getNoteNumber(), a, m.getFloatVelocity(), faseKick, fKick);

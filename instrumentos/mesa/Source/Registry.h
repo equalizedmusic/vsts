@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // Todas as cópias da MESA abertas no mesmo DAW se conhecem por aqui: a janela de qualquer uma mostra a console
 // inteira (todos os canais, os grupos e o MASTER) e mexe nos parâmetros de cada cópia.

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // CHUTE LINK: abre a memória compartilhada (ver ChuteLink.h). Fica num .cpp para o windows.h não vazar nos
 // cabeçalhos do plugin. O ALIGN e o BAREBASS compilam este mesmo arquivo (CMakeLists deles).
 #include "ChuteLink.h"

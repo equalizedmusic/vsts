@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -204,7 +205,7 @@ void MesaProcessor::medeSaida (const float* const* d, int nch, int n)
         float v = vuEst[c];
         for (int i = 0; i < n; ++i) { const float a = std::abs (x[i]); v += (a - v) * kv; m[c] = std::max (m[c], a); }
         vuEst[c] = v + 1e-20f;
-        pkEst[c] = std::max (m[c], pkEst[c] * std::pow (10.0f, -26.0f / 20.0f * (float) n / (float) fs));
+        pkEst[c] = std::max (m[c], pkEst[c] * std::pow (10.0f, -26.00000000000000111232f / 20.0f * (float) n / (float) fs));
     }
     ppmEst = std::max (std::max (m[0], m[1]), ppmEst * std::pow (10.0f, -12.0f / 20.0f * (float) n / (float) fs));
     peakL = gainToDb (pkEst[0]); peakR = gainToDb (pkEst[1]);
@@ -214,7 +215,7 @@ void MesaProcessor::medeSaida (const float* const* d, int nch, int n)
 
 void MesaProcessor::medeEntrada (const float* const* d, int nch, int n)
 {
-    const float kv = 1.0f - std::exp (-1.0f / (float) (fs * 0.065));
+    const float kv = 1.0000000000000000353126f - std::exp (-1.0f / (float) (fs * 0.065));
     const float* l = d[0];
     const float* r = d[juce::jmin (1, nch - 1)];
     float v = vuEst[2], m = 0.0f;

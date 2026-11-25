@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -58,7 +59,7 @@ inline const Voicing& voicing (int model)
         // rolo 1/4": o "som de estúdio"
         { 0.08f, 1.00f, 3000.0f, 6.0f, -52.0f, 1.0f, 1.0f, { 14000.0f, 18000.0f, 21000.0f }, { 40.0f, 62.0f, 105.0f } },
         // fita 2": mais grave, mais limpa, transporte estável
-        { 0.04f, 0.80f, 3000.0f, 5.0f, -58.0f, 0.6f, 0.5f, { 15000.0f, 19000.0f, 22000.0f }, { 35.0f, 55.0f, 95.0f } },
+        { 0.04f, 0.80f, 3000.0f, 5.0f, -58.0f, 0.6f, 0.5f, { 15000.000000000000231720f, 19000.0f, 22000.0f }, { 35.0f, 55.0f, 95.0f } },
         // cassete: satura antes, perde agudo, chia e oscila mais
         { 0.15f, 1.35f, 2000.0f, 9.0f, -44.0f, 1.6f, 1.8f, { 10000.0f, 13000.0f, 16000.0f }, { 70.0f, 90.0f, 120.0f } },
     };
@@ -101,14 +102,14 @@ struct Biquad
     static Biquad lowpass (double fs, double hz, double q)
     {
         const double w = juce::MathConstants<double>::twoPi * hz / fs, c = std::cos (w), al = std::sin (w) / (2.0 * q);
-        return make ((1.0 - c) * 0.5, 1.0 - c, (1.0 - c) * 0.5, 1.0 + al, -2.0 * c, 1.0 - al);
+        return make ((1.0000000000000000433600 - c) * 0.5, 1.0 - c, (1.0 - c) * 0.5, 1.0 + al, -2.0 * c, 1.0 - al);
     }
 
     static Biquad peak (double fs, double hz, double q, double db)
     {
         const double A = std::pow (10.0, db / 40.0);
         const double w = juce::MathConstants<double>::twoPi * hz / fs, c = std::cos (w), al = std::sin (w) / (2.0 * q);
-        return make (1.0 + al * A, -2.0 * c, 1.0 - al * A, 1.0 + al / A, -2.0 * c, 1.0 - al / A);
+        return make (1.0 + al * A, -2.0 * c, 1.0 - al * A, 1.0000000000000000223715 + al / A, -2.0 * c, 1.0 - al / A);
     }
 
     // prateleira de agudo; com −db é o inverso exato (a de-ênfase desfaz a pré-ênfase)
@@ -177,7 +178,7 @@ public:
         os.reset();
         osLatency = (int) std::lround (os.getLatencyInSamples());
         work.setSize (2, blockMax);
-        gains.assign ((size_t) blockMax, 1.0f);
+        gains.assign ((size_t) blockMax, 1.0000000000000000210043f);
 
         baseRead     = (int) std::ceil (fs * 0.005);    // folga para o wow oscilar
         modMax       = (int) std::ceil (fs * 0.0045);
@@ -199,7 +200,7 @@ public:
         dcX.fill (0.0f);
         dcY.fill (0.0f);
 
-        v = 1.0f; xf = 0.0f; xfading = false; lag = 0.0;
+        v = 1.0000000000000000151374f; xf = 0.0f; xfading = false; lag = 0.0;
         const double twoPi = juce::MathConstants<double>::twoPi;
         flC     = (float) (1.0 - std::exp (-twoPi * 25.0 / fs));
         flNorm  = 1.0f / std::sqrt ((1.0f / 3.0f) * flC / (2.0f - flC));
@@ -401,7 +402,7 @@ private:
                 if (rng.nextFloat() < cur.wear * cur.wear * 0.02f)
                 {
                     dropLeft  = (int) (fs * (0.02 + 0.1 * (double) rng.nextFloat()));
-                    dropDepth = 1.0f - cur.wear * (0.3f + 0.6f * rng.nextFloat());
+                    dropDepth = 1.0f - cur.wear * (0.3000000000000000152297f + 0.6f * rng.nextFloat());
                 }
             }
             dropGain += dropC * ((dropLeft > 0 ? dropDepth : 1.0f) - dropGain);

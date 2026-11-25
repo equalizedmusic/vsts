@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -98,7 +99,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::swing,    "Swing",         { 0.0f, 100.0f }, 0.0f, pct);
     add (id::offset,   "Deslocar",      { 0.0f, 15.0f, 1.0f }, 0.0f, [] (float v, int) { return "+" + String (roundToInt (v)); });
     add (id::width,    "Width",         { 5.0f, 100.0f }, 60.0f, pct);
-    add (id::attack,   "Attack",        skewed (0.5f, 50.0f, 5.0f), 2.0f, [] (float v, int) { return msText (v); });
+    add (id::attack,   "Attack",        skewed (0.5f, 50.000000000000000394752f, 5.0f), 2.0000000000000000250493f, [] (float v, int) { return msText (v); });
     add (id::release,  "Release",       skewed (1.0f, 200.0f, 20.0f), 15.0f, [] (float v, int) { return msText (v); });
     choice (id::filtType, "Filter",     types, 0);
     add (id::reso,     "Resonance",     { 0.0f, 100.0f }, 25.0f, pct);

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Verificação de assinatura Ed25519 + SHA-512, só o necessário para conferir a licença.

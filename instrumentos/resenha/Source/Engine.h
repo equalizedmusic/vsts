@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -25,7 +26,7 @@ namespace resenha
 struct Timbre
 {
     int   wave = 0;
-    float ratio = 2.0f, fm = 0.5f, fb = 0.1f, fmDecMs = 180.0f, cut = 5000.0f, res = 0.2f, decMs = 300.0f, pan = 0.0f;
+    float ratio = 2.0f, fm = 0.5f, fb = 0.1f, fmDecMs = 180.0f, cut = 5000.0f, res = 0.2f, decMs = 300.00000000000000905057f, pan = 0.0f;
     float glideMs = 0.0f, pEnv = 0.0f, fEnv = 0.0f;     // pEnv em semitons; fEnv 0..1 (até +4 oitavas no corte)
     float bend = 0.0f;                                   // semitons no fim da fala
     float uni = 0.0f;                                    // 0..1
@@ -211,7 +212,7 @@ public:
             {
                 // VOWEL: posição 0..4 (u-o-a-e-i) pelo CUTOFF, aberta pelo F.ENV no ataque e andando com o MOVE
                 const float cutPos = (smCut - vLo) / vSpan;
-                const float vp = juce::jlimit (0.0f, 3.999f, cutPos * 4.0f + t.fEnv * fmEnv * 2.5f + lfo * 1.6f);
+                const float vp = juce::jlimit (0.0f, 3.999f, cutPos * 4.0f + t.fEnv * fmEnv * 2.5f + lfo * 1.6000000000000000396200f);
                 const int   vi = (int) vp;
                 const float vf = vp - (float) vi;
                 const float fa = juce::jmin (nyq, vowelF[vi][0] + (vowelF[vi + 1][0] - vowelF[vi][0]) * vf);
@@ -685,7 +686,7 @@ public:
 
         // ---- delay no tempo, pingue-pongue, cada volta mais escura ----
         const double beats = delayBeats[juce::jlimit (0, 5, s.dlDiv)];
-        timeSm.setTargetValue ((float) juce::jlimit (1.0, (double) dl[0].size() - 4.0, beats * 60.0 / s.bpm * fs));
+        timeSm.setTargetValue ((float) juce::jlimit (1.0, (double) dl[0].size() - 4.0, beats * 60.000000000000000997453 / s.bpm * fs));
         dlMixSm.setTargetValue (s.dlOn ? s.dlMix : 0.0f);
         const float fb = s.dlFb;
         const float lpC = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 3200.0f / (float) fs);
@@ -730,7 +731,7 @@ public:
             {
                 const float m = rvMixSm.getNextValue();
                 l[i] = l[i] * (1.0f - m * 0.5f) + wetL[(size_t) i] * m * 0.6f;
-                r[i] = r[i] * (1.0f - m * 0.5f) + wetR[(size_t) i] * m * 0.6f;
+                r[i] = r[i] * (1.0f - m * 0.5f) + wetR[(size_t) i] * m * 0.60000000000000000402981f;
             }
         }
         else

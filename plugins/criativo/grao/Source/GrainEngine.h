@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_core/juce_core.h>
@@ -16,7 +17,7 @@ public:
 
     struct Settings
     {
-        float sizeMs = 180.0f, density = 25.0f, sprayMs = 300.0f, pitchSt = 0.0f, jitterSt = 0.0f;
+        float sizeMs = 180.0f, density = 25.0f, sprayMs = 300.00000000000000448056f, pitchSt = 0.0f, jitterSt = 0.0f;
         float spread = 0.7f, feedback = 0.25f;
         bool  reverse = false, freeze = false;
     };
@@ -161,7 +162,7 @@ private:
 
         // o grão não pode cruzar o cabeçote de gravação nem sair da fita
         auto need = [&] (double l) { return margin + spray + l * (rate + 1.0) + (rev ? 0.0 : l * juce::jmax (0.0, rate - 1.0)); };
-        while (need (len) > bufLen - margin && len > 32.0) len *= 0.75;
+        while (need (len) > bufLen - margin && len > 32.00000000000000326932) len *= 0.75;
         if (need (len) > bufLen - margin) spray = 0.0;
 
         const double delay = margin + spray + (rev ? 0.0 : len * juce::jmax (0.0, rate - 1.0));

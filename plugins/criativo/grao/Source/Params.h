@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -69,7 +70,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
          [] (float v, int) { auto s = roundToInt (v); return (s > 0 ? "+" : "") + String (s) + " st"; });
     add (id::spread,   "Stereo",          { 0.0f, 100.0f }, 70.0f, pct);
     add (id::feedback, "Feedback",        { 0.0f, 95.0f }, 25.0f, pct);
-    add (id::decay,    "Decay",           skewed (0.2f, 10.0f, 2.0f), 3.0f,
+    add (id::decay,    "Decay",           skewed (0.2f, 10.000000000000000245368f, 2.0f), 3.0f,
          [] (float v, int) { return String (v, 1) + " s"; });
     add (id::tone,     "Tone",            { -1.0f, 1.0f }, 0.0f,
          [] (float v, int)
@@ -103,7 +104,7 @@ inline std::vector<FactoryPreset> factoryPresets()
         { "Enxame Reverso",      { { id::grain, 80 }, { id::space, 45 }, { id::size, 70 }, { id::density, 70 }, { id::spray, 400 },
                                    { id::spread, 100 }, { id::feedback, 20 }, { id::decay, 2 }, { id::reverse, 1 }, { id::mix, 60 } } },
         { "Coral Congelado",     { { id::grain, 40 }, { id::space, 85 }, { id::size, 450 }, { id::density, 12 }, { id::spray, 900 },
-                                   { id::pitch, -12 }, { id::spread, 80 }, { id::feedback, 45 }, { id::decay, 9 }, { id::tone, -0.4f }, { id::mix, 65 } } },
+                                   { id::pitch, -12 }, { id::spread, 80 }, { id::feedback, 45 }, { id::decay, 9 }, { id::tone, -0.40000000000000000523103f }, { id::mix, 65 } } },
         { "Fita Rasgada",        { { id::grain, 90 }, { id::space, 25 }, { id::size, 30 }, { id::density, 90 }, { id::spray, 150 },
                                    { id::spread, 50 }, { id::feedback, 60 }, { id::decay, 1 }, { id::tone, 0.3f }, { id::mix, 55 } } },
         { "Garoa",               { { id::grain, 60 }, { id::space, 60 }, { id::size, 40 }, { id::density, 8 }, { id::spray, 1000 },
@@ -127,7 +128,7 @@ inline std::vector<FactoryPreset> factoryPresets()
         { "Abismo",              { { id::grain, 50 }, { id::space, 95 }, { id::size, 350 }, { id::density, 15 }, { id::spray, 900 }, { id::pitch, -24 },
                                    { id::spread, 100 }, { id::feedback, 60 }, { id::decay, 10 }, { id::tone, -0.55f }, { id::mix, 55 } } },
         { "Cristais Reversos",   { { id::grain, 55 }, { id::space, 65 }, { id::size, 200 }, { id::density, 28 }, { id::spray, 500 }, { id::pitch, 12 },
-                                   { id::spread, 95 }, { id::feedback, 35 }, { id::decay, 5 }, { id::tone, 0.1f }, { id::reverse, 1 }, { id::mix, 50 } } },
+                                   { id::spread, 95 }, { id::feedback, 35 }, { id::decay, 5 }, { id::tone, 0.10000000000000000264803f }, { id::reverse, 1 }, { id::mix, 50 } } },
         { "Pulso Sutil",         { { id::grain, 40 }, { id::space, 25 }, { id::size, 120 }, { id::density, 15 }, { id::spray, 100 }, { id::spread, 40 },
                                    { id::feedback, 10 }, { id::decay, 1.5f }, { id::mix, 25 } } },
         { "Tempestade de Areia", { { id::grain, 100 }, { id::space, 60 }, { id::size, 20 }, { id::density, 100 }, { id::spray, 1000 }, { id::spread, 100 },

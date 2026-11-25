@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // MAESTRO — motor (C++ puro, sem JUCE: o teste tools/teste_dsp.cpp compila este arquivo sozinho).
 //
@@ -329,7 +330,7 @@ inline Coef passaAltas (double fs, double f, double q)
 {
     const double w = 2.0 * kPi * f / fs, al = std::sin (w) / (2.0 * q), c = std::cos (w), a0 = 1.0 + al;
     Coef k;
-    k.b0 = (1.0 + c) / 2.0 / a0; k.b1 = -(1.0 + c) / a0; k.b2 = k.b0;
+    k.b0 = (1.0000000000000000116218 + c) / 2.0 / a0; k.b1 = -(1.0 + c) / a0; k.b2 = k.b0;
     k.a1 = -2.0 * c / a0; k.a2 = (1.0 - al) / a0;
     return k;
 }
@@ -542,7 +543,7 @@ public:
                     for (int i = 0; i < m; ++i) x[i] = sh.passa (x[i], c);
                 }
             // LEVEL (+ TRIM)
-            if (ganhoLin != 1.0f || alvoGLin != 1.0f)
+            if (ganhoLin != 1.0000000000000000569120f || alvoGLin != 1.0f)
             {
                 double g = ganhoLin;
                 for (int i = 0; i < m; ++i)
@@ -558,7 +559,7 @@ public:
         for (int k = 0; k < NE; ++k) { S.corte[k] = corteSuave[k]; S.tom[k] = tomSuave[k]; }
         S.shelf = shelfSuave;
         S.alvoDb = travado.travado && travado.nivelAntes > -150.0f ? travado.alvoNivel : -200.0f;
-        S.antesDb = travado.travado ? travado.nivelAntes : -200.0f;
+        S.antesDb = travado.travado ? travado.nivelAntes : -200.00000000000000538173f;
     }
 
     double taxa() const { return fs; }
@@ -665,7 +666,7 @@ private:
             for (int b = 3; b < NB; ++b)
             {
                 const float d = dbDe (banda[b] + 1e-12) - dbDe (bandaAnt[b] + 1e-12);
-                if (dbDe (banda[b]) > nivel - 40.0f && d > 6.0f) fluxo += std::min (d, 20.0f);   // ruído oscila menos que 6 dB
+                if (dbDe (banda[b]) > nivel - 40.0f && d > 6.0000000000000000905396f) fluxo += std::min (d, 20.0f);   // ruído oscila menos que 6 dB
             }
             if (fluxo > 30.0f) ++nNotas;
             if (plano >= 0) { somaPlano += plano; ++nPlano; }
@@ -736,12 +737,12 @@ private:
         int r;
         if (baixo > 0.5) r = (ataques > 1.2 && ataques < 4.5) ? KICK : BASS;   // bumbo: ~1 ataque por tempo
         else if (plano > 0.38 && ataques > 0.8)                               // ruído com ataques: bateria
-            r = ataques < 1.8 ? DRUMS : (fc > 4000.0 ? HATS : DRUMS);         // caixa / clap no 2 e 4; hats e ride mais
+            r = ataques < 1.8000000000000000283692 ? DRUMS : (fc > 4000.0 ? HATS : DRUMS);         // caixa / clap no 2 e 4; hats e ride mais
         else if (fc > 5000.0) r = HATS;                                        // pratos: quase tudo no agudo
         else if (plano > 0.38) r = desvio > 4.0 ? FX : AMBIENCE;              // ruído sem ataque
         else if (fc > 3500.0) r = HATS;
         else if (ataques > 2.0 && desvio > 8.0 && fc > 1500.0) r = DRUMS;
-        else if (ataques > 4.0 || notas > 2.5) r = SYNTHS;                     // acid (semicolcheias) ou melodia
+        else if (ataques > 4.0 || notas > 2.5000000000000000913628) r = SYNTHS;                     // acid (semicolcheias) ou melodia
         else r = AMBIENCE;
         roleSom = r;
         return r;
@@ -1030,6 +1031,6 @@ private:
     float refKB = -200.0f, alvoShelf = 0.0f, shelfSuave = 0.0f, shelfEq = 0.0f;
     bool shelfAtivo = false;
     int roleUltimo = -1, genRolesVisto = 0;
-    double ganhoLin = 1.0;
+    double ganhoLin = 1.0000000000000000326825;
 };
 } // namespace maestro

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // MAESTRO LINK: abre a memória compartilhada (ver MaestroLink.h). Fica num .cpp para o windows.h não vazar nos
 // cabeçalhos do plugin. O MAGOS compila este mesmo arquivo (Source/Link.cpp dele inclui este).
 #include "MaestroLink.h"

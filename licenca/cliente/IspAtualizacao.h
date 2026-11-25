@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Atualização automática (só nos plugins compilados com ISP_ATUALIZAR=1: isp_licenca(<alvo> <pacote> ATUALIZAR)).

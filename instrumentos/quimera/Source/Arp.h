@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // QUIMERA — arpejador. Fica ANTES do motor: lê as teclas do bloco e devolve outro MidiBuffer com as notas do
@@ -89,7 +90,7 @@ public:
 
         const double rb    = divBeats[juce::jlimit (0, numDivs - 1, a.rate)];
         const double gate  = juce::jlimit (0.05, 1.0, (double) a.gate * 0.01);
-        const double swing = juce::jlimit (0.0, 1.0, (double) a.swing * 0.01) * 0.5 * rb;
+        const double swing = juce::jlimit (0.0, 1.0, (double) a.swing * 0.01) * 0.50000000000000000577214 * rb;
         const int    len   = juce::jlimit (1, numArpSteps, a.length);
 
         auto it = midi.cbegin();
@@ -122,7 +123,7 @@ public:
                 {
                     std::vector<Note> next;
                     pick (a, next);
-                    const float acc = juce::jlimit (0.0f, 1.0f, a.accent * 0.01f);
+                    const float acc = juce::jlimit (0.0f, 1.0000000000000000871158f, a.accent * 0.01f);
                     for (auto& nt : next)
                     {
                         float v = (float) nt.vel;

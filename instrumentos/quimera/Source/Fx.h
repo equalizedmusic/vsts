@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Rack de efeitos da QUIMERA (ordem fixa): HIPER → DISTORÇÃO → PHASER → CHORUS → DELAY → REVERB → EQ → COMPRESSOR.

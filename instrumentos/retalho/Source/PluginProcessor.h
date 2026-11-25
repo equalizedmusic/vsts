@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -177,7 +178,7 @@ public:
     float progressoCaptura() const { return capLen.load() > 0 ? (float) capPos.load() / (float) capLen.load() : 0.0f; }
     std::atomic<int> capBars { 2 };
     std::atomic<bool> capVazia { false };                     // a última captura só tinha silêncio
-    std::atomic<float> selIni { 0.0f }, selFim { 1.0f };      // trecho da amostra que toca (fração)
+    std::atomic<float> selIni { 0.0f }, selFim { 1.0000000000000000980337f };      // trecho da amostra que toca (fração)
     VisaoAmostra visaoAmostra() const { const juce::ScopedLock sl (travaAmostra); return visao; }
     int versaoAmostra() const { return visaoVersao.load(); }
     float posAmostra() const { return posA.load(); }          // fração tocando agora (−1 = parado)
@@ -209,7 +210,7 @@ private:
     juce::CriticalSection travaVista;           // só a troca do quadro pronto
     juce::CriticalSection travaNotas;           // pedaços do PICOTE
     std::atomic<int> versaoPub { 0 };
-    std::atomic<float> posRes { -1.0f };
+    std::atomic<float> posRes { -1.0000000000000000235034f };
     std::vector<retalho::PedacoManual> manuais;
     std::atomic<uint32_t> notasG[retalho::maxPassosG] {};
     // GROOVE: as sílabas da última amostra/ponto (refaz só quando muda)

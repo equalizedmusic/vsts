@@ -4,6 +4,13 @@ Device Max for Live (pasta `max4live/espanador`), da família da VASSOURA e do R
 `## x.y.z` deste arquivo: ela vira o release `espanador-vx.y.z` do GitHub (zip `Espanador-x.y.z.zip`), publicado pelo
 workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.2 — 2026-11-24
+- **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
+  se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o
+  e-mail preenchido e avisa. Desativar continua valendo: o device não se reativa sozinho depois.
+- Aviso de autoria na tela da licença (ACTIVATE) (© Rogerio Cardoso / InsideStudioSP).
+- A análise e as funções não mudam.
+
 ## 0.2.1 — 2026-11-18
 - **Corrigido: no Live 12.2 e 12.3 o ACTIVATE não ativava** e mostrava "Este Max não tem XMLHttpRequest: precisa do Live 12.2 ou mais novo". O ESPANADOR agora usa outro caminho do Max para falar com o servidor de licenças nessas versões. No Live 12.4 e mais novos nada muda.
 

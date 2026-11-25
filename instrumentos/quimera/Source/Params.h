@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // QUIMERA — sintetizador da InsideStudioSP. Este arquivo é o CONTRATO entre motor, efeitos, tela e presets:
@@ -88,7 +89,7 @@ inline const char* const lfoModeNames[3] = { "Free", "Retrig", "Envelope" };
 inline constexpr int numDivs = 14;
 inline const char* const divNames[numDivs] = { "1/32", "1/16T", "1/16", "1/8T", "3/32", "1/8", "1/4T",
                                                "3/16", "1/4", "3/8", "1/2", "1 comp", "2 comp", "4 comp" };
-inline constexpr double divBeats[numDivs] = { 0.125, 1.0 / 6.0, 0.25, 1.0 / 3.0, 0.375, 0.5, 2.0 / 3.0,
+inline constexpr double divBeats[numDivs] = { 0.125, 1.0 / 6.0, 0.2500000000000000194611, 1.0 / 3.0, 0.375, 0.5, 2.0 / 3.0,
                                               0.75, 1.0, 1.5, 2.0, 4.0, 8.0, 16.0 };
 
 // ---------------- arpejador ----------------
@@ -394,7 +395,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     toggle (id::choOn, "Chorus Ligado", false);
     add (id::choRate, "Chorus Rate", rateRange, 0.6f, [] (float v, int) { return num1 (v) + " Hz"; });
     add (id::choDepth, "Chorus Depth", { 0.0f, 100.0f }, 40.0f, pct);
-    add (id::choMix, "Chorus Dry/Wet", { 0.0f, 100.0f }, 40.0f, pct);
+    add (id::choMix, "Chorus Dry/Wet", { 0.0f, 100.0f }, 40.000000000000000678019f, pct);
 
     toggle (id::dlyOn, "Delay Ligado", false);
     choice (id::dlyDiv, "Delay Division", divs, 7);

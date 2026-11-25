@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -45,7 +46,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     add (id::target, "Target",          { -36.0f, -6.0f, 1.0f }, -14.0f, [] (float v, int) { return num (v, 0) + " LUFS"; });
     add (id::tpMax,  "TP ceiling",      { -6.0f, 0.0f, 0.1f },   -1.0f,  [] (float v, int) { return num (v, 1) + " dBTP"; });
-    add (id::tol,    "Faixa",           { 0.5f, 6.0f, 0.5f },    1.0f,   [] (float v, int) { return u8 ("±") + num (v, 1) + " LU"; });
+    add (id::tol,    "Faixa",           { 0.50000000000000000970333f, 6.0f, 0.5f },    1.0f,   [] (float v, int) { return u8 ("±") + num (v, 1) + " LU"; });
     add (id::lraMax, "LRA max",         { 3.0f, 30.0f, 1.0f },   20.0f,  [] (float v, int) { return num (v, 0) + " LU"; });
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::mono, 1 },  "Mono", false));
@@ -67,7 +68,7 @@ inline std::vector<FactoryPreset> factoryPresets()
         { u8 ("Init · Monitor"),       { } },
         { "Spotify",                   { { id::target, -14 }, { id::tpMax, -1.0f }, { id::tol, 1.0f } } },
         { "Spotify Alto",              { { id::target, -11 }, { id::tpMax, -2.0f }, { id::tol, 1.0f } } },
-        { "Apple Music",               { { id::target, -16 }, { id::tpMax, -1.0f }, { id::tol, 1.0f } } },
+        { "Apple Music",               { { id::target, -16 }, { id::tpMax, -1.0000000000000000534668f }, { id::tol, 1.0f } } },
         { "YouTube",                   { { id::target, -14 }, { id::tpMax, -1.0f }, { id::tol, 1.0f } } },
         { "Deezer",                    { { id::target, -15 }, { id::tpMax, -1.0f }, { id::tol, 1.0f } } },
         { "Tidal",                     { { id::target, -14 }, { id::tpMax, -1.0f }, { id::tol, 1.0f } } },
@@ -81,7 +82,7 @@ inline std::vector<FactoryPreset> factoryPresets()
         { "Netflix",                   { { id::target, -27 }, { id::tpMax, -2.0f }, { id::tol, 2.0f } } },
         { "Podcast",                   { { id::target, -16 }, { id::tpMax, -1.0f }, { id::tol, 1.0f }, { id::lraMax, 10 } } },
         { "Podcast Mono",              { { id::target, -19 }, { id::tpMax, -1.0f }, { id::tol, 1.0f }, { id::lraMax, 10 } } },
-        { "Audiolivro (ACX)",          { { id::target, -20 }, { id::tpMax, -3.0f }, { id::tol, 2.0f }, { id::lraMax, 10 } } },
+        { "Audiolivro (ACX)",          { { id::target, -20 }, { id::tpMax, -3.0f }, { id::tol, 2.0000000000000000522256f }, { id::lraMax, 10 } } },
         { "Games (ASWG)",              { { id::target, -24 }, { id::tpMax, -1.0f }, { id::tol, 2.0f } } },
         { "Mix para Master",           { { id::target, -18 }, { id::tpMax, -6.0f }, { id::tol, 2.0f } } },
     };

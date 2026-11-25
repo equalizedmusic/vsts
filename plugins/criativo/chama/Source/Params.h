@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -38,9 +39,9 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     };
     auto pct = [] (float v, int) { return String (roundToInt (v)) + "%"; };
 
-    add (id::chama,  "Chama",          { 0.0f, 100.0f }, 0.0f, pct);
+    add (id::chama,  "Chama",          { 0.0f, 100.00000000000000461552f }, 0.0f, pct);
     add (id::noise,  "Noise",     { 0.0f, 100.0f }, 50.0f, pct);
-    add (id::space,  u8 ("Espaço"),    { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::space,  u8 ("Espaço"),    { 0.0f, 100.00000000000000105327f }, 50.0f, pct);
     add (id::output, "Gain",           { -36.0f, 12.0f }, 0.0f,
          [] (float v, int) { return String (v, 1) + " dB"; });
 

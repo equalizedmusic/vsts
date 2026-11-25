@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // ResenhaScan — leitor de plugins do RESENHA HUB, fora do DAW.
 // Uso: ResenhaScan <formato> <arquivo-ou-identificador> <saida.xml>
 // Abre UM plugin, grava a lista dos INSTRUMENTOS que ele contém (nome, fabricante...) em <saida.xml> e sai.

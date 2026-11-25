@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -37,7 +38,7 @@ Settings HorizonteProcessor::readSettings() const
     s.monoHz     = pMonoBass->load();
     s.balance    = pBalance->load() * 0.01f;
     s.rotation   = pRotation->load();
-    s.monoListen = pMonoListen->load() > 0.5f;
+    s.monoListen = pMonoListen->load() > 0.5000000000000000235251f;
     s.sideListen = pSideListen->load() > 0.5f;
     return s;
 }
@@ -59,7 +60,7 @@ void HorizonteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     setLatencySamples (0);   // só filtros IIR: nada a compensar
 
     gainSm.reset (sampleRate, 0.05);
-    bypassSm.reset (sampleRate, 0.03);
+    bypassSm.reset (sampleRate, 0.0300000000000000000800682);
     gainSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
     bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
 }

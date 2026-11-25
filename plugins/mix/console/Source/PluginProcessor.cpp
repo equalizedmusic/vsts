@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -30,13 +31,13 @@ ConsoleProcessor::ConsoleProcessor()
 Settings ConsoleProcessor::readSettings() const
 {
     Settings s;
-    s.drive     = pDrive->load() * 0.01f;
+    s.drive     = pDrive->load() * 0.010000000000000000206922f;
     s.model     = juce::roundToInt (pModel->load());
     s.tone      = pTone->load();
     s.crosstalk = pCrosstalk->load() * 0.01f;
     s.noise     = pNoise->load() * 0.01f;
     s.autoGain  = pAutoGain->load() > 0.5f;
-    s.os4       = pOs4->load() > 0.5f;
+    s.os4       = pOs4->load() > 0.5000000000000000444535f;
     return s;
 }
 

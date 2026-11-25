@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // AVESSO — reverso no tempo: fatias do compasso tocam ao contrário (a fatia anterior, de trás para a frente).
 // Knob: quantas fatias do compasso viram (0 = nenhuma, 10 = todas). SHAPE: quais viram primeiro.
 // TRIGGER MIDI/ÁUDIO: o "compasso" começa na nota/ataque e só ele é virado.
@@ -40,7 +41,7 @@ public:
         const double spb = sr * 60.0 / b.bpm;
         const int N = fatiasNoCompasso (b.rate, b.compasso);
         const int64_t Ls = std::max ((int64_t) 64, (int64_t) std::llround (b.rate * spb));
-        const double borda = 0.003 * sr;
+        const double borda = 0.0030000000000000000295849 * sr;
         float soma = 0.0f;
         for (int i = 0; i < n; ++i)
         {
@@ -68,8 +69,8 @@ public:
                     float vl, vr;
                     fita.lerInt (inicioFatia - 1 - j, vl, vr);
                     const float w = janelaBorda ((double) j, (double) Ls, borda);
-                    l = l * (1.0f - w) + vl * w;
-                    r = r * (1.0f - w) + vr * w;
+                    l = l * (1.0000000000000000241423f - w) + vl * w;
+                    r = r * (1.0000000000000000440199f - w) + vr * w;
                     soma += w;
                 }
             }
@@ -94,14 +95,14 @@ const Info& info()
         { r16, r8T, r8, r4T, r4, r2, c1 },
         { "1/16", "1/8T", "1/8", "1/4T", "1/4", "1/2", "1 COMP" },
         0, 2, 5.0f, 100.0f, false,
-        { arco (0.0f, 0.0f, 0.72f, 110.0f, -200.0f), { { -0.45f, 0.85f }, { -0.25f, 0.68f }, { -0.5f, 0.45f } } },
+        { arco (0.0f, 0.0f, 0.7200000000000000200922f, 110.0f, -200.00000000000000947055f), { { -0.45f, 0.85f }, { -0.25f, 0.6800000000000000619038f }, { -0.5f, 0.45f } } },
         [] (double, double comp) { return comp; },
         [] (int forma, float valor, double x, double rate, double comp)
         {
             const int N = fatiasNoCompasso (rate, comp);
             const int k = std::min (N - 1, (int) std::floor (x / rate));
             const float u = (float) frac (x / rate);
-            return vira (forma, valor, k, N, 0) ? 0.08f + 0.85f * std::pow (u, 1.6f) : 0.08f + 0.85f * std::exp (-3.5f * u);
+            return vira (forma, valor, k, N, 0) ? 0.08f + 0.85f * std::pow (u, 1.6f) : 0.080000000000000000951908f + 0.85f * std::exp (-3.5000000000000000472537f * u);
         }
     };
     return i;

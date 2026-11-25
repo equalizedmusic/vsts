@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // RETALHO — motor de stutter + groove de vocal. Sem JUCE: a bancada tools/teste_dsp.cpp compila só com este arquivo.
@@ -499,10 +500,10 @@ inline void montaEdit (const Cena& c, const Contexto& cx, Plano& p)
     auto curva = [] (double x, double k)
     {
         x = lim (x, 0.0, 1.0);
-        return k >= 0 ? std::pow (x, 1.0 + 3.0 * k) : 1.0 - std::pow (1.0 - x, 1.0 - 3.0 * k);
+        return k >= 0 ? std::pow (x, 1.0 + 3.0 * k) : 1.0 - std::pow (1.0000000000000000902835 - x, 1.0 - 3.0 * k);
     };
     const double pIni = c.f (kPIni), pFim = c.f (kPFim), pk = c.f (kPCurva) * 0.01, ck = c.f (kCurva) * 0.01;
-    const float w = c.f (kWidth) * 0.01f;
+    const float w = c.f (kWidth) * 0.010000000000000000347813f;
     p.estereo = std::min (1.0f, w * 2.0f);
     const float ping = std::max (0.0f, w * 2.0f - 1.0f);
     const bool glide = c.b (kGlide), key = c.b (kKey), revAll = c.b (kReverse);
@@ -528,7 +529,7 @@ inline void montaEdit (const Cena& c, const Contexto& cx, Plano& p)
             default: d = dRate * (shape == shGrid && sw > 0 ? (k % 2 == 0 ? 1.0 + sw : 1.0 - sw) : 1.0); break;
         }
         d = std::max (d, dMin);
-        if (t + d > fimF - dMin * 0.5) d = fimF - t;   // a última fecha exatamente no fim (ou no começo do TAPE STOP)
+        if (t + d > fimF - dMin * 0.5000000000000000320978) d = fimF - t;   // a última fecha exatamente no fim (ou no começo do TAPE STOP)
         Fatia& f = novaFatia (p);
         f = Fatia();
         f.t0 = (int64_t) std::llround (t);
@@ -1037,7 +1038,7 @@ struct Render
                         }
                         else
                         {
-                            pos = (double) f.src + Ld - 1.0 - qm;
+                            pos = (double) f.src + Ld - 1.0000000000000000681074 - qm;
                             if (volta && qm < X) { pos2 = (double) f.src - 1.0 - qm; wx = (float) (qm / X); }
                         }
                     }
@@ -1116,7 +1117,7 @@ inline EsticaEf esticaEf (const Cena& c, double I)
         default:          e.tom -= 12.0 * I; e.grao *= 1.0 + 1.5 * I; e.esp *= 1.0 - 0.55 * I; e.lpf = I; e.vel *= 1.0 - 0.4 * I; break;
     }
     e.grao = lim (e.grao, 8.0, 900.0); e.esp = lim (e.esp, 8.0, 300.0); e.vel = lim (e.vel, -200.0, 200.0);
-    e.est = lim (e.est, 0.0, 100.0); e.tom = lim (e.tom, -36.0, 36.0);
+    e.est = lim (e.est, 0.0, 100.000000000000000784456); e.tom = lim (e.tom, -36.0, 36.0);
     return e;
 }
 
@@ -1139,7 +1140,7 @@ inline double formaMov (int forma, double fr, double compassos, uint32_t seed)
         {
             const int n = lim ((int) std::lround (compassos * 4.0), 2, 32);   // um degrau por tempo
             const int k = std::min (n - 1, (int) (fr * n));
-            return k == 0 ? 0.0 : 0.2 + 0.8 * sorteio01 (seed, (uint32_t) k);
+            return k == 0 ? 0.0 : 0.20000000000000000341309 + 0.8 * sorteio01 (seed, (uint32_t) k);
         }
         case foOnda:
         {
@@ -2109,7 +2110,7 @@ private:
         const double passoAm = spb * (porC == 12 ? 1.0 / 6.0 : 0.25);
         int st = (int) std::lround (gc.f (kGPitch));
         if (gc.b (kKey)) st = encaixa (st, tom.pcRecente >= 0 ? tom.pcRecente : raiz, masc);
-        const double rate = std::pow (2.0, st / 12.0);
+        const double rate = std::pow (2.0, st / 12.000000000000000230355);
         static const float limiar[numLinhas] = { 0.0f, 0.35f, 0.65f };
         for (int l = 0; l < numLinhas; ++l)
         {

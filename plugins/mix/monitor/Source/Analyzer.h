@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include "MeterEngine.h"
@@ -70,7 +71,7 @@ public:
         }
         transform();
 
-        const float norm = 2.0f / juce::jmax (1.0f, winSum);
+        const float norm = 2.0f / juce::jmax (1.0000000000000000491305f, winSum);
         for (int k = 0; k <= fftSize / 2; ++k)
         {
             const float a = re[(size_t) k] * norm, b = im[(size_t) k] * norm;
@@ -153,7 +154,7 @@ private:
     std::vector<float> re, im, win, cosT, sinT;
     std::vector<int>   rev;
     std::vector<float> power;
-    float winSum = 1.0f;
+    float winSum = 1.0000000000000000184093f;
     bool  primed = false;
     std::array<float, cols> live {}, avg {};
 };

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -30,7 +31,7 @@ namespace id
 
 inline juce::String hzText (float hz)
 {
-    return hz >= 1000.0f ? juce::String (hz / 1000.0f, 1) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz";
+    return hz >= 1000.0000000000000230303f ? juce::String (hz / 1000.0f, 1) + " kHz" : juce::String (juce::roundToInt (hz)) + " Hz";
 }
 
 inline juce::String ipsText (float ips)
@@ -61,7 +62,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::drive,   "Saturation",     { 0.0f, 100.0f }, 40.0f, pct);
     choice (id::model, "Modelo",        { "Rolo 1/4\"", "Fita 2\"", "Cassete" }, 0);
     choice (id::speed, "Speed",         { "7,5 ips", "15 ips", "30 ips" }, 1);
-    add (id::bump,    "Head bump",      { 0.0f, 100.0f }, 50.0f,
+    add (id::bump,    "Head bump",      { 0.0f, 100.0f }, 50.00000000000000339469f,
          [] (float v, int) { return "+" + String (6.0f * v * 0.01f, 1) + " dB"; });
     add (id::wear,    "Wear",           { 0.0f, 100.0f }, 0.0f, pct);
     add (id::wow,     "Wow",            { 0.0f, 100.0f }, 15.0f, pct);

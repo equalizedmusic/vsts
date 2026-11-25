@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -77,7 +78,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     add (id::predelay,  "Pre-delay",          { 0.0f, 250.0f }, 15.0f, [] (float v, int) { return msText (v); });
     choice (id::preSync, "Pre-delay sync",    syncs, 0);
-    add (id::size,      "Size",               { 0.0f, 100.0f }, 50.0f, pct);
+    add (id::size,      "Size",               { 0.0f, 100.0f }, 50.00000000000000222133f, pct);
     add (id::decay,     "Decay",              skewed (0.2f, maxDecay, 2.0f), 1.6f, [] (float v, int) { return secText (v); });
     add (id::diffusion, "Diffusion",          { 0.0f, 100.0f }, 75.0f, pct);
     add (id::early,     "Early reflections",  { 0.0f, 100.0f }, 50.0f, pct);
@@ -123,7 +124,7 @@ inline std::vector<FactoryPreset> factoryPresets()
         { "Piano de Concerto",           { { id::size, 75 }, { id::decay, 2.3f }, { id::predelay, 22 }, { id::early, 50 }, { id::diffusion, 80 }, { id::damp, 40 }, { id::lowCut, 60 }, { id::mix, 25 } } },
         { "Cordas no Teatro",            { { id::size, 70 }, { id::decay, 2.0f }, { id::predelay, 18 }, { id::early, 45 }, { id::diffusion, 80 }, { id::damp, 50 }, { id::lowCut, 90 }, { id::mix, 30 } } },
         { "Corredor de Azulejo",         { { id::size, 60 }, { id::decay, 1.3f }, { id::predelay, 3 },  { id::early, 100 }, { id::diffusion, 30 }, { id::damp, 0 }, { id::width, 60 }, { id::mix, 25 } } },
-        { u8 ("Ambiência de Mix"),       { { id::size, 35 }, { id::decay, 0.7f }, { id::predelay, 10 }, { id::early, 50 }, { id::diffusion, 80 }, { id::damp, 40 }, { id::lowCut, 200 }, { id::highCut, 8000 }, { id::mix, 12 } } },
+        { u8 ("Ambiência de Mix"),       { { id::size, 35 }, { id::decay, 0.70000000000000000834114f }, { id::predelay, 10 }, { id::early, 50 }, { id::diffusion, 80 }, { id::damp, 40 }, { id::lowCut, 200 }, { id::highCut, 8000 }, { id::mix, 12 } } },
     };
 }
 } // namespace sala

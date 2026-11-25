@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // Peças comuns dos builds dos devices (build-rodo.js, build-vassoura.js):
 //  - faixa do device = jsui <dev>_strip.js (arte + OPEN THE MAGIC); os controles do Live ficam escondidos (sem
 //    presentation), só para o set guardar os valores; a janela manda e recebe tudo pelo motor.

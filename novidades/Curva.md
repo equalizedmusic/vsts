@@ -1,5 +1,12 @@
 # CURVA — novidades
 
+## 0.2.1 — 2026-11-24
+- **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
+  se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o
+  e-mail preenchido e avisa. Desativar continua valendo: o plugin não se reativa sozinho depois.
+- Aviso de autoria na tela da licença (© Rogerio Cardoso / InsideStudioSP).
+- O som e as funções não mudam.
+
 ## 0.2.0 — 2026-11-22
 - Versão oficial, GRÁTIS com licença: na 1ª vez a CURVA pede o e-mail e o token grátis da página insidestudiosp.com.br/curva/. Sem ativar, o som passa direto.
 - Menu (botão direito na tela): Licença… mostra a licença e libera o computador.

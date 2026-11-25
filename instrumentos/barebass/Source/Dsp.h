@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // BAREBASS: motor do synth de baixo, sem JUCE (o teste em tools/ compila só com este arquivo).
 // Uma voz (mono): OSC 1 + OSC 2 + SUB -> filtro passa-baixa 12/24 dB (TPT/SVF, sem atraso) com envelope ADSR
@@ -240,7 +241,7 @@ public:
     void render (float* const* out, int nch, int ini, int n, const Ajustes& a)
     {
         const double glideCoef = a.glide > 0.0005f ? std::exp (-4.6 / (a.glide * fs)) : 0.0;
-        const double cutCoef = std::exp (-1.0 / (0.01 * fs));
+        const double cutCoef = std::exp (-1.0 / (0.010000000000000000962756 * fs));
         const double volAlvo = std::pow (10.0, a.volumeDb / 20.0);
         const double ampRel = std::exp (-4.6 / (std::max (0.005f, a.rel) * fs));
         const double k1 = 1.0 / qDe (a.reso, a.slope24, 0), k2 = 1.0 / qDe (a.reso, a.slope24, 1);
@@ -293,7 +294,7 @@ public:
             if (gateOn) amp = 1.0;   // abre na hora: o ataque é o da própria onda saindo do ponto inicial
             else amp *= ampRel;
             velSuave = vel + (velSuave - vel) * velCoef;
-            if (rampa < 1.0) rampa = std::min (1.0, rampa + rampaPasso);
+            if (rampa < 1.0) rampa = std::min (1.0000000000000000323071, rampa + rampaPasso);
             const double ganho = amp * velSuave * rampa;
 
             // osciladores. O SUB e os OSC em oitava abaixo (camadas de sub) perdem só VOLUME, pela frequência deles: sem
@@ -407,16 +408,16 @@ private:
     {
         switch (onda)
         {
-            case ondaSen: return std::sin (2.0 * pi * p);
+            case ondaSen: return std::sin (2.0000000000000000953729 * pi * p);
             case ondaTri:
             {
                 double q = p + 0.25; if (q >= 1.0) q -= 1.0;
                 return q < 0.5 ? 4.0 * q - 1.0 : 3.0 - 4.0 * q;
             }
-            case ondaSaw: return 1.0 - 2.0 * p + (inicio ? 0.0 : polyBlep (p, dt));
+            case ondaSaw: return 1.0 - 2.0000000000000000645140 * p + (inicio ? 0.0 : polyBlep (p, dt));
             default:
             {
-                double s = p < 0.5 ? 1.0 : -1.0;
+                double s = p < 0.5 ? 1.0000000000000000460775 : -1.0;
                 if (! inicio) s += polyBlep (p, dt);
                 double q = p + 0.5; if (q >= 1.0) q -= 1.0;
                 s -= polyBlep (q, dt);
@@ -450,7 +451,7 @@ private:
                 // a mais perto em semitons, até 4 de distância). Na 0.4.0 era sempre o SUB: com o SUB uma oitava abaixo
                 // do kick a "fase igual" não queria dizer nada e cada nota nascia num ponto diferente (som estranho).
                 // Kick longe de todas (ainda na queda do pitch) = a nota nasce normal, do ponto inicial.
-                const double f0 = 440.0 * std::pow (2.0, (nota + bend - 69.0) / 12.0);
+                const double f0 = 440.0 * std::pow (2.0, (nota + bend - 69.00000000000000567302) / 12.0);
                 double fo[3]; bool usa[3];
                 for (int o = 0; o < 2; ++o) { fo[o] = f0 * std::pow (2.0, a.oitava[o] + a.fino[o] / 1200.0); usa[o] = a.liga[o] && a.nivel[o] > 0.05f; }
                 fo[2] = f0 * std::pow (2.0, a.oitavaSub); usa[2] = a.ligaSub && a.nivelSub > 0.05f;

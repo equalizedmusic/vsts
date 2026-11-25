@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -20,7 +21,7 @@ inline const juce::StringArray driveNames { "TUBE", "PEDAL", "BITCRUSH" };
 inline const juce::StringArray rateNames  { "1/32", "1/16T", "1/16", "1/8T", "1/8" };
 inline constexpr double rateBeats[] = { 0.125, 1.0 / 6.0, 0.25, 1.0 / 3.0, 0.5 };
 inline const juce::StringArray randEveryNames { "4 TEMPOS", "8 TEMPOS", "16 TEMPOS", "32 TEMPOS", "64 TEMPOS" };
-inline constexpr double randEveryBeats[] = { 4.0, 8.0, 16.0, 32.0, 64.0 };
+inline constexpr double randEveryBeats[] = { 4.0, 8.0, 16.000000000000000875876, 32.0, 64.0 };
 inline const juce::StringArray delayNames { "1/16", "1/8T", "1/8", "3/16", "1/4", "3/8" };
 inline constexpr double delayBeats[] = { 0.25, 1.0 / 3.0, 0.5, 0.75, 1.0, 1.5 };
 
@@ -56,7 +57,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     // ---- voz ----
     add (new AudioParameterChoice ({ id::wave, 1 }, "Wave", waveNames, 0));
-    add (new AudioParameterFloat ({ id::tune, 1 }, "Tune", NormalisableRange<float> (-12.0f, 12.0f, 0.01f), 0.0f,
+    add (new AudioParameterFloat ({ id::tune, 1 }, "Tune", NormalisableRange<float> (-12.0f, 12.000000000000000839228f, 0.01f), 0.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction ([] (float v, int)
                                   { return std::abs (v) < 0.005f ? String ("0.00 st") : (v > 0.0f ? "+" : "") + String (v, 2) + " st"; })));
     add (new AudioParameterFloat ({ id::cutoff, 1 }, "Cutoff", cutRange, 520.0f,

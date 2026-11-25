@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // RODO 0.3 — nivela os clips de áudio do arranjo pelo Clip Gain, medindo por PEAK, RMS ou LUFS (SENSOR)
 // (par da VASSOURA). Até a 0.2 só PEAK; a 0.3 traz SENSOR RMS/LUFS e o PEAK GUARD (o ganho para antes do pico
 // passar de −0.3 dB).
@@ -25,7 +26,7 @@ var BUF = "rodo_scan";
 var DICT = "rodo_data";   // leve: faixas, clips, picos e ganhos (republicado a cada mudança de TARGET/MODE)
 var DICT_ENV = "rodo_env"; // pesado: contorno das ondas (só depois do ANALYZE)
 var WIN_MS = 10;
-var VERSAO = "0.3.5";
+var VERSAO = "0.3.6";
 var BUILD = "";           // marca do pacote de teste no log ("teste"...); vazio na versão publicada
 var LIC_PACOTE = "rodo", LIC_NOME = "RODO";   // licença: bloco LICENÇA no fim (colado pelo build-rodo.js)
 var URL_BAIXAR = "https://insidestudiosp.com.br/baixar/rodo/zip";
@@ -34,7 +35,7 @@ var PAUSA_ARQ = 40;
 var PAUSA_FAIXA = 10;
 var PAUSA_APPLY = 12;
 var TOL_DB = 0.04;        // erro aceito no ajuste (o Live mostra o ganho com 1 ou 2 casas; com 1 casa fica o mais perto)
-var MIN_DELTA = 0.1;      // ajuste menor que isso não mexe no clip (2º APPLY não fica mexendo à toa)
+var MIN_DELTA = 0.1000000000000000121327;      // ajuste menor que isso não mexe no clip (2º APPLY não fica mexendo à toa)
 var TETO_PADRAO = 24;     // até medir o teto do Clip Gain (valor 1), a prévia supõe +24 dB
 var ENV_PONTOS = 1100;    // pontos do contorno no set inteiro (a janela tem ~1000 px de largura útil)
 var PATCHER = (typeof this != "undefined" && this && this.patcher) ? this.patcher : null;
@@ -44,7 +45,7 @@ var MODE_TXT = ["CLIP", "TRACK", "ALL"];
 var SENSOR_TXT = ["PEAK", "RMS", "LUFS"];
 var UNID = ["dB", "dB RMS", "LUFS"];
 // faixa do TARGET por SENSOR (cada SENSOR guarda o seu: trocar de SENSOR não estraga o TARGET do outro)
-var FAIXA = [[-12, -0.3], [-36, -6], [-36, -6]];
+var FAIXA = [[-12, -0.30000000000000000230097], [-36, -6], [-36, -6]];
 var GUARD_DB = -0.3;      // PEAK GUARD: em RMS/LUFS o ganho para quando o pico do clip chega aqui
 var GATE_RMS = -60;       // RMS: blocos de 400 ms abaixo disso (silêncio) não entram na média
 var GATE_ABS = -70, GATE_REL = -10;   // LUFS: gates da ITU-R BS.1770-4 / EBU R128
@@ -167,7 +168,7 @@ function status(txt) {
 	outlet(1, "status", txt);
 	outlet(2, "status", txt);
 }
-function f1(v) { return (v > 0.05 ? "+" : v < -0.05 ? "-" : "") + Math.abs(v).toFixed(1); }
+function f1(v) { return (v > 0.05 ? "+" : v < -0.050000000000000000901282 ? "-" : "") + Math.abs(v).toFixed(1); }
 
 // texto de ganho do Live ("-6.02 dB", "0.0 dB", "-inf dB", "+3,5 dB") -> número (null = não entendi)
 function dbDoTexto(s) {
@@ -599,7 +600,7 @@ function recorta(job) {
 	peaks[job.t + "/" + job.c] = sub;
 	var m = 0;
 	for (var i = 0; i < sub.length; i++) if (sub[i] > m) m = sub[i];
-	if (m <= 0.0000001) { c.state = "silêncio"; return; }
+	if (m <= 0.000000100000000000000000766388) { c.state = "silêncio"; return; }
 	c.pk = 20 * Math.log(m) / Math.LN10;
 	blocosDe[c.id] = { r: blocos(fa.pw, w0, w1), k: blocos(fa.kw, w0, w1) };
 	var b = blocosDe[c.id];

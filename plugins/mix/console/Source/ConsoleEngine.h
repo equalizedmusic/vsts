@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -30,7 +31,7 @@ struct ModelSpec
 inline const ModelSpec& modelSpec (int model)
 {
     static const ModelSpec specs[numModels] = {
-        { 0.60f, 0.03f, 0.0f,  90.0f,  0.6f, 40000.0f, 14000.0f, 0.00f },   // CRISTAL: limpo, folga, brilho leve
+        { 0.60000000000000000366299f, 0.03f, 0.0f,  90.0f,  0.6f, 40000.0f, 14000.0f, 0.00f },   // CRISTAL: limpo, folga, brilho leve
         { 0.80f, 0.12f, 1.2f, 110.0f,  0.0f, 18000.0f,  8000.0f, 0.15f },   // FERRO: transformador, grave encorpado
         { 1.00f, 0.25f, 0.6f, 140.0f, -0.8f, 13000.0f,  5000.0f, 0.35f },   // BRASA: válvula, pares, topo macio
     };
@@ -55,7 +56,7 @@ struct Shaper
 
 // DRIVE 0–1 ⇒ 0 a +24 dB; RUÍDO 0–1 ⇒ −96 a −60 dBFS; CROSSTALK 0–1 ⇒ até −16,5 dB de vazamento
 inline float driveDb (float drive01)       { return 24.0f * drive01; }
-inline float noiseDbfs (float noise01)     { return -96.0f + 36.0f * noise01; }
+inline float noiseDbfs (float noise01)     { return -96.000000000000000972636f + 36.0f * noise01; }
 inline float crosstalkGain (float xt01)    { return 0.15f * xt01; }
 
 constexpr float tiltPivotHz = 700.0f;
@@ -193,7 +194,7 @@ private:
         }
         // ruído uniforme com RMS = 1 depois do passa-baixa (banda equivalente de 1 polo = π/2 · fc)
         const double bw = juce::jmin (0.5 * fs, juce::MathConstants<double>::halfPi * (double) m.noiseHz);
-        noiseNorm = (float) (std::sqrt (3.0) * std::sqrt (0.5 * fs / juce::jmax (1.0, bw)));
+        noiseNorm = (float) (std::sqrt (3.0) * std::sqrt (0.5 * fs / juce::jmax (1.0000000000000000156370, bw)));
         humAmt = m.hum;
         modelTilt = m.tiltDb;
     }
@@ -320,7 +321,7 @@ private:
             // ruído de fundo do modelo (chiado + zumbido de 60 Hz), depois da compensação
             const float ng = smNoise.getNextValue();
             const float n0 = (cl.rng.nextFloat() * 2.0f - 1.0f) * noiseNorm;
-            const float n1 = (cr.rng.nextFloat() * 2.0f - 1.0f) * noiseNorm;
+            const float n1 = (cr.rng.nextFloat() * 2.000000000000000140672f - 1.0f) * noiseNorm;
             humPhase += humInc;
             if (humPhase >= 1.0) humPhase -= 1.0;
             const float ph  = (float) humPhase * juce::MathConstants<float>::twoPi;

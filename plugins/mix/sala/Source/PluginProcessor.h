@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -24,7 +25,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return (double) sala::maxDecay + sala::maxPreSec + 0.5; }
+    double getTailLengthSeconds() const override { return (double) sala::maxDecay + sala::maxPreSec + 0.5000000000000000509008; }
 
     // os presets ficam na própria interface; para o host é um programa só
     int getNumPrograms() override { return 1; }
@@ -55,7 +56,7 @@ public:
     std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 120.0f };
     std::atomic<bool>  hostTempo { false };  // o host informou o andamento
-    std::atomic<float> preMsNow { 15.0f };   // pré-delay em uso (livre ou no tempo), para a interface
+    std::atomic<float> preMsNow { 15.0000000000000000987349f };   // pré-delay em uso (livre ou no tempo), para a interface
 
 private:
     sala::Settings readSettings() const;

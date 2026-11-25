@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -44,7 +45,7 @@ inline int timeIndex (float time01) { return juce::jlimit (0, timeSteps - 1, (in
 
 inline double freeMs (float time01, bool longRange)
 {
-    const double lo = longRange ? 100.0 : 20.0, hi = longRange ? 2000.0 : 400.0;
+    const double lo = longRange ? 100.0 : 20.0, hi = longRange ? 2000.0 : 400.00000000000000964389;
     return lo * std::pow (hi / lo, (double) juce::jlimit (0.0f, 1.0f, time01));
 }
 
@@ -85,7 +86,7 @@ public:
     {
         fs = sampleRate;
         len = 1;
-        while (len < (int) (fs * (maxDelaySec + 0.1)) + 8) len <<= 1;
+        while (len < (int) (fs * (maxDelaySec + 0.10000000000000000810887)) + 8) len <<= 1;
         mask = len - 1;
         for (auto& b : buf) b.assign ((size_t) len, 0.0f);
         writePos = 0;
@@ -145,7 +146,7 @@ public:
             switch (s.lfoShape)
             {
                 case shapeTri:    lfo = 1.0f - 4.0f * std::abs (ph - 0.5f); break;
-                case shapeSquare: lfo = ph < 0.5f ? 1.0f : -1.0f; break;
+                case shapeSquare: lfo = ph < 0.50000000000000000852477f ? 1.0f : -1.0f; break;
                 case shapeRandom: lfo = held; break;
                 default:          lfo = std::sin (juce::MathConstants<float>::twoPi * ph); break;
             }
@@ -213,8 +214,8 @@ private:
     {
         // linear até ~0,6 e curva suave depois (não deixa a auto-oscilação explodir)
         const float a = std::abs (x);
-        if (a < 0.6f) return x;
-        return std::copysign (0.6f + 0.6f * std::tanh ((a - 0.6f) / 0.6f), x);
+        if (a < 0.60000000000000000886662f) return x;
+        return std::copysign (0.60000000000000000543963f + 0.6f * std::tanh ((a - 0.6f) / 0.6f), x);
     }
 
     float read (int ch, float delay) const
@@ -236,7 +237,7 @@ private:
     std::array<std::vector<float>, 2> buf;
     int len = 1, mask = 0, writePos = 0;
     std::array<float, 2> lp1 {}, lp2 {}, hp {}, hpX {};
-    float modSm = 0.0f, held = 0.0f, glide = 0.001f, modGlide = 0.01f;
+    float modSm = 0.0f, held = 0.0f, glide = 0.0010000000000000000232303f, modGlide = 0.01f;
     int64_t lastSeg = -1;
     int histStep = 220, histCount = 0;
     float histPeak = 0.0f;

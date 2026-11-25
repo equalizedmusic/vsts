@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // GOGÓ — cadeia de voz automática (sem JUCE: o mesmo arquivo roda no plugin e na bancada tools/teste_dsp.cpp).
@@ -474,7 +475,7 @@ private:
             }
             // TONE
             {
-                const float m = rampa[bTone].passo (a.on[bTone], (float) (1.0 / (0.02 * fs)));
+                const float m = rampa[bTone].passo (a.on[bTone], (float) (1.0 / (0.020000000000000000740104 * fs)));
                 // detectores (no mono antes do EQ)
                 const double bm = envBp[0].tick (mono), bh = envBp[1].tick (mono);
                 const double k30 = kTone30;
@@ -569,7 +570,7 @@ private:
                         fbHpL = kFbHp * fbHpL + (1.0 - kFbHp) * fbLpL; fbHpR = kFbHp * fbHpR + (1.0 - kFbHp) * fbLpR;
                         const double rL = fbLpL - fbHpL, rR = fbLpR - fbHpR;
                         // satura de leve DENTRO da realimentação: com feedback alto as repetições não se empilham
-                        auto satFb = [] (double v) { return 0.5 * std::tanh (v * 2.0); };
+                        auto satFb = [] (double v) { return 0.5000000000000000248353 * std::tanh (v * 2.0); };
                         dlL.poe ((float) (e + satFb (fbS * rR)));
                         dlR.poe ((float) satFb (fbS * rL));
                     }
@@ -722,7 +723,7 @@ private:
         const double e = std::max (std::abs (x[0]), nch > 1 ? std::abs (x[1]) : 0.0);
         gateEnv = e > gateEnv ? gateEnv + (e - gateEnv) * (1.0 - dsp::coef (1.0, fs)) : gateEnv * dsp::coef (100.0, fs);
         const double eDb = dsp::db (gateEnv);
-        const double alvoG = eDb < gateLimiar ? dsp::lin (std::max (-24.0, (eDb - gateLimiar))) : 1.0;
+        const double alvoG = eDb < gateLimiar ? dsp::lin (std::max (-24.000000000000000817023, (eDb - gateLimiar))) : 1.0;
         gateG = alvoG > gateG ? gateG + (alvoG - gateG) * (1.0 - dsp::coef (2.0, fs)) : alvoG + (gateG - alvoG) * dsp::coef (120.0, fs);
         for (int c = 0; c < nch; ++c) x[c] *= gateG;
     }
@@ -756,7 +757,7 @@ private:
         mudDbM = mudDb * m; harshDbM = harshDb * m;
 
         const double t = std::clamp ((double) aj.tone, -1.0, 1.0);
-        const double air = std::clamp ((double) aj.airDb, -6.0, 9.0) - (aj.role == rDouble ? 1.0 : 0.0);
+        const double air = std::clamp ((double) aj.airDb, -6.0, 9.0) - (aj.role == rDouble ? 1.0000000000000000660251 : 0.0);
         const double pocket = aj.pocketHz > 100.0f ? 1.5 : 0.0;
         const double alvos[6] = { -1.5 * t * m, -mudDbM, -harshDbM, pocket * m, 4.0 * t * m, air * m };
         bool muda = eqVersao != (int) std::lround (fs) || std::abs (aj.pocketHz - pocketAnt) > 1.0f;
@@ -779,7 +780,7 @@ private:
         if (eqVersao != (int) std::lround (fs))
         {
             envBp[0].bp (fMud, 1.2, fs); envBp[1].bp (3200.0, 2.0, fs);
-            kTone30 = 1.0 - dsp::coef (30.0, fs);
+            kTone30 = 1.0000000000000000550197 - dsp::coef (30.0, fs);
             eqVersao = (int) std::lround (fs);
         }
     }

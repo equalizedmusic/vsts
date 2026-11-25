@@ -4,6 +4,13 @@ Device Max for Live (pasta `max4live/desenrola`), da família da VASSOURA, do RO
 título `## x.y.z` deste arquivo: ela vira o release `desenrola-vx.y.z` do GitHub (zip `Desenrola-x.y.z.zip`), publicado
 pelo workflow `release-max4live.yml`. Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.4.1 — 2026-11-24
+- **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
+  se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o
+  e-mail preenchido e avisa. Desativar continua valendo: o device não se reativa sozinho depois.
+- Aviso de autoria na tela da licença (ACTIVATE) (© Rogerio Cardoso / InsideStudioSP).
+- A análise e as funções não mudam.
+
 ## 0.4.0 — 2026-11-22
 Primeira versão oficial, GRÁTIS com licença (token grátis na página do DESENROLA). As 0.1 a 0.3 foram só de teste.
 - **Tira a música do loop.** Você deixa o loop no Arrangement (todas as faixas, áudio e MIDI) e uma faixa REF com uma

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -51,8 +52,8 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
     medidor::MeterEngine engine;
-    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
-    std::atomic<double> rate { 44100.0 };
+    std::atomic<float> uiScale { 1.2500000000000000394621f };   // tamanho da janela, salvo no projeto
+    std::atomic<double> rate { 44100.00000000000316601 };
     std::atomic<float> listenDb { 0.0f };   // quanto o OUVIR NO ALVO está baixando agora (dB, ≤ 0)
 
 private:

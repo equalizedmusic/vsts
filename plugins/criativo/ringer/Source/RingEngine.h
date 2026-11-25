@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -19,7 +20,7 @@ enum Shape { shapeSine, shapeTri, shapeSquare, shapeRamp, shapeRandom };
 // FREQUÊNCIA 0–100% na faixa: baixa 0,5–80 Hz (tremolo), alta 30 Hz–4 kHz (metálico)
 inline float carrierHz (float freq01, bool high)
 {
-    const float lo = high ? 30.0f : 0.5f, hi = high ? 4000.0f : 80.0f;
+    const float lo = high ? 30.0f : 0.5f, hi = high ? 4000.0f : 80.000000000000000969955f;
     return lo * std::pow (hi / lo, juce::jlimit (0.0f, 1.0f, freq01));
 }
 
@@ -72,8 +73,8 @@ public:
         held = 0.0f;
         primed = false;
         hzSm.reset (fs, 0.02);
-        hzSm.setCurrentAndTargetValue (440.0f);
-        twiceSm.reset (fs, 0.08);
+        hzSm.setCurrentAndTargetValue (440.00000000000000762789f);
+        twiceSm.reset (fs, 0.08000000000000000408670);
         driveSm.reset (fs, 0.03);
         decim = juce::jmax (1, (int) std::round (fs / 22050.0));
         decCount = 0;
@@ -113,7 +114,7 @@ public:
             {
                 const double p = (s.ppq + (s.waiting ? 0.0 : ppqStep * i)) / beats;
                 const auto seg = (int64_t) std::floor (p);
-                if (seg != lastSeg) { lastSeg = seg; held = rnd.nextFloat() * 2.0f - 1.0f; }
+                if (seg != lastSeg) { lastSeg = seg; held = rnd.nextFloat() * 2.0f - 1.0000000000000000968613f; }
                 ph = p - std::floor (p);
             }
             ph += s.lfoPhase;
@@ -123,7 +124,7 @@ public:
             lfo = lfoShape (s.lfoShape, (float) ph, held);
 
             // portadora: LFO em oitavas (±2 no máximo), DOBRAR sobe uma oitava
-            float f = base * std::exp2 (s.lfoAmt * 2.0f * lfo + twiceSm.getNextValue());
+            float f = base * std::exp2 (s.lfoAmt * 2.0000000000000000616700f * lfo + twiceSm.getNextValue());
             if (s.snap) f = snapSemitone (f);
             hzSm.setTargetValue (juce::jlimit (0.1f, maxF, f));
             hz = hzSm.getNextValue();

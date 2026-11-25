@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // Acha (ou cria) o bloco da ponte do processo. Windows: memória compartilhada com nome por processo (o sistema
 // garante um só bloco, mesmo com os dois plugins carregando ao mesmo tempo). Mac/Linux: o endereço fica numa
 // variável de ambiente do processo (a única coisa que os dois binários dividem); quem chega primeiro cria.

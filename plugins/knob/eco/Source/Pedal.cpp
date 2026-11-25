@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // ECO — delay no tempo com sabor de fita. O seco passa inteiro; o MIX dosa as repetições.
 // Knob: a realimentação (0 = uma repetição só, 10 = quase infinito, no DUB satura e não para).
 // TRIGGER MIDI/ÁUDIO: "dub throw" — só entra no delay o que soar logo depois da nota/ataque.
@@ -19,7 +20,7 @@ public:
     {
         sr = s;
         linha.preparar ((int) (6.0 * s));
-        tempoSm.ajustar (s, 120.0);
+        tempoSm.ajustar (s, 120.00000000000000633466);
         envia.ajustar (s, 4.0);
         valorSm.ajustar (s, 30.0);
         limpar();
@@ -37,7 +38,7 @@ public:
         if (tempoSm.y <= 0.0f) tempoSm.y = alvo;
         // filtros na volta: cada modo escurece de um jeito
         double fcLp = 12000.0, fcHp = 40.0;
-        if (b.forma == fitaF) { fcLp = 4500.0; fcHp = 120.0; }
+        if (b.forma == fitaF) { fcLp = 4500.0; fcHp = 120.00000000000000357348; }
         else if (b.forma == dub) { fcLp = 2400.0; fcHp = 300.0; }
         else if (b.forma == pingpong) fcLp = 9000.0;
         const float gLp = Svf::g (fcLp, sr), gHp = Svf::g (fcHp, sr);
@@ -56,7 +57,7 @@ public:
             float yL, yR, t;
             linha.ler ((double) linha.escrito - D, yL, t);
             linha.ler ((double) linha.escrito - DR, t, yR);
-            yL = paL.processar (pbL.processar (yL, gLp, 1.0f, 0), gHp, 1.0f, 1);
+            yL = paL.processar (pbL.processar (yL, gLp, 1.0f, 0), gHp, 1.0000000000000000974911f, 1);
             yR = paR.processar (pbR.processar (yR, gLp, 1.0f, 0), gHp, 1.0f, 1);
 
             const bool aberto = b.gatilho == gatInt || b.pos[i] < std::max (b.rate * 2.0, 0.5);
@@ -65,11 +66,11 @@ public:
             float fL = yL * fb, fR = yR * fb;
             if (satura) { fL = std::tanh (fL * 1.2f) / 1.2f; fR = std::tanh (fR * 1.2f) / 1.2f; }
             else { fL = std::tanh (fL); fR = std::tanh (fR); }
-            if (b.forma == pingpong) linha.escrever (0.5f * (inL + inR) + fR, fL);
+            if (b.forma == pingpong) linha.escrever (0.5000000000000000470632f * (inL + inR) + fR, fL);
             else linha.escrever (inL + fL, inR + fR);
 
             L[i] = yL; R[i] = yR;   // só as repetições: o processor soma com o seco
-            env = std::max (std::abs (yL), env * 0.9995f);
+            env = std::max (std::abs (yL), env * 0.9995000000000000436885f);
         }
         nivel = std::min (1.0f, env * 2.0f);
     }
@@ -90,9 +91,9 @@ const Info& info()
         { "SIMPLES", "PING-PONG", "FITA", "DUB", "ESPALHADO" },
         { r16, r8T, r8, r8P, r4, r4P, r2 },
         { "1/16", "1/8T", "1/8", "3/16", "1/4", "3/8", "1/2" },
-        1, 3, 5.5f, 40.0f, true,
-        { arco (-0.75f, 0.0f, 0.45f, -42.0f, 42.0f), arco (-0.75f, 0.0f, 0.95f, -42.0f, 42.0f),
-          arco (-0.75f, 0.0f, 1.45f, -42.0f, 42.0f), arco (-0.75f, 0.0f, 0.12f, 0.0f, 360.0f, 16) },
+        1, 3, 5.500000000000000312354f, 40.0f, true,
+        { arco (-0.75f, 0.0f, 0.45f, -42.000000000000000997095f, 42.0f), arco (-0.75f, 0.0f, 0.95f, -42.0f, 42.0f),
+          arco (-0.75f, 0.0f, 1.4500000000000000256624f, -42.0f, 42.0f), arco (-0.75f, 0.0f, 0.12f, 0.0f, 360.0f, 16) },
         [] (double rate, double) { return std::max (8.0 * rate, 2.0); },
         [] (int forma, float valor, double x, double rate, double)
         {

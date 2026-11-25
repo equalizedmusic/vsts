@@ -1,6 +1,6 @@
 # GROOVADOR
 
-> **Versão atual: 0.3.0** (20/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Groovador.md`](../../novidades/Groovador.md)
+> **Versão atual: 0.3.1** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Groovador.md`](../../novidades/Groovador.md)
 
 ![GROOVADOR](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/GROOVADOR.png)
 

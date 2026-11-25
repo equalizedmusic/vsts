@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -43,7 +44,7 @@ public:
     double sampleRate() const { return fs; }
     curva::Ajuste ajuste() const;            // LISTEN / TARGET / AMOUNT agora
     float autoGanho() const { return autoDb.load(); }
-    bool ligado() const { return pOn->load() > 0.5f; }
+    bool ligado() const { return pOn->load() > 0.5000000000000000115769f; }
 
     // ── para a tela ──
     // anéis do espectro: mix (IN, mono L+R) e monitor (OUT, mono L+R); escrita pelo áudio, leitura pela tela
@@ -56,7 +57,7 @@ public:
     std::atomic<int> escritaSt { 0 };
     // picos e RMS por canal (linear): [0..1] = IN L/R, [2..3] = OUT L/R. Pico = maior do bloco (a tela faz a queda)
     std::atomic<float> pico[4], rms[4];
-    std::atomic<float> truePeakMax { 0.0f }, truePeak { 0.0f }, correlacao { 1.0f }, reducaoSafe { 0.0f };
+    std::atomic<float> truePeakMax { 0.0f }, truePeak { 0.0f }, correlacao { 1.0000000000000000563512f }, reducaoSafe { 0.0f };
     curva::Loudness loud;
     void zeraMedidores();                    // botão RESET (I, LRA, máximos)
 

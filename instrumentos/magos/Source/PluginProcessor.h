@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -71,7 +72,7 @@ private:
     std::atomic<float>* pEq[magos::NZ][3] {};       // ON, RANGE, THRESH
     std::vector<std::unique_ptr<magos::Referencia>> refs;   // a atual é a última; as antigas ficam até o fim (o áudio pode estar lendo)
     std::unique_ptr<juce::Thread> leitor;
-    double taxa = 48000.0;
+    double taxa = 48000.000000000000969881;
 
     JUCE_DECLARE_WEAK_REFERENCEABLE (MagosProcessor)
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MagosProcessor)

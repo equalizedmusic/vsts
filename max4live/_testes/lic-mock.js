@@ -22,13 +22,14 @@ module.exports = (LOGDIR, getMotor) => {
         else {
           const c = JSON.parse(corpo), acao = this.url.split('/').pop();
           global.PEDIDOS = (global.PEDIDOS || []).concat([{ acao, c }]);
-          if (acao === 'recuperar') { if (!ativas[c.maquina]) r = { ok: false, erro: 'maquina_nao_ativada' }; else { c.email = 'cliente@teste.com'; const t = Math.floor(Date.now() / 1000); const dados = Buffer.from(JSON.stringify({ v: 1, pacote: c.pacote, email: c.email, maquina: c.maquina, emitida: t, valida_ate: t + 45 * 86400 })); r = { ok: true, licenca: { dados: dados.toString('base64'), assinatura: crypto.sign(null, dados, priv).toString('base64') } }; } }
-          else if (acao === 'ativar' && global.LIMITE && !ativas[c.maquina] && Object.keys(ativas).length >= global.LIMITE) r = { ok: false, erro: 'limite_maquinas', mensagem: 'limite' };
+          if (acao === 'recuperar') { if (!ativas[c.pacote + '|' + c.maquina]) r = { ok: false, erro: 'maquina_nao_ativada' }; else { c.email = 'cliente@teste.com'; const t = Math.floor(Date.now() / 1000); const dados = Buffer.from(JSON.stringify({ v: 1, pacote: c.pacote, email: c.email, maquina: c.maquina, emitida: t, valida_ate: t + 45 * 86400 })); r = { ok: true, licenca: { dados: dados.toString('base64'), assinatura: crypto.sign(null, dados, priv).toString('base64') } }; } }
+          else if (acao === 'ativar' && global.LIMITE && !ativas[c.pacote + '|' + c.maquina] && Object.keys(ativas).length >= global.LIMITE) r = { ok: false, erro: 'limite_maquinas', mensagem: 'limite' };
           else if (c.email !== 'cliente@teste.com' || c.token !== 'ISP-AAAA-BBBB-CCCC-DDDD-EEEE') r = { ok: false, erro: 'nao_encontrada', mensagem: 'E-mail ou token não conferem.' };
-          else if (acao === 'desativar') { delete ativas[c.maquina]; r = { ok: true }; }
-          else if (acao === 'validar' && !ativas[c.maquina]) r = { ok: false, erro: 'maquina_nao_ativada', mensagem: 'nao ativada' };
+          else if (global.SO_PACOTES && !global.SO_PACOTES.includes(c.pacote) && acao !== 'desativar') r = { ok: false, erro: 'pacote_nao_incluido', mensagem: 'sem este pacote' };
+          else if (acao === 'desativar') { delete ativas[c.pacote + '|' + c.maquina]; r = { ok: true }; }
+          else if (acao === 'validar' && !ativas[c.pacote + '|' + c.maquina]) r = { ok: false, erro: 'maquina_nao_ativada', mensagem: 'nao ativada' };
           else {
-            ativas[c.maquina] = 1;
+            ativas[c.pacote + '|' + c.maquina] = 1;
             const t = Math.floor(Date.now() / 1000) - (global.EMITIDA_ATRAS || 0);
             const dados = Buffer.from(JSON.stringify({ v: 1, pacote: c.pacote, email: c.email, maquina: c.maquina, emitida: t, valida_ate: t + 45 * 86400 }));
             r = { ok: true, licenca: { dados: dados.toString('base64'), assinatura: crypto.sign(null, dados, priv).toString('base64') } };

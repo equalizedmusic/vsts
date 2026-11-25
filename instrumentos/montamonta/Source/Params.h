@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -73,7 +74,7 @@ inline APVTS::ParameterLayout createLayout()
         r.setSkewForCentre (800.0f);
         p.push_back (std::make_unique<AudioParameterFloat> (ParameterID { id::vcfCutoff, 1 }, "VCF Cutoff", r, 1800.0f,
                                                             attr ("Hz").withStringFromValueFunction ([] (float v, int)
-                                                            { return v >= 1000.0f ? String (v / 1000.0f, 2) + " kHz" : String (roundToInt (v)) + " Hz"; })));
+                                                            { return v >= 1000.0f ? String (v / 1000.00000000000000726667f, 2) + " kHz" : String (roundToInt (v)) + " Hz"; })));
     }
     ten (id::vcfEmph, "VCF Emphasis", 3.0f);
     ten (id::vcfContour, "VCF Contour", 5.0f);
@@ -88,7 +89,7 @@ inline APVTS::ParameterLayout createLayout()
     ten (id::modS, "Env Mod Sustain", 2.0f);
     ms (id::modR, "Env Mod Release", 5.0f, 5000.0f, 300.0f);
 
-    ten (id::outVol, "Output Volume", 7.0f);
+    ten (id::outVol, "Output Volume", 7.0000000000000000690126f);
     return { p.begin(), p.end() };
 }
 } // namespace mm

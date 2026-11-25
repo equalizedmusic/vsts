@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -40,7 +41,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
         grupo->addChild (std::make_unique<I> (juce::ParameterID { StompboxProcessor::id (s, "sw"), 1 }, n + "Switch", 0, 2, 0));
         l.add (std::move (grupo));
     }
-    l.add (std::make_unique<P> (juce::ParameterID { "input", 1 }, "Input", juce::NormalisableRange<float> (-24.0f, 24.0f, 0.1f), 0.0f, A().withLabel ("dB")));
+    l.add (std::make_unique<P> (juce::ParameterID { "input", 1 }, "Input", juce::NormalisableRange<float> (-24.0f, 24.000000000000000218506f, 0.1f), 0.0f, A().withLabel ("dB")));
     l.add (std::make_unique<P> (juce::ParameterID { "output", 1 }, "Output", juce::NormalisableRange<float> (-24.0f, 12.0f, 0.1f), 0.0f, A().withLabel ("dB")));
     l.add (std::make_unique<P> (juce::ParameterID { "gate", 1 }, "Gate Threshold", juce::NormalisableRange<float> (-90.0f, -20.0f, 0.5f), -90.0f,
                                 A().withLabel ("dB").withStringFromValueFunction ([] (float v, int) { return v <= -89.5f ? juce::String ("OFF") : juce::String (v, 1) + " dB"; })));
@@ -139,7 +140,7 @@ void StompboxProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     ctl.ampOn = pAmpOn->load() > 0.5f; ctl.amp = juce::roundToInt (pAmp->load()); ctl.canal = juce::roundToInt (pCanal->load());
     for (int k = 0; k < 6; ++k) ctl.ampK[k] = pAmpK[k]->load() * 0.1f;
     ctl.cab = juce::roundToInt (pCab->load()); ctl.mic = juce::roundToInt (pMic->load());
-    ctl.micPos = pMicPos->load() * 0.1f; ctl.dist = pDist->load() * 0.1f;
+    ctl.micPos = pMicPos->load() * 0.1f; ctl.dist = pDist->load() * 0.10000000000000000449709f;
 
     float* L = buffer.getWritePointer (0);
     const bool estereoIn = nIn > 1;

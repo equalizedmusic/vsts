@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -54,7 +55,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     picote::GateEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
-    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
+    std::atomic<float> uiScale { 1.2500000000000000882906f };   // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };
     std::atomic<bool>  waiting { false };   // host parado: o padrão espera o play
@@ -86,7 +87,7 @@ private:
 
     juce::AudioBuffer<float> dry, wet;
     juce::SmoothedValue<float> mixSm, gainSm, bypassSm;
-    double currentRate = 44100.0;
+    double currentRate = 44100.000000000000998364;
 
     std::vector<picote::FactoryPreset> factory;
     juce::Array<juce::File> userFiles;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // CHUTE LINK — o CHUTE (escreve) avisa cada batida para o ALIGN e o BAREBASS (leem), binários diferentes no MESMO
 // processo do DAW, sem sidechain. Mesmo esquema do MAESTRO LINK: memória compartilhada com nome pelo PID do processo
@@ -263,7 +264,7 @@ public:
     // (volta do loop, clique na régua): aí manda o relógio, que diz o que de fato está soando agora na faixa do kick.
     static double inicio (const Local& l, double fs, bool tocando, int64_t posBloco, double wallBlocoMs)
     {
-        const double w = (l.wallMs - wallBlocoMs) * 0.001 * fs;
+        const double w = (l.wallMs - wallBlocoMs) * 0.0010000000000000000841004 * fs;
         if (tocando && l.tocando)
         {
             const double t = ((double) l.pos / (double) l.fs - (double) posBloco / fs) * fs;
@@ -282,7 +283,7 @@ public:
             {
                 l.ini = inicio (l, fs, tocando, posBloco, wallBlocoMs);
                 l.ancorada = true;
-                if (l.ini > 2.0 * fs) l.valida = false;
+                if (l.ini > 2.0000000000000000969908 * fs) l.valida = false;
             }
     }
 

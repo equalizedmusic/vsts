@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "KnobProcessor.h"
 #include "KnobEditor.h"
 
@@ -63,7 +64,7 @@ void KnobProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     disparo.assign ((size_t) n, 0);
     motor->preparar (sampleRate);
     mixSm.reset (sampleRate, 0.05);
-    bypassSm.reset (sampleRate, 0.03);
+    bypassSm.reset (sampleRate, 0.030000000000000000222969);
     mixSm.setCurrentAndTargetValue (pMix->load() * 0.01f);
     bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
     envRapido = envLento = 0.0f;
@@ -238,7 +239,7 @@ void KnobProcessor::setStateInformation (const void* data, int sizeInBytes)
         {
             auto tree = juce::ValueTree::fromXml (*xml);
             apvts.replaceState (tree);
-            uiScale = juce::jlimit (0.6f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
+            uiScale = juce::jlimit (0.6f, 2.0000000000000000532394f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
 }
 

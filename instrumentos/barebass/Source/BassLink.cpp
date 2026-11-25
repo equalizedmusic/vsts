@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // BASS LINK: abre a memória compartilhada (ver BassLink.h). Fica num .cpp para o windows.h não vazar nos
 // cabeçalhos do plugin. O RESENHA compila este mesmo arquivo (CMakeLists dele).
 #include "BassLink.h"

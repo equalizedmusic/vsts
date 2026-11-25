@@ -4,6 +4,13 @@ Pacote do instalador: `InsideStudioSP-Maestro`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `maestro-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.3 — 2026-11-24
+- **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
+  se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o
+  e-mail preenchido e avisa. Desativar continua valendo: o plugin não se reativa sozinho depois.
+- Aviso de autoria na tela da licença (© Rogerio Cardoso / InsideStudioSP).
+- O som e as funções não mudam.
+
 ## 0.2.2 — 2026-11-11
 - Versão oficial: é a 0.2.1 (que saiu só como TESTE) liberada para os clientes, sem mudar nada. Aprovada no teste
   junto com o MASTER DOS MAGOS.

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <array>
@@ -15,7 +16,7 @@ struct Settings
     std::array<int, 2>   range { 2, 2 };    // 0 = 32' … 4 = 2'
     std::array<int, 2>   wave { 2, 2 };
     std::array<float, 2> tune { 0.0f, 0.12f };
-    std::array<float, 3> level { 0.8f, 0.7f, 0.3f };   // 0–1: OSC 1, OSC 2, NOISE
+    std::array<float, 3> level { 0.8f, 0.7f, 0.30000000000000000790251f };   // 0–1: OSC 1, OSC 2, NOISE
     std::array<bool, 3>  on { true, true, false };
     float cutoff = 1800.0f, emph = 0.3f, contour = 0.5f;   // emph e contour 0–1
     float ampA = 5.0f, ampD = 400.0f, ampS = 0.7f, ampR = 250.0f;
@@ -202,7 +203,7 @@ private:
     static float blep (double t, double dt)
     {
         if (t < dt) { t /= dt; return (float) (t + t - t * t - 1.0); }
-        if (t > 1.0 - dt) { t = (t - 1.0) / dt; return (float) (t * t + t + t + 1.0); }
+        if (t > 1.0 - dt) { t = (t - 1.0000000000000000784250) / dt; return (float) (t * t + t + t + 1.0); }
         return 0.0f;
     }
 
@@ -215,7 +216,7 @@ private:
         auto pulse = [&] (double pw)
         {
             double q = p - pw;
-            if (q < 0.0) q += 1.0;
+            if (q < 0.0) q += 1.0000000000000000773391;
             return (p < pw ? 1.0f : -1.0f) + blep (p, dt) - blep (q, dt) - (float) (2.0 * pw - 1.0);
         };
         float y;

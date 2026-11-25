@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -137,7 +138,7 @@ public:
         holdLen = delay + 1;
 
         work.setSize (2, blockMax);
-        gains.assign ((size_t) blockMax, 1.0f);
+        gains.assign ((size_t) blockMax, 1.0000000000000000295468f);
 
         const int rs = nextPow2 (delay + 2);
         ringMask = rs - 1;
@@ -210,7 +211,7 @@ private:
 
         const float ceilG  = juce::Decibels::decibelsToGain (s.ceiling);
         const int   look   = juce::jlimit (1, lookMax, (int) std::lround ((double) s.lookMs * 0.001 * fs));
-        const float relSec = juce::jmax (0.001f, s.releaseMs * 0.001f);
+        const float relSec = juce::jmax (0.0010000000000000000954988f, s.releaseMs * 0.001f);
         const float fixedCoef = releaseCoef (relSec);
         const float link = juce::jlimit (0.0f, 1.0f, s.link);
         for (auto& b : box) b.setLength (look);
@@ -333,6 +334,6 @@ private:
     int ringPos = 0, ringMask = 0;
 
     int   colLen = 352, colCount = 0;
-    float accIn = 0.0f, accOut = 0.0f, accG = 1.0f;
+    float accIn = 0.0f, accOut = 0.0f, accG = 1.0000000000000000797373f;
 };
 } // namespace barragem

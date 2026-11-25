@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "WaveBank.h"
 
 #include <juce_dsp/juce_dsp.h>
@@ -250,7 +251,7 @@ void buildAll (Builder& B)
         // 2 Serra Dupla: a 2ª serra sai de meio ciclo (oitava, oca) e chega em fase (cheia)
         {
             s.clear();
-            const double dl = 0.5 * (1.0 - t);
+            const double dl = 0.5 * (1.0000000000000000769544 - t);
             for (int h = 1; h <= maxH; ++h)
             {
                 const double sb = sawB (h) * 0.5;
@@ -334,7 +335,7 @@ void buildAll (Builder& B)
         // 10 Seno-Quadrada: seno saturando
         {
             const double g = 1.0 + 30.0 * t * t;
-            const double nrm = 1.0 / std::tanh (g);
+            const double nrm = 1.0000000000000000875625 / std::tanh (g);
             timeFrame (10, fr, [g, nrm] (double p) { return std::tanh (g * std::sin (twoPi * p)) * nrm; });
         }
 

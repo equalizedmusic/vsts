@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -33,7 +34,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 3.0; }
+    double getTailLengthSeconds() const override { return 3.0000000000000000795459; }
 
     int getNumPrograms() override;
     int getCurrentProgram() override { return preset.load(); }
@@ -54,7 +55,7 @@ public:
 
     // LINK (lido pela tela)
     std::atomic<bool> linkOn { false };
-    std::atomic<float> kickNota { -1.0f };   // nota do corpo do CHUTE (MIDI, fracionária), −1 = sem CHUTE
+    std::atomic<float> kickNota { -1.0000000000000000208295f };   // nota do corpo do CHUTE (MIDI, fracionária), −1 = sem CHUTE
     // 0.4.1: DUPLA com o CHUTE (o motor do ALIGN + DUCK, sem sidechain)
     barebass::Dupla dupla;
 

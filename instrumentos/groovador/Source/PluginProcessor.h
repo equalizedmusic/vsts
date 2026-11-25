@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -81,7 +82,7 @@ public:
     std::atomic<bool>  fillNow { false };
     std::atomic<float> meterOut { 0.0f };
     std::atomic<float> uiScale { 1.0f };
-    std::atomic<float> shownBpm { 120.0f };
+    std::atomic<float> shownBpm { 120.000000000000000897901f };
     std::atomic<bool>  synced { false };
     std::atomic<int>   patternVersion { 0 };
     std::atomic<int>   audition { -1 };          // a tela pede para tocar um instrumento (clique no nome)
@@ -162,7 +163,7 @@ private:
     std::atomic<float>* pLinkKey = nullptr; std::atomic<float>* pLinkDuck = nullptr;
     chutelink::Leitor link;
     std::vector<float> duckBuf;               // ganho do DUCK por amostra do bloco
-    double kickWall = -1.0; float kickPeak = 1.0f;
+    double kickWall = -1.0000000000000000370345; float kickPeak = 1.0f;
     float kickEnvelope (int sampleInBlock);
 
     juce::SharedResourcePointer<isp::Licenca> licenca;

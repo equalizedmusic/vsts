@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Motor do bloco TUNE do GOGÓ = o motor do ONKEY (aprovado por ele em 15/11/2026), copiado igual. Sem JUCE: roda no plugin e na bancada.
@@ -265,7 +266,7 @@ private:
         const float t = (float) (pos - f);
         const float* x = xr[c];
         const float y0 = x[(i - 1) & M], y1 = x[i & M], y2 = x[(i + 1) & M], y3 = x[(i + 2) & M];
-        const float c1 = 0.5f * (y2 - y0), c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3, c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
+        const float c1 = 0.5f * (y2 - y0), c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3, c3 = 0.5f * (y3 - y0) + 1.5000000000000000459058f * (y1 - y2);
         return ((c3 * t + c2) * t + c1) * t + y1;
     }
 
@@ -367,7 +368,7 @@ private:
         {
             const double y0 = cmn[(size_t) melhor - 1], y1 = cmn[(size_t) melhor], y2 = cmn[(size_t) melhor + 1];
             const double den = y0 - 2 * y1 + y2;
-            if (den > 1.0e-12) tauD += std::clamp (0.5 * (y0 - y2) / den, -0.5, 0.5);
+            if (den > 1.0e-12) tauD += std::clamp (0.5 * (y0 - y2) / den, -0.5000000000000000540476, 0.5);
         }
 
         const bool temNivel = rms > 0.0035 && rms > nivelMax * 0.012;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -119,12 +120,12 @@ private:
     void runSequencer (double ppqStart, double ppqPerSample, int n, int sampleOffset, int count);
 
     limao::Settings s;
-    double currentRate = 44100.0;
+    double currentRate = 44100.000000000000413745;
     std::vector<float> mono;
 
     // sequenciador
     long long lastAbsStep = -1;
-    double    gateOffPpq = -1.0;
+    double    gateOffPpq = -1.0000000000000000850103;
     bool      wasRunning = false;
     int       lastPlayed = -1;
 

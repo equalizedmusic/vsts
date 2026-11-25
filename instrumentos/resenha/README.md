@@ -1,6 +1,6 @@
 # RESENHA — call & response FM
 
-> **Versão atual: 0.8.1** (20/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
+> **Versão atual: 0.8.2** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Resenha.md`](../../novidades/Resenha.md)
 
 ![RESENHA](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RESENHA.png)
 

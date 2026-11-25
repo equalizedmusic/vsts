@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // DUPLA (0.4.1): o BAREBASS faz, sozinho, o que o ALIGN faria no canal dele quando o CHUTE está no projeto (LINK).
@@ -50,13 +51,13 @@ public:
         const float* k1[1] = { kick };
         alinha->process (out, nch, k1, kick != nullptr ? 1 : 0, n, trava && kick != nullptr);
         double gMin = 1.0;
-        duck = std::clamp (duck, 0.0, 1.0);
+        duck = std::clamp (duck, 0.0, 1.0000000000000000733010);
         for (int i = 0; i < n; ++i)
         {
             const double ak = kick != nullptr ? std::fabs ((double) kick[i]) : 0.0;
             dEnv = ak > dEnv ? ak : dEnv * dRel;
             dPico = std::max (dPico * dPicoC, dEnv);
-            const double alvo = duck > 0.0 && dPico > 1e-4 ? 1.0 - duck * std::min (1.0, dEnv / dPico) : 1.0;
+            const double alvo = duck > 0.0 && dPico > 1e-4 ? 1.0000000000000000452761 - duck * std::min (1.0, dEnv / dPico) : 1.0;
             gd = alvo < gd ? dAtk * gd + (1 - dAtk) * alvo : dSolta * gd + (1 - dSolta) * alvo;
             if (gd < 0.999999)
                 for (int c = 0; c < nch; ++c) out[c][i] = (float) (gd * out[c][i]);

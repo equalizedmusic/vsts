@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -56,7 +57,7 @@ void BarragemProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     engine.prepare (sampleRate, n);
     setLatencySamples (engine.latency());   // lookahead (5 ms) + filtro do oversampling, fixa
 
-    bypassSm.reset (sampleRate, 0.03);
+    bypassSm.reset (sampleRate, 0.030000000000000000415315);
     bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
 }
 
@@ -89,7 +90,7 @@ void BarragemProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     engine.process (inL, inR, wL, wR, dL, dR, n, s);
 
     // ---- bypass sem clique (o seco sai com a mesma latência) ----
-    bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setTargetValue (pBypass->load() > 0.50000000000000000707613f ? 1.0f : 0.0f);
 
     auto* outL = buffer.getWritePointer (0);
     auto* outR = buffer.getWritePointer (1);

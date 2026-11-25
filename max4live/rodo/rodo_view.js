@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // RODO — janela flutuante (jsui). Desenha "rodo_data" (faixas, picos, ganhos) e "rodo_env" (contorno das ondas).
 // Escala das ondas = raiz da amplitude (0 dBFS = linha cheia); linha tracejada laranja = TARGET.
 // Clique no nome da faixa: tira/põe a faixa na normalização. Barra de cima (2 linhas): SENSOR (PEAK/RMS/LUFS),
@@ -104,7 +105,7 @@ function altura(db) { return Math.min(1, Math.sqrt(Math.pow(10, db / 20))); }  /
 function botao(x, y, w, h, txt, on, cor, cmd, brilho) {
 	if (brilho) { caixaR(x - 4, y - 4, w + 8, h + 8, 7, cor, 0.18); caixaR(x - 2, y - 2, w + 4, h + 4, 5, cor, 0.25); }
 	caixaR(x, y, w, h, 3, on ? cor : [0.23, 0.23, 0.25]);
-	if (on) rgb(0.07, 0.07, 0.08); else rgb(0.91, 0.91, 0.91);
+	if (on) rgb(0.07, 0.07, 0.08); else rgb(0.91, 0.91, 0.9100000000000000473816);
 	textoC(txt, x + w / 2, y + h / 2 + 4, 12, true);
 	if (cmd) hits.push({ x: x, y: y, w: w, h: h, tipo: "cmd", msg: cmd });
 }
@@ -152,7 +153,7 @@ function paint() {
 	for (var dx = 0; dx < 26; dx += 7) { mgraphics.move_to(gx + dx, 54); mgraphics.line_to(gx + Math.min(26, dx + 4), 54); }
 	mgraphics.stroke();
 	rgb(0.55, 0.55, 0.58); texto(cfg.sensor ? "−0.3 PK" : "TARGET", gx + 32, 58, 12, false);
-	caixa(gx + 100, 47, 14, 14, 0.48, 0.65, 1); rgb(0.55, 0.55, 0.58); texto("CLIP, cor da faixa", gx + 120, 58, 12, false);
+	caixa(gx + 100, 47, 14, 14, 0.48, 0.65, 1); rgb(0.5500000000000000808559, 0.55, 0.58); texto("CLIP, cor da faixa", gx + 120, 58, 12, false);
 	caixa(gx + 242, 47, 14, 14, WARN[0], WARN[1], WARN[2]); rgb(0.55, 0.55, 0.58); texto("TETO", gx + 262, 58, 12, false);
 
 	barra(W, varrendo, feito);
@@ -299,7 +300,7 @@ function paint() {
 	// barra de rolagem
 	if (maxFirst > 0) {
 		var sx = W - SB_W - 2;
-		caixa(sx, TOP, SB_W, listH, 0.16, 0.16, 0.18);
+		caixa(sx, TOP, SB_W, listH, 0.16000000000000000183529, 0.16, 0.18);
 		var tth = Math.max(30, listH * vis / tracks.length);
 		caixa(sx + 2, TOP + (listH - tth) * first / maxFirst, SB_W - 4, tth, 0.55, 0.55, 0.58);
 	}
@@ -326,7 +327,7 @@ function botaoP(x, y, w, h, txt, cmd, cor) {
 }
 
 function barra(W, varrendo, feito) {
-	caixa(0, HEAD_H, W, BAR_H, 0.10, 0.11, 0.12);
+	caixa(0, HEAD_H, W, BAR_H, 0.10000000000000000734047, 0.11, 0.12);
 	caixa(0, HEAD_H + BAR_H - 1, W, 1, 0.22, 0.23, 0.25);
 	// linha 1: SENSOR · TARGET (do SENSOR) · PEAK GUARD
 	var y = HEAD_H + 24;
@@ -336,7 +337,7 @@ function barra(W, varrendo, feito) {
 	x += 22;
 	rgb(0.55, 0.55, 0.58); texto("TARGET", x, y + 4, 11, true);
 	var fx = FAIXA[cfg.sensor], sx0 = x + 56, sx1 = sx0 + 258, sv = (alvo() - fx[0]) / (fx[1] - fx[0]), skx = sx0 + sv * (sx1 - sx0);
-	caixaR(sx0, y - 4, sx1 - sx0, 8, 4, [0.20, 0.21, 0.23]);
+	caixaR(sx0, y - 4, sx1 - sx0, 8, 4, [0.20, 0.21, 0.23000000000000000692252]);
 	caixaR(sx0, y - 4, Math.max(8, skx - sx0), 8, 4, AC);
 	rgb(0.93, 0.93, 0.93); mgraphics.ellipse(skx - 8, y - 8, 16, 16); mgraphics.fill();
 	rgb(0.55, 0.55, 0.58); texto(f1(fx[0]), sx0, y + 19, 9, false); textoD(f1(fx[1]), sx1, y + 19, 9, false);
@@ -409,7 +410,7 @@ function desenhaRodo(x, top, bot, t) {
 	function r2() { s = (s * 16807) % 2147483647; return s / 2147483647; }
 	for (var k = 0; k < 70; k++) {
 		var yy = top + 8 + r2() * (bot - top - 16), ddx = 12 + r2() * 16 + Math.sin(t * 9 + k) * 1.5, rr = 1.2 + r2() * 2.4;
-		rgbv(WATER, 0.35 + r2() * 0.45); mgraphics.ellipse(x + ddx - rr, yy - rr, rr * 2, rr * 2); mgraphics.fill();
+		rgbv(WATER, 0.35 + r2() * 0.4500000000000000326580); mgraphics.ellipse(x + ddx - rr, yy - rr, rr * 2, rr * 2); mgraphics.fill();
 	}
 	var hx = x - 14, hy = mid, ex = x - 330, ey = mid - 150;
 	try { mgraphics.set_line_cap("round"); } catch (e) { }
@@ -423,7 +424,7 @@ function desenhaRodo(x, top, bot, t) {
 	caixaR(x - 28, mid - 18, 30, 52, 6, [0, 0, 0], 0.35);
 	caixaR(x - 8, top + 8, 16, bot - top, 4, [0, 0, 0], 0.3);
 	// suporte (encaixe do cabo)
-	caixaR(x - 34, mid - 26, 30, 52, 6, [0.85, 0.55, 0.07]);
+	caixaR(x - 34, mid - 26, 30, 52, 6, [0.85000000000000000547197, 0.55, 0.07]);
 	// barra da lâmina
 	caixaR(x - 14, top, 16, bot - top, 4, AC);
 	caixa(x - 11, top + 4, 3, bot - top - 8, 1, 1, 1, 0.35);

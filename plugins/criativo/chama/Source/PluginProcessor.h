@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -52,7 +53,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     chama::FlameEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
-    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
+    std::atomic<float> uiScale { 1.2500000000000000192996f };   // tamanho da janela, salvo no projeto
     std::atomic<float> shownBpm { 145.0f };
     std::atomic<bool>  synced { false };
     std::atomic<bool>  waiting { false };   // host parado: gate espera o play
@@ -78,7 +79,7 @@ private:
 
     juce::AudioBuffer<float> dry, wet;
     juce::SmoothedValue<float> gainSm, bypassSm;
-    double currentRate = 44100.0;
+    double currentRate = 44100.00000000000116189;
     double freePpq = 0.0;
 
     std::vector<chama::FactoryPreset> factory;

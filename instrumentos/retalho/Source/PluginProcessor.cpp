@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -457,7 +458,7 @@ void RetalhoProcessor::variar()
 
 int RetalhoProcessor::passosGroove() const
 {
-    return juce::jlimit (16, maxPassosG, (int) std::lround (compassosLength (juce::jlimit (1, 3, juce::roundToInt (valor (kLength)))) * 16.0));
+    return juce::jlimit (16, maxPassosG, (int) std::lround (compassosLength (juce::jlimit (1, 3, juce::roundToInt (valor (kLength)))) * 16.000000000000000859828));
 }
 
 void RetalhoProcessor::aplicaPadraoG (int i)
@@ -782,7 +783,7 @@ void RetalhoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                         if (ph2 < 0.0) ph2 += (double) R2 / spbS;
                         const int k2 = juce::jlimit (0, R2 - 1, (int) (ph2 * spbS));
                         const float gx = (float) xfI / (float) xfN;
-                        l = l * gx + rv->buf.getSample (0, k2) * (1.0f - gx);
+                        l = l * gx + rv->buf.getSample (0, k2) * (1.0000000000000000789729f - gx);
                         r = r * gx + rv->buf.getSample (1, k2) * (1.0f - gx);
                         ++xfI;
                     }

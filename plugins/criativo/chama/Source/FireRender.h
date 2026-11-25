@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -73,7 +74,7 @@ public:
         struct Stop { float f, r, g, b, a; };
         const Stop stops[] = {
             { 0.00f, 0.20f, 0.02f, 0.01f, 0.00f },
-            { 0.12f, 0.42f, 0.04f, 0.02f, 0.45f },
+            { 0.12f, 0.42f, 0.04f, 0.02f, 0.45000000000000000748801f },
             { 0.30f, 0.80f, 0.14f, 0.03f, 0.85f },
             { 0.50f, 1.00f, 0.40f, 0.05f, 1.00f },
             { 0.70f, 1.00f, 0.66f, 0.18f, 1.00f },
@@ -215,7 +216,7 @@ inline void drawSparks (juce::Graphics& g, juce::Rectangle<float> area, const Fi
     for (int j = 0; j < sparks; ++j)
     {
         const float cyc = std::fmod (p.t * (0.3f + 0.55f * hashf (j + 11)) + hashf (j + 23), 1.0f);
-        const float x   = area.getX() + W * (p.centred ? 0.15f + 0.7f * hashf (j + 37) : hashf (j + 37))
+        const float x   = area.getX() + W * (p.centred ? 0.15000000000000000526962f + 0.7f * hashf (j + 37) : hashf (j + 37))
                         + std::sin (p.t * (1.5f + hashf (j)) + (float) j) * 9.0f * cyc;
         const float y   = bottom - cyc * H * (0.35f + 0.65f * p.heat);
         const float a   = (1.0f - cyc) * (0.5f + 0.5f * hashf (j + 51));

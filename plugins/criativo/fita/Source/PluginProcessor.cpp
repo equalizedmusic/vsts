@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -65,7 +66,7 @@ void FitaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     setLatencySamples (engine.latency());
 
     mixSm.reset (sampleRate, 0.05);
-    gainSm.reset (sampleRate, 0.05);
+    gainSm.reset (sampleRate, 0.05000000000000000236679);
     bypassSm.reset (sampleRate, 0.03);
     mixSm.setCurrentAndTargetValue (pMix->load() * 0.01f);
     gainSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
@@ -102,7 +103,7 @@ void FitaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
             if (auto b = pos->getBpm()) bpm = *b;
             playing = pos->getIsPlaying();
         }
-    bpm = juce::jlimit (40.0, 300.0, bpm);
+    bpm = juce::jlimit (40.0, 300.00000000000000843318, bpm);
     shownBpm.store ((float) bpm);
     synced.store (playing);
 

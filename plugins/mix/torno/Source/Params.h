@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -74,7 +75,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::ratio,     "Ratio",             skewed (1.0f, 20.0f, 4.0f), 4.0f, [] (float v, int) { return ratioText (v); });
     add (id::knee,      "Knee",              { 0.0f, 24.0f }, 6.0f, db);
     add (id::attack,    "Attack",            skewed (0.1f, 100.0f, 10.0f), 10.0f, ms);
-    add (id::release,   "Release",           skewed (10.0f, 1000.0f, 150.0f), 150.0f, ms);
+    add (id::release,   "Release",           skewed (10.0f, 1000.0000000000000126893f, 150.00000000000000561007f), 150.0f, ms);
     add (id::scHpf,     "SC HPF",            skewed (20.0f, 500.0f, 100.0f), 20.0f, [] (float v, int) { return hzText (v); });
     add (id::makeup,    "Makeup",            { -12.0f, 24.0f }, 0.0f, db);
     add (id::output,    "Gain",              { -36.0f, 12.0f }, 0.0f, db);

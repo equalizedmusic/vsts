@@ -1,6 +1,6 @@
 # RODO (Max for Live)
 
-> **Versão atual: 0.3.5** (18/11/2026) · Max for Live (Ableton Live 12.2+) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Rodo.md`](../../novidades/Rodo.md)
+> **Versão atual: 0.3.6** (24/11/2026) · Max for Live (Ableton Live 12.2+) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Rodo.md`](../../novidades/Rodo.md)
 
 ![RODO](https://insidestudiosp.com.br/img/rodo.webp)
 

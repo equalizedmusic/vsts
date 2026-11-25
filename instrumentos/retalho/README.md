@@ -1,7 +1,6 @@
 # RETALHO
 
-> **Versão atual: 0.1.5** (17/11/2026) · TESTE aprovado, sem licença e ainda fora do site; lançamento previsto para
-> 23/11/2026 · notas em [`novidades/Retalho.md`](../../novidades/Retalho.md)
+> **Versão atual: 0.2.1** (24/11/2026) · pago, com licença, no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (lançado em 19/11/2026) · notas em [`novidades/Retalho.md`](../../novidades/Retalho.md)
 
 ![RETALHO](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/RETALHO.png)
 

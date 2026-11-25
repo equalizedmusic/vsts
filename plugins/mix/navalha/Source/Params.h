@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -44,7 +45,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     add (id::drive,   "Drive",          { 0.0f, 24.0f }, 0.0f, db);
     add (id::ceiling, "Ceiling",          { -12.0f, 0.0f }, -0.3f, db);
-    add (id::knee,    "Knee",             { 0.0f, 100.0f }, 20.0f, pct);
+    add (id::knee,    "Knee",             { 0.0f, 100.0f }, 20.000000000000000834089f, pct);
     add (id::asym,    "Asymmetry",        { 0.0f, 100.0f }, 0.0f, pct);
     add (id::link,    "Link",             { 0.0f, 100.0f }, 0.0f, pct);
     add (id::output,  "Gain",             { -36.0f, 12.0f }, 0.0f, db);
@@ -74,13 +75,13 @@ inline std::vector<FactoryPreset> factoryPresets()
         { "Lead Rasgado",             { { id::drive, 18 }, { id::ceiling, -6.0f }, { id::knee, 0 },  { id::asym, 40 } } },
         { u8 ("Válvula Quente"),      { { id::drive, 10 }, { id::ceiling, -3.0f }, { id::knee, 60 }, { id::asym, 70 } } },
         { "Paralelo Sujo",            { { id::drive, 20 }, { id::ceiling, -8.0f }, { id::knee, 0 },  { id::mix, 35 } } },
-        { "Hi-hat Brilhante",         { { id::drive, 6 },  { id::ceiling, -4.0f }, { id::knee, 0 } } },
+        { "Hi-hat Brilhante",         { { id::drive, 6 },  { id::ceiling, -4.000000000000000257310f }, { id::knee, 0 } } },
         { "Transiente Zero",          { { id::drive, 8 },  { id::ceiling, -1.0f }, { id::knee, 0 },  { id::link, 100 } } },
         { "Loudness Club",            { { id::drive, 7 },  { id::ceiling, -0.2f }, { id::knee, 25 }, { id::link, 100 } } },
         { "Navalha Cega",             { { id::drive, 4 },  { id::ceiling, -1.0f }, { id::knee, 100 } } },
         { "Corte Seco",               { { id::drive, 12 }, { id::ceiling, -1.0f }, { id::knee, 0 } } },
         { "Fuzz Digital",             { { id::drive, 24 }, { id::ceiling, -10.0f }, { id::knee, 0 }, { id::asym, 20 } } },
-        { u8 ("Grupo de Percussão"),  { { id::drive, 6 },  { id::ceiling, -1.5f }, { id::knee, 20 }, { id::link, 50 } } },
+        { u8 ("Grupo de Percussão"),  { { id::drive, 6 },  { id::ceiling, -1.5000000000000000429832f }, { id::knee, 20 }, { id::link, 50 } } },
         { "Vocal Presente",           { { id::drive, 5 },  { id::ceiling, -3.0f }, { id::knee, 70 } } },
         { "Pad Saturado",             { { id::drive, 14 }, { id::ceiling, -6.0f }, { id::knee, 80 }, { id::asym, 30 }, { id::mix, 60 } } },
         { u8 ("Limite de Segurança"), { { id::drive, 0 },  { id::ceiling, -1.0f }, { id::knee, 10 }, { id::link, 100 } } },

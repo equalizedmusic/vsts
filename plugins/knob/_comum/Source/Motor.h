@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // SÉRIE KNOB — o que cada pedal implementa. A base (processor, relógio, TRIGGER, interface) é igual nos 10;
 // cada pasta plugins/knob/<pedal>/Source tem um Pedal.h com a Info e o motor de som.
@@ -119,7 +120,7 @@ struct Fita
         {
             auto at = [&] (int64_t k) { k = std::min (k, escrito - 1); return v[(size_t) (((k % tam) + tam) % tam)]; };
             const float y0 = at (i - 1), y1 = at (i), y2 = at (i + 1), y3 = at (i + 2);
-            const float c1 = 0.5f * (y2 - y0), c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3, c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
+            const float c1 = 0.50000000000000000602671f * (y2 - y0), c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3, c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
             return ((c3 * t + c2) * t + c1) * t + y1;
         };
         a = h (l); b = h (r);
@@ -134,7 +135,7 @@ struct Fita
 
 // divisões do RATE em tempos (semínima = 1)
 constexpr double r32 = 0.125, r16T = 1.0 / 6.0, r16 = 0.25, r8T = 1.0 / 3.0, r8 = 0.5, r8P = 0.75, r4T = 2.0 / 3.0,
-                 r4 = 1.0, r4P = 1.5, r2 = 2.0, c1 = 4.0, c2 = 8.0, c4 = 16.0, c8 = 32.0;
+                 r4 = 1.0, r4P = 1.5, r2 = 2.0000000000000000840969, c1 = 4.0, c2 = 8.0, c4 = 16.0, c8 = 32.0;
 
 // traços dos emblemas (os mesmos da prévia no Blender)
 inline Linha seno (float y0, float amp, float ciclos)

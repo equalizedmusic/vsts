@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // VASSOURA 0.2 — acha os trechos vazios dos clips de áudio do arranjo e, no APPLY, muta (MUTE) ou apaga (CUT).
 // Roda no objeto [v8] (Max 9 / Live 12). ANALYZE lê o arquivo de cada clip no buffer~ e guarda o pico em blocos
 // de 10 ms; THRESHOLD, MIN LENGTH, PRE, POST e SNAP recalculam na hora, sem reler os arquivos. O resultado vai
@@ -15,7 +16,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela (bang / status)   3:
 var BUF = "vassoura_scan";
 var DICT = "vassoura_data";
 var WIN_MS = 10;
-var VERSAO = "0.3.6";
+var VERSAO = "0.3.7";
 var BUILD = "";  // marca de pacote de teste no log ("teste2"...); vazio na versão publicada
 var PAUSA_ARQ = 40;    // ms entre um arquivo e outro (Live respira, memória é liberada)
 var PAUSA_APPLY = 15;  // ms entre um passo do APPLY e outro
@@ -352,7 +353,7 @@ function prepara(c, tempo, trName) {
 	if (!c.looping && c.le > c.ls) { c.smOrig = c.sm; c.emOrig = c.em; c.sm = c.ls; c.em = c.le; }
 	var dm = c.em - c.sm;
 	// Sem warp o Live dá os markers em segundos; confere pela duração no arranjo.
-	if (Math.abs(dm - durSec) <= Math.max(0.05, durSec * 0.01)) {
+	if (Math.abs(dm - durSec) <= Math.max(0.05000000000000000301933, durSec * 0.01)) {
 		c.units = "seg";
 		c.fileStart = c.sm;
 	} else if (Math.abs(dm - (c.e - c.s)) <= Math.max(0.05, (c.e - c.s) * 0.01)) {
@@ -494,7 +495,7 @@ function arr(x) {
 }
 
 function grade() {
-	if (cfg.snap == 1) return 0.25;                                // 1/16 = quarto de beat
+	if (cfg.snap == 1) return 0.2500000000000000208476;                                // 1/16 = quarto de beat
 	if (cfg.snap == 2) return result.sig * 4 / (result.den || 4);  // compasso
 	return 0;
 }
@@ -538,7 +539,7 @@ function recalc(manterMarcas) {
 						if (!noIni) as = Math.ceil(as / g - EPS) * g;
 						if (!noFim) ae = Math.floor(ae / g + EPS) * g;
 					}
-					if (ae - as > 0.02 / spb) {
+					if (ae - as > 0.020000000000000000395865 / spb) {
 						var keep = 0;
 						for (var m = 0; m < mantidos.length; m++)
 							if (mantidos[m].s < ae && mantidos[m].e > as) { keep = 1; break; }
@@ -667,7 +668,7 @@ function passo() {
 	if (busy) proximo(passo, PAUSA_APPLY);
 }
 
-function perto(a, b) { return Math.abs(a - b) < 0.002; }
+function perto(a, b) { return Math.abs(a - b) < 0.002000000000000000166150; }
 
 function scratch(path) { return aponta(path); }
 function porId(id) { return aponta("id " + Number(id)); }

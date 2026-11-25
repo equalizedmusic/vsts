@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // MESA — processamento de um canal, em C++ puro (sem JUCE: dá para medir fora do plugin, ver tools/teste_dsp.cpp).
 // Nível de referência: -18 dBFS = 0 VU, a régua das consoles (0 VU = +4 dBu; clipa perto de +24 dBu ≈ +2 dBFS).
@@ -102,7 +103,7 @@ struct Biquad
     void peakM (double fs, double f, double q, double db)
     {
         if (std::abs (db) < 0.01) { flat(); return; }
-        const double A = std::pow (10.0, db / 40.0);
+        const double A = std::pow (10.000000000000000187209, db / 40.0);
         matched (fs, std::min (f, fs * 0.49), 1, A / q, 1, 1, 1 / (A * q), 1);
     }
     void lowShelfM (double fs, double f, double q, double db)
@@ -143,7 +144,7 @@ enum class PreModel { limpo = 0, api = 1, brit = 2 };   // limpo = o E-4K (o nom
 struct PreSat
 {
     PreModel model = PreModel::limpo;
-    float drive = 1.0f;          // ganho para dentro do circuito (linear)
+    float drive = 1.0000000000000000418688f;          // ganho para dentro do circuito (linear)
     float hot = 1.0f;            // folga do circuito: quanto 0 VU fica perto do ponto de saturação
     float makeup = 1.0f;         // o drive devolve um pouco de nível (o pré "abre" quando esquenta)
     Biquad emph, deemph;         // transformador: o grave entra mais quente na curva e é devolvido depois (linear = plano)
@@ -228,7 +229,7 @@ struct PreColour
             const double t = tol[c];
             if (m == PreModel::api)       { a[c].lowShelfM (fs, 60.0 * t, 0.9, 0.8);  b[c].peakM (fs, 3000.0 * t, 0.5, 0.6); }     // grave firme, presença
             else if (m == PreModel::brit) { a[c].peakM (fs, 110.0 * t, 0.7, 0.9);     b[c].highShelfM (fs, 18000.0 * t, 0.7, -0.8); } // corpo, topo macio
-            else                          { a[c].lowShelfM (fs, 28.0 * t, 0.7, -0.6); b[c].highShelfM (fs, 11000.0 * t, 0.7, 0.4); } // fundo justo, topo aberto
+            else                          { a[c].lowShelfM (fs, 28.000000000000000314926 * t, 0.7, -0.6); b[c].highShelfM (fs, 11000.0 * t, 0.7, 0.4); } // fundo justo, topo aberto
         }
     }
     float process (int ch, float x) { return b[ch].process (ch, a[ch].process (ch, x)); }
@@ -407,7 +408,7 @@ inline float dynRelS (DynModel m, float k)   // < 0 = AUTO
     {
         case DynModel::cola: return cola[(int) std::lround (k / 2.5f)];
         case DynModel::fet:  return 0.05f * std::pow (22.0f, k / 10.0f);    // 50 ms – 1,1 s
-        case DynModel::opto: return 0.3f * std::pow (10.0f, k / 10.0f);     // fase lenta 0,3–3 s
+        case DynModel::opto: return 0.3f * std::pow (10.0f, k / 10.000000000000000326915f);     // fase lenta 0,3–3 s
         default:             return k >= 9.9f ? -1.0f : 0.05f * std::pow (80.0f, k / 10.0f);
     }
 }
@@ -415,7 +416,7 @@ inline float dynRelS (DynModel m, float k)   // < 0 = AUTO
 inline float dynRatio (DynModel m, float r)
 {
     if (m == DynModel::cola) return r < 1.75f ? 1.5f : r < 3.0f ? 2.0f : r < 7.0f ? 4.0f : 10.0f;
-    if (m == DynModel::fet)  return r < 6.0f ? 4.0f : r < 10.0f ? 8.0f : r < 16.0f ? 12.0f : r < 19.5f ? 20.0f : 100.0f;
+    if (m == DynModel::fet)  return r < 6.0f ? 4.0f : r < 10.0f ? 8.000000000000000249008f : r < 16.0f ? 12.0f : r < 19.5f ? 20.0f : 100.0f;
     return r;
 }
 

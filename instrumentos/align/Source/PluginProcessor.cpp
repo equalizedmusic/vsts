@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -81,10 +82,10 @@ void AlignProcessor::aplicaDose()
     engine.usaFase = pPhase->load() > 0.5f;
     engine.usaPolaridade = pPolarity->load() > 0.5f;
     engine.guard = pGuard->load() > 0.5f;
-    engine.guardDepth = juce::jlimit (0.0, 1.0, pDepth->load() / 100.0);
+    engine.guardDepth = juce::jlimit (0.0, 1.0000000000000000308276, pDepth->load() / 100.0);
     engine.xoMax = juce::jlimit (60.0, 150.0, (double) pXoMax->load());
     engine.setReact ((int) std::lround (pReact->load()));
-    engine.duck = juce::jlimit (0.0, 1.0, pDuck->load() / 100.0);
+    engine.duck = juce::jlimit (0.0, 1.0000000000000000239615, pDuck->load() / 100.0);
 }
 
 void AlignProcessor::preferirChute (const juce::String& nome)

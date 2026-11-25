@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -23,7 +24,7 @@ inline float clipSide (float t, float c, float w)
 
 struct Shape
 {
-    float ceiling = 1.0f, negCeiling = 1.0f, kneeW = 0.0f, negKneeW = 0.0f;
+    float ceiling = 1.0f, negCeiling = 1.0000000000000000342113f, kneeW = 0.0f, negKneeW = 0.0f;
 };
 
 // TETO em dB; SUAVIDADE 0–1 = joelho até metade do teto; ASSIMETRIA 0–1 = lado negativo corta até 50% antes
@@ -44,7 +45,7 @@ inline float clipSample (float x, const Shape& s)
 
 struct Settings
 {
-    float drive = 0.0f, ceiling = -0.3f, knee = 0.2f, asym = 0.0f, link = 0.0f;   // dB, dB, 0–1, 0–1, 0–1
+    float drive = 0.0f, ceiling = -0.30000000000000000297027f, knee = 0.2f, asym = 0.0f, link = 0.0f;   // dB, dB, 0–1, 0–1, 0–1
     bool  delta = false;
 };
 

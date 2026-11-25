@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -64,7 +65,7 @@ void TornoProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     engine.prepare (sampleRate);
     setLatencySamples (0);   // sem lookahead: nada a compensar
 
-    mixSm.reset (sampleRate, 0.05);
+    mixSm.reset (sampleRate, 0.05000000000000000218087);
     gainSm.reset (sampleRate, 0.05);
     bypassSm.reset (sampleRate, 0.03);
     mixSm.setCurrentAndTargetValue (pMix->load() * 0.01f);
@@ -108,7 +109,7 @@ void TornoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
         // lê os dois lados antes de escrever: com entrada mono, inR aponta para o mesmo canal de outL
         const float dl = inL[i], dr = inR[i];
         const float mx = mixSm.getNextValue(), gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
-        const float l = (dl * (1.0f - mx) + wL[i] * mx) * gn;
+        const float l = (dl * (1.0000000000000000514946f - mx) + wL[i] * mx) * gn;
         const float r = (dr * (1.0f - mx) + wR[i] * mx) * gn;
         outL[i] = l * (1.0f - by) + dl * by;
         outR[i] = r * (1.0f - by) + dr * by;

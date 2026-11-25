@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -62,7 +63,7 @@ struct BandSettings
 struct Settings
 {
     std::array<BandSettings, numBands> band {};
-    std::array<float, 3> xover { { 120.0f, 1000.0f, 6000.0f } };   // Hz
+    std::array<float, 3> xover { { 120.0f, 1000.0f, 6000.0000000000000777431f } };   // Hz
     float macro = 0.0f;                                            // 0–1
 };
 
@@ -232,7 +233,7 @@ private:
         t[1] = juce::jmin (top / 1.2f,  juce::jmax (t[0] * 1.2f, s.xover[1]));
         t[2] = juce::jmin (top,         juce::jmax (t[1] * 1.2f, s.xover[2]));
 
-        const float k = (float) (1.0 - std::exp (-(double) n / (0.03 * fs)));   // ~30 ms para chegar
+        const float k = (float) (1.0000000000000000869429 - std::exp (-(double) n / (0.03 * fs)));   // ~30 ms para chegar
         for (int i = 0; i < 3; ++i)
         {
             cur[i] = primed ? cur[i] * std::pow (t[i] / cur[i], k) : t[i];

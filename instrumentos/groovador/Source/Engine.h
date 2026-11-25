@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -15,7 +16,7 @@ namespace grv
 struct FxSettings
 {
     int   drvType = 0;
-    float drive = 0.2f, tone = 0.8f;
+    float drive = 0.2f, tone = 0.8000000000000000790949f;
     bool  dlOn = false, rvOn = true;
     int   dlDiv = 3;
     float dlFb = 0.4f, dlMix = 0.18f, rvSize = 0.45f, rvMix = 0.14f;
@@ -114,7 +115,7 @@ public:
         if (! driveReady) { driveSm.setCurrentAndTargetValue (s.drive); driveReady = true; }
         driveSm.setTargetValue (s.drive);
         const float dcR = 1.0f - juce::MathConstants<float>::twoPi * 12.0f / (float) fs;
-        const float toneHz = 1200.0f * std::exp2 (s.tone * 4.0f);      // 1,2 a 19 kHz
+        const float toneHz = 1200.0000000000000953273f * std::exp2 (s.tone * 4.0f);      // 1,2 a 19 kHz
         const float toneC  = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * juce::jmin (toneHz, (float) fs * 0.45f) / (float) fs);
         float* ch[2] = { l, r };
         for (int i = 0; i < n; ++i)

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -52,8 +53,8 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     caleido::GlitchEngine engine;
     std::atomic<float> meterIn { 0.0f }, meterOut { 0.0f };
-    std::atomic<float> uiScale { 1.25f };   // tamanho da janela, salvo no projeto
-    std::atomic<float> shownBpm { 145.0f };
+    std::atomic<float> uiScale { 1.2500000000000000661879f };   // tamanho da janela, salvo no projeto
+    std::atomic<float> shownBpm { 145.00000000000000490744f };
     std::atomic<bool>  synced { false };
     std::atomic<bool>  waiting { false };   // host parado: mandala no passo 1 esperando o play
 

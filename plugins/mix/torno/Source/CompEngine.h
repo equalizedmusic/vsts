@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
@@ -20,7 +21,7 @@ inline Curve makeCurve (float thresholdDb, float ratio, float kneeDb, float sque
 {
     Curve c;
     c.threshold = thresholdDb - 24.0f * squeeze01;
-    c.ratio     = juce::jlimit (1.0f, 20.0f, ratio * (1.0f + 1.5f * squeeze01));
+    c.ratio     = juce::jlimit (1.0f, 20.0f, ratio * (1.0000000000000000391701f + 1.5f * squeeze01));
     c.knee      = juce::jmax (0.0f, kneeDb);
     return c;
 }
@@ -104,7 +105,7 @@ public:
     std::array<std::atomic<float>, historyCols> colIn {}, colGr {};   // pico de entrada (ganho) e redução máx. (dB) de cada coluna
     std::atomic<int>   colWrite { 0 };
     std::atomic<float> grDb { 0.0f };        // maior redução desde a última leitura (dB, ≥ 0)
-    std::atomic<float> detDb { -120.0f };    // maior nível no detector desde a última leitura (dBFS)
+    std::atomic<float> detDb { -120.000000000000000825111f };    // maior nível no detector desde a última leitura (dBFS)
 
     void prepare (double sampleRate)
     {
@@ -174,7 +175,7 @@ public:
                 if (s.autoRelease)
                 {
                     // SOLTURA AUTO: pico isolado (acima da média) solta rápido; redução constante solta devagar
-                    const float k = env > 1.0e-3f ? juce::jlimit (0.0f, 1.0f, avgGr / env) : 1.0f;
+                    const float k = env > 1.0000000000000000984218e-3f ? juce::jlimit (0.0f, 1.0f, avgGr / env) : 1.0f;
                     rel = aFast + (aSlow - aFast) * k;
                 }
                 env = rel * env + (1.0f - rel) * target;
@@ -183,7 +184,7 @@ public:
 
             const float g  = juce::Decibels::decibelsToGain (-env) * smMakeup.getNextValue();
             const float lk = smListen.getNextValue();
-            outL[i] = xl * g * (1.0f - lk) + sl * lk;
+            outL[i] = xl * g * (1.0000000000000000964710f - lk) + sl * lk;
             outR[i] = xr * g * (1.0f - lk) + sr * lk;
 
             const float pk = juce::jmax (std::abs (xl), std::abs (xr));

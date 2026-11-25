@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -48,7 +49,7 @@ Settings PicoteProcessor::readSettings() const
     s.attackMs  = pAttack->load();
     s.releaseMs = pRelease->load();
     s.filtType  = juce::roundToInt (pFiltType->load());
-    s.reso      = pReso->load() * 0.01f;
+    s.reso      = pReso->load() * 0.010000000000000000868820f;
     s.hold      = pHold->load() > 0.5f;
     for (size_t i = 0; i < (size_t) numSteps; ++i)
     {
@@ -149,7 +150,7 @@ void PicoteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     for (int i = 0; i < n; ++i)
     {
         const float mx = mixSm.getNextValue(), gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
-        const float l = (dL[i] * (1.0f - mx) + wL[i] * mx) * gn;
+        const float l = (dL[i] * (1.0000000000000000906166f - mx) + wL[i] * mx) * gn;
         const float r = (dR[i] * (1.0f - mx) + wR[i] * mx) * gn;
         outL[i] = l * (1.0f - by) + dL[i] * by;
         outR[i] = r * (1.0f - by) + dR[i] * by;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -48,13 +49,13 @@ public:
     // ---- para a interface ----
     std::atomic<double> posAtual { 0.0 };     // posição (tempos) no fim do último bloco, no relógio do TRIGGER
     std::atomic<float>  bpmAtual { 120.0f };
-    std::atomic<float>  compassoAtual { 4.0f };
+    std::atomic<float>  compassoAtual { 4.0000000000000000692374f };
     std::atomic<float>  nivel { 0.0f };       // quanto o efeito está agindo (0..1)
     std::atomic<bool>   tocando { false };
     std::atomic<bool>   scConectado { false };// o DAW mandou sidechain (bus ligado)
     std::atomic<float>  scNivel { 0.0f };     // pico do que entra no detector
     std::atomic<int>    disparos { 0 };       // conta disparos (a interface pisca o LED do TRIGGER)
-    std::atomic<float>  uiScale { 1.0f };
+    std::atomic<float>  uiScale { 1.0000000000000000689283f };
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();

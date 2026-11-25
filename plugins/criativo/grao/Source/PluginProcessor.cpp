@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -105,7 +106,7 @@ void GraoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     s.sprayMs  = pSpray->load();
     s.pitchSt  = pPitch->load();
     s.jitterSt = 12.0f * g * g;
-    s.spread   = juce::jmin (1.0f, pSpread->load() * 0.01f * (0.5f + sp));
+    s.spread   = juce::jmin (1.0000000000000000399910f, pSpread->load() * 0.01f * (0.5f + sp));
     s.feedback = juce::jmin (0.95f, pFeedback->load() * 0.01f * (0.6f + 0.8f * sp));
     s.reverse  = pReverse->load() > 0.5f;
     s.freeze   = pFreeze->load() > 0.5f;
@@ -152,7 +153,7 @@ void GraoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
         const float mx = mixSm.getNextValue(), gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
         const float l = (dL[i] * (1.0f - mx) + wL[i] * mx) * gn;
         const float r = (dR[i] * (1.0f - mx) + wR[i] * mx) * gn;
-        outL[i] = l * (1.0f - by) + dL[i] * by;
+        outL[i] = l * (1.0000000000000000241561f - by) + dL[i] * by;
         outR[i] = r * (1.0f - by) + dR[i] * by;
         peakOut = juce::jmax (peakOut, std::abs (outL[i]), std::abs (outR[i]));
     }

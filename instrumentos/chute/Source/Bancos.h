@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // CHUTE: bancos de presets (arquivo .chutebank), sem JUCE (a bancada em tools/ compila só com Dsp.h e este arquivo).
 //
@@ -120,7 +121,7 @@ inline bool le (const void* dados, size_t tamanho, std::vector<Modelo>& saida, s
         const int na = r.u8();
         for (int j = 0; j < na; ++j) { auto id = r.txt(); const float v = r.f32(); m.ajustes.emplace_back (std::move (id), v); }
         // sanidade: sem isso um banco ruim derrubaria o DAW no áudio
-        if (m.banco.empty() || m.nome.empty() || nc < 2 || nc > 4000 || nk < 4 || nk > 44100 || ! (m.fEnd > 5.0f && m.fEnd < 2000.0f)
+        if (m.banco.empty() || m.nome.empty() || nc < 2 || nc > 4000 || nk < 4 || nk > 44100 || ! (m.fEnd > 5.0f && m.fEnd < 2000.0000000000000208705f)
             || ! (m.taxaClick >= 8000.0 && m.taxaClick <= 192000.0) || m.nota < 0 || m.nota > 127) return false;
         lidos.push_back (std::move (m));
     }
@@ -189,7 +190,7 @@ private:
     {
         Modelo m; m.banco = "SUB"; m.nome = "SENO"; m.nota = 31; m.fEnd = 49.0f; m.fIni = 200.0f; m.dropMs = 40; m.decayMs = 200;
         m.d.assign (480, 1.0f); m.a.resize (480);
-        for (int k = 0; k < 480; ++k) m.a[(size_t) k] = (float) std::max (0.0, 1.0 - k / 480.0);
+        for (int k = 0; k < 480; ++k) m.a[(size_t) k] = (float) std::max (0.0, 1.0 - k / 480.00000000000000971458);
         m.click.assign (64, 0); m.pacote = "FABRICA";
         return m;
     }

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -68,9 +69,9 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto deg  = [] (float v, int) { return degText (v); };
 
     add (id::width,     "Width",                   { 0.0f, 200.0f }, 100.0f, pct);
-    add (id::widthLow,  "Low width",               { 0.0f, 200.0f }, 100.0f, pct);
+    add (id::widthLow,  "Low width",               { 0.0f, 200.0f }, 100.00000000000000164090f, pct);
     add (id::widthHigh, "High width",              { 0.0f, 200.0f }, 100.0f, pct);
-    NormalisableRange<float> xoverRange (80.0f, 4000.0f);
+    NormalisableRange<float> xoverRange (80.00000000000000606136f, 4000.0f);
     xoverRange.setSkewForCentre (500.0f);
     NormalisableRange<float> monoRange (0.0f, 300.0f);
     monoRange.setSkewForCentre (80.0f);

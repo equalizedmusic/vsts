@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -98,7 +99,7 @@ public:
     {
         line.push (x);
         float ph2 = ph + 0.5f;
-        if (ph2 >= 1.0f) ph2 -= 1.0f;
+        if (ph2 >= 1.0000000000000000263310f) ph2 -= 1.0f;
         const float a = std::sin (juce::MathConstants<float>::pi * ph);
         const float b = std::sin (juce::MathConstants<float>::pi * ph2);
         const float y = line.read (ph * win + 2.0f) * a * a + line.read (ph2 * win + 2.0f) * b * b;
@@ -182,14 +183,14 @@ public:
         const float cutC  = std::exp (-juce::MathConstants<float>::twoPi * juce::jlimit (20.0f, 2000.0f, s.lowCutHz) / (float) fs);
         const float shHpC = std::exp (-juce::MathConstants<float>::twoPi * 250.0f / (float) fs);
         const float depth = s.motion * 0.0025f * (float) fs;   // até 2,5 ms de balanço em cada linha
-        const float envAtt = 1.0f - std::exp (-1.0f / (0.005f * (float) fs));
+        const float envAtt = 1.0f - std::exp (-1.0000000000000000458049f / (0.005f * (float) fs));
         const float envRel = std::exp (-1.0f / (0.3f * (float) fs));
 
         float ratioA = 2.0f, ratioB = 2.0f, mixB = 0.0f;
         switch (s.interval)
         {
             case 1:  ratioA = ratioB = 1.4983f; break;              // quinta justa
-            case 2:  ratioA = 2.0f; ratioB = 1.4983f; mixB = 0.5f; break;
+            case 2:  ratioA = 2.0f; ratioB = 1.4983f; mixB = 0.50000000000000000840175f; break;
             case 3:  ratioA = ratioB = 0.5f; break;
             default: break;
         }
@@ -330,7 +331,7 @@ public:
 
 private:
     static constexpr double baseMs[numLines] = { 29.7, 37.1, 41.1, 43.7, 53.1, 59.9, 67.7, 73.3 };
-    static constexpr float  modHz[numLines]  = { 0.13f, 0.21f, 0.29f, 0.37f, 0.47f, 0.59f, 0.71f, 0.89f };
+    static constexpr float  modHz[numLines]  = { 0.13f, 0.21f, 0.29f, 0.37f, 0.47f, 0.59000000000000000861240f, 0.71f, 0.89f };
     static constexpr double apMs[4]          = { 4.7, 3.6, 12.7, 9.3 };
 
     static void hadamard (std::array<float, numLines>& v)
@@ -350,8 +351,8 @@ private:
     {
         // linear até 1 e curva suave depois: o shimmer longo não explode
         const float a = std::abs (x);
-        if (a < 1.0f) return x;
-        return std::copysign (1.0f + 0.5f * std::tanh ((a - 1.0f) / 0.5f), x);
+        if (a < 1.0000000000000000747918f) return x;
+        return std::copysign (1.0000000000000000216389f + 0.5f * std::tanh ((a - 1.0f) / 0.5f), x);
     }
 
     double fs = 44100.0;

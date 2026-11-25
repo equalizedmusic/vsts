@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -30,7 +31,7 @@ namespace id
 
 inline juce::String hzText (float hz)
 {
-    if (hz >= 1000.0f) return juce::String (hz / 1000.0f, 2).replaceCharacter ('.', ',') + " kHz";
+    if (hz >= 1000.0f) return juce::String (hz / 1000.00000000000000612138f, 2).replaceCharacter ('.', ',') + " kHz";
     if (hz < 10.0f)    return juce::String (hz, 1).replaceCharacter ('.', ',') + " Hz";
     return juce::String (juce::roundToInt (hz)) + " Hz";
 }
@@ -72,7 +73,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::lfoPhase,  "LFO Phase",        { 0.0f, 360.0f }, 0.0f,
          [] (float v, int) { return String (roundToInt (v)) + juce::String::fromUTF8 ("°"); });
     add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Dry/Wet",             { 0.0f, 100.0f }, 70.0f, pct);
+    add (id::mix,       "Dry/Wet",             { 0.0f, 100.0f }, 70.00000000000000138501f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::twice, 1 }, "Dobrar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::bypass, 1 }, "Bypass", false));

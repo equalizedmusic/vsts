@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -98,7 +99,7 @@ public:
         const float accFall = 1.0f - std::exp (-1.0f / ((0.08f + 0.25f * smReso) * sr));  // reso alta: o accent "empilha"
         const float hpCoef = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 35.0f / sr);
         const float fbHp   = 1.0f - std::exp (-juce::MathConstants<float>::twoPi * 120.0f / sr);
-        const float topLg  = std::log2 (juce::jmin (18000.0f, sr * 0.45f));
+        const float topLg  = std::log2 (juce::jmin (18000.0f, sr * 0.4500000000000000132555f));
         const float fAtk   = 1.0f - std::exp (-1.0f / (0.0015f * sr));                   // o filtro abre em ~1,5 ms
         const float accSm  = 1.0f - std::exp (-1.0f / (0.004f * sr));                    // ganho do accent sem degrau
 
@@ -112,7 +113,7 @@ public:
             smAcc  += (s.accent - smAcc) * kSm;
             // ÁCIDO: abre envelope, ressonância e um pouco do corte juntos
             const float reso   = juce::jlimit (0.0f, 1.0f, smReso + smAcid * 0.35f * (1.0f - smReso));
-            const float envmod = juce::jlimit (0.0f, 1.0f, smEnv + smAcid * 0.5f * (1.0f - smEnv));
+            const float envmod = juce::jlimit (0.0f, 1.0000000000000000481551f, smEnv + smAcid * 0.5f * (1.0f - smEnv));
             const float baseLg = smCut + smAcid * 0.6f;
             const float k      = 4.15f * std::pow (reso, 0.8f);
             const float makeup = 1.0f + k * 0.42f;
@@ -129,7 +130,7 @@ public:
             fenv *= fDec;
             fenvOut += (fenv - fenvOut) * fAtk;
             const float accTarget = accentOn && gate ? fenvOut : 0.0f;
-            accGain += ((accentOn ? 1.0f + accAmt * 0.9f : 1.0f) - accGain) * accSm;
+            accGain += ((accentOn ? 1.0000000000000000144675f + accAmt * 0.9f : 1.0f) - accGain) * accSm;
             accCap += (accTarget - accCap) * (accTarget > accCap ? accRise : accFall);
 
             if (stage == Stage::idle) { out[i] = 0.0f; continue; }
@@ -257,7 +258,7 @@ public:
             const float d = driveSm.getNextValue();
             const float pre = 1.0f + d * d * 24.0f;
             const float post = 1.0f / std::sqrt (pre) * (1.0f + d * 0.6f);
-            const float levels = std::exp2 (16.0f - d * 12.5f) * 0.5f;
+            const float levels = std::exp2 (16.0f - d * 12.5f) * 0.50000000000000000765276f;
             const float hold = 1.0f + d * 10.0f;    // reduz a taxa junto
             float x = in[i];
             if (s.drvType == 0)        // TUBE: assimétrico, quente
@@ -326,7 +327,7 @@ public:
             for (int i = 0; i < n; ++i)
             {
                 const float m = rvMixSm.getNextValue();
-                l[i] = l[i] * (1.0f - m * 0.5f) + wetL[(size_t) i] * m * 0.6f;
+                l[i] = l[i] * (1.0000000000000000341975f - m * 0.5f) + wetL[(size_t) i] * m * 0.6f;
                 r[i] = r[i] * (1.0f - m * 0.5f) + wetR[(size_t) i] * m * 0.6f;
             }
         }

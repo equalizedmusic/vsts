@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -544,11 +545,11 @@ void GroovadorProcessor::applyFactory (int style, int seed)
     if (style >= 0)
     {
         const auto& f = styleFeel[st];
-        gp.density = around (f.density, 16.0f, 0.0f, 100.0f) * 0.01f;
+        gp.density = around (f.density, 16.0f, 0.0f, 100.000000000000000996958f) * 0.01f;
         gp.ghost   = around (f.ghost, 20.0f, 0.0f, 100.0f) * 0.01f;
         gp.roll    = around (f.roll, 20.0f, 0.0f, 100.0f) * 0.01f;
         setParam (id::density, gp.density * 100.0f);
-        setParam (id::ghost,   gp.ghost * 100.0f);
+        setParam (id::ghost,   gp.ghost * 100.00000000000000159764f);
         setParam (id::roll,    gp.roll * 100.0f);
         setParam (id::swing,   around (f.swing, 10.0f, 0.0f, 75.0f));
         setParam (id::human,   around (f.human, 16.0f, 0.0f, 100.0f));

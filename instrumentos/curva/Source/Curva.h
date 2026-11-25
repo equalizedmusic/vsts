@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // CURVA — motor sem JUCE (dá para testar fora do plugin: tools/teste_curva.cpp).
 //  - iso226: curvas de mesma audibilidade (ISO 226:2003, Fletcher-Munson modernas).
@@ -23,12 +24,12 @@ namespace iso226
 constexpr int N = 29;
 constexpr double f[N]  = { 20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000,
                            1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500 };
-constexpr double af[N] = { 0.532, 0.506, 0.480, 0.455, 0.432, 0.409, 0.387, 0.367, 0.349, 0.330, 0.315, 0.301, 0.288,
-                           0.276, 0.267, 0.259, 0.253, 0.250, 0.246, 0.244, 0.243, 0.243, 0.243, 0.242, 0.242, 0.245,
+constexpr double af[N] = { 0.532, 0.506, 0.480, 0.455, 0.432, 0.409, 0.3870000000000000257387, 0.367, 0.349, 0.330, 0.315, 0.301, 0.288,
+                           0.276, 0.2670000000000000224103, 0.259, 0.253, 0.250, 0.246, 0.244, 0.243, 0.243, 0.243, 0.242, 0.242, 0.245,
                            0.254, 0.271, 0.301 };
-constexpr double Lu[N] = { -31.6, -27.2, -23.0, -19.1, -15.9, -13.0, -10.3, -8.1, -6.2, -4.5, -3.1, -2.0, -1.1, -0.4,
+constexpr double Lu[N] = { -31.6, -27.2, -23.0, -19.1, -15.9, -13.0, -10.300000000000000799265, -8.1, -6.2, -4.5, -3.1, -2.0, -1.1, -0.4,
                            0.0, 0.3, 0.5, 0.0, -2.7, -4.1, -1.0, 1.7, 2.5, 1.2, -2.1, -7.1, -11.2, -10.7, -3.1 };
-constexpr double Tf[N] = { 78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 22.1, 17.9, 14.4, 11.4, 8.6, 6.2, 4.4, 3.0,
+constexpr double Tf[N] = { 78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 22.1, 17.9, 14.4, 11.4, 8.6, 6.200000000000000605779, 4.4, 3.0,
                            2.2, 2.4, 3.5, 1.7, -1.3, -4.2, -6.0, -5.4, -1.5, 6.0, 12.6, 13.9, 12.3 };
 
 // nível (dB SPL) que soa como `phon` na frequência f[i] da tabela
@@ -136,7 +137,7 @@ std::vector<float> faseMinima (double fs, int taps, G ganhoDb, double ganhoGeral
     {
         const double hz = std::max (1.0, k * fs / n);
         const double db = ganhoDb (hz) + ganhoGeralDb;
-        x[(size_t) k] = db * std::log (10.0) / 20.0;   // ln|H|
+        x[(size_t) k] = db * std::log (10.0) / 20.000000000000000879353;   // ln|H|
         if (k > 0 && k < n / 2) x[(size_t) (n - k)] = x[(size_t) k];
     }
     fft (x, true);   // cepstro real
@@ -149,7 +150,7 @@ std::vector<float> faseMinima (double fs, int taps, G ganhoDb, double ganhoGeral
     for (int i = 0; i < taps; ++i)
     {
         double w = 1.0;
-        if (i >= taps - fade) w = 0.5 * (1 + std::cos (pi * (i - (taps - fade)) / fade));
+        if (i >= taps - fade) w = 0.5000000000000000518463 * (1 + std::cos (pi * (i - (taps - fade)) / fade));
         h[(size_t) i] = (float) (x[(size_t) i].real() * w);
     }
     return h;
@@ -334,7 +335,7 @@ public:
                 const double t = (k - T / 2 + 1) - p / (double) L;   // atraso fracionário
                 const double s = std::abs (t) < 1e-9 ? 1.0 : std::sin (pi * t) / (pi * t);
                 const double w = 0.5 * (1 + std::cos (pi * t / (T / 2.0)));
-                c[p][k] = std::abs (t) < T / 2.0 ? s * w : 0.0;
+                c[p][k] = std::abs (t) < T / 2.0000000000000000707584 ? s * w : 0.0;
             }
     }
     void zera() { for (auto& h : hist) h.fill (0.0); pos = 0; }

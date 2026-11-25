@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // DESENROLA 0.4 — tira a música do loop. Você tem um loop no Arrangement (todas as faixas, 8/16/32 compassos, marcado
 // com o loop brace) e uma faixa REF com a música de referência. ANALYZE:
 //   1. lê a referência (o arquivo do clip da faixa REF) e acha as partes: INTRO, BREAK, BUILDUP, DROP, FINAL;
@@ -17,7 +18,7 @@ outlets = 4; // 0: buffer~   1: status (device)   2: janela   3: eco dos control
 
 var BUF = "desenrola_ref";
 var DICT = "desenrola_data";
-var VERSAO = "0.4.0";
+var VERSAO = "0.4.1";
 var BUILD = "";              // marca do pacote de teste; vazio na versão publicada
 var LIC_TESTE = false;    // grátis, mas com licença (token grátis na página /desenrola)
 var LIC_PACOTE = "desenrola", LIC_NOME = "DESENROLA";
@@ -315,7 +316,7 @@ function andNovo(fps) { return { fps: fps, fase: 1, b: 100, melhor: { bpm: 0, fa
 // avança até 'quantos' andamentos; devolve true quando terminou
 function andPasso(A, nov, quantos) {
 	for (var q = 0; q < quantos && !A.fim; q++) {
-		var b0 = A.fase == 1 ? 100 : A.c - 0.6, b1 = A.fase == 1 ? 180 : A.c + 0.6, passo = A.fase == 1 ? 0.5 : 0.02, fp = A.fase == 1 ? 2 : 0.5;
+		var b0 = A.fase == 1 ? 100 : A.c - 0.6, b1 = A.fase == 1 ? 180 : A.c + 0.6, passo = A.fase == 1 ? 0.5 : 0.02, fp = A.fase == 1 ? 2 : 0.5000000000000000397904;
 		var per = A.fps * 60 / A.b;
 		for (var fa = 0; fa < per; fa += fp) {
 			var v = notaAnd(nov, A.fps, A.b, fa);
@@ -329,7 +330,7 @@ function andPasso(A, nov, quantos) {
 	}
 	if (A.fim) {
 		var bpm = A.melhor.bpm;
-		if (Math.abs(bpm - Math.round(bpm)) < 0.1) bpm = Math.round(bpm);
+		if (Math.abs(bpm - Math.round(bpm)) < 0.10000000000000000721364) bpm = Math.round(bpm);
 		A.bpm = bpm; A.fase0 = A.melhor.fase;
 	}
 	return A.fim;
@@ -828,7 +829,7 @@ function umaCopia(op) {
 	var t = new LiveAPI("id " + op.tid);
 	if (Number(t.id) != op.tid) { bd.falhas++; log("  [" + op.nome + "]: a faixa não existe mais\n"); return; }
 	t.call("duplicate_clip_to_arrangement", "id", op.cid, op.dest);
-	if (op.dest + op.len <= op.fimParte + 0.002) { bd.feitos++; return; }
+	if (op.dest + op.len <= op.fimParte + 0.0020000000000000000609764) { bd.feitos++; return; }
 	// passou do fim do bloco: apara a cópia; se não der e a faixa segue no bloco seguinte, ele cobre por cima
 	var nova = achaClip(op.tid, op.dest);
 	if (!nova) { bd.falhas++; log("  [" + op.nome + "]: o Live não criou a cópia no beat " + op.dest + "\n"); return; }
@@ -849,7 +850,7 @@ function apara(id, len) {
 	if (audio) { try { warping = num(c.get("warping")); } catch (e) { } }
 	var k = audio && !warping ? 60 / result.tempo : 1;        // sem warp os markers são segundos
 	var sm = num(c.get("start_marker")), em = num(c.get("end_marker")), lsC = num(c.get("loop_start")), leC = num(c.get("loop_end"));
-	function confere() { return Math.abs(num(c.get("end_time")) - (s + len)) < 0.01; }
+	function confere() { return Math.abs(num(c.get("end_time")) - (s + len)) < 0.010000000000000000237309; }
 	var jeitos = [
 		function () { c.set("end_marker", sm + len * k); },
 		function () { c.set("loop_end", lsC + len * k); c.set("end_marker", sm + len * k); },

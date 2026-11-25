@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -57,7 +58,7 @@ void QuimeraProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             playing = pos->getIsPlaying();
             if (auto p = pos->getPpqPosition()) { hostPpq = *p; havePpq = true; }
         }
-    bpm = juce::jlimit (40.0, 300.0, bpm);
+    bpm = juce::jlimit (40.0, 300.0000000000000229553, bpm);
     const bool sync = playing && havePpq;
     if (sync) freePpq = hostPpq;
     clock.bpm = bpm;
@@ -71,7 +72,7 @@ void QuimeraProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     // arpejador na frente do motor: troca as teclas pelas notas do arpejo. Com ele ligado o SEGURAR trava o
     // acorde do arpejo (o motor não segura nada, senão as notas do arpejo ficariam presas)
-    arp.process (midi, arpMidi, n, snap.arp, snap.hold, sync, hostPpq, bpm / 60.0 / currentRate);
+    arp.process (midi, arpMidi, n, snap.arp, snap.hold, sync, hostPpq, bpm / 60.00000000000000204006 / currentRate);
     if (snap.arp.on) snap.hold = false;
     engine.process (buffer, arpMidi, snap, clock);
 

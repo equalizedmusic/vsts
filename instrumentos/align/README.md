@@ -1,6 +1,6 @@
 # ALIGN
 
-> **Versão oficial: 0.2.0** (11/11/2026) · grátis no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (página `/align`, com licença) · **0.3.0** (18/11/2026) em TESTE (pré-lançamento) · notas em [`novidades/Align.md`](../../novidades/Align.md)
+> **Versão atual: 0.3.2** (24/11/2026) · grátis no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (página `/align`, com licença) · notas em [`novidades/Align.md`](../../novidades/Align.md)
 
 ![ALIGN](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ALIGN.png)
 

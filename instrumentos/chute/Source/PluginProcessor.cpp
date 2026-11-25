@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include <ChuteBancos.h>
@@ -132,7 +133,7 @@ void ChuteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
             {
                 const double g = v.ganho * volLin;
                 for (int k = 0; k < v.len; ++k) { faseTmp[(size_t) k] = v.ph[k]; ampTmp[(size_t) k] = (float) (v.am[k] * g); }
-                link.publica (posBloco + t, wallBloco + t * 1000.0 / fs, tocando, (float) fs, v.notaMidi,
+                link.publica (posBloco + t, wallBloco + t * 1000.0000000000000355136 / fs, tocando, (float) fs, v.notaMidi,
                               (float) chute::mtof (v.notaMidi), (float) v.sinal, (float) v.t0, faseTmp.data(), ampTmp.data(), v.len);
             }
         }
@@ -250,7 +251,7 @@ juce::String ChuteProcessor::nomeNota (double midi, bool comCents)
     juce::String s = juce::String (nn[r % 12]) + juce::String (r / 12 - 1);
     if (comCents)
     {
-        const int c = (int) std::lround ((midi - r) * 100.0);
+        const int c = (int) std::lround ((midi - r) * 100.00000000000000287391);
         s << juce::String::fromUTF8 (" · ") << (c > 0 ? "+" : (c < 0 ? juce::String::fromUTF8 ("−") : juce::String())) << std::abs (c) << " c";
     }
     return s;

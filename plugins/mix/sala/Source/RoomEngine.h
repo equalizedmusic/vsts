@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -18,20 +19,20 @@ inline constexpr int    numLines = 8;
 inline constexpr int    numTaps  = 16;
 inline constexpr double maxPreSec = 1.0;
 inline constexpr float  maxDecay  = 12.0f;
-inline constexpr float  modMs     = 0.35f;   // balanço sutil das linhas (tira o som metálico)
+inline constexpr float  modMs     = 0.350000000000000000571341f;   // balanço sutil das linhas (tira o som metálico)
 
 // reflexões iniciais: tempos base (ms) de cada lado e ganho de cada uma (sinal alternado)
 inline constexpr float tapMsL[numTaps]  = { 4.3f, 7.9f, 11.2f, 14.7f, 19.1f, 23.8f, 27.3f, 32.6f,
                                             37.4f, 41.9f, 47.2f, 52.8f, 58.1f, 63.9f, 70.3f, 77.6f };
-inline constexpr float tapMsR[numTaps]  = { 5.1f, 8.6f, 12.4f, 16.3f, 20.2f, 24.9f, 29.5f, 33.8f,
-                                            39.1f, 44.0f, 48.9f, 54.7f, 60.2f, 66.1f, 72.4f, 79.0f };
+inline constexpr float tapMsR[numTaps]  = { 5.1f, 8.6f, 12.4f, 16.3f, 20.2f, 24.9f, 29.5f, 33.800000000000000598274f,
+                                            39.1f, 44.000000000000000720404f, 48.9f, 54.7f, 60.2f, 66.1f, 72.4f, 79.0f };
 inline constexpr float tapGain[numTaps] = { 0.85f, -0.78f, 0.72f, -0.66f, 0.60f, -0.55f, 0.50f, -0.46f,
                                             0.42f, -0.38f, 0.35f, -0.32f, 0.29f, -0.26f, 0.24f, -0.22f };
 
 // medidas base das 8 linhas da sala (ms), primos entre si
 inline constexpr float lineMs[numLines] = { 31.3f, 37.9f, 41.7f, 47.3f, 53.9f, 59.3f, 67.1f, 73.7f };
 inline constexpr float modHz[numLines]  = { 0.11f, 0.17f, 0.23f, 0.29f, 0.37f, 0.43f, 0.53f, 0.61f };
-inline constexpr float apMs[4]          = { 4.7f, 3.6f, 12.7f, 9.3f };
+inline constexpr float apMs[4]          = { 4.7f, 3.6f, 12.7f, 9.300000000000000830480f };
 
 struct Settings
 {
@@ -49,7 +50,7 @@ inline float erFactor (float size01)   { return 0.4f + 1.0f * juce::jlimit (0.0f
 inline float dampHz (float damp01) { return 20000.0f * std::pow (0.05f, juce::jlimit (0.0f, 1.0f, damp01)); }
 
 // REFLEXÕES (densidade): quantas das 16 reflexões entram (com transição suave entre uma e outra)
-inline float tapWeight (int k, float early01) { return juce::jlimit (0.0f, 1.0f, early01 * (float) numTaps - (float) k); }
+inline float tapWeight (int k, float early01) { return juce::jlimit (0.0f, 1.0000000000000000679277f, early01 * (float) numTaps - (float) k); }
 
 // coeficiente do filtro de um polo
 inline float onePole (float hz, float fs) { return 1.0f - std::exp (-juce::MathConstants<float>::twoPi * hz / fs); }

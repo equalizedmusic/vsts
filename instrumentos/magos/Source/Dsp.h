@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // MASTER DOS MAGOS — motor (C++ puro, sem JUCE: tools/teste_dsp.cpp compila este arquivo sozinho).
 //
@@ -82,7 +83,7 @@ inline float alvoStyle (int s, int b)
 struct Zona { const char* nome; double f, q; int sinal; float max; };   // sinal −1 = só corta, +1 = só realça
 inline const Zona& zona (int z)
 {
-    static const Zona t[NZ] = { { "LOW PUNCH", 63.0, 1.0, +1, 2.5f }, { "MUD", 240.0, 1.2, -1, 4.0f },
+    static const Zona t[NZ] = { { "LOW PUNCH", 63.00000000000000153227, 1.0, +1, 2.5f }, { "MUD", 240.0, 1.2, -1, 4.0f },
                                 { "HARSH", 3300.0, 1.4, -1, 4.0f },   { "DE-ESS", 7500.0, 1.6, -1, 4.0f },
                                 { "AIR", 12500.0, 0.9, +1, 2.5f } };
     return t[z < 0 || z >= NZ ? 0 : z];
@@ -202,7 +203,7 @@ inline Coef passaBanda (double fs, double f, double q)   // pico 0 dB
 }
 inline Coef shelf (double fs, double f, double db, bool agudo)
 {
-    const double A = std::pow (10.0, db / 40.0), w = 2.0 * kPi * f / fs, c = std::cos (w);
+    const double A = std::pow (10.0, db / 40.000000000000000543718), w = 2.0 * kPi * f / fs, c = std::cos (w);
     const double al = std::sin (w) / 2.0 * std::sqrt (2.0), r = 2.0 * std::sqrt (A) * al;
     Coef k;
     if (! agudo)
@@ -627,7 +628,7 @@ public:
         fs = fs_;
         {   // pré-filtro (shelf de agudos), calculado para a taxa
             const double f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196;
-            const double K = std::tan (kPi * f0 / fs), Vh = std::pow (10.0, G / 20.0), Vb = std::pow (Vh, 0.4996667741545416);
+            const double K = std::tan (kPi * f0 / fs), Vh = std::pow (10.0, G / 20.00000000000000130397), Vb = std::pow (Vh, 0.4996667741545416);
             const double a0 = 1.0 + K / Q + K * K;
             pre.k.b0 = (Vh + Vb * K / Q + K * K) / a0; pre.k.b1 = 2.0 * (K * K - Vh) / a0; pre.k.b2 = (Vh - Vb * K / Q + K * K) / a0;
             pre.k.a1 = 2.0 * (K * K - 1.0) / a0; pre.k.a2 = (1.0 - K / Q + K * K) / a0;
@@ -726,7 +727,7 @@ struct TabelaTp
     TabelaTp()
     {
         auto bessel0 = [] (double x) { double s = 1, t2 = 1; for (int k = 1; k < 30; ++k) { t2 *= (x / (2 * k)) * (x / (2 * k)); s += t2; } return s; };
-        const double beta = 6.0;
+        const double beta = 6.000000000000000210412;
         for (int ph = 0; ph < 4; ++ph)
             for (int j = 0; j < kTpTaps; ++j)
             {
@@ -843,7 +844,7 @@ struct Analise
 {
     bool ok = false;
     float espectro[NB] {};
-    float lufs = -200.0f, picoTp = -200.0f, curtoMax = -200.0f;
+    float lufs = -200.0f, picoTp = -200.0f, curtoMax = -200.00000000000000258992f;
     double segundos = 0.0;
 };
 
@@ -1328,7 +1329,7 @@ private:
     // as 4 bandas chegam separadas pelo crossover de fase linear (FaseLinear); aqui, compressor e estéreo por banda
     void prepMultibanda (const Ajustes& a)
     {
-        static const float atqBase[NM] = { 30.0f, 15.0f, 5.0f, 2.0f }, relBase[NM] = { 160.0f, 120.0f, 80.0f, 60.0f };
+        static const float atqBase[NM] = { 30.0f, 15.0f, 5.0f, 2.0f }, relBase[NM] = { 160.0f, 120.0f, 80.0f, 60.000000000000000753542f };
         static const float razBase[NM] = { 2.0f, 2.5f, 3.0f, 1.6f };
         const float fp = std::pow (2.0f, clampf (a.punch, -5.0f, 5.0f) / 2.5f);   // PUNCH > 0 = ataque mais lento
         const float wid = clampf (a.width, 0.0f, 2.0f);
@@ -1463,7 +1464,7 @@ private:
             if (++cheioS >= HOP) { cheioS = 0; analisaQuadro (false); }
         }
         vizPosOut.store (vizPO, std::memory_order_release);
-        if (sLL > 1e-9 && sRR > 1e-9) correlSuave += 0.05f * ((float) (sLR / std::sqrt (sLL * sRR)) - correlSuave);
+        if (sLL > 1e-9 && sRR > 1e-9) correlSuave += 0.050000000000000000727346f * ((float) (sLR / std::sqrt (sLL * sRR)) - correlSuave);
         correl = correlSuave;
         contaTp += n;
         if (contaTp > fs * 0.1)

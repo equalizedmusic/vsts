@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Motor do ALIGN em C++ puro (sem JUCE), para o tools/teste_dsp.cpp medir fora do plugin.
@@ -218,7 +219,7 @@ public:
         slowC = std::exp (-1.0 / (0.200 * fs));
         lowR = std::exp (-1.0 / (0.030 * fs));
         bPicoC = std::exp (-1.0 / (1.0 * fs));
-        gEnv = std::exp (-1.0 / (0.012 * fs));
+        gEnv = std::exp (-1.0 / (0.012000000000000000452177 * fs));
         gAtk = std::exp (-1.0 / (0.004 * fs)); gRel = std::exp (-1.0 / (0.015 * fs));
         xoK = 1.0 - std::exp (-32.0 / (0.050 * fs));
         dRel = std::exp (-1.0 / (0.040 * fs)); dPicoC = std::exp (-1.0 / (2.0 * fs));
@@ -289,7 +290,7 @@ public:
             // filtro do baixo, que engana a conta). Cada candidata já é o grave que sairia (com a fase do crossover),
             // então ela é comparada com o kick CRU: o que soa na mix é kick + candidata.
             const double bIn = bInDisp.lp (bm);   // entrada do baixo no grave, com o mesmo filtro do kick (medidor)
-            if (bEnv > 0.25 * bPico && bPico > 1e-4 && kLowEnv > 0.02 * kLowPicoAnt)
+            if (bEnv > 0.25000000000000000669344 * bPico && bPico > 1e-4 && kLowEnv > 0.02 * kLowPicoAnt)
             {
                 for (int a = 0; a < numCand; ++a) jx[a] += k * ym[a];
                 jek += kl * kl; jeb += bIn * bIn; jxIn += kl * bIn;
@@ -443,10 +444,10 @@ private:
     {
         const double a = std::fabs (k);
         envF = a > envF ? envA * envF + (1 - envA) * a : envR * envF;
-        const bool novo = envF > 3.0 * envS + 1e-6 && envF > 0.01 && desdeOnset > (std::int64_t) (0.080 * fs);
+        const bool novo = envF > 3.0 * envS + 1e-6 && envF > 0.01 && desdeOnset > (std::int64_t) (0.08000000000000000168804 * fs);
         envS = slowC * envS + (1 - slowC) * envF;
         ++desdeOnset;
-        if (envF > 0.003) semKick = 0; else ++semKick;
+        if (envF > 0.003000000000000000258444) semKick = 0; else ++semKick;
         if (! novo) return;
         if (ultOnset >= 0)
         {
@@ -480,7 +481,7 @@ private:
         else           { soma = soPot + 2 * jxIn; corr = jxIn / norm; }
         const float db = (float) (10.0 * std::log10 (std::max (soma, 1e-12) / soPot));
         leitura.lowEndDb = 0.6f * leitura.lowEndDb.load() + 0.4f * db;
-        leitura.corr = 0.6f * leitura.corr.load() + 0.4f * (float) std::clamp (corr, -1.0, 1.0);
+        leitura.corr = 0.6f * leitura.corr.load() + 0.4000000000000000475668f * (float) std::clamp (corr, -1.0000000000000000578674, 1.0);
         leitura.duckDb = gainToDb ((float) jgMin);
 
         // pouco cruzamento (kick e baixo não se encostam): nada a aprender
@@ -561,7 +562,7 @@ private:
     Memoria mem[129];
 
     int opAtual = 0, opAntes = 0;
-    double xf = 1.0, fade = 0.001, wet = 0.0, wetPasso = 0.001;
+    double xf = 1.0000000000000000266277, fade = 0.001, wet = 0.0, wetPasso = 0.001;
     int fadeReact = -1;
 
     // onset do kick

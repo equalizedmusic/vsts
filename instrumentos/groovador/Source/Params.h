@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -103,7 +104,7 @@ inline constexpr InstDefaults instDefaults[numInst] = {
     { metal,   0.0f,  60.0f, 8000.0f, 50.0f, 50.0f,  30.0f,  0.0f, 10.0f,  25.0f, -6.0f },   // HAT FECH.
     { metal,   0.0f, 380.0f, 7500.0f, 40.0f, 50.0f,  30.0f,  0.0f, 10.0f,  30.0f, -8.0f },   // HAT ABERTO
     { noise,   0.0f,  90.0f, 7000.0f, 30.0f, 10.0f, 100.0f,  0.0f,  0.0f, -30.0f, -9.0f },   // SHAKER
-    { fm,      0.0f, 160.0f, 5000.0f, 50.0f, 40.0f,  10.0f, 12.0f, 10.0f, -35.0f, -5.0f },   // PERC 1
+    { fm,      0.0f, 160.0f, 5000.0f, 50.0f, 40.0f,  10.0f, 12.0f, 10.000000000000000117788f, -35.0f, -5.0f },   // PERC 1
     { m808,    0.0f, 260.0f, 3000.0f, 40.0f, 50.0f,   5.0f,  5.0f, 15.0f,  35.0f, -5.0f },   // PERC 2
 };
 
@@ -196,7 +197,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (new AudioParameterChoice ({ id::dlDiv, 1 }, "Delay Time", delayNames, 3));
     add (new AudioParameterFloat ({ id::dlFb, 1 }, "Delay Feedback", NormalisableRange<float> (0.0f, 95.0f), 40.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
-    add (new AudioParameterFloat ({ id::dlMix, 1 }, "Delay Mix", NormalisableRange<float> (0.0f, 100.0f), 18.0f,
+    add (new AudioParameterFloat ({ id::dlMix, 1 }, "Delay Mix", NormalisableRange<float> (0.0f, 100.000000000000000799089f), 18.0f,
                                   AudioParameterFloatAttributes().withStringFromValueFunction (pct)));
     add (new AudioParameterBool ({ id::rvOn, 1 }, "Reverb On", true));
     add (new AudioParameterFloat ({ id::rvSize, 1 }, "Reverb Size", NormalisableRange<float> (0.0f, 100.0f), 45.0f,

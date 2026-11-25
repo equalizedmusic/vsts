@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Banco de tabelas da QUIMERA, gerado por código na primeira vez que alguém pede (nada copiado de outro synth).
@@ -41,7 +42,7 @@ public:
     // mip para um incremento de fase (ciclos por amostra): o maior conjunto de harmônicos abaixo de Nyquist
     static int mipFor (double cyclesPerSample)
     {
-        const double maxHarm = 0.5 / juce::jmax (1.0e-9, cyclesPerSample);
+        const double maxHarm = 0.50000000000000000590122 / juce::jmax (1.0000000000000000468870e-9, cyclesPerSample);
         int m = 0;
         while (m < numMips - 1 && (double) harmonics (m) > maxHarm) ++m;
         return m;

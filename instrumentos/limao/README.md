@@ -1,6 +1,6 @@
 # LIMÃO — bassline ácido
 
-> **Versão atual: 0.6.2** (12/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Limao.md`](../../novidades/Limao.md)
+> **Versão atual: 0.6.3** (24/11/2026) · à venda com licença no site [insidestudiosp.com.br](https://insidestudiosp.com.br) · notas em [`novidades/Limao.md`](../../novidades/Limao.md)
 
 ![LIMÃO](https://insidestudiosp.com.br/img/limao.webp)
 

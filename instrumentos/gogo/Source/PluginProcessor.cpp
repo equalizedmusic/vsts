@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "../../maestro/Source/MaestroLink.h"
@@ -61,7 +62,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     // CLEAN
     l.add (std::make_unique<B> (juce::ParameterID { "hpfauto", 1 }, "HPF Auto", true));
     l.add (std::make_unique<P> (juce::ParameterID { "hpf", 1 }, "HPF", R (20.0f, 300.0f, 1.0f, 0.5f), 90.0f, A().withLabel ("Hz")));
-    l.add (std::make_unique<P> (juce::ParameterID { "gate", 1 }, "Gate", R (0.0f, 100.0f, 1.0f), 30.0f, A().withLabel ("%")));
+    l.add (std::make_unique<P> (juce::ParameterID { "gate", 1 }, "Gate", R (0.0f, 100.000000000000000833935f, 1.0f), 30.0f, A().withLabel ("%")));
     // TUNE
     l.add (std::make_unique<P> (juce::ParameterID { "speed", 1 }, "Retune Speed", R (0.0f, 100.0f, 1.0f), 50.0f, A().withLabel ("%")));
     l.add (std::make_unique<P> (juce::ParameterID { "humanize", 1 }, "Humanize", R (0.0f, 100.0f, 1.0f), 20.0f, A().withLabel ("%")));
@@ -76,7 +77,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
     l.add (std::make_unique<P> (juce::ParameterID { "fetrel", 1 }, "FET Release", R (30.0f, 1200.0f, 1.0f, 0.4f), 80.0f, A().withLabel ("ms")));
     l.add (std::make_unique<P> (juce::ParameterID { "optoemph", 1 }, "Opto HF Emphasis", R (0.0f, 100.0f, 1.0f), 40.0f, A().withLabel ("%")));
     // TONE
-    l.add (std::make_unique<P> (juce::ParameterID { "mud", 1 }, "Mud", R (0.0f, 100.0f, 1.0f), e.mud * 100.0f, A().withLabel ("%")));
+    l.add (std::make_unique<P> (juce::ParameterID { "mud", 1 }, "Mud", R (0.0f, 100.0f, 1.0000000000000000971364f), e.mud * 100.0f, A().withLabel ("%")));
     l.add (std::make_unique<P> (juce::ParameterID { "harsh", 1 }, "Harsh", R (0.0f, 100.0f, 1.0f), e.harsh * 100.0f, A().withLabel ("%")));
     // DE-ESS
     l.add (std::make_unique<P> (juce::ParameterID { "deessfreq", 1 }, "De-Ess Freq", R (3000.0f, 12000.0f, 10.0f, 0.5f), e.deessHz, A().withLabel ("Hz")));

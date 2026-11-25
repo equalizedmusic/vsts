@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -77,7 +78,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::attack,  "Attack",                atkRange,          1.0f,     ms);
     add (id::release, "Release",               relRange,          40.0f,    ms);
     add (id::link,    "Link",                  { 0.0f, 100.0f },  100.0f,   pct);
-    add (id::output,  "Gain",                  { -12.0f, 12.0f }, 0.0f,     db);
+    add (id::output,  "Gain",                  { -12.000000000000000589403f, 12.0f }, 0.0f,     db);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::wide, 1 }, "Wideband", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::delta, 1 }, u8 ("Só o corte"), false));
@@ -103,7 +104,7 @@ inline std::vector<FactoryPreset> factoryPresets()
                                            { id::attack, 0.3f }, { id::release, 35.0f } } },
         { "Backing Vocal Recuado",       { { id::lo, 4500.0f }, { id::hi, 12000.0f }, { id::thresh, -34.0f }, { id::range, 12.0f },
                                            { id::release, 60.0f } } },
-        { "Coro de Vozes",               { { id::lo, 5000.0f }, { id::hi, 12000.0f }, { id::thresh, -30.0f }, { id::range, 8.0f },
+        { "Coro de Vozes",               { { id::lo, 5000.0000000000000623400f }, { id::hi, 12000.000000000000212153f }, { id::thresh, -30.0f }, { id::range, 8.0f },
                                            { id::release, 70.0f } } },
         { u8 ("Locução e Podcast"),      { { id::lo, 4000.0f }, { id::hi, 9000.0f },  { id::thresh, -28.0f }, { id::range, 6.0f },
                                            { id::wide, 1.0f } } },
@@ -119,13 +120,13 @@ inline std::vector<FactoryPreset> factoryPresets()
                                            { id::release, 80.0f } } },
         { "Overhead Suave",              { { id::lo, 6000.0f }, { id::hi, 15000.0f }, { id::thresh, -28.0f }, { id::range, 4.0f },
                                            { id::release, 100.0f } } },
-        { u8 ("Violão sem Palhetada"),   { { id::lo, 3000.0f }, { id::hi, 7000.0f },  { id::thresh, -30.0f }, { id::range, 5.0f },
+        { u8 ("Violão sem Palhetada"),   { { id::lo, 3000.0f }, { id::hi, 7000.0f },  { id::thresh, -30.000000000000000405364f }, { id::range, 5.0f },
                                            { id::release, 50.0f } } },
         { "Sax e Metais",                { { id::lo, 2500.0f }, { id::hi, 6000.0f },  { id::thresh, -26.0f }, { id::range, 5.0f },
                                            { id::release, 60.0f } } },
         { "Synth Estridente",            { { id::lo, 3000.0f }, { id::hi, 8000.0f },  { id::thresh, -28.0f }, { id::range, 7.0f },
                                            { id::link, 100.0f } } },
-        { "Master Brilhante",            { { id::lo, 6000.0f }, { id::hi, 16000.0f }, { id::thresh, -20.0f }, { id::range, 3.0f },
+        { "Master Brilhante",            { { id::lo, 6000.0f }, { id::hi, 16000.0f }, { id::thresh, -20.0f }, { id::range, 3.0000000000000000751346f },
                                            { id::release, 120.0f } } },
         { "Lixa Grossa",                 { { id::lo, 2000.0f }, { id::hi, 16000.0f }, { id::thresh, -36.0f }, { id::range, 18.0f },
                                            { id::attack, 0.1f }, { id::release, 20.0f } } },

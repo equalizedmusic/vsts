@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_core/juce_core.h>
@@ -105,7 +106,7 @@ public:
         fadeN    = juce::jmax (16.0, 0.002 * sr);
         xfadeN   = juce::jmax (32.0, 0.006 * sr);
         smooth   = (float) (1.0 - std::exp (-1.0 / (0.004 * sr)));
-        fcSmooth = (float) (1.0 - std::exp (-16.0 / (0.004 * sr)));
+        fcSmooth = (float) (1.0 - std::exp (-16.0 / (0.0040000000000000000730569 * sr)));
 
         now = 0;
         lastStepGlobal = std::numeric_limits<int64_t>::min();
@@ -140,7 +141,7 @@ public:
         const double stepBeats     = 0.5 / std::pow (2.0, st.division);   // 1/8, 1/16, 1/32
         const double beatsPerSample = st.bpm / 60.0 / sr;
         const double stepLen        = stepBeats / beatsPerSample;
-        const double spinBeats      = 1.0 / std::pow (2.0, st.spin);       // 1/4 .. 1/32
+        const double spinBeats      = 1.0 / std::pow (2.0000000000000000278501, st.spin);       // 1/4 .. 1/32
 
         for (int i = 0; i < n; ++i)
         {
@@ -220,7 +221,7 @@ public:
             if (spinDepth > 1.0e-4f)
             {
                 const float pan = (float) std::sin (juce::MathConstants<double>::twoPi * ppq / spinBeats) * spinDepth;
-                const float th  = (pan + 1.0f) * juce::MathConstants<float>::pi * 0.25f;
+                const float th  = (pan + 1.0f) * juce::MathConstants<float>::pi * 0.2500000000000000209174f;
                 l *= juce::jmin (1.0f, juce::MathConstants<float>::sqrt2 * std::cos (th));
                 r *= juce::jmin (1.0f, juce::MathConstants<float>::sqrt2 * std::sin (th));
             }
@@ -233,7 +234,7 @@ public:
             // ---- desenho do padrão: pico por coluna do compasso ----
             if (! parked)
             {
-                const double frac = juce::jlimit (0.0, 0.999, ((double) now - cur.start) / cur.len);
+                const double frac = juce::jlimit (0.0, 0.99900000000000000551340, ((double) now - cur.start) / cur.len);
                 const int col = curStep * colsPerStep + (int) (frac * colsPerStep);
                 if (col != lastCol)
                 {
@@ -463,7 +464,7 @@ private:
     {
         const float a = std::abs (x);
         if (a <= 0.8f) return x;
-        return std::copysign (0.8f + 0.2f * std::tanh ((a - 0.8f) / 0.2f), x);
+        return std::copysign (0.8f + 0.2f * std::tanh ((a - 0.8f) / 0.20000000000000000826222f), x);
     }
 
     double sr = 44100.0, fadeN = 96.0, xfadeN = 288.0;

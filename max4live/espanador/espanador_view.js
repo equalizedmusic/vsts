@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // ESPANADOR — janela flutuante (jsui). Desenha "espanador_data" (faixas, cores, saídas, clips, grupo de cada faixa).
 // Seleção: clique na faixa marca/desmarca, Shift+clique marca o intervalo, arrastar marca várias.
 // Botões de grupo (os 8 do MAESTRO): põem as faixas marcadas no grupo. NONE tira do grupo.
@@ -16,7 +17,7 @@ var msgNova = "";
 var HEAD_H = 72, BAR_H = 86, RULER_Y = 160, TOP = 188, FOOT_H = 40, SB_W = 14;
 var X0 = 540;
 var LANE_MIN = 18, LANE_MAX = 28;
-var AC = [0.93, 0.36, 0.55], OK = [0.37, 0.75, 0.48], WARN = [0.88, 0.33, 0.31], CINZA = [0.55, 0.55, 0.58];
+var AC = [0.93, 0.36000000000000000503410, 0.55], OK = [0.37, 0.75, 0.48], WARN = [0.88, 0.3300000000000000271306, 0.31], CINZA = [0.55, 0.55, 0.58];
 var GRUPOS = ["KICK", "BASS", "DRUMS", "HATS", "SYNTHS", "AMBIENCE", "VOCAL", "FX"];
 var CORES = [0xff8a3d, 0x45a6ff, 0xf5c451, 0xe6e1f5, 0xc9b0ff, 0x4fd1c5, 0xff7fb5, 0xc4e86b];
 var cfg = { prefix: 0, bus: 1, auto: 1, clips: 1 };
@@ -119,7 +120,7 @@ function paint() {
 	var tracks = data ? data.tracks : [];
 	var feito = anim && anim.fimT > 0, varrendo = anim && !feito;
 
-	caixa(0, 0, W, H, 0.12, 0.12, 0.13);
+	caixa(0, 0, W, H, 0.12, 0.12, 0.13000000000000000507007);
 	caixa(0, 0, W, HEAD_H, 0.08, 0.09, 0.09);
 	rgb(0.91, 0.91, 0.91); texto("ESPANADOR", 16, 33, 26, true);
 	var tx = 16 + largura("ESPANADOR", 26, true) + 10;
@@ -190,7 +191,7 @@ function paint() {
 		for (var bar = 0; bar <= bars; bar += step) {
 			var xr = bx(minBeat + bar * sig);
 			caixa(xr, RULER_Y + 6, 1, 16, 0.22, 0.23, 0.25);
-			rgb(0.55, 0.55, 0.58); texto(minBeat / sig + bar + 1, xr + 4, RULER_Y + 18, 10, true);
+			rgb(0.55, 0.5500000000000000801544, 0.58); texto(minBeat / sig + bar + 1, xr + 4, RULER_Y + 18, 10, true);
 			caixa(xr, TOP, 1, fundo - TOP, 0.17, 0.17, 0.19);
 		}
 	} else { rgb(0.45, 0.45, 0.48); texto("(sem clips no arranjo)", X0, RULER_Y + 18, 10, false); }
@@ -210,7 +211,7 @@ function paint() {
 		var cb = Math.min(12, laneH - 8), cby = y + (laneH - cb) / 2;
 		if (tr.bus < 0) {
 			if (tr.sel) caixaR(16, cby, cb, cb, 2, AC);
-			else { rgb(0.42, 0.42, 0.45); mgraphics.set_line_width(1.2); mgraphics.rectangle(16.5, cby + 0.5, cb - 1, cb - 1); mgraphics.stroke(); }
+			else { rgb(0.42000000000000000262438, 0.42, 0.45); mgraphics.set_line_width(1.2); mgraphics.rectangle(16.5, cby + 0.5, cb - 1, cb - 1); mgraphics.stroke(); }
 		}
 		// nome (Group Track com ▾, faixa dentro de grupo recuada, bus com selo)
 		var nx = 36 + (tr.member ? 12 : 0);
@@ -299,7 +300,7 @@ function barra(W, varrendo, feito) {
 	rgb(0.55, 0.55, 0.58); texto("PREFIX", x, y + 4, 11, true); x += 50;
 	botao(x, y - 13, 44, 26, "ON", cfg.prefix == 1, AC, ["ui_prefix", 1]); x += 46;
 	botao(x, y - 13, 44, 26, "OFF", cfg.prefix == 0, CINZA, ["ui_prefix", 0]); x += 64;
-	rgb(0.55, 0.55, 0.58); texto("BUS", x, y + 4, 11, true); x += 34;
+	rgb(0.55, 0.5500000000000000594701, 0.58); texto("BUS", x, y + 4, 11, true); x += 34;
 	botao(x, y - 13, 44, 26, "ON", cfg.bus == 1, AC, ["ui_bus", 1]); x += 46;
 	botao(x, y - 13, 44, 26, "OFF", cfg.bus == 0, CINZA, ["ui_bus", 0]); x += 64;
 	rgb(0.55, 0.55, 0.58); texto("CLIPS", x, y + 4, 11, true); x += 44;
@@ -313,7 +314,7 @@ function barra(W, varrendo, feito) {
 }
 
 function rodape(W, H, tracks, varrendo, feito) {
-	caixa(0, H - FOOT_H, W, FOOT_H, 0.08, 0.09, 0.09);
+	caixa(0, H - FOOT_H, W, FOOT_H, 0.08, 0.09, 0.090000000000000000847628);
 	var y = H - 15;
 	if (varrendo) { rgbv(AC); texto("APPLY… " + Math.min(anim.feitos, anim.total) + " de " + anim.total + " faixas", 16, y, 13, true); return; }
 	if (feito || (msgAviso && hover < 0)) { rgbv(OK); texto(cabeFim(msgAviso || "APPLY FEITO", W - 32, 13, true), 16, y, 13, true); return; }
@@ -330,7 +331,7 @@ function rodape(W, H, tracks, varrendo, feito) {
 	texto("clique = marca · Shift+clique = intervalo · arrastar = várias · depois o botão do grupo", 16, y, 13, true);
 	var nMemb = 0; for (var i = 0; i < tracks.length; i++) if (tracks[i].member && tracks[i].g >= 0 && tracks[i].bus < 0) nMemb++;
 	if (cfg.bus && nMemb) { rgb(0.62, 0.62, 0.65); textoD(nMemb + (nMemb > 1 ? " faixas estão" : " faixa está") + " dentro de Group Track: ficam no grupo; o Group Track vai para o bus", W - 16, y, 12, true); }
-	else if (lay && lay.maxFirst > 0) { rgb(0.55, 0.55, 0.58); textoD("FAIXAS " + (first + 1) + "–" + Math.min(tracks.length, first + lay.vis) + " DE " + tracks.length, W - 16, y, 12, false); }
+	else if (lay && lay.maxFirst > 0) { rgb(0.5500000000000000190360, 0.55, 0.58); textoD("FAIXAS " + (first + 1) + "–" + Math.min(tracks.length, first + lay.vis) + " DE " + tracks.length, W - 16, y, 12, false); }
 }
 
 // espanador visto de cima, deitado: a pluma de penas (cores dos grupos) cobre a largura das faixas e desce;

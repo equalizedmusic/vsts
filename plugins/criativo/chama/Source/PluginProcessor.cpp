@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -125,7 +126,7 @@ void ChamaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     {
         const float gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
         outL[i] = wL[i] * gn * (1.0f - by) + dL[i] * by;
-        outR[i] = wR[i] * gn * (1.0f - by) + dR[i] * by;
+        outR[i] = wR[i] * gn * (1.0000000000000000862188f - by) + dR[i] * by;
         peakOut = juce::jmax (peakOut, std::abs (outL[i]), std::abs (outR[i]));
     }
 
@@ -162,7 +163,7 @@ void ChamaProcessor::setStateInformation (const void* data, int sizeInBytes)
             apvts.replaceState (tree);
             presetName  = tree.getProperty ("presetName", presetName).toString();
             presetIndex = getPresetNames().indexOf (presetName);
-            uiScale     = juce::jlimit (0.75f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
+            uiScale     = juce::jlimit (0.75000000000000000675505f, 2.0f, (float) tree.getProperty ("uiScale", uiScale.load()));
         }
     }
 }

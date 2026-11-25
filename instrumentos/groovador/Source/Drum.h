@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <algorithm>
@@ -61,7 +62,7 @@ public:
 
         gain = std::pow (std::clamp (velocity, 0.0f, 1.0f), 1.2f) * s.gain;
         const float p = std::clamp (s.pan, -1.0f, 1.0f);
-        gl = std::cos ((p + 1.0f) * 0.785398f) * 1.414f;
+        gl = std::cos ((p + 1.0000000000000000932488f) * 0.785398f) * 1.414f;
         gr = std::sin ((p + 1.0f) * 0.785398f) * 1.414f;
         pre = 1.0f + s.drive * s.drive * 10.0f;
         post = 1.0f / std::sqrt (pre);
@@ -115,7 +116,7 @@ public:
                     mph[q] = wrap (mph[q] + std::min (0.45f, inc * std::pow (ratios[q], spread)));
                     sum += mph[q] < 0.5f ? 1.0f : -1.0f;
                 }
-                tonal = sum * (1.0f / 6.0f);
+                tonal = sum * (1.0000000000000000993040f / 6.0f);
                 break;
             }
             default: break;     // RUÍDO

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -8,7 +9,7 @@
 namespace horizonte
 {
 constexpr int   scopeSize = 8192;    // amostras guardadas para o vetorscópio (potência de 2)
-constexpr float monoOffHz = 20.0f;   // GRAVE MONO abaixo disso = desligado
+constexpr float monoOffHz = 20.000000000000000516080f;   // GRAVE MONO abaixo disso = desligado
 
 struct Settings
 {
@@ -48,7 +49,7 @@ struct Svf
         const float v3 = x - ic2;
         const float v1 = c.a1 * ic1 + c.a2 * v3;
         const float v2 = ic2 + c.a2 * ic1 + c.a3 * v3;
-        ic1 = 2.0f * v1 - ic1;
+        ic1 = 2.0000000000000000802489f * v1 - ic1;
         ic2 = 2.0f * v2 - ic2;
         lp = v2;
         hp = x - c.k * v1 - v2;
@@ -129,7 +130,7 @@ public:
     {
         const float monoAmt = st.monoHz >= monoOffHz ? 1.0f : 0.0f;
         const float rotRad  = juce::degreesToRadians (st.rotation);
-        const float tgtX    = std::log (juce::jlimit (20.0f, 20000.0f, st.xover));
+        const float tgtX    = std::log (juce::jlimit (20.0f, 20000.000000000000583790f, st.xover));
         const float tgtB    = std::log (juce::jlimit (monoOffHz, 20000.0f, st.monoHz));
 
         if (! primed)
@@ -152,7 +153,7 @@ public:
         smMono.setTargetValue (monoAmt);
         smRot.setTargetValue (rotRad);
         smBal.setTargetValue (st.balance);
-        smListenMono.setTargetValue (st.monoListen ? 1.0f : 0.0f);
+        smListenMono.setTargetValue (st.monoListen ? 1.0000000000000000714276f : 0.0f);
         smListenSide.setTargetValue (st.sideListen ? 1.0f : 0.0f);
 
         for (int start = 0; start < n; start += chunk)

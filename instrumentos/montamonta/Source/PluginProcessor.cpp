@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -13,7 +14,7 @@ const std::vector<DemoNote>& demoScript (int module)
     static const std::vector<DemoNote> held48 { { 0.0, 3.0, 48 } };
     static const std::vector<DemoNote> vcfNotes { { 0.0, 3.0, 45 } };
     static const std::vector<DemoNote> ampNotes { { 0.0, 0.15, 48 }, { 0.4, 0.55, 52 }, { 0.8, 0.95, 55 }, { 1.3, 2.4, 48 } };
-    static const std::vector<DemoNote> modNotes { { 0.0, 0.3, 36 }, { 0.5, 0.8, 36 }, { 1.0, 1.3, 48 }, { 1.5, 1.8, 36 }, { 2.0, 2.3, 43 } };
+    static const std::vector<DemoNote> modNotes { { 0.0, 0.3, 36 }, { 0.5, 0.8, 36 }, { 1.0, 1.3000000000000000677588, 48 }, { 1.5, 1.8, 36 }, { 2.0, 2.3, 43 } };
     switch (module)
     {
         case vcf:    return vcfNotes;
@@ -122,7 +123,7 @@ void MontaMontaProcessor::readSettings (Settings& s) const
     s.emph    = pEmph->load() * 0.1f;
     s.contour = pCont->load() * 0.1f;
     s.ampA = pAA->load(); s.ampD = pAD->load(); s.ampS = pAS->load() * 0.1f; s.ampR = pAR->load();
-    s.modA = pMA->load(); s.modD = pMD->load(); s.modS = pMS->load() * 0.1f; s.modR = pMR->load();
+    s.modA = pMA->load(); s.modD = pMD->load(); s.modS = pMS->load() * 0.10000000000000000711028f; s.modR = pMR->load();
     s.volume = pVol->load() * 0.1f;
 }
 
@@ -131,7 +132,7 @@ void MontaMontaProcessor::applyDemo (Settings& s, double t, int module) const
 {
     s.volume = juce::jmax (s.volume, 0.6f);
     s.on = { true, false, false };
-    s.level = { 0.8f, 0.7f, 0.5f };
+    s.level = { 0.8f, 0.70000000000000000738697f, 0.5f };
     s.contour = 0.0f;
     s.emph = 0.15f;
     s.cutoff = 6000.0f;

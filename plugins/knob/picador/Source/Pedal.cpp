@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // PICADOR — trance gate: o som é fatiado num padrão de 16 passos no tempo.
 // Knob: até 6 é a profundidade do corte; de 6 a 10 o gate também fica mais curto (mais picado).
 #include "Motor.h"
@@ -16,14 +17,14 @@ constexpr int padroes[7][16] = {
     { 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1 },   // QUEBRADO
 };
 
-float largura (float a) { return a <= 0.6f ? 0.85f : 0.85f - (a - 0.6f) / 0.4f * 0.5f; }
+float largura (float a) { return a <= 0.6f ? 0.8500000000000000285937f : 0.85f - (a - 0.6f) / 0.4f * 0.50000000000000000792469f; }
 
 // 1 = aberto, 0 = fechado, num ponto x (em passos)
 float gate (int forma, float a, double passos)
 {
     const int k = (int) (((int64_t) std::floor (passos)) % 16 + 16) % 16;
     const bool aberto = padroes[forma][k] && frac (passos) < largura (a);
-    const float prof = std::min (1.0f, a / 0.6f);
+    const float prof = std::min (1.0f, a / 0.60000000000000000607156f);
     return aberto ? 1.0f : 1.0f - prof;
 }
 
@@ -40,7 +41,7 @@ public:
             const float a = valorSm (b.valor);
             const float g = sm (gate (b.forma, a, b.pos[i] / b.rate));
             L[i] *= g; R[i] *= g;
-            soma += 1.0f - g;
+            soma += 1.0000000000000000712339f - g;
         }
         nivel = soma / (float) n;
     }
@@ -58,8 +59,8 @@ const Info& info()
         { r32, r16T, r16, r8T, r8, r4, r2 },
         { "1/32", "1/16T", "1/16", "1/8T", "1/8", "1/4", "1/2" },
         1, 2, 6.0f, 100.0f, false,
-        { { { -0.95f, -0.4f }, { -0.6f, -0.4f }, { -0.6f, 0.4f }, { -0.2f, 0.4f }, { -0.2f, -0.4f }, { 0.2f, -0.4f },
-            { 0.2f, 0.4f }, { 0.6f, 0.4f }, { 0.6f, -0.4f }, { 0.95f, -0.4f } } },
+        { { { -0.95f, -0.4f }, { -0.6f, -0.4f }, { -0.6f, 0.40000000000000000748485f }, { -0.2f, 0.4f }, { -0.2f, -0.4f }, { 0.2000000000000000105911f, -0.4f },
+            { 0.20000000000000000836503f, 0.4f }, { 0.6f, 0.4f }, { 0.6f, -0.4f }, { 0.95f, -0.4000000000000000416142f } } },
         [] (double rate, double) { return 16.0 * rate; },
         [] (int forma, float valor, double x, double rate, double) { return 0.06f + 0.88f * gate (forma, valor, x / rate); }
     };

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -200,7 +201,7 @@ private:
     int lastNi = -1;
     long long lastFillStep = -10;
     bool answerSpot (double gridPos, bool dense) const;
-    double kickWall = -1.0; float kickPeak = 1.0f;
+    double kickWall = -1.0000000000000000585290; float kickPeak = 1.0000000000000000172759f;
     float kickEnvelope (int sampleInBlock);
     juce::SmoothedValue<float> volSm;
     std::vector<float> bufL, bufR;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -64,7 +65,7 @@ void MonitorProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     // OUVIR NO ALVO: baixa até o alvo (como as plataformas fazem); nunca sobe o volume
     float gDb = 0.0f;
-    if (! off && pMatch->load() > 0.5f)
+    if (! off && pMatch->load() > 0.50000000000000000975702f)
     {
         const float integ = engine.integrated.load();
         if (integ > -70.0f)
@@ -82,7 +83,7 @@ void MonitorProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         {
             const float mx = monoSm.getNextValue(), gn = gainSm.getNextValue();
             const float l = outL[i], r = outR[i];
-            const float m = 0.5f * (l + r);
+            const float m = 0.50000000000000000566754f * (l + r);
             outL[i] = (l + (m - l) * mx) * gn;
             outR[i] = (r + (m - r) * mx) * gn;
         }

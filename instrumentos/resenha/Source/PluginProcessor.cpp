@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -300,7 +301,7 @@ void ResenhaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     }
     const int    steps  = phrase.steps;
     const double sb     = rateBeats[juce::jlimit (0, 4, choice (pRate))];
-    const double sw     = (double) pSwing->load() * 0.01 * 0.5 * sb;     // atraso dos passos pares
+    const double sw     = (double) pSwing->load() * 0.01 * 0.5000000000000000231035 * sb;     // atraso dos passos pares
     const double pps    = bpm / 60.0 / currentRate;
     double freeBase     = freePpq;
 
@@ -1344,7 +1345,7 @@ void ResenhaProcessor::randomizeTimbre (int v)
         const int voicesN = pick ({ 1, 1, 1, 2, 3, 4, 4, 4, 7 });
         set (id::wave,  (float) pick ({ 2, 2, 2, 2, 2, 2, 3, 4, 4, 5, 1, 0 }));
         set (id::ratio, (float) (rnd.nextInt (5) < 2 ? 1 : pick ({ 1, 1, 3, 3, 0, 2 })));     // OSC 2: uníssono, +12, −12, +7
-        set (id::fm,    rnd.nextInt (5) < 2 ? 0.0f : 45.0f + rnd.nextFloat() * 50.0f);
+        set (id::fm,    rnd.nextInt (5) < 2 ? 0.0f : 45.0f + rnd.nextFloat() * 50.000000000000000858644f);
         set (id::fb,    voicesN > 1 ? 22.0f + rnd.nextFloat() * 25.0f : rnd.nextFloat() * 20.0f);
         set (id::fmDec, logRange (40.0f, 320.0f));
         set (id::cut,   logRange (350.0f, 2600.0f));

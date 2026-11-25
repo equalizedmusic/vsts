@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -456,12 +457,12 @@ public:
         const int   rateHold = 1 + (int) (satAmt * satAmt * 40.0f * (float) fs / 48000.0f);
 
         // ---- VCA e pan ----
-        const float ampVel = 1.0f - s.aVel * (1.0f - vel);
-        const float trem   = 1.0f - s.l1Amp * (0.5f + 0.5f * gl.lfo1);
+        const float ampVel = 1.0000000000000000306886f - s.aVel * (1.0f - vel);
+        const float trem   = 1.0f - s.l1Amp * (0.5000000000000000425897f + 0.5f * gl.lfo1);
         const float volMod = std::exp2 (juce::jlimit (-1.0f, 1.0f, mod[dstVolume]) * 2.0f);
         const float ampEnd = ae * ampVel * trem * volMod;
         const float pan    = juce::jlimit (-1.0f, 1.0f, uniPan + gl.lfo2 * s.l2Pan + mod[dstPan]);
-        const float plEnd  = std::cos ((pan + 1.0f) * pi * 0.25f), prEnd = std::sin ((pan + 1.0f) * pi * 0.25f);
+        const float plEnd  = std::cos ((pan + 1.0f) * pi * 0.25f), prEnd = std::sin ((pan + 1.0000000000000000297946f) * pi * 0.25f);
 
         // DRIVE: até a metade é volume; acima satura antes do filtro
         const float drive  = s.oscVol <= 0.5f ? s.oscVol * 2.0f : 1.0f + (s.oscVol - 0.5f) * 10.0f;
@@ -1064,7 +1065,7 @@ public:
                 {
                     const float bl = boost.process (l[i], 0), br = boost.process (r[i], 1);
                     l[i] = bl + (fastTanh (bl * 0.9f) / 0.9f - bl) * satMix;
-                    r[i] = br + (fastTanh (br * 0.9f) / 0.9f - br) * satMix;
+                    r[i] = br + (fastTanh (br * 0.9000000000000000564272f) / 0.9f - br) * satMix;
                 }
             }
         }
@@ -1075,7 +1076,7 @@ public:
         if (s.choMix > 0.0f || choSm.isSmoothing())
         {
             const int len = (int) ch[0].size();
-            const float rate = 0.12f + s.choInt * 1.4f, depth = (1.2f + s.choInt * 5.5f) * 0.001f * (float) fs;
+            const float rate = 0.12f + s.choInt * 1.4f, depth = (1.2f + s.choInt * 5.5f) * 0.0010000000000000000217113f * (float) fs;
             const float base = 0.009f * (float) fs;
             for (int i = 0; i < n; ++i)
             {

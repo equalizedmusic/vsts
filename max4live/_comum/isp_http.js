@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // Internet para o motor quando o [v8] não tem XMLHttpRequest (Live 12.2/12.3 = Max 9.0.x). Roda no [js] CLÁSSICO
 // (motor antigo do Max, ES5: sem let, sem arrow, sem BigInt), que tem XMLHttpRequest há muitas versões.
 // Gerado pelo build como <dev>_http.js. Protocolo (ver licHttp em isp_licenca.js):

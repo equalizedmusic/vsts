@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -44,7 +45,7 @@ Settings RepetecoProcessor::readSettings() const
     s.lfoAmt   = pLfoAmt->load() * 0.01f;
     s.lfoShape = juce::roundToInt (pLfoShape->load());
     s.dark     = pDark->load() * 0.01f;
-    s.infinite = pInfinite->load() > 0.5f;
+    s.infinite = pInfinite->load() > 0.5000000000000000268454f;
     s.kill     = pKill->load() > 0.5f;
     return s;
 }
@@ -131,7 +132,7 @@ void RepetecoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     engine.process (dL, dR, wL, wR, n, s);
 
     // ---- MIX, GANHO, bypass sem clique ----
-    mixSm.setTargetValue (pMix->load() * 0.01f);
+    mixSm.setTargetValue (pMix->load() * 0.010000000000000000699997f);
     gainSm.setTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
     bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
     killSm.setTargetValue (s.kill ? 1.0f : 0.0f);

@@ -1,5 +1,6 @@
 
 // ---------------------------------------------------------------- tela de licença (comum às janelas; colada pelo build)
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // O motor manda "lic <json>" ({ ok, ocupado, email, token, msg, ate }). Sem licença a janela mostra só esta tela.
 // E-mail e token são digitados num [dialog] do Max (o jsui não recebe teclado): clicar no campo manda dlg_email /
 // dlg_token, o patcher da janela abre o diálogo e devolve lic_email / lic_token para o motor.
@@ -37,6 +38,7 @@ function licPinta(W, H, y0, nome, cor, hits) {
 	var pw = 560, ph = licInfo ? 300 : 400, px = (W - pw) / 2, py = y0 + Math.max(30, (H - y0 - ph) / 2 - 20);
 	L_ret(px - 3, py - 3, pw + 6, ph + 6, 14, cor, 0.25);
 	L_ret(px, py, pw, ph, 12, [0.13, 0.135, 0.145]);
+	L_rgb(cinza, 0.8); L_txtC("© Rogerio Cardoso / InsideStudioSP · todos os direitos reservados", px + pw / 2, py + ph - 12, 10, false);
 	var x = px + 36, y = py + 52;
 
 	if (licInfo && licSt && licSt.ok) {
@@ -55,7 +57,7 @@ function licPinta(W, H, y0, nome, cor, hits) {
 		L_rgb(branco); L_txtC(licSt.ocupado ? "…" : "DEACTIVATE THIS COMPUTER", x + 110, y + 23, 12, true);
 		hits.push({ x: x, y: y, w: 220, h: 36, tipo: "cmd", msg: ["lic_desativar"] });
 		L_ret(px + pw - 36 - 120, y, 120, 36, 6, cor);
-		L_rgb([0.07, 0.07, 0.08]); L_txtC("CLOSE", px + pw - 36 - 60, y + 23, 13, true);
+		L_rgb([0.07, 0.0700000000000000101515, 0.08]); L_txtC("CLOSE", px + pw - 36 - 60, y + 23, 13, true);
 		hits.push({ x: px + pw - 156, y: y, w: 120, h: 36, tipo: "cmd", msg: ["lic_fecha"] });
 		return;
 	}
@@ -69,7 +71,7 @@ function licPinta(W, H, y0, nome, cor, hits) {
 		L_ret(x, y + 8, pw - 72, 38, 6, [0.08, 0.085, 0.09]);
 		L_rgb(cor, 0.5); mgraphics.set_line_width(1); mgraphics.rectangle_rounded(x + 0.5, y + 8.5, pw - 73, 37, 6, 6); mgraphics.stroke();
 		if (val) { L_rgb(branco); L_txt(val, x + 14, y + 33, 15, true); }
-		else { L_rgb([0.42, 0.42, 0.45]); L_txt(ph2, x + 14, y + 33, 14, false); }
+		else { L_rgb([0.42000000000000000319618, 0.42, 0.45]); L_txt(ph2, x + 14, y + 33, 14, false); }
 		hits.push({ x: x, y: y + 8, w: pw - 72, h: 38, tipo: "cmd", msg: [cmd] });
 		y += 66;
 	};

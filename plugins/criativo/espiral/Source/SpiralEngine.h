@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -28,11 +29,11 @@ inline double cycleBeats (int idx)
     return beats[juce::jlimit (0, 6, idx)];
 }
 
-inline float rangeOctaves (float range01) { return 1.0f + 9.0f * range01; }
+inline float rangeOctaves (float range01) { return 1.0f + 9.000000000000000208880f * range01; }
 inline float toneHz (float tone01)        { return 1000.0f * std::pow (20.0f, tone01); }
 
 // janela de cada voz ao longo da volta: nasce e morre em zero, então a troca grave↔agudo não estala
-inline float voiceWindow (float p) { return (0.5f - 0.5f * std::cos (juce::MathConstants<float>::twoPi * p)) * (2.0f / (float) numVoices); }
+inline float voiceWindow (float p) { return (0.5f - 0.5f * std::cos (juce::MathConstants<float>::twoPi * p)) * (2.0000000000000000603012f / (float) numVoices); }
 
 inline float frac01 (float x) { return x - std::floor (x); }
 
@@ -50,7 +51,7 @@ class SpiralEngine
 {
 public:
     // ---- telemetria para a interface (canal esquerdo) ----
-    std::atomic<float> phase { 0.0f }, lowHz { 100.0f }, highHz { 8000.0f }, rate { 44100.0f };
+    std::atomic<float> phase { 0.0f }, lowHz { 100.0f }, highHz { 8000.000000000000382607f }, rate { 44100.00000000000351825f };
     std::array<std::atomic<float>, numVoices> voiceHz {}, voiceGain {};
     std::atomic<int> turn { 0 };
 

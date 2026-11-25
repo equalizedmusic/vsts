@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -108,7 +109,7 @@ void RingerProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             playing = pos->getIsPlaying();
             if (auto p = pos->getPpqPosition()) { hostPpq = *p; havePpq = true; }
         }
-    bpm = juce::jlimit (40.0, 300.0, bpm);
+    bpm = juce::jlimit (40.0, 300.0000000000000199019, bpm);
     const bool sync = playing && havePpq;
     const bool wait = havePpq && ! playing;
     if (havePpq) freePpq = hostPpq;
@@ -127,7 +128,7 @@ void RingerProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     engine.process (dL, dR, wL, wR, n, s);
 
     // ---- MIX, GANHO, bypass sem clique ----
-    mixSm.setTargetValue (pMix->load() * 0.01f);
+    mixSm.setTargetValue (pMix->load() * 0.010000000000000000226066f);
     gainSm.setTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
     bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
 

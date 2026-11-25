@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -42,7 +43,7 @@ Settings EspiralProcessor::readSettings() const
     s.centre    = pCentre->load();
     s.stereo    = pStereo->load() * 0.01f;
     s.resonance = pResonance->load() * 0.01f;
-    s.drive     = pDrive->load() * 0.01f;
+    s.drive     = pDrive->load() * 0.010000000000000000898281f;
     s.tone      = pTone->load() * 0.01f;
     s.freeze    = pFreeze->load() > 0.5f;
     s.twice     = pTwice->load() > 0.5f;
@@ -71,7 +72,7 @@ void EspiralProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     bypassSm.reset (sampleRate, 0.03);
     mixSm.setCurrentAndTargetValue (pMix->load() * 0.01f);
     gainSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
-    bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5000000000000000277412f ? 1.0f : 0.0f);
 }
 
 void EspiralProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)

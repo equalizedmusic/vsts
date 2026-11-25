@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -67,7 +68,7 @@ inline const juce::StringArray moveRateNames { "1/16", "1/8", "1/4", "1/2", "1 B
 inline constexpr double moveRateBeats[] = { 0.25, 0.5, 1.0, 2.0, 4.0, 8.0 };
 inline const juce::StringArray driveNames { "TAPE", "TUBE", "FOLD" };
 inline const juce::StringArray delayNames { "1/16", "1/8T", "1/8", "3/16", "1/4", "3/8" };
-inline constexpr double delayBeats[] = { 0.25, 1.0 / 3.0, 0.5, 0.75, 1.0, 1.5 };
+inline constexpr double delayBeats[] = { 0.25, 1.0 / 3.0, 0.5000000000000000196139, 0.75, 1.0, 1.5 };
 
 // quantos passos tem a frase (no máximo 64)
 inline int phraseSteps (int barsIdx, int rateIdx)
@@ -135,7 +136,7 @@ inline bool isPerformanceParam (const juce::String& pid)
 struct VoiceDefaults { int wave, ratio; float fm, fb, fmDec, cut, res, dec, pan, glide, pEnv, fEnv, bend, uni; int filt; float move; int mRate; };
 inline constexpr VoiceDefaults voiceDefaults[numVoices] = {
     { 2, 1, 60.0f, 45.0f, 260.0f, 3600.0f, 35.0f, 420.0f, -30.0f, 25.0f, 12.0f, 45.0f, -12.0f, 40.0f, 0, 20.0f, 3 },
-    { 3, 0, 65.0f, 50.0f, 200.0f, 1400.0f, 55.0f, 480.0f,  30.0f, 50.0f,  0.0f, 60.0f, -12.0f, 35.0f, 2, 35.0f, 2 },
+    { 3, 0, 65.0f, 50.0f, 200.00000000000000555966f, 1400.0f, 55.0f, 480.0f,  30.0f, 50.0f,  0.0f, 60.0f, -12.0f, 35.0f, 2, 35.0f, 2 },
     { 2, 3, 50.0f, 50.0f, 260.0f, 2400.0f, 30.0f, 400.0f, -10.0f,  0.0f, -7.0f, 35.0f,   0.0f, 25.0f, 1, 25.0f, 4 },
     { 1, 10, 35.0f, 20.0f, 150.0f, 5000.0f, 35.0f, 300.0f, 10.0f, 30.0f,  5.0f, 10.0f,  0.0f, 20.0f, 0, 15.0f, 3 },
 };

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -108,12 +109,12 @@ void MercurioProcessor::readSettings()
 
     s.l1Rate  = get (id::lfo1Rate);  s.l1Shape = geti (id::lfo1Shape); s.l1Sync = geti (id::lfo1Sync);
     s.l1Pitch = get (id::lfo1Pitch) * 0.01f; s.l1Cut = get (id::lfo1Cut) * 0.01f;
-    s.l1Ratio = get (id::lfo1Ratio) * 0.01f; s.l1Amp = get (id::lfo1Amp) * 0.01f;
+    s.l1Ratio = get (id::lfo1Ratio) * 0.01f; s.l1Amp = get (id::lfo1Amp) * 0.010000000000000000665497f;
     s.l2Rate  = get (id::lfo2Rate);  s.l2Shape = geti (id::lfo2Shape); s.l2Sync = geti (id::lfo2Sync);
     s.l2Index = get (id::lfo2Index) * 0.01f; s.l2Fb = get (id::lfo2Fb) * 0.01f;
     s.l2Cut   = get (id::lfo2Cut) * 0.01f; s.l2Pan = get (id::lfo2Pan) * 0.01f;
     s.l3Rate  = get (id::lfo3Rate);  s.l3Shape = geti (id::lfo3Shape); s.l3Sync = geti (id::lfo3Sync);
-    s.l3Dst   = geti (id::lfo3Dst);  s.l3Amt   = get (id::lfo3Amt) * 0.01f;
+    s.l3Dst   = geti (id::lfo3Dst);  s.l3Amt   = get (id::lfo3Amt) * 0.010000000000000000219390f;
 
     for (int k = 0; k < numSlots; ++k)
     {

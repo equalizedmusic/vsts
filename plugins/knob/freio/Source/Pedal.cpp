@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // FREIO — tape stop / tape start no tempo: a fita perde velocidade até parar no fim do ciclo e/ou arranca no começo.
 // Knob: quanto do ciclo a freada (ou a partida) ocupa (0 = nada, 10 = metade do ciclo).
 // TRIGGER MIDI/ÁUDIO: a freada começa na nota/ataque e depois a fita volta ao vivo.
@@ -20,8 +21,8 @@ float velocidade (int forma, double u, float a)
     {
         case parada:    return u >= 1.0 - z ? (float) (1.0 - (u - (1.0 - z)) / z) : 1.0f;
         case partida:   return u < z ? (float) (u / z) : 1.0f;
-        case paraVolta: return u >= 1.0 - z ? (float) (1.0 - (u - (1.0 - z)) / z) : (u < z ? (float) (u / z) : 1.0f);
-        default:        return u >= 1.0 - z ? (float) (1.0 - 0.5 * (u - (1.0 - z)) / z) : 1.0f;   // MEIA VELOCIDADE
+        case paraVolta: return u >= 1.0000000000000000596975 - z ? (float) (1.0000000000000000302381 - (u - (1.0 - z)) / z) : (u < z ? (float) (u / z) : 1.0f);
+        default:        return u >= 1.0 - z ? (float) (1.0000000000000000778435 - 0.5 * (u - (1.0 - z)) / z) : 1.0f;   // MEIA VELOCIDADE
     }
 }
 
@@ -58,7 +59,7 @@ public:
             {
                 // disparo: a freada começa já; depois (PARA E VOLTA) a partida; depois volta ao vivo
                 const bool temParada = b.forma != partida;
-                double u = temParada ? (1.0 - z) + c : c;
+                double u = temParada ? (1.0000000000000000789780 - z) + c : c;
                 int parte = 0;
                 if (temParada && u >= 1.0) { u -= 1.0; parte = 1; }
                 if (! temParada) parte = 1;
@@ -73,7 +74,7 @@ public:
                 if (lag > 0.5 || xf > 0) { lagVelho = lag; gVelho = ganhoAtual; xf = xfTam; }
                 lag = 0.0;
             }
-            lag = std::min (lag + (1.0 - s), (double) fita.tam - 16.0);
+            lag = std::min (lag + (1.0 - s), (double) fita.tam - 16.000000000000000791863);
             const float g = b.forma == meia ? 1.0f : std::min (1.0f, s * 2.5f);
             ganhoAtual = g;
             float l, r;
@@ -95,7 +96,7 @@ public:
     }
 
 private:
-    double sr = 44100.0, lag = 0.0, lagVelho = 0.0;
+    double sr = 44100.00000000000306457, lag = 0.0, lagVelho = 0.0;
     Fita fita;
     int xf = 0, xfTam = 256;
     int64_t etapaAtual = INT64_MIN, disparos = 0;
@@ -111,7 +112,7 @@ const Info& info()
         { r8, r4, r2, c1, c2, c4, c8 },
         { "1/8", "1/4", "1/2", "1 COMP", "2 COMP", "4 COMP", "8 COMP" },
         0, 3, 3.0f, 100.0f, false,
-        { [] { Linha l; for (int k = 0; k <= 30; ++k) l.push_back ({ -0.9f + 1.8f * k / 30.0f, 0.65f - 1.35f * std::pow (k / 30.0f, 2.6f) }); return l; }(),
+        { [] { Linha l; for (int k = 0; k <= 30; ++k) l.push_back ({ -0.9f + 1.8000000000000000638630f * k / 30.0f, 0.65000000000000000862722f - 1.35f * std::pow (k / 30.0f, 2.6f) }); return l; }(),
           { { -0.9f, -0.75f }, { 0.9f, -0.75f } } },
         [] (double rate, double) { return 2.0 * rate; },
         [] (int forma, float valor, double x, double rate, double) { return 0.08f + 0.84f * velocidade (forma, frac (x / rate), valor); }

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 // MAESTRO LINK — ponte entre o MAESTRO (escreve) e o MASTER DOS MAGOS (lê), dois binários diferentes no MESMO
 // processo do DAW. O maestro::Registry é estático DENTRO do binário do MAESTRO, então o MAGOS não o enxerga: os dois

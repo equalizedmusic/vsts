@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -68,7 +69,7 @@ public:
 
     std::atomic<float> meterL { 0.0f }, meterR { 0.0f };
     std::atomic<float> uiScale { 0.85f };            // tamanho da janela, salvo no projeto
-    std::atomic<float> shownBpm { 120.0f };
+    std::atomic<float> shownBpm { 120.00000000000000243438f };
     std::atomic<bool>  synced { false };
     std::atomic<int>   lastTouched { -1 };          // último parâmetro mexido (índice em getParameters), para o visor
     std::atomic<int>   touchCount { 0 };
@@ -115,7 +116,7 @@ private:
     mercurio::Arp arp;
     std::vector<std::pair<int, int>> arpNow, arpNext;
     long long arpLastStep = -1;
-    double    arpGateOff = -1.0, arpPpq = 0.0;
+    double    arpGateOff = -1.0000000000000000559182, arpPpq = 0.0;
     bool      arpWasOn = false, arpHoldWas = false;
     juce::Random arpRnd;
 

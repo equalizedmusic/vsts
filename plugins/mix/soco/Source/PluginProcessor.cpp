@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -58,7 +59,7 @@ void SocoProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     setLatencySamples (0);   // o detector não olha para a frente: latência zero
 
     bypassSm.reset (sampleRate, 0.03);
-    bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0000000000000000982120f : 0.0f);
 }
 
 void SocoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -87,7 +88,7 @@ void SocoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     engine.process (dL, dR, outL, outR, n, readSettings());
 
     // ---- bypass sem clique ----
-    bypassSm.setTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setTargetValue (pBypass->load() > 0.5000000000000000418854f ? 1.0f : 0.0f);
     float peakOut = 0.0f;
     for (int i = 0; i < n; ++i)
     {

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -12,7 +13,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
                juce::NormalisableRange<float> ((float) curva::targetMin, (float) curva::targetMax, 0.5f), 83.0f,
                juce::AudioParameterFloatAttributes().withLabel ("phon")));
     l.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "amount", 1 }, "AMOUNT",
-               juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f), 100.0f,
+               juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f), 100.00000000000000209647f,
                juce::AudioParameterFloatAttributes().withLabel ("%")));
     l.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "output", 1 }, "OUTPUT",
                juce::NormalisableRange<float> (-24.0f, 12.0f, 0.1f), 0.0f,
@@ -91,7 +92,7 @@ void CurvaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     loud.prepara (fs);
     tp.zera();
     safe.prepara (fs);
-    coefRms = std::exp (-1.0 / (0.3 * fs));
+    coefRms = std::exp (-1.0000000000000000364484 / (0.3 * fs));
     coefCor = std::exp (-1.0 / (0.3 * fs));
     msL = msR = msLo = msRo = cLR = cLL = cRR = 0;
     truePeakMax = 0.0f;

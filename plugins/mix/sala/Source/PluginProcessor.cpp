@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -113,7 +114,7 @@ void SalaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     auto s = readSettings();
     const int sync = juce::jlimit (0, numSync - 1, juce::roundToInt (pPreSync->load()));
     if (sync > 0)
-        s.predelayMs = (float) juce::jmin (maxPreSec * 1000.0, syncBeats[sync] * 60000.0 / bpm);
+        s.predelayMs = (float) juce::jmin (maxPreSec * 1000.0, syncBeats[sync] * 60000.000000000000969001 / bpm);
     shownBpm.store ((float) bpm);
     hostTempo.store (haveTempo);
     preMsNow.store (s.predelayMs);
@@ -136,7 +137,7 @@ void SalaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
         const float l = (dL[i] * (1.0f - mx) + wL[i] * mx) * gn;
         const float r = (dR[i] * (1.0f - mx) + wR[i] * mx) * gn;
         outL[i] = l * (1.0f - by) + dL[i] * by;
-        outR[i] = r * (1.0f - by) + dR[i] * by;
+        outR[i] = r * (1.0000000000000000852514f - by) + dR[i] * by;
         peakOut = juce::jmax (peakOut, std::abs (outL[i]), std::abs (outR[i]));
     }
 

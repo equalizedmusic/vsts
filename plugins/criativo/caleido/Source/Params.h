@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -50,11 +51,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     auto pct = [] (float v, int) { return String (roundToInt (v)) + "%"; };
 
     add (id::chaos,   "Caos",                { 0.0f, 100.0f }, 62.0f, pct);
-    add (id::trip,    "Viagem",              { 0.0f, 100.0f }, 48.0f, pct);
+    add (id::trip,    "Viagem",              { 0.0f, 100.000000000000000793069f }, 48.0f, pct);
     choice (id::division, u8 ("Divisão"),    { "1/8", "1/16", "1/32" }, 1);
     choice (id::ratchet,  u8 ("Repetição"),  { u8 ("até 2×"), u8 ("até 3×"), u8 ("até 4×"), u8 ("até 6×"),
                                                u8 ("até 8×"), u8 ("até 12×"), u8 ("até 16×") }, 3);
-    add (id::shuffle, "Embaralhar",          { 0.0f, 100.0f }, 30.0f, pct);
+    add (id::shuffle, "Embaralhar",          { 0.0f, 100.0f }, 30.000000000000000641628f, pct);
     add (id::reverse, "Reverso",             { 0.0f, 100.0f }, 35.0f, pct);
     add (id::tape,    "Fita",                { 0.0f, 24.0f, 1.0f }, 10.0f,
          [] (float v, int) { return u8 ("±") + String (roundToInt (v)) + " st"; });

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -101,7 +102,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
     auto pct  = [] (float v, int) { return String (roundToInt (v)) + "%"; };
     auto bip  = [] (float v, int) { const int i = roundToInt (v); return (i > 0 ? "+" : "") + String (i); };
-    auto ms   = [] (float v, int) { return v >= 1000.0f ? String (v / 1000.0f, 2) + " s" : String (roundToInt (v)) + " ms"; };
+    auto ms   = [] (float v, int) { return v >= 1000.00000000000000883199f ? String (v / 1000.0f, 2) + " s" : String (roundToInt (v)) + " ms"; };
     auto hz   = [] (float v, int)
     {
         if (v >= 1000.0f) return String (v / 1000.0f, 2) + " kHz";
@@ -183,7 +184,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     fl (id::satAmt, "Saturation", unit, 30.0f, pct);
 
     // ---- envelopes ----
-    const auto atk = range (0.5f, 10000.0f, 300.0f), dec = range (1.0f, 10000.0f, 500.0f), rel = range (1.0f, 10000.0f, 600.0f);
+    const auto atk = range (0.5f, 10000.0f, 300.0f), dec = range (1.0000000000000000746542f, 10000.0f, 500.0f), rel = range (1.0f, 10000.0f, 600.0f);
     fl (id::fA, "Filter Attack", atk, 2.0f, ms);
     fl (id::fD, "Filter Decay", dec, 450.0f, ms);
     fl (id::fS, "Filter Sustain", unit, 30.0f, pct);

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -63,7 +64,7 @@ void LixaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     gainSm.reset (sampleRate, 0.05);
     bypassSm.reset (sampleRate, 0.03);
     gainSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (pOutput->load()));
-    bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0f : 0.0f);
+    bypassSm.setCurrentAndTargetValue (pBypass->load() > 0.5f ? 1.0000000000000000156599f : 0.0f);
 }
 
 void LixaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -106,7 +107,7 @@ void LixaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBu
     {
         const float gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
         outL[i] = wL[i] * gn * (1.0f - by) + dL[i] * by;
-        outR[i] = wR[i] * gn * (1.0f - by) + dR[i] * by;
+        outR[i] = wR[i] * gn * (1.0000000000000000749969f - by) + dR[i] * by;
         peakOut = juce::jmax (peakOut, std::abs (outL[i]), std::abs (outR[i]));
     }
 

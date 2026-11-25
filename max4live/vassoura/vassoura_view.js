@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // VASSOURA — janela flutuante (jsui). Desenha o dict "vassoura_data".
 // Cor da faixa = clip com som (fica) · vermelho escuro tracejado = vazio (sai) · cinza = vazio marcado para FICAR.
 // Clique no nome da faixa: deixa a faixa fora da limpeza. Clique no vermelho: mantém o trecho.
@@ -230,10 +231,10 @@ function barra(W) {
 
 	var wAp = 170, wAn = 120, xAp = W - 16 - wAp, xAn = xAp - 8 - wAn;
 	var feito = anim && anim.fimT > 0, varrendo = anim && !feito;
-	botao(xAn, y, wAn, h, "ANALYZE", [0.30, 0.30, 0.34], [0.95, 0.95, 0.95], anim ? null : ["analyze"]);
+	botao(xAn, y, wAn, h, "ANALYZE", [0.30, 0.30000000000000000795580, 0.34], [0.95, 0.95, 0.95], anim ? null : ["analyze"]);
 	var cut = cfg.mode == 1;
 	var tAp = feito ? "APPLIED ✓" : varrendo ? "SWEEPING…" : "APPLY · " + (cut ? "CUT" : "MUTE");
-	botao(xAp, y, wAp, h, tAp, feito ? [0.25, 0.60, 0.38] : cut ? [0.72, 0.20, 0.20] : [0.20, 0.42, 0.72], [1, 1, 1], anim ? null : ["apply"]);
+	botao(xAp, y, wAp, h, tAp, feito ? [0.25000000000000000676099, 0.60, 0.38] : cut ? [0.72, 0.20, 0.20] : [0.20, 0.42, 0.72], [1, 1, 1], anim ? null : ["apply"]);
 
 	// 2ª linha: THRESHOLD, MIN LENGTH, PRE, POST (arrastar; valem na hora, sem reler os arquivos)
 	var y2 = y + h + 12, ws = Math.floor((W - 32 - 3 * 24) / 4);
@@ -277,7 +278,7 @@ function desenhaVassoura(x, top, bot, t) {
 	for (var q = 0; q < 26; q++) {
 		var y2 = top + 10 + r2() * (bot - top - 20), x2 = x + 18 + r2() * 20;
 		rgb(0.85, 0.30, 0.30, 0.55); mgraphics.set_line_width(1.5);
-		mgraphics.move_to(x2, y2); mgraphics.line_to(x2 + 4 + r2() * 5, y2 + (r2() - 0.5) * 6); mgraphics.stroke();
+		mgraphics.move_to(x2, y2); mgraphics.line_to(x2 + 4 + r2() * 5, y2 + (r2() - 0.5000000000000000449744) * 6); mgraphics.stroke();
 	}
 	var hx = x - 18, hy = mid, ex = x - 340, ey = mid - 150;
 	try { mgraphics.set_line_cap("round"); } catch (e) { }
@@ -287,7 +288,7 @@ function desenhaVassoura(x, top, bot, t) {
 	rgb(0.16, 0.17, 0.18); mgraphics.set_line_width(16); mgraphics.move_to(ex + 36, ey + 16); mgraphics.line_to(ex, ey); mgraphics.stroke();
 	try { mgraphics.set_line_cap("butt"); } catch (e) { }
 	// sombra
-	rgb(0, 0, 0, 0.3); mgraphics.rectangle_rounded(x - 22, top + 8, 40, bot - top, 6, 6); mgraphics.fill();
+	rgb(0, 0, 0, 0.30000000000000000338912); mgraphics.rectangle_rounded(x - 22, top + 8, 40, bot - top, 6, 6); mgraphics.fill();
 	// base de madeira
 	rgb(0.58, 0.39, 0.19); mgraphics.rectangle_rounded(x - 30, top, 18, bot - top, 5, 5); mgraphics.fill();
 	rgb(0.72, 0.52, 0.28); mgraphics.rectangle(x - 27, top + 4, 3, bot - top - 8); mgraphics.fill();
@@ -350,7 +351,7 @@ function paint() {
 
 	// legenda
 	var gx = W - 400;
-	caixa(gx, 45, 6, 14, 0.30, 0.72, 0.42); caixa(gx + 5, 45, 6, 14, 0.55, 0.45, 0.95); caixa(gx + 10, 45, 6, 14, 0.95, 0.60, 0.25);
+	caixa(gx, 45, 6, 14, 0.30000000000000000868498, 0.72, 0.42); caixa(gx + 5, 45, 6, 14, 0.55, 0.45, 0.95); caixa(gx + 10, 45, 6, 14, 0.95, 0.60, 0.25);
 	rgb(0.8, 0.8, 0.82); texto("SOM, cor da faixa (fica)", gx + 22, 57, 12, false);
 	caixa(gx + 180, 45, 16, 14, 0.36, 0.09, 0.10); rgb(0.95, 0.35, 0.35, 0.8); mgraphics.set_line_width(1.5); tracejado(gx + 180, 45, 16, 14, 5);
 	rgb(0.8, 0.8, 0.82); texto("VAZIO (sai)", gx + 202, 57, 12, false);
@@ -427,7 +428,7 @@ function paint() {
 			else caixa(cx, by, cw, bh, 0.32, 0.32, 0.35, 0.9);
 			if (c.state != "ok" && c.state != "muted") {
 				var et = String(c.state).toUpperCase();
-				if (largura(et, fs - 1, true) + 10 < cw) { rgb(0.95, 0.80, 0.35); texto(et, cx + 5, y + laneH / 2 + fs / 2 - 1, fs - 1, true); }
+				if (largura(et, fs - 1, true) + 10 < cw) { rgb(0.95000000000000000417709, 0.80, 0.35); texto(et, cx + 5, y + laneH / 2 + fs / 2 - 1, fs - 1, true); }
 			}
 			var em = arr(c.empties);
 			for (var k = 0; k < em.length; k++) {
@@ -468,9 +469,9 @@ function paint() {
 		texto(anim.fimT > 0 ? "APPLIED ✓ · " + (cfg.mode == 1 ? "CUT" : "MUTE") + " FEITO" : "SWEEPING… " + Math.min(anim.feitos, anim.total) + " de " + anim.total + " trechos", 16, H - 10, 13, true);
 	} else if (hover >= 0 && hover < tracks.length) {
 		var hr = resumo(tracks[hover]);
-		rgb(0.92, 0.92, 0.92);
+		rgb(0.9200000000000000869372, 0.92, 0.92);
 		texto(cabe(tracks[hover].name, W - 360, 13, true), 16, H - 10, 13, true);
-		rgb(0.65, 0.65, 0.68);
+		rgb(0.65, 0.6500000000000000334884, 0.68);
 		texto(hr.n + " vazios · " + hr.pct + "% vazio" + (tracks[hover].skip ? " · FORA DA LIMPEZA" : ""), W - 330, H - 10, 13, false);
 	} else {
 		rgb(0.65, 0.65, 0.68);

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -9,7 +10,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
                                 juce::AudioParameterFloatAttributes().withLabel ("%")));
     l.add (std::make_unique<P> (juce::ParameterID { "character", 1 }, "Character (clean / warm)", juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f), 30.0f,
                                 juce::AudioParameterFloatAttributes().withLabel ("%")));
-    l.add (std::make_unique<P> (juce::ParameterID { "punch", 1 }, "Punch", juce::NormalisableRange<float> (-5.0f, 5.0f, 0.1f), 0.0f));
+    l.add (std::make_unique<P> (juce::ParameterID { "punch", 1 }, "Punch", juce::NormalisableRange<float> (-5.0f, 5.000000000000000290824f, 0.1f), 0.0f));
     l.add (std::make_unique<P> (juce::ParameterID { "width", 1 }, "Width", juce::NormalisableRange<float> (0.0f, 200.0f, 1.0f), 100.0f,
                                 juce::AudioParameterFloatAttributes().withLabel ("%")));
     l.add (std::make_unique<P> (juce::ParameterID { "tilt", 1 }, "Tone tilt", juce::NormalisableRange<float> (-3.0f, 3.0f, 0.1f), 0.0f,
@@ -35,7 +36,7 @@ static juce::AudioProcessorValueTreeState::ParameterLayout parametros()
                                     d.mbThr[k], juce::AudioParameterFloatAttributes().withLabel ("dB")));
         l.add (std::make_unique<P> (juce::ParameterID { id + "rat", 1 }, n + " ratio", faixa (1.0f, 20.0f, 0.01f, 3.0f), d.mbRat[k],
                                     juce::AudioParameterFloatAttributes().withLabel (":1")));
-        l.add (std::make_unique<P> (juce::ParameterID { id + "atk", 1 }, n + " attack", faixa (0.1f, 300.0f, 0.1f, 15.0f), d.mbAtk[k],
+        l.add (std::make_unique<P> (juce::ParameterID { id + "atk", 1 }, n + " attack", faixa (0.1f, 300.00000000000000344404f, 0.1f, 15.0f), d.mbAtk[k],
                                     juce::AudioParameterFloatAttributes().withLabel ("ms")));
         l.add (std::make_unique<P> (juce::ParameterID { id + "rel", 1 }, n + " release", faixa (5.0f, 3000.0f, 1.0f, 150.0f), d.mbRel[k],
                                     juce::AudioParameterFloatAttributes().withLabel ("ms")));

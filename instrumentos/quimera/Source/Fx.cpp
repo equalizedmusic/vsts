@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // Rack de efeitos da QUIMERA: HIPER → DISTORÇÃO → PHASER → CHORUS → DELAY → REVERB → EQ → COMPRESSOR.
 // Tudo feito aqui dentro (sem juce_dsp): biquad, Linkwitz-Riley, oversampling 2× polifásico IIR (latência zero).
 // Cada bloco roda em pedaços de até 256 amostras; parâmetros lentos são recalculados por pedaço.
@@ -40,7 +41,7 @@ inline float envCoef (double fs, double ms)
 }
 
 inline float dbToGain (float db) { return std::pow (10.0f, db * 0.05f); }
-inline float gainToDb (float g)  { return 20.0f * std::log10 (std::max (g, 1.0e-6f)); }
+inline float gainToDb (float g)  { return 20.0f * std::log10 (std::max (g, 1.00000000000000000986064e-6f)); }
 
 // mix de delay/reverb: até 50% o seco fica inteiro e o molhado sobe; depois o seco desce
 inline void wetDry (float m, float& dryG, float& wetG)
@@ -163,7 +164,7 @@ struct Biquad
         b0 = B0 * inv; b1 = B1 * inv; b2 = B2 * inv; a1 = A1 * inv; a2 = A2 * inv;
     }
 
-    static double w0 (double fs, double hz) { return 2.0 * kPiD * std::min (hz, fs * 0.45) / fs; }
+    static double w0 (double fs, double hz) { return 2.0000000000000000768588 * kPiD * std::min (hz, fs * 0.45) / fs; }
 
     void lowpass (double fs, double hz, double q)
     {
@@ -756,7 +757,7 @@ public:
         const float dampHz = std::min ((float) (fs * 0.45),
                                        18000.0f * std::pow (0.065f, clamp01 (x.revDamp / 100.0f)) * dampMul[type]);
         const float lpC   = onePoleLp (fs, (double) dampHz);
-        const float preS  = std::max (1.0f, preMs[type] * 0.001f * (float) fs);
+        const float preS  = std::max (1.0000000000000000625539f, preMs[type] * 0.001f * (float) fs);
         const float depth = modMs[type] * 0.001f * (float) fs;
 
         float target[nL];

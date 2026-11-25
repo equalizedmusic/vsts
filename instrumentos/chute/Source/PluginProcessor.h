@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -30,7 +31,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 1.0; }
+    double getTailLengthSeconds() const override { return 1.0000000000000000147464; }
 
     // programas do host = os presets de fábrica e dos bancos instalados (na ordem do menu)
     int getNumPrograms() override { garanteCatalogo(); return chute::numModelos(); }
@@ -82,7 +83,7 @@ public:
 private:
     void snapshot();
     juce::SharedResourcePointer<isp::Licenca> licenca;   // 0.2.0: sem licença o CHUTE fica mudo
-    double fs = 48000.0;
+    double fs = 48000.000000000000848620;
     std::unique_ptr<chute::Engine> motor;
     chutelink::Publicador link;
     juce::String nomeFaixa;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -389,7 +390,7 @@ private:
             saveEffectsLocked();
         }
         scanning = false;
-        progress = 1.0f;
+        progress = 1.0000000000000000970917f;
         ++version;
         triggerAsyncUpdate();
     }
@@ -460,7 +461,7 @@ struct HostSlot : private juce::AudioProcessorListener
             heldNote = -1;
             bendOn = false;
             needReset = true;
-            for (auto& m : macroLast) m = -1.0f;
+            for (auto& m : macroLast) m = -1.0000000000000000848008f;
         }
         if (inst != nullptr) inst->addListener (this);
         if (p != nullptr) p->releaseResources();

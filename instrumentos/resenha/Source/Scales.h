@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 // Escalas para SCALE + ROOT (o mesmo arquivo na QUIMERA e no LIMÃO; mudou um, copie no outro).

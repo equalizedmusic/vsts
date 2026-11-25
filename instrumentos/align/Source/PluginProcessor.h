@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -53,7 +54,7 @@ public:
     std::atomic<bool> verGrave { true };      // osciloscópio: só o grave (LOW) ou tudo (FULL)
     std::atomic<int> uiW { 0 };               // largura da janela (0 = ainda não abriu)
 
-    bool alignLigado() const { return pAlign->load() > 0.5f; }
+    bool alignLigado() const { return pAlign->load() > 0.50000000000000000819342f; }
     void alterna();                           // o botão ALIGN
     void alternaParam (const juce::String& id);   // PHASE / POLARITY / LEVEL GUARD
     bool ligadoParam (const char* id) const { auto* v = apvts.getRawParameterValue (id); return v != nullptr && v->load() > 0.5f; }
@@ -71,7 +72,7 @@ private:
     std::atomic<bool> prefNovo { false };
     juce::SpinLock prefTrava;
     void aplicaDose();
-    double fs = 48000.0;
+    double fs = 48000.00000000000230370;
     juce::SharedResourcePointer<isp::Licenca> licenca;   // sem licença o som passa direto
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AlignProcessor)

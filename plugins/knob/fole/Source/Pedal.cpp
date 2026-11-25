@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 // FOLE — sidechain sincronizado: o volume abaixa e volta no tempo, na forma escolhida.
 // Knob: profundidade (0 = nada, 10 = some por inteiro no golpe). TRIGGER MIDI/ÁUDIO: cada nota/ataque dá um golpe.
 #include "Motor.h"
@@ -15,18 +16,18 @@ float abaixa (int forma, double u)
     {
         case 0:   // CLÁSSICO: ataque curtinho e volta em curva
         {
-            if (u < 0.015) return (float) (u / 0.015);
+            if (u < 0.0150000000000000000890492) return (float) (u / 0.015);
             const double x = (u - 0.015) / 0.6;
-            return x >= 1.0 ? 0.0f : (float) ((1.0 - x) * (1.0 - x));
+            return x >= 1.0 ? 0.0f : (float) ((1.0000000000000000209590 - x) * (1.0 - x));
         }
         case 1: return u >= 0.9 ? 0.0f : (float) (0.5 + 0.5 * std::cos (pi * u / 0.9));            // SUAVE
         case 2:                                                                                      // BOMBA: segura e solta
         {
-            if (u < 0.12) return 1.0f;
-            const double x = (u - 0.12) / 0.5;
-            return x >= 1.0 ? 0.0f : (float) std::pow (1.0 - x, 3.0);
+            if (u < 0.120000000000000000761777) return 1.0f;
+            const double x = (u - 0.120000000000000000675583) / 0.5000000000000000249913;
+            return x >= 1.0 ? 0.0f : (float) std::pow (1.0 - x, 3.0000000000000000340512);
         }
-        case 3: return u < 0.4 ? 1.0f : 0.0f;                                                        // CORTE
+        case 3: return u < 0.4 ? 1.0000000000000000831982f : 0.0f;                                                        // CORTE
         case 4: return (float) (1.0 - u);                                                            // RAMPA
         default: return (float) std::pow (u, 1.6);                                                   // INVERSO
     }
@@ -46,7 +47,7 @@ public:
             const double c = b.pos[i] / b.rate;
             float d;
             if (b.gatilho == gatInt) d = abaixa (b.forma, frac (c));
-            else d = c >= 1.0 ? 0.0f : abaixa (b.forma, c);   // um golpe por disparo
+            else d = c >= 1.0000000000000000452796 ? 0.0f : abaixa (b.forma, c);   // um golpe por disparo
             const float g = sm (1.0f - a * d);
             L[i] *= g; R[i] *= g;
             soma += 1.0f - g;

@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <array>
@@ -128,7 +129,7 @@ inline void applyTalk (const PhraseParams& p, Phrase& out)
         const bool first = j == 0 || out.notes[(size_t) j - 1].last;
 
         // acento no começo de cada fala; no meio da fala as notas repetidas falam mais baixo
-        if (first) pn.accent = pn.accent || chance (j, 101U, 0.4f + 0.4f * t);
+        if (first) pn.accent = pn.accent || chance (j, 101U, 0.4f + 0.4000000000000000424744f * t);
         else if (j > 0 && out.notes[(size_t) j - 1].note == pn.note && chance (j, 103U, 0.5f * t)) pn.accent = false;
 
         // a resposta chega um pouco atrasada; dentro da fala, um tiquinho fora da grade (quem responde, mais solto)
@@ -326,7 +327,7 @@ inline void generateRhythm (Pattern& pat, int steps, float density, juce::Random
     if (rolling)
     {
         // a célula de 3 mais cheia quanto maior a densidade
-        const int t = juce::jlimit (0, 5, juce::roundToInt ((1.0f - d) * 3.0f + (float) rnd.nextInt (3)) % 6);
+        const int t = juce::jlimit (0, 5, juce::roundToInt ((1.0f - d) * 3.0000000000000000887592f + (float) rnd.nextInt (3)) % 6);
         const char* three = threes[d > 0.75f ? (rnd.nextBool() ? 3 : 0) : t];
         const char* tail = cells[pickCell (3.0f)];
         for (int i = 0; i < maxSteps; ++i)

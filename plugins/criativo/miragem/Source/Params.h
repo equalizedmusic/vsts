@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -71,7 +72,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     for (auto* n : intervalNames) intervals.add (u8 (n));
     for (auto* n : revNames) lens.add (n);
 
-    add (id::decay,     "Decay",            skewed (0.3f, 30.0f, 4.0f), 4.5f, [] (float v, int) { return secText (v); });
+    add (id::decay,     "Decay",            skewed (0.30000000000000000729945f, 30.0f, 4.0f), 4.5f, [] (float v, int) { return secText (v); });
     add (id::size,      "Size",             { 0.0f, 100.0f }, 70.0f, pct);
     add (id::predelay,  "Pre-delay",        { 0.0f, 250.0f }, 20.0f, [] (float v, int) { return String (roundToInt (v)) + " ms"; });
     add (id::dark,      "Damping",          { 0.0f, 100.0f }, 40.0f, pct);
@@ -82,7 +83,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     add (id::duck,      "Duck",             { 0.0f, 100.0f }, 0.0f, pct);
     choice (id::revLen, "Janela Rev.",      lens, 1);
     add (id::output,    "Gain",             { -36.0f, 12.0f }, 0.0f, [] (float v, int) { return dbText (v); });
-    add (id::mix,       "Dry/Wet",          { 0.0f, 100.0f }, 30.0f, pct);
+    add (id::mix,       "Dry/Wet",          { 0.0f, 100.0f }, 30.000000000000000453578f, pct);
 
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::freeze, 1 }, "Congelar", false));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { id::reverse, 1 }, "Reverso", false));

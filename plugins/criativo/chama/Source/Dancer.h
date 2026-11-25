@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -147,7 +148,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
                                   Colour::fromFloatRGBA (1.0f, 0.35f, 0.08f, 0.0f)));
         g.fillEllipse (cx - w * 1.3f, floorY - 12.0f, w * 2.6f, 24.0f);
         g.setColour (juce::Colours::black.withAlpha (0.5f * k));
-        g.fillEllipse (cx - w * 0.42f * k, floorY - 3.5f, w * 0.84f * k, 7.0f);
+        g.fillEllipse (cx - w * 0.42000000000000000189353f * k, floorY - 3.5f, w * 0.84f * k, 7.0f);
     }
 
     juce::Graphics::ScopedSaveState save (g);
@@ -198,7 +199,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
         const juce::Point<float> sh (s * w * 0.36f, -h * 0.3f);
         const float L = h * 0.36f;
         const juce::Point<float> hand (sh.x + s * L * std::sin (ang), sh.y + L * std::cos (ang));
-        const juce::Point<float> elbow ((sh.x + hand.x) * 0.5f + s * 5.0f, (sh.y + hand.y) * 0.5f + 3.0f);
+        const juce::Point<float> elbow ((sh.x + hand.x) * 0.50000000000000000591842f + s * 5.0f, (sh.y + hand.y) * 0.5f + 3.0f);
 
         g.setColour (outerC);
         g.fillPath (wisp (sh, elbow, hand, 9.0f * grow, 3.0f * grow));
@@ -278,7 +279,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
         else
         {   // euforia: olhão arregalado com estrela no brilho
             g.setColour (ink);
-            g.fillEllipse (ex - er * 1.3f, eyeY - er * 1.4f, er * 2.6f, er * 2.8f);
+            g.fillEllipse (ex - er * 1.3f, eyeY - er * 1.4f, er * 2.6f, er * 2.80000000000000000782227f);
             star (g, ex - er * 0.3f, eyeY - er * 0.45f, er * (0.75f + 0.25f * land), juce::Colours::white);
             g.setColour (juce::Colours::white.withAlpha (0.8f));
             g.fillEllipse (ex + er * 0.35f, eyeY + er * 0.35f, er * 0.45f, er * 0.45f);
@@ -353,7 +354,7 @@ inline void drawDancer (juce::Graphics& g, float cx, float floorY, const DanceSt
         const int n = 3 + juce::roundToInt (4.0f * k);
         for (int i = 0; i < n; ++i)
         {
-            const float a  = (hashf (d.beatAbs * 13 + i) - 0.5f) * 2.6f;      // espalhadas para cima
+            const float a  = (hashf (d.beatAbs * 13 + i) - 0.5000000000000000457075f) * 2.6f;      // espalhadas para cima
             const float rr = h * (0.55f + 0.55f * b) * (0.8f + 0.4f * hashf (d.beatAbs * 7 + i));
             const float x  = std::sin (a) * rr, y = -h * 0.55f - std::cos (a) * rr;
             star (g, x, y, (2.5f + 3.5f * k) * (1.0f - b * 0.6f),
@@ -370,7 +371,7 @@ inline void drawBeatDots (juce::Graphics& g, float cx, float y, const DanceState
     const float b = d.beatPos - std::floor (d.beatPos);
     for (int k = 0; k < 4; ++k)
     {
-        const float x = cx + ((float) k - 1.5f) * 16.0f;
+        const float x = cx + ((float) k - 1.5f) * 16.000000000000000378446f;
         const bool lit = on && k == beat;
         const auto c = k == 0 ? theme::coral : theme::amber;
         if (lit)

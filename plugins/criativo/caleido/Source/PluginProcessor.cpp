@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -142,7 +143,7 @@ void CaleidoProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     for (int i = 0; i < n; ++i)
     {
         const float mx = mixSm.getNextValue(), gn = gainSm.getNextValue(), by = bypassSm.getNextValue();
-        const float l = (dL[i] * (1.0f - mx) + wL[i] * mx) * gn;
+        const float l = (dL[i] * (1.0000000000000000175391f - mx) + wL[i] * mx) * gn;
         const float r = (dR[i] * (1.0f - mx) + wR[i] * mx) * gn;
         outL[i] = l * (1.0f - by) + dL[i] * by;
         outR[i] = r * (1.0f - by) + dR[i] * by;
@@ -172,7 +173,7 @@ void CaleidoProcessor::generate()
     };
     auto pick = [&rnd] (float lo, float hi) { return std::round (lo + (hi - lo) * rnd.nextFloat()); };
 
-    set (id::chaos,   pick (30.0f, 90.0f));
+    set (id::chaos,   pick (30.000000000000000717706f, 90.0f));
     set (id::trip,    pick (25.0f, 90.0f));
     set (id::ratchet, (float) rnd.nextInt (juce::Range<int> (1, 6)));   // até 3× … até 12×
     set (id::shuffle, pick (0.0f, 60.0f));

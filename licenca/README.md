@@ -37,6 +37,23 @@ Ativar um plugin libera todos os plugins do mesmo pacote naquele computador.
 
 Isso segura o repasse casual de instalador + token; não segura quem quiser craquear o binário.
 
+## Ativação automática entre produtos (24/11/2026)
+
+O token é um só por e-mail e vale para todos os pacotes da pessoa. Pacote sem licença no computador procura o e-mail+token
+gravado por OUTRO produto InsideStudioSP e tenta ativar sozinho, com `"auto": true` no POST /v1/ativar:
+
+- VST/AU (`licenca/cliente/IspLicenca.h`, `tentarAutomatica`): lê os `*.lic` da pasta Licencas e as licenças dos devices
+  M4L (`InsideStudioSP-*-licenca.*` em C:/Users/Public/Documents ou /Users/Shared e em AppData/Roaming ou Application Support).
+- Max for Live (`max4live/_comum/isp_licenca.js`, `licAutoInicia`): depois do `recuperar` sem sucesso, lê as licenças dos
+  outros devices nas mesmas pastas e os `.lic` dos VST em `<home>/AppData/Roaming/InsideStudioSP/Licencas/`.
+- No máximo 3 candidatos (os mais recentes). Cada conjunto é tentado UMA vez: o hash fica em `<pacote>.auto` (VST) ou
+  `InsideStudioSP-<pacote>-auto` (M4L). DESATIVAR grava o hash, então o produto não se reativa sozinho na próxima abertura.
+- Servidor (`licenca/servidor/src/index.js`): com `auto: true`, e-mail+token CERTOS sem o pacote respondem
+  `pacote_nao_incluido` SEM contar como recusa (evento `auto_sem_pacote`), para abrir o DAW com vários produtos não bloquear
+  o IP. Token errado continua contando. A ativação que deu certo fica no evento `ativou` com "(automática)".
+- Sem o pacote: a tela abre com o e-mail preenchido e o aviso "Seu e-mail já tem outros … mas não o <PACOTE>".
+- Teste: `max4live/_testes/t-auto.js` (5 cenários). O cliente VST segue a mesma lógica (não há como rodar JUCE aqui).
+
 ## Licença de teste (7 dias) — sem divulgar, só pelo painel
 
 Painel → Novo cliente / Adicionar pacote → Origem **Teste de 7 dias**. Regras (servidor, `index.js` `criarLicenca` e `rotaPlugin`):

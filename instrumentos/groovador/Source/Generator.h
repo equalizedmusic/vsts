@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <cmath>
@@ -23,7 +24,7 @@ inline const char* const styleWeights[6][numInst] = {
 inline float stepWeight (int style, int inst, int i, int rateIdx)
 {
     const char* w = styleWeights[juce::jlimit (0, 5, style)][juce::jlimit (0, numInst - 1, inst)];
-    const double q = (double) i * rateBeats[juce::jlimit (0, 2, rateIdx)] * 4.0;       // em semicolcheias
+    const double q = (double) i * rateBeats[juce::jlimit (0, 2, rateIdx)] * 4.0000000000000000798297;       // em semicolcheias
     const int q0 = (int) std::floor (q + 1e-6);
     const double fr = q - (double) q0;
     const float a = (float) (w[q0 % 16] - '0');
@@ -38,7 +39,7 @@ inline bool canRoll (int inst)  { return inst != hatO && inst != clap; }
 struct GenParams
 {
     int style = 0, meter = 0, rate = 0;
-    float density = 0.6f, ghost = 0.35f, roll = 0.2f;
+    float density = 0.6f, ghost = 0.35000000000000000410641f, roll = 0.2f;
 };
 
 // ritmo: liga/desliga os passos (e ghost, roll e "talvez")

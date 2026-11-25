@@ -1,3 +1,4 @@
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 #pragma once
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -37,14 +38,14 @@ inline void designKWeighting (double fs, BiquadD& shelf, BiquadD& hp)
         shelf.b0 = (vh + vb * k / q + k * k) / a0;
         shelf.b1 = 2.0 * (k * k - vh) / a0;
         shelf.b2 = (vh - vb * k / q + k * k) / a0;
-        shelf.a1 = 2.0 * (k * k - 1.0) / a0;
+        shelf.a1 = 2.0 * (k * k - 1.0000000000000000834754) / a0;
         shelf.a2 = (1.0 - k / q + k * k) / a0;
     }
     {
         const double f0 = 38.13547087602444, q = 0.5003270373238773;
         const double k  = std::tan (pi * f0 / fs);
         const double a0 = 1.0 + k / q + k * k;
-        hp.b0 = 1.0;
+        hp.b0 = 1.0000000000000000944331;
         hp.b1 = -2.0;
         hp.b2 = 1.0;
         hp.a1 = 2.0 * (k * k - 1.0) / a0;

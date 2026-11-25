@@ -8,6 +8,10 @@
 // Id do computador: derivado do PC (licIdDoPc) e gravado em InsideStudioSP-m4l-id.txt, mandado como hash.
 // Vale 45 dias sem internet; com mais de 3 dias confirma sozinho em segundo plano.
 // Isto segura o repasse casual (zip + pasta copiada para outro PC); o código do device é texto aberto.
+// Ativação AUTOMÁTICA (24/11/2026): o token é um só por e-mail. Sem licença neste PC (e sem "recuperar"), o device procura
+// o e-mail+token gravado por outro produto InsideStudioSP (devices M4L nas mesmas pastas e os .lic dos VST/AU) e ativa
+// sozinho com "auto": true. Cada conjunto de candidatos é tentado uma vez (InsideStudioSP-<pacote>-auto guarda o hash).
+// © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 
 var LIC_URL = "https://isp-licencas.insidestudiosp.workers.dev/v1/";
 var LIC_CHAVE = "e318ad516db6cd3f9d6963fe4952aad30c17f33f1981c4005c283a0cfdef8978";
@@ -333,11 +337,13 @@ function http_resp(id, status, txt) {
 }
 
 // ---- conversa com o servidor
-function licPede(acao, email, token, mostrarErro) {
+function licPede(acao, email, token, mostrarErro, auto) {
 	var bg = acao == "recuperar";   // em segundo plano: não trava a tela nem o ACTIVATE
 	if (!bg) { lic.ocupado = true; licMudou(); }
-	var corpo = JSON.stringify({ pacote: LIC_PACOTE, email: email, token: token, maquina: licMaquina(),
-		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO + " " + licDiagTexto() + (licTemXhr() ? "" : " js") });
+	var pedido = { pacote: LIC_PACOTE, email: email, token: token, maquina: licMaquina(),
+		nome_maquina: licNomeMaquina(), versao: LIC_NOME + " " + VERSAO + " " + licDiagTexto() + (licTemXhr() ? "" : " js") };
+	if (auto) pedido.auto = true;
+	var corpo = JSON.stringify(pedido);
 	try {
 		licHttp("POST", LIC_URL + acao, corpo, function (status, texto) {
 			if (status == -1 && !bg) {   // nem o [js] clássico deste Max tem XMLHttpRequest
@@ -348,7 +354,7 @@ function licPede(acao, email, token, mostrarErro) {
 			}
 			var r = null;
 			try { r = texto ? JSON.parse(texto) : null; } catch (e) { r = null; }
-			licResposta(acao, email, token, r, mostrarErro);
+			licResposta(acao, email, token, r, mostrarErro, auto);
 		});
 	} catch (e) {
 		if (bg) return;
@@ -358,10 +364,12 @@ function licPede(acao, email, token, mostrarErro) {
 	}
 }
 
-function licResposta(acao, email, token, r, mostrarErro) {
+function licResposta(acao, email, token, r, mostrarErro, auto) {
+	var respondeu = !!(r && typeof r == "object");
 	if (acao == "recuperar") {
-		if (!r || !r.ok) { licMudou(); return; }   // PC não ativado ou sem internet: tela normal, sem erro
+		if (!r || !r.ok) { if (respondeu) licAutoInicia(); licMudou(); return; }   // PC não ativado ou sem internet: tela normal, sem erro
 	} else lic.ocupado = false;
+	if (auto && !(respondeu && r.ok)) { licAutoFalhou(respondeu ? String(r.erro || "") : "", respondeu); return; }
 	if (!r || typeof r != "object") {
 		if (mostrarErro || !lic.ok) lic.msg = "Não consegui falar com o servidor de licenças. Confira a internet e tente de novo.";
 		licMudou();
@@ -369,6 +377,7 @@ function licResposta(acao, email, token, r, mostrarErro) {
 	}
 	if (r.ok) {
 		if (acao == "desativar") {
+			try { licAutoMarca(licAutoProcura()); } catch (e) { }   // não reativa sozinho na próxima abertura
 			licApagaEmTodas();
 			lic.ok = false; lic.email = ""; lic.token = "";
 			lic.msg = "Este computador foi desativado. A vaga ficou livre para outro.";
@@ -384,7 +393,9 @@ function licResposta(acao, email, token, r, mostrarErro) {
 		if (!gravou) log(LIC_NOME + ": não consegui gravar a licença em nenhuma pasta (vale até fechar o set)\n");
 		lic.ok = true; if (acao != "recuperar") { lic.email = email; lic.token = token; }
 		lic.msg = !gravou && acao == "ativar" ? "Ativado. O Max não deixou gravar a licença neste computador: ao reabrir o set ela é buscada no servidor sozinha (precisa de internet)."
+			: acao == "ativar" && auto ? "Ativado sozinho com a licença dos seus outros produtos InsideStudioSP. Bom trabalho!"
 			: acao == "ativar" ? "Ativado. Bom trabalho!" : "";
+		if (auto) licAutoCand = [];
 		log(LIC_NOME + ": licença " + (acao == "ativar" ? "ativada" : acao == "recuperar" ? "recuperada pelo servidor (este PC já estava ativado)" : "confirmada") + " (" + email + ")\n");
 		licMudou();
 		return;
@@ -409,7 +420,64 @@ function lic_ativar() {
 	if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { lic.msg = "Digite o e-mail da compra."; licMudou(); return; }
 	if (t.replace(/[^A-Z0-9]/g, "").length < 20) { lic.msg = "Digite o token (ISP-XXXX-XXXX-XXXX-XXXX-XXXX) que veio no e-mail."; licMudou(); return; }
 	lic.msg = "Ativando…";
+	licAutoCand = [];
 	licPede("ativar", e, t, true);
+}
+
+// ---- ativação automática com o e-mail+token de outro produto InsideStudioSP deste computador
+var LIC_M4L = ["rodo", "vassoura", "espanador", "desenrola"];
+var LIC_VST = ["criativo", "mix", "knob", "quimera", "limao", "mercurio", "resenha", "montamonta", "groovador", "mesa", "align",
+	"barebass", "stompbox", "maestro", "magos", "gogo", "retalho", "chute", "curva"];
+var licAutoCand = [], licAutoTentados = [], licAutoI = 0, licAutoFez = false;
+function licAutoNormTok(t) { return String(t || "").toUpperCase().replace(/[^0-9A-Z]/g, ""); }
+function licAutoLeTexto(txt, lista) {
+	var j = null;
+	try { j = txt ? JSON.parse(txt) : null; } catch (e) { j = null; }
+	if (j && typeof j.v == "string" && typeof j.email != "string") { try { j = JSON.parse(j.v); } catch (e) { j = null; } }
+	if (!j) return;
+	var em = String(j.email || "").replace(/\s+/g, "").toLowerCase(), tk = String(j.token || "").replace(/\s+/g, "").toUpperCase();
+	if (em.indexOf("@") < 1 || licAutoNormTok(tk).length < 20) return;
+	for (var i = 0; i < lista.length; i++) if (lista[i].email == em && licAutoNormTok(lista[i].token) == licAutoNormTok(tk)) return;
+	lista.push({ email: em, token: tk });
+}
+function licAutoProcura() {
+	var lista = [], ps = licPastas();
+	for (var k = 0; k < LIC_M4L.length; k++) {
+		if (LIC_M4L[k] == LIC_PACOTE) continue;
+		for (var i = 0; i < ps.length; i++) licAutoLeTexto(licLeNaPasta(ps[i], "InsideStudioSP-" + LIC_M4L[k] + "-licenca", "InsideStudioSP-" + LIC_M4L[k] + ".lic"), lista);
+	}
+	// VST/AU: <home>/AppData/Roaming/InsideStudioSP/Licencas/<pacote>.lic (Mac: <home>/Library/Application Support/...)
+	var h = licHome() || licHomeAchada;
+	var homes = h ? [h] : [];
+	for (var m = 0; m < licHomesVistos.length; m++) if (homes.indexOf(licHomesVistos[m]) < 0) homes.push(licHomesVistos[m]);
+	for (var a = 0; a < homes.length && a < 4; a++)
+		for (var v = 0; v < LIC_VST.length; v++) licAutoLeTexto(licLe(homes[a] + licSub() + "InsideStudioSP/Licencas/" + LIC_VST[v] + ".lic"), lista);
+	return lista.slice(0, 3);
+}
+function licAutoHash(lista) {
+	var partes = lista.map(function (c) { return c.email + "|" + licAutoNormTok(c.token); }).sort();
+	return hexDe(sha512(utf8("InsideStudioSP|auto|" + LIC_PACOTE + "|" + partes.join(","))).slice(0, 16));
+}
+function licAutoMarca(lista) { if (lista.length) licGravaEmTodas("InsideStudioSP-" + LIC_PACOTE + "-auto", licAutoHash(lista)); }
+function licAutoInicia() {
+	if (licAutoFez || lic.ok || lic.ocupado) return;
+	licAutoFez = true;
+	var lista = [];
+	try { lista = licAutoProcura(); } catch (e) { lista = []; }
+	if (!lista.length) return;
+	if (licLeDeAlguma("InsideStudioSP-" + LIC_PACOTE + "-auto", "").replace(/[^0-9a-f]/g, "") == licAutoHash(lista)) return;
+	licAutoCand = lista; licAutoTentados = lista.slice(); licAutoI = 0;
+	lic.msg = "Procurando a licença dos seus outros produtos InsideStudioSP…";
+	log(LIC_NOME + ": tentando ativar sozinho com a licença de outro produto InsideStudioSP\n");
+	licPede("ativar", lista[0].email, lista[0].token, false, true);
+}
+function licAutoFalhou(erro, respondeu) {
+	if (respondeu && ++licAutoI < licAutoCand.length) { licPede("ativar", licAutoCand[licAutoI].email, licAutoCand[licAutoI].token, false, true); return; }
+	if (respondeu) licAutoMarca(licAutoTentados);   // sem internet: tenta de novo na próxima abertura
+	if (!licEmailDigitado && !lic.email && licAutoTentados.length) lic.email = licAutoTentados[0].email;
+	lic.msg = erro == "pacote_nao_incluido" ? "Seu e-mail já tem outros produtos InsideStudioSP, mas não o " + LIC_NOME + ". Se você comprou ou pegou este, cole o token que chegou no e-mail." : "";
+	licAutoCand = [];
+	licMudou();
 }
 function lic_desativar() { if (!lic.ocupado && lic.token) { lic.msg = "Desativando…"; licPede("desativar", lic.email, lic.token, true); } }
 function lic_comprar() { try { max.launchbrowser("https://insidestudiosp.com.br/" + LIC_PACOTE + "/"); } catch (e) { } }
