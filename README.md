@@ -11,36 +11,36 @@ Loja, páginas dos produtos e manuais: [insidestudiosp.com.br](https://insidestu
 | `licenca/cliente` | O que vai dentro do plugin para ativar a licença (o servidor fica no repositório privado `site`) |
 | `novidades/<Pacote>.md` | Versão atual e notas de cada pacote |
 
-## Catálogo (25/11/2026)
+## Catálogo (26/11/2026)
 
 A versão é a do primeiro título de `novidades/<Pacote>.md`. **Teste** = sai como pré-release ou ainda não está no
 site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 
 | Produto | Tipo | Versão | Situação |
 |---|---|---|---|
-| [MAESTRO](instrumentos/maestro/README.md) | Mix automática (8 grupos) | 0.2.4 | à venda |
-| [MASTER DOS MAGOS](instrumentos/magos/README.md) | Masterização | 0.2.2 | à venda |
-| [GOGÓ](instrumentos/gogo/README.md) | Cadeia de voz | 0.2.2 | à venda |
-| [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: PICOTE, ESTICA, GROOVE | 0.2.2 | pago |
-| [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.2 | pago (lançamento 22/11) |
-| [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.3 | grátis |
-| [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.4 | grátis |
-| [CURVA](instrumentos/curva/README.md) | Monitor de volume (Fletcher-Munson / ISO 226) | 0.2.2 | grátis (com licença) |
-| [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.2 | à venda |
-| [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.2 | à venda |
-| [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.3 | à venda |
-| [MERCÚRIO](instrumentos/mercurio/README.md) | Synth FM | 0.6.2 | à venda |
-| [RESENHA](instrumentos/resenha/README.md) | Call & response / HUB de synths | 0.8.2 | à venda |
-| [GROOVADOR](instrumentos/groovador/README.md) | Percussão com gerador de groove | 0.3.2 | à venda |
-| SÉRIE CRIATIVO | 10 efeitos criativos | 1.2.3 | à venda |
-| SÉRIE MIX | 10 ferramentas de mix | 1.2.3 | à venda |
-| [SÉRIE KNOB](plugins/knob/README.md) | 10 pedais de um knob | 0.3.3 | à venda |
+| [MAESTRO](instrumentos/maestro/README.md) | Mix automática (8 grupos) | 0.2.5 | à venda |
+| [MASTER DOS MAGOS](instrumentos/magos/README.md) | Masterização | 0.2.3 | à venda |
+| [GOGÓ](instrumentos/gogo/README.md) | Cadeia de voz | 0.2.3 | à venda |
+| [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: PICOTE, ESTICA, GROOVE | 0.2.3 | pago |
+| [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.3 | pago (lançamento 22/11) |
+| [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.4 | grátis |
+| [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.5 | grátis |
+| [CURVA](instrumentos/curva/README.md) | Monitor de volume (Fletcher-Munson / ISO 226) | 0.2.3 | grátis (com licença) |
+| [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.3 | à venda |
+| [QUIMERA](instrumentos/quimera/README.md) | Synth wavetable | 0.5.3 | à venda |
+| [LIMÃO](instrumentos/limao/README.md) | Bassline ácido | 0.6.4 | à venda |
+| [MERCÚRIO](instrumentos/mercurio/README.md) | Synth FM | 0.6.3 | à venda |
+| [RESENHA](instrumentos/resenha/README.md) | Call & response / HUB de synths | 0.8.3 | à venda |
+| [GROOVADOR](instrumentos/groovador/README.md) | Percussão com gerador de groove | 0.3.3 | à venda |
+| SÉRIE CRIATIVO | 10 efeitos criativos | 1.2.4 | à venda |
+| SÉRIE MIX | 10 ferramentas de mix | 1.2.4 | à venda |
+| [SÉRIE KNOB](plugins/knob/README.md) | 10 pedais de um knob | 0.3.4 | à venda |
 | [VASSOURA](max4live/vassoura/README.md) | Max for Live: limpa os vazios dos clips | 0.3.8 | à venda |
 | [RODO](max4live/rodo/README.md) | Max for Live: nivela os clips | 0.3.7 | à venda |
 | [ESPANADOR](max4live/espanador/README.md) | Max for Live: organiza o set nos grupos do MAESTRO | 0.2.3 | à venda |
 | [DESENROLA](max4live/desenrola/README.md) | Max for Live: loop → música pela estrutura de uma referência | 0.4.2 | grátis (com licença) |
-| [MESA](instrumentos/mesa/README.md) | Console analógica | 0.5.3 | fora do site (licenças seguem) |
-| [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático | 0.1.3 | não está à venda |
+| [MESA](instrumentos/mesa/README.md) | Console analógica | 0.5.4 | fora do site (licenças seguem) |
+| [MONTA-MONTA](instrumentos/montamonta/README.md) | Synth didático | 0.1.4 | não está à venda |
 | [ONKEY](instrumentos/onkey/README.md) | Afinação de voz | 0.1.0 | virou o bloco TUNE do GOGÓ |
 
 Combos no site: **MAESTRO + MASTER DOS MAGOS**, **VASSOURA + RODO** e o **PACOTÃO MIX & MASTER** (os 5 do fluxo, na

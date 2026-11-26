@@ -64,6 +64,21 @@ gravado por OUTRO produto InsideStudioSP e tenta ativar sozinho, com `"auto": tr
 - Sem o pacote: a tela abre com o e-mail preenchido e o aviso "Seu e-mail já tem outros … mas não o <PACOTE>".
 - Teste: `max4live/_testes/t-auto.js` (5 cenários). O cliente VST segue a mesma lógica (não há como rodar JUCE aqui).
 
+## Ativação sem internet (26/11/2026) — VST3/AU
+
+Para o PC de estúdio sem rede (cliente com Cubase sem placa de rede). Só VST/AU; Max for Live e licença de teste ficam fora.
+- Plugin: tela de ativação → **SEM INTERNET?** mostra o código do computador (= `maquina()`) e **SALVAR CÓDIGO** grava
+  `InsideStudioSP-codigo-<PC>.txt`. **CARREGAR LICENÇA** lê o `.isplic` (`{ tipo: "isp-offline", licencas: [{ pacote,
+  dados, assinatura }] }`), confere assinatura + máquina de cada uma e grava o `.lic` de TODOS os pacotes do arquivo
+  (token vazio). Cada plugin aberto percebe pelo timer; os outros ao abrir.
+- Licença: `dados` ganha `offline: true` e `valida_ate` = 31/12/2099. Com `offline`, o plugin não reconfirma a cada 3
+  dias e a tela de info mostra "Licença SEM INTERNET" com só **Fechar** (sem token não há DESATIVAR). Plugin antigo
+  também aceita o `.lic` (só olha v/pacote/maquina/valida_ate), mas não tem a tela para carregar.
+- Servidor (repo `site`): página `GET /offline` e `POST /offline/gerar { email, token, codigo, nome }` — licenças do
+  e-mail com aquele token; cada pacote ocupa a vaga da máquina como no ATIVAR (nome "<PC> (sem internet)", evento
+  `ativou`); sem vaga = fica de fora com motivo `limite`. Liberar a máquina no painel solta a vaga, mas o `.lic` no PC
+  sem internet segue valendo (não há como revogar sem rede).
+
 ## Licença de teste (7 dias) — sem divulgar, só pelo painel
 
 Painel → Novo cliente / Adicionar pacote → Origem **Teste de 7 dias**. Regras (servidor, `index.js` `criarLicenca` e `rotaPlugin`):

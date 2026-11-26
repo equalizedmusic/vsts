@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Maestro`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `maestro-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.2.5 — 2026-11-26
+- **Ativação sem internet:** para o computador do estúdio que não fica na internet (ou nem tem placa de rede). Na tela
+  de ativação, clique em **SEM INTERNET?** → **SALVAR CÓDIGO** e leve o arquivo num pen drive a um computador com internet;
+  em **insidestudiosp.com.br/offline** digite o e-mail e o token e envie o arquivo. Volte com o arquivo **.isplic** e clique
+  em **CARREGAR LICENÇA**: todos os seus plugins VST3/AU ficam ativados de uma vez nesse computador, sem vencer e sem
+  precisar de internet. Trocou a placa-mãe ou formatou? Gere um arquivo novo.
+- O som e as funções não mudam.
+
 ## 0.2.4 — 2026-11-25
 - **Atualização automática:** o aviso de versão nova no pé da janela ganha o botão **ATUALIZAR**: o plugin baixa o
   instalador, confere a assinatura e o arquivo e instala sozinho. No Windows ele espera você fechar o DAW e roda o

@@ -4,6 +4,14 @@ Pacote do instalador: `InsideStudioSP-Resenha`. A versão é o primeiro título 
 ela entra no plugin, no instalador e no release `resenha-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.8.3 — 2026-11-26
+- **Ativação sem internet:** para o computador do estúdio que não fica na internet (ou nem tem placa de rede). Na tela
+  de ativação, clique em **SEM INTERNET?** → **SALVAR CÓDIGO** e leve o arquivo num pen drive a um computador com internet;
+  em **insidestudiosp.com.br/offline** digite o e-mail e o token e envie o arquivo. Volte com o arquivo **.isplic** e clique
+  em **CARREGAR LICENÇA**: todos os seus plugins VST3/AU ficam ativados de uma vez nesse computador, sem vencer e sem
+  precisar de internet. Trocou a placa-mãe ou formatou? Gere um arquivo novo.
+- O som e as funções não mudam.
+
 ## 0.8.2 — 2026-11-24
 - **Ativação automática:** se você já ativou outro plugin ou device InsideStudioSP neste computador, com o mesmo e-mail, este
   se ativa sozinho ao abrir, sem digitar o token. Se o seu e-mail não tem este pacote, a tela de ativação já abre com o

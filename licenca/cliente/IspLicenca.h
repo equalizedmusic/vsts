@@ -19,6 +19,12 @@
 // Não tem este pacote = a tela abre com o e-mail já preenchido e um aviso. Cada conjunto de candidatos é tentado UMA vez
 // (<pacote>.auto guarda o hash): abrir o DAW de novo não repete o pedido, e DESATIVAR não é desfeito na próxima abertura.
 //
+// Ativação SEM INTERNET (26/11/2026): para o PC de estúdio que não tem rede. salvarCodigo() grava num arquivo o código
+// deste computador (o mesmo hash de maquina()); a pessoa leva a um PC com internet, abre insidestudiosp.com.br/offline e
+// recebe um .isplic com a licença de TODOS os pacotes dela para esta máquina. carregarSemRede() confere cada licença
+// (assinatura, máquina) e grava o .lic de cada pacote: um clique ativa todos. Licença com "offline": true não vence e
+// não tenta reconfirmar pela internet; sem token gravado, não há DESATIVAR (a vaga se libera pelo suporte).
+//
 // © Rogerio Cardoso / InsideStudioSP — todos os direitos reservados. Proibida a cópia, redistribuição ou obra derivada.
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -108,6 +114,7 @@ public:
     juce::String email() const { return emailAtual; }
     juce::String token() const { return tokenAtual; }
     juce::Time validaAte() const { return juce::Time ((juce::int64) validaAteSeg * 1000); }
+    bool semRede() const noexcept { return licSemRede; }   // licença ativada por arquivo (não vence, não reconfirma)
 
     // versão nova do pacote (vazia = está em dia, ou ainda não perguntou, ou a pessoa dispensou o aviso)
     static juce::String versaoAtual() { return ISP_VERSAO_ATUAL; }
@@ -175,6 +182,80 @@ public:
         return juce::String::toHexString (h, 32, 0);
     }
 
+    // ---- ativação sem internet ----
+    static constexpr const char* urlSemRede = "insidestudiosp.com.br/offline";
+
+    static juce::String nomeArquivoCodigo()
+    {
+        auto pc = juce::SystemStats::getComputerName().retainCharacters ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+        return "InsideStudioSP-codigo-" + (pc.isEmpty() ? juce::String ("PC") : pc.substring (0, 40)) + ".txt";
+    }
+
+    // grava o arquivo com o código deste computador (para levar no pen drive)
+    static bool salvarCodigo (const juce::File& destino)
+    {
+        juce::String t;
+        t << "InsideStudioSP - ativar sem internet\r\n\r\n"
+          << "Computador: " << juce::SystemStats::getComputerName() << "\r\n"
+          << utf8 ("Código: ") << maquina() << "\r\n\r\n"
+          << utf8 ("Leve este arquivo a um computador com internet, abra ") << urlSemRede << "\r\n"
+          << utf8 ("digite o e-mail e o token e envie este arquivo. Traga de volta o arquivo .isplic e, no plugin,\r\n")
+          << utf8 ("clique em SEM INTERNET? > CARREGAR LICENÇA.\r\n");
+        return destino.replaceWithText (t, false, false, "\r\n");
+    }
+
+    // .isplic gerado pelo site: grava a licença de cada pacote que confere (assinatura + este computador).
+    // Devolve quantos pacotes ativou; a mensagem fica em mensagem().
+    int carregarSemRede (const juce::File& f)
+    {
+        if (emAndamento) return 0;
+        const auto j = f.getSize() < 512 * 1024 ? juce::JSON::parse (f.loadFileAsString()) : juce::var();
+        const auto* lista = j["licencas"].getArray();
+        if (j["tipo"].toString() != "isp-offline" || lista == nullptr)
+        {
+            msg = utf8 ("Este não é o arquivo de licença sem internet (.isplic) gerado no site.");
+            sendChangeMessage();
+            return 0;
+        }
+        std::uint8_t pk[32];
+        chavePublica (pk);
+        const auto eu = maquina();
+        const auto pasta = arquivo().getParentDirectory();
+        pasta.createDirectory();
+        int n = 0, outraMaquina = 0;
+        for (const auto& l : *lista)
+        {
+            const auto p = l["pacote"].toString();
+            if (p.isEmpty() || ! p.containsOnly ("abcdefghijklmnopqrstuvwxyz")) continue;
+            juce::MemoryOutputStream dados, assinatura;
+            if (! juce::Base64::convertFromBase64 (dados, l["dados"].toString())
+                || ! juce::Base64::convertFromBase64 (assinatura, l["assinatura"].toString())
+                || assinatura.getDataSize() != 64
+                || ! ed25519::verificar (pk, static_cast<const std::uint8_t*> (assinatura.getData()), dados.getData(), dados.getDataSize()))
+                continue;
+            const auto d = juce::JSON::parse (dados.toUTF8());
+            if ((int) d["v"] != 1 || d["pacote"].toString() != p) continue;
+            if (d["maquina"].toString() != eu) { ++outraMaquina; continue; }
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty ("email", d["email"]);
+            obj->setProperty ("token", "");
+            obj->setProperty ("dados", l["dados"]);
+            obj->setProperty ("assinatura", l["assinatura"]);
+            if (pasta.getChildFile (p + ".lic").replaceWithText (juce::JSON::toString (juce::var (obj))))
+                ++n;
+        }
+        carregar();
+        if (n == 0)
+            msg = outraMaquina > 0 ? utf8 ("Este arquivo é de outro computador. Gere de novo com o código DESTE computador.")
+                                   : utf8 ("O arquivo não tem licença válida. Gere de novo no site.");
+        else if (ok)
+            msg = utf8 ("Ativado sem internet: ") + juce::String (n) + utf8 (n == 1 ? " pacote. Bom som!" : " pacotes. Abra os outros plugins: já estão liberados. Bom som!");
+        else
+            msg = utf8 ("Gravei ") + juce::String (n) + utf8 (" pacotes, mas este (") + nomePacote() + utf8 (") não veio no arquivo.");
+        sendChangeMessage();
+        return n;
+    }
+
 private:
     // confere a licença gravada; liga/desliga ok e decide se precisa confirmar pela internet
     void carregar()
@@ -197,7 +278,7 @@ private:
                 perguntarVersao();
             }
             const auto agora = juce::Time::currentTimeMillis() / 1000;
-            if (! jaConfirmou && agora - emitidaSeg > 3 * 86400)
+            if (! licSemRede && ! jaConfirmou && agora - emitidaSeg > 3 * 86400)
             {
                 jaConfirmou = true;
                 pedir ("validar", emailAtual, tokenAtual, false);
@@ -349,6 +430,7 @@ private:
 
     bool conferir (const juce::var& lido, juce::String& erro)
     {
+        licSemRede = false;
         if (! lido.isObject()) return false;
         juce::MemoryOutputStream dados, assinatura;
         if (! juce::Base64::convertFromBase64 (dados, lido["dados"].toString())
@@ -387,6 +469,7 @@ private:
             return false;
         }
         emailAtual = d["email"].toString();
+        licSemRede = (bool) d["offline"];
         return true;
     }
 
@@ -557,7 +640,7 @@ private:
     }
 
     std::atomic<bool> ok { false };
-    bool emAndamento = false, jaConfirmou = false, versaoPerguntada = false, tentouAuto = false;
+    bool emAndamento = false, jaConfirmou = false, versaoPerguntada = false, tentouAuto = false, licSemRede = false;
     juce::Array<Candidato> candidatos, candidatosTentados;
     int autoIndice = 0;
     juce::String msg, emailAtual, tokenAtual, novaVersao, urlNova, dispensada;

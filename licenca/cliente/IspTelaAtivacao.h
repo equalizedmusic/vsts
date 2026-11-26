@@ -192,6 +192,34 @@ public:
         principal.onClick = [this] { clicouPrincipal(); };
         secundario.onClick = [this] { clicouSecundario(); };
 
+        // ativação sem internet (26/11/2026): código deste PC num arquivo ⇒ site ⇒ .isplic de volta
+        for (auto* b : { &semRedeBt, &salvarBt, &carregarBt, &voltarBt })
+        {
+            addChildComponent (b);
+            b->setColour (juce::TextButton::textColourOffId, texto);
+            b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2a2d33));
+        }
+        carregarBt.setColour (juce::TextButton::buttonColourId, destaque.darker (0.35f));
+        semRedeBt.setButtonText (utf8 ("SEM INTERNET?"));
+        salvarBt.setButtonText (utf8 ("SALVAR CÓDIGO"));
+        carregarBt.setButtonText (utf8 ("CARREGAR LICENÇA"));
+        voltarBt.setButtonText (utf8 ("Voltar"));
+        semRedeBt.onClick = [this] { modoSemRede = true; atualizar(); };
+        voltarBt.onClick = [this] { modoSemRede = false; avisoLocal = {}; atualizar(); };
+        salvarBt.onClick = [this] { salvarCodigo(); };
+        carregarBt.onClick = [this] { carregarLicenca(); };
+
+        addChildComponent (codigoEd);
+        codigoEd.setReadOnly (true);
+        codigoEd.setCaretVisible (false);
+        codigoEd.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.5f, juce::Font::plain));
+        codigoEd.setIndents (8, 9);
+        codigoEd.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff0f1013));
+        codigoEd.setColour (juce::TextEditor::textColourId, destaque);
+        codigoEd.setColour (juce::TextEditor::outlineColourId, borda);
+        codigoEd.setColour (juce::TextEditor::focusedOutlineColourId, destaque);
+        codigoEd.setText (Licenca::maquina(), false);
+
         licenca->addChangeListener (this);
     }
 
@@ -245,13 +273,33 @@ public:
         g.setColour (texto);
         g.setFont (juce::FontOptions (24.0f, juce::Font::bold));
         const bool ativa = licenca->liberada();
-        g.drawText (utf8 (ativa ? "PACOTE " : "ATIVAR PACOTE ") + nomePacoteTxt() + (ativa ? utf8 (" ATIVADO") : juce::String()),
-                    r.removeFromTop (34), juce::Justification::centredLeft);
+        const bool semRede = modoSemRede && ! ativa;
+        g.drawFittedText (semRede ? utf8 ("ATIVAR SEM INTERNET")
+                                  : utf8 (ativa ? "PACOTE " : "ATIVAR PACOTE ") + nomePacoteTxt() + (ativa ? utf8 (" ATIVADO") : juce::String()),
+                          r.removeFromTop (34), juce::Justification::centredLeft, 1, 0.7f);
         r.removeFromTop (6);
 
         g.setFont (juce::FontOptions (14.5f));
         g.setColour (texto.withAlpha (0.78f));
-        if (ativa)
+        if (semRede)
+        {
+            g.setFont (juce::FontOptions (13.5f));
+            g.drawFittedText (utf8 ("1. Clique em SALVAR CÓDIGO e grave o arquivo num pen drive.\n"
+                                    "2. Num computador com internet, abra ") + Licenca::urlSemRede
+                              + utf8 (", digite o e-mail e o token e envie o arquivo do código.\n"
+                                      "3. Traga o arquivo .isplic e clique em CARREGAR LICENÇA: todos os seus plugins ativam."),
+                              r.removeFromTop (96), juce::Justification::topLeft, 7, 0.9f);
+        }
+        else if (ativa && licenca->semRede())
+        {
+            juce::String t;
+            t << utf8 ("E-mail: ") << licenca->email() << "\n"
+              << utf8 ("Este computador: ") << juce::SystemStats::getComputerName() << "\n"
+              << utf8 ("Licença SEM INTERNET: não vence e não precisa de conexão.") << "\n\n"
+              << utf8 ("Vai trocar de computador ou formatar? Fale com contato@insidestudiosp.com.br para liberar a vaga.");
+            g.drawFittedText (t, r.removeFromTop (130), juce::Justification::topLeft, 8, 1.0f);
+        }
+        else if (ativa)
         {
             const auto ate = licenca->validaAte().formatted ("%d/%m/%Y");
             juce::String t;
@@ -276,11 +324,12 @@ public:
 
         // mensagem do servidor / andamento, logo acima dos botões
         auto m = cartao().reduced (28, 0).withTop (principal.getY() - 46).withHeight (40);
-        const auto msg = licenca->mensagem();
+        const bool local = semRede && avisoLocal.isNotEmpty();
+        const auto msg = local ? avisoLocal : licenca->mensagem();
         if (msg.isNotEmpty())
         {
             g.setFont (juce::FontOptions (14.0f));
-            g.setColour (licenca->ocupada() || licenca->liberada() ? texto.withAlpha (0.85f) : juce::Colour (0xffff8a70));
+            g.setColour (local || licenca->ocupada() || licenca->liberada() ? texto.withAlpha (0.85f) : juce::Colour (0xffff8a70));
             g.drawFittedText (msg, m, juce::Justification::centredLeft, 3, 1.0f);
         }
     }
@@ -288,16 +337,34 @@ public:
     void resized() override
     {
         auto r = cartao().reduced (28, 22);
+        auto rc = r;
         r.removeFromTop (18 + 34 + 6 + 54 + 10);
         emailEd.setBounds (r.removeFromTop (38));
         r.removeFromTop (10);
         tokenEd.setBounds (r.removeFromTop (38));
+        rc.removeFromTop (18 + 34 + 6 + 96 + 6);
+        codigoEd.setBounds (rc.removeFromTop (34));
 
         auto b = cartao().reduced (28, 22).removeFromBottom (38);
+        if (salvarBt.isVisible())   // modo sem internet: SALVAR CÓDIGO · CARREGAR LICENÇA · Voltar
+        {
+            const int w = b.getWidth();
+            salvarBt.setBounds (b.removeFromLeft (w * 34 / 100));
+            b.removeFromLeft (8);
+            carregarBt.setBounds (b.removeFromLeft (w * 38 / 100));
+            b.removeFromLeft (8);
+            voltarBt.setBounds (b);
+            return;
+        }
         if (secundario.isVisible())
         {
             secundario.setBounds (b.removeFromRight (secundarioLargura()));
             b.removeFromRight (10);
+        }
+        if (semRedeBt.isVisible())
+        {
+            semRedeBt.setBounds (b.removeFromLeft (juce::jmin (150, b.getWidth() / 3)));
+            b.removeFromLeft (10);
         }
         principal.setBounds (b);
     }
@@ -335,8 +402,10 @@ private:
         if (! mostrar) return;
         toFront (false);
 
-        emailEd.setVisible (! ativa);
-        tokenEd.setVisible (! ativa);
+        if (ativa) modoSemRede = false;
+        const bool semRede = modoSemRede;
+        emailEd.setVisible (! ativa && ! semRede);
+        tokenEd.setVisible (! ativa && ! semRede);
         if (! ativa && emailEd.isEmpty() && tokenEd.isEmpty())
         {
             emailEd.setText (licenca->email(), false);
@@ -344,11 +413,22 @@ private:
         }
 
         const bool ocupado = licenca->ocupada();
-        principal.setVisible (true);
+        codigoEd.setVisible (semRede);
+        for (auto* b : { &salvarBt, &carregarBt, &voltarBt })
+        {
+            b->setVisible (semRede);
+            b->setEnabled (! ocupado && escolha == nullptr);
+        }
+        semRedeBt.setVisible (! ativa && ! semRede);
+        semRedeBt.setEnabled (! ocupado);
+        principal.setVisible (! semRede);
         principal.setEnabled (! ocupado);
-        secundario.setVisible (ativa);
+        const bool soFechar = ativa && licenca->semRede();   // sem token gravado: não tem DESATIVAR
+        secundario.setVisible (ativa && ! soFechar);
         secundario.setEnabled (! ocupado);
-        if (ativa)
+        if (soFechar)
+            principal.setButtonText (utf8 ("Fechar"));
+        else if (ativa)
         {
             principal.setButtonText (utf8 (confirmando ? "Confirmar: desativar este computador" : "Desativar este computador"));
             secundario.setButtonText (utf8 ("Fechar"));
@@ -363,6 +443,7 @@ private:
     void clicouPrincipal()
     {
         if (! licenca->liberada()) { clicouAtivar(); return; }
+        if (licenca->semRede()) { clicouSecundario(); return; }   // "Fechar"
         if (! confirmando) { confirmando = true; atualizar(); return; }
         confirmando = false;
         licenca->desativar();
@@ -379,6 +460,58 @@ private:
     {
         if (licenca->liberada() || licenca->ocupada()) return;
         licenca->ativar (emailEd.getText(), tokenEd.getText());
+    }
+
+    // grava o código deste computador (padrão: Área de Trabalho; a pessoa escolhe o pen drive)
+    void salvarCodigo()
+    {
+        if (escolha != nullptr) return;
+        const auto inicio = juce::File::getSpecialLocation (juce::File::userDesktopDirectory).getChildFile (Licenca::nomeArquivoCodigo());
+        escolha = std::make_unique<juce::FileChooser> (utf8 ("Salvar o código deste computador"), inicio, "*.txt");
+        atualizar();
+        juce::Component::SafePointer<TelaAtivacao> eu (this);
+        escolha->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+                                  | juce::FileBrowserComponent::warnAboutOverwriting,
+                              [eu] (const juce::FileChooser& fc)
+        {
+            if (eu == nullptr) return;
+            auto f = fc.getResult();
+            if (f != juce::File())
+            {
+                if (! f.hasFileExtension ("txt")) f = f.withFileExtension ("txt");
+                eu->avisoLocal = Licenca::salvarCodigo (f)
+                    ? utf8 ("Código salvo em ") + f.getFullPathName() + utf8 (". Leve ao site e traga o .isplic.")
+                    : utf8 ("Não consegui gravar o arquivo aí. Escolha outra pasta ou o pen drive.");
+            }
+            eu->liberarEscolha();
+        });
+    }
+
+    // o FileChooser não pode ser destruído dentro do próprio callback: solta na próxima volta da fila de mensagens
+    void liberarEscolha()
+    {
+        juce::Component::SafePointer<TelaAtivacao> eu (this);
+        juce::MessageManager::callAsync ([eu] { if (eu != nullptr) { eu->escolha.reset(); eu->atualizar(); } });
+    }
+
+    void carregarLicenca()
+    {
+        if (escolha != nullptr) return;
+        escolha = std::make_unique<juce::FileChooser> (utf8 ("Escolha o arquivo de licença (.isplic)"),
+                                                       juce::File::getSpecialLocation (juce::File::userDesktopDirectory), "*.isplic");
+        atualizar();
+        juce::Component::SafePointer<TelaAtivacao> eu (this);
+        escolha->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                              [eu] (const juce::FileChooser& fc)
+        {
+            if (eu == nullptr) return;
+            const auto f = fc.getResult();
+            eu->avisoLocal = {};
+            // mensagem e liberação vêm pelo ChangeBroadcaster; deu certo ⇒ fica a tela de info com a confirmação
+            if (f.existsAsFile() && eu->licenca->carregarSemRede (f) > 0 && eu->licenca->liberada())
+                eu->modoInfo = true;
+            eu->liberarEscolha();
+        });
     }
 
     void changeListenerCallback (juce::ChangeBroadcaster*) override { atualizar(); }
@@ -405,6 +538,12 @@ private:
     juce::TextEditor emailEd, tokenEd;
     juce::TextButton principal, secundario;
     bool modoInfo = false, confirmando = false;
+    // ativação sem internet
+    juce::TextButton semRedeBt, salvarBt, carregarBt, voltarBt;
+    juce::TextEditor codigoEd;
+    std::unique_ptr<juce::FileChooser> escolha;
+    juce::String avisoLocal;
+    bool modoSemRede = false;
 
     const juce::Colour texto { 0xffe9e4da }, apagado { 0xff7d7a74 }, borda { 0xff3a3d45 }, destaque { 0xffe8a33d };
 
