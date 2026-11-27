@@ -1,0 +1,6 @@
+dist
+dist/VST3
+dist-align
+dist-align/VST3
+dist-align/VST3/ALIGN.vst3
+-rwxr-xr-x 1 runneradmin 197121 4619339 Nov 27 21:10 InsideStudioSP-Align-win.exe

@@ -1,0 +1,9 @@
+dist
+dist/VST3
+dist/AU
+dist-align
+dist-align/VST3
+dist-align/VST3/ALIGN.vst3
+dist-align/AU
+dist-align/AU/ALIGN.component
+-rw-r--r--@ 1 runner  staff  10373583 Nov 27 21:10 InsideStudioSP-Align-mac.dmg
