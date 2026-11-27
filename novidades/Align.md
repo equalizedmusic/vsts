@@ -4,6 +4,19 @@ Pacote do instalador: `InsideStudioSP-Align`. A versão é o primeiro título `#
 ela entra no plugin, no instalador e no release `align-vx.y.z` do GitHub (com o texto da seção como nota).
 Para lançar uma versão nova, escreva a seção nova AQUI EM CIMA, no mesmo commit da mudança.
 
+## 0.3.5 — 2026-11-27
+- **Timbre preservado** (vindo de teste de cliente no Cubase):
+  - Ligar o ALIGN com PHASE, POLARITY e LEVEL GUARD desligados não mexe mais em nada: o baixo sai idêntico à
+    entrada. Antes o crossover interno já girava a fase do baixo e mudava o encaixe com o kick.
+  - Baixo que já chega em fase com o kick fica como está: o ALIGN só gira a fase quando isso soma pelo menos 1 dB a
+    mais de grave do que deixar o baixo inteiro, sem crossover. Antes ele podia trocar um baixo já alinhado por uma
+    rotação e deixar o som mais seco.
+  - **POLARITY** agora inverte o baixo inteiro. Antes invertia só o grave, o que abria um buraco perto do X-OVER e
+    deixava o baixo mais fino.
+  - **LEVEL GUARD** mais suave quando o baixo não precisa de rotação (low shelf dinâmico, sem crossover): segura a
+    soma sem afinar o baixo, e o LOW END fica perto de 0 em vez de negativo.
+- Projetos salvos abrem com os mesmos ajustes; o som muda só onde descrito acima.
+
 ## 0.3.4 — 2026-11-26
 - **Ativação sem internet:** para o computador do estúdio que não fica na internet (ou nem tem placa de rede). Na tela
   de ativação, clique em **SEM INTERNET?** → **SALVAR CÓDIGO** e leve o arquivo num pen drive a um computador com internet;

@@ -23,7 +23,7 @@ site; quem baixa pelo site recebe a última oficial. Preço e oferta: no site.
 | [GOGÓ](instrumentos/gogo/README.md) | Cadeia de voz | 0.2.3 | à venda |
 | [RETALHO](instrumentos/retalho/README.md) | Sampler de vocal: PICOTE, ESTICA, GROOVE | 0.2.3 | pago |
 | [CHUTE](instrumentos/chute/README.md) | Kick designer | 0.2.3 | pago (lançamento 22/11) |
-| [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.4 | grátis |
+| [ALIGN](instrumentos/align/README.md) | Fase kick/baixo | 0.3.5 | grátis |
 | [BAREBASS](instrumentos/barebass/README.md) | Synth de baixo | 0.4.5 | grátis |
 | [CURVA](instrumentos/curva/README.md) | Monitor de volume (Fletcher-Munson / ISO 226) | 0.2.3 | grátis (com licença) |
 | [STOMPBOX](instrumentos/stompbox/README.md) | Pedalboard de guitarra | 0.2.3 | à venda |

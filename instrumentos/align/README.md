@@ -1,6 +1,6 @@
 # ALIGN
 
-> **Versão atual: 0.3.3** (25/11/2026) · grátis no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (página `/align`, com licença) · notas em [`novidades/Align.md`](../../novidades/Align.md)
+> **Versão atual: 0.3.5** (27/11/2026) · grátis no site [insidestudiosp.com.br](https://insidestudiosp.com.br) (página `/align`, com licença) · notas em [`novidades/Align.md`](../../novidades/Align.md)
 
 ![ALIGN](https://raw.githubusercontent.com/equalizedmusic/vsts/shots/ALIGN.png)
 
@@ -28,6 +28,11 @@ da primeira nota do baixo e os dois cancelam (ou embolam) no grave.
   da soma de potência (nem buraco, nem embolar), até −6 dB. A conta é pela energia da nota, não amostra a amostra.
 - **Só no grave do baixo.** Crossover Linkwitz-Riley de 4ª ordem no X-OVER, que acompanha a nota (~1,6 × a
   fundamental, de 60 Hz até o X-OVER MAX). O resto do baixo passa como está.
+- **Timbre preservado (0.3.5).** O crossover sozinho já gira a fase do baixo (~−110° na fundamental), e girar ou
+  inverter só o grave abre um buraco no X-OVER (o baixo "afina"). Por isso: a opção **SECO** (o baixo inteiro, sem
+  crossover) é o ponto de partida e só perde para uma rotação que some pelo menos 1 dB a mais; **POLARITY** inverte o
+  baixo inteiro; no SECO o **LEVEL GUARD** é um low shelf dinâmico; e PHASE, POLARITY e LEVEL GUARD desligados = a
+  entrada sai intacta. Baixo que já chega em fase não muda nada.
 - **Latência zero.** Nada olha para a frente. A primeira batida de uma nota que ele nunca ouviu pode sair com a
   correção da nota anterior; da segunda em diante sai certa.
 
@@ -39,8 +44,8 @@ que sozinho soa igual; o que muda é como ele soma com o kick.
 O corretor segue sempre automático; a faixa DOSE, embaixo do osciloscópio, dosa cada parte (duplo clique nas barras
 volta ao padrão; projeto antigo abre como a 0.1.0: tudo ligado, 100%, MID, 110 Hz):
 
-- **PHASE** e **POLARITY** ligam/desligam a rotação de fase e a inversão de polaridade (as duas desligadas = o grave
-  passa direto).
+- **PHASE** e **POLARITY** ligam/desligam a rotação de fase e a inversão de polaridade (do baixo inteiro). PHASE,
+  POLARITY e LEVEL GUARD desligados = o baixo passa intacto, como com o ALIGN desligado.
 - **LEVEL GUARD** liga/desliga o controle de nível; **GUARD DEPTH** (0–100%) dosa quanto ele abaixa.
 - **REACT** (SLOW / MID / FAST): a rapidez com que aprende cada nota e troca de correção.
 - **X-OVER MAX** (60–150 Hz): o teto do grave corrigido; o X-OVER continua acompanhando a nota.
@@ -70,3 +75,5 @@ congelada / passada para áudio ou DAW que isola cada plugin (Bitwig com sandbox
   filtro e envelope): compara a opção aprendida com a melhor de verdade, o LEVEL GUARD, a troca de nota, o desligado
   idêntico à entrada e o nível sem sidechain.
   `zig c++ -O2 -std=c++17 -target x86_64-windows-gnu teste_dsp.cpp -o teste_dsp.exe && teste_dsp.exe`
+- `tools/teste_timbre.cpp` (0.3.5): cada combinação da DOSE com o baixo em 5 fases, modo antigo × novo: soma com o
+  kick, grave do baixo, timbre 60–200 Hz fora do kick, saída idêntica (ou invertida) à entrada e o LOW END da tela.

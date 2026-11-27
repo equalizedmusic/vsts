@@ -21,6 +21,13 @@
 //    kick está soando em relação ao pico dele), até −DUCK × 100%. Em 0 não faz nada (projeto antigo abre igual).
 //  - O desligado (ALIGN off) devolve a entrada sem nenhuma alteração; a análise continua (serve de A/B e já
 //    chega aprendido quando liga).
+//  - TIMBRE PRESERVADO (0.3.5, preservaTimbre = true; o BAREBASS segue no modo antigo): o crossover sozinho já é um
+//    allpass (~−110° na fundamental) e girar/inverter SÓ o grave abre um buraco no X-OVER (o baixo "afina"). Então:
+//      · há a opção SECO = o baixo inteiro sem passar pelo crossover (± polaridade). Ela é o ponto de partida (nada
+//        muda antes de aprender) e só perde para uma rotação que some pelo menos margemTimbre dB a mais;
+//      · POLARITY inverte o baixo INTEIRO (grave e agudo juntos), não só o grave: inverter não mexe no timbre;
+//      · no SECO o LEVEL GUARD é um low shelf dinâmico (fase mínima, sem crossover); em ganho 1 é a identidade;
+//      · PHASE, POLARITY e LEVEL GUARD desligados = a entrada sai intacta (só o DUCK, se houver).
 
 #include <algorithm>
 #include <atomic>
@@ -77,6 +84,26 @@ struct Lr4
     double hp (double x) { return d.hp (c.hp (x)); }
 };
 
+// low shelf TPT (Simper), modulável: ganho linear no grave = gLin (A² = gLin). Em gLin = 1 devolve a entrada exata.
+struct LowShelf
+{
+    double a1 = 1, a2 = 0, a3 = 0, m1 = 0, m2 = 0, k = 1.41421356, ic1 = 0, ic2 = 0;
+    void set (double fs, double fc, double gLin)
+    {
+        const double A = std::sqrt (std::max (gLin, 1.0e-4));
+        const double g = std::tan (pi * std::min (fc, fs * 0.45) / fs) / std::sqrt (A);
+        a1 = 1.0 / (1.0 + g * (g + k)); a2 = g * a1; a3 = g * a2;
+        m1 = k * (A - 1.0); m2 = A * A - 1.0;
+    }
+    void reset() { ic1 = ic2 = 0; }
+    double process (double v0)
+    {
+        const double v3 = v0 - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
+        ic1 = 2 * v1 - ic1; ic2 = 2 * v2 - ic2;
+        return v0 + m1 * v1 + m2 * v2;
+    }
+};
+
 // allpass de 2ª ordem (RBJ), em double (frequências baixas a 192 kHz)
 struct Allpass
 {
@@ -107,6 +134,9 @@ struct Allpass
 constexpr int numAp = 16;            // allpass do banco
 constexpr int numCand = numAp + 1;   // + o caminho direto (índice 0)
 constexpr int numOpc = numCand * 2;  // × polaridade (opção = cand * 2 + invertida)
+constexpr int candSeco = numCand;    // 0.3.5: o baixo inteiro sem crossover (opções numOpc e numOpc + 1)
+constexpr int opSeco = numOpc;
+constexpr int numOpcTot = numOpc + 2;
 constexpr int maxCh = 2;
 constexpr int semNota = 128;         // memória de quando a nota não foi reconhecida
 
@@ -123,6 +153,9 @@ struct Memoria
 {
     double x[numCand] {};   // Σ kick·candidato, médio
     double ek = 0, eb = 0;  // energias médias do grave do kick e do baixo na janela
+    double xHi = 0;         // Σ kick·agudo do baixo (comum a todas as rotações; polaridade inteira inverte junto)
+    double xSeco = 0;       // Σ kick·baixo inteiro (opção SECO)
+    double xIn = 0;         // Σ kick_grave·baixo_grave da entrada (o cruzamento do SECO no grave, p/ o LEVEL GUARD)
     int opcao = -1;         // correção guardada (-1 = ainda nenhuma)
     int opcaoRestrita = -1; // a melhor só entre as opções que a dosagem permite (PHASE/POLARITY desligados)
     int restricaoDe = -1;   // para qual combinação de PHASE/POLARITY a opcaoRestrita foi escolhida
@@ -193,6 +226,8 @@ public:
     int react = 1;              // REACT 0 lento, 1 médio, 2 rápido
     double xoMax = 110.0;       // X-OVER MAX (60..150 Hz): teto do X-OVER que acompanha a nota
     double duck = 0.0;          // DUCK 0..1 (0.3.0): quanto o baixo abaixa com o kick (0 = desligado)
+    bool preservaTimbre = false;  // 0.3.5: SECO + polaridade inteira + shelf (ALIGN liga; BAREBASS fica no antigo)
+    double margemTimbre = 1.0;    // dB que uma rotação tem de somar a mais que o SECO para valer
 
     // o host muda a dosagem bloco a bloco (sem alocar; o REACT ajusta o crossfade)
     void setReact (int r)
@@ -233,10 +268,12 @@ public:
         for (int c = 0; c < maxCh; ++c) { split[c].reset(); for (auto& a : ap[c]) a.reset(); }
         for (auto& a : apMid) a.reset();
         for (auto* f : { &kSplit, &bInDisp, &bOutDisp, &bSemDisp }) f->reset();
+        for (auto& s : shelf) s.reset();
+        gShelf = 1.0; xoShelf = -1.0;
         for (auto& m : mem) m = Memoria();
         for (auto& b : leitura.notas) b = 0;
         novaJanela();
-        opAtual = 0; opAntes = 0; xf = 1.0; wet = 0.0;
+        opAtual = opNeutra(); opAntes = opAtual; xf = 1.0; wet = 0.0;
         envF = envS = 0; kLowEnv = 0; bEnv = 0; bPico = 0; jJunto = false;
         desdeOnset = 1 << 30; semKick = 1 << 30;
         eK2 = eB2 = 0; g = 1.0; gNota = 1.0;
@@ -293,6 +330,7 @@ public:
             if (bEnv > 0.25000000000000000669344 * bPico && bPico > 1e-4 && kLowEnv > 0.02 * kLowPicoAnt)
             {
                 for (int a = 0; a < numCand; ++a) jx[a] += k * ym[a];
+                jxHi += k * hm; jxSeco += k * bm;
                 jek += kl * kl; jeb += bIn * bIn; jxIn += kl * bIn;
                 ++jn;
                 jJunto = true;
@@ -312,17 +350,18 @@ public:
             }
             {
                 const Memoria& mm = mem[notaAplica >= 0 ? notaAplica : semNota];
-                const double xs = ((opAtual & 1) ? -1.0 : 1.0) * mm.x[opAtual >> 1];
+                const double xs = ((opAtual & 1) ? -1.0 : 1.0) * ((opAtual >> 1) == candSeco ? mm.xIn : mm.x[opAtual >> 1]);
                 gNota = (mm.vezes > 0 && xs > 0 && mm.eb > 1e-12)
                           ? std::clamp ((-xs + std::sqrt (xs * xs + mm.eb * mm.eb)) / mm.eb, 0.5, 1.0) : 1.0;
             }
+            const int ca = opAtual >> 1, cb = opAntes >> 1;
+            const double sa = (opAtual & 1) ? -1.0 : 1.0, sb = (opAntes & 1) ? -1.0 : 1.0;
+            const double t = xf;
             double yAp[maxCh], yApM;
             {
-                const int ca = opAtual >> 1, cb = opAntes >> 1;
-                const double sa = (opAtual & 1) ? -1.0 : 1.0, sb = (opAntes & 1) ? -1.0 : 1.0;
-                const double t = xf;
-                for (int c = 0; c < nch; ++c) yAp[c] = t * sa * y[c][ca] + (1 - t) * sb * y[c][cb];
-                yApM = t * sa * ym[ca] + (1 - t) * sb * ym[cb];
+                const int ya = std::min (ca, numCand - 1), yb = std::min (cb, numCand - 1);   // SECO não usa o banco
+                for (int c = 0; c < nch; ++c) yAp[c] = t * sa * y[c][ya] + (1 - t) * sb * y[c][yb];
+                yApM = t * sa * ym[ya] + (1 - t) * sb * ym[yb];
                 if (xf < 1.0) xf = std::min (1.0, xf + fade);
             }
 
@@ -349,10 +388,39 @@ public:
             }
             const double gDuck = 1.0 - wet * (1.0 - gd);
             gdMin = std::min (gdMin, gDuck);
-            for (int c = 0; c < nch; ++c)
-                if (wet > 0.0) bass[c][i] = (float) (gDuck * (xC[c] + wet * (hiC[c] + g * yAp[c] - xC[c])));
-            const double outFull = bm + wet * (hm + g * yApM - bm);
-            const double semFull = bm + wet * (hm + yApM - bm);
+            double outFull, semFull;
+            if (! preservaTimbre)
+            {
+                for (int c = 0; c < nch; ++c)
+                    if (wet > 0.0) bass[c][i] = (float) (gDuck * (xC[c] + wet * (hiC[c] + g * yAp[c] - xC[c])));
+                outFull = bm + wet * (hm + g * yApM - bm);
+                semFull = bm + wet * (hm + yApM - bm);
+            }
+            else
+            {
+                // SECO: low shelf dinâmico no baixo inteiro (ganho 1 = identidade). Rotação: crossover + banco, e a
+                // polaridade vale para o baixo INTEIRO (agudo junto), sem buraco no X-OVER.
+                const bool usaSeco = ca == candSeco || (t < 1.0 && cb == candSeco);
+                if (usaSeco && ((agora & 7) == 0 || std::fabs (g - gShelf) > 0.002))
+                    if (std::fabs (g - gShelf) > 1.0e-6 || xoShelf != xo)
+                    {
+                        gShelf = g; xoShelf = xo;
+                        for (auto& s : shelf) s.set (fs, 1.25 * xo, gShelf);
+                    }
+                auto via = [&] (int cand, double sgn, int c, double seco, double gg)
+                { return sgn * (cand == candSeco ? seco : hiC[c] + gg * y[c][cand]); };
+                outFull = 0; semFull = 0;
+                for (int c = 0; c < nch; ++c)
+                {
+                    const double seco = shelf[c].process (xC[c]);
+                    double o = t * via (ca, sa, c, seco, g), so = t * via (ca, sa, c, xC[c], 1.0);
+                    if (t < 1.0) { o += (1 - t) * via (cb, sb, c, seco, g); so += (1 - t) * via (cb, sb, c, xC[c], 1.0); }
+                    if (wet > 0.0) bass[c][i] = (float) (gDuck * (xC[c] + wet * (o - xC[c])));
+                    outFull += o; semFull += so;
+                }
+                outFull = bm + wet * (outFull / nch - bm);
+                semFull = bm + wet * (semFull / nch - bm);
+            }
             // saída no grave com o mesmo filtro do kick: na tela e no medidor, a fase entre os dois é a real
             const double outLow = bOutDisp.lp (outFull);
             const double semLow = bSemDisp.lp (semFull);
@@ -385,13 +453,20 @@ public:
         leitura.temBaixo = bEnv > 1e-4;
         leitura.estado = ! leitura.temKick.load() ? 0 : (mem[notaAplica >= 0 ? notaAplica : semNota].opcao >= 0 ? 2 : 1);
         // fase e polaridade desligadas juntas: nada a aplicar, volta ao direto (com crossfade, sem clique)
-        if (forcaOpcao < 0 && ! usaFase && ! usaPolaridade && opAtual != 0 && xf >= 1.0) { opAntes = opAtual; opAtual = 0; xf = 0.0; }
+        if (forcaOpcao < 0 && ! usaFase && ! usaPolaridade && opAtual != opNeutra() && xf >= 1.0) { opAntes = opAtual; opAtual = opNeutra(); xf = 0.0; }
+        // 0.3.5: dosagem mudou e a correção aplicada não é mais permitida (ex.: desligou o PHASE) = volta já, sem
+        // esperar a próxima batida
+        if (forcaOpcao < 0 && preservaTimbre && ! permitida (opAtual) && xf >= 1.0)
+        {
+            const int alvo = opcaoPermitida (mem[notaAplica >= 0 ? notaAplica : semNota]);
+            opAntes = opAtual; opAtual = alvo >= 0 && permitida (alvo) ? alvo : opNeutra(); xf = 0.0;
+        }
         leitura.nota = notaAplica;
         leitura.f0 = (float) f0Agora;
         leitura.xoverHz = (float) xo;
         leitura.invertida = opAtual & 1;
         const double fRef = f0Agora > 0 ? f0Agora : 50.0;
-        double rot = (opAtual >> 1) == 0 ? 0.0 : apMid[(opAtual >> 1) - 1].phaseDeg (fs, fRef);
+        double rot = (opAtual >> 1) == 0 || (opAtual >> 1) == candSeco ? 0.0 : apMid[(opAtual >> 1) - 1].phaseDeg (fs, fRef);
         if (rot > 0) rot -= 360.0;
         leitura.rotDeg = (float) rot;
     }
@@ -403,26 +478,53 @@ public:
 
 private:
     int restricao() const { return (usaFase ? 1 : 0) | (usaPolaridade ? 2 : 0); }
-    bool permitida (int o) const { return (usaFase || (o >> 1) == 0) && (usaPolaridade || (o & 1) == 0); }
-
-    int melhorRestrita (const Memoria& m) const
+    // sem correção nenhuma: o caminho direto (antigo) ou o SECO (0.3.5, a entrada intacta)
+    int opNeutra() const { return preservaTimbre ? opSeco : 0; }
+    int numOpcoes() const { return preservaTimbre ? numOpcTot : numOpc; }
+    bool permitida (int o) const
     {
-        int melhor = 0; double v = -1e300;
-        for (int o = 0; o < numOpc; ++o)
-            if (permitida (o))
-            {
-                const double vo = ((o & 1) ? -1.0 : 1.0) * m.x[o >> 1];
-                if (vo > v) { v = vo; melhor = o; }
-            }
+        const int c = o >> 1;
+        if (preservaTimbre ? (c != candSeco && ! usaFase) : (c != 0 && ! usaFase)) return false;
+        if (c == candSeco && ! preservaTimbre) return false;
+        return usaPolaridade || (o & 1) == 0;
+    }
+    // o quanto a opção soma com o kick (Σ kick·saída). No modo antigo só o grave; no 0.3.5 o baixo inteiro, porque a
+    // polaridade vale para o agudo também e o SECO concorre com as rotações
+    double valor (const Memoria& m, int o) const
+    {
+        const double s = (o & 1) ? -1.0 : 1.0;
+        const int c = o >> 1;
+        if (! preservaTimbre) return s * m.x[c];
+        return c == candSeco ? s * m.xSeco : s * (m.x[c] + m.xHi);
+    }
+    double ganhoDb (const Memoria& m, double va, double vb) const   // quanto va soma a mais que vb (dB)
+    {
+        const double base = m.ek + m.eb;
+        return 10.0 * std::log10 (std::max (base + 2 * va, 1e-12 * base) / std::max (base + 2 * vb, 1e-12 * base));
+    }
+    // a melhor entre as opções (todas ou só as permitidas). No 0.3.5 uma rotação só vence o SECO se somar pelo menos
+    // margemTimbre dB a mais (rotação mexe no timbre; o SECO não)
+    int escolhe (const Memoria& m, bool soPermitidas) const
+    {
+        int melhor = opNeutra(), seco = -1; double v = -1e300, vs = -1e300;
+        for (int o = 0; o < numOpcoes(); ++o)
+        {
+            if (soPermitidas && ! permitida (o)) continue;
+            const double vo = valor (m, o);
+            if (vo > v) { v = vo; melhor = o; }
+            if ((o >> 1) == candSeco && vo > vs) { vs = vo; seco = o; }
+        }
+        if (preservaTimbre && seco >= 0 && (melhor >> 1) != candSeco && ganhoDb (m, v, vs) < margemTimbre) melhor = seco;
         return melhor;
     }
+    int melhorRestrita (const Memoria& m) const { return escolhe (m, true); }
 
     // a correção que vale para esta nota com a dosagem atual (−1 = ainda nada aprendido)
     int opcaoPermitida (const Memoria& m) const
     {
         if (m.opcao < 0) return -1;
         if (usaFase && usaPolaridade) return m.opcao;
-        if (! usaFase && ! usaPolaridade) return 0;
+        if (! usaFase && ! usaPolaridade) return opNeutra();
         if (m.restricaoDe == restricao() && m.opcaoRestrita >= 0 && permitida (m.opcaoRestrita)) return m.opcaoRestrita;
         return melhorRestrita (m);   // a dosagem acabou de mudar: a melhor entre as permitidas (a próxima batida fixa)
     }
@@ -436,7 +538,7 @@ private:
     void novaJanela()
     {
         std::fill (std::begin (jx), std::end (jx), 0.0);
-        jek = jeb = jxo = jeo = jxIn = 0; jn = 0; jSobreMax = 0; jNota = -1; jgMin = 1.0;
+        jek = jeb = jxo = jeo = jxIn = jxHi = jxSeco = 0; jn = 0; jSobreMax = 0; jNota = -1; jgMin = 1.0;
         kLowPicoAnt = std::max (kLowPico, 1e-9); kLowPico = 0;
     }
 
@@ -493,26 +595,19 @@ private:
         static constexpr double aReact[3] = { 0.2, 0.4, 0.7 }, histReact[3] = { 1.5, 1.0, 0.5 };
         const double a = m.vezes == 0 ? 1.0 : aReact[std::clamp (react, 0, 2)];
         for (int c = 0; c < numCand; ++c) m.x[c] += a * (jx[c] / jn - m.x[c]);
+        m.xHi += a * (jxHi / jn - m.xHi); m.xSeco += a * (jxSeco / jn - m.xSeco); m.xIn += a * (jxIn / jn - m.xIn);
         m.ek += a * (ek - m.ek); m.eb += a * (eb - m.eb);
         ++m.vezes;
 
-        int melhor = 0; double vMelhor = -1e300;
-        for (int o = 0; o < numOpc; ++o)
-        {
-            const double v = ((o & 1) ? -1.0 : 1.0) * m.x[o >> 1];
-            if (v > vMelhor) { vMelhor = v; melhor = o; }
-        }
-        const int atual = m.opcao >= 0 ? m.opcao : 0;
-        const double vAtual = ((atual & 1) ? -1.0 : 1.0) * m.x[atual >> 1];
-        const double base = m.ek + m.eb;
-        const double ganho = 10.0 * std::log10 (std::max (base + 2 * vMelhor, 1e-12 * base) / std::max (base + 2 * vAtual, 1e-12 * base));
+        const int melhor = escolhe (m, false);
+        const int atual = m.opcao >= 0 ? m.opcao : opNeutra();
+        const double ganho = ganhoDb (m, valor (m, melhor), valor (m, atual));
         if (m.opcao < 0 || ganho > histReact[std::clamp (react, 0, 2)]) m.opcao = melhor;
         // a correção com fase/polaridade limitadas também troca só acima da histerese (sem ficar pulando)
         {
             const int mr = melhorRestrita (m);
-            const int ar = m.opcaoRestrita >= 0 ? m.opcaoRestrita : 0;
-            const double vr = ((mr & 1) ? -1.0 : 1.0) * m.x[mr >> 1], va = ((ar & 1) ? -1.0 : 1.0) * m.x[ar >> 1];
-            const double gr = 10.0 * std::log10 (std::max (base + 2 * vr, 1e-12 * base) / std::max (base + 2 * va, 1e-12 * base));
+            const int ar = m.opcaoRestrita >= 0 ? m.opcaoRestrita : opNeutra();
+            const double gr = ganhoDb (m, valor (m, mr), valor (m, ar));
             if (m.opcaoRestrita < 0 || ! permitida (ar) || gr > histReact[std::clamp (react, 0, 2)]) m.opcaoRestrita = mr;
             m.restricaoDe = restricao();
         }
@@ -554,10 +649,13 @@ private:
     double fcAp[numAp] {};
     Lr4 split[maxCh], kSplit, bInDisp, bOutDisp, bSemDisp;
     Allpass ap[maxCh][numAp], apMid[numAp];
+    LowShelf shelf[maxCh];   // LEVEL GUARD no SECO (0.3.5)
+    double gShelf = 1.0, xoShelf = -1.0;
     double xo = 90.0, xoAlvo = 90.0, xoK = 0;
 
     // janela da batida
     double jx[numCand] {}, jek = 0, jeb = 0, jxo = 0, jeo = 0, jxIn = 0, jSobreMax = 0, jgMin = 1.0;
+    double jxHi = 0, jxSeco = 0;
     int jn = 0, jNota = -1;
     Memoria mem[129];
 

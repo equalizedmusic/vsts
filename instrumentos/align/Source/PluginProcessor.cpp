@@ -79,6 +79,7 @@ void AlignProcessor::alternaParam (const juce::String& id)
 
 void AlignProcessor::aplicaDose()
 {
+    engine.preservaTimbre = true;   // 0.3.5: SECO + polaridade no baixo inteiro + shelf (ver Dsp.h)
     engine.usaFase = pPhase->load() > 0.5f;
     engine.usaPolaridade = pPolarity->load() > 0.5f;
     engine.guard = pGuard->load() > 0.5f;
